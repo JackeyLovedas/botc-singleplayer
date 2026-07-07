@@ -32,6 +32,7 @@ export type CommandEnvelope<TPayload> = {
 };
 
 export type CreateGameCommandPayload = {
+  readonly commandType: "CreateGame";
   readonly rootSeed: string;
   readonly rulesBaselineVersion: string;
   readonly playerCount: number;
@@ -41,10 +42,13 @@ export type CreateGameCommandPayload = {
 };
 
 export type SelectScriptCommandPayload = {
+  readonly commandType: "SelectScript";
   readonly scriptId: string;
   readonly scriptName: string;
   readonly edition: "sects-and-violets" | "custom";
 };
 
+export type SupportedCommandPayload = CreateGameCommandPayload | SelectScriptCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
+export type SupportedCommandEnvelope = CreateGameCommand | SelectScriptCommand;

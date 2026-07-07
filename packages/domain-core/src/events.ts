@@ -21,6 +21,7 @@ export type GameCreatedPayload = {
 };
 
 export type ScriptSelectedPayload = {
+  readonly rulesBaselineVersion: string;
   readonly scriptId: string;
   readonly scriptName: string;
   readonly edition: "sects-and-violets" | "custom";

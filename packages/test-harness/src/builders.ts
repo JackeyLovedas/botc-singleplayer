@@ -11,14 +11,14 @@ import {
 } from "@botc/domain-core";
 import type {
   AuditEventEnvelope,
-  CommandEnvelope,
+  CreateGameCommand,
   CreateGameCommandPayload,
   DomainEventEnvelope,
   GameId,
   InfrastructureEventEnvelope,
+  SelectScriptCommand,
   SelectScriptCommandPayload
 } from "@botc/domain-core";
-import type { CreateGameCommandEnvelope, SelectScriptCommandEnvelope } from "@botc/application";
 
 export const ids = {
   game: gameId("game-1"),
@@ -27,6 +27,9 @@ export const ids = {
 };
 
 export const systemActor = { kind: "system", systemId: "test" } as const;
+export const humanActor = { kind: "human", playerId: playerId("player-human-1") } as const;
+export const aiActor = { kind: "ai", playerId: playerId("player-ai-1") } as const;
+export const storytellerActor = { kind: "storyteller" } as const;
 
 export const createGamePayload = {
   commandType: "CreateGame",
@@ -36,18 +39,18 @@ export const createGamePayload = {
   humanPlayerCount: 1,
   aiPlayerCount: 11,
   storytellerCount: 1
-} as const;
+} as const satisfies CreateGameCommandPayload;
 
 export const selectScriptPayload = {
   commandType: "SelectScript",
   scriptId: "sects-and-violets",
   scriptName: "Sects & Violets",
   edition: "sects-and-violets"
-} as const;
+} as const satisfies SelectScriptCommandPayload;
 
 export const createGameCommand = (
-  overrides: Partial<CommandEnvelope<CreateGameCommandPayload & { readonly commandType: "CreateGame" }>> = {}
-): CreateGameCommandEnvelope => ({
+  overrides: Partial<CreateGameCommand> = {}
+): CreateGameCommand => ({
   commandId: ids.command,
   gameId: ids.game,
   expectedGameVersion: 0,
@@ -59,8 +62,8 @@ export const createGameCommand = (
 });
 
 export const selectScriptCommand = (
-  overrides: Partial<CommandEnvelope<SelectScriptCommandPayload & { readonly commandType: "SelectScript" }>> = {}
-): SelectScriptCommandEnvelope => ({
+  overrides: Partial<SelectScriptCommand> = {}
+): SelectScriptCommand => ({
   commandId: commandId("command-2"),
   gameId: ids.game,
   expectedGameVersion: 1,
@@ -118,7 +121,8 @@ export const scriptSelectedEvent = (
   payload: {
     scriptId: "sects-and-violets",
     scriptName: "Sects & Violets",
-    edition: "sects-and-violets"
+    edition: "sects-and-violets",
+    rulesBaselineVersion: RULES_BASELINE_VERSION
   },
   ...overrides
 });

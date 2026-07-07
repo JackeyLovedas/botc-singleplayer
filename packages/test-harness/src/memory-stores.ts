@@ -1,58 +1,155 @@
+import {
+  validateDomainEventStream
+} from "@botc/domain-core";
 import type {
-  CommandId,
-  DomainEventBatch,
   AnyDomainEventEnvelope,
+  CommandId,
   GameId
 } from "@botc/domain-core";
 import type {
+  CommandCommitStore,
   CommandReceipt,
-  CommandReceiptStore,
-  DomainEventStore
+  CommitAcceptedCommandInput,
+  RecordRejectedCommandInput
 } from "@botc/application";
 
-export class MemoryDomainEventStore implements DomainEventStore {
+const compositeCommandKey = (gameId: GameId, commandId: CommandId): string => `${gameId}\u0000${commandId}`;
+
+export class MemoryCommandCommitStore implements CommandCommitStore {
   private readonly events = new Map<GameId, AnyDomainEventEnvelope[]>();
-  public failNextAppend = false;
+  private readonly receipts = new Map<string, CommandReceipt>();
+  private readonly gameVersions = new Map<GameId, number>();
+
+  public failBeforeCommit = false;
+  public failDuringCommit = false;
+  public acceptedCount = 0;
+  public rejectedCount = 0;
 
   public loadDomainEvents(gameId: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
     return Promise.resolve([...(this.events.get(gameId) ?? [])]);
   }
 
-  public appendDomainEventBatch(expectedGameVersion: number, batch: DomainEventBatch): Promise<void> {
-    if (this.failNextAppend) {
-      this.failNextAppend = false;
-      return Promise.reject(new Error("Injected append failure"));
+  public findCommandReceipt(gameId: GameId, commandId: CommandId): Promise<CommandReceipt | undefined> {
+    return Promise.resolve(this.receipts.get(compositeCommandKey(gameId, commandId)));
+  }
+
+  public commitAcceptedCommand(input: CommitAcceptedCommandInput): Promise<void> {
+    if (this.failBeforeCommit) {
+      this.failBeforeCommit = false;
+      return Promise.reject(new Error("Injected failure before commit"));
     }
 
-    const existing = this.events.get(batch.gameId) ?? [];
-    const currentVersion = existing.at(-1)?.gameVersion ?? 0;
-    if (currentVersion !== expectedGameVersion) {
-      throw new Error(`Expected version ${expectedGameVersion} but current version is ${currentVersion}`);
+    try {
+      this.validateAcceptedInput(input);
+      const existing = this.events.get(input.eventBatch.gameId) ?? [];
+      const stagedEvents = [...existing, ...input.eventBatch.events];
+      validateDomainEventStream(stagedEvents);
+
+      if (this.failDuringCommit) {
+        this.failDuringCommit = false;
+        return Promise.reject(new Error("Injected failure during commit"));
+      }
+
+      this.events.set(input.eventBatch.gameId, stagedEvents);
+      this.receipts.set(compositeCommandKey(input.receipt.gameId, input.receipt.commandId), input.receipt);
+      this.gameVersions.set(input.eventBatch.gameId, input.eventBatch.committedGameVersion);
+      this.acceptedCount += 1;
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject(error instanceof Error ? error : new Error("Unknown commit failure"));
+    }
+  }
+
+  public recordRejectedCommand(input: RecordRejectedCommandInput): Promise<void> {
+    if (input.receipt.gameId !== input.gameId || input.receipt.commandId !== input.commandId) {
+      return Promise.reject(new Error("Rejected receipt key must match recordRejectedCommand input"));
     }
 
-    this.events.set(batch.gameId, [...existing, ...batch.events]);
-    return Promise.resolve();
-  }
-}
+    if (input.receipt.result.status !== "rejected") {
+      return Promise.reject(new Error("recordRejectedCommand requires a rejected command result"));
+    }
 
-export class MemoryCommandReceiptStore implements CommandReceiptStore {
-  private readonly receipts = new Map<CommandId, CommandReceipt>();
-  public acceptedCount = 0;
-  public rejectedCount = 0;
+    const key = compositeCommandKey(input.gameId, input.commandId);
+    const existing = this.receipts.get(key);
+    if (existing?.result.status === "accepted") {
+      return Promise.reject(new Error("Cannot overwrite an accepted command receipt"));
+    }
 
-  public find(commandId: CommandId): Promise<CommandReceipt | undefined> {
-    return Promise.resolve(this.receipts.get(commandId));
-  }
-
-  public recordAccepted(receipt: CommandReceipt): Promise<void> {
-    this.acceptedCount += 1;
-    this.receipts.set(receipt.commandId, receipt);
-    return Promise.resolve();
-  }
-
-  public recordRejected(receipt: CommandReceipt): Promise<void> {
+    this.receipts.set(key, input.receipt);
     this.rejectedCount += 1;
-    this.receipts.set(receipt.commandId, receipt);
     return Promise.resolve();
+  }
+
+  public getGameVersion(gameId: GameId): number {
+    return this.gameVersions.get(gameId) ?? 0;
+  }
+
+  public getReceiptCount(): number {
+    return this.receipts.size;
+  }
+
+  private validateAcceptedInput(input: CommitAcceptedCommandInput): void {
+    const { eventBatch, expectedGameVersion, receipt } = input;
+
+    if (receipt.result.status !== "accepted") {
+      throw new Error("commitAcceptedCommand requires an accepted command result");
+    }
+
+    if (receipt.gameId !== eventBatch.gameId || receipt.commandId !== eventBatch.commandId) {
+      throw new Error("Accepted receipt key must match event batch key");
+    }
+
+    if (receipt.result.gameId !== eventBatch.gameId || receipt.result.gameVersion !== eventBatch.committedGameVersion) {
+      throw new Error("Accepted receipt result must match committed batch");
+    }
+
+    if (eventBatch.expectedGameVersion !== expectedGameVersion) {
+      throw new Error("Batch expectedGameVersion must match commit input");
+    }
+
+    if (eventBatch.committedGameVersion !== expectedGameVersion + 1) {
+      throw new Error("Batch committedGameVersion must be expectedGameVersion + 1");
+    }
+
+    if (eventBatch.events.length === 0) {
+      throw new Error("Domain event batch must not be empty");
+    }
+
+    const existingEvents = this.events.get(eventBatch.gameId) ?? [];
+    const currentGameVersion = this.gameVersions.get(eventBatch.gameId) ?? existingEvents.at(-1)?.gameVersion ?? 0;
+    if (currentGameVersion !== expectedGameVersion) {
+      throw new Error(`Expected version ${expectedGameVersion} but current version is ${currentGameVersion}`);
+    }
+
+    if (this.receipts.has(compositeCommandKey(eventBatch.gameId, eventBatch.commandId))) {
+      throw new Error("Command has already been committed for this game");
+    }
+
+    if (existingEvents.some((event) => event.commandId === eventBatch.commandId)) {
+      throw new Error("Command id already has a successful batch for this game");
+    }
+
+    const currentLastSequence = existingEvents.at(-1)?.eventSequence ?? 0;
+    eventBatch.events.forEach((event, index) => {
+      if (event.gameId !== eventBatch.gameId) {
+        throw new Error("Batch gameId must match every event");
+      }
+
+      if (event.commandId !== eventBatch.commandId) {
+        throw new Error("Batch commandId must match every event");
+      }
+
+      if (event.batchId !== eventBatch.batchId) {
+        throw new Error("Batch batchId must match every event");
+      }
+
+      if (event.gameVersion !== eventBatch.committedGameVersion) {
+        throw new Error("Every event gameVersion must match committedGameVersion");
+      }
+
+      if (event.eventSequence !== currentLastSequence + index + 1) {
+        throw new Error("Batch event sequences must continue from the current stream");
+      }
+    });
   }
 }

@@ -1,25 +1,22 @@
 import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
+  assertNever,
   causationIdFromCommandId,
   rebuildOptionalGameState
 } from "@botc/domain-core";
 import type {
   BatchId,
-  CommandEnvelope,
-  CommandId,
-  CreateGameCommandPayload,
   DomainEventBatch,
   AnyDomainEventEnvelope,
   EventId,
-  GameId,
+  GameState,
   ScriptSelectedPayload,
-  SelectScriptCommandPayload
+  SupportedCommandEnvelope
 } from "@botc/domain-core";
-import type { CommandReceiptStore } from "./ports/command-receipt-store.js";
-import type { DomainEventStore } from "./ports/domain-event-store.js";
 import { accepted, markIdempotent, rejected } from "./command-result.js";
-import type { CommandResult } from "./command-result.js";
+import type { CommandRejectionCode, CommandResult } from "./command-result.js";
+import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
 
 export type IdGenerator = {
   readonly nextEventId: () => EventId;
@@ -31,33 +28,27 @@ export type Clock = {
 };
 
 export type GameApplicationServiceDependencies = {
-  readonly domainEventStore: DomainEventStore;
-  readonly commandReceiptStore: CommandReceiptStore;
+  readonly commandStore: CommandCommitStore;
   readonly ids: IdGenerator;
   readonly clock: Clock;
 };
-
-export type CreateGameCommandEnvelope = CommandEnvelope<CreateGameCommandPayload & { readonly commandType: "CreateGame" }>;
-export type SelectScriptCommandEnvelope = CommandEnvelope<SelectScriptCommandPayload & { readonly commandType: "SelectScript" }>;
-export type SupportedCommandEnvelope = CreateGameCommandEnvelope | SelectScriptCommandEnvelope;
 
 export class GameApplicationService {
   public constructor(private readonly dependencies: GameApplicationServiceDependencies) {}
 
   public async execute(command: SupportedCommandEnvelope): Promise<CommandResult> {
-    const existingReceipt = await this.dependencies.commandReceiptStore.find(command.commandId);
+    const existingReceipt = await this.dependencies.commandStore.findCommandReceipt(command.gameId, command.commandId);
     if (existingReceipt !== undefined) {
       return markIdempotent(existingReceipt.result);
     }
 
-    const events = await this.dependencies.domainEventStore.loadDomainEvents(command.gameId);
+    const events = await this.dependencies.commandStore.loadDomainEvents(command.gameId);
     const state = rebuildOptionalGameState(events);
     const currentGameVersion = state?.gameVersion ?? 0;
 
     if (command.expectedGameVersion !== currentGameVersion) {
       return this.recordRejected(
-        command.commandId,
-        command.gameId,
+        command,
         rejected(
           command.gameId,
           "ExpectedGameVersionMismatch",
@@ -67,33 +58,51 @@ export class GameApplicationService {
       );
     }
 
-    const validation = this.validate(command, state !== undefined);
+    const validation = this.validate(command, state);
     if (validation !== undefined) {
-      return this.recordRejected(command.commandId, command.gameId, rejected(command.gameId, validation.code, validation.message, currentGameVersion));
+      return this.recordRejected(command, rejected(command.gameId, validation.code, validation.message, currentGameVersion));
     }
 
-    const batch = this.createBatch(command, events.length, currentGameVersion);
+    const batch = this.createBatch(command, state, currentGameVersion);
+    const result = accepted(command.gameId, batch.committedGameVersion, batch.events);
+    const receipt: CommandReceipt = { commandId: command.commandId, gameId: command.gameId, result };
 
     try {
-      await this.dependencies.domainEventStore.appendDomainEventBatch(currentGameVersion, batch);
+      await this.dependencies.commandStore.commitAcceptedCommand({
+        expectedGameVersion: currentGameVersion,
+        eventBatch: batch,
+        receipt
+      });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown event store failure";
       return rejected(command.gameId, "EventStoreAppendFailed", message, currentGameVersion);
     }
 
-    const result = accepted(command.gameId, batch.committedGameVersion, batch.events);
-    await this.dependencies.commandReceiptStore.recordAccepted({ commandId: command.commandId, gameId: command.gameId, result });
     return result;
   }
 
   private validate(
     command: SupportedCommandEnvelope,
-    gameExists: boolean
-  ): { readonly code: "InvalidCreateGameCounts" | "GameAlreadyCreated" | "GameNotCreated"; readonly message: string } | undefined {
+    state: GameState | undefined
+  ): { readonly code: CommandRejectionCode; readonly message: string } | undefined {
+    if (command.actor.kind !== "human" && command.actor.kind !== "system") {
+      return {
+        code: "ActorNotAllowed",
+        message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+      };
+    }
+
     switch (command.payload.commandType) {
       case "CreateGame": {
-        if (gameExists) {
+        if (state !== undefined) {
           return { code: "GameAlreadyCreated", message: "Game already exists" };
+        }
+
+        if (command.payload.rulesBaselineVersion !== RULES_BASELINE_VERSION) {
+          return {
+            code: "UnsupportedRulesBaseline",
+            message: `Unsupported rules baseline ${command.payload.rulesBaselineVersion}`
+          };
         }
 
         if (
@@ -112,23 +121,25 @@ export class GameApplicationService {
       }
 
       case "SelectScript": {
-        if (!gameExists) {
+        if (state === undefined) {
           return { code: "GameNotCreated", message: "SelectScript requires an existing game" };
         }
 
         return undefined;
       }
     }
+
+    return assertNever(command.payload);
   }
 
   private createBatch(
     command: SupportedCommandEnvelope,
-    existingEventCount: number,
+    state: GameState | undefined,
     currentGameVersion: number
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.dependencies.ids.nextBatchId();
-    const eventSequence = existingEventCount + 1;
+    const eventSequence = (state?.lastEventSequence ?? 0) + 1;
     const event = this.createEvent(command, batch, eventSequence, newVersion);
 
     return {
@@ -170,7 +181,7 @@ export class GameApplicationService {
           payload: {
             gameId: command.gameId,
             rootSeed: command.payload.rootSeed,
-            rulesBaselineVersion: command.payload.rulesBaselineVersion,
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
             playerCount: command.payload.playerCount,
             humanPlayerCount: command.payload.humanPlayerCount,
             aiPlayerCount: command.payload.aiPlayerCount,
@@ -183,19 +194,26 @@ export class GameApplicationService {
           ...common,
           eventType: "ScriptSelected",
           payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
             scriptId: command.payload.scriptId,
             scriptName: command.payload.scriptName,
             edition: command.payload.edition
           } satisfies ScriptSelectedPayload
         };
     }
+
+    return assertNever(command.payload);
   }
 
-  private async recordRejected(commandIdValue: CommandId, gameIdValue: GameId, result: CommandResult): Promise<CommandResult> {
-    await this.dependencies.commandReceiptStore.recordRejected({
-      commandId: commandIdValue,
-      gameId: gameIdValue,
-      result
+  private async recordRejected(command: SupportedCommandEnvelope, result: CommandResult): Promise<CommandResult> {
+    await this.dependencies.commandStore.recordRejectedCommand({
+      gameId: command.gameId,
+      commandId: command.commandId,
+      receipt: {
+        commandId: command.commandId,
+        gameId: command.gameId,
+        result
+      }
     });
 
     return result;

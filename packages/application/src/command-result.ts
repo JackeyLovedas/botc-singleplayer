@@ -3,6 +3,8 @@ import type { AnyDomainEventEnvelope, GameId } from "@botc/domain-core";
 export type CommandRejectionCode =
   | "ExpectedGameVersionMismatch"
   | "InvalidCreateGameCounts"
+  | "UnsupportedRulesBaseline"
+  | "ActorNotAllowed"
   | "GameAlreadyCreated"
   | "GameNotCreated"
   | "UnsupportedCommand"

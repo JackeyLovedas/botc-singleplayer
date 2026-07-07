@@ -2,11 +2,19 @@ export type DomainErrorCode =
   | "EmptyEventStream"
   | "EventGameMismatch"
   | "EventSequenceJump"
+  | "EventGameVersionMismatch"
+  | "EventBatchMismatch"
+  | "EventCommandMismatch"
+  | "EventRulesBaselineMismatch"
+  | "DuplicateEventId"
+  | "DuplicateCommandBatch"
+  | "NonContiguousBatch"
   | "DuplicateGameCreated"
   | "MissingGameCreated"
   | "UnsupportedEventVersion"
   | "InvalidPlayerCounts"
-  | "InvalidGameCreatedPayload";
+  | "InvalidGameCreatedPayload"
+  | "InvalidScriptSelectedPayload";
 
 export class DomainError extends Error {
   public constructor(
