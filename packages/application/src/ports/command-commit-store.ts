@@ -1,10 +1,10 @@
 import type { AnyDomainEventEnvelope, CommandId, DomainEventBatch, GameId } from "@botc/domain-core";
-import type { CommandResult } from "../command-result.js";
+import type { CommandReceiptResult } from "../command-result.js";
 
 export type CommandReceipt = {
   readonly commandId: CommandId;
   readonly gameId: GameId;
-  readonly result: CommandResult;
+  readonly result: CommandReceiptResult;
 };
 
 export type CommitAcceptedCommandInput = {

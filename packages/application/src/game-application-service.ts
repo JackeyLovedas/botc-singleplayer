@@ -27,8 +27,8 @@ import type {
   ScriptSelectedPayload,
   SupportedCommandEnvelope
 } from "@botc/domain-core";
-import { accepted, markIdempotent, rejected } from "./command-result.js";
-import type { GeneralCommandRejectionCode, SetupGenerationRejectionDetails, CommandResult } from "./command-result.js";
+import { accepted, failed, markIdempotent, rejected } from "./command-result.js";
+import type { CommandExecutionFailed, CommandRejected, CommandResult, GeneralCommandRejectionCode, SetupGenerationRejectionDetails } from "./command-result.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
 import type { SetupGeneratorPort } from "./ports/setup-generator.js";
 
@@ -79,6 +79,10 @@ export class GameApplicationService {
     }
 
     const batch = this.createBatchOrReject(command, state, currentGameVersion);
+    if ("status" in batch) {
+      return batch;
+    }
+
     if ("code" in batch) {
       if (batch.code === "SetupGenerationFailed") {
         return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
@@ -103,7 +107,7 @@ export class GameApplicationService {
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown event store failure";
-      return rejected(command.gameId, "EventStoreAppendFailed", message, currentGameVersion);
+      return failed(command.gameId, "EventStoreAppendFailed", message, currentGameVersion);
     }
 
     return result;
@@ -217,13 +221,13 @@ export class GameApplicationService {
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number
-  ): DomainEventBatch | { readonly code: GeneralCommandRejectionCode; readonly message: string } | {
+  ): DomainEventBatch | CommandExecutionFailed | { readonly code: GeneralCommandRejectionCode; readonly message: string } | {
     readonly code: "SetupGenerationFailed";
     readonly message: string;
     readonly details: SetupGenerationRejectionDetails;
   } {
     try {
-      const generatedSetup = this.generateSetupOrReject(command, state);
+      const generatedSetup = this.generateSetupOrReject(command, state, currentGameVersion);
       if (generatedSetup !== undefined && "code" in generatedSetup) {
         return generatedSetup;
       }
@@ -260,8 +264,9 @@ export class GameApplicationService {
 
   private generateSetupOrReject(
     command: SupportedCommandEnvelope,
-    state: GameState | undefined
-  ): GeneratedSetup | {
+    state: GameState | undefined,
+    currentGameVersion: number
+  ): GeneratedSetup | CommandExecutionFailed | {
     readonly code: "SetupGenerationFailed";
     readonly message: string;
     readonly details: SetupGenerationRejectionDetails;
@@ -281,20 +286,21 @@ export class GameApplicationService {
 
     const setupGenerator = this.dependencies.setupGenerator;
     if (setupGenerator === undefined) {
-      const message = "Setup generator dependency is not configured";
-      return {
-        code: "SetupGenerationFailed",
-        message,
-        details: this.setupGenerationFailureDetails("NoLegalSetup", message, command.payload.constraints)
-      };
+      return failed(command.gameId, "ApplicationNotConfigured", "Setup generator dependency is not configured", currentGameVersion);
     }
 
-    const result = setupGenerator.generate({
-      scriptId: state.selectedScript.scriptId,
-      rootSeed: state.rootSeed,
-      playerCount: state.playerCounts.playerCount,
-      constraints: command.payload.constraints
-    });
+    let result;
+    try {
+      result = setupGenerator.generate({
+        scriptId: state.selectedScript.scriptId,
+        rootSeed: state.rootSeed,
+        playerCount: state.playerCounts.playerCount,
+        constraints: command.payload.constraints
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown setup generator failure";
+      return failed(command.gameId, "DependencyExecutionFailed", message, currentGameVersion);
+    }
 
     if (result.status === "failure") {
       return {
@@ -479,7 +485,7 @@ export class GameApplicationService {
     }
   }
 
-  private async recordRejected(command: SupportedCommandEnvelope, result: CommandResult): Promise<CommandResult> {
+  private async recordRejected(command: SupportedCommandEnvelope, result: CommandRejected): Promise<CommandRejected> {
     await this.dependencies.commandStore.recordRejectedCommand({
       gameId: command.gameId,
       commandId: command.commandId,

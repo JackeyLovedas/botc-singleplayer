@@ -57,7 +57,22 @@ export type GeneralCommandRejected = {
 
 export type CommandRejected = SetupGenerationCommandRejected | GeneralCommandRejected;
 
-export type CommandResult = CommandAccepted | CommandRejected;
+export type CommandExecutionFailureCode =
+  | "ApplicationNotConfigured"
+  | "DependencyExecutionFailed"
+  | "EventStoreAppendFailed";
+
+export type CommandExecutionFailed = {
+  readonly status: "failed";
+  readonly gameId: GameId;
+  readonly code: CommandExecutionFailureCode;
+  readonly message: string;
+  readonly currentGameVersion: number;
+  readonly retryable: true;
+};
+
+export type CommandReceiptResult = CommandAccepted | CommandRejected;
+export type CommandResult = CommandReceiptResult | CommandExecutionFailed;
 
 export const accepted = (
   gameId: GameId,
@@ -70,6 +85,20 @@ export const accepted = (
   gameVersion,
   events,
   idempotent
+});
+
+export const failed = (
+  gameId: GameId,
+  code: CommandExecutionFailureCode,
+  message: string,
+  currentGameVersion: number
+): CommandExecutionFailed => ({
+  status: "failed",
+  gameId,
+  code,
+  message,
+  currentGameVersion,
+  retryable: true
 });
 
 export function rejected(
@@ -122,6 +151,10 @@ export function rejected(
 }
 
 export const markIdempotent = (result: CommandResult): CommandResult => {
+  if (result.status === "failed") {
+    return result;
+  }
+
   if (result.status === "accepted") {
     return { ...result, idempotent: true };
   }
