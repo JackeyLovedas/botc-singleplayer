@@ -8,10 +8,14 @@ import {
   BASE_TWELVE_PLAYER_COUNTS,
   CHARACTER_TYPES,
   SUPPORTED_RANDOM_ALGORITHM_VERSION,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
   SUPPORTED_ROLE_CATALOG_VERSION,
   SUPPORTED_SCRIPT_ID,
+  SUPPORTED_SCRIPT_EDITION,
   SUPPORTED_SETUP_ALGORITHM_VERSION,
   SUPPORTED_SETUP_RANDOM_STREAM,
+  calculateRoleCatalogSignature,
   compareRoleSetupSnapshot,
   isStableRoleIdList,
   isSupportedScriptMetadata,
@@ -53,6 +57,9 @@ const hasCanonicalRoleOrder = (roles: readonly RoleSetupSnapshot[]): boolean =>
 const hasCanonicalRoleIdOrder = (roles: readonly RoleSetupSnapshot[]): boolean =>
   roles.every((role, index) => index === 0 || (roles[index - 1]?.roleId ?? "") < role.roleId);
 
+const hasUniqueRoleIds = (roles: readonly RoleSetupSnapshot[]): boolean =>
+  new Set(roles.map((role) => role.roleId)).size === roles.length;
+
 const expectedPostCountsForDemon = (demon: RoleSetupSnapshot): RoleCountSet => ({
   TOWNSFOLK: BASE_TWELVE_PLAYER_COUNTS.TOWNSFOLK + demon.setupModifier.townsfolkDelta,
   OUTSIDER: BASE_TWELVE_PLAYER_COUNTS.OUTSIDER + demon.setupModifier.outsiderDelta,
@@ -60,10 +67,83 @@ const expectedPostCountsForDemon = (demon: RoleSetupSnapshot): RoleCountSet => (
   DEMON: BASE_TWELVE_PLAYER_COUNTS.DEMON
 });
 
-const validateConstraintsSnapshot = (payload: SetupGeneratedPayload): void => {
+const validateRoleCatalogSnapshot = (payload: SetupGeneratedPayload): ReadonlyMap<RoleId, RoleSetupSnapshot> => {
+  const snapshot = payload.roleCatalogSnapshot;
+  if (
+    snapshot.scriptId !== payload.scriptId ||
+    snapshot.edition !== SUPPORTED_SCRIPT_EDITION ||
+    snapshot.roleCatalogVersion !== payload.roleCatalogVersion ||
+    snapshot.roleCatalogVersion !== SUPPORTED_ROLE_CATALOG_VERSION
+  ) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot metadata must match supported catalog metadata");
+  }
+
+  if (payload.roleCatalogSignatureAlgorithm !== SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSignatureAlgorithm must be supported");
+  }
+
+  if (snapshot.roles.length !== 25) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot must contain 25 roles");
+  }
+
+  if (!hasUniqueRoleIds(snapshot.roles)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot role ids must be unique");
+  }
+
+  if (!hasCanonicalRoleOrder(snapshot.roles)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot must use canonical role order");
+  }
+
+  if (snapshot.roles.some((role) => !validateRoleSetupSnapshot(role))) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot contains invalid role metadata");
+  }
+
+  const catalogCounts = countRolesByType(snapshot.roles);
+  const expectedCatalogCounts: RoleCountSet = {
+    TOWNSFOLK: 13,
+    OUTSIDER: 4,
+    MINION: 4,
+    DEMON: 4
+  };
+  if (!sameCounts(catalogCounts, expectedCatalogCounts)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot must contain 13/4/4/4 roles");
+  }
+
+  const recalculatedSignature = calculateRoleCatalogSignature(snapshot);
+  if (
+    snapshot.canonicalSignature !== payload.roleCatalogSignature ||
+    payload.roleCatalogSignature !== recalculatedSignature ||
+    payload.roleCatalogSignature !== SUPPORTED_ROLE_CATALOG_SIGNATURE
+  ) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated role catalog signature must match the supported exact catalog");
+  }
+
+  return new Map(snapshot.roles.map((role) => [role.roleId, role]));
+};
+
+const requireCatalogRole = (
+  catalogById: ReadonlyMap<RoleId, RoleSetupSnapshot>,
+  role: RoleSetupSnapshot,
+  message: string
+): void => {
+  const catalogRole = catalogById.get(role.roleId);
+  if (catalogRole === undefined || !sameRoleSetupSnapshot(role, catalogRole)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", message);
+  }
+};
+
+const validateConstraintsSnapshot = (
+  payload: SetupGeneratedPayload,
+  catalogById: ReadonlyMap<RoleId, RoleSetupSnapshot>
+): void => {
   const { lockedRoleIds, excludedRoleIds, exactRoleIds } = payload.constraintsSnapshot;
   if (!isStableRoleIdList(lockedRoleIds) || !isStableRoleIdList(excludedRoleIds) || !isStableRoleIdList(exactRoleIds)) {
     throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated constraintsSnapshot lists must be unique and ASCII sorted");
+  }
+
+  const allConstraintIds = [...lockedRoleIds, ...excludedRoleIds, ...exactRoleIds];
+  if (allConstraintIds.some((roleIdValue) => !catalogById.has(roleIdValue))) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated constraintsSnapshot roles must exist in roleCatalogSnapshot");
   }
 
   const excluded = new Set(excludedRoleIds);
@@ -115,14 +195,14 @@ const validateSetupGeneratedPayload = (state: GameState, payload: SetupGenerated
     throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated scriptId must be sects-and-violets");
   }
 
-  if (
-    payload.setupAlgorithmVersion !== SUPPORTED_SETUP_ALGORITHM_VERSION ||
+  if (payload.setupAlgorithmVersion !== SUPPORTED_SETUP_ALGORITHM_VERSION ||
     payload.randomAlgorithmVersion !== SUPPORTED_RANDOM_ALGORITHM_VERSION ||
     payload.randomStream !== SUPPORTED_SETUP_RANDOM_STREAM ||
-    payload.roleCatalogVersion !== SUPPORTED_ROLE_CATALOG_VERSION
-  ) {
+    payload.roleCatalogVersion !== SUPPORTED_ROLE_CATALOG_VERSION) {
     throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated setup algorithm and catalog versions must be supported");
   }
+
+  const catalogById = validateRoleCatalogSnapshot(payload);
 
   if (!sameCounts(payload.preModifierCounts, BASE_TWELVE_PLAYER_COUNTS)) {
     throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated preModifierCounts must be 7/2/2/1");
@@ -147,6 +227,12 @@ const validateSetupGeneratedPayload = (state: GameState, payload: SetupGenerated
   if (payload.actualRoles.some((role) => !validateRoleSetupSnapshot(role)) || !validateRoleSetupSnapshot(payload.demonRole)) {
     throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated role snapshots must contain valid setup metadata");
   }
+
+  for (const role of payload.actualRoles) {
+    requireCatalogRole(catalogById, role, "SetupGenerated actualRoles must match roleCatalogSnapshot");
+  }
+
+  requireCatalogRole(catalogById, payload.demonRole, "SetupGenerated demonRole must match roleCatalogSnapshot");
 
   const actualCounts = countRolesByType(payload.actualRoles);
   if (!sameCounts(actualCounts, payload.postModifierCounts)) {
@@ -210,6 +296,10 @@ const validateSetupGeneratedPayload = (state: GameState, payload: SetupGenerated
     throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated demonBluffs must be good, Sects & Violets, and not actual roles");
   }
 
+  for (const role of payload.demonBluffs) {
+    requireCatalogRole(catalogById, role, "SetupGenerated demonBluffs must match roleCatalogSnapshot");
+  }
+
   if (
     payload.validationSummary.actualRoleCount !== 12 ||
     payload.validationSummary.demonBluffCount !== 3 ||
@@ -221,7 +311,7 @@ const validateSetupGeneratedPayload = (state: GameState, payload: SetupGenerated
     throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated validationSummary must match payload invariants");
   }
 
-  validateConstraintsSnapshot(payload);
+  validateConstraintsSnapshot(payload, catalogById);
 };
 
 const validateEnvelope = (state: GameState | undefined, event: AnyDomainEventEnvelope): void => {

@@ -7,6 +7,8 @@ export const SUPPORTED_SETUP_ALGORITHM_VERSION = "snv-12-setup-v1" as const;
 export const SUPPORTED_RANDOM_ALGORITHM_VERSION = "xmur3-sfc32-rejection-v1" as const;
 export const SUPPORTED_SETUP_RANDOM_STREAM = "setup/sects-and-violets/12/v1" as const;
 export const SUPPORTED_ROLE_CATALOG_VERSION = "snv-role-catalog-v1" as const;
+export const SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM = "canonical-role-catalog-v1" as const;
+export const SUPPORTED_ROLE_CATALOG_SIGNATURE = "canonical-role-catalog-v1:60ac4718" as const;
 
 export type SupportedScriptId = typeof SUPPORTED_SCRIPT_ID;
 export type SupportedScriptName = typeof SUPPORTED_SCRIPT_NAME;
@@ -15,6 +17,7 @@ export type SupportedSetupAlgorithmVersion = typeof SUPPORTED_SETUP_ALGORITHM_VE
 export type SupportedRandomAlgorithmVersion = typeof SUPPORTED_RANDOM_ALGORITHM_VERSION;
 export type SupportedSetupRandomStream = typeof SUPPORTED_SETUP_RANDOM_STREAM;
 export type SupportedRoleCatalogVersion = typeof SUPPORTED_ROLE_CATALOG_VERSION;
+export type SupportedRoleCatalogSignatureAlgorithm = typeof SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM;
 
 export type CharacterType = "TOWNSFOLK" | "OUTSIDER" | "MINION" | "DEMON";
 export type DefaultAlignment = "GOOD" | "EVIL";
@@ -50,6 +53,14 @@ export type RoleSetupSnapshot = {
   readonly defaultAlignment: DefaultAlignment;
   readonly edition: SupportedEdition;
   readonly setupModifier: SetupModifier;
+};
+
+export type RoleCatalogSnapshot = {
+  readonly scriptId: SupportedScriptId;
+  readonly edition: SupportedEdition;
+  readonly roleCatalogVersion: string;
+  readonly roles: readonly RoleSetupSnapshot[];
+  readonly canonicalSignature: string;
 };
 
 export type RoleCountSet = {
@@ -92,6 +103,9 @@ export type GeneratedSetup = {
   readonly randomAlgorithmVersion: string;
   readonly randomStream: string;
   readonly roleCatalogVersion: string;
+  readonly roleCatalogSnapshot: RoleCatalogSnapshot;
+  readonly roleCatalogSignature: string;
+  readonly roleCatalogSignatureAlgorithm: string;
   readonly constraintsSnapshot: SetupGenerationConstraintsSnapshot;
   readonly preModifierCounts: RoleCountSet;
   readonly postModifierCounts: RoleCountSet;
@@ -239,8 +253,76 @@ const snapshotFromRole = (role: RoleDefinition): RoleSetupSnapshot => ({
   characterType: role.characterType,
   defaultAlignment: role.defaultAlignment,
   edition: role.edition,
-  setupModifier: role.setupModifier
+  setupModifier: {
+    outsiderDelta: role.setupModifier.outsiderDelta,
+    townsfolkDelta: role.setupModifier.townsfolkDelta
+  }
 });
+
+type RoleCatalogSignatureInput = {
+  readonly scriptId: string;
+  readonly edition: string;
+  readonly roleCatalogVersion?: string;
+  readonly roles: readonly (RoleDefinition | RoleSetupSnapshot)[];
+};
+
+const toRoleSetupSnapshot = (role: RoleDefinition | RoleSetupSnapshot): RoleSetupSnapshot => ({
+  roleId: role.roleId,
+  characterType: role.characterType,
+  defaultAlignment: role.defaultAlignment,
+  edition: role.edition,
+  setupModifier: {
+    outsiderDelta: role.setupModifier.outsiderDelta,
+    townsfolkDelta: role.setupModifier.townsfolkDelta
+  }
+});
+
+export const createCanonicalRoleCatalogRoles = (
+  roles: readonly (RoleDefinition | RoleSetupSnapshot)[]
+): readonly RoleSetupSnapshot[] => roles.map(toRoleSetupSnapshot).sort(compareRoleSetupSnapshot);
+
+export const serializeRoleCatalogCanonical = (catalog: RoleCatalogSignatureInput): string => {
+  const roleCatalogVersion = catalog.roleCatalogVersion ?? SUPPORTED_ROLE_CATALOG_VERSION;
+  const roleLines = createCanonicalRoleCatalogRoles(catalog.roles).map((role) => [
+    role.roleId,
+    role.characterType,
+    role.defaultAlignment,
+    role.edition,
+    String(role.setupModifier.outsiderDelta),
+    String(role.setupModifier.townsfolkDelta)
+  ].join("|"));
+
+  return [
+    `scriptId|${catalog.scriptId}`,
+    `edition|${catalog.edition}`,
+    `roleCatalogVersion|${roleCatalogVersion}`,
+    ...roleLines
+  ].join("\n");
+};
+
+export const calculateRoleCatalogSignature = (catalog: RoleCatalogSignatureInput): string => {
+  const serialized = serializeRoleCatalogCanonical(catalog);
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < serialized.length; index += 1) {
+    hash = Math.imul(hash ^ serialized.charCodeAt(index), 0x01000193) >>> 0;
+  }
+
+  return `${SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM}:${hash.toString(16).padStart(8, "0")}`;
+};
+
+export const createRoleCatalogSnapshot = (script: ScriptDefinition): RoleCatalogSnapshot => {
+  const snapshotWithoutSignature = {
+    scriptId: script.scriptId,
+    edition: script.edition,
+    roleCatalogVersion: SUPPORTED_ROLE_CATALOG_VERSION,
+    roles: createCanonicalRoleCatalogRoles(script.roles)
+  } satisfies Omit<RoleCatalogSnapshot, "canonicalSignature">;
+
+  return {
+    ...snapshotWithoutSignature,
+    canonicalSignature: calculateRoleCatalogSignature(snapshotWithoutSignature)
+  };
+};
 
 export const validateScriptDefinitionForSetup = (script: ScriptDefinition): void => {
   if (!isSupportedScriptMetadata(script.scriptId, script.scriptName, script.edition)) {

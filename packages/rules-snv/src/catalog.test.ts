@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { compareStableId, roleId } from "@botc/domain-core";
+import {
+  SUPPORTED_ROLE_CATALOG_SIGNATURE,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
+  calculateRoleCatalogSignature,
+  compareStableId,
+  roleId
+} from "@botc/domain-core";
 import type { RoleDefinition, ScriptDefinition } from "@botc/domain-core";
 import { SECTS_AND_VIOLETS_ROLES, assertValidSectsAndVioletsCatalog } from "@botc/rules-snv";
 
@@ -7,6 +13,15 @@ const cloneRole = (role: RoleDefinition): RoleDefinition => ({
   ...role,
   setupModifier: { ...role.setupModifier }
 });
+
+const firstCatalogRole = (): RoleDefinition => {
+  const role = SECTS_AND_VIOLETS_ROLES[0];
+  if (role === undefined) {
+    throw new Error("Missing first catalog role");
+  }
+
+  return role;
+};
 
 const scriptWithRoles = (roles: readonly RoleDefinition[]): ScriptDefinition => ({
   scriptId: "sects-and-violets",
@@ -59,6 +74,43 @@ describe("Sects & Violets role catalog", () => {
 
     expect(modified).toStrictEqual(["fang_gu", "vigormortis"]);
     expect(() => assertValidSectsAndVioletsCatalog()).not.toThrow();
+  });
+
+  it("matches the supported canonical role catalog signature", () => {
+    expect(calculateRoleCatalogSignature(scriptWithRoles(SECTS_AND_VIOLETS_ROLES))).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+    expect(SUPPORTED_ROLE_CATALOG_SIGNATURE).toMatch(new RegExp(`^${SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM}:[0-9a-f]{8}$`));
+  });
+
+  it("changes the signature when a role type changes", () => {
+    const changed = scriptWithRole("clockmaker", { characterType: "OUTSIDER" });
+
+    expect(calculateRoleCatalogSignature(changed)).not.toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+  });
+
+  it("changes the signature when a setup modifier changes", () => {
+    const changed = scriptWithRole("fang_gu", {
+      setupModifier: {
+        outsiderDelta: -1,
+        townsfolkDelta: 1
+      }
+    });
+
+    expect(calculateRoleCatalogSignature(changed)).not.toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+  });
+
+  it("changes the signature when roles are added or removed", () => {
+    expect(calculateRoleCatalogSignature(scriptWithRoles(SECTS_AND_VIOLETS_ROLES.slice(1)))).not.toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+    expect(calculateRoleCatalogSignature(scriptWithRoles([
+      ...SECTS_AND_VIOLETS_ROLES,
+      {
+        ...cloneRole(firstCatalogRole()),
+        roleId: roleId("extra_role")
+      }
+    ]))).not.toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+  });
+
+  it("keeps the signature stable when the source catalog order changes", () => {
+    expect(calculateRoleCatalogSignature(scriptWithRoles([...SECTS_AND_VIOLETS_ROLES].reverse()))).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
   });
 
   it("rejects Fang Gu when its setup modifier is reversed", () => {

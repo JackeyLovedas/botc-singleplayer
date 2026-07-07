@@ -17,6 +17,9 @@ export type CommandRejectionCode =
   | "DomainValidationFailed"
   | "EventStoreAppendFailed";
 
+export type SetupGenerationRejectionCode = "SetupGenerationFailed";
+export type GeneralCommandRejectionCode = Exclude<CommandRejectionCode, SetupGenerationRejectionCode>;
+
 export type CommandAccepted = {
   readonly status: "accepted";
   readonly gameId: GameId;
@@ -25,21 +28,34 @@ export type CommandAccepted = {
   readonly idempotent: boolean;
 };
 
-export type CommandRejectionDetails =
-  | {
-      readonly kind: "setup-generation";
-      readonly failure: SetupGenerationFailure;
-    };
+export type SetupGenerationRejectionDetails = {
+  readonly kind: "setup-generation";
+  readonly failure: SetupGenerationFailure;
+};
 
-export type CommandRejected = {
+export type CommandRejectionDetails = SetupGenerationRejectionDetails;
+
+export type SetupGenerationCommandRejected = {
   readonly status: "rejected";
   readonly gameId: GameId;
-  readonly code: CommandRejectionCode;
+  readonly code: SetupGenerationRejectionCode;
   readonly message: string;
   readonly currentGameVersion: number;
   readonly idempotent: boolean;
-  readonly details?: CommandRejectionDetails;
+  readonly details: SetupGenerationRejectionDetails;
 };
+
+export type GeneralCommandRejected = {
+  readonly status: "rejected";
+  readonly gameId: GameId;
+  readonly code: GeneralCommandRejectionCode;
+  readonly message: string;
+  readonly currentGameVersion: number;
+  readonly idempotent: boolean;
+  readonly details?: never;
+};
+
+export type CommandRejected = SetupGenerationCommandRejected | GeneralCommandRejected;
 
 export type CommandResult = CommandAccepted | CommandRejected;
 
@@ -56,22 +72,54 @@ export const accepted = (
   idempotent
 });
 
-export const rejected = (
+export function rejected(
+  gameId: GameId,
+  code: SetupGenerationRejectionCode,
+  message: string,
+  currentGameVersion: number,
+  idempotent: boolean,
+  details: SetupGenerationRejectionDetails
+): SetupGenerationCommandRejected;
+export function rejected(
+  gameId: GameId,
+  code: GeneralCommandRejectionCode,
+  message: string,
+  currentGameVersion: number,
+  idempotent?: boolean
+): GeneralCommandRejected;
+export function rejected(
   gameId: GameId,
   code: CommandRejectionCode,
   message: string,
   currentGameVersion: number,
   idempotent = false,
   details: CommandRejectionDetails | undefined = undefined
-): CommandRejected => ({
-  status: "rejected",
-  gameId,
-  code,
-  message,
-  currentGameVersion,
-  idempotent,
-  ...(details === undefined ? {} : { details })
-});
+): CommandRejected {
+  if (code === "SetupGenerationFailed") {
+    if (details === undefined) {
+      throw new Error("SetupGenerationFailed requires structured rejection details");
+    }
+
+    return {
+      status: "rejected",
+      gameId,
+      code,
+      message,
+      currentGameVersion,
+      idempotent,
+      details
+    };
+  }
+
+  return {
+    status: "rejected",
+    gameId,
+    code,
+    message,
+    currentGameVersion,
+    idempotent
+  };
+}
 
 export const markIdempotent = (result: CommandResult): CommandResult => {
   if (result.status === "accepted") {

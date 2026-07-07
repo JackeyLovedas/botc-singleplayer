@@ -4,6 +4,7 @@ import {
   applyDomainEventBatch,
   assertNever,
   causationIdFromCommandId,
+  compareStableId,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
   SUPPORTED_SCRIPT_EDITION,
@@ -21,11 +22,13 @@ import type {
   GameState,
   PhaseTransitionedPayload,
   SetupGeneratedPayload,
+  SetupGenerationConstraints,
+  SetupGenerationFailure,
   ScriptSelectedPayload,
   SupportedCommandEnvelope
 } from "@botc/domain-core";
 import { accepted, markIdempotent, rejected } from "./command-result.js";
-import type { CommandRejectionCode, CommandRejectionDetails, CommandResult } from "./command-result.js";
+import type { GeneralCommandRejectionCode, SetupGenerationRejectionDetails, CommandResult } from "./command-result.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
 import type { SetupGeneratorPort } from "./ports/setup-generator.js";
 
@@ -77,7 +80,11 @@ export class GameApplicationService {
 
     const batch = this.createBatchOrReject(command, state, currentGameVersion);
     if ("code" in batch) {
-      return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
+      if (batch.code === "SetupGenerationFailed") {
+        return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
+      }
+
+      return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion));
     }
 
     const prospective = this.validateProspectiveBatch(state, batch);
@@ -105,7 +112,7 @@ export class GameApplicationService {
   private validate(
     command: SupportedCommandEnvelope,
     state: GameState | undefined
-  ): { readonly code: CommandRejectionCode; readonly message: string } | undefined {
+  ): { readonly code: GeneralCommandRejectionCode; readonly message: string } | undefined {
     switch (command.payload.commandType) {
       case "CreateGame": {
         if (command.actor.kind !== "human" && command.actor.kind !== "system") {
@@ -210,7 +217,11 @@ export class GameApplicationService {
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number
-  ): DomainEventBatch | { readonly code: CommandRejectionCode; readonly message: string; readonly details?: CommandRejectionDetails } {
+  ): DomainEventBatch | { readonly code: GeneralCommandRejectionCode; readonly message: string } | {
+    readonly code: "SetupGenerationFailed";
+    readonly message: string;
+    readonly details: SetupGenerationRejectionDetails;
+  } {
     try {
       const generatedSetup = this.generateSetupOrReject(command, state);
       if (generatedSetup !== undefined && "code" in generatedSetup) {
@@ -224,21 +235,58 @@ export class GameApplicationService {
     }
   }
 
+  private setupGenerationFailureDetails(
+    failureCode: SetupGenerationFailure["failureCode"],
+    message: string,
+    constraints: SetupGenerationConstraints
+  ): SetupGenerationRejectionDetails {
+    return {
+      kind: "setup-generation",
+      failure: {
+        status: "failure",
+        failureCode,
+        message,
+        conflictingRoleIds: [],
+        requestedCounts: undefined,
+        availableCounts: undefined,
+        constraintsSnapshot: {
+          lockedRoleIds: [...(constraints.lockedRoleIds ?? [])].sort(compareStableId),
+          excludedRoleIds: [...(constraints.excludedRoleIds ?? [])].sort(compareStableId),
+          exactRoleIds: [...(constraints.exactRoleIds ?? [])].sort(compareStableId)
+        }
+      }
+    };
+  }
+
   private generateSetupOrReject(
     command: SupportedCommandEnvelope,
     state: GameState | undefined
-  ): GeneratedSetup | { readonly code: "SetupGenerationFailed"; readonly message: string; readonly details?: CommandRejectionDetails } | undefined {
+  ): GeneratedSetup | {
+    readonly code: "SetupGenerationFailed";
+    readonly message: string;
+    readonly details: SetupGenerationRejectionDetails;
+  } | undefined {
     if (command.payload.commandType !== "GenerateSetup") {
       return undefined;
     }
 
     if (state === undefined || state.selectedScript === undefined) {
-      return { code: "SetupGenerationFailed", message: "GenerateSetup requires an existing selected script state" };
+      const message = "GenerateSetup requires an existing selected script state";
+      return {
+        code: "SetupGenerationFailed",
+        message,
+        details: this.setupGenerationFailureDetails("NoLegalSetup", message, command.payload.constraints)
+      };
     }
 
     const setupGenerator = this.dependencies.setupGenerator;
     if (setupGenerator === undefined) {
-      return { code: "SetupGenerationFailed", message: "Setup generator dependency is not configured" };
+      const message = "Setup generator dependency is not configured";
+      return {
+        code: "SetupGenerationFailed",
+        message,
+        details: this.setupGenerationFailureDetails("NoLegalSetup", message, command.payload.constraints)
+      };
     }
 
     const result = setupGenerator.generate({

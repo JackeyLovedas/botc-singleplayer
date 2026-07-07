@@ -9,7 +9,7 @@ import {
 } from "@botc/domain-core";
 import type { AnyDomainEventEnvelope, GameId } from "@botc/domain-core";
 import { GameApplicationService, accepted } from "@botc/application";
-import type { CommandAccepted, CommandResult, SetupGeneratorPort } from "@botc/application";
+import type { CommandAccepted, CommandRejected, CommandResult, SetupGeneratorPort } from "@botc/application";
 import {
   FixedClock,
   FixedIdGenerator,
@@ -128,6 +128,60 @@ describe("GameApplicationService", () => {
     expect(commandStore.acceptedCount).toBe(0);
     expect(commandStore.rejectedCount).toBe(1);
     expect(commandStore.getGameVersion(command.gameId)).toBe(0);
+  });
+
+  it("enforces setup-generation rejection details at the type boundary", () => {
+    const setupFailure = {
+      status: "failure" as const,
+      failureCode: "NoLegalSetup" as const,
+      message: "No legal setup exists",
+      conflictingRoleIds: [],
+      requestedCounts: undefined,
+      availableCounts: undefined,
+      constraintsSnapshot: {
+        lockedRoleIds: [],
+        excludedRoleIds: [],
+        exactRoleIds: []
+      }
+    };
+    const validSetupRejected: CommandRejected = {
+      status: "rejected",
+      gameId: ids.game,
+      code: "SetupGenerationFailed",
+      message: "No legal setup exists",
+      currentGameVersion: 2,
+      idempotent: false,
+      details: {
+        kind: "setup-generation",
+        failure: setupFailure
+      }
+    };
+    // @ts-expect-error SetupGenerationFailed must include setup-generation details.
+    const missingDetails: CommandRejected = {
+      status: "rejected",
+      gameId: ids.game,
+      code: "SetupGenerationFailed",
+      message: "No legal setup exists",
+      currentGameVersion: 2,
+      idempotent: false
+    };
+    const invalidGeneralRejected: CommandRejected = {
+      status: "rejected",
+      gameId: ids.game,
+      code: "GameNotCreated",
+      message: "Game not created",
+      currentGameVersion: 0,
+      idempotent: false,
+      details: {
+        // @ts-expect-error General command rejections must not carry setup-generation details.
+        kind: "setup-generation",
+        failure: setupFailure
+      }
+    };
+
+    void validSetupRejected;
+    void missingDetails;
+    void invalidGeneralRejected;
   });
 
   it("rejects invalid create-game counts without appending events", async () => {

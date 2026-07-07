@@ -14,7 +14,7 @@ This slice still does not implement seats, player roster, character assignment, 
 - `packages/rules-snv`: exact Sects & Violets role catalog and catalog integrity checks.
 - `packages/setup-engine`: deterministic setup generation.
 - `packages/application`: consumes setup generation only through `SetupGeneratorPort`.
-- `packages/domain-core`: owns setup payload contracts, replay validation, stable ordering, and version constants.
+- `packages/domain-core`: owns setup payload contracts, replay validation, stable ordering, catalog snapshotting, and version constants.
 
 Dependency direction remains inward:
 
@@ -52,7 +52,7 @@ Current flow:
 
 ## 4. No False Unsolvable Results
 
-Regression coverage now verifies:
+Regression coverage verifies:
 
 - two locked Outsiders succeed and do not choose `vigormortis`.
 - three locked Outsiders force `fang_gu`.
@@ -71,7 +71,7 @@ Random version remains:
 xmur3-sfc32-rejection-v1
 ```
 
-The implementation now follows the standard sfc32 update order:
+The implementation follows the standard sfc32 update order:
 
 ```text
 t = a + b
@@ -116,16 +116,17 @@ Fixed `nextInt(17)` vector for seed `vector-seed`:
 
 ## 6. Cross-Platform Determinism
 
-Domain and setup ordering now use a stable ASCII/code-unit comparator:
+Domain and setup ordering use a stable ASCII/code-unit comparator:
 
 ```text
 left === right ? 0 : left < right ? -1 : 1
 ```
 
-No locale-sensitive comparator or comparator-free sort call remains in deterministic setup code.
+No locale-sensitive comparator or comparator-free ordering remains in deterministic setup code.
 
 Canonical output rules:
 
+- `roleCatalogSnapshot.roles`: character type order, then ASCII `roleId`.
 - `actualRoles`: character type order, then ASCII `roleId`.
 - `demonBluffs`: ASCII `roleId`.
 - `lockedRoleIds`, `excludedRoleIds`, `exactRoleIds`: unique ASCII `roleId`.
@@ -142,7 +143,7 @@ Local Windows execution of that package command passed.
 
 ## 7. Exact Catalog Integrity
 
-`assertValidSectsAndVioletsCatalog` now validates the exact 25-role catalog, not only aggregate counts.
+`assertValidSectsAndVioletsCatalog` validates the exact 25-role catalog, not only aggregate counts.
 
 It checks:
 
@@ -160,7 +161,7 @@ Corruption tests cover reversed modifiers, wrong modifiers, swapped types with p
 
 ## 8. Generic Catalog Defense
 
-`setup-engine` now uses `validateScriptDefinitionForSetup` from `domain-core` and does not depend on `rules-snv`.
+`setup-engine` uses `validateScriptDefinitionForSetup` from `domain-core` and does not depend on `rules-snv`.
 
 The generic setup catalog validation checks:
 
@@ -177,22 +178,111 @@ The generic setup catalog validation checks:
 
 The generator defensively copies the script and role modifiers at construction time.
 
-## 9. Version Constants
+## 9. Replayable Full Role Catalog Snapshot
 
-The event-validated setup constants now live in `domain-core`:
+`GeneratedSetup` and `SetupGenerated` now include:
+
+```text
+roleCatalogSnapshot
+roleCatalogSignature
+roleCatalogSignatureAlgorithm
+```
+
+`roleCatalogSnapshot` contains:
+
+- `scriptId`
+- `edition`
+- `roleCatalogVersion`
+- all 25 canonical `RoleSetupSnapshot` entries.
+- `canonicalSignature`
+
+This makes each setup event self-describing for replay. Replay no longer needs to infer which catalog existed at generation time from only a version string.
+
+## 10. Canonical Role Catalog Signature
+
+Catalog signature algorithm:
+
+```text
+canonical-role-catalog-v1
+```
+
+Supported Sects & Violets catalog signature:
+
+```text
+canonical-role-catalog-v1:60ac4718
+```
+
+The signature is computed from canonical serialization of:
+
+- `scriptId`
+- `edition`
+- `roleCatalogVersion`
+- each role's `roleId`
+- each role's `characterType`
+- each role's `defaultAlignment`
+- each role's `edition`
+- each role's setup modifier deltas
+
+The signature is stable across source role order changes and platforms. It is a deterministic replay guard, not a cryptographic authenticity mechanism.
+
+## 11. Role Snapshot To Catalog Binding
+
+Replay validates every generated role snapshot against `roleCatalogSnapshot`:
+
+- every `actualRoles` entry must exist in the catalog.
+- every `actualRoles` entry must exactly match the catalog role snapshot.
+- `demonRole` must exist in the catalog.
+- `demonRole` must exactly match the catalog role snapshot.
+- every `demonBluffs` entry must exist in the catalog.
+- every `demonBluffs` entry must exactly match the catalog role snapshot.
+
+The existing deep match between `demonRole` and the unique demon in `actualRoles` remains.
+
+## 12. Unknown Role Replay Protection
+
+Replay rejects unknown role IDs in:
+
+- `roleCatalogSnapshot.roles`
+- `actualRoles`
+- `demonRole`
+- `demonBluffs`
+- `constraintsSnapshot.lockedRoleIds`
+- `constraintsSnapshot.excludedRoleIds`
+- `constraintsSnapshot.exactRoleIds`
+
+Coverage includes unknown actual roles, unknown demon bluffs, and unknown locked/excluded/exact constraints.
+
+## 13. Role-Specific Modifier Protection
+
+Replay now rejects role metadata that is generically legal but not the supported Sects & Violets catalog.
+
+Covered cases include:
+
+- fake catalog roles with legal aggregate counts.
+- `vortox` carrying Fang Gu's setup modifier.
+- `no_dashii` carrying Vigormortis's setup modifier.
+- `actualRoles` snapshots whose known role type, alignment, or setup modifier differs from the catalog.
+- `demonRole` snapshots whose modifier differs from the catalog.
+- `demonBluffs` snapshots whose role metadata differs from the catalog.
+
+## 14. Version Constants
+
+The event-validated setup constants live in `domain-core`:
 
 ```text
 SUPPORTED_SETUP_ALGORITHM_VERSION = snv-12-setup-v1
 SUPPORTED_RANDOM_ALGORITHM_VERSION = xmur3-sfc32-rejection-v1
 SUPPORTED_SETUP_RANDOM_STREAM = setup/sects-and-violets/12/v1
 SUPPORTED_ROLE_CATALOG_VERSION = snv-role-catalog-v1
+SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM = canonical-role-catalog-v1
+SUPPORTED_ROLE_CATALOG_SIGNATURE = canonical-role-catalog-v1:60ac4718
 ```
 
-`GeneratedSetup` and `SetupGenerated` include `roleCatalogVersion`.
+`GeneratedSetup` and `SetupGenerated` include the role catalog version, catalog snapshot, catalog signature, and signature algorithm.
 
-## 10. SetupGenerated Replay Validation
+## 15. SetupGenerated Replay Validation
 
-Domain replay now validates the setup event instead of trusting the generator.
+Domain replay validates the setup event instead of trusting the generator.
 
 Replay checks include:
 
@@ -200,24 +290,34 @@ Replay checks include:
 - supported random algorithm version.
 - supported random stream.
 - supported role catalog version.
+- supported role catalog signature algorithm.
+- complete 25-role catalog snapshot.
+- catalog snapshot metadata matching the setup payload.
+- unique catalog role IDs.
+- canonical catalog role order.
+- catalog 13/4/4/4 counts.
+- recalculated catalog signature matching `roleCatalogSignature`.
+- `roleCatalogSignature` matching the supported exact catalog signature.
 - valid role snapshots.
 - canonical `actualRoles` order.
 - canonical `demonBluffs` order.
 - exactly one demon and two minions.
+- `actualRoles`, `demonRole`, and `demonBluffs` bound to the catalog snapshots.
 - `demonRole` deeply equals the unique demon snapshot in `actualRoles`.
 - strict `setupModifiersApplied` shape.
 - `constraintsSnapshot` uniqueness, ordering, overlap, locked/excluded/exact invariants.
+- every constrained role ID exists in the catalog.
 - validation summary consistency.
 
-The replay tests now include the required damaged-event cases and a legal rebuild into `CHARACTER_ASSIGNMENT`.
+The replay tests include damaged-event cases and a legal rebuild into `CHARACTER_ASSIGNMENT`.
 
-## 11. Structured Setup Failure Details
+## 16. Structured Setup Failure Details
 
-`CommandRejected` now supports:
+`CommandRejected` is now a discriminated union:
 
 ```text
-details.kind = setup-generation
-details.failure = SetupGenerationFailure
+SetupGenerationFailed -> details.kind = setup-generation
+General rejection -> no details field
 ```
 
 For `SetupGenerationFailed`, the application layer preserves:
@@ -229,9 +329,9 @@ For `SetupGenerationFailed`, the application layer preserves:
 - `availableCounts`
 - `constraintsSnapshot`
 
-Rejected command receipts preserve the same details, and retrying the same failed command returns the same structured details with `idempotent = true`.
+The `rejected` helper requires structured details for `SetupGenerationFailed` at the type boundary and at runtime. General command rejections reject extra details at the type boundary. Retrying the same failed setup command returns the same structured details with `idempotent = true`.
 
-## 12. Golden Seed
+## 17. Golden Seed
 
 Golden input:
 
@@ -240,6 +340,8 @@ scriptId = sects-and-violets
 rootSeed = golden-seed
 playerCount = 12
 constraints = {}
+roleCatalogSignature = canonical-role-catalog-v1:60ac4718
+roleCatalogSignatureAlgorithm = canonical-role-catalog-v1
 ```
 
 Golden `actualRoles`:
@@ -273,19 +375,19 @@ snake_charmer
 sweetheart
 ```
 
-## 13. Quality Gates
+## 18. Quality Gates
 
-Local gates after PR #3 hardening:
+Local gates after PR #3 final hardening:
 
 ```text
 pnpm typecheck: passed
 pnpm lint: passed
-pnpm test: passed, 198 tests
-pnpm test:coverage: passed, 198 tests
+pnpm test: passed, 229 tests
+pnpm test:coverage: passed, 229 tests
 pnpm --filter @botc/setup-engine test: passed on Windows
 ```
 
-## 14. Not Implemented
+## 19. Not Implemented
 
 - seat roster.
 - player list.
@@ -309,11 +411,11 @@ pnpm --filter @botc/setup-engine test: passed on Windows
 - Electron.
 - SQLite.
 
-## 15. BLOCKER Status
+## 20. BLOCKER Status
 
 No implementation-level Slice 2B1 blocker remains after this hardening pass.
 
-## 16. Next Step
+## 21. Next Step
 
 Recommended next slice after PR #3 is reviewed and merged:
 

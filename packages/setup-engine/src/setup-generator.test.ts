@@ -1,11 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
-import { compareStableId, roleId } from "@botc/domain-core";
-import type { RoleCountSet, RoleDefinition, RoleId, ScriptDefinition, SetupGenerationResult } from "@botc/domain-core";
+import {
+  SUPPORTED_ROLE_CATALOG_SIGNATURE,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
+  calculateRoleCatalogSignature,
+  compareRoleSetupSnapshot,
+  compareStableId,
+  roleId
+} from "@botc/domain-core";
+import type { RoleCountSet, RoleDefinition, RoleId, RoleSetupSnapshot, ScriptDefinition, SetupGenerationResult } from "@botc/domain-core";
 import { SECTS_AND_VIOLETS_SCRIPT } from "@botc/rules-snv";
 import {
   DeterministicRandom,
   RANDOM_ALGORITHM_VERSION,
   ROLE_CATALOG_VERSION,
+  ROLE_CATALOG_SIGNATURE_ALGORITHM,
   SETUP_ALGORITHM_VERSION,
   SETUP_RANDOM_STREAM,
   SeededSectsAndVioletsSetupGenerator
@@ -49,6 +57,14 @@ const withRole = (roleIdValue: RoleId, patch: Partial<RoleDefinition>): ScriptDe
   makeScript(SECTS_AND_VIOLETS_SCRIPT.roles.map((role) => (role.roleId === roleIdValue ? { ...cloneRole(role), ...patch } : cloneRole(role))));
 
 const reversedScript = (): ScriptDefinition => makeScript([...SECTS_AND_VIOLETS_SCRIPT.roles].reverse().map(cloneRole));
+
+const snapshotRole = (role: RoleDefinition): RoleSetupSnapshot => ({
+  roleId: role.roleId,
+  characterType: role.characterType,
+  defaultAlignment: role.defaultAlignment,
+  edition: role.edition,
+  setupModifier: { ...role.setupModifier }
+});
 
 const generateWithScript = (
   script: ScriptDefinition,
@@ -208,10 +224,40 @@ describe("SeededSectsAndVioletsSetupGenerator", () => {
     expect(setup.randomAlgorithmVersion).toBe(RANDOM_ALGORITHM_VERSION);
     expect(setup.randomStream).toBe(SETUP_RANDOM_STREAM);
     expect(setup.roleCatalogVersion).toBe(ROLE_CATALOG_VERSION);
+    expect(setup.roleCatalogSignature).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+    expect(setup.roleCatalogSnapshot.canonicalSignature).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+    expect(setup.roleCatalogSignatureAlgorithm).toBe(ROLE_CATALOG_SIGNATURE_ALGORITHM);
     expect(SETUP_ALGORITHM_VERSION).toBe("snv-12-setup-v1");
     expect(RANDOM_ALGORITHM_VERSION).toBe("xmur3-sfc32-rejection-v1");
     expect(SETUP_RANDOM_STREAM).toBe("setup/sects-and-violets/12/v1");
     expect(ROLE_CATALOG_VERSION).toBe("snv-role-catalog-v1");
+    expect(ROLE_CATALOG_SIGNATURE_ALGORITHM).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM);
+  });
+
+  it("emits a replayable complete role catalog snapshot", () => {
+    const setup = expectSuccess(generate());
+    const expectedRoles = SECTS_AND_VIOLETS_SCRIPT.roles.map(snapshotRole).sort(compareRoleSetupSnapshot);
+
+    expect(setup.roleCatalogSnapshot).toStrictEqual({
+      scriptId: "sects-and-violets",
+      edition: "sects-and-violets",
+      roleCatalogVersion: ROLE_CATALOG_VERSION,
+      roles: expectedRoles,
+      canonicalSignature: SUPPORTED_ROLE_CATALOG_SIGNATURE
+    });
+    expect(calculateRoleCatalogSignature(setup.roleCatalogSnapshot)).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+  });
+
+  it("keeps the catalog signature stable across source order changes and platforms", () => {
+    const setup = expectSuccess(generateWithScript(reversedScript(), {
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-catalog-signature",
+      playerCount: 12,
+      constraints: {}
+    }));
+
+    expect(setup.roleCatalogSignature).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+    expect(setup.roleCatalogSnapshot.canonicalSignature).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
   });
 
   it("always includes locked roles", () => {
@@ -528,6 +574,63 @@ describe("SeededSectsAndVioletsSetupGenerator", () => {
     });
 
     expect(result.status).toBe("success");
+  });
+
+  it("returns catalog snapshots that cannot mutate the generator's internal catalog", () => {
+    const seededGenerator = new SeededSectsAndVioletsSetupGenerator(SECTS_AND_VIOLETS_SCRIPT);
+    const first = expectSuccess(seededGenerator.generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-snapshot-copy",
+      playerCount: 12,
+      constraints: {}
+    }));
+    const mutableRoles = first.roleCatalogSnapshot.roles as RoleSetupSnapshot[];
+    mutableRoles.splice(0, mutableRoles.length);
+
+    const second = expectSuccess(seededGenerator.generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-snapshot-copy",
+      playerCount: 12,
+      constraints: {}
+    }));
+
+    expect(first.roleCatalogSnapshot.roles).toHaveLength(0);
+    expect(second.roleCatalogSnapshot.roles).toHaveLength(25);
+    expect(second.roleCatalogSignature).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+  });
+
+  it("does not let post-generation external catalog mutations change generated catalog evidence", () => {
+    const mutableRoles = SECTS_AND_VIOLETS_SCRIPT.roles.map(cloneRole);
+    const script = makeScript(mutableRoles);
+    const seededGenerator = new SeededSectsAndVioletsSetupGenerator(script);
+    const first = expectSuccess(seededGenerator.generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-external-mutation",
+      playerCount: 12,
+      constraints: {}
+    }));
+
+    const firstMutableRole = mutableRoles[0];
+    if (firstMutableRole === undefined) {
+      throw new Error("Expected role");
+    }
+    mutableRoles[0] = {
+      ...firstMutableRole,
+      roleId: roleId("mutated_after_generation")
+    };
+    mutableRoles.splice(1, mutableRoles.length - 1);
+
+    const second = expectSuccess(seededGenerator.generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-external-mutation",
+      playerCount: 12,
+      constraints: {}
+    }));
+
+    expect(first.roleCatalogSnapshot.roles).toHaveLength(25);
+    expect(first.roleCatalogSignature).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+    expect(second.roleCatalogSnapshot.roles).toHaveLength(25);
+    expect(second.roleCatalogSignature).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
   });
 
   it("rejects a script with corrupted type counts", () => {

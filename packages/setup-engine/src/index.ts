@@ -2,11 +2,13 @@ import {
   BASE_TWELVE_PLAYER_COUNTS,
   CHARACTER_TYPES,
   SUPPORTED_RANDOM_ALGORITHM_VERSION,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
   SUPPORTED_ROLE_CATALOG_VERSION,
   SUPPORTED_SCRIPT_ID,
   SUPPORTED_SETUP_ALGORITHM_VERSION,
   SUPPORTED_SETUP_RANDOM_STREAM,
   compareStableId,
+  createRoleCatalogSnapshot,
   isZeroSetupModifier,
   validateScriptDefinitionForSetup
 } from "@botc/domain-core";
@@ -14,6 +16,7 @@ import type {
   CharacterType,
   GeneratedSetup,
   RoleCountSet,
+  RoleCatalogSnapshot,
   RoleDefinition,
   RoleId,
   RoleSetupSnapshot,
@@ -31,6 +34,7 @@ export const SETUP_ALGORITHM_VERSION = SUPPORTED_SETUP_ALGORITHM_VERSION;
 export const RANDOM_ALGORITHM_VERSION = SUPPORTED_RANDOM_ALGORITHM_VERSION;
 export const SETUP_RANDOM_STREAM = SUPPORTED_SETUP_RANDOM_STREAM;
 export const ROLE_CATALOG_VERSION = SUPPORTED_ROLE_CATALOG_VERSION;
+export const ROLE_CATALOG_SIGNATURE_ALGORITHM = SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM;
 
 const TYPE_ORDER = new Map<CharacterType, number>(CHARACTER_TYPES.map((type, index) => [type, index]));
 
@@ -111,6 +115,20 @@ const copyScript = (script: ScriptDefinition): ScriptDefinition => ({
   scriptName: script.scriptName,
   edition: script.edition,
   roles: stableRoleSort(script.roles.map(copyRole))
+});
+
+const copyRoleCatalogSnapshot = (snapshot: RoleCatalogSnapshot): RoleCatalogSnapshot => ({
+  scriptId: snapshot.scriptId,
+  edition: snapshot.edition,
+  roleCatalogVersion: snapshot.roleCatalogVersion,
+  roles: snapshot.roles.map((role) => ({
+    ...role,
+    setupModifier: {
+      outsiderDelta: role.setupModifier.outsiderDelta,
+      townsfolkDelta: role.setupModifier.townsfolkDelta
+    }
+  })),
+  canonicalSignature: snapshot.canonicalSignature
 });
 
 const applyDemonModifier = (demon: RoleDefinition | RoleSetupSnapshot): RoleCountSet => ({
@@ -373,10 +391,12 @@ type FailureBuilder = (
 export class SeededSectsAndVioletsSetupGenerator {
   private readonly script: ScriptDefinition;
   private readonly rolesById: ReadonlyMap<RoleId, RoleDefinition>;
+  private readonly roleCatalogSnapshot: RoleCatalogSnapshot;
 
   public constructor(script: ScriptDefinition) {
     this.script = copyScript(script);
     validateScriptDefinitionForSetup(this.script);
+    this.roleCatalogSnapshot = createRoleCatalogSnapshot(this.script);
     this.rolesById = new Map(this.script.roles.map((role) => [role.roleId, role]));
   }
 
@@ -581,12 +601,16 @@ export class SeededSectsAndVioletsSetupGenerator {
     const demonBluffs = chooseManyByRoleId(random, demonBluffCandidates, 3).map(snapshotRole);
     const postModifierCounts = applyDemonModifier(demon);
     const actualCounts = countRolesByType(actualRoles);
+    const roleCatalogSnapshot = copyRoleCatalogSnapshot(this.roleCatalogSnapshot);
     const setup: GeneratedSetup = {
       scriptId: SUPPORTED_SCRIPT_ID,
       setupAlgorithmVersion: SETUP_ALGORITHM_VERSION,
       randomAlgorithmVersion: RANDOM_ALGORITHM_VERSION,
       randomStream: SETUP_RANDOM_STREAM,
       roleCatalogVersion: ROLE_CATALOG_VERSION,
+      roleCatalogSnapshot,
+      roleCatalogSignature: roleCatalogSnapshot.canonicalSignature,
+      roleCatalogSignatureAlgorithm: ROLE_CATALOG_SIGNATURE_ALGORITHM,
       constraintsSnapshot,
       preModifierCounts: BASE_TWELVE_PLAYER_COUNTS,
       postModifierCounts,
