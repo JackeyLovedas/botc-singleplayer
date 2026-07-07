@@ -38,3 +38,28 @@ jobs:
 
       - name: Coverage
         run: pnpm test:coverage
+
+  deterministic-setup-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "11.7.0"
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.15.0"
+          cache: "pnpm"
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Deterministic setup tests
+        run: pnpm --filter @botc/setup-engine test

@@ -4,31 +4,35 @@ import {
   batchId,
   commandId,
   correlationId,
-  rebuildOptionalGameState
+  rebuildOptionalGameState,
+  roleId
 } from "@botc/domain-core";
 import type { AnyDomainEventEnvelope, GameId } from "@botc/domain-core";
 import { GameApplicationService, accepted } from "@botc/application";
-import type { CommandAccepted, CommandResult } from "@botc/application";
+import type { CommandAccepted, CommandRejected, CommandResult, SetupGeneratorPort } from "@botc/application";
 import {
   FixedClock,
   FixedIdGenerator,
   MemoryCommandCommitStore,
   aiActor,
   createGameCommand,
+  generateSetupCommand,
   humanActor,
   ids,
   otherGameId,
   scriptSelectedEvent,
   selectScriptCommand,
   storytellerActor,
+  testSetupGenerator,
   systemActor
 } from "@botc/test-harness";
 
-const makeService = (commandStore = new MemoryCommandCommitStore()) => {
+const makeService = (commandStore = new MemoryCommandCommitStore(), setupGenerator: SetupGeneratorPort = testSetupGenerator) => {
   const service = new GameApplicationService({
     commandStore,
     ids: new FixedIdGenerator(),
-    clock: new FixedClock()
+    clock: new FixedClock(),
+    setupGenerator
   });
 
   return { service, commandStore };
@@ -124,6 +128,60 @@ describe("GameApplicationService", () => {
     expect(commandStore.acceptedCount).toBe(0);
     expect(commandStore.rejectedCount).toBe(1);
     expect(commandStore.getGameVersion(command.gameId)).toBe(0);
+  });
+
+  it("enforces setup-generation rejection details at the type boundary", () => {
+    const setupFailure = {
+      status: "failure" as const,
+      failureCode: "NoLegalSetup" as const,
+      message: "No legal setup exists",
+      conflictingRoleIds: [],
+      requestedCounts: undefined,
+      availableCounts: undefined,
+      constraintsSnapshot: {
+        lockedRoleIds: [],
+        excludedRoleIds: [],
+        exactRoleIds: []
+      }
+    };
+    const validSetupRejected: CommandRejected = {
+      status: "rejected",
+      gameId: ids.game,
+      code: "SetupGenerationFailed",
+      message: "No legal setup exists",
+      currentGameVersion: 2,
+      idempotent: false,
+      details: {
+        kind: "setup-generation",
+        failure: setupFailure
+      }
+    };
+    // @ts-expect-error SetupGenerationFailed must include setup-generation details.
+    const missingDetails: CommandRejected = {
+      status: "rejected",
+      gameId: ids.game,
+      code: "SetupGenerationFailed",
+      message: "No legal setup exists",
+      currentGameVersion: 2,
+      idempotent: false
+    };
+    const invalidGeneralRejected: CommandRejected = {
+      status: "rejected",
+      gameId: ids.game,
+      code: "GameNotCreated",
+      message: "Game not created",
+      currentGameVersion: 0,
+      idempotent: false,
+      details: {
+        // @ts-expect-error General command rejections must not carry setup-generation details.
+        kind: "setup-generation",
+        failure: setupFailure
+      }
+    };
+
+    void validSetupRejected;
+    void missingDetails;
+    void invalidGeneralRejected;
   });
 
   it("rejects invalid create-game counts without appending events", async () => {
@@ -230,6 +288,45 @@ describe("GameApplicationService", () => {
     expect(commandStore.getGameVersion(command.gameId)).toBe(2);
   });
 
+  it("rejects custom SelectScript edition without recording domain events", async () => {
+    const { service, commandStore } = makeService();
+
+    await service.execute(createGameCommand());
+    const result = await service.execute(selectScriptCommand({
+      payload: {
+        ...selectScriptCommand().payload,
+        edition: "custom"
+      }
+    }));
+
+    expect(result).toMatchObject({ status: "rejected", code: "UnsupportedScript" });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(1);
+  });
+
+  it("rejects unsupported SelectScript scriptId", async () => {
+    const { service } = makeService();
+
+    await service.execute(createGameCommand());
+    await expect(service.execute(selectScriptCommand({
+      payload: {
+        ...selectScriptCommand().payload,
+        scriptId: "custom-script"
+      }
+    }))).resolves.toMatchObject({ status: "rejected", code: "UnsupportedScript" });
+  });
+
+  it("rejects unsupported SelectScript scriptName", async () => {
+    const { service } = makeService();
+
+    await service.execute(createGameCommand());
+    await expect(service.execute(selectScriptCommand({
+      payload: {
+        ...selectScriptCommand().payload,
+        scriptName: "Custom Script"
+      }
+    }))).resolves.toMatchObject({ status: "rejected", code: "UnsupportedScript" });
+  });
+
   it("rejects a second SelectScript with a new commandId and current gameVersion", async () => {
     const { service, commandStore } = makeService();
 
@@ -268,6 +365,203 @@ describe("GameApplicationService", () => {
     expect(events).toHaveLength(3);
     expect(events[1]?.eventSequence).toBe(2);
     expect(events[2]?.eventSequence).toBe(3);
+  });
+
+  it("rejects GenerateSetup when the game does not exist", async () => {
+    const { service, commandStore } = makeService();
+    const command = generateSetupCommand({ expectedGameVersion: 0 });
+
+    const result = await service.execute(command);
+
+    expect(result).toMatchObject({ status: "rejected", code: "GameNotCreated" });
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(0);
+  });
+
+  it("rejects GenerateSetup before script selection", async () => {
+    const { service, commandStore } = makeService();
+
+    await service.execute(createGameCommand());
+    const result = await service.execute(generateSetupCommand({ expectedGameVersion: 1 }));
+
+    expect(result).toMatchObject({ status: "rejected", code: "ScriptNotSelected" });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(1);
+  });
+
+  it("rejects Human and AI actors for GenerateSetup", async () => {
+    const { service, commandStore } = makeService();
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+
+    await expect(service.execute(generateSetupCommand({
+      commandId: commandId("human-setup"),
+      actor: humanActor
+    }))).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    await expect(service.execute(generateSetupCommand({
+      commandId: commandId("ai-setup"),
+      actor: aiActor
+    }))).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(3);
+  });
+
+  it("allows System actors to GenerateSetup with a two-event batch", async () => {
+    const { service, commandStore } = makeService();
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    const result = await service.execute(generateSetupCommand());
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(result);
+    expect(result.events).toHaveLength(2);
+    expect(result.gameVersion).toBe(3);
+    expect(events).toHaveLength(5);
+    expect(events[3]).toMatchObject({ eventType: "SetupGenerated", eventSequence: 4, gameVersion: 3 });
+    expect(events[4]).toMatchObject({ eventType: "PhaseTransitioned", eventSequence: 5, gameVersion: 3 });
+    expect(events[3]?.batchId).toBe(events[4]?.batchId);
+    expect(events[3]?.commandId).toBe(events[4]?.commandId);
+    expect(state?.phase).toBe("CHARACTER_ASSIGNMENT");
+    expect(state?.setup?.actualRoles).toHaveLength(12);
+    expect("assignment" in (state ?? {})).toBe(false);
+  });
+
+  it("allows Storyteller actors to GenerateSetup", async () => {
+    const { service } = makeService();
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    await expect(service.execute(generateSetupCommand({ actor: storytellerActor }))).resolves.toMatchObject({
+      status: "accepted",
+      gameVersion: 3
+    });
+  });
+
+  it("rejects unsolvable GenerateSetup without appending events or increasing gameVersion", async () => {
+    const { service, commandStore } = makeService();
+    const command = generateSetupCommand({
+      payload: {
+        commandType: "GenerateSetup",
+        constraints: { exactRoleIds: [roleId("clockmaker")] }
+      }
+    });
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    const result = await service.execute(command);
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const receipt = await commandStore.findCommandReceipt(ids.game, command.commandId);
+
+    expect(result).toMatchObject({ status: "rejected", code: "SetupGenerationFailed", currentGameVersion: 2 });
+    expect(events).toHaveLength(3);
+    expect(commandStore.getGameVersion(ids.game)).toBe(2);
+    expect(receipt?.result.status).toBe("rejected");
+  });
+
+  it("preserves structured setup generation failures through receipts and idempotent retry", async () => {
+    const structuredFailure = {
+      status: "failure" as const,
+      failureCode: "InsufficientCandidates" as const,
+      message: "Not enough candidates are available for the demon plan",
+      conflictingRoleIds: [roleId("clockmaker")],
+      requestedCounts: {
+        TOWNSFOLK: 8,
+        OUTSIDER: 1,
+        MINION: 2,
+        DEMON: 1
+      },
+      availableCounts: {
+        TOWNSFOLK: 6,
+        OUTSIDER: 1,
+        MINION: 2,
+        DEMON: 1
+      },
+      constraintsSnapshot: {
+        lockedRoleIds: [roleId("clockmaker")],
+        excludedRoleIds: [roleId("dreamer")],
+        exactRoleIds: []
+      }
+    };
+    const failingSetupGenerator: SetupGeneratorPort = {
+      generate: () => structuredFailure
+    };
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore, failingSetupGenerator);
+    const command = generateSetupCommand({ commandId: commandId("structured-setup-failure") });
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    const first = await service.execute(command);
+    const second = await service.execute(command);
+    const receipt = await commandStore.findCommandReceipt(ids.game, command.commandId);
+
+    expect(first).toMatchObject({
+      status: "rejected",
+      code: "SetupGenerationFailed",
+      idempotent: false,
+      details: {
+        kind: "setup-generation",
+        failure: structuredFailure
+      }
+    });
+    expect(second).toMatchObject({
+      status: "rejected",
+      code: "SetupGenerationFailed",
+      idempotent: true,
+      details: {
+        kind: "setup-generation",
+        failure: structuredFailure
+      }
+    });
+    expect(receipt?.result).toMatchObject({
+      status: "rejected",
+      details: {
+        kind: "setup-generation",
+        failure: structuredFailure
+      }
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(3);
+  });
+
+  it("returns the original accepted GenerateSetup result on retry", async () => {
+    const { service, commandStore } = makeService();
+    const command = generateSetupCommand();
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    const first = await service.execute(command);
+    const second = await service.execute(command);
+    const events = await commandStore.loadDomainEvents(ids.game);
+
+    expectAcceptedResult(first);
+    expectAcceptedResult(second);
+    expect(second).toMatchObject({ status: "accepted", idempotent: true, gameVersion: 3 });
+    expect(second.events).toStrictEqual(first.events);
+    expect(events).toHaveLength(5);
+  });
+
+  it("rejects stale GenerateSetup expectedGameVersion", async () => {
+    const { service } = makeService();
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    await expect(service.execute(generateSetupCommand({ expectedGameVersion: 1 }))).resolves.toMatchObject({
+      status: "rejected",
+      code: "ExpectedGameVersionMismatch",
+      currentGameVersion: 2
+    });
+  });
+
+  it("rejects GenerateSetup after setup already exists", async () => {
+    const { service } = makeService();
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    await service.execute(generateSetupCommand());
+    await expect(service.execute(generateSetupCommand({
+      commandId: commandId("second-setup"),
+      expectedGameVersion: 3
+    }))).resolves.toMatchObject({ status: "rejected", code: "SetupAlreadyGenerated" });
   });
 
   it("leaves no partial writes when atomic accepted commit fails before commit", async () => {

@@ -3,21 +3,30 @@ import {
   applyDomainEvent,
   DomainError,
   RULES_BASELINE_VERSION,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
   batchId,
+  calculateRoleCatalogSignature,
+  compareRoleSetupSnapshot,
   commandId,
+  compareStableId,
   eventId,
   applyDomainEventBatch,
+  roleId,
   rebuildGameState,
   validateDomainEventStream
 } from "@botc/domain-core";
-import type { AnyDomainEventEnvelope, DomainErrorCode } from "@botc/domain-core";
+import type { AnyDomainEventEnvelope, DomainErrorCode, RoleCatalogSnapshot, RoleId, RoleSetupSnapshot, SetupGeneratedPayload } from "@botc/domain-core";
 import {
   auditEvent,
   gameCreatedEvent,
   infrastructureEvent,
   otherGameId,
   phaseTransitionedEvent,
-  scriptSelectedEvent
+  scriptSelectedEvent,
+  setupGeneratedEvent,
+  setupPhaseTransitionedEvent,
+  testSetupGenerator
 } from "@botc/test-harness";
 
 const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
@@ -30,6 +39,103 @@ const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
 
   expect(caught).toBeInstanceOf(DomainError);
   expect((caught as DomainError).code).toBe(code);
+};
+
+const setupEventStream = (setupEvent = setupGeneratedEvent()): readonly AnyDomainEventEnvelope[] => [
+  gameCreatedEvent(),
+  scriptSelectedEvent(),
+  phaseTransitionedEvent(),
+  setupEvent,
+  setupPhaseTransitionedEvent()
+];
+
+const generatedPayloadFor = (constraints: Parameters<typeof testSetupGenerator.generate>[0]["constraints"]): SetupGeneratedPayload => {
+  const result = testSetupGenerator.generate({
+    scriptId: "sects-and-violets",
+    rootSeed: "seed-1",
+    playerCount: 12,
+    constraints
+  });
+
+  if (result.status === "failure") {
+    throw new Error(result.message);
+  }
+
+  return {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...result.setup
+  };
+};
+
+const mutateSetupPayload = (
+  mutate: (payload: SetupGeneratedPayload) => SetupGeneratedPayload
+): ReturnType<typeof setupGeneratedEvent> => setupGeneratedEvent({ payload: mutate(setupGeneratedEvent().payload) });
+
+const setupRoleIds = (roles: readonly RoleSetupSnapshot[]): readonly RoleId[] =>
+  roles.map((role) => role.roleId).sort(compareStableId);
+
+const cloneRoleSnapshot = (role: RoleSetupSnapshot): RoleSetupSnapshot => ({
+  ...role,
+  setupModifier: { ...role.setupModifier }
+});
+
+const roleCatalogWithRoles = (
+  payload: SetupGeneratedPayload,
+  roles: readonly RoleSetupSnapshot[]
+): RoleCatalogSnapshot => {
+  const snapshotWithoutSignature = {
+    scriptId: payload.roleCatalogSnapshot.scriptId,
+    edition: payload.roleCatalogSnapshot.edition,
+    roleCatalogVersion: payload.roleCatalogSnapshot.roleCatalogVersion,
+    roles: roles.map(cloneRoleSnapshot)
+  };
+
+  return {
+    ...snapshotWithoutSignature,
+    canonicalSignature: calculateRoleCatalogSignature(snapshotWithoutSignature)
+  };
+};
+
+const payloadWithCatalogRoles = (
+  payload: SetupGeneratedPayload,
+  roles: readonly RoleSetupSnapshot[]
+): SetupGeneratedPayload => {
+  const roleCatalogSnapshot = roleCatalogWithRoles(payload, roles);
+
+  return {
+    ...payload,
+    roleCatalogSnapshot,
+    roleCatalogSignature: roleCatalogSnapshot.canonicalSignature
+  };
+};
+
+const absentRoleId = (payload: SetupGeneratedPayload): RoleId => {
+  const actualRoleIds = new Set(payload.actualRoles.map((role) => role.roleId));
+  const candidates = [
+    "clockmaker",
+    "dreamer",
+    "snake_charmer",
+    "mathematician",
+    "flowergirl",
+    "town_crier",
+    "oracle",
+    "savant",
+    "seamstress",
+    "philosopher",
+    "artist",
+    "juggler",
+    "sage",
+    "mutant",
+    "sweetheart",
+    "barber",
+    "klutz"
+  ].map(roleId);
+  const candidate = candidates.find((roleIdValue) => !actualRoleIds.has(roleIdValue));
+  if (candidate === undefined) {
+    throw new Error("Expected at least one absent role candidate");
+  }
+
+  return candidate;
 };
 
 describe("domain event rebuild", () => {
@@ -368,6 +474,669 @@ describe("domain event rebuild", () => {
     });
 
     expectDomainCode(() => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), event]), "EventRulesBaselineMismatch");
+  });
+
+  it("rebuilds a legal GenerateSetup batch into CHARACTER_ASSIGNMENT", () => {
+    const state = rebuildGameState([
+      gameCreatedEvent(),
+      scriptSelectedEvent(),
+      phaseTransitionedEvent(),
+      setupGeneratedEvent(),
+      setupPhaseTransitionedEvent()
+    ]);
+
+    expect(state.phase).toBe("CHARACTER_ASSIGNMENT");
+    expect(state.gameVersion).toBe(3);
+    expect(state.lastEventSequence).toBe(5);
+  });
+
+  it("rebuilds setup while leaving assignment absent", () => {
+    const state = rebuildGameState([
+      gameCreatedEvent(),
+      scriptSelectedEvent(),
+      phaseTransitionedEvent(),
+      setupGeneratedEvent(),
+      setupPhaseTransitionedEvent()
+    ]);
+
+    expect(state.setup?.actualRoles).toHaveLength(12);
+    expect("assignment" in state).toBe(false);
+  });
+
+  it("rejects SETUP_GENERATED transition when setup fact is missing", () => {
+    const state = rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
+
+    expectDomainCode(() => applyDomainEvent(state, setupPhaseTransitionedEvent({ eventSequence: 4 })), "MissingTransitionPrerequisite");
+  });
+
+  it("rejects damaged SetupGenerated payloads during replay", () => {
+    const damaged = setupGeneratedEvent({
+      payload: {
+        ...setupGeneratedEvent().payload,
+        actualRoles: setupGeneratedEvent().payload.actualRoles.slice(1)
+      }
+    });
+
+    expectDomainCode(
+      () => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent(), damaged, setupPhaseTransitionedEvent()]),
+      "InvalidSetupGeneratedPayload"
+    );
+  });
+
+  it("accepts a legal complete role catalog snapshot", () => {
+    const state = rebuildGameState(setupEventStream());
+
+    expect(state.setup?.roleCatalogSnapshot.roles).toHaveLength(25);
+    expect(state.setup?.roleCatalogSignature).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE);
+    expect(state.setup?.roleCatalogSignatureAlgorithm).toBe(SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM);
+  });
+
+  it("rejects roleCatalogSnapshot when one role is missing", () => {
+    const damaged = mutateSetupPayload((payload) => payloadWithCatalogRoles(payload, payload.roleCatalogSnapshot.roles.slice(1)));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects roleCatalogSnapshot when an extra role is present", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const firstRole = payload.roleCatalogSnapshot.roles[0];
+      if (firstRole === undefined) {
+        throw new Error("Expected catalog role");
+      }
+
+      return payloadWithCatalogRoles(payload, [
+        ...payload.roleCatalogSnapshot.roles,
+        {
+          ...cloneRoleSnapshot(firstRole),
+          roleId: roleId("extra_role")
+        }
+      ]);
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects duplicate role ids in roleCatalogSnapshot", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const roles = payload.roleCatalogSnapshot.roles.map(cloneRoleSnapshot);
+      const firstRole = roles[0];
+      const secondRole = roles[1];
+      if (firstRole === undefined || secondRole === undefined) {
+        throw new Error("Expected catalog roles");
+      }
+      roles[1] = {
+        ...secondRole,
+        roleId: firstRole.roleId
+      };
+
+      return payloadWithCatalogRoles(payload, roles);
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects roleCatalogSnapshot outside canonical order", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const roles = payload.roleCatalogSnapshot.roles.map(cloneRoleSnapshot);
+      const firstRole = roles[0];
+      const secondRole = roles[1];
+      if (firstRole === undefined || secondRole === undefined) {
+        throw new Error("Expected catalog roles");
+      }
+      roles[0] = secondRole;
+      roles[1] = firstRole;
+
+      return payloadWithCatalogRoles(payload, roles);
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects a wrong roleCatalogSignature", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      roleCatalogSignature: "canonical-role-catalog-v1:00000000"
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects a wrong roleCatalogSignatureAlgorithm", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      roleCatalogSignatureAlgorithm: "other-catalog-signature-v1"
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects roleCatalogSignature mismatches with catalog content", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const roles = payload.roleCatalogSnapshot.roles.map(cloneRoleSnapshot);
+      const fangGuIndex = roles.findIndex((role) => role.roleId === roleId("fang_gu"));
+      const fangGu = roles[fangGuIndex];
+      if (fangGu === undefined) {
+        throw new Error("Expected Fang Gu");
+      }
+      roles[fangGuIndex] = {
+        ...fangGu,
+        setupModifier: {
+          outsiderDelta: -1,
+          townsfolkDelta: 1
+        }
+      };
+
+      return {
+        ...payload,
+        roleCatalogSnapshot: {
+          ...payload.roleCatalogSnapshot,
+          roles
+        }
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects actualRoles containing a role absent from roleCatalogSnapshot", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      actualRoles: payload.actualRoles.map((role, index) =>
+        index === 0
+          ? {
+              ...role,
+              roleId: roleId("aaa_unknown_actual_role")
+            }
+          : role
+      )
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects demonBluffs containing a role absent from roleCatalogSnapshot", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      demonBluffs: payload.demonBluffs.map((role, index) =>
+        index === 0
+          ? {
+              ...role,
+              roleId: roleId("aaa_unknown_bluff_role")
+            }
+          : role
+      )
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects excludedRoleIds containing a role absent from roleCatalogSnapshot", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      constraintsSnapshot: {
+        ...payload.constraintsSnapshot,
+        excludedRoleIds: [roleId("unknown_excluded_role")]
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects lockedRoleIds containing a role absent from roleCatalogSnapshot", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      constraintsSnapshot: {
+        ...payload.constraintsSnapshot,
+        lockedRoleIds: [roleId("unknown_locked_role")]
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects exactRoleIds containing a role absent from roleCatalogSnapshot", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      constraintsSnapshot: {
+        lockedRoleIds: [],
+        excludedRoleIds: [],
+        exactRoleIds: [roleId("unknown_exact_role"), ...setupRoleIds(payload.actualRoles).slice(1)].sort(compareStableId)
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects actualRoles whose known role type differs from the catalog", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      actualRoles: payload.actualRoles.map((role, index) =>
+        index === 0
+          ? {
+              ...role,
+              characterType: "OUTSIDER" as const
+            }
+          : role
+      )
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects actualRoles whose known role alignment differs from the catalog", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      actualRoles: payload.actualRoles.map((role, index) =>
+        index === 0
+          ? {
+              ...role,
+              defaultAlignment: "EVIL" as const
+            }
+          : role
+      )
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects actualRoles whose known role modifier differs from the catalog", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      actualRoles: payload.actualRoles.map((role, index) =>
+        index === 0
+          ? {
+              ...role,
+              setupModifier: {
+                outsiderDelta: 1,
+                townsfolkDelta: -1
+              }
+            }
+          : role
+      )
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects demonBluff snapshots that differ from the catalog", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      demonBluffs: payload.demonBluffs.map((role, index) =>
+        index === 0
+          ? {
+              ...role,
+              defaultAlignment: "EVIL" as const
+            }
+          : role
+      )
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects demonRole snapshots that differ from the catalog", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      demonRole: {
+        ...payload.demonRole,
+        setupModifier: {
+          outsiderDelta: payload.demonRole.setupModifier.outsiderDelta + 1,
+          townsfolkDelta: payload.demonRole.setupModifier.townsfolkDelta - 1
+        }
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects Vortox carrying Fang Gu setup modifiers in the catalog", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const roles = payload.roleCatalogSnapshot.roles.map((role) =>
+        role.roleId === roleId("vortox")
+          ? {
+              ...cloneRoleSnapshot(role),
+              setupModifier: {
+                outsiderDelta: 1,
+                townsfolkDelta: -1
+              }
+            }
+          : cloneRoleSnapshot(role)
+      );
+
+      return payloadWithCatalogRoles(payload, roles);
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects No Dashii carrying Vigormortis setup modifiers in the catalog", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const roles = payload.roleCatalogSnapshot.roles.map((role) =>
+        role.roleId === roleId("no_dashii")
+          ? {
+              ...cloneRoleSnapshot(role),
+              setupModifier: {
+                outsiderDelta: -1,
+                townsfolkDelta: 1
+              }
+            }
+          : cloneRoleSnapshot(role)
+      );
+
+      return payloadWithCatalogRoles(payload, roles);
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects fake catalog roles even when generic type counts remain legal", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const roles = payload.roleCatalogSnapshot.roles.map((role) =>
+        role.roleId === roleId("clockmaker")
+          ? {
+              ...cloneRoleSnapshot(role),
+              roleId: roleId("clockmaker_fake")
+            }
+          : cloneRoleSnapshot(role)
+      );
+
+      return payloadWithCatalogRoles(payload, roles.sort(compareRoleSetupSnapshot));
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("accepts SetupGenerated when demonRole deeply matches the actual demon snapshot", () => {
+    const state = rebuildGameState(setupEventStream());
+    const actualDemon = state.setup?.actualRoles.find((role) => role.characterType === "DEMON");
+
+    expect(state.phase).toBe("CHARACTER_ASSIGNMENT");
+    expect(state.setup?.demonRole).toStrictEqual(actualDemon);
+  });
+
+  it("rejects demonRole reusing a townsfolk roleId while claiming to be a demon", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const townsfolk = payload.actualRoles.find((role) => role.characterType === "TOWNSFOLK");
+      if (townsfolk === undefined) {
+        throw new Error("Expected townsfolk in setup");
+      }
+
+      return {
+        ...payload,
+        demonRole: {
+          ...townsfolk,
+          characterType: "DEMON",
+          defaultAlignment: "EVIL"
+        }
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects demonRole modifier values that differ from the actual demon snapshot", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      demonRole: {
+        ...payload.demonRole,
+        setupModifier: {
+          outsiderDelta: payload.demonRole.setupModifier.outsiderDelta + 1,
+          townsfolkDelta: payload.demonRole.setupModifier.townsfolkDelta - 1
+        }
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects townsfolk snapshots with EVIL default alignment", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      actualRoles: payload.actualRoles.map((role) =>
+        role.characterType === "TOWNSFOLK" ? { ...role, defaultAlignment: "EVIL" as const } : role
+      )
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects demon snapshots with GOOD default alignment", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      actualRoles: payload.actualRoles.map((role) =>
+        role.characterType === "DEMON" ? { ...role, defaultAlignment: "GOOD" as const } : role
+      ),
+      demonRole: {
+        ...payload.demonRole,
+        defaultAlignment: "GOOD" as const
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects non-demon role snapshots carrying setup modifiers", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      actualRoles: payload.actualRoles.map((role) =>
+        role.characterType === "TOWNSFOLK"
+          ? {
+              ...role,
+              setupModifier: {
+                outsiderDelta: 1,
+                townsfolkDelta: -1
+              }
+            }
+          : role
+      )
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects zero-modifier demons with setupModifiersApplied records", () => {
+    const payload = generatedPayloadFor({ lockedRoleIds: [roleId("no_dashii")] });
+    const damaged = setupGeneratedEvent({
+      payload: {
+        ...payload,
+        setupModifiersApplied: [{
+          roleId: roleId("no_dashii"),
+          outsiderDelta: 0,
+          townsfolkDelta: 0
+        }]
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects non-zero demon modifiers with extra zero-value records", () => {
+    const payload = generatedPayloadFor({ lockedRoleIds: [roleId("fang_gu")] });
+    const damaged = setupGeneratedEvent({
+      payload: {
+        ...payload,
+        setupModifiersApplied: [
+          ...payload.setupModifiersApplied,
+          {
+            roleId: roleId("clockmaker"),
+            outsiderDelta: 0,
+            townsfolkDelta: 0
+          }
+        ]
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects locked roles that did not enter actualRoles", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      constraintsSnapshot: {
+        ...payload.constraintsSnapshot,
+        lockedRoleIds: [absentRoleId(payload)]
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects excluded roles that appear in actualRoles", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      constraintsSnapshot: {
+        ...payload.constraintsSnapshot,
+        excludedRoleIds: [payload.actualRoles[0]?.roleId ?? roleId("clockmaker")]
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects excluded roles that appear as demon bluffs", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      constraintsSnapshot: {
+        ...payload.constraintsSnapshot,
+        excludedRoleIds: [payload.demonBluffs[0]?.roleId ?? roleId("clockmaker")]
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects exactRoleIds that do not match actualRoles", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const actualRoleIds = setupRoleIds(payload.actualRoles);
+      const replacement = payload.demonBluffs[0]?.roleId;
+      if (replacement === undefined) {
+        throw new Error("Expected demon bluff");
+      }
+
+      return {
+        ...payload,
+        constraintsSnapshot: {
+          lockedRoleIds: [],
+          excludedRoleIds: [],
+          exactRoleIds: [...actualRoleIds.slice(1), replacement].sort(compareStableId)
+        }
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects duplicate role ids inside constraintsSnapshot", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      constraintsSnapshot: {
+        ...payload.constraintsSnapshot,
+        lockedRoleIds: [payload.actualRoles[0]?.roleId ?? roleId("clockmaker"), payload.actualRoles[0]?.roleId ?? roleId("clockmaker")]
+      }
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects locked and excluded constraint overlap", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const lockedRoleId = payload.actualRoles[0]?.roleId ?? roleId("clockmaker");
+
+      return {
+        ...payload,
+        constraintsSnapshot: {
+          lockedRoleIds: [lockedRoleId],
+          excludedRoleIds: [lockedRoleId],
+          exactRoleIds: []
+        }
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects unsupported setup algorithm versions", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      setupAlgorithmVersion: "snv-12-setup-v0"
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects unsupported random algorithm versions", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      randomAlgorithmVersion: "xmur3-custom-v0"
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects unsupported random streams", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      randomStream: "setup/other"
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects unsupported role catalog versions", () => {
+    const damaged = mutateSetupPayload((payload) => ({
+      ...payload,
+      roleCatalogVersion: "snv-role-catalog-v0"
+    }));
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects actualRoles outside canonical order", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const actualRoles = [...payload.actualRoles];
+      const first = actualRoles[0];
+      const second = actualRoles[1];
+      if (first === undefined || second === undefined) {
+        throw new Error("Expected at least two actual roles");
+      }
+      actualRoles[0] = second;
+      actualRoles[1] = first;
+
+      return {
+        ...payload,
+        actualRoles
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rejects demonBluffs outside canonical roleId order", () => {
+    const damaged = mutateSetupPayload((payload) => {
+      const demonBluffs = [...payload.demonBluffs];
+      const first = demonBluffs[0];
+      const second = demonBluffs[1];
+      if (first === undefined || second === undefined) {
+        throw new Error("Expected at least two demon bluffs");
+      }
+      demonBluffs[0] = second;
+      demonBluffs[1] = first;
+
+      return {
+        ...payload,
+        demonBluffs
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(setupEventStream(damaged)), "InvalidSetupGeneratedPayload");
+  });
+
+  it("rebuilds a legal SetupGenerated event stream into CHARACTER_ASSIGNMENT", () => {
+    const state = rebuildGameState(setupEventStream());
+
+    expect(state.phase).toBe("CHARACTER_ASSIGNMENT");
+    expect(state.setup?.actualRoles).toHaveLength(12);
+    expect(state.setup?.demonBluffs).toHaveLength(3);
   });
 
   it("does not allow AuditEvent streams at the type boundary", () => {

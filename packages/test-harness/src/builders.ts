@@ -14,12 +14,17 @@ import type {
   CreateGameCommand,
   CreateGameCommandPayload,
   DomainEventEnvelope,
+  GenerateSetupCommand,
+  GenerateSetupCommandPayload,
   GameId,
   InfrastructureEventEnvelope,
   PhaseTransitionedPayload,
   SelectScriptCommand,
-  SelectScriptCommandPayload
+  SelectScriptCommandPayload,
+  SetupGeneratedPayload
 } from "@botc/domain-core";
+import { SECTS_AND_VIOLETS_SCRIPT } from "@botc/rules-snv";
+import { SeededSectsAndVioletsSetupGenerator } from "@botc/setup-engine";
 
 export const ids = {
   game: gameId("game-1"),
@@ -72,6 +77,24 @@ export const selectScriptCommand = (
   issuedAt: "2026-07-07T00:00:01.000Z",
   correlationId: correlationId("correlation-2"),
   payload: selectScriptPayload,
+  ...overrides
+});
+
+export const generateSetupPayload = {
+  commandType: "GenerateSetup",
+  constraints: {}
+} as const satisfies GenerateSetupCommandPayload;
+
+export const generateSetupCommand = (
+  overrides: Partial<GenerateSetupCommand> = {}
+): GenerateSetupCommand => ({
+  commandId: commandId("command-3"),
+  gameId: ids.game,
+  expectedGameVersion: 2,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:02.000Z",
+  correlationId: correlationId("correlation-3"),
+  payload: generateSetupPayload,
   ...overrides
 });
 
@@ -149,6 +172,75 @@ export const phaseTransitionedEvent = (
     fromPhase: "SCRIPT_SELECTION",
     toPhase: "SETUP_GENERATION",
     transitionReason: "SCRIPT_SELECTED",
+    dayNumberBefore: 0,
+    dayNumberAfter: 0,
+    nightNumberBefore: 0,
+    nightNumberAfter: 0
+  } satisfies PhaseTransitionedPayload,
+  ...overrides
+});
+
+export const testSetupGenerator = new SeededSectsAndVioletsSetupGenerator(SECTS_AND_VIOLETS_SCRIPT);
+
+const generatedSetup = () => {
+  const result = testSetupGenerator.generate({
+    scriptId: "sects-and-violets",
+    rootSeed: "seed-1",
+    playerCount: 12,
+    constraints: {}
+  });
+
+  if (result.status === "failure") {
+    throw new Error(result.message);
+  }
+
+  return result.setup;
+};
+
+export const setupGeneratedEvent = (
+  overrides: Partial<DomainEventEnvelope<"SetupGenerated">> = {}
+): DomainEventEnvelope<"SetupGenerated"> => ({
+  category: "domain",
+  eventId: eventId("event-4"),
+  gameId: ids.game,
+  eventSequence: 4,
+  batchId: batchId("batch-3"),
+  gameVersion: 3,
+  eventType: "SetupGenerated",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-3"),
+  createdAt: "2026-07-07T00:00:02.000Z",
+  correlationId: correlationId("correlation-3"),
+  causationId: causationId("command-3"),
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...generatedSetup()
+  } satisfies SetupGeneratedPayload,
+  ...overrides
+});
+
+export const setupPhaseTransitionedEvent = (
+  overrides: Partial<DomainEventEnvelope<"PhaseTransitioned">> = {}
+): DomainEventEnvelope<"PhaseTransitioned"> => ({
+  category: "domain",
+  eventId: eventId("event-5"),
+  gameId: ids.game,
+  eventSequence: 5,
+  batchId: batchId("batch-3"),
+  gameVersion: 3,
+  eventType: "PhaseTransitioned",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-3"),
+  createdAt: "2026-07-07T00:00:02.000Z",
+  correlationId: correlationId("correlation-3"),
+  causationId: causationId("command-3"),
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    fromPhase: "SETUP_GENERATION",
+    toPhase: "CHARACTER_ASSIGNMENT",
+    transitionReason: "SETUP_GENERATED",
     dayNumberBefore: 0,
     dayNumberAfter: 0,
     nightNumberBefore: 0,

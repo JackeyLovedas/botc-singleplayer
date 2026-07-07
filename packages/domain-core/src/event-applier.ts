@@ -1,8 +1,318 @@
 import { DomainError, assertNever } from "./errors.js";
 import { RULES_BASELINE_VERSION, SUPPORTED_DOMAIN_EVENT_VERSION, isCanonicalPlayerCounts } from "./events.js";
-import type { AnyDomainEventEnvelope } from "./events.js";
+import type { AnyDomainEventEnvelope, SetupGeneratedPayload } from "./events.js";
 import type { GameState } from "./game-state.js";
+import type { RoleId } from "./ids.js";
 import { evaluatePhaseTransition } from "./phase-transition-policy.js";
+import {
+  BASE_TWELVE_PLAYER_COUNTS,
+  CHARACTER_TYPES,
+  SUPPORTED_RANDOM_ALGORITHM_VERSION,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
+  SUPPORTED_ROLE_CATALOG_VERSION,
+  SUPPORTED_SCRIPT_ID,
+  SUPPORTED_SCRIPT_EDITION,
+  SUPPORTED_SETUP_ALGORITHM_VERSION,
+  SUPPORTED_SETUP_RANDOM_STREAM,
+  calculateRoleCatalogSignature,
+  compareRoleSetupSnapshot,
+  isStableRoleIdList,
+  isSupportedScriptMetadata,
+  isZeroSetupModifier,
+  sameRoleSetupSnapshot,
+  validateRoleSetupSnapshot
+} from "./setup-types.js";
+import type { RoleCountSet, RoleSetupSnapshot } from "./setup-types.js";
+
+const countRolesByType = (roles: readonly RoleSetupSnapshot[]): RoleCountSet => ({
+  TOWNSFOLK: roles.filter((role) => role.characterType === "TOWNSFOLK").length,
+  OUTSIDER: roles.filter((role) => role.characterType === "OUTSIDER").length,
+  MINION: roles.filter((role) => role.characterType === "MINION").length,
+  DEMON: roles.filter((role) => role.characterType === "DEMON").length
+});
+
+const countTotal = (counts: RoleCountSet): number => counts.TOWNSFOLK + counts.OUTSIDER + counts.MINION + counts.DEMON;
+
+const sameCounts = (left: RoleCountSet, right: RoleCountSet): boolean =>
+  CHARACTER_TYPES.every((type) => left[type] === right[type]);
+
+const allRoleIdsUnique = (roles: readonly RoleSetupSnapshot[]): boolean => {
+  const roleIds = new Set(roles.map((role) => role.roleId));
+  return roleIds.size === roles.length;
+};
+
+const roleIdsEqualAsSets = (left: readonly RoleId[], right: readonly RoleId[]): boolean => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  const rightSet = new Set(right);
+  return left.every((roleIdValue) => rightSet.has(roleIdValue));
+};
+
+const hasCanonicalRoleOrder = (roles: readonly RoleSetupSnapshot[]): boolean =>
+  roles.every((role, index) => index === 0 || compareRoleSetupSnapshot(roles[index - 1] ?? role, role) < 0);
+
+const hasCanonicalRoleIdOrder = (roles: readonly RoleSetupSnapshot[]): boolean =>
+  roles.every((role, index) => index === 0 || (roles[index - 1]?.roleId ?? "") < role.roleId);
+
+const hasUniqueRoleIds = (roles: readonly RoleSetupSnapshot[]): boolean =>
+  new Set(roles.map((role) => role.roleId)).size === roles.length;
+
+const expectedPostCountsForDemon = (demon: RoleSetupSnapshot): RoleCountSet => ({
+  TOWNSFOLK: BASE_TWELVE_PLAYER_COUNTS.TOWNSFOLK + demon.setupModifier.townsfolkDelta,
+  OUTSIDER: BASE_TWELVE_PLAYER_COUNTS.OUTSIDER + demon.setupModifier.outsiderDelta,
+  MINION: BASE_TWELVE_PLAYER_COUNTS.MINION,
+  DEMON: BASE_TWELVE_PLAYER_COUNTS.DEMON
+});
+
+const validateRoleCatalogSnapshot = (payload: SetupGeneratedPayload): ReadonlyMap<RoleId, RoleSetupSnapshot> => {
+  const snapshot = payload.roleCatalogSnapshot;
+  if (
+    snapshot.scriptId !== payload.scriptId ||
+    snapshot.edition !== SUPPORTED_SCRIPT_EDITION ||
+    snapshot.roleCatalogVersion !== payload.roleCatalogVersion ||
+    snapshot.roleCatalogVersion !== SUPPORTED_ROLE_CATALOG_VERSION
+  ) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot metadata must match supported catalog metadata");
+  }
+
+  if (payload.roleCatalogSignatureAlgorithm !== SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSignatureAlgorithm must be supported");
+  }
+
+  if (snapshot.roles.length !== 25) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot must contain 25 roles");
+  }
+
+  if (!hasUniqueRoleIds(snapshot.roles)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot role ids must be unique");
+  }
+
+  if (!hasCanonicalRoleOrder(snapshot.roles)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot must use canonical role order");
+  }
+
+  if (snapshot.roles.some((role) => !validateRoleSetupSnapshot(role))) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot contains invalid role metadata");
+  }
+
+  const catalogCounts = countRolesByType(snapshot.roles);
+  const expectedCatalogCounts: RoleCountSet = {
+    TOWNSFOLK: 13,
+    OUTSIDER: 4,
+    MINION: 4,
+    DEMON: 4
+  };
+  if (!sameCounts(catalogCounts, expectedCatalogCounts)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated roleCatalogSnapshot must contain 13/4/4/4 roles");
+  }
+
+  const recalculatedSignature = calculateRoleCatalogSignature(snapshot);
+  if (
+    snapshot.canonicalSignature !== payload.roleCatalogSignature ||
+    payload.roleCatalogSignature !== recalculatedSignature ||
+    payload.roleCatalogSignature !== SUPPORTED_ROLE_CATALOG_SIGNATURE
+  ) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated role catalog signature must match the supported exact catalog");
+  }
+
+  return new Map(snapshot.roles.map((role) => [role.roleId, role]));
+};
+
+const requireCatalogRole = (
+  catalogById: ReadonlyMap<RoleId, RoleSetupSnapshot>,
+  role: RoleSetupSnapshot,
+  message: string
+): void => {
+  const catalogRole = catalogById.get(role.roleId);
+  if (catalogRole === undefined || !sameRoleSetupSnapshot(role, catalogRole)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", message);
+  }
+};
+
+const validateConstraintsSnapshot = (
+  payload: SetupGeneratedPayload,
+  catalogById: ReadonlyMap<RoleId, RoleSetupSnapshot>
+): void => {
+  const { lockedRoleIds, excludedRoleIds, exactRoleIds } = payload.constraintsSnapshot;
+  if (!isStableRoleIdList(lockedRoleIds) || !isStableRoleIdList(excludedRoleIds) || !isStableRoleIdList(exactRoleIds)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated constraintsSnapshot lists must be unique and ASCII sorted");
+  }
+
+  const allConstraintIds = [...lockedRoleIds, ...excludedRoleIds, ...exactRoleIds];
+  if (allConstraintIds.some((roleIdValue) => !catalogById.has(roleIdValue))) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated constraintsSnapshot roles must exist in roleCatalogSnapshot");
+  }
+
+  const excluded = new Set(excludedRoleIds);
+  if (lockedRoleIds.some((roleIdValue) => excluded.has(roleIdValue))) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated locked and excluded constraints must not overlap");
+  }
+
+  const actualRoleIds = payload.actualRoles.map((role) => role.roleId);
+  const actualRoleIdSet = new Set(actualRoleIds);
+  const bluffRoleIdSet = new Set(payload.demonBluffs.map((role) => role.roleId));
+
+  if (lockedRoleIds.some((roleIdValue) => !actualRoleIdSet.has(roleIdValue))) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated locked roles must appear in actualRoles");
+  }
+
+  if (excludedRoleIds.some((roleIdValue) => actualRoleIdSet.has(roleIdValue) || bluffRoleIdSet.has(roleIdValue))) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated excluded roles must not appear in actualRoles or demonBluffs");
+  }
+
+  if (exactRoleIds.length > 0) {
+    if (exactRoleIds.length !== 12 || lockedRoleIds.length > 0 || excludedRoleIds.length > 0) {
+      throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated exactRoleIds must be the only constraints and contain 12 roles");
+    }
+
+    if (!roleIdsEqualAsSets(exactRoleIds, actualRoleIds)) {
+      throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated exactRoleIds must match actualRoles");
+    }
+  }
+};
+
+const validateSetupGeneratedPayload = (state: GameState, payload: SetupGeneratedPayload): void => {
+  if (state.phase !== "SETUP_GENERATION") {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated can only be applied during SETUP_GENERATION");
+  }
+
+  if (state.selectedScript === undefined) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated requires a selected script");
+  }
+
+  if (!isSupportedScriptMetadata(state.selectedScript.scriptId, state.selectedScript.scriptName, state.selectedScript.edition)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated requires Sects & Violets as the selected script");
+  }
+
+  if (state.setup !== undefined) {
+    throw new DomainError("DuplicateSetupGenerated", "SetupGenerated cannot overwrite existing setup");
+  }
+
+  if (payload.scriptId !== SUPPORTED_SCRIPT_ID) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated scriptId must be sects-and-violets");
+  }
+
+  if (payload.setupAlgorithmVersion !== SUPPORTED_SETUP_ALGORITHM_VERSION ||
+    payload.randomAlgorithmVersion !== SUPPORTED_RANDOM_ALGORITHM_VERSION ||
+    payload.randomStream !== SUPPORTED_SETUP_RANDOM_STREAM ||
+    payload.roleCatalogVersion !== SUPPORTED_ROLE_CATALOG_VERSION) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated setup algorithm and catalog versions must be supported");
+  }
+
+  const catalogById = validateRoleCatalogSnapshot(payload);
+
+  if (!sameCounts(payload.preModifierCounts, BASE_TWELVE_PLAYER_COUNTS)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated preModifierCounts must be 7/2/2/1");
+  }
+
+  if (countTotal(payload.postModifierCounts) !== 12 || CHARACTER_TYPES.some((type) => payload.postModifierCounts[type] < 0)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated postModifierCounts must be non-negative and total 12");
+  }
+
+  if (payload.actualRoles.length !== 12) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated actualRoles must contain 12 roles");
+  }
+
+  if (!allRoleIdsUnique(payload.actualRoles)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated actualRoles must be unique");
+  }
+
+  if (!hasCanonicalRoleOrder(payload.actualRoles)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated actualRoles must use canonical role order");
+  }
+
+  if (payload.actualRoles.some((role) => !validateRoleSetupSnapshot(role)) || !validateRoleSetupSnapshot(payload.demonRole)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated role snapshots must contain valid setup metadata");
+  }
+
+  for (const role of payload.actualRoles) {
+    requireCatalogRole(catalogById, role, "SetupGenerated actualRoles must match roleCatalogSnapshot");
+  }
+
+  requireCatalogRole(catalogById, payload.demonRole, "SetupGenerated demonRole must match roleCatalogSnapshot");
+
+  const actualCounts = countRolesByType(payload.actualRoles);
+  if (!sameCounts(actualCounts, payload.postModifierCounts)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated actual role counts must match postModifierCounts");
+  }
+
+  if (actualCounts.DEMON !== 1 || actualCounts.MINION !== 2) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated must contain exactly 1 demon and 2 minions");
+  }
+
+  const actualRoleIds = new Set(payload.actualRoles.map((role) => role.roleId));
+  const actualDemons = payload.actualRoles.filter((role) => role.characterType === "DEMON");
+  const [actualDemon] = actualDemons;
+  if (actualDemons.length !== 1 || actualDemon === undefined || !sameRoleSetupSnapshot(payload.demonRole, actualDemon)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated demonRole must deeply match the demon in actualRoles");
+  }
+
+  const expectedPostCounts = expectedPostCountsForDemon(payload.demonRole);
+  if (!sameCounts(payload.postModifierCounts, expectedPostCounts)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated postModifierCounts must match demon setup modifier");
+  }
+
+  const demonModifierIsZero = isZeroSetupModifier(payload.demonRole.setupModifier);
+  if (demonModifierIsZero && payload.setupModifiersApplied.length !== 0) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated must not apply zero setup modifiers");
+  }
+
+  if (!demonModifierIsZero) {
+    const [applied] = payload.setupModifiersApplied;
+    if (
+      payload.setupModifiersApplied.length !== 1 ||
+      applied === undefined ||
+      applied.roleId !== payload.demonRole.roleId ||
+      applied.outsiderDelta !== payload.demonRole.setupModifier.outsiderDelta ||
+      applied.townsfolkDelta !== payload.demonRole.setupModifier.townsfolkDelta
+    ) {
+      throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated setup modifiers must match the demon role");
+    }
+  }
+
+  if (payload.demonBluffs.length !== 3) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated demonBluffs must contain 3 roles");
+  }
+
+  if (!allRoleIdsUnique(payload.demonBluffs)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated demonBluffs must be unique");
+  }
+
+  if (!hasCanonicalRoleIdOrder(payload.demonBluffs)) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated demonBluffs must use canonical roleId order");
+  }
+
+  if (
+    payload.demonBluffs.some(
+      (role) =>
+        !validateRoleSetupSnapshot(role) ||
+        role.defaultAlignment !== "GOOD" ||
+        actualRoleIds.has(role.roleId)
+    )
+  ) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated demonBluffs must be good, Sects & Violets, and not actual roles");
+  }
+
+  for (const role of payload.demonBluffs) {
+    requireCatalogRole(catalogById, role, "SetupGenerated demonBluffs must match roleCatalogSnapshot");
+  }
+
+  if (
+    payload.validationSummary.actualRoleCount !== 12 ||
+    payload.validationSummary.demonBluffCount !== 3 ||
+    !payload.validationSummary.roleIdsUnique ||
+    payload.validationSummary.demonRoleCount !== 1 ||
+    payload.validationSummary.minionRoleCount !== 2 ||
+    !payload.validationSummary.actualRolesMatchPostModifierCounts
+  ) {
+    throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated validationSummary must match payload invariants");
+  }
+
+  validateConstraintsSnapshot(payload, catalogById);
+};
 
 const validateEnvelope = (state: GameState | undefined, event: AnyDomainEventEnvelope): void => {
   if (event.eventVersion !== SUPPORTED_DOMAIN_EVENT_VERSION) {
@@ -103,6 +413,25 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
       };
     }
 
+    case "SetupGenerated": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "SetupGenerated requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidSetupGeneratedPayload", "SetupGenerated payload rules baseline must match game state");
+      }
+
+      validateSetupGeneratedPayload(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        setup: event.payload
+      };
+    }
+
     case "PhaseTransitioned": {
       if (state === undefined) {
         throw new DomainError("MissingGameCreated", "PhaseTransitioned requires an existing game");
@@ -132,6 +461,15 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         state.selectedScript === undefined
       ) {
         throw new DomainError("MissingTransitionPrerequisite", "SCRIPT_SELECTED transition requires a selected script fact");
+      }
+
+      if (
+        event.payload.transitionReason === "SETUP_GENERATED" &&
+        event.payload.fromPhase === "SETUP_GENERATION" &&
+        event.payload.toPhase === "CHARACTER_ASSIGNMENT" &&
+        state.setup === undefined
+      ) {
+        throw new DomainError("MissingTransitionPrerequisite", "SETUP_GENERATED transition requires a generated setup fact");
       }
 
       const transition = evaluatePhaseTransition({

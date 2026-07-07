@@ -39,7 +39,41 @@ Acceptance:
 - `CommandBus` serializes commands per game and allows independent games to proceed concurrently.
 - No setup placeholder, fake assignment, or forced phase domain event is introduced.
 
-## Slice 2B: Integrated Basic Phase Flow
+## Slice 2B1: Seeded Sects & Violets Setup Foundation
+
+Scope:
+
+- Lock first-release script support to official Sects & Violets metadata.
+- Add the 25-role Sects & Violets catalog without implementing role abilities.
+- Generate a legal 12-player actual role set from `GameState.rootSeed`.
+- Apply Fang Gu and Vigormortis setup modifiers before filling role type counts.
+- Generate three demon bluffs from out-of-play good roles.
+- Record `SetupGenerated` plus `PhaseTransitioned(SETUP_GENERATED)` in one atomic batch.
+- Advance only from `SETUP_GENERATION` to `CHARACTER_ASSIGNMENT`.
+
+Acceptance:
+
+- Same seed and constraints produce the same actual role set and demon bluffs.
+- `SetupGenerated` stores replayable role snapshots, not only role id strings.
+- Bare `SetupGenerated` and bare `PhaseTransitioned(SETUP_GENERATED)` are rejected.
+- No seat roster, player assignment, character ability, first night, AI, UI, or persistence adapter is introduced.
+
+## Slice 2B2: Seat Roster and Character Assignment
+
+Scope:
+
+- Execute only after Slice 2B1 is accepted.
+- Build the seat roster and character assignment facts from generated setup.
+- Keep actual roles, demon bluffs, seats, assignments, and player knowledge separate.
+- Integrate `CHARACTERS_ASSIGNED` only with real assignment facts.
+
+Acceptance:
+
+- The generated setup can be assigned to the 12 seats without leaking hidden information.
+- Character assignment is replayable and does not reinterpret old setup events through a future role catalog.
+- No first night entry occurs until assignment is real and validated.
+
+## Slice 2C: Integrated Basic Phase Flow
 
 Scope:
 
@@ -79,20 +113,7 @@ Acceptance:
 
 - Player projection does not contain hidden assignments, truth statuses, or hidden effect causes.
 
-## Slice 5: Seeded Setup Prototype
-
-Scope:
-
-- Use current Sects & Violets role pool data.
-- Generate a legal 12-player setup with fixed seed.
-- Keep setup, assignment, and demon bluffs separate.
-
-Acceptance:
-
-- Same seed and constraints produce the same result.
-- Custom script pool shortage reports an error instead of silently adding roles.
-
-## Slice 6: One Verified Interaction
+## Slice 5: One Verified Interaction
 
 Scope:
 

@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "@botc/application": "workspace:*",
-    "@botc/domain-core": "workspace:*"
+    "@botc/domain-core": "workspace:*",
+    "@botc/rules-snv": "workspace:*",
+    "@botc/setup-engine": "workspace:*"
   }
 }

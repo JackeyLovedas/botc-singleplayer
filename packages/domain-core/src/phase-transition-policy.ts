@@ -14,7 +14,7 @@ export type PhaseTransitionReason =
   | "NIGHT_TASKS_COMPLETED"
   | "GAME_ENDED";
 
-export const INTEGRATED_TRANSITION_REASONS = ["SCRIPT_SELECTED"] as const;
+export const INTEGRATED_TRANSITION_REASONS = ["SCRIPT_SELECTED", "SETUP_GENERATED"] as const;
 
 export type IntegratedTransitionReason = (typeof INTEGRATED_TRANSITION_REASONS)[number];
 

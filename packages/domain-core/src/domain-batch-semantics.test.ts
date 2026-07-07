@@ -10,7 +10,13 @@ import {
   validateDomainBatchSemantics
 } from "@botc/domain-core";
 import type { AnyDomainEventEnvelope, DomainErrorCode } from "@botc/domain-core";
-import { gameCreatedEvent, phaseTransitionedEvent, scriptSelectedEvent } from "@botc/test-harness";
+import {
+  gameCreatedEvent,
+  phaseTransitionedEvent,
+  scriptSelectedEvent,
+  setupGeneratedEvent,
+  setupPhaseTransitionedEvent
+} from "@botc/test-harness";
 
 const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
   let caught: unknown;
@@ -25,6 +31,7 @@ const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
 };
 
 const createdState = () => rebuildGameState([gameCreatedEvent()]);
+const setupGenerationState = () => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
 
 describe("domain batch semantic validation", () => {
   it("accepts a legal CreateGame single-event batch", () => {
@@ -94,17 +101,18 @@ describe("domain batch semantic validation", () => {
     );
   });
 
-  it("rejects planned SETUP_GENERATED transitions before integration", () => {
-    const futureTransition = phaseTransitionedEvent({
+  it("rejects bare SETUP_GENERATED transitions without a SetupGenerated fact", () => {
+    const futureTransition = setupPhaseTransitionedEvent({
+      eventSequence: 4,
       payload: {
-        ...phaseTransitionedEvent().payload,
+        ...setupPhaseTransitionedEvent().payload,
         fromPhase: "SETUP_GENERATION",
         toPhase: "CHARACTER_ASSIGNMENT",
         transitionReason: "SETUP_GENERATED"
       }
     });
 
-    expectDomainCode(() => validateDomainBatchSemantics(createdState(), [futureTransition]), "PhaseTransitionNotIntegrated");
+    expectDomainCode(() => validateDomainBatchSemantics(setupGenerationState(), [futureTransition]), "InvalidDomainBatchSemantics");
   });
 
   it("keeps GAME_ENDED evaluable in pure policy while rejecting it from the current event log", () => {
@@ -158,5 +166,52 @@ describe("domain batch semantic validation", () => {
     });
 
     expectDomainCode(() => validateDomainBatchSemantics(setupState, [selected, transitioned]), "InvalidDomainBatchSemantics");
+  });
+
+  it("accepts a legal GenerateSetup two-event batch", () => {
+    expect(() =>
+      validateDomainBatchSemantics(setupGenerationState(), [setupGeneratedEvent(), setupPhaseTransitionedEvent()])
+    ).not.toThrow();
+  });
+
+  it("rejects a bare SetupGenerated event", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(setupGenerationState(), [setupGeneratedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects reversed GenerateSetup batch order", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(setupGenerationState(), [setupPhaseTransitionedEvent(), setupGeneratedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects GenerateSetup batch metadata mismatch", () => {
+    expectDomainCode(
+      () =>
+        validateDomainBatchSemantics(setupGenerationState(), [
+          setupGeneratedEvent(),
+          setupPhaseTransitionedEvent({ batchId: batchId("other-setup-batch") })
+        ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects GenerateSetup transition with incorrect from and to phases", () => {
+    expectDomainCode(
+      () =>
+        validateDomainBatchSemantics(setupGenerationState(), [
+          setupGeneratedEvent(),
+          setupPhaseTransitionedEvent({
+            payload: {
+              ...setupPhaseTransitionedEvent().payload,
+              fromPhase: "SCRIPT_SELECTION"
+            }
+          })
+        ]),
+      "InvalidDomainBatchSemantics"
+    );
   });
 });

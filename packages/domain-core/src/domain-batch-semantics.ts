@@ -60,6 +60,31 @@ const validateIntegratedScriptSelectionBatch = (
   }
 };
 
+const validateIntegratedSetupGenerationBatch = (
+  currentState: GameState | undefined,
+  setupGenerated: DomainEventEnvelope<"SetupGenerated">,
+  phaseTransitioned: DomainEventEnvelope<"PhaseTransitioned">
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "GenerateSetup batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (state.phase !== "SETUP_GENERATION" || state.selectedScript === undefined || state.setup !== undefined) {
+    reject("GenerateSetup batch requires SETUP_GENERATION with selected script and no existing setup");
+  }
+
+  assertSharedBatchMetadata(setupGenerated, phaseTransitioned);
+
+  if (
+    phaseTransitioned.payload.fromPhase !== "SETUP_GENERATION" ||
+    phaseTransitioned.payload.toPhase !== "CHARACTER_ASSIGNMENT" ||
+    phaseTransitioned.payload.transitionReason !== "SETUP_GENERATED"
+  ) {
+    reject("GenerateSetup batch must transition SETUP_GENERATION to CHARACTER_ASSIGNMENT with SETUP_GENERATED");
+  }
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -92,18 +117,22 @@ export const validateDomainBatchSemantics = (
   }
 
   if (batchEvents.length !== 2) {
-    reject("Only GameCreated and integrated SelectScript batches are currently supported");
+    reject("Only GameCreated, integrated SelectScript, and integrated GenerateSetup batches are currently supported");
   }
 
   if (third !== undefined) {
-    reject("Integrated SelectScript batch must not contain a third domain event");
+    reject("Integrated two-event batches must not contain a third domain event");
   }
 
-  if (first.eventType !== "ScriptSelected" || second === undefined || second.eventType !== "PhaseTransitioned") {
-    reject("Integrated SelectScript batch must contain ScriptSelected followed by PhaseTransitioned");
+  if (first.eventType === "ScriptSelected" && second !== undefined && second.eventType === "PhaseTransitioned") {
+    validateIntegratedScriptSelectionBatch(currentState, first, second);
+    return;
   }
 
-  const scriptSelected = first as DomainEventEnvelope<"ScriptSelected">;
-  const phaseTransitioned = second as DomainEventEnvelope<"PhaseTransitioned">;
-  validateIntegratedScriptSelectionBatch(currentState, scriptSelected, phaseTransitioned);
+  if (first.eventType === "SetupGenerated" && second !== undefined && second.eventType === "PhaseTransitioned") {
+    validateIntegratedSetupGenerationBatch(currentState, first, second);
+    return;
+  }
+
+  reject("Integrated two-event batch must contain a supported fact event followed by PhaseTransitioned");
 };

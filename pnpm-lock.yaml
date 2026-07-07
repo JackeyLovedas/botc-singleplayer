@@ -38,6 +38,18 @@ importers:
 
   packages/domain-core: {}
 
+  packages/rules-snv:
+    dependencies:
+      '@botc/domain-core':
+        specifier: workspace:*
+        version: link:../domain-core
+
+  packages/setup-engine:
+    dependencies:
+      '@botc/domain-core':
+        specifier: workspace:*
+        version: link:../domain-core
+
   packages/test-harness:
     dependencies:
       '@botc/application':
@@ -46,6 +58,12 @@ importers:
       '@botc/domain-core':
         specifier: workspace:*
         version: link:../domain-core
+      '@botc/rules-snv':
+        specifier: workspace:*
+        version: link:../rules-snv
+      '@botc/setup-engine':
+        specifier: workspace:*
+        version: link:../setup-engine
 
 packages:
 
