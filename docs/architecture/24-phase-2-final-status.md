@@ -8,7 +8,14 @@ Result: Ready for user review
 
 Implementation status: no framework initialization, no code packages, no UI, no role implementation, no AI implementation, no demo.
 
-Phase 3 status: not started.
+Phase 3 status: user explicitly approved Phase 3 Slice 1 on 2026-07-07.
+
+## Phase 3 Entry Corrections
+
+Before Phase 3 implementation, two Phase 2.1 inconsistencies were corrected:
+
+- Package dependency direction now uses application-defined ports and concrete adapters. `application` does not depend on `persistence-sqlite` or `ai-gateway`; the future composition root wires adapters.
+- Nomination and voting state transitions now return from `VOTING` to `NOMINATION_WINDOW` after `CompleteVote` and `BlockStateUpdated`. `CloseNominations` is the only normal transition to execution or no-execution day close.
 
 ## Locked Decisions
 
@@ -70,4 +77,4 @@ Phase 3 may begin only after explicit user approval. Before writing implementati
 
 ## Stop Condition
 
-Stop here. Do not enter Phase 3 or write code until the user explicitly starts the next phase.
+Phase 3 Slice 1 may proceed because the user explicitly approved it. Do not proceed beyond Domain Event Spine into Slice 2, role abilities, AI players, UI, Electron, SQLite implementation, or full game development without separate approval.

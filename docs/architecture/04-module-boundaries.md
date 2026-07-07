@@ -39,20 +39,45 @@ It must not directly mutate canonical state. It returns candidate effects or eve
 ## Dependency Direction
 
 ```text
-desktop shell -> projections -> application -> domain-core
-ai-gateway -> projections -> application -> command-validator -> domain-core
-storyteller-policy -> legal candidates -> application -> domain-core
-persistence -> application -> domain-core event/snapshot contracts
-role modules -> domain-core rule interfaces
+apps/desktop composition root
+  -> application
+  -> persistence adapters
+  -> AI adapters
+  -> projections
+
+application
+  -> domain-core
+  -> application-defined ports
+
+persistence-sqlite
+  -> application persistence ports
+  -> domain-core event contracts
+
+ai-gateway
+  -> application AI ports and command contracts
+  -> projections
+
+role modules
+  -> domain-core public rule interfaces
 ```
 
 Lower-level modules must not import UI, AI provider, or desktop packaging code.
 Application coordinates command handling, persistence, projection publishing, and follow-up scheduling. It must not absorb role rules or mutate canonical state directly.
 
+## Ports And Adapters Rule
+
+- `application` defines the persistence, AI, clock, id-generation, and projection-publishing ports it needs.
+- `application` must not depend on concrete `persistence-sqlite` or `ai-gateway` implementations.
+- Concrete adapters implement application-defined ports.
+- The future composition root, such as `apps/desktop`, instantiates and injects concrete adapters.
+- `domain-core` remains independent from application orchestration and infrastructure.
+- No package may create a circular dependency to reach an adapter.
+
 ## Forbidden Couplings
 
 - UI reading `canonicalGameState`.
 - AI gateway importing domain internals that expose hidden truth.
+- Application importing concrete `persistence-sqlite` or `ai-gateway` packages.
 - Role modules sharing a mutable global night array.
 - Storyteller policy creating events that were not produced as legal candidates.
 - Persistence migrations silently changing rule meaning.
