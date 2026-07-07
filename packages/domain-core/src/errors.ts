@@ -1,6 +1,7 @@
 export type DomainErrorCode =
   | "EmptyEventStream"
   | "EmptyEventBatch"
+  | "InvalidDomainBatchSemantics"
   | "EventGameMismatch"
   | "EventSequenceJump"
   | "EventGameVersionMismatch"
@@ -20,7 +21,9 @@ export type DomainErrorCode =
   | "DuplicateScriptSelected"
   | "InvalidPhaseTransition"
   | "InvalidPhaseTransitionReason"
-  | "InvalidPhaseCounter";
+  | "InvalidPhaseCounter"
+  | "MissingTransitionPrerequisite"
+  | "PhaseTransitionNotIntegrated";
 
 export class DomainError extends Error {
   public constructor(

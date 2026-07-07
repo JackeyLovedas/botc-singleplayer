@@ -1,4 +1,5 @@
 export * from "./command.js";
+export * from "./domain-batch-semantics.js";
 export * from "./errors.js";
 export * from "./event-applier.js";
 export * from "./event-batch.js";

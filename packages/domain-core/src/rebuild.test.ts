@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyDomainEvent,
   DomainError,
   RULES_BASELINE_VERSION,
   batchId,
   commandId,
-  correlationId,
   eventId,
   applyDomainEventBatch,
   rebuildGameState,
   validateDomainEventStream
 } from "@botc/domain-core";
-import type { AnyDomainEventEnvelope, DomainErrorCode, DomainEventEnvelope, GamePhase, PhaseTransitionReason } from "@botc/domain-core";
+import type { AnyDomainEventEnvelope, DomainErrorCode } from "@botc/domain-core";
 import {
   auditEvent,
   gameCreatedEvent,
@@ -31,35 +31,6 @@ const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
   expect(caught).toBeInstanceOf(DomainError);
   expect((caught as DomainError).code).toBe(code);
 };
-
-const phaseEvent = (
-  eventSequence: number,
-  fromPhase: GamePhase,
-  toPhase: GamePhase,
-  dayNumberBefore: number,
-  dayNumberAfter: number,
-  nightNumberBefore: number,
-  nightNumberAfter: number,
-  transitionReason: PhaseTransitionReason
-): DomainEventEnvelope<"PhaseTransitioned"> =>
-  phaseTransitionedEvent({
-    eventId: eventId(`phase-event-${eventSequence}`),
-    batchId: batchId(`phase-batch-${eventSequence}`),
-    commandId: commandId(`phase-command-${eventSequence}`),
-    correlationId: correlationId(`phase-correlation-${eventSequence}`),
-    eventSequence,
-    gameVersion: eventSequence,
-    payload: {
-      rulesBaselineVersion: RULES_BASELINE_VERSION,
-      fromPhase,
-      toPhase,
-      transitionReason,
-      dayNumberBefore,
-      dayNumberAfter,
-      nightNumberBefore,
-      nightNumberAfter
-    }
-  });
 
 describe("domain event rebuild", () => {
   it("has explicit empty event stream behavior", () => {
@@ -111,8 +82,9 @@ describe("domain event rebuild", () => {
       commandId: scriptSelectedEvent().commandId,
       gameVersion: 2
     });
+    const state = rebuildGameState([gameCreatedEvent()]);
 
-    expectDomainCode(() => rebuildGameState([gameCreatedEvent(), duplicate]), "DuplicateGameCreated");
+    expectDomainCode(() => applyDomainEvent(state, duplicate), "DuplicateGameCreated");
   });
 
   it("rejects event sequence jumps", () => {
@@ -137,13 +109,13 @@ describe("domain event rebuild", () => {
   });
 
   it("rebuilds the same event stream deterministically", () => {
-    const events = [gameCreatedEvent(), scriptSelectedEvent()];
+    const events = [gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()];
 
     expect(rebuildGameState(events)).toStrictEqual(rebuildGameState(events));
   });
 
   it("does not mutate input events", () => {
-    const events = [gameCreatedEvent(), scriptSelectedEvent()];
+    const events = [gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()];
     const before = JSON.stringify(events);
 
     rebuildGameState(events);
@@ -253,20 +225,13 @@ describe("domain event rebuild", () => {
     expectDomainCode(() => rebuildGameState([gameCreatedEvent(), selected]), "EventRulesBaselineMismatch");
   });
 
-  it("rebuilds a legal multi-event batch", () => {
-    const created = gameCreatedEvent();
-    const selected = scriptSelectedEvent({
-      batchId: created.batchId,
-      commandId: created.commandId,
-      eventSequence: 2,
-      gameVersion: 1
-    });
+  it("rebuilds a legal SelectScript multi-event batch", () => {
+    const state = rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
 
-    const state = rebuildGameState([created, selected]);
-
-    expect(state.gameVersion).toBe(1);
-    expect(state.lastEventSequence).toBe(2);
+    expect(state.gameVersion).toBe(2);
+    expect(state.lastEventSequence).toBe(3);
     expect(state.selectedScript).toMatchObject({ scriptId: "sects-and-violets" });
+    expect(state.phase).toBe("SETUP_GENERATION");
   });
 
   it("applies PhaseTransitioned into SETUP_GENERATION after ScriptSelected", () => {
@@ -288,10 +253,9 @@ describe("domain event rebuild", () => {
       gameVersion: 3
     });
 
-    expectDomainCode(
-      () => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent(), duplicate]),
-      "InvalidScriptSelectedPhase"
-    );
+    const state = rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
+
+    expectDomainCode(() => applyDomainEvent(state, duplicate), "InvalidScriptSelectedPhase");
   });
 
   it("rejects two ScriptSelected events in one stream before phase transition", () => {
@@ -303,7 +267,9 @@ describe("domain event rebuild", () => {
       gameVersion: 3
     });
 
-    expectDomainCode(() => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), duplicate]), "DuplicateScriptSelected");
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
+
+    expectDomainCode(() => applyDomainEvent(state, duplicate), "DuplicateScriptSelected");
   });
 
   it("rejects PhaseTransitioned when reasonCode does not match policy", () => {
@@ -314,7 +280,9 @@ describe("domain event rebuild", () => {
       }
     });
 
-    expectDomainCode(() => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), event]), "InvalidPhaseTransitionReason");
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
+
+    expectDomainCode(() => applyDomainEvent(state, event), "InvalidPhaseTransitionReason");
   });
 
   it("keeps transitionReason as a typed replay fact", () => {
@@ -337,7 +305,7 @@ describe("domain event rebuild", () => {
     const stateBefore = JSON.stringify(currentState);
     const eventsBefore = JSON.stringify(invalid);
 
-    expectDomainCode(() => applyDomainEventBatch(currentState, invalid), "InvalidScriptSelectedPhase");
+    expectDomainCode(() => applyDomainEventBatch(currentState, invalid), "InvalidDomainBatchSemantics");
     expect(JSON.stringify(currentState)).toBe(stateBefore);
     expect(JSON.stringify(invalid)).toBe(eventsBefore);
   });
@@ -359,7 +327,9 @@ describe("domain event rebuild", () => {
       }
     });
 
-    expectDomainCode(() => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), event]), "InvalidPhaseTransition");
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
+
+    expectDomainCode(() => applyDomainEvent(state, event), "InvalidPhaseTransition");
   });
 
   it("rejects negative phase counters", () => {
@@ -370,7 +340,9 @@ describe("domain event rebuild", () => {
       }
     });
 
-    expectDomainCode(() => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), event]), "InvalidPhaseCounter");
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
+
+    expectDomainCode(() => applyDomainEvent(state, event), "InvalidPhaseCounter");
   });
 
   it("rejects illegal phase jumps", () => {
@@ -381,23 +353,9 @@ describe("domain event rebuild", () => {
       }
     });
 
-    expectDomainCode(() => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), event]), "InvalidPhaseTransition");
-  });
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
 
-  it("does not allow GAME_ENDED to recover to an active phase", () => {
-    const events = [
-      gameCreatedEvent(),
-      phaseEvent(2, "SCRIPT_SELECTION", "SETUP_GENERATION", 0, 0, 0, 0, "SCRIPT_SELECTED"),
-      phaseEvent(3, "SETUP_GENERATION", "CHARACTER_ASSIGNMENT", 0, 0, 0, 0, "SETUP_GENERATED"),
-      phaseEvent(4, "CHARACTER_ASSIGNMENT", "FIRST_NIGHT", 0, 0, 0, 1, "CHARACTERS_ASSIGNED"),
-      phaseEvent(5, "FIRST_NIGHT", "DAWN_RESOLUTION", 0, 0, 1, 1, "FIRST_NIGHT_COMPLETED"),
-      phaseEvent(6, "DAWN_RESOLUTION", "DAY_DISCUSSION", 0, 1, 1, 1, "DAWN_COMPLETED"),
-      phaseEvent(7, "DAY_DISCUSSION", "NOMINATION_WINDOW", 1, 1, 1, 1, "NOMINATION_OPENED"),
-      phaseEvent(8, "NOMINATION_WINDOW", "GAME_ENDED", 1, 1, 1, 1, "GAME_ENDED"),
-      phaseEvent(9, "GAME_ENDED", "DAY_DISCUSSION", 1, 1, 1, 1, "DAWN_COMPLETED")
-    ];
-
-    expectDomainCode(() => rebuildGameState(events), "InvalidPhaseTransition");
+    expectDomainCode(() => applyDomainEvent(state, event), "InvalidPhaseTransition");
   });
 
   it("rejects PhaseTransitioned rules baseline mismatch", () => {

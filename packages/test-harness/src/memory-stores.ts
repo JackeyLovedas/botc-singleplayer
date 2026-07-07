@@ -1,5 +1,7 @@
 import {
   rebuildGameState,
+  rebuildOptionalGameState,
+  validateDomainBatchSemantics,
   validateDomainEventStream
 } from "@botc/domain-core";
 import type {
@@ -43,6 +45,7 @@ export class MemoryCommandCommitStore implements CommandCommitStore {
     try {
       this.validateAcceptedInput(input);
       const existing = this.events.get(input.eventBatch.gameId) ?? [];
+      validateDomainBatchSemantics(rebuildOptionalGameState(existing), input.eventBatch.events);
       const stagedEvents = [...existing, ...input.eventBatch.events];
       validateDomainEventStream(stagedEvents);
       rebuildGameState(stagedEvents);

@@ -7,8 +7,7 @@ import {
   MemoryCommandCommitStore,
   gameCreatedEvent,
   ids,
-  phaseTransitionedEvent,
-  scriptSelectedEvent
+  phaseTransitionedEvent
 } from "@botc/test-harness";
 
 const commitInputFor = (batch: DomainEventBatch): CommitAcceptedCommandInput => {
@@ -105,36 +104,21 @@ describe("MemoryCommandCommitStore batch contract", () => {
       batchId: batchId("phase-batch"),
       commandId: commandId("phase-command")
     });
-    await store.commitAcceptedCommand(commitInputFor({
+    const invalidBatch: DomainEventBatch = {
       batchId: transition.batchId,
       gameId: ids.game,
       commandId: transition.commandId,
       expectedGameVersion: 1,
       committedGameVersion: 2,
       events: [transition]
-    }));
-
-    const invalidScript = scriptSelectedEvent({
-      eventSequence: 3,
-      gameVersion: 3,
-      batchId: batchId("semantic-invalid-batch"),
-      commandId: commandId("semantic-invalid-command")
-    });
-    const invalidBatch: DomainEventBatch = {
-      batchId: invalidScript.batchId,
-      gameId: ids.game,
-      commandId: invalidScript.commandId,
-      expectedGameVersion: 2,
-      committedGameVersion: 3,
-      events: [invalidScript]
     };
 
-    await expect(store.commitAcceptedCommand(commitInputFor(invalidBatch))).rejects.toThrow("ScriptSelected");
+    await expect(store.commitAcceptedCommand(commitInputFor(invalidBatch))).rejects.toThrow("SelectScript");
 
     const events = await store.loadDomainEvents(ids.game);
-    expect(events).toHaveLength(2);
-    expect(store.getGameVersion(ids.game)).toBe(2);
-    expect(await store.findCommandReceipt(ids.game, invalidScript.commandId)).toBeUndefined();
-    expect(rebuildGameState(events).phase).toBe("SETUP_GENERATION");
+    expect(events).toHaveLength(1);
+    expect(store.getGameVersion(ids.game)).toBe(1);
+    expect(await store.findCommandReceipt(ids.game, transition.commandId)).toBeUndefined();
+    expect(rebuildGameState(events).phase).toBe("SCRIPT_SELECTION");
   });
 });

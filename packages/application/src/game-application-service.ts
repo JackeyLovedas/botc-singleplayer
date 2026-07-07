@@ -5,7 +5,8 @@ import {
   assertNever,
   causationIdFromCommandId,
   evaluatePhaseTransition,
-  rebuildOptionalGameState
+  rebuildOptionalGameState,
+  validateDomainBatchSemantics
 } from "@botc/domain-core";
 import type {
   BatchId,
@@ -278,6 +279,7 @@ export class GameApplicationService {
     batch: DomainEventBatch
   ): { readonly code: "DomainValidationFailed"; readonly message: string } | undefined {
     try {
+      validateDomainBatchSemantics(state, batch.events);
       applyDomainEventBatch(state, batch.events);
       return undefined;
     } catch (error: unknown) {

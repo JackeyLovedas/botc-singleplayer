@@ -125,6 +125,15 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         throw new DomainError("InvalidPhaseCounter", "Phase counter before values must match current game state");
       }
 
+      if (
+        event.payload.transitionReason === "SCRIPT_SELECTED" &&
+        event.payload.fromPhase === "SCRIPT_SELECTION" &&
+        event.payload.toPhase === "SETUP_GENERATION" &&
+        state.selectedScript === undefined
+      ) {
+        throw new DomainError("MissingTransitionPrerequisite", "SCRIPT_SELECTED transition requires a selected script fact");
+      }
+
       const transition = evaluatePhaseTransition({
         fromPhase: event.payload.fromPhase,
         toPhase: event.payload.toPhase,

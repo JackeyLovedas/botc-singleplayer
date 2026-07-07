@@ -14,6 +14,13 @@ export type PhaseTransitionReason =
   | "NIGHT_TASKS_COMPLETED"
   | "GAME_ENDED";
 
+export const INTEGRATED_TRANSITION_REASONS = ["SCRIPT_SELECTED"] as const;
+
+export type IntegratedTransitionReason = (typeof INTEGRATED_TRANSITION_REASONS)[number];
+
+export const isIntegratedTransitionReason = (reason: PhaseTransitionReason): reason is IntegratedTransitionReason =>
+  INTEGRATED_TRANSITION_REASONS.includes(reason as IntegratedTransitionReason);
+
 export type PhaseTransitionPolicyInput = PhaseCounters & {
   readonly fromPhase: GamePhase;
   readonly toPhase: GamePhase;

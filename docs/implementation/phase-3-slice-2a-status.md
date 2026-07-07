@@ -55,8 +55,22 @@ Event application rejects:
 - attempts to leave `GAME_ENDED`.
 - rules baseline mismatch.
 - transition reason mismatch against policy `reasonCode`.
+- `SCRIPT_SELECTED` transition without an already-applied `ScriptSelected` fact.
 
-## 4. SelectScript Multi-Event Batch
+## 4. Integrated Versus Planned Transitions
+
+`evaluatePhaseTransition` describes the planned complete phase graph, including future transitions such as `SETUP_GENERATED`, `CHARACTERS_ASSIGNED`, day/night movement, nomination, voting, execution, and `GAME_ENDED`.
+
+The authoritative domain event log currently integrates only one phase transition:
+
+```text
+SCRIPT_SELECTION -> SETUP_GENERATION
+reasonCode = SCRIPT_SELECTED
+```
+
+All other phase transition reason codes remain valid pure policy facts, but they cannot be written to or replayed from the domain event log until their triggering domain facts are implemented.
+
+## 5. SelectScript Multi-Event Batch
 
 `SelectScript` now commits one atomic batch with two domain events:
 
@@ -72,7 +86,45 @@ Both events share:
 
 Event sequences are consecutive. The batch increments `gameVersion` once and rebuilds to `SETUP_GENERATION`.
 
-## 5. CommandBus Wiring
+## 6. Domain Batch Semantic Validation
+
+`packages/domain-core/src/domain-batch-semantics.ts` validates command-produced event batches before they are applied or replayed.
+
+Currently valid production batches are:
+
+- `CreateGame`: exactly one `GameCreated` event.
+- `SelectScript`: exactly `ScriptSelected` followed by `PhaseTransitioned`.
+
+The `SelectScript` batch requires matching `batchId`, `commandId`, `gameVersion`, `rulesBaselineVersion`, consecutive `eventSequence`, and:
+
+```text
+fromPhase = SCRIPT_SELECTION
+toPhase = SETUP_GENERATION
+transitionReason = SCRIPT_SELECTED
+```
+
+The validator rejects bare `ScriptSelected`, bare `PhaseTransitioned(SCRIPT_SELECTED)`, reversed SelectScript batches, unrelated third events, missing trigger facts, missing paired phase transitions, and planned-but-unintegrated transition reasons.
+
+## 7. Transition Trigger Invariants
+
+`PhaseTransitioned(SCRIPT_SELECTED)` is not accepted merely because the reason text says `SCRIPT_SELECTED`.
+
+The transition is valid only after the batch has applied the real `ScriptSelected` fact. The event applier also keeps an independent guard: if `SCRIPT_SELECTION -> SETUP_GENERATION` with `SCRIPT_SELECTED` is applied while `state.selectedScript` is absent, it rejects the event with `MissingTransitionPrerequisite`.
+
+## 8. Replay Protection Against Bare Phase Events
+
+`rebuildGameState` groups the full event stream by consecutive `batchId` and validates each batch before applying its events.
+
+This prevents replay from accepting a naked future phase event such as:
+
+```text
+SETUP_GENERATION -> CHARACTER_ASSIGNMENT
+reasonCode = SETUP_GENERATED
+```
+
+Current replay cannot skip into setup, assignment, night, day, nomination, voting, execution, or game-end phases through bare `PhaseTransitioned` events. Those transitions will be enabled only when their real command and domain facts exist.
+
+## 9. CommandBus Wiring
 
 `packages/application/src/game-command-bus.ts` adds `GameCommandBus`.
 
@@ -83,7 +135,7 @@ Event sequences are consecutive. The batch increments `gameVersion` once and reb
 
 Production callers should use `GameCommandBus` and must not bypass it by calling `GameApplicationService.execute` directly. Tests may still use `GameApplicationService` directly for focused application-service checks.
 
-## 6. Phase Counter Rules
+## 10. Phase Counter Rules
 
 The pure phase transition policy defines future phase movement without creating production commands for those transitions.
 
@@ -94,7 +146,7 @@ Counter rules:
 - entering `NIGHT_TASKS` after execution increments `nightNumber`.
 - returning from `VOTING` to `NOMINATION_WINDOW` does not change day or night counters.
 
-## 7. Semantic Pre-Commit Validation
+## 11. Semantic Pre-Commit Validation
 
 `GameApplicationService` now validates candidate domain events before calling `CommandCommitStore.commitAcceptedCommand`.
 
@@ -108,9 +160,15 @@ Flow:
 6. reject as `DomainValidationFailed` if the prospective state is invalid.
 7. atomically commit only after semantic validation passes.
 
-The test memory store also validates staged events with both `validateDomainEventStream(stagedEvents)` and `rebuildGameState(stagedEvents)` before writing.
+The test memory store also validates staged writes in this order:
 
-## 8. Script Selection Invariants
+1. structural accepted-command input checks.
+2. domain batch semantic validation against the rebuilt current state.
+3. full event stream validation.
+4. full event stream rebuild.
+5. atomic write.
+
+## 12. Script Selection Invariants
 
 Application command validation now rejects:
 
@@ -123,7 +181,7 @@ Domain replay independently rejects:
 - `ScriptSelected` outside `SCRIPT_SELECTION`: `InvalidScriptSelectedPhase`.
 - duplicate `ScriptSelected`: `DuplicateScriptSelected`.
 
-## 9. Typed Transition Reasons
+## 13. Typed Transition Reasons
 
 `PhaseTransitioned.payload.transitionReason` is now a `PhaseTransitionReason`, not free text.
 
@@ -135,7 +193,7 @@ event.payload.transitionReason === policy.reasonCode
 
 Mismatch is rejected as `InvalidPhaseTransitionReason`.
 
-## 10. Game End Entry Phases
+## 14. Game End Entry Phases
 
 Allowed `GAME_ENDED` entries:
 
@@ -154,7 +212,9 @@ Disallowed direct entries:
 - `CHARACTER_ASSIGNMENT`
 - `GAME_ENDED` back to any active phase.
 
-## 11. Phase Counter Invariants
+`GAME_ENDED` remains covered by pure policy tests. It is not currently integrated as a production event-log transition.
+
+## 15. Phase Counter Invariants
 
 `validatePhaseCounters` enforces phase-specific counter states:
 
@@ -166,14 +226,14 @@ Disallowed direct entries:
 
 `evaluatePhaseTransition` rejects invalid current counters and invalid computed next counters instead of repairing them.
 
-## 12. Test Results
+## 16. Test Results
 
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
-- `pnpm test`: passed, 81 tests.
+- `pnpm test`: passed, 94 tests.
 - `pnpm test:coverage`: passed.
 
-## 13. Not Implemented
+## 17. Not Implemented
 
 - real setup generation.
 - role pool validation.
@@ -193,13 +253,13 @@ Disallowed direct entries:
 - SQLite adapter.
 - generic production `AdvancePhase` command.
 
-## 14. Why No Setup Placeholder
+## 18. Why No Setup Placeholder
 
 Slice 2A deliberately does not create setup placeholder events or fake assignment facts. Writing placeholder setup facts into the authoritative domain event log would make later replay and migration treat incomplete development scaffolding as real game truth.
 
 Later phase paths are tested through pure policy tests and explicit test fixtures, not by committing fake production facts.
 
-## 15. Next Step
+## 19. Next Step
 
 Recommended next slice: Slice 2B only after real setup and assignment events exist.
 
@@ -212,6 +272,6 @@ Slice 2B should integrate:
 - nomination and voting flow.
 - one complete day/night loop.
 
-## 16. BLOCKER Status
+## 20. BLOCKER Status
 
 No BLOCKER identified for Slice 2A.

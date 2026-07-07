@@ -1,8 +1,27 @@
 import { DomainError } from "./errors.js";
 import { applyDomainEvent } from "./event-applier.js";
 import { validateDomainEventStream } from "./event-stream-validator.js";
+import { validateDomainBatchSemantics } from "./domain-batch-semantics.js";
 import type { AnyDomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
+
+const groupConsecutiveBatches = (
+  events: readonly AnyDomainEventEnvelope[]
+): readonly (readonly AnyDomainEventEnvelope[])[] => {
+  const batches: AnyDomainEventEnvelope[][] = [];
+
+  for (const event of events) {
+    const currentBatch = batches.at(-1);
+    if (currentBatch === undefined || currentBatch[0]?.batchId !== event.batchId) {
+      batches.push([event]);
+      continue;
+    }
+
+    currentBatch.push(event);
+  }
+
+  return batches;
+};
 
 export const rebuildGameState = (events: readonly AnyDomainEventEnvelope[]): GameState => {
   const eventList = [...events];
@@ -15,8 +34,12 @@ export const rebuildGameState = (events: readonly AnyDomainEventEnvelope[]): Gam
 
   let state: GameState | undefined;
 
-  for (const event of eventList) {
-    state = applyDomainEvent(state, event);
+  for (const batch of groupConsecutiveBatches(eventList)) {
+    validateDomainBatchSemantics(state, batch);
+
+    for (const event of batch) {
+      state = applyDomainEvent(state, event);
+    }
   }
 
   if (state === undefined) {
