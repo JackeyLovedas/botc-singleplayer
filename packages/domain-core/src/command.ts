@@ -1,4 +1,5 @@
 import type { CommandId, CorrelationId, GameId, PlayerId } from "./ids.js";
+import type { SetupGenerationConstraints } from "./setup-types.js";
 
 export type HumanActor = {
   readonly kind: "human";
@@ -45,10 +46,16 @@ export type SelectScriptCommandPayload = {
   readonly commandType: "SelectScript";
   readonly scriptId: string;
   readonly scriptName: string;
-  readonly edition: "sects-and-violets" | "custom";
+  readonly edition: string;
 };
 
-export type SupportedCommandPayload = CreateGameCommandPayload | SelectScriptCommandPayload;
+export type GenerateSetupCommandPayload = {
+  readonly commandType: "GenerateSetup";
+  readonly constraints: SetupGenerationConstraints;
+};
+
+export type SupportedCommandPayload = CreateGameCommandPayload | SelectScriptCommandPayload | GenerateSetupCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
-export type SupportedCommandEnvelope = CreateGameCommand | SelectScriptCommand;
+export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
+export type SupportedCommandEnvelope = CreateGameCommand | SelectScriptCommand | GenerateSetupCommand;

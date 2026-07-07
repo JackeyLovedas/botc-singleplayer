@@ -11,3 +11,4 @@ export * from "./ids.js";
 export * from "./phase-transition-policy.js";
 export * from "./prospective-events.js";
 export * from "./rebuild.js";
+export * from "./setup-types.js";

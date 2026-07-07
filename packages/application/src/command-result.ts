@@ -8,7 +8,11 @@ export type CommandRejectionCode =
   | "GameAlreadyCreated"
   | "GameNotCreated"
   | "CommandNotAllowedInPhase"
+  | "ScriptNotSelected"
   | "ScriptAlreadySelected"
+  | "UnsupportedScript"
+  | "SetupAlreadyGenerated"
+  | "SetupGenerationFailed"
   | "UnsupportedCommand"
   | "DomainValidationFailed"
   | "EventStoreAppendFailed";

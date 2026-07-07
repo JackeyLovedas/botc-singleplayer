@@ -19,6 +19,8 @@ export type DomainErrorCode =
   | "InvalidScriptSelectedPayload"
   | "InvalidScriptSelectedPhase"
   | "DuplicateScriptSelected"
+  | "InvalidSetupGeneratedPayload"
+  | "DuplicateSetupGenerated"
   | "InvalidPhaseTransition"
   | "InvalidPhaseTransitionReason"
   | "InvalidPhaseCounter"

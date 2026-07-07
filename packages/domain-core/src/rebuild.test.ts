@@ -17,7 +17,9 @@ import {
   infrastructureEvent,
   otherGameId,
   phaseTransitionedEvent,
-  scriptSelectedEvent
+  scriptSelectedEvent,
+  setupGeneratedEvent,
+  setupPhaseTransitionedEvent
 } from "@botc/test-harness";
 
 const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
@@ -368,6 +370,53 @@ describe("domain event rebuild", () => {
     });
 
     expectDomainCode(() => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), event]), "EventRulesBaselineMismatch");
+  });
+
+  it("rebuilds a legal GenerateSetup batch into CHARACTER_ASSIGNMENT", () => {
+    const state = rebuildGameState([
+      gameCreatedEvent(),
+      scriptSelectedEvent(),
+      phaseTransitionedEvent(),
+      setupGeneratedEvent(),
+      setupPhaseTransitionedEvent()
+    ]);
+
+    expect(state.phase).toBe("CHARACTER_ASSIGNMENT");
+    expect(state.gameVersion).toBe(3);
+    expect(state.lastEventSequence).toBe(5);
+  });
+
+  it("rebuilds setup while leaving assignment absent", () => {
+    const state = rebuildGameState([
+      gameCreatedEvent(),
+      scriptSelectedEvent(),
+      phaseTransitionedEvent(),
+      setupGeneratedEvent(),
+      setupPhaseTransitionedEvent()
+    ]);
+
+    expect(state.setup?.actualRoles).toHaveLength(12);
+    expect("assignment" in state).toBe(false);
+  });
+
+  it("rejects SETUP_GENERATED transition when setup fact is missing", () => {
+    const state = rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
+
+    expectDomainCode(() => applyDomainEvent(state, setupPhaseTransitionedEvent({ eventSequence: 4 })), "MissingTransitionPrerequisite");
+  });
+
+  it("rejects damaged SetupGenerated payloads during replay", () => {
+    const damaged = setupGeneratedEvent({
+      payload: {
+        ...setupGeneratedEvent().payload,
+        actualRoles: setupGeneratedEvent().payload.actualRoles.slice(1)
+      }
+    });
+
+    expectDomainCode(
+      () => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent(), damaged, setupPhaseTransitionedEvent()]),
+      "InvalidSetupGeneratedPayload"
+    );
   });
 
   it("does not allow AuditEvent streams at the type boundary", () => {

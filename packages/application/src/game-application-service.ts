@@ -6,6 +6,9 @@ import {
   causationIdFromCommandId,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
+  SUPPORTED_SCRIPT_EDITION,
+  SUPPORTED_SCRIPT_ID,
+  SUPPORTED_SCRIPT_NAME,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
 import type {
@@ -14,14 +17,17 @@ import type {
   AnyDomainEventEnvelope,
   DomainEventEnvelope,
   EventId,
+  GeneratedSetup,
   GameState,
   PhaseTransitionedPayload,
+  SetupGeneratedPayload,
   ScriptSelectedPayload,
   SupportedCommandEnvelope
 } from "@botc/domain-core";
 import { accepted, markIdempotent, rejected } from "./command-result.js";
 import type { CommandRejectionCode, CommandResult } from "./command-result.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
+import type { SetupGeneratorPort } from "./ports/setup-generator.js";
 
 export type IdGenerator = {
   readonly nextEventId: () => EventId;
@@ -36,6 +42,7 @@ export type GameApplicationServiceDependencies = {
   readonly commandStore: CommandCommitStore;
   readonly ids: IdGenerator;
   readonly clock: Clock;
+  readonly setupGenerator?: SetupGeneratorPort;
 };
 
 export class GameApplicationService {
@@ -99,15 +106,15 @@ export class GameApplicationService {
     command: SupportedCommandEnvelope,
     state: GameState | undefined
   ): { readonly code: CommandRejectionCode; readonly message: string } | undefined {
-    if (command.actor.kind !== "human" && command.actor.kind !== "system") {
-      return {
-        code: "ActorNotAllowed",
-        message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
-      };
-    }
-
     switch (command.payload.commandType) {
       case "CreateGame": {
+        if (command.actor.kind !== "human" && command.actor.kind !== "system") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
         if (state !== undefined) {
           return { code: "GameAlreadyCreated", message: "Game already exists" };
         }
@@ -135,6 +142,13 @@ export class GameApplicationService {
       }
 
       case "SelectScript": {
+        if (command.actor.kind !== "human" && command.actor.kind !== "system") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
         if (state === undefined) {
           return { code: "GameNotCreated", message: "SelectScript requires an existing game" };
         }
@@ -145,6 +159,44 @@ export class GameApplicationService {
 
         if (state.phase !== "SCRIPT_SELECTION") {
           return { code: "CommandNotAllowedInPhase", message: `SelectScript cannot execute during ${state.phase}` };
+        }
+
+        if (
+          command.payload.scriptId !== SUPPORTED_SCRIPT_ID ||
+          command.payload.scriptName !== SUPPORTED_SCRIPT_NAME ||
+          command.payload.edition !== SUPPORTED_SCRIPT_EDITION
+        ) {
+          return {
+            code: "UnsupportedScript",
+            message: "First release only supports Sects & Violets script metadata"
+          };
+        }
+
+        return undefined;
+      }
+
+      case "GenerateSetup": {
+        if (command.actor.kind !== "system" && command.actor.kind !== "storyteller") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "GenerateSetup requires an existing game" };
+        }
+
+        if (state.selectedScript === undefined) {
+          return { code: "ScriptNotSelected", message: "GenerateSetup requires a selected script" };
+        }
+
+        if (state.setup !== undefined) {
+          return { code: "SetupAlreadyGenerated", message: "Setup has already been generated" };
+        }
+
+        if (state.phase !== "SETUP_GENERATION") {
+          return { code: "CommandNotAllowedInPhase", message: `GenerateSetup cannot execute during ${state.phase}` };
         }
 
         return undefined;
@@ -158,24 +210,64 @@ export class GameApplicationService {
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number
-  ): DomainEventBatch | { readonly code: "DomainValidationFailed"; readonly message: string } {
+  ): DomainEventBatch | { readonly code: CommandRejectionCode; readonly message: string } {
     try {
-      return this.createBatch(command, state, currentGameVersion);
+      const generatedSetup = this.generateSetupOrReject(command, state);
+      if (generatedSetup !== undefined && "code" in generatedSetup) {
+        return generatedSetup;
+      }
+
+      return this.createBatch(command, state, currentGameVersion, generatedSetup);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown domain validation failure";
       return { code: "DomainValidationFailed", message };
     }
   }
 
+  private generateSetupOrReject(
+    command: SupportedCommandEnvelope,
+    state: GameState | undefined
+  ): GeneratedSetup | { readonly code: "SetupGenerationFailed"; readonly message: string } | undefined {
+    if (command.payload.commandType !== "GenerateSetup") {
+      return undefined;
+    }
+
+    if (state === undefined || state.selectedScript === undefined) {
+      return { code: "SetupGenerationFailed", message: "GenerateSetup requires an existing selected script state" };
+    }
+
+    const setupGenerator = this.dependencies.setupGenerator;
+    if (setupGenerator === undefined) {
+      return { code: "SetupGenerationFailed", message: "Setup generator dependency is not configured" };
+    }
+
+    const result = setupGenerator.generate({
+      scriptId: state.selectedScript.scriptId,
+      rootSeed: state.rootSeed,
+      playerCount: state.playerCounts.playerCount,
+      constraints: command.payload.constraints
+    });
+
+    if (result.status === "failure") {
+      return {
+        code: "SetupGenerationFailed",
+        message: `${result.failureCode}: ${result.message}`
+      };
+    }
+
+    return result.setup;
+  }
+
   private createBatch(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
-    currentGameVersion: number
+    currentGameVersion: number,
+    generatedSetup: GeneratedSetup | undefined
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.dependencies.ids.nextBatchId();
     const eventSequence = (state?.lastEventSequence ?? 0) + 1;
-    const events = this.createEvents(command, batch, eventSequence, newVersion, state);
+    const events = this.createEvents(command, batch, eventSequence, newVersion, state, generatedSetup);
 
     return {
       batchId: batch,
@@ -192,7 +284,8 @@ export class GameApplicationService {
     eventBatchId: BatchId,
     firstEventSequence: number,
     gameVersion: number,
-    state: GameState | undefined
+    state: GameState | undefined,
+    generatedSetup: GeneratedSetup | undefined
   ): readonly AnyDomainEventEnvelope[] {
     const common = (eventSequence: number) => ({
       category: "domain" as const,
@@ -246,9 +339,9 @@ export class GameApplicationService {
           eventType: "ScriptSelected" as const,
           payload: {
             rulesBaselineVersion: RULES_BASELINE_VERSION,
-            scriptId: command.payload.scriptId,
-            scriptName: command.payload.scriptName,
-            edition: command.payload.edition
+            scriptId: SUPPORTED_SCRIPT_ID,
+            scriptName: SUPPORTED_SCRIPT_NAME,
+            edition: SUPPORTED_SCRIPT_EDITION
           } satisfies ScriptSelectedPayload
         };
 
@@ -268,6 +361,49 @@ export class GameApplicationService {
         };
 
         return [scriptSelectedEvent, phaseTransitionedEvent];
+      }
+
+      case "GenerateSetup": {
+        if (state === undefined || generatedSetup === undefined) {
+          throw new Error("GenerateSetup event creation requires current state and generated setup");
+        }
+
+        const transition = evaluatePhaseTransition({
+          fromPhase: state.phase,
+          toPhase: "CHARACTER_ASSIGNMENT",
+          dayNumber: state.dayNumber,
+          nightNumber: state.nightNumber
+        });
+
+        if (!transition.allowed || transition.reasonCode === undefined) {
+          throw new Error(`GenerateSetup phase transition is not allowed: ${transition.reason}`);
+        }
+
+        const setupGeneratedEvent: DomainEventEnvelope<"SetupGenerated"> = {
+          ...common(firstEventSequence),
+          eventType: "SetupGenerated" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            ...generatedSetup
+          } satisfies SetupGeneratedPayload
+        };
+
+        const phaseTransitionedEvent: DomainEventEnvelope<"PhaseTransitioned"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "PhaseTransitioned" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            fromPhase: state.phase,
+            toPhase: transition.nextPhase,
+            transitionReason: transition.reasonCode,
+            dayNumberBefore: state.dayNumber,
+            dayNumberAfter: transition.dayNumber,
+            nightNumberBefore: state.nightNumber,
+            nightNumberAfter: transition.nightNumber
+          } satisfies PhaseTransitionedPayload
+        };
+
+        return [setupGeneratedEvent, phaseTransitionedEvent];
       }
     }
 

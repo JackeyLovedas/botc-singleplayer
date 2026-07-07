@@ -34,6 +34,21 @@ describe("architecture boundaries", () => {
     expect(names).not.toContain("better-sqlite3");
   });
 
+  it("keeps setup package dependencies pointing inward only", async () => {
+    const rulesNames = dependencyNames(await readPackageJson("packages/rules-snv/package.json"));
+    const setupNames = dependencyNames(await readPackageJson("packages/setup-engine/package.json"));
+    const testHarnessNames = dependencyNames(await readPackageJson("packages/test-harness/package.json"));
+
+    expect(rulesNames).toStrictEqual(["@botc/domain-core"]);
+    expect(setupNames).toStrictEqual(["@botc/domain-core"]);
+    expect(testHarnessNames).toEqual(expect.arrayContaining([
+      "@botc/application",
+      "@botc/domain-core",
+      "@botc/rules-snv",
+      "@botc/setup-engine"
+    ]));
+  });
+
   it("keeps audit and infrastructure events outside canonical rebuild data", () => {
     expect(auditEvent().category).toBe("audit");
     expect(infrastructureEvent().category).toBe("infrastructure");
