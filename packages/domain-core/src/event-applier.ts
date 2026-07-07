@@ -1,9 +1,18 @@
 import { DomainError, assertNever } from "./errors.js";
 import { RULES_BASELINE_VERSION, SUPPORTED_DOMAIN_EVENT_VERSION, isCanonicalPlayerCounts } from "./events.js";
-import type { AnyDomainEventEnvelope, SetupGeneratedPayload } from "./events.js";
+import type { AnyDomainEventEnvelope, CharactersAssignedPayload, PlayerRosterCreatedPayload, SetupGeneratedPayload } from "./events.js";
 import type { GameState } from "./game-state.js";
 import type { RoleId } from "./ids.js";
 import { evaluatePhaseTransition } from "./phase-transition-policy.js";
+import {
+  SUPPORTED_ASSIGNMENT_ALGORITHM_VERSION,
+  SUPPORTED_ASSIGNMENT_RANDOM_STREAM,
+  validateCharacterAssignments
+} from "./character-assignment.js";
+import {
+  SUPPORTED_ROSTER_VERSION,
+  validatePlayerRoster
+} from "./player-roster.js";
 import {
   BASE_TWELVE_PLAYER_COUNTS,
   CHARACTER_TYPES,
@@ -314,6 +323,74 @@ const validateSetupGeneratedPayload = (state: GameState, payload: SetupGenerated
   validateConstraintsSnapshot(payload, catalogById);
 };
 
+const validatePlayerRosterCreatedPayload = (state: GameState, payload: PlayerRosterCreatedPayload): void => {
+  if (state.phase !== "CHARACTER_ASSIGNMENT") {
+    throw new DomainError("InvalidPlayerRosterCreatedPayload", "PlayerRosterCreated can only be applied during CHARACTER_ASSIGNMENT");
+  }
+
+  if (state.setup === undefined) {
+    throw new DomainError("InvalidPlayerRosterCreatedPayload", "PlayerRosterCreated requires generated setup");
+  }
+
+  if (state.roster !== undefined) {
+    throw new DomainError("DuplicatePlayerRosterCreated", "PlayerRosterCreated cannot overwrite an existing roster");
+  }
+
+  if (state.assignment !== undefined) {
+    throw new DomainError("InvalidPlayerRosterCreatedPayload", "PlayerRosterCreated cannot be applied after character assignment");
+  }
+
+  if (payload.rosterVersion !== SUPPORTED_ROSTER_VERSION) {
+    throw new DomainError("InvalidPlayerRosterCreatedPayload", "PlayerRosterCreated rosterVersion must be supported");
+  }
+
+  const rosterValidation = validatePlayerRoster(payload.entries);
+  if (!rosterValidation.valid) {
+    throw new DomainError("InvalidPlayerRosterCreatedPayload", rosterValidation.reason);
+  }
+};
+
+const validateCharactersAssignedPayload = (state: GameState, payload: CharactersAssignedPayload): void => {
+  if (state.phase !== "CHARACTER_ASSIGNMENT") {
+    throw new DomainError("InvalidCharactersAssignedPayload", "CharactersAssigned can only be applied during CHARACTER_ASSIGNMENT");
+  }
+
+  if (state.setup === undefined) {
+    throw new DomainError("InvalidCharactersAssignedPayload", "CharactersAssigned requires generated setup");
+  }
+
+  if (state.roster === undefined) {
+    throw new DomainError("InvalidCharactersAssignedPayload", "CharactersAssigned requires a player roster");
+  }
+
+  if (state.assignment !== undefined) {
+    throw new DomainError("DuplicateCharactersAssigned", "CharactersAssigned cannot overwrite an existing assignment");
+  }
+
+  if (
+    payload.rosterVersion !== SUPPORTED_ROSTER_VERSION ||
+    payload.assignmentAlgorithmVersion !== SUPPORTED_ASSIGNMENT_ALGORITHM_VERSION ||
+    payload.randomAlgorithmVersion !== SUPPORTED_RANDOM_ALGORITHM_VERSION ||
+    payload.randomStream !== SUPPORTED_ASSIGNMENT_RANDOM_STREAM
+  ) {
+    throw new DomainError("InvalidCharactersAssignedPayload", "CharactersAssigned version fields must be supported");
+  }
+
+  if (payload.roleCatalogSignature !== state.setup.roleCatalogSignature) {
+    throw new DomainError("InvalidCharactersAssignedPayload", "CharactersAssigned roleCatalogSignature must match setup");
+  }
+
+  const assignmentValidation = validateCharacterAssignments({
+    assignments: payload.assignments,
+    roster: state.roster.entries,
+    actualRoles: state.setup.actualRoles,
+    roleCatalogRoles: state.setup.roleCatalogSnapshot.roles
+  });
+  if (!assignmentValidation.valid) {
+    throw new DomainError("InvalidCharactersAssignedPayload", assignmentValidation.reason);
+  }
+};
+
 const validateEnvelope = (state: GameState | undefined, event: AnyDomainEventEnvelope): void => {
   if (event.eventVersion !== SUPPORTED_DOMAIN_EVENT_VERSION) {
     throw new DomainError("UnsupportedEventVersion", "Unsupported domain event version");
@@ -432,6 +509,44 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
       };
     }
 
+    case "PlayerRosterCreated": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "PlayerRosterCreated requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidPlayerRosterCreatedPayload", "PlayerRosterCreated payload rules baseline must match game state");
+      }
+
+      validatePlayerRosterCreatedPayload(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        roster: event.payload
+      };
+    }
+
+    case "CharactersAssigned": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "CharactersAssigned requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidCharactersAssignedPayload", "CharactersAssigned payload rules baseline must match game state");
+      }
+
+      validateCharactersAssignedPayload(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        assignment: event.payload
+      };
+    }
+
     case "PhaseTransitioned": {
       if (state === undefined) {
         throw new DomainError("MissingGameCreated", "PhaseTransitioned requires an existing game");
@@ -470,6 +585,15 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         state.setup === undefined
       ) {
         throw new DomainError("MissingTransitionPrerequisite", "SETUP_GENERATED transition requires a generated setup fact");
+      }
+
+      if (
+        event.payload.transitionReason === "CHARACTERS_ASSIGNED" &&
+        event.payload.fromPhase === "CHARACTER_ASSIGNMENT" &&
+        event.payload.toPhase === "FIRST_NIGHT" &&
+        state.assignment === undefined
+      ) {
+        throw new DomainError("MissingTransitionPrerequisite", "CHARACTERS_ASSIGNED transition requires character assignment fact");
       }
 
       const transition = evaluatePhaseTransition({

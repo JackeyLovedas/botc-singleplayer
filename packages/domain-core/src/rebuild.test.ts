@@ -5,6 +5,7 @@ import {
   RULES_BASELINE_VERSION,
   SUPPORTED_ROLE_CATALOG_SIGNATURE,
   SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
+  SUPPORTED_ROSTER_VERSION,
   batchId,
   calculateRoleCatalogSignature,
   compareRoleSetupSnapshot,
@@ -12,17 +13,29 @@ import {
   compareStableId,
   eventId,
   applyDomainEventBatch,
+  playerId,
   roleId,
   rebuildGameState,
   validateDomainEventStream
 } from "@botc/domain-core";
-import type { AnyDomainEventEnvelope, DomainErrorCode, RoleCatalogSnapshot, RoleId, RoleSetupSnapshot, SetupGeneratedPayload } from "@botc/domain-core";
+import type {
+  AnyDomainEventEnvelope,
+  CharactersAssignedPayload,
+  DomainErrorCode,
+  RoleCatalogSnapshot,
+  RoleId,
+  RoleSetupSnapshot,
+  SetupGeneratedPayload
+} from "@botc/domain-core";
 import {
   auditEvent,
+  charactersAssignedEvent,
+  charactersAssignedPhaseTransitionedEvent,
   gameCreatedEvent,
   infrastructureEvent,
   otherGameId,
   phaseTransitionedEvent,
+  playerRosterCreatedEvent,
   scriptSelectedEvent,
   setupGeneratedEvent,
   setupPhaseTransitionedEvent,
@@ -49,6 +62,20 @@ const setupEventStream = (setupEvent = setupGeneratedEvent()): readonly AnyDomai
   setupPhaseTransitionedEvent()
 ];
 
+const rosterEventStream = (rosterEvent = playerRosterCreatedEvent()): readonly AnyDomainEventEnvelope[] => [
+  ...setupEventStream(),
+  rosterEvent
+];
+
+const assignmentEventStream = (
+  assignmentEvent = charactersAssignedEvent(),
+  transitionEvent = charactersAssignedPhaseTransitionedEvent()
+): readonly AnyDomainEventEnvelope[] => [
+  ...rosterEventStream(),
+  assignmentEvent,
+  transitionEvent
+];
+
 const generatedPayloadFor = (constraints: Parameters<typeof testSetupGenerator.generate>[0]["constraints"]): SetupGeneratedPayload => {
   const result = testSetupGenerator.generate({
     scriptId: "sects-and-violets",
@@ -70,6 +97,10 @@ const generatedPayloadFor = (constraints: Parameters<typeof testSetupGenerator.g
 const mutateSetupPayload = (
   mutate: (payload: SetupGeneratedPayload) => SetupGeneratedPayload
 ): ReturnType<typeof setupGeneratedEvent> => setupGeneratedEvent({ payload: mutate(setupGeneratedEvent().payload) });
+
+const mutateCharactersAssignedPayload = (
+  mutate: (payload: CharactersAssignedPayload) => CharactersAssignedPayload
+): ReturnType<typeof charactersAssignedEvent> => charactersAssignedEvent({ payload: mutate(charactersAssignedEvent().payload) });
 
 const setupRoleIds = (roles: readonly RoleSetupSnapshot[]): readonly RoleId[] =>
   roles.map((role) => role.roleId).sort(compareStableId);
@@ -1137,6 +1168,188 @@ describe("domain event rebuild", () => {
     expect(state.phase).toBe("CHARACTER_ASSIGNMENT");
     expect(state.setup?.actualRoles).toHaveLength(12);
     expect(state.setup?.demonBluffs).toHaveLength(3);
+  });
+
+  it("rebuilds a legal PlayerRosterCreated event stream while staying in CHARACTER_ASSIGNMENT", () => {
+    const state = rebuildGameState(rosterEventStream());
+
+    expect(state.phase).toBe("CHARACTER_ASSIGNMENT");
+    expect(state.roster?.rosterVersion).toBe(SUPPORTED_ROSTER_VERSION);
+    expect(state.roster?.entries).toHaveLength(12);
+    expect(state.roster?.entries.filter((entry) => entry.playerKind === "HUMAN")).toHaveLength(1);
+    expect(state.roster?.entries.filter((entry) => entry.playerKind === "AI")).toHaveLength(11);
+    expect(state.assignment).toBeUndefined();
+  });
+
+  it("rejects PlayerRosterCreated with an unsupported roster version", () => {
+    const damaged = playerRosterCreatedEvent({
+      payload: {
+        ...playerRosterCreatedEvent().payload,
+        rosterVersion: "unsupported-roster-version"
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState(rosterEventStream(damaged)), "InvalidPlayerRosterCreatedPayload");
+  });
+
+  it("rejects PlayerRosterCreated with an incomplete roster", () => {
+    const damaged = playerRosterCreatedEvent({
+      payload: {
+        ...playerRosterCreatedEvent().payload,
+        entries: playerRosterCreatedEvent().payload.entries.slice(1)
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState(rosterEventStream(damaged)), "InvalidPlayerRosterCreatedPayload");
+  });
+
+  it("rejects duplicate PlayerRosterCreated facts", () => {
+    const state = rebuildGameState(rosterEventStream());
+
+    expectDomainCode(() => applyDomainEvent(state, playerRosterCreatedEvent({ eventSequence: 7 })), "DuplicatePlayerRosterCreated");
+  });
+
+  it("rejects CharactersAssigned when a roster is missing", () => {
+    const state = rebuildGameState(setupEventStream());
+
+    expectDomainCode(() => applyDomainEvent(state, charactersAssignedEvent({ eventSequence: 6 })), "InvalidCharactersAssignedPayload");
+  });
+
+  it("rebuilds a legal CharactersAssigned event stream into FIRST_NIGHT", () => {
+    const state = rebuildGameState(assignmentEventStream());
+
+    expect(state.phase).toBe("FIRST_NIGHT");
+    expect(state.dayNumber).toBe(0);
+    expect(state.nightNumber).toBe(1);
+    expect(state.roster?.entries).toHaveLength(12);
+    expect(state.assignment?.assignments).toHaveLength(12);
+    expect(state.assignment?.assignments.map((assignment) => assignment.seatNumber)).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it("rejects CHARACTERS_ASSIGNED transition when assignment fact is missing", () => {
+    const state = rebuildGameState(rosterEventStream());
+
+    expectDomainCode(
+      () => applyDomainEvent(state, charactersAssignedPhaseTransitionedEvent({ eventSequence: 7 })),
+      "MissingTransitionPrerequisite"
+    );
+  });
+
+  it("rejects duplicate CharactersAssigned facts", () => {
+    const assignedState = applyDomainEvent(rebuildGameState(rosterEventStream()), charactersAssignedEvent());
+
+    expectDomainCode(() => applyDomainEvent(assignedState, charactersAssignedEvent({ eventSequence: 8 })), "DuplicateCharactersAssigned");
+  });
+
+  it("rejects CharactersAssigned with an unsupported assignment algorithm version", () => {
+    const damaged = mutateCharactersAssignedPayload((payload) => ({
+      ...payload,
+      assignmentAlgorithmVersion: "unsupported-assignment-version"
+    }));
+
+    expectDomainCode(() => rebuildGameState(assignmentEventStream(damaged)), "InvalidCharactersAssignedPayload");
+  });
+
+  it("rejects CharactersAssigned with an unsupported random stream", () => {
+    const damaged = mutateCharactersAssignedPayload((payload) => ({
+      ...payload,
+      randomStream: "unsupported-assignment-stream"
+    }));
+
+    expectDomainCode(() => rebuildGameState(assignmentEventStream(damaged)), "InvalidCharactersAssignedPayload");
+  });
+
+  it("rejects CharactersAssigned with a role catalog signature mismatch", () => {
+    const damaged = mutateCharactersAssignedPayload((payload) => ({
+      ...payload,
+      roleCatalogSignature: "tampered-role-catalog-signature"
+    }));
+
+    expectDomainCode(() => rebuildGameState(assignmentEventStream(damaged)), "InvalidCharactersAssignedPayload");
+  });
+
+  it("rejects CharactersAssigned when player and seat do not match the roster", () => {
+    const damaged = mutateCharactersAssignedPayload((payload) => {
+      const [first, ...rest] = payload.assignments;
+      if (first === undefined) {
+        throw new Error("test assignment missing first entry");
+      }
+
+      return {
+        ...payload,
+        assignments: [
+          {
+            ...first,
+            playerId: playerId("unknown-player")
+          },
+          ...rest
+        ]
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(assignmentEventStream(damaged)), "InvalidCharactersAssignedPayload");
+  });
+
+  it("rejects CharactersAssigned with duplicate role ids", () => {
+    const damaged = mutateCharactersAssignedPayload((payload) => {
+      const first = payload.assignments[0];
+      const second = payload.assignments[1];
+      if (first === undefined || second === undefined) {
+        throw new Error("test assignment missing entries");
+      }
+
+      return {
+        ...payload,
+        assignments: [first, { ...second, role: first.role }, ...payload.assignments.slice(2)]
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(assignmentEventStream(damaged)), "InvalidCharactersAssignedPayload");
+  });
+
+  it("rejects CharactersAssigned with role snapshots that do not match setup.actualRoles", () => {
+    const damaged = mutateCharactersAssignedPayload((payload) => {
+      const [first, ...rest] = payload.assignments;
+      if (first === undefined) {
+        throw new Error("test assignment missing first entry");
+      }
+
+      return {
+        ...payload,
+        assignments: [
+          {
+            ...first,
+            role: {
+              ...first.role,
+              setupModifier: {
+                ...first.role.setupModifier,
+                outsiderDelta: first.role.setupModifier.outsiderDelta + 1
+              }
+            }
+          },
+          ...rest
+        ]
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(assignmentEventStream(damaged)), "InvalidCharactersAssignedPayload");
+  });
+
+  it("rejects CharactersAssigned when assignments are not sorted by seat", () => {
+    const damaged = mutateCharactersAssignedPayload((payload) => {
+      const first = payload.assignments[0];
+      const second = payload.assignments[1];
+      if (first === undefined || second === undefined) {
+        throw new Error("test assignment missing entries");
+      }
+
+      return {
+        ...payload,
+        assignments: [second, first, ...payload.assignments.slice(2)]
+      };
+    });
+
+    expectDomainCode(() => rebuildGameState(assignmentEventStream(damaged)), "InvalidCharactersAssignedPayload");
   });
 
   it("does not allow AuditEvent streams at the type boundary", () => {

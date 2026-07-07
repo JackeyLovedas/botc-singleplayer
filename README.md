@@ -16,9 +16,10 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Phase Two / Phase 2.1：技术架构定稿
 - Phase Three Slice 1：Domain Event Spine 已合并
 - Phase Three Slice 2A：Phase State Machine Core 已合并
-- Phase Three Slice 2B1：Seeded Sects & Violets Setup Foundation 进行中
+- Phase Three Slice 2B1：Seeded Sects & Violets Setup Foundation 已合并
+- Phase Three Slice 2B2：Seat Roster and Character Assignment 进行中
 
-当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口，以及固定种子可复现的 12 人《梦殒春宵》真实配板基础。它不包含座位分配、玩家角色分配、首夜、完整昼夜可玩流程、角色能力、AI 玩家、UI、Electron 或 SQLite 正式适配器。
+当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口、固定种子可复现的 12 人《梦殒春宵》真实配板基础，以及固定 12 人座位名单和可复现角色分配基础。它不包含首夜任务、玩家私有知识展示、完整昼夜可玩流程、角色能力、AI 决策、UI、Electron 或 SQLite 正式适配器。
 
 重要文档：
 
@@ -30,3 +31,4 @@ Windows 本地《血染钟楼》单机游戏项目。
 - `docs/implementation/phase-3-slice-1-status.md`
 - `docs/implementation/phase-3-slice-2a-status.md`
 - `docs/implementation/phase-3-slice-2b1-status.md`
+- `docs/implementation/phase-3-slice-2b2-status.md`

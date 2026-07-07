@@ -1,9 +1,11 @@
 import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
+  SUPPORTED_ROSTER_VERSION,
   applyDomainEventBatch,
   assertNever,
   causationIdFromCommandId,
+  createFixedPlayerRoster,
   compareStableId,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
@@ -13,14 +15,18 @@ import {
   validateDomainBatchSemantics
 } from "@botc/domain-core";
 import type {
+  AssignmentGenerationFailure,
   BatchId,
   DomainEventBatch,
   AnyDomainEventEnvelope,
   DomainEventEnvelope,
   EventId,
+  GeneratedCharacterAssignment,
   GeneratedSetup,
   GameState,
+  CharactersAssignedPayload,
   PhaseTransitionedPayload,
+  PlayerRosterCreatedPayload,
   SetupGeneratedPayload,
   SetupGenerationConstraints,
   SetupGenerationFailure,
@@ -28,7 +34,15 @@ import type {
   SupportedCommandEnvelope
 } from "@botc/domain-core";
 import { accepted, failed, markIdempotent, rejected } from "./command-result.js";
-import type { CommandExecutionFailed, CommandRejected, CommandResult, GeneralCommandRejectionCode, SetupGenerationRejectionDetails } from "./command-result.js";
+import type {
+  AssignmentGenerationRejectionDetails,
+  CommandExecutionFailed,
+  CommandRejected,
+  CommandResult,
+  GeneralCommandRejectionCode,
+  SetupGenerationRejectionDetails
+} from "./command-result.js";
+import type { CharacterAssignmentGeneratorPort } from "./ports/character-assignment-generator.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
 import type { SetupGeneratorPort } from "./ports/setup-generator.js";
 
@@ -46,6 +60,7 @@ export type GameApplicationServiceDependencies = {
   readonly ids: IdGenerator;
   readonly clock: Clock;
   readonly setupGenerator?: SetupGeneratorPort;
+  readonly characterAssignmentGenerator?: CharacterAssignmentGeneratorPort;
 };
 
 export class GameApplicationService {
@@ -85,6 +100,10 @@ export class GameApplicationService {
 
     if ("code" in batch) {
       if (batch.code === "SetupGenerationFailed") {
+        return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
+      }
+
+      if (batch.code === "AssignmentGenerationFailed") {
         return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
       }
 
@@ -212,6 +231,86 @@ export class GameApplicationService {
 
         return undefined;
       }
+
+      case "CreatePlayerRoster": {
+        if (command.actor.kind !== "human" && command.actor.kind !== "system") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
+        if (command.actor.kind === "human" && command.actor.playerId !== command.payload.humanPlayerId) {
+          return {
+            code: "ActorPlayerMismatch",
+            message: "Human actor playerId must match the requested humanPlayerId"
+          };
+        }
+
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "CreatePlayerRoster requires an existing game" };
+        }
+
+        if (state.setup === undefined) {
+          return { code: "SetupNotGenerated", message: "CreatePlayerRoster requires generated setup" };
+        }
+
+        if (state.phase !== "CHARACTER_ASSIGNMENT") {
+          return { code: "CommandNotAllowedInPhase", message: `CreatePlayerRoster cannot execute during ${state.phase}` };
+        }
+
+        if (state.roster !== undefined) {
+          return { code: "PlayerRosterAlreadyCreated", message: "Player roster has already been created" };
+        }
+
+        if (state.assignment !== undefined) {
+          return { code: "CharacterAssignmentAlreadyCreated", message: "Character assignment has already been created" };
+        }
+
+        try {
+          createFixedPlayerRoster({
+            humanPlayerId: command.payload.humanPlayerId,
+            humanDisplayName: command.payload.humanDisplayName,
+            humanSeatNumber: command.payload.humanSeatNumber
+          });
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : "Invalid player roster";
+          return { code: "InvalidPlayerRoster", message };
+        }
+
+        return undefined;
+      }
+
+      case "AssignCharacters": {
+        if (command.actor.kind !== "system" && command.actor.kind !== "storyteller") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "AssignCharacters requires an existing game" };
+        }
+
+        if (state.setup === undefined) {
+          return { code: "SetupNotGenerated", message: "AssignCharacters requires generated setup" };
+        }
+
+        if (state.roster === undefined) {
+          return { code: "PlayerRosterNotCreated", message: "AssignCharacters requires a player roster" };
+        }
+
+        if (state.assignment !== undefined) {
+          return { code: "CharacterAssignmentAlreadyCreated", message: "Character assignment has already been created" };
+        }
+
+        if (state.phase !== "CHARACTER_ASSIGNMENT") {
+          return { code: "CommandNotAllowedInPhase", message: `AssignCharacters cannot execute during ${state.phase}` };
+        }
+
+        return undefined;
+      }
     }
 
     return assertNever(command.payload);
@@ -225,6 +324,10 @@ export class GameApplicationService {
     readonly code: "SetupGenerationFailed";
     readonly message: string;
     readonly details: SetupGenerationRejectionDetails;
+  } | {
+    readonly code: "AssignmentGenerationFailed";
+    readonly message: string;
+    readonly details: AssignmentGenerationRejectionDetails;
   } {
     try {
       const generatedSetup = this.generateSetupOrReject(command, state, currentGameVersion);
@@ -232,7 +335,12 @@ export class GameApplicationService {
         return generatedSetup;
       }
 
-      return this.createBatch(command, state, currentGameVersion, generatedSetup);
+      const generatedAssignment = this.generateAssignmentOrReject(command, state, currentGameVersion);
+      if (generatedAssignment !== undefined && "code" in generatedAssignment) {
+        return generatedAssignment;
+      }
+
+      return this.createBatch(command, state, currentGameVersion, generatedSetup, generatedAssignment);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unknown domain validation failure";
       return { code: "DomainValidationFailed", message };
@@ -316,16 +424,72 @@ export class GameApplicationService {
     return result.setup;
   }
 
+  private assignmentGenerationFailureDetails(
+    failure: AssignmentGenerationFailure
+  ): AssignmentGenerationRejectionDetails {
+    return {
+      kind: "assignment-generation",
+      failure
+    };
+  }
+
+  private generateAssignmentOrReject(
+    command: SupportedCommandEnvelope,
+    state: GameState | undefined,
+    currentGameVersion: number
+  ): GeneratedCharacterAssignment | CommandExecutionFailed | {
+    readonly code: "AssignmentGenerationFailed";
+    readonly message: string;
+    readonly details: AssignmentGenerationRejectionDetails;
+  } | undefined {
+    if (command.payload.commandType !== "AssignCharacters") {
+      return undefined;
+    }
+
+    if (state === undefined || state.setup === undefined || state.roster === undefined) {
+      return failed(command.gameId, "ApplicationNotConfigured", "AssignCharacters requires setup and roster state", currentGameVersion);
+    }
+
+    const assignmentGenerator = this.dependencies.characterAssignmentGenerator;
+    if (assignmentGenerator === undefined) {
+      return failed(command.gameId, "ApplicationNotConfigured", "Character assignment generator dependency is not configured", currentGameVersion);
+    }
+
+    let result;
+    try {
+      result = assignmentGenerator.generate({
+        rootSeed: state.rootSeed,
+        roster: state.roster.entries,
+        actualRoles: state.setup.actualRoles,
+        roleCatalogSignature: state.setup.roleCatalogSignature
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown character assignment generator failure";
+      return failed(command.gameId, "DependencyExecutionFailed", message, currentGameVersion);
+    }
+
+    if (result.status === "failure") {
+      return {
+        code: "AssignmentGenerationFailed",
+        message: `${result.failureCode}: ${result.message}`,
+        details: this.assignmentGenerationFailureDetails(result)
+      };
+    }
+
+    return result.assignment;
+  }
+
   private createBatch(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number,
-    generatedSetup: GeneratedSetup | undefined
+    generatedSetup: GeneratedSetup | undefined,
+    generatedAssignment: GeneratedCharacterAssignment | undefined
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.dependencies.ids.nextBatchId();
     const eventSequence = (state?.lastEventSequence ?? 0) + 1;
-    const events = this.createEvents(command, batch, eventSequence, newVersion, state, generatedSetup);
+    const events = this.createEvents(command, batch, eventSequence, newVersion, state, generatedSetup, generatedAssignment);
 
     return {
       batchId: batch,
@@ -343,7 +507,8 @@ export class GameApplicationService {
     firstEventSequence: number,
     gameVersion: number,
     state: GameState | undefined,
-    generatedSetup: GeneratedSetup | undefined
+    generatedSetup: GeneratedSetup | undefined,
+    generatedAssignment: GeneratedCharacterAssignment | undefined
   ): readonly AnyDomainEventEnvelope[] {
     const common = (eventSequence: number) => ({
       category: "domain" as const,
@@ -462,6 +627,71 @@ export class GameApplicationService {
         };
 
         return [setupGeneratedEvent, phaseTransitionedEvent];
+      }
+
+      case "CreatePlayerRoster": {
+        if (state === undefined) {
+          throw new Error("CreatePlayerRoster event creation requires current state");
+        }
+
+        const playerRosterCreatedEvent: DomainEventEnvelope<"PlayerRosterCreated"> = {
+          ...common(firstEventSequence),
+          eventType: "PlayerRosterCreated" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            rosterVersion: SUPPORTED_ROSTER_VERSION,
+            entries: createFixedPlayerRoster({
+              humanPlayerId: command.payload.humanPlayerId,
+              humanDisplayName: command.payload.humanDisplayName,
+              humanSeatNumber: command.payload.humanSeatNumber
+            })
+          } satisfies PlayerRosterCreatedPayload
+        };
+
+        return [playerRosterCreatedEvent];
+      }
+
+      case "AssignCharacters": {
+        if (state === undefined || generatedAssignment === undefined) {
+          throw new Error("AssignCharacters event creation requires current state and generated assignment");
+        }
+
+        const transition = evaluatePhaseTransition({
+          fromPhase: state.phase,
+          toPhase: "FIRST_NIGHT",
+          dayNumber: state.dayNumber,
+          nightNumber: state.nightNumber
+        });
+
+        if (!transition.allowed || transition.reasonCode === undefined) {
+          throw new Error(`AssignCharacters phase transition is not allowed: ${transition.reason}`);
+        }
+
+        const charactersAssignedEvent: DomainEventEnvelope<"CharactersAssigned"> = {
+          ...common(firstEventSequence),
+          eventType: "CharactersAssigned" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            ...generatedAssignment
+          } satisfies CharactersAssignedPayload
+        };
+
+        const phaseTransitionedEvent: DomainEventEnvelope<"PhaseTransitioned"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "PhaseTransitioned" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            fromPhase: state.phase,
+            toPhase: transition.nextPhase,
+            transitionReason: transition.reasonCode,
+            dayNumberBefore: state.dayNumber,
+            dayNumberAfter: transition.dayNumber,
+            nightNumberBefore: state.nightNumber,
+            nightNumberAfter: transition.nightNumber
+          } satisfies PhaseTransitionedPayload
+        };
+
+        return [charactersAssignedEvent, phaseTransitionedEvent];
       }
     }
 

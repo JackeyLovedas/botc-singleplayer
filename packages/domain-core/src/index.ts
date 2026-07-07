@@ -1,4 +1,6 @@
+export * from "./character-assignment.js";
 export * from "./command.js";
+export * from "./deterministic-random.js";
 export * from "./domain-batch-semantics.js";
 export * from "./errors.js";
 export * from "./event-applier.js";
@@ -9,6 +11,7 @@ export * from "./game-phase.js";
 export * from "./game-state.js";
 export * from "./ids.js";
 export * from "./phase-transition-policy.js";
+export * from "./player-roster.js";
 export * from "./prospective-events.js";
 export * from "./rebuild.js";
 export * from "./setup-types.js";

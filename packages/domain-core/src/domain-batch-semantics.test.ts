@@ -12,7 +12,10 @@ import {
 import type { AnyDomainEventEnvelope, DomainErrorCode } from "@botc/domain-core";
 import {
   gameCreatedEvent,
+  charactersAssignedEvent,
+  charactersAssignedPhaseTransitionedEvent,
   phaseTransitionedEvent,
+  playerRosterCreatedEvent,
   scriptSelectedEvent,
   setupGeneratedEvent,
   setupPhaseTransitionedEvent
@@ -32,6 +35,17 @@ const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
 
 const createdState = () => rebuildGameState([gameCreatedEvent()]);
 const setupGenerationState = () => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
+const characterAssignmentState = () =>
+  rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent(), setupGeneratedEvent(), setupPhaseTransitionedEvent()]);
+const rosterCreatedState = () => rebuildGameState([...characterAssignmentStateEvents(), playerRosterCreatedEvent()]);
+
+const characterAssignmentStateEvents = (): readonly AnyDomainEventEnvelope[] => [
+  gameCreatedEvent(),
+  scriptSelectedEvent(),
+  phaseTransitionedEvent(),
+  setupGeneratedEvent(),
+  setupPhaseTransitionedEvent()
+];
 
 describe("domain batch semantic validation", () => {
   it("accepts a legal CreateGame single-event batch", () => {
@@ -208,6 +222,83 @@ describe("domain batch semantic validation", () => {
             payload: {
               ...setupPhaseTransitionedEvent().payload,
               fromPhase: "SCRIPT_SELECTION"
+            }
+          })
+        ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("accepts a legal CreatePlayerRoster single-event batch", () => {
+    expect(() => validateDomainBatchSemantics(characterAssignmentState(), [playerRosterCreatedEvent()])).not.toThrow();
+  });
+
+  it("rejects CreatePlayerRoster before setup exists", () => {
+    expectDomainCode(() => validateDomainBatchSemantics(setupGenerationState(), [playerRosterCreatedEvent()]), "InvalidDomainBatchSemantics");
+  });
+
+  it("rejects CreatePlayerRoster when a roster already exists", () => {
+    expectDomainCode(() => validateDomainBatchSemantics(rosterCreatedState(), [playerRosterCreatedEvent()]), "InvalidDomainBatchSemantics");
+  });
+
+  it("rejects CreatePlayerRoster batches with extra events", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(characterAssignmentState(), [playerRosterCreatedEvent(), playerRosterCreatedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("accepts a legal AssignCharacters two-event batch", () => {
+    expect(() =>
+      validateDomainBatchSemantics(rosterCreatedState(), [charactersAssignedEvent(), charactersAssignedPhaseTransitionedEvent()])
+    ).not.toThrow();
+  });
+
+  it("rejects a bare CharactersAssigned event", () => {
+    expectDomainCode(() => validateDomainBatchSemantics(rosterCreatedState(), [charactersAssignedEvent()]), "InvalidDomainBatchSemantics");
+  });
+
+  it("rejects a bare CHARACTERS_ASSIGNED transition", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(rosterCreatedState(), [charactersAssignedPhaseTransitionedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects reversed AssignCharacters batch order", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(rosterCreatedState(), [charactersAssignedPhaseTransitionedEvent(), charactersAssignedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects AssignCharacters batch metadata mismatch", () => {
+    expectDomainCode(
+      () =>
+        validateDomainBatchSemantics(rosterCreatedState(), [
+          charactersAssignedEvent(),
+          charactersAssignedPhaseTransitionedEvent({ batchId: batchId("other-assignment-batch") })
+        ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects AssignCharacters before a roster exists", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(characterAssignmentState(), [charactersAssignedEvent(), charactersAssignedPhaseTransitionedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects AssignCharacters transition with incorrect from and to phases", () => {
+    expectDomainCode(
+      () =>
+        validateDomainBatchSemantics(rosterCreatedState(), [
+          charactersAssignedEvent(),
+          charactersAssignedPhaseTransitionedEvent({
+            payload: {
+              ...charactersAssignedPhaseTransitionedEvent().payload,
+              fromPhase: "SETUP_GENERATION"
             }
           })
         ]),

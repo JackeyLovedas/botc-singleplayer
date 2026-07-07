@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   SUPPORTED_ROLE_CATALOG_SIGNATURE,
   SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
+  DeterministicRandom,
   calculateRoleCatalogSignature,
   compareRoleSetupSnapshot,
   compareStableId,
@@ -10,7 +11,6 @@ import {
 import type { RoleCountSet, RoleDefinition, RoleId, RoleSetupSnapshot, ScriptDefinition, SetupGenerationResult } from "@botc/domain-core";
 import { SECTS_AND_VIOLETS_SCRIPT } from "@botc/rules-snv";
 import {
-  DeterministicRandom,
   RANDOM_ALGORITHM_VERSION,
   ROLE_CATALOG_VERSION,
   ROLE_CATALOG_SIGNATURE_ALGORITHM,

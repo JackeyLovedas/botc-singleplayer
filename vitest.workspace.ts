@@ -3,6 +3,7 @@ import { defineWorkspace } from "vitest/config";
 
 const domainCore = fileURLToPath(new URL("./packages/domain-core/src/index.ts", import.meta.url));
 const application = fileURLToPath(new URL("./packages/application/src/index.ts", import.meta.url));
+const assignmentEngine = fileURLToPath(new URL("./packages/assignment-engine/src/index.ts", import.meta.url));
 const rulesSnv = fileURLToPath(new URL("./packages/rules-snv/src/index.ts", import.meta.url));
 const setupEngine = fileURLToPath(new URL("./packages/setup-engine/src/index.ts", import.meta.url));
 const testHarness = fileURLToPath(new URL("./packages/test-harness/src/index.ts", import.meta.url));
@@ -10,6 +11,7 @@ const testHarness = fileURLToPath(new URL("./packages/test-harness/src/index.ts"
 const aliases = {
   "@botc/domain-core": domainCore,
   "@botc/application": application,
+  "@botc/assignment-engine": assignmentEngine,
   "@botc/rules-snv": rulesSnv,
   "@botc/setup-engine": setupEngine,
   "@botc/test-harness": testHarness
@@ -29,6 +31,15 @@ export default defineWorkspace([
     test: {
       name: "application",
       include: ["packages/application/src/**/*.test.ts"]
+    },
+    resolve: {
+      alias: aliases
+    }
+  },
+  {
+    test: {
+      name: "assignment-engine",
+      include: ["packages/assignment-engine/src/**/*.test.ts"]
     },
     resolve: {
       alias: aliases
