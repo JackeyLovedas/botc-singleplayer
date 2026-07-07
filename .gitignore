@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.yarn/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+out/
+coverage/
+.tmp/
+temp/
+cache/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# AI provider credentials
+.openai/
+.anthropic/
+.codex/auth*
+**/api-key*
+**/token.json
+
+# IDE and OS
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local databases and runtime saves
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+saves/
+local-data/
+runtime-data/
+
+# Logs
+*.log
+logs/
+
+# Temporary archives and local handoff bundles
+*.tmp
+*.bak
+*.swp
+*.zip
+*.7z
+*.rar
+*.sha256
