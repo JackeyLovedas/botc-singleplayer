@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyDomainEvent,
   DomainError,
   RULES_BASELINE_VERSION,
+  batchId,
   commandId,
   eventId,
+  applyDomainEventBatch,
   rebuildGameState,
   validateDomainEventStream
 } from "@botc/domain-core";
@@ -13,6 +16,7 @@ import {
   gameCreatedEvent,
   infrastructureEvent,
   otherGameId,
+  phaseTransitionedEvent,
   scriptSelectedEvent
 } from "@botc/test-harness";
 
@@ -43,6 +47,9 @@ describe("domain event rebuild", () => {
       created: true,
       rootSeed: "seed-1",
       rulesBaselineVersion: RULES_BASELINE_VERSION,
+      phase: "SCRIPT_SELECTION",
+      dayNumber: 0,
+      nightNumber: 0,
       playerCounts: {
         playerCount: 12,
         humanPlayerCount: 1,
@@ -50,6 +57,15 @@ describe("domain event rebuild", () => {
         storytellerCount: 1
       }
     });
+  });
+
+  it("rebuilds the initial phase and counters after GameCreated", () => {
+    const state = rebuildGameState([gameCreatedEvent()]);
+
+    expect(state.phase).toBe("SCRIPT_SELECTION");
+    expect(state.dayNumber).toBe(0);
+    expect(state.nightNumber).toBe(0);
+    expect(rebuildGameState([gameCreatedEvent()])).toStrictEqual(state);
   });
 
   it("requires ScriptSelected to follow GameCreated", () => {
@@ -66,8 +82,9 @@ describe("domain event rebuild", () => {
       commandId: scriptSelectedEvent().commandId,
       gameVersion: 2
     });
+    const state = rebuildGameState([gameCreatedEvent()]);
 
-    expectDomainCode(() => rebuildGameState([gameCreatedEvent(), duplicate]), "DuplicateGameCreated");
+    expectDomainCode(() => applyDomainEvent(state, duplicate), "DuplicateGameCreated");
   });
 
   it("rejects event sequence jumps", () => {
@@ -92,13 +109,13 @@ describe("domain event rebuild", () => {
   });
 
   it("rebuilds the same event stream deterministically", () => {
-    const events = [gameCreatedEvent(), scriptSelectedEvent()];
+    const events = [gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()];
 
     expect(rebuildGameState(events)).toStrictEqual(rebuildGameState(events));
   });
 
   it("does not mutate input events", () => {
-    const events = [gameCreatedEvent(), scriptSelectedEvent()];
+    const events = [gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()];
     const before = JSON.stringify(events);
 
     rebuildGameState(events);
@@ -208,20 +225,149 @@ describe("domain event rebuild", () => {
     expectDomainCode(() => rebuildGameState([gameCreatedEvent(), selected]), "EventRulesBaselineMismatch");
   });
 
-  it("rebuilds a legal multi-event batch", () => {
-    const created = gameCreatedEvent();
-    const selected = scriptSelectedEvent({
-      batchId: created.batchId,
-      commandId: created.commandId,
-      eventSequence: 2,
-      gameVersion: 1
+  it("rebuilds a legal SelectScript multi-event batch", () => {
+    const state = rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
+
+    expect(state.gameVersion).toBe(2);
+    expect(state.lastEventSequence).toBe(3);
+    expect(state.selectedScript).toMatchObject({ scriptId: "sects-and-violets" });
+    expect(state.phase).toBe("SETUP_GENERATION");
+  });
+
+  it("applies PhaseTransitioned into SETUP_GENERATION after ScriptSelected", () => {
+    const state = rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
+
+    expect(state.phase).toBe("SETUP_GENERATION");
+    expect(state.dayNumber).toBe(0);
+    expect(state.nightNumber).toBe(0);
+    expect(state.gameVersion).toBe(2);
+    expect(state.lastEventSequence).toBe(3);
+  });
+
+  it("rejects ScriptSelected after the game has already reached SETUP_GENERATION", () => {
+    const duplicate = scriptSelectedEvent({
+      eventId: eventId("event-4"),
+      eventSequence: 4,
+      batchId: batchId("batch-3"),
+      commandId: commandId("command-3"),
+      gameVersion: 3
     });
 
-    const state = rebuildGameState([created, selected]);
+    const state = rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
 
-    expect(state.gameVersion).toBe(1);
-    expect(state.lastEventSequence).toBe(2);
-    expect(state.selectedScript).toMatchObject({ scriptId: "sects-and-violets" });
+    expectDomainCode(() => applyDomainEvent(state, duplicate), "InvalidScriptSelectedPhase");
+  });
+
+  it("rejects two ScriptSelected events in one stream before phase transition", () => {
+    const duplicate = scriptSelectedEvent({
+      eventId: eventId("event-3"),
+      eventSequence: 3,
+      batchId: batchId("batch-3"),
+      commandId: commandId("command-3"),
+      gameVersion: 3
+    });
+
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
+
+    expectDomainCode(() => applyDomainEvent(state, duplicate), "DuplicateScriptSelected");
+  });
+
+  it("rejects PhaseTransitioned when reasonCode does not match policy", () => {
+    const event = phaseTransitionedEvent({
+      payload: {
+        ...phaseTransitionedEvent().payload,
+        transitionReason: "SETUP_GENERATED"
+      }
+    });
+
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
+
+    expectDomainCode(() => applyDomainEvent(state, event), "InvalidPhaseTransitionReason");
+  });
+
+  it("keeps transitionReason as a typed replay fact", () => {
+    const event = phaseTransitionedEvent();
+    const state = rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), event]);
+
+    expect(event.payload.transitionReason).toBe("SCRIPT_SELECTED");
+    expect(state.phase).toBe("SETUP_GENERATION");
+  });
+
+  it("rejects semantically invalid prospective batches without mutating inputs", () => {
+    const currentState = rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
+    const invalid = [scriptSelectedEvent({
+      eventId: eventId("event-4"),
+      eventSequence: 4,
+      batchId: batchId("batch-3"),
+      commandId: commandId("command-3"),
+      gameVersion: 3
+    })];
+    const stateBefore = JSON.stringify(currentState);
+    const eventsBefore = JSON.stringify(invalid);
+
+    expectDomainCode(() => applyDomainEventBatch(currentState, invalid), "InvalidDomainBatchSemantics");
+    expect(JSON.stringify(currentState)).toBe(stateBefore);
+    expect(JSON.stringify(invalid)).toBe(eventsBefore);
+  });
+
+  it("does not allow arbitrary transitionReason strings at the type boundary", () => {
+    const event = phaseTransitionedEvent();
+    // @ts-expect-error transitionReason must be a PhaseTransitionReason value
+    const invalid: typeof event.payload.transitionReason = "SCRIPT_SELECTION_TO_SETUP_GENERATION";
+
+    void invalid;
+    expect(event.payload.transitionReason).toBe("SCRIPT_SELECTED");
+  });
+
+  it("rejects PhaseTransitioned when fromPhase does not match state", () => {
+    const event = phaseTransitionedEvent({
+      payload: {
+        ...phaseTransitionedEvent().payload,
+        fromPhase: "DAY_DISCUSSION"
+      }
+    });
+
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
+
+    expectDomainCode(() => applyDomainEvent(state, event), "InvalidPhaseTransition");
+  });
+
+  it("rejects negative phase counters", () => {
+    const event = phaseTransitionedEvent({
+      payload: {
+        ...phaseTransitionedEvent().payload,
+        dayNumberAfter: -1
+      }
+    });
+
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
+
+    expectDomainCode(() => applyDomainEvent(state, event), "InvalidPhaseCounter");
+  });
+
+  it("rejects illegal phase jumps", () => {
+    const event = phaseTransitionedEvent({
+      payload: {
+        ...phaseTransitionedEvent().payload,
+        toPhase: "FIRST_NIGHT"
+      }
+    });
+
+    const state = applyDomainEvent(rebuildGameState([gameCreatedEvent()]), scriptSelectedEvent());
+
+    expectDomainCode(() => applyDomainEvent(state, event), "InvalidPhaseTransition");
+  });
+
+  it("rejects PhaseTransitioned rules baseline mismatch", () => {
+    const event = phaseTransitionedEvent({
+      rulesBaselineVersion: "Phase One v0",
+      payload: {
+        ...phaseTransitionedEvent().payload,
+        rulesBaselineVersion: "Phase One v0"
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), event]), "EventRulesBaselineMismatch");
   });
 
   it("does not allow AuditEvent streams at the type boundary", () => {

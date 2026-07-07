@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { accepted } from "@botc/application";
-import { batchId } from "@botc/domain-core";
+import { batchId, commandId, rebuildGameState } from "@botc/domain-core";
 import type { CommandReceipt, CommitAcceptedCommandInput } from "@botc/application";
 import type { DomainEventBatch } from "@botc/domain-core";
 import {
   MemoryCommandCommitStore,
   gameCreatedEvent,
-  ids
+  ids,
+  phaseTransitionedEvent
 } from "@botc/test-harness";
 
 const commitInputFor = (batch: DomainEventBatch): CommitAcceptedCommandInput => {
@@ -91,5 +92,33 @@ describe("MemoryCommandCommitStore batch contract", () => {
     await expect(store.commitAcceptedCommand(commitInputFor(batch))).rejects.toThrow("sequences");
 
     expect(await store.loadDomainEvents(ids.game)).toHaveLength(0);
+  });
+
+  it("rejects structurally valid but semantically invalid staged streams without partial writes", async () => {
+    const store = new MemoryCommandCommitStore();
+    await store.commitAcceptedCommand(commitInputFor(createGameBatch()));
+
+    const transition = phaseTransitionedEvent({
+      eventSequence: 2,
+      gameVersion: 2,
+      batchId: batchId("phase-batch"),
+      commandId: commandId("phase-command")
+    });
+    const invalidBatch: DomainEventBatch = {
+      batchId: transition.batchId,
+      gameId: ids.game,
+      commandId: transition.commandId,
+      expectedGameVersion: 1,
+      committedGameVersion: 2,
+      events: [transition]
+    };
+
+    await expect(store.commitAcceptedCommand(commitInputFor(invalidBatch))).rejects.toThrow("SelectScript");
+
+    const events = await store.loadDomainEvents(ids.game);
+    expect(events).toHaveLength(1);
+    expect(store.getGameVersion(ids.game)).toBe(1);
+    expect(await store.findCommandReceipt(ids.game, transition.commandId)).toBeUndefined();
+    expect(rebuildGameState(events).phase).toBe("SCRIPT_SELECTION");
   });
 });

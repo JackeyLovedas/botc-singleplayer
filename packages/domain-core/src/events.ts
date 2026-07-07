@@ -1,4 +1,6 @@
 import type { BatchId, CausationId, CommandId, CorrelationId, EventId, GameId } from "./ids.js";
+import type { GamePhase } from "./game-phase.js";
+import type { PhaseTransitionReason } from "./phase-transition-policy.js";
 
 export const SUPPORTED_DOMAIN_EVENT_VERSION = 1;
 export const RULES_BASELINE_VERSION = "Phase One v2.1";
@@ -27,9 +29,21 @@ export type ScriptSelectedPayload = {
   readonly edition: "sects-and-violets" | "custom";
 };
 
+export type PhaseTransitionedPayload = {
+  readonly rulesBaselineVersion: string;
+  readonly fromPhase: GamePhase;
+  readonly toPhase: GamePhase;
+  readonly transitionReason: PhaseTransitionReason;
+  readonly dayNumberBefore: number;
+  readonly dayNumberAfter: number;
+  readonly nightNumberBefore: number;
+  readonly nightNumberAfter: number;
+};
+
 export type DomainEventPayloadByType = {
   readonly GameCreated: GameCreatedPayload;
   readonly ScriptSelected: ScriptSelectedPayload;
+  readonly PhaseTransitioned: PhaseTransitionedPayload;
 };
 
 export type DomainEventType = keyof DomainEventPayloadByType;
