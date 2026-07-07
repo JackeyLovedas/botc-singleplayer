@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { roleId } from "@botc/domain-core";
-import type { RoleCountSet, RoleId, SetupGenerationResult } from "@botc/domain-core";
+import { compareStableId, roleId } from "@botc/domain-core";
+import type { RoleCountSet, RoleDefinition, RoleId, ScriptDefinition, SetupGenerationResult } from "@botc/domain-core";
 import { SECTS_AND_VIOLETS_SCRIPT } from "@botc/rules-snv";
 import {
+  DeterministicRandom,
   RANDOM_ALGORITHM_VERSION,
+  ROLE_CATALOG_VERSION,
   SETUP_ALGORITHM_VERSION,
+  SETUP_RANDOM_STREAM,
   SeededSectsAndVioletsSetupGenerator
 } from "@botc/setup-engine";
 
@@ -32,7 +35,50 @@ const roleIds = (result: SetupGenerationResult): string[] =>
 
 const counts = (result: SetupGenerationResult): RoleCountSet => expectSuccess(result).postModifierCounts;
 
+const makeScript = (roles: readonly RoleDefinition[]): ScriptDefinition => ({
+  ...SECTS_AND_VIOLETS_SCRIPT,
+  roles
+});
+
+const cloneRole = (role: RoleDefinition): RoleDefinition => ({
+  ...role,
+  setupModifier: { ...role.setupModifier }
+});
+
+const withRole = (roleIdValue: RoleId, patch: Partial<RoleDefinition>): ScriptDefinition =>
+  makeScript(SECTS_AND_VIOLETS_SCRIPT.roles.map((role) => (role.roleId === roleIdValue ? { ...cloneRole(role), ...patch } : cloneRole(role))));
+
+const reversedScript = (): ScriptDefinition => makeScript([...SECTS_AND_VIOLETS_SCRIPT.roles].reverse().map(cloneRole));
+
+const generateWithScript = (
+  script: ScriptDefinition,
+  overrides: Parameters<SeededSectsAndVioletsSetupGenerator["generate"]>[0]
+): SetupGenerationResult => new SeededSectsAndVioletsSetupGenerator(script).generate(overrides);
+
 describe("SeededSectsAndVioletsSetupGenerator", () => {
+  it("uses fixed standard sfc32 nextUint32 vectors", () => {
+    const random = new DeterministicRandom("vector-seed");
+
+    expect(Array.from({ length: 10 }, () => random.nextUint32())).toStrictEqual([
+      4192517003,
+      1065224812,
+      2124141431,
+      4225418798,
+      39656548,
+      229722173,
+      1759554890,
+      569041450,
+      1103139648,
+      3514609012
+    ]);
+  });
+
+  it("uses fixed rejection-sampled nextInt vectors", () => {
+    const random = new DeterministicRandom("vector-seed");
+
+    expect(Array.from({ length: 10 }, () => random.nextInt(17))).toStrictEqual([4, 1, 16, 16, 2, 0, 14, 8, 9, 10]);
+  });
+
   it("produces 7/2/2/1 for an unmodified locked No Dashii setup", () => {
     const result = generate({
       scriptId: "sects-and-violets",
@@ -129,22 +175,30 @@ describe("SeededSectsAndVioletsSetupGenerator", () => {
   });
 
   it("keeps the golden seed role set stable", () => {
-    const actualRoleIds = roleIds(generate({ scriptId: "sects-and-violets", rootSeed: "golden-seed", playerCount: 12, constraints: {} }));
+    const setup = expectSuccess(generate({ scriptId: "sects-and-violets", rootSeed: "golden-seed", playerCount: 12, constraints: {} }));
 
-    expect(actualRoleIds).toStrictEqual([
-      "flowergirl",
-      "juggler",
-      "oracle",
-      "philosopher",
-      "savant",
-      "seamstress",
-      "town_crier",
-      "barber",
-      "mutant",
-      "cerenovus",
-      "evil_twin",
-      "no_dashii"
-    ]);
+    expect({
+      actualRoles: setup.actualRoles.map((role) => role.roleId),
+      demonRole: setup.demonRole.roleId,
+      demonBluffs: setup.demonBluffs.map((role) => role.roleId)
+    }).toStrictEqual({
+      actualRoles: [
+        "dreamer",
+        "flowergirl",
+        "juggler",
+        "oracle",
+        "philosopher",
+        "sage",
+        "savant",
+        "town_crier",
+        "mutant",
+        "evil_twin",
+        "witch",
+        "vigormortis"
+      ],
+      demonRole: "vigormortis",
+      demonBluffs: ["mathematician", "snake_charmer", "sweetheart"]
+    });
   });
 
   it("records algorithm versions with the golden output", () => {
@@ -152,8 +206,12 @@ describe("SeededSectsAndVioletsSetupGenerator", () => {
 
     expect(setup.setupAlgorithmVersion).toBe(SETUP_ALGORITHM_VERSION);
     expect(setup.randomAlgorithmVersion).toBe(RANDOM_ALGORITHM_VERSION);
+    expect(setup.randomStream).toBe(SETUP_RANDOM_STREAM);
+    expect(setup.roleCatalogVersion).toBe(ROLE_CATALOG_VERSION);
     expect(SETUP_ALGORITHM_VERSION).toBe("snv-12-setup-v1");
     expect(RANDOM_ALGORITHM_VERSION).toBe("xmur3-sfc32-rejection-v1");
+    expect(SETUP_RANDOM_STREAM).toBe("setup/sects-and-violets/12/v1");
+    expect(ROLE_CATALOG_VERSION).toBe("snv-role-catalog-v1");
   });
 
   it("always includes locked roles", () => {
@@ -221,6 +279,101 @@ describe("SeededSectsAndVioletsSetupGenerator", () => {
     expect(result).toMatchObject({ status: "failure", failureCode: "TooManyLockedRolesForType" });
   });
 
+  it("succeeds with two locked outsiders by excluding infeasible demon plans", () => {
+    const setup = expectSuccess(generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-two-outsiders",
+      playerCount: 12,
+      constraints: { lockedRoleIds: [id("mutant"), id("sweetheart")] }
+    }));
+
+    expect(setup.actualRoles.map((role) => role.roleId)).toEqual(expect.arrayContaining(["mutant", "sweetheart"]));
+    expect(setup.demonRole.roleId).not.toBe("vigormortis");
+  });
+
+  it("selects Fang Gu when three outsiders are locked", () => {
+    const setup = expectSuccess(generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-three-outsiders",
+      playerCount: 12,
+      constraints: { lockedRoleIds: [id("barber"), id("mutant"), id("sweetheart")] }
+    }));
+
+    expect(setup.demonRole.roleId).toBe("fang_gu");
+  });
+
+  it("selects Vigormortis when eight townsfolk are locked", () => {
+    const setup = expectSuccess(generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-eight-townsfolk",
+      playerCount: 12,
+      constraints: {
+        lockedRoleIds: [
+          id("clockmaker"),
+          id("dreamer"),
+          id("snake_charmer"),
+          id("mathematician"),
+          id("flowergirl"),
+          id("town_crier"),
+          id("oracle"),
+          id("savant")
+        ]
+      }
+    }));
+
+    expect(setup.demonRole.roleId).toBe("vigormortis");
+  });
+
+  it("selects Vigormortis when only one outsider candidate remains", () => {
+    const setup = expectSuccess(generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-one-outsider",
+      playerCount: 12,
+      constraints: { excludedRoleIds: [id("barber"), id("mutant"), id("sweetheart")] }
+    }));
+
+    expect(setup.demonRole.roleId).toBe("vigormortis");
+  });
+
+  it("only fails after every demon plan is infeasible", () => {
+    const result = generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-all-demons-infeasible",
+      playerCount: 12,
+      constraints: { lockedRoleIds: [id("barber"), id("klutz"), id("mutant"), id("sweetheart")] }
+    });
+
+    expect(result).toMatchObject({
+      status: "failure",
+      failureCode: "TooManyLockedRolesForType"
+    });
+  });
+
+  it("keeps feasible demon planning stable when the script array insertion order changes", () => {
+    const input = {
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-plan-order",
+      playerCount: 12,
+      constraints: { lockedRoleIds: [id("mutant"), id("sweetheart")] }
+    } as const;
+
+    expect(generateWithScript(reversedScript(), input)).toStrictEqual(generateWithScript(SECTS_AND_VIOLETS_SCRIPT, input));
+  });
+
+  it("does not let infeasible demon plans consume the final role-selection stream", () => {
+    const input = {
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-infeasible-stream",
+      playerCount: 12,
+      constraints: { lockedRoleIds: [id("mutant"), id("sweetheart")] }
+    } as const;
+
+    const setup = expectSuccess(generateWithScript(reversedScript(), input));
+
+    expect(setup.demonRole.roleId).not.toBe("vigormortis");
+    expect(setup).toStrictEqual(expectSuccess(generateWithScript(SECTS_AND_VIOLETS_SCRIPT, input)));
+  });
+
   it("uses legal exactRoleIds as the actual setup set", () => {
     const exactRoleIds = [
       "clockmaker",
@@ -242,7 +395,7 @@ describe("SeededSectsAndVioletsSetupGenerator", () => {
       rootSeed: "seed-exact",
       playerCount: 12,
       constraints: { exactRoleIds }
-    })).sort()).toStrictEqual(exactRoleIds.map(String).sort());
+    })).sort(compareStableId)).toStrictEqual(exactRoleIds.map(String).sort(compareStableId));
   });
 
   it("fails when exactRoleIds does not contain 12 roles", () => {
@@ -359,6 +512,56 @@ describe("SeededSectsAndVioletsSetupGenerator", () => {
     });
 
     expect(result).toMatchObject({ status: "failure", failureCode: "InsufficientDemonBluffs" });
+  });
+
+  it("defensively copies the script catalog at construction time", () => {
+    const mutableRoles = SECTS_AND_VIOLETS_SCRIPT.roles.map(cloneRole);
+    const script = makeScript(mutableRoles);
+    const seededGenerator = new SeededSectsAndVioletsSetupGenerator(script);
+    mutableRoles.splice(0, mutableRoles.length);
+
+    const result = seededGenerator.generate({
+      scriptId: "sects-and-violets",
+      rootSeed: "seed-defensive-copy",
+      playerCount: 12,
+      constraints: {}
+    });
+
+    expect(result.status).toBe("success");
+  });
+
+  it("rejects a script with corrupted type counts", () => {
+    expect(() => new SeededSectsAndVioletsSetupGenerator(withRole(id("clockmaker"), { characterType: "OUTSIDER" }))).toThrow(
+      "13/4/4/4"
+    );
+  });
+
+  it("rejects a script where type and default alignment disagree", () => {
+    expect(() => new SeededSectsAndVioletsSetupGenerator(withRole(id("clockmaker"), { defaultAlignment: "EVIL" }))).toThrow(
+      "invalid role setup metadata"
+    );
+  });
+
+  it("rejects a script where a non-demon has a setup modifier", () => {
+    expect(() =>
+      new SeededSectsAndVioletsSetupGenerator(withRole(id("clockmaker"), {
+        setupModifier: {
+          outsiderDelta: 1,
+          townsfolkDelta: -1
+        }
+      }))
+    ).toThrow("invalid role setup metadata");
+  });
+
+  it("rejects a script where a demon modifier changes the total role count", () => {
+    expect(() =>
+      new SeededSectsAndVioletsSetupGenerator(withRole(id("fang_gu"), {
+        setupModifier: {
+          outsiderDelta: 1,
+          townsfolkDelta: 0
+        }
+      }))
+    ).toThrow("invalid role setup metadata");
   });
 
   it("generates exactly 3 demon bluffs", () => {

@@ -2,6 +2,7 @@ import {
   SUPPORTED_SCRIPT_EDITION,
   SUPPORTED_SCRIPT_ID,
   SUPPORTED_SCRIPT_NAME,
+  compareStableId,
   roleId
 } from "@botc/domain-core";
 import type { CharacterType, DefaultAlignment, RoleDefinition, ScriptDefinition, SetupModifier } from "@botc/domain-core";
@@ -81,12 +82,55 @@ export const SECTS_AND_VIOLETS_SCRIPT: ScriptDefinition = {
 const expectedAlignment = (characterType: CharacterType): DefaultAlignment =>
   characterType === "MINION" || characterType === "DEMON" ? "EVIL" : "GOOD";
 
+type ExpectedRoleMetadata = {
+  readonly characterType: CharacterType;
+  readonly defaultAlignment: DefaultAlignment;
+  readonly setupModifier: SetupModifier;
+};
+
+const expectedRole = (characterType: CharacterType, setupModifier: SetupModifier = zeroModifier): ExpectedRoleMetadata => ({
+  characterType,
+  defaultAlignment: expectedAlignment(characterType),
+  setupModifier
+});
+
+const EXPECTED_SECTS_AND_VIOLETS_ROLE_METADATA: Readonly<Record<string, ExpectedRoleMetadata>> = {
+  clockmaker: expectedRole("TOWNSFOLK"),
+  dreamer: expectedRole("TOWNSFOLK"),
+  snake_charmer: expectedRole("TOWNSFOLK"),
+  mathematician: expectedRole("TOWNSFOLK"),
+  flowergirl: expectedRole("TOWNSFOLK"),
+  town_crier: expectedRole("TOWNSFOLK"),
+  oracle: expectedRole("TOWNSFOLK"),
+  savant: expectedRole("TOWNSFOLK"),
+  seamstress: expectedRole("TOWNSFOLK"),
+  philosopher: expectedRole("TOWNSFOLK"),
+  artist: expectedRole("TOWNSFOLK"),
+  juggler: expectedRole("TOWNSFOLK"),
+  sage: expectedRole("TOWNSFOLK"),
+  mutant: expectedRole("OUTSIDER"),
+  sweetheart: expectedRole("OUTSIDER"),
+  barber: expectedRole("OUTSIDER"),
+  klutz: expectedRole("OUTSIDER"),
+  evil_twin: expectedRole("MINION"),
+  witch: expectedRole("MINION"),
+  cerenovus: expectedRole("MINION"),
+  pit_hag: expectedRole("MINION"),
+  fang_gu: expectedRole("DEMON", {
+    outsiderDelta: 1,
+    townsfolkDelta: -1
+  }),
+  vigormortis: expectedRole("DEMON", {
+    outsiderDelta: -1,
+    townsfolkDelta: 1
+  }),
+  no_dashii: expectedRole("DEMON"),
+  vortox: expectedRole("DEMON")
+};
+
 export const assertValidSectsAndVioletsCatalog = (script: ScriptDefinition = SECTS_AND_VIOLETS_SCRIPT): void => {
   const roles = [...script.roles];
   const roleIds = new Set(roles.map((candidate) => candidate.roleId));
-  const nonZeroModifiers = roles.filter(
-    (candidate) => candidate.setupModifier.outsiderDelta !== 0 || candidate.setupModifier.townsfolkDelta !== 0
-  );
 
   if (
     script.scriptId !== SUPPORTED_SCRIPT_ID ||
@@ -100,6 +144,12 @@ export const assertValidSectsAndVioletsCatalog = (script: ScriptDefinition = SEC
     throw new Error("Sects & Violets catalog must contain exactly 25 unique roles");
   }
 
+  const expectedRoleIds = Object.keys(EXPECTED_SECTS_AND_VIOLETS_ROLE_METADATA).sort(compareStableId);
+  const actualRoleIds = roles.map((candidate) => candidate.roleId).sort(compareStableId);
+  if (actualRoleIds.join(",") !== expectedRoleIds.join(",")) {
+    throw new Error("Sects & Violets catalog must match the exact expected role ids");
+  }
+
   const counts = {
     TOWNSFOLK: roles.filter((candidate) => candidate.characterType === "TOWNSFOLK").length,
     OUTSIDER: roles.filter((candidate) => candidate.characterType === "OUTSIDER").length,
@@ -111,21 +161,20 @@ export const assertValidSectsAndVioletsCatalog = (script: ScriptDefinition = SEC
     throw new Error("Sects & Violets catalog type counts are invalid");
   }
 
-  if (
-    roles.some(
-      (candidate) =>
-        candidate.nameZh.trim().length === 0 ||
-        candidate.nameEn.trim().length === 0 ||
-        candidate.edition !== SUPPORTED_SCRIPT_EDITION ||
-        candidate.defaultAlignment !== expectedAlignment(candidate.characterType)
-    )
-  ) {
-    throw new Error("Sects & Violets catalog role metadata is invalid");
-  }
-
-  const nonZeroModifierIds = nonZeroModifiers.map((candidate) => candidate.roleId).sort();
-  if (nonZeroModifierIds.join(",") !== "fang_gu,vigormortis") {
-    throw new Error("Only Fang Gu and Vigormortis may define setup modifiers in Sects & Violets");
+  for (const candidate of roles) {
+    const expected = EXPECTED_SECTS_AND_VIOLETS_ROLE_METADATA[candidate.roleId];
+    if (
+      expected === undefined ||
+      candidate.nameZh.trim().length === 0 ||
+      candidate.nameEn.trim().length === 0 ||
+      candidate.edition !== SUPPORTED_SCRIPT_EDITION ||
+      candidate.characterType !== expected.characterType ||
+      candidate.defaultAlignment !== expected.defaultAlignment ||
+      candidate.setupModifier.outsiderDelta !== expected.setupModifier.outsiderDelta ||
+      candidate.setupModifier.townsfolkDelta !== expected.setupModifier.townsfolkDelta
+    ) {
+      throw new Error("Sects & Violets catalog role metadata is invalid");
+    }
   }
 };
 

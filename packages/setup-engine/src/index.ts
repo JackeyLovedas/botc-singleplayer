@@ -1,7 +1,14 @@
 import {
   BASE_TWELVE_PLAYER_COUNTS,
+  CHARACTER_TYPES,
+  SUPPORTED_RANDOM_ALGORITHM_VERSION,
+  SUPPORTED_ROLE_CATALOG_VERSION,
   SUPPORTED_SCRIPT_ID,
-  isSupportedScriptMetadata
+  SUPPORTED_SETUP_ALGORITHM_VERSION,
+  SUPPORTED_SETUP_RANDOM_STREAM,
+  compareStableId,
+  isZeroSetupModifier,
+  validateScriptDefinitionForSetup
 } from "@botc/domain-core";
 import type {
   CharacterType,
@@ -20,11 +27,11 @@ import type {
   SetupModifierApplied
 } from "@botc/domain-core";
 
-export const SETUP_ALGORITHM_VERSION = "snv-12-setup-v1";
-export const RANDOM_ALGORITHM_VERSION = "xmur3-sfc32-rejection-v1";
-export const SETUP_RANDOM_STREAM = "setup/sects-and-violets/12/v1";
+export const SETUP_ALGORITHM_VERSION = SUPPORTED_SETUP_ALGORITHM_VERSION;
+export const RANDOM_ALGORITHM_VERSION = SUPPORTED_RANDOM_ALGORITHM_VERSION;
+export const SETUP_RANDOM_STREAM = SUPPORTED_SETUP_RANDOM_STREAM;
+export const ROLE_CATALOG_VERSION = SUPPORTED_ROLE_CATALOG_VERSION;
 
-const CHARACTER_TYPES: readonly CharacterType[] = ["TOWNSFOLK", "OUTSIDER", "MINION", "DEMON"];
 const TYPE_ORDER = new Map<CharacterType, number>(CHARACTER_TYPES.map((type, index) => [type, index]));
 
 const stableRoleSort = <TRole extends { readonly roleId: RoleId; readonly characterType?: CharacterType }>(roles: readonly TRole[]): TRole[] =>
@@ -35,8 +42,11 @@ const stableRoleSort = <TRole extends { readonly roleId: RoleId; readonly charac
       return leftType - rightType;
     }
 
-    return left.roleId.localeCompare(right.roleId);
+    return compareStableId(left.roleId, right.roleId);
   });
+
+const stableRoleIdSort = <TRole extends { readonly roleId: RoleId }>(roles: readonly TRole[]): TRole[] =>
+  [...roles].sort((left, right) => compareStableId(left.roleId, right.roleId));
 
 const countRolesByType = (roles: readonly RoleDefinition[] | readonly RoleSetupSnapshot[]): RoleCountSet => ({
   TOWNSFOLK: roles.filter((role) => role.characterType === "TOWNSFOLK").length,
@@ -50,6 +60,13 @@ const countTotal = (counts: RoleCountSet): number => counts.TOWNSFOLK + counts.O
 const sameCounts = (left: RoleCountSet, right: RoleCountSet): boolean =>
   CHARACTER_TYPES.every((type) => left[type] === right[type]);
 
+const subtractCounts = (left: RoleCountSet, right: RoleCountSet): RoleCountSet => ({
+  TOWNSFOLK: left.TOWNSFOLK - right.TOWNSFOLK,
+  OUTSIDER: left.OUTSIDER - right.OUTSIDER,
+  MINION: left.MINION - right.MINION,
+  DEMON: left.DEMON - right.DEMON
+});
+
 const duplicateRoleIds = (roleIds: readonly RoleId[]): readonly RoleId[] => {
   const seen = new Set<RoleId>();
   const duplicates = new Set<RoleId>();
@@ -61,13 +78,13 @@ const duplicateRoleIds = (roleIds: readonly RoleId[]): readonly RoleId[] => {
     seen.add(roleIdValue);
   }
 
-  return [...duplicates].sort();
+  return [...duplicates].sort(compareStableId);
 };
 
 const normalizeConstraints = (constraints: SetupGenerationConstraints): SetupGenerationConstraintsSnapshot => ({
-  lockedRoleIds: [...(constraints.lockedRoleIds ?? [])].sort(),
-  excludedRoleIds: [...(constraints.excludedRoleIds ?? [])].sort(),
-  exactRoleIds: [...(constraints.exactRoleIds ?? [])].sort()
+  lockedRoleIds: [...(constraints.lockedRoleIds ?? [])].sort(compareStableId),
+  excludedRoleIds: [...(constraints.excludedRoleIds ?? [])].sort(compareStableId),
+  exactRoleIds: [...(constraints.exactRoleIds ?? [])].sort(compareStableId)
 });
 
 const snapshotRole = (role: RoleDefinition): RoleSetupSnapshot => ({
@@ -75,10 +92,28 @@ const snapshotRole = (role: RoleDefinition): RoleSetupSnapshot => ({
   characterType: role.characterType,
   defaultAlignment: role.defaultAlignment,
   edition: role.edition,
-  setupModifier: role.setupModifier
+  setupModifier: {
+    outsiderDelta: role.setupModifier.outsiderDelta,
+    townsfolkDelta: role.setupModifier.townsfolkDelta
+  }
 });
 
-const applyDemonModifier = (demon: RoleDefinition): RoleCountSet => ({
+const copyRole = (role: RoleDefinition): RoleDefinition => ({
+  ...role,
+  setupModifier: {
+    outsiderDelta: role.setupModifier.outsiderDelta,
+    townsfolkDelta: role.setupModifier.townsfolkDelta
+  }
+});
+
+const copyScript = (script: ScriptDefinition): ScriptDefinition => ({
+  scriptId: script.scriptId,
+  scriptName: script.scriptName,
+  edition: script.edition,
+  roles: stableRoleSort(script.roles.map(copyRole))
+});
+
+const applyDemonModifier = (demon: RoleDefinition | RoleSetupSnapshot): RoleCountSet => ({
   TOWNSFOLK: BASE_TWELVE_PLAYER_COUNTS.TOWNSFOLK + demon.setupModifier.townsfolkDelta,
   OUTSIDER: BASE_TWELVE_PLAYER_COUNTS.OUTSIDER + demon.setupModifier.outsiderDelta,
   MINION: BASE_TWELVE_PLAYER_COUNTS.MINION,
@@ -89,7 +124,7 @@ const modifierIsValid = (counts: RoleCountSet): boolean =>
   countTotal(counts) === 12 && CHARACTER_TYPES.every((type) => counts[type] >= 0);
 
 const appliedModifiersFor = (demon: RoleDefinition): readonly SetupModifierApplied[] =>
-  demon.setupModifier.outsiderDelta === 0 && demon.setupModifier.townsfolkDelta === 0
+  isZeroSetupModifier(demon.setupModifier)
     ? []
     : [{
         roleId: demon.roleId,
@@ -111,7 +146,7 @@ const xmur3 = (input: string): (() => number) => {
   };
 };
 
-class DeterministicRandom {
+export class DeterministicRandom {
   private a: number;
   private b: number;
   private c: number;
@@ -130,12 +165,15 @@ class DeterministicRandom {
     this.b >>>= 0;
     this.c >>>= 0;
     this.d >>>= 0;
-    const result = (this.a + this.b + this.d) >>> 0;
-    this.d = (this.d + 1) >>> 0;
+
+    let result = (this.a + this.b) >>> 0;
     this.a = (this.b ^ (this.b >>> 9)) >>> 0;
     this.b = (this.c + (this.c << 3)) >>> 0;
     this.c = ((this.c << 21) | (this.c >>> 11)) >>> 0;
+    this.d = (this.d + 1) >>> 0;
+    result = (result + this.d) >>> 0;
     this.c = (this.c + result) >>> 0;
+
     return result;
   }
 
@@ -168,6 +206,10 @@ const chooseMany = <TValue extends { readonly roleId: RoleId; readonly character
   candidates: readonly TValue[],
   count: number
 ): readonly TValue[] => {
+  if (candidates.length < count) {
+    throw new Error("Cannot choose more candidates than are available");
+  }
+
   const pool = stableRoleSort(candidates);
   const selected: TValue[] = [];
   while (selected.length < count) {
@@ -181,23 +223,161 @@ const chooseMany = <TValue extends { readonly roleId: RoleId; readonly character
   return stableRoleSort(selected);
 };
 
-const assertUsableScript = (script: ScriptDefinition): void => {
-  if (!isSupportedScriptMetadata(script.scriptId, script.scriptName, script.edition)) {
-    throw new Error("Setup generator only supports Sects & Violets");
+const chooseManyByRoleId = <TValue extends { readonly roleId: RoleId }>(
+  random: DeterministicRandom,
+  candidates: readonly TValue[],
+  count: number
+): readonly TValue[] => {
+  if (candidates.length < count) {
+    throw new Error("Cannot choose more candidates than are available");
   }
 
-  const roleIds = new Set(script.roles.map((role) => role.roleId));
-  if (script.roles.length !== 25 || roleIds.size !== 25) {
-    throw new Error("Setup generator requires a complete 25-role Sects & Violets catalog");
+  const pool = stableRoleIdSort(candidates);
+  const selected: TValue[] = [];
+  while (selected.length < count) {
+    const index = random.nextInt(pool.length);
+    const [role] = pool.splice(index, 1);
+    if (role !== undefined) {
+      selected.push(role);
+    }
   }
+
+  return stableRoleIdSort(selected);
 };
 
+export type DemonSetupPlan = {
+  readonly demon: RoleDefinition;
+  readonly postModifierCounts: RoleCountSet;
+  readonly lockedCounts: RoleCountSet;
+  readonly remainingCounts: RoleCountSet;
+  readonly availableCounts: RoleCountSet;
+  readonly eligibleBluffCount: number;
+};
+
+export type DemonFeasibilityResult =
+  | {
+      readonly status: "feasible";
+      readonly plan: DemonSetupPlan;
+    }
+  | {
+      readonly status: "infeasible";
+      readonly demon: RoleDefinition;
+      readonly failureCode: SetupFailureCode;
+      readonly message: string;
+      readonly conflictingRoleIds: readonly RoleId[];
+      readonly requestedCounts: RoleCountSet | undefined;
+      readonly availableCounts: RoleCountSet | undefined;
+    };
+
+export type DemonFeasibilityInput = {
+  readonly demon: RoleDefinition;
+  readonly lockedRoles: readonly RoleDefinition[];
+  readonly excludedRoleIds: readonly RoleId[];
+  readonly scriptRoles: readonly RoleDefinition[];
+};
+
+const compareDemonSetupPlan = (left: DemonSetupPlan, right: DemonSetupPlan): number =>
+  compareStableId(left.demon.roleId, right.demon.roleId);
+
+export const evaluateDemonFeasibility = (input: DemonFeasibilityInput): DemonFeasibilityResult => {
+  const excluded = new Set(input.excludedRoleIds);
+  const postModifierCounts = applyDemonModifier(input.demon);
+  if (!modifierIsValid(postModifierCounts)) {
+    return {
+      status: "infeasible",
+      demon: input.demon,
+      failureCode: "InvalidModifierResult",
+      message: "Demon setup modifier produced invalid role counts",
+      conflictingRoleIds: [input.demon.roleId],
+      requestedCounts: undefined,
+      availableCounts: undefined
+    };
+  }
+
+  const selectedById = new Map<RoleId, RoleDefinition>([[input.demon.roleId, input.demon]]);
+  for (const role of input.lockedRoles) {
+    selectedById.set(role.roleId, role);
+  }
+
+  const selectedRoles = [...selectedById.values()];
+  const lockedCounts = countRolesByType(selectedRoles);
+  const remainingCounts = subtractCounts(postModifierCounts, lockedCounts);
+  const overflowingTypes = CHARACTER_TYPES.filter((type) => remainingCounts[type] < 0);
+  if (overflowingTypes.length > 0) {
+    const conflictingRoleIds = selectedRoles
+      .filter((role) => overflowingTypes.includes(role.characterType))
+      .map((role) => role.roleId)
+      .sort(compareStableId);
+    return {
+      status: "infeasible",
+      demon: input.demon,
+      failureCode: "TooManyLockedRolesForType",
+      message: "Locked roles exceed post-modifier type capacity",
+      conflictingRoleIds,
+      requestedCounts: postModifierCounts,
+      availableCounts: lockedCounts
+    };
+  }
+
+  const availableRoles = input.scriptRoles.filter((role) => !excluded.has(role.roleId) && !selectedById.has(role.roleId));
+  const availableCounts = countRolesByType(availableRoles);
+  if (CHARACTER_TYPES.some((type) => availableCounts[type] < remainingCounts[type])) {
+    return {
+      status: "infeasible",
+      demon: input.demon,
+      failureCode: "InsufficientCandidates",
+      message: "Not enough candidates are available for the demon plan",
+      conflictingRoleIds: [],
+      requestedCounts: remainingCounts,
+      availableCounts
+    };
+  }
+
+  const availableGoodRoleCount = input.scriptRoles.filter(
+    (role) => role.defaultAlignment === "GOOD" && !excluded.has(role.roleId)
+  ).length;
+  const eligibleBluffCount = availableGoodRoleCount - postModifierCounts.TOWNSFOLK - postModifierCounts.OUTSIDER;
+  if (eligibleBluffCount < 3) {
+    return {
+      status: "infeasible",
+      demon: input.demon,
+      failureCode: "InsufficientDemonBluffs",
+      message: "Not enough legal demon bluff candidates are available",
+      conflictingRoleIds: [],
+      requestedCounts: undefined,
+      availableCounts
+    };
+  }
+
+  return {
+    status: "feasible",
+    plan: {
+      demon: input.demon,
+      postModifierCounts,
+      lockedCounts,
+      remainingCounts,
+      availableCounts,
+      eligibleBluffCount
+    }
+  };
+};
+
+type FailureBuilder = (
+  failureCode: SetupFailureCode,
+  message: string,
+  conflictingRoleIds?: readonly RoleId[],
+  requestedCounts?: RoleCountSet,
+  availableCounts?: RoleCountSet
+) => SetupGenerationFailure;
+
 export class SeededSectsAndVioletsSetupGenerator {
+  private readonly script: ScriptDefinition;
   private readonly rolesById: ReadonlyMap<RoleId, RoleDefinition>;
 
-  public constructor(private readonly script: ScriptDefinition) {
-    assertUsableScript(script);
-    this.rolesById = new Map(script.roles.map((role) => [role.roleId, role]));
+  public constructor(script: ScriptDefinition) {
+    this.script = copyScript(script);
+    validateScriptDefinitionForSetup(this.script);
+    this.rolesById = new Map(this.script.roles.map((role) => [role.roleId, role]));
   }
 
   public generate(input: SetupGeneratorInput): SetupGenerationResult {
@@ -205,17 +385,17 @@ export class SeededSectsAndVioletsSetupGenerator {
     const random = new DeterministicRandom(
       `${input.rootSeed}|${SETUP_RANDOM_STREAM}|${SETUP_ALGORITHM_VERSION}|${RANDOM_ALGORITHM_VERSION}`
     );
-    const failure = (
-      failureCode: SetupFailureCode,
-      message: string,
-      conflictingRoleIds: readonly RoleId[] = [],
-      requestedCounts: RoleCountSet | undefined = undefined,
-      availableCounts: RoleCountSet | undefined = undefined
-    ): SetupGenerationFailure => ({
+    const failure: FailureBuilder = (
+      failureCode,
+      message,
+      conflictingRoleIds = [],
+      requestedCounts = undefined,
+      availableCounts = undefined
+    ) => ({
       status: "failure",
       failureCode,
       message,
-      conflictingRoleIds: [...conflictingRoleIds].sort(),
+      conflictingRoleIds: [...conflictingRoleIds].sort(compareStableId),
       requestedCounts,
       availableCounts,
       constraintsSnapshot
@@ -268,13 +448,7 @@ export class SeededSectsAndVioletsSetupGenerator {
   private generateExactSetup(
     constraintsSnapshot: SetupGenerationConstraintsSnapshot,
     random: DeterministicRandom,
-    failure: (
-      failureCode: SetupFailureCode,
-      message: string,
-      conflictingRoleIds?: readonly RoleId[],
-      requestedCounts?: RoleCountSet,
-      availableCounts?: RoleCountSet
-    ) => SetupGenerationFailure
+    failure: FailureBuilder
   ): SetupGenerationResult {
     const actualRoles = constraintsSnapshot.exactRoleIds.map((roleIdValue) => this.rolesById.get(roleIdValue)).filter((role): role is RoleDefinition => role !== undefined);
     const demons = actualRoles.filter((role) => role.characterType === "DEMON");
@@ -303,13 +477,7 @@ export class SeededSectsAndVioletsSetupGenerator {
   private generateRandomSetup(
     constraintsSnapshot: SetupGenerationConstraintsSnapshot,
     random: DeterministicRandom,
-    failure: (
-      failureCode: SetupFailureCode,
-      message: string,
-      conflictingRoleIds?: readonly RoleId[],
-      requestedCounts?: RoleCountSet,
-      availableCounts?: RoleCountSet
-    ) => SetupGenerationFailure
+    failure: FailureBuilder
   ): SetupGenerationResult {
     const excluded = new Set(constraintsSnapshot.excludedRoleIds);
     const lockedRoles = constraintsSnapshot.lockedRoleIds.map((roleIdValue) => this.rolesById.get(roleIdValue)).filter((role): role is RoleDefinition => role !== undefined);
@@ -318,33 +486,58 @@ export class SeededSectsAndVioletsSetupGenerator {
       return failure("MultipleLockedDemons", "Only one demon can be locked into a 12-player setup", lockedDemons.map((role) => role.roleId));
     }
 
-    const demonCandidates = stableRoleSort(
-      this.script.roles.filter((role) => role.characterType === "DEMON" && !excluded.has(role.roleId))
-    );
-    const demon = lockedDemons[0] ?? chooseOne(random, demonCandidates);
-    if (demon === undefined) {
+    const demonCandidates = lockedDemons.length === 1
+      ? lockedDemons
+      : stableRoleSort(this.script.roles.filter((role) => role.characterType === "DEMON" && !excluded.has(role.roleId)));
+    if (demonCandidates.length === 0) {
       return failure("InsufficientCandidates", "No legal demon candidates are available", [], BASE_TWELVE_PLAYER_COUNTS, countRolesByType(demonCandidates));
     }
 
-    const postModifierCounts = applyDemonModifier(demon);
-    if (!modifierIsValid(postModifierCounts)) {
-      return failure("InvalidModifierResult", "Demon setup modifier produced invalid role counts", [demon.roleId]);
+    const feasibilityResults = demonCandidates.map((demon) =>
+      evaluateDemonFeasibility({
+        demon,
+        lockedRoles,
+        excludedRoleIds: constraintsSnapshot.excludedRoleIds,
+        scriptRoles: this.script.roles
+      })
+    );
+    const feasiblePlans = feasibilityResults
+      .filter((result): result is Extract<DemonFeasibilityResult, { readonly status: "feasible" }> => result.status === "feasible")
+      .map((result) => result.plan)
+      .sort(compareDemonSetupPlan);
+
+    const selectedPlan = chooseOne(random, feasiblePlans);
+    if (selectedPlan === undefined) {
+      const firstFailure = feasibilityResults.find(
+        (result): result is Extract<DemonFeasibilityResult, { readonly status: "infeasible" }> => result.status === "infeasible"
+      );
+      return failure(
+        firstFailure?.failureCode ?? "NoLegalSetup",
+        firstFailure?.message ?? "No legal setup exists for the given constraints",
+        firstFailure?.conflictingRoleIds ?? [],
+        firstFailure?.requestedCounts,
+        firstFailure?.availableCounts
+      );
     }
 
-    const selectedById = new Map<RoleId, RoleDefinition>([[demon.roleId, demon]]);
+    return this.buildSetupFromPlan(selectedPlan, lockedRoles, constraintsSnapshot, random, failure);
+  }
+
+  private buildSetupFromPlan(
+    plan: DemonSetupPlan,
+    lockedRoles: readonly RoleDefinition[],
+    constraintsSnapshot: SetupGenerationConstraintsSnapshot,
+    random: DeterministicRandom,
+    failure: FailureBuilder
+  ): SetupGenerationResult {
+    const excluded = new Set(constraintsSnapshot.excludedRoleIds);
+    const selectedById = new Map<RoleId, RoleDefinition>([[plan.demon.roleId, plan.demon]]);
     for (const role of lockedRoles) {
       selectedById.set(role.roleId, role);
     }
 
-    const selectedRoles = [...selectedById.values()];
-    const selectedCounts = countRolesByType(selectedRoles);
-    const overflowingTypes = CHARACTER_TYPES.filter((type) => selectedCounts[type] > postModifierCounts[type]);
-    if (overflowingTypes.length > 0) {
-      return failure("TooManyLockedRolesForType", "Locked roles exceed post-modifier type capacity", constraintsSnapshot.lockedRoleIds, postModifierCounts, selectedCounts);
-    }
-
     for (const type of CHARACTER_TYPES) {
-      const needed = postModifierCounts[type] - selectedCounts[type];
+      const needed = plan.remainingCounts[type];
       if (needed === 0) {
         continue;
       }
@@ -355,7 +548,7 @@ export class SeededSectsAndVioletsSetupGenerator {
         )
       );
       if (candidates.length < needed) {
-        return failure("InsufficientCandidates", `Not enough ${type} candidates are available`, [], postModifierCounts, countRolesByType(candidates));
+        return failure("InsufficientCandidates", `Not enough ${type} candidates are available`, [], plan.remainingCounts, countRolesByType(candidates));
       }
 
       for (const role of chooseMany(random, candidates, needed)) {
@@ -363,7 +556,7 @@ export class SeededSectsAndVioletsSetupGenerator {
       }
     }
 
-    return this.buildSuccess([...selectedById.values()], demon, constraintsSnapshot, random, failure);
+    return this.buildSuccess([...selectedById.values()], plan.demon, constraintsSnapshot, random, failure);
   }
 
   private buildSuccess(
@@ -371,18 +564,12 @@ export class SeededSectsAndVioletsSetupGenerator {
     demon: RoleDefinition,
     constraintsSnapshot: SetupGenerationConstraintsSnapshot,
     random: DeterministicRandom,
-    failure: (
-      failureCode: SetupFailureCode,
-      message: string,
-      conflictingRoleIds?: readonly RoleId[],
-      requestedCounts?: RoleCountSet,
-      availableCounts?: RoleCountSet
-    ) => SetupGenerationFailure
+    failure: FailureBuilder
   ): SetupGenerationResult {
     const actualRoles = stableRoleSort(actualRoleDefinitions).map(snapshotRole);
     const actualRoleIds = new Set(actualRoles.map((role) => role.roleId));
     const excluded = new Set(constraintsSnapshot.excludedRoleIds);
-    const demonBluffCandidates = stableRoleSort(
+    const demonBluffCandidates = stableRoleIdSort(
       this.script.roles.filter(
         (role) => role.defaultAlignment === "GOOD" && !actualRoleIds.has(role.roleId) && !excluded.has(role.roleId)
       )
@@ -391,7 +578,7 @@ export class SeededSectsAndVioletsSetupGenerator {
       return failure("InsufficientDemonBluffs", "Not enough legal demon bluff candidates are available", [], undefined, countRolesByType(demonBluffCandidates));
     }
 
-    const demonBluffs = stableRoleSort(chooseMany(random, demonBluffCandidates, 3)).map(snapshotRole);
+    const demonBluffs = chooseManyByRoleId(random, demonBluffCandidates, 3).map(snapshotRole);
     const postModifierCounts = applyDemonModifier(demon);
     const actualCounts = countRolesByType(actualRoles);
     const setup: GeneratedSetup = {
@@ -399,6 +586,7 @@ export class SeededSectsAndVioletsSetupGenerator {
       setupAlgorithmVersion: SETUP_ALGORITHM_VERSION,
       randomAlgorithmVersion: RANDOM_ALGORITHM_VERSION,
       randomStream: SETUP_RANDOM_STREAM,
+      roleCatalogVersion: ROLE_CATALOG_VERSION,
       constraintsSnapshot,
       preModifierCounts: BASE_TWELVE_PLAYER_COUNTS,
       postModifierCounts,

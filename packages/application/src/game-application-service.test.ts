@@ -9,7 +9,7 @@ import {
 } from "@botc/domain-core";
 import type { AnyDomainEventEnvelope, GameId } from "@botc/domain-core";
 import { GameApplicationService, accepted } from "@botc/application";
-import type { CommandAccepted, CommandResult } from "@botc/application";
+import type { CommandAccepted, CommandResult, SetupGeneratorPort } from "@botc/application";
 import {
   FixedClock,
   FixedIdGenerator,
@@ -27,12 +27,12 @@ import {
   systemActor
 } from "@botc/test-harness";
 
-const makeService = (commandStore = new MemoryCommandCommitStore()) => {
+const makeService = (commandStore = new MemoryCommandCommitStore(), setupGenerator: SetupGeneratorPort = testSetupGenerator) => {
   const service = new GameApplicationService({
     commandStore,
     ids: new FixedIdGenerator(),
     clock: new FixedClock(),
-    setupGenerator: testSetupGenerator
+    setupGenerator
   });
 
   return { service, commandStore };
@@ -402,6 +402,71 @@ describe("GameApplicationService", () => {
     expect(events).toHaveLength(3);
     expect(commandStore.getGameVersion(ids.game)).toBe(2);
     expect(receipt?.result.status).toBe("rejected");
+  });
+
+  it("preserves structured setup generation failures through receipts and idempotent retry", async () => {
+    const structuredFailure = {
+      status: "failure" as const,
+      failureCode: "InsufficientCandidates" as const,
+      message: "Not enough candidates are available for the demon plan",
+      conflictingRoleIds: [roleId("clockmaker")],
+      requestedCounts: {
+        TOWNSFOLK: 8,
+        OUTSIDER: 1,
+        MINION: 2,
+        DEMON: 1
+      },
+      availableCounts: {
+        TOWNSFOLK: 6,
+        OUTSIDER: 1,
+        MINION: 2,
+        DEMON: 1
+      },
+      constraintsSnapshot: {
+        lockedRoleIds: [roleId("clockmaker")],
+        excludedRoleIds: [roleId("dreamer")],
+        exactRoleIds: []
+      }
+    };
+    const failingSetupGenerator: SetupGeneratorPort = {
+      generate: () => structuredFailure
+    };
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore, failingSetupGenerator);
+    const command = generateSetupCommand({ commandId: commandId("structured-setup-failure") });
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    const first = await service.execute(command);
+    const second = await service.execute(command);
+    const receipt = await commandStore.findCommandReceipt(ids.game, command.commandId);
+
+    expect(first).toMatchObject({
+      status: "rejected",
+      code: "SetupGenerationFailed",
+      idempotent: false,
+      details: {
+        kind: "setup-generation",
+        failure: structuredFailure
+      }
+    });
+    expect(second).toMatchObject({
+      status: "rejected",
+      code: "SetupGenerationFailed",
+      idempotent: true,
+      details: {
+        kind: "setup-generation",
+        failure: structuredFailure
+      }
+    });
+    expect(receipt?.result).toMatchObject({
+      status: "rejected",
+      details: {
+        kind: "setup-generation",
+        failure: structuredFailure
+      }
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(3);
   });
 
   it("returns the original accepted GenerateSetup result on retry", async () => {

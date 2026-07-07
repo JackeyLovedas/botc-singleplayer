@@ -1,4 +1,4 @@
-import type { AnyDomainEventEnvelope, GameId } from "@botc/domain-core";
+import type { AnyDomainEventEnvelope, GameId, SetupGenerationFailure } from "@botc/domain-core";
 
 export type CommandRejectionCode =
   | "ExpectedGameVersionMismatch"
@@ -25,6 +25,12 @@ export type CommandAccepted = {
   readonly idempotent: boolean;
 };
 
+export type CommandRejectionDetails =
+  | {
+      readonly kind: "setup-generation";
+      readonly failure: SetupGenerationFailure;
+    };
+
 export type CommandRejected = {
   readonly status: "rejected";
   readonly gameId: GameId;
@@ -32,6 +38,7 @@ export type CommandRejected = {
   readonly message: string;
   readonly currentGameVersion: number;
   readonly idempotent: boolean;
+  readonly details?: CommandRejectionDetails;
 };
 
 export type CommandResult = CommandAccepted | CommandRejected;
@@ -54,14 +61,16 @@ export const rejected = (
   code: CommandRejectionCode,
   message: string,
   currentGameVersion: number,
-  idempotent = false
+  idempotent = false,
+  details: CommandRejectionDetails | undefined = undefined
 ): CommandRejected => ({
   status: "rejected",
   gameId,
   code,
   message,
   currentGameVersion,
-  idempotent
+  idempotent,
+  ...(details === undefined ? {} : { details })
 });
 
 export const markIdempotent = (result: CommandResult): CommandResult => {

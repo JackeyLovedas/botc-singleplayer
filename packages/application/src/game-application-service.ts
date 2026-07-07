@@ -25,7 +25,7 @@ import type {
   SupportedCommandEnvelope
 } from "@botc/domain-core";
 import { accepted, markIdempotent, rejected } from "./command-result.js";
-import type { CommandRejectionCode, CommandResult } from "./command-result.js";
+import type { CommandRejectionCode, CommandRejectionDetails, CommandResult } from "./command-result.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
 import type { SetupGeneratorPort } from "./ports/setup-generator.js";
 
@@ -77,7 +77,7 @@ export class GameApplicationService {
 
     const batch = this.createBatchOrReject(command, state, currentGameVersion);
     if ("code" in batch) {
-      return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion));
+      return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
     }
 
     const prospective = this.validateProspectiveBatch(state, batch);
@@ -210,7 +210,7 @@ export class GameApplicationService {
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number
-  ): DomainEventBatch | { readonly code: CommandRejectionCode; readonly message: string } {
+  ): DomainEventBatch | { readonly code: CommandRejectionCode; readonly message: string; readonly details?: CommandRejectionDetails } {
     try {
       const generatedSetup = this.generateSetupOrReject(command, state);
       if (generatedSetup !== undefined && "code" in generatedSetup) {
@@ -227,7 +227,7 @@ export class GameApplicationService {
   private generateSetupOrReject(
     command: SupportedCommandEnvelope,
     state: GameState | undefined
-  ): GeneratedSetup | { readonly code: "SetupGenerationFailed"; readonly message: string } | undefined {
+  ): GeneratedSetup | { readonly code: "SetupGenerationFailed"; readonly message: string; readonly details?: CommandRejectionDetails } | undefined {
     if (command.payload.commandType !== "GenerateSetup") {
       return undefined;
     }
@@ -251,7 +251,11 @@ export class GameApplicationService {
     if (result.status === "failure") {
       return {
         code: "SetupGenerationFailed",
-        message: `${result.failureCode}: ${result.message}`
+        message: `${result.failureCode}: ${result.message}`,
+        details: {
+          kind: "setup-generation",
+          failure: result
+        }
       };
     }
 

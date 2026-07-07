@@ -6,6 +6,9 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "test": "cd ../.. && vitest run --workspace vitest.workspace.ts packages/setup-engine/src/setup-generator.test.ts"
+  },
   "dependencies": {
     "@botc/domain-core": "workspace:*"
   }
