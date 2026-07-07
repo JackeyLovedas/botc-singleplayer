@@ -8,4 +8,5 @@ export * from "./game-phase.js";
 export * from "./game-state.js";
 export * from "./ids.js";
 export * from "./phase-transition-policy.js";
+export * from "./prospective-events.js";
 export * from "./rebuild.js";

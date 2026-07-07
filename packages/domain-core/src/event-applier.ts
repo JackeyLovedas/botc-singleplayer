@@ -87,6 +87,14 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         throw new DomainError("InvalidScriptSelectedPayload", "ScriptSelected payload rules baseline must match game state");
       }
 
+      if (state.phase !== "SCRIPT_SELECTION") {
+        throw new DomainError("InvalidScriptSelectedPhase", "ScriptSelected can only be applied during SCRIPT_SELECTION");
+      }
+
+      if (state.selectedScript !== undefined) {
+        throw new DomainError("DuplicateScriptSelected", "ScriptSelected cannot overwrite an existing script selection");
+      }
+
       return {
         ...state,
         gameVersion: event.gameVersion,
@@ -126,6 +134,10 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
 
       if (!transition.allowed) {
         throw new DomainError("InvalidPhaseTransition", transition.reason);
+      }
+
+      if (event.payload.transitionReason !== transition.reasonCode) {
+        throw new DomainError("InvalidPhaseTransitionReason", "PhaseTransitioned reason code must match transition policy");
       }
 
       if (event.payload.dayNumberAfter !== transition.dayNumber || event.payload.nightNumberAfter !== transition.nightNumber) {

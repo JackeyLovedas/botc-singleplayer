@@ -18,6 +18,7 @@ import {
   humanActor,
   ids,
   otherGameId,
+  phaseTransitionedEvent,
   scriptSelectedEvent,
   selectScriptCommand,
   storytellerActor,
@@ -208,6 +209,68 @@ describe("GameApplicationService", () => {
     expect(state?.gameVersion).toBe(2);
     expect(state?.lastEventSequence).toBe(3);
     expect(commandStore.acceptedCount).toBe(2);
+  });
+
+  it("rejects a second SelectScript with a new commandId and current gameVersion", async () => {
+    const { service, commandStore } = makeService();
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    const secondSelect = selectScriptCommand({
+      commandId: commandId("second-script-command"),
+      expectedGameVersion: 2,
+      payload: {
+        ...selectScriptCommand().payload,
+        scriptId: "custom-script",
+        scriptName: "Custom Script",
+        edition: "custom"
+      }
+    });
+
+    const result = await service.execute(secondSelect);
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expect(result).toMatchObject({ status: "rejected", code: "ScriptAlreadySelected", currentGameVersion: 2 });
+    expect(events).toHaveLength(3);
+    expect(commandStore.getGameVersion(ids.game)).toBe(2);
+    expect(state?.selectedScript).toMatchObject({ scriptId: "sects-and-violets" });
+    expect(state?.phase).toBe("SETUP_GENERATION");
+  });
+
+  it("rejects SelectScript when the phase is no longer SCRIPT_SELECTION even without selectedScript", async () => {
+    const { service, commandStore } = makeService();
+
+    await service.execute(createGameCommand());
+    const transitionOnly = phaseTransitionedEvent({
+      eventSequence: 2,
+      gameVersion: 2,
+      batchId: batchId("transition-only-batch"),
+      commandId: commandId("transition-only-command")
+    });
+    await commandStore.commitAcceptedCommand({
+      expectedGameVersion: 1,
+      eventBatch: {
+        batchId: transitionOnly.batchId,
+        gameId: ids.game,
+        commandId: transitionOnly.commandId,
+        expectedGameVersion: 1,
+        committedGameVersion: 2,
+        events: [transitionOnly]
+      },
+      receipt: {
+        commandId: transitionOnly.commandId,
+        gameId: ids.game,
+        result: accepted(ids.game, 2, [transitionOnly])
+      }
+    });
+
+    const result = await service.execute(selectScriptCommand({ commandId: commandId("wrong-phase-select"), expectedGameVersion: 2 }));
+    const events = await commandStore.loadDomainEvents(ids.game);
+
+    expect(result).toMatchObject({ status: "rejected", code: "CommandNotAllowedInPhase" });
+    expect(events).toHaveLength(2);
+    expect(rebuildOptionalGameState(events)?.phase).toBe("SETUP_GENERATION");
   });
 
   it("does not use the loaded event array length as the sequence authority", async () => {

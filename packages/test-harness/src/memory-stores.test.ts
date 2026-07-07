@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { accepted } from "@botc/application";
-import { batchId } from "@botc/domain-core";
+import { batchId, commandId, rebuildGameState } from "@botc/domain-core";
 import type { CommandReceipt, CommitAcceptedCommandInput } from "@botc/application";
 import type { DomainEventBatch } from "@botc/domain-core";
 import {
   MemoryCommandCommitStore,
   gameCreatedEvent,
-  ids
+  ids,
+  phaseTransitionedEvent,
+  scriptSelectedEvent
 } from "@botc/test-harness";
 
 const commitInputFor = (batch: DomainEventBatch): CommitAcceptedCommandInput => {
@@ -91,5 +93,48 @@ describe("MemoryCommandCommitStore batch contract", () => {
     await expect(store.commitAcceptedCommand(commitInputFor(batch))).rejects.toThrow("sequences");
 
     expect(await store.loadDomainEvents(ids.game)).toHaveLength(0);
+  });
+
+  it("rejects structurally valid but semantically invalid staged streams without partial writes", async () => {
+    const store = new MemoryCommandCommitStore();
+    await store.commitAcceptedCommand(commitInputFor(createGameBatch()));
+
+    const transition = phaseTransitionedEvent({
+      eventSequence: 2,
+      gameVersion: 2,
+      batchId: batchId("phase-batch"),
+      commandId: commandId("phase-command")
+    });
+    await store.commitAcceptedCommand(commitInputFor({
+      batchId: transition.batchId,
+      gameId: ids.game,
+      commandId: transition.commandId,
+      expectedGameVersion: 1,
+      committedGameVersion: 2,
+      events: [transition]
+    }));
+
+    const invalidScript = scriptSelectedEvent({
+      eventSequence: 3,
+      gameVersion: 3,
+      batchId: batchId("semantic-invalid-batch"),
+      commandId: commandId("semantic-invalid-command")
+    });
+    const invalidBatch: DomainEventBatch = {
+      batchId: invalidScript.batchId,
+      gameId: ids.game,
+      commandId: invalidScript.commandId,
+      expectedGameVersion: 2,
+      committedGameVersion: 3,
+      events: [invalidScript]
+    };
+
+    await expect(store.commitAcceptedCommand(commitInputFor(invalidBatch))).rejects.toThrow("ScriptSelected");
+
+    const events = await store.loadDomainEvents(ids.game);
+    expect(events).toHaveLength(2);
+    expect(store.getGameVersion(ids.game)).toBe(2);
+    expect(await store.findCommandReceipt(ids.game, invalidScript.commandId)).toBeUndefined();
+    expect(rebuildGameState(events).phase).toBe("SETUP_GENERATION");
   });
 });

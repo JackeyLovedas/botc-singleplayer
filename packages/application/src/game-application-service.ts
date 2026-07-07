@@ -1,8 +1,10 @@
 import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
+  applyDomainEventBatch,
   assertNever,
   causationIdFromCommandId,
+  evaluatePhaseTransition,
   rebuildOptionalGameState
 } from "@botc/domain-core";
 import type {
@@ -65,7 +67,16 @@ export class GameApplicationService {
       return this.recordRejected(command, rejected(command.gameId, validation.code, validation.message, currentGameVersion));
     }
 
-    const batch = this.createBatch(command, state, currentGameVersion);
+    const batch = this.createBatchOrReject(command, state, currentGameVersion);
+    if ("code" in batch) {
+      return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion));
+    }
+
+    const prospective = this.validateProspectiveBatch(state, batch);
+    if (prospective !== undefined) {
+      return this.recordRejected(command, rejected(command.gameId, prospective.code, prospective.message, currentGameVersion));
+    }
+
     const result = accepted(command.gameId, batch.committedGameVersion, batch.events);
     const receipt: CommandReceipt = { commandId: command.commandId, gameId: command.gameId, result };
 
@@ -127,11 +138,32 @@ export class GameApplicationService {
           return { code: "GameNotCreated", message: "SelectScript requires an existing game" };
         }
 
+        if (state.selectedScript !== undefined) {
+          return { code: "ScriptAlreadySelected", message: "Script has already been selected" };
+        }
+
+        if (state.phase !== "SCRIPT_SELECTION") {
+          return { code: "CommandNotAllowedInPhase", message: `SelectScript cannot execute during ${state.phase}` };
+        }
+
         return undefined;
       }
     }
 
     return assertNever(command.payload);
+  }
+
+  private createBatchOrReject(
+    command: SupportedCommandEnvelope,
+    state: GameState | undefined,
+    currentGameVersion: number
+  ): DomainEventBatch | { readonly code: "DomainValidationFailed"; readonly message: string } {
+    try {
+      return this.createBatch(command, state, currentGameVersion);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown domain validation failure";
+      return { code: "DomainValidationFailed", message };
+    }
   }
 
   private createBatch(
@@ -197,6 +229,17 @@ export class GameApplicationService {
           throw new Error("SelectScript event creation requires an existing game state");
         }
 
+        const transition = evaluatePhaseTransition({
+          fromPhase: state.phase,
+          toPhase: "SETUP_GENERATION",
+          dayNumber: state.dayNumber,
+          nightNumber: state.nightNumber
+        });
+
+        if (!transition.allowed || transition.reasonCode === undefined) {
+          throw new Error(`SelectScript phase transition is not allowed: ${transition.reason}`);
+        }
+
         const scriptSelectedEvent: DomainEventEnvelope<"ScriptSelected"> = {
           ...common(firstEventSequence),
           eventType: "ScriptSelected" as const,
@@ -213,13 +256,13 @@ export class GameApplicationService {
           eventType: "PhaseTransitioned" as const,
           payload: {
             rulesBaselineVersion: RULES_BASELINE_VERSION,
-            fromPhase: "SCRIPT_SELECTION",
-            toPhase: "SETUP_GENERATION",
-            transitionReason: "SCRIPT_SELECTED",
+            fromPhase: state.phase,
+            toPhase: transition.nextPhase,
+            transitionReason: transition.reasonCode,
             dayNumberBefore: state.dayNumber,
-            dayNumberAfter: state.dayNumber,
+            dayNumberAfter: transition.dayNumber,
             nightNumberBefore: state.nightNumber,
-            nightNumberAfter: state.nightNumber
+            nightNumberAfter: transition.nightNumber
           } satisfies PhaseTransitionedPayload
         };
 
@@ -228,6 +271,22 @@ export class GameApplicationService {
     }
 
     return assertNever(command.payload);
+  }
+
+  private validateProspectiveBatch(
+    state: GameState | undefined,
+    batch: DomainEventBatch
+  ): { readonly code: "DomainValidationFailed"; readonly message: string } | undefined {
+    try {
+      applyDomainEventBatch(state, batch.events);
+      return undefined;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown domain validation failure";
+      return {
+        code: "DomainValidationFailed",
+        message
+      };
+    }
   }
 
   private async recordRejected(command: SupportedCommandEnvelope, result: CommandResult): Promise<CommandResult> {

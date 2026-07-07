@@ -1,5 +1,6 @@
 export type DomainErrorCode =
   | "EmptyEventStream"
+  | "EmptyEventBatch"
   | "EventGameMismatch"
   | "EventSequenceJump"
   | "EventGameVersionMismatch"
@@ -15,7 +16,10 @@ export type DomainErrorCode =
   | "InvalidPlayerCounts"
   | "InvalidGameCreatedPayload"
   | "InvalidScriptSelectedPayload"
+  | "InvalidScriptSelectedPhase"
+  | "DuplicateScriptSelected"
   | "InvalidPhaseTransition"
+  | "InvalidPhaseTransitionReason"
   | "InvalidPhaseCounter";
 
 export class DomainError extends Error {

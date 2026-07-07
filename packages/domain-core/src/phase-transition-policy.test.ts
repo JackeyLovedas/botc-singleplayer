@@ -32,6 +32,7 @@ describe("phase transition policy", () => {
     for (let index = 0; index < path.length - 1; index += 1) {
       const result = transition(path[index] as GamePhase, path[index + 1] as GamePhase, dayNumber, nightNumber);
       expect(result.allowed).toBe(true);
+      expect(result.reasonCode).toBeDefined();
       dayNumber = result.dayNumber;
       nightNumber = result.nightNumber;
     }
@@ -46,6 +47,7 @@ describe("phase transition policy", () => {
     expect(result).toMatchObject({
       allowed: true,
       nextPhase: "NOMINATION_WINDOW",
+      reasonCode: "VOTE_COMPLETED",
       dayNumber: 1,
       nightNumber: 1
     });
@@ -55,6 +57,7 @@ describe("phase transition policy", () => {
     const result = transition("CHARACTER_ASSIGNMENT", "FIRST_NIGHT", 0, 0);
 
     expect(result.allowed).toBe(true);
+    expect(result.reasonCode).toBe("CHARACTERS_ASSIGNED");
     expect(result.nightNumber).toBe(1);
   });
 
@@ -62,6 +65,7 @@ describe("phase transition policy", () => {
     const result = transition("DAWN_RESOLUTION", "DAY_DISCUSSION", 0, 1);
 
     expect(result.allowed).toBe(true);
+    expect(result.reasonCode).toBe("DAWN_COMPLETED");
     expect(result.dayNumber).toBe(1);
   });
 
@@ -87,5 +91,40 @@ describe("phase transition policy", () => {
 
     expect(result.allowed).toBe(false);
     expect(result.nextPhase).toBe("SCRIPT_SELECTION");
+  });
+
+  it("allows GAME_ENDED from active rule phases only", () => {
+    const allowedCases: Array<readonly [GamePhase, number, number]> = [
+      ["FIRST_NIGHT", 0, 1],
+      ["DAWN_RESOLUTION", 0, 1],
+      ["DAY_DISCUSSION", 1, 1],
+      ["NOMINATION_WINDOW", 1, 1],
+      ["VOTING", 1, 1],
+      ["EXECUTION_RESOLUTION", 1, 1],
+      ["NIGHT_TASKS", 1, 2]
+    ];
+
+    for (const [fromPhase, dayNumber, nightNumber] of allowedCases) {
+      const result = transition(fromPhase, "GAME_ENDED", dayNumber, nightNumber);
+      expect(result).toMatchObject({
+        allowed: true,
+        nextPhase: "GAME_ENDED",
+        reasonCode: "GAME_ENDED"
+      });
+    }
+  });
+
+  it("does not allow setup phases or ended games to enter GAME_ENDED or active phases directly", () => {
+    expect(transition("SCRIPT_SELECTION", "GAME_ENDED", 0, 0).allowed).toBe(false);
+    expect(transition("SETUP_GENERATION", "GAME_ENDED", 0, 0).allowed).toBe(false);
+    expect(transition("CHARACTER_ASSIGNMENT", "GAME_ENDED", 0, 0).allowed).toBe(false);
+    expect(transition("GAME_ENDED", "DAY_DISCUSSION", 1, 1).allowed).toBe(false);
+  });
+
+  it("rejects illegal phase counter combinations before transition", () => {
+    expect(transition("CHARACTER_ASSIGNMENT", "FIRST_NIGHT", 1, 1)).toMatchObject({ allowed: false });
+    expect(transition("FIRST_NIGHT", "DAWN_RESOLUTION", 1, 1)).toMatchObject({ allowed: false });
+    expect(transition("DAY_DISCUSSION", "NOMINATION_WINDOW", 1, 2)).toMatchObject({ allowed: false });
+    expect(transition("DAWN_RESOLUTION", "DAY_DISCUSSION", 1, 1)).toMatchObject({ allowed: false });
   });
 });
