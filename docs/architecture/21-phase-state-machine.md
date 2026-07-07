@@ -75,19 +75,33 @@ Avoid a generic production `AdvancePhase` command. Use semantic commands that sa
 ### NOMINATION_WINDOW
 
 - Entry: nominations opened.
-- Exit: `CloseNominations` or transition to voting for a nomination.
-- Legal commands: `DeclareNomination`, `RecordPublicClaim`, `SendPrivateMessage`, `CastVote` only after vote opens.
+- Exit: `OpenVote` after a valid `DeclareNomination`, or `CloseNominations` when no more nominations will occur.
+- Legal commands: `DeclareNomination`, `OpenVote`, `CloseNominations`, `RecordPublicClaim`, `SendPrivateMessage`.
 - Required tasks: validate nominator and target rights.
 - Automatic triggers: Witch curse subscription on nomination.
 - Victory check: after death or special result from nomination trigger.
 - Interruptions: cursed nominator death, madness execution.
 - Must not skip: one nomination per nominator and target constraints.
 
+Nomination and voting cycle:
+
+```text
+NOMINATION_WINDOW
+-> DeclareNomination
+-> OpenVote
+-> VOTING
+-> CompleteVote
+-> BlockStateUpdated
+-> NOMINATION_WINDOW
+```
+
+Every completed vote returns to `NOMINATION_WINDOW` so later nominations remain possible. Only `CloseNominations` leaves the nomination window for execution or day-end handling.
+
 ### VOTING
 
-- Entry: valid nomination declared and vote opened.
-- Exit: vote counted and block state updated.
-- Legal commands: `CastVote`.
+- Entry: `OpenVote` after a valid nomination.
+- Exit: `CompleteVote`, then `BlockStateUpdated`, then return to `NOMINATION_WINDOW`.
+- Legal commands: `CastVote`, `CompleteVote`.
 - Required tasks: count votes, consume ghost votes, update on-the-block state.
 - Automatic triggers: `BlockStateUpdated`.
 - Victory check: none unless a vote-triggered event causes death or special condition.
@@ -104,6 +118,28 @@ Avoid a generic production `AdvancePhase` command. Use semantic commands that sa
 - Victory check: required after execution and death resolution.
 - Interruptions: death replacement, Evil Twin, Klutz, Vortox-related checks.
 - Must not skip: execution/death separation.
+
+If there is a player on the block:
+
+```text
+CloseNominations
+-> ExecutionDeclared
+-> death attempt and related effects
+-> ExecutionResolved
+-> victory checks
+-> BeginNight or GameEnded
+```
+
+If there is no player on the block:
+
+```text
+CloseNominations
+-> DayClosedWithoutExecution
+-> Vortox and other day-end checks
+-> BeginNight or GameEnded
+```
+
+`DayClosedWithoutExecution` is a domain event. It is not an execution and must not satisfy rules that require an execution.
 
 ### NIGHT_TASKS
 
@@ -145,7 +181,10 @@ Preferred phase commands:
 - `BeginFirstNight`
 - `CloseDiscussion`
 - `OpenNominations`
+- `OpenVote`
+- `CompleteVote`
 - `CloseNominations`
+- `DayClosedWithoutExecution`
 - `ResolveExecution`
 - `BeginNight`
 - `CompleteNight`

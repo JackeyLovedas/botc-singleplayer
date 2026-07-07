@@ -58,28 +58,25 @@ apps/desktop
 
 packages/application
   -> domain-core
-  -> setup-engine
-  -> task-engine
-  -> effect-engine
-  -> information-engine
-  -> victory-engine
-  -> projections
-  -> persistence-sqlite
-  -> ai-gateway
+  -> application-defined ports
 
 rules-snv -> rules-baseline -> domain-core public rule interfaces
 engines -> domain-core public interfaces
 projections -> domain-core read models and event contracts
-persistence-sqlite -> domain-core event/snapshot contracts
-ai-gateway -> projections and application command contracts
+persistence-sqlite -> application persistence ports -> domain-core event contracts
+ai-gateway -> application AI ports and command contracts -> projections
 test-harness -> all packages under test
 ```
+
+The future `apps/desktop` package is the composition root. It may depend on `application`, concrete adapters such as `persistence-sqlite` and `ai-gateway`, and projections. It is responsible for instantiation and dependency injection.
 
 ## Hard Boundaries
 
 - `domain-core` must not depend on Electron, SQLite, AI SDKs, or UI packages.
 - `domain-core` owns domain contracts but not application orchestration.
 - `application` coordinates command handling and persistence; it must not absorb role rules.
+- `application` defines required ports and must not import concrete `persistence-sqlite` or `ai-gateway` implementations.
+- Concrete adapters implement application ports.
 - Role modules depend only on public domain rule interfaces.
 - `persistence-sqlite` persists contracts; it must not decide rules.
 - `ai-gateway` receives projections and returns candidate commands; it must not import canonical state builders.
