@@ -14,7 +14,9 @@ export type DomainErrorCode =
   | "UnsupportedEventVersion"
   | "InvalidPlayerCounts"
   | "InvalidGameCreatedPayload"
-  | "InvalidScriptSelectedPayload";
+  | "InvalidScriptSelectedPayload"
+  | "InvalidPhaseTransition"
+  | "InvalidPhaseCounter";
 
 export class DomainError extends Error {
   public constructor(

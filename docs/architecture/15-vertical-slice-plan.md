@@ -18,18 +18,42 @@ Acceptance:
 - A short event log rebuilds the same canonical state every time.
 - Invalid event ordering is rejected by tests.
 
-## Slice 2: Basic Phase Flow
+## Slice 2A: Phase State Machine Core
 
 Scope:
 
 - Create game.
-- Advance setup placeholder to first night, first day, nomination, vote, execution, night.
-- Track public phase and day/night counters.
+- Define strict game phase types.
+- Define phase transition policy and day/night counter policy.
+- Add `PhaseTransitioned` as the only domain event that changes `GameState.phase`.
+- Use a real multi-event batch for `SelectScript`: `ScriptSelected` plus `PhaseTransitioned`.
+- Wire `GameCommandBus` to `GameSessionRunner` and `GameApplicationService`.
+- Advance only from game creation to script selection, then to setup generation.
+- Test later phase paths through pure policy tests and explicit test fixtures only.
 
 Acceptance:
 
-- One basic day/night cycle is testable.
+- `GameCreated` rebuilds to `SCRIPT_SELECTION`, `dayNumber = 0`, and `nightNumber = 0`.
+- `SelectScript` atomically records two domain events in one batch and rebuilds to `SETUP_GENERATION`.
+- Stage counters follow the documented transition policy.
+- `CommandBus` serializes commands per game and allows independent games to proceed concurrently.
+- No setup placeholder, fake assignment, or forced phase domain event is introduced.
+
+## Slice 2B: Integrated Basic Phase Flow
+
+Scope:
+
+- Execute only after real setup and assignment events exist.
+- Move from role assignment into first night.
+- Move from first night to first day.
+- Add nomination, voting, day end, ordinary night, and dawn transitions.
+- Validate one complete day/night loop.
+
+Acceptance:
+
+- One basic day/night cycle is testable using real setup and assignment facts.
 - Execution and death remain separate events.
+- No incomplete setup fact is written into the authoritative event log.
 
 ## Slice 3: Command Validation Surface
 

@@ -2,6 +2,7 @@ import { DomainError, assertNever } from "./errors.js";
 import { RULES_BASELINE_VERSION, SUPPORTED_DOMAIN_EVENT_VERSION, isCanonicalPlayerCounts } from "./events.js";
 import type { AnyDomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
+import { evaluatePhaseTransition } from "./phase-transition-policy.js";
 
 const validateEnvelope = (state: GameState | undefined, event: AnyDomainEventEnvelope): void => {
   if (event.eventVersion !== SUPPORTED_DOMAIN_EVENT_VERSION) {
@@ -62,6 +63,9 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         gameId: event.gameId,
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
+        phase: "SCRIPT_SELECTION",
+        dayNumber: 0,
+        nightNumber: 0,
         created: true,
         rootSeed: event.payload.rootSeed,
         rulesBaselineVersion: event.payload.rulesBaselineVersion,
@@ -88,6 +92,53 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         selectedScript: event.payload
+      };
+    }
+
+    case "PhaseTransitioned": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "PhaseTransitioned requires an existing game");
+      }
+
+      if (event.payload.fromPhase !== state.phase) {
+        throw new DomainError("InvalidPhaseTransition", "PhaseTransitioned fromPhase must match current game state");
+      }
+
+      if (
+        event.payload.dayNumberBefore < 0 ||
+        event.payload.dayNumberAfter < 0 ||
+        event.payload.nightNumberBefore < 0 ||
+        event.payload.nightNumberAfter < 0
+      ) {
+        throw new DomainError("InvalidPhaseCounter", "Phase day and night counters cannot be negative");
+      }
+
+      if (event.payload.dayNumberBefore !== state.dayNumber || event.payload.nightNumberBefore !== state.nightNumber) {
+        throw new DomainError("InvalidPhaseCounter", "Phase counter before values must match current game state");
+      }
+
+      const transition = evaluatePhaseTransition({
+        fromPhase: event.payload.fromPhase,
+        toPhase: event.payload.toPhase,
+        dayNumber: state.dayNumber,
+        nightNumber: state.nightNumber
+      });
+
+      if (!transition.allowed) {
+        throw new DomainError("InvalidPhaseTransition", transition.reason);
+      }
+
+      if (event.payload.dayNumberAfter !== transition.dayNumber || event.payload.nightNumberAfter !== transition.nightNumber) {
+        throw new DomainError("InvalidPhaseCounter", "Phase counter after values must match transition policy");
+      }
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        phase: event.payload.toPhase,
+        dayNumber: event.payload.dayNumberAfter,
+        nightNumber: event.payload.nightNumberAfter
       };
     }
 

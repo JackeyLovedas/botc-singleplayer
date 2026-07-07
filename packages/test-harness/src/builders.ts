@@ -16,6 +16,7 @@ import type {
   DomainEventEnvelope,
   GameId,
   InfrastructureEventEnvelope,
+  PhaseTransitionedPayload,
   SelectScriptCommand,
   SelectScriptCommandPayload
 } from "@botc/domain-core";
@@ -124,6 +125,35 @@ export const scriptSelectedEvent = (
     edition: "sects-and-violets",
     rulesBaselineVersion: RULES_BASELINE_VERSION
   },
+  ...overrides
+});
+
+export const phaseTransitionedEvent = (
+  overrides: Partial<DomainEventEnvelope<"PhaseTransitioned">> = {}
+): DomainEventEnvelope<"PhaseTransitioned"> => ({
+  category: "domain",
+  eventId: eventId("event-3"),
+  gameId: ids.game,
+  eventSequence: 3,
+  batchId: batchId("batch-2"),
+  gameVersion: 2,
+  eventType: "PhaseTransitioned",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-2"),
+  createdAt: "2026-07-07T00:00:01.000Z",
+  correlationId: correlationId("correlation-2"),
+  causationId: causationId("command-2"),
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    fromPhase: "SCRIPT_SELECTION",
+    toPhase: "SETUP_GENERATION",
+    transitionReason: "SCRIPT_SELECTED",
+    dayNumberBefore: 0,
+    dayNumberAfter: 0,
+    nightNumberBefore: 0,
+    nightNumberAfter: 0
+  } satisfies PhaseTransitionedPayload,
   ...overrides
 });
 

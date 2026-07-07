@@ -1,28 +1,29 @@
 # BOTC Singleplayer
 
-Windows 本地《血染钟楼》单机游戏。
+Windows 本地《血染钟楼》单机游戏项目。
 
 当前范围：
 
 - 12 名普通玩家
-- 1 名真人
-- 11 名 AI
-- 1 个自动说书人
+- 1 名真人玩家
+- 11 名 AI 玩家
+- 1 个自动说书人，不计入 12 名玩家
 - 第一版剧本：《梦殒春宵》
 
 当前阶段：
 
 - Phase One v2.1：规则研究，有条件通过
 - Phase Two / Phase 2.1：技术架构定稿
-- Phase Three Slice 1：Domain Event Spine 最小垂直切片进行中
-- 尚未进入正式业务代码开发
+- Phase Three Slice 1：Domain Event Spine 已合并
+- Phase Three Slice 2A：Phase State Machine Core 进行中
+
+当前代码只覆盖领域事件脊柱、阶段状态机核心、阶段转换策略和命令串行入口。它不包含完整昼夜可玩流程、真实 setup、角色能力、AI 玩家、UI、Electron 或 SQLite 正式适配器。
 
 重要文档：
 
 - `AGENTS.md`
 - `project-handoff/00-README-FIRST.md`
 - `project-handoff/RULES_BASELINE.md`
+- `docs/architecture/15-vertical-slice-plan.md`
 - `docs/architecture/24-phase-2-final-status.md`
-
-本仓库当前只保存规则交接材料、架构文档和仓库治理文档。游戏尚未实现，不能运行。
-当前代码只覆盖最小领域事件脊柱，不包含可玩流程、角色能力、AI 玩家、UI 或桌面应用。
+- `docs/implementation/phase-3-slice-1-status.md`

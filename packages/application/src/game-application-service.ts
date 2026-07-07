@@ -9,8 +9,10 @@ import type {
   BatchId,
   DomainEventBatch,
   AnyDomainEventEnvelope,
+  DomainEventEnvelope,
   EventId,
   GameState,
+  PhaseTransitionedPayload,
   ScriptSelectedPayload,
   SupportedCommandEnvelope
 } from "@botc/domain-core";
@@ -140,7 +142,7 @@ export class GameApplicationService {
     const newVersion = currentGameVersion + 1;
     const batch = this.dependencies.ids.nextBatchId();
     const eventSequence = (state?.lastEventSequence ?? 0) + 1;
-    const event = this.createEvent(command, batch, eventSequence, newVersion);
+    const events = this.createEvents(command, batch, eventSequence, newVersion, state);
 
     return {
       batchId: batch,
@@ -148,17 +150,18 @@ export class GameApplicationService {
       commandId: command.commandId,
       expectedGameVersion: currentGameVersion,
       committedGameVersion: newVersion,
-      events: [event]
+      events
     };
   }
 
-  private createEvent(
+  private createEvents(
     command: SupportedCommandEnvelope,
     eventBatchId: BatchId,
-    eventSequence: number,
-    gameVersion: number
-  ): AnyDomainEventEnvelope {
-    const common = {
+    firstEventSequence: number,
+    gameVersion: number,
+    state: GameState | undefined
+  ): readonly AnyDomainEventEnvelope[] {
+    const common = (eventSequence: number) => ({
       category: "domain" as const,
       eventId: this.dependencies.ids.nextEventId(),
       gameId: command.gameId,
@@ -171,12 +174,12 @@ export class GameApplicationService {
       createdAt: this.dependencies.clock.now(),
       correlationId: command.correlationId,
       causationId: causationIdFromCommandId(command.commandId)
-    } as const;
+    }) as const;
 
     switch (command.payload.commandType) {
       case "CreateGame":
-        return {
-          ...common,
+        return [{
+          ...common(firstEventSequence),
           eventType: "GameCreated",
           payload: {
             gameId: command.gameId,
@@ -187,12 +190,16 @@ export class GameApplicationService {
             aiPlayerCount: command.payload.aiPlayerCount,
             storytellerCount: command.payload.storytellerCount
           }
-        };
+        }];
 
-      case "SelectScript":
-        return {
-          ...common,
-          eventType: "ScriptSelected",
+      case "SelectScript": {
+        if (state === undefined) {
+          throw new Error("SelectScript event creation requires an existing game state");
+        }
+
+        const scriptSelectedEvent: DomainEventEnvelope<"ScriptSelected"> = {
+          ...common(firstEventSequence),
+          eventType: "ScriptSelected" as const,
           payload: {
             rulesBaselineVersion: RULES_BASELINE_VERSION,
             scriptId: command.payload.scriptId,
@@ -200,6 +207,24 @@ export class GameApplicationService {
             edition: command.payload.edition
           } satisfies ScriptSelectedPayload
         };
+
+        const phaseTransitionedEvent: DomainEventEnvelope<"PhaseTransitioned"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "PhaseTransitioned" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            fromPhase: "SCRIPT_SELECTION",
+            toPhase: "SETUP_GENERATION",
+            transitionReason: "SCRIPT_SELECTED",
+            dayNumberBefore: state.dayNumber,
+            dayNumberAfter: state.dayNumber,
+            nightNumberBefore: state.nightNumber,
+            nightNumberAfter: state.nightNumber
+          } satisfies PhaseTransitionedPayload
+        };
+
+        return [scriptSelectedEvent, phaseTransitionedEvent];
+      }
     }
 
     return assertNever(command.payload);

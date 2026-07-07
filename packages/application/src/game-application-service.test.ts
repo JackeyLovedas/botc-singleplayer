@@ -185,16 +185,28 @@ describe("GameApplicationService", () => {
     const events = await commandStore.loadDomainEvents(createGameCommand().gameId);
     const state = rebuildOptionalGameState(events);
 
-    expect(result.status).toBe("accepted");
-    expect(events).toHaveLength(2);
+    expectAcceptedResult(result);
+    expect(result.events).toHaveLength(2);
+    expect(events).toHaveLength(3);
     expect(events[1]).toMatchObject({
       eventType: "ScriptSelected",
       eventSequence: 2,
       gameVersion: 2,
       commandId: selectScriptCommand().commandId
     });
+    expect(events[2]).toMatchObject({
+      eventType: "PhaseTransitioned",
+      eventSequence: 3,
+      gameVersion: 2,
+      commandId: selectScriptCommand().commandId
+    });
+    expect(events[1]?.batchId).toBe(events[2]?.batchId);
+    expect(events[1]?.commandId).toBe(events[2]?.commandId);
+    expect(events[1]?.gameVersion).toBe(events[2]?.gameVersion);
     expect(state?.selectedScript).toMatchObject({ scriptId: "sects-and-violets" });
+    expect(state?.phase).toBe("SETUP_GENERATION");
     expect(state?.gameVersion).toBe(2);
+    expect(state?.lastEventSequence).toBe(3);
     expect(commandStore.acceptedCount).toBe(2);
   });
 
@@ -206,8 +218,9 @@ describe("GameApplicationService", () => {
     await service.execute(selectScriptCommand());
     const events = await MemoryCommandCommitStore.prototype.loadDomainEvents.call(commandStore, ids.game);
 
-    expect(events).toHaveLength(2);
+    expect(events).toHaveLength(3);
     expect(events[1]?.eventSequence).toBe(2);
+    expect(events[2]?.eventSequence).toBe(3);
   });
 
   it("leaves no partial writes when atomic accepted commit fails before commit", async () => {
@@ -256,6 +269,26 @@ describe("GameApplicationService", () => {
     expect(events).toHaveLength(1);
     expect(commandStore.acceptedCount).toBe(1);
     expect(commandStore.getReceiptCount()).toBe(1);
+  });
+
+  it("leaves no partial SelectScript events when atomic accepted commit fails", async () => {
+    const { service, commandStore } = makeService();
+
+    await service.execute(createGameCommand());
+    commandStore.failDuringCommit = true;
+    const failed = await service.execute(selectScriptCommand());
+    const eventsAfterFailure = await commandStore.loadDomainEvents(ids.game);
+    const retried = await service.execute(selectScriptCommand());
+    const eventsAfterRetry = await commandStore.loadDomainEvents(ids.game);
+
+    expect(failed).toMatchObject({ status: "rejected", code: "EventStoreAppendFailed" });
+    expect(eventsAfterFailure).toHaveLength(1);
+    expect(eventsAfterFailure[0]?.eventType).toBe("GameCreated");
+    expectAcceptedResult(retried);
+    expect(retried.events).toHaveLength(2);
+    expect(eventsAfterRetry).toHaveLength(3);
+    expect(eventsAfterRetry[1]?.eventType).toBe("ScriptSelected");
+    expect(eventsAfterRetry[2]?.eventType).toBe("PhaseTransitioned");
   });
 
   it("does not allow the commit store to accept a second successful batch for one game command", async () => {
