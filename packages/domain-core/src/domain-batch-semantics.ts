@@ -182,6 +182,51 @@ const validateFirstNightTaskPlanCreatedBatch = (
   }
 };
 
+const validateIntegratedFirstNightSystemInformationBatch = (
+  currentState: GameState | undefined,
+  informationDelivered: DomainEventEnvelope<"MinionInformationDelivered"> | DomainEventEnvelope<"DemonInformationDelivered">,
+  scheduledTaskSettled: DomainEventEnvelope<"ScheduledTaskSettled">
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "First-night system information batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    reject("First-night system information batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  assertSharedBatchMetadata(informationDelivered, scheduledTaskSettled);
+
+  if (
+    scheduledTaskSettled.payload.taskId !== informationDelivered.payload.taskId ||
+    scheduledTaskSettled.payload.taskType !== informationDelivered.payload.taskType ||
+    scheduledTaskSettled.payload.characterStateRevision !== informationDelivered.payload.characterStateRevision
+  ) {
+    reject("ScheduledTaskSettled must match the preceding team information event task identity and character state revision");
+  }
+
+  if (
+    informationDelivered.eventType === "MinionInformationDelivered" &&
+    scheduledTaskSettled.payload.outcomeType !== "MINION_INFORMATION_DELIVERED"
+  ) {
+    reject("MINION_INFO settlement must use MINION_INFORMATION_DELIVERED outcome");
+  }
+
+  if (
+    informationDelivered.eventType === "DemonInformationDelivered" &&
+    scheduledTaskSettled.payload.outcomeType !== "DEMON_INFORMATION_DELIVERED"
+  ) {
+    reject("DEMON_INFO settlement must use DEMON_INFORMATION_DELIVERED outcome");
+  }
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -220,6 +265,19 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "FirstNightTaskPlanCreated") {
     validateFirstNightTaskPlanCreatedBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (
+    (first.eventType === "MinionInformationDelivered" || first.eventType === "DemonInformationDelivered") &&
+    second !== undefined &&
+    second.eventType === "ScheduledTaskSettled"
+  ) {
+    if (batchEvents.length !== 2 || third !== undefined) {
+      reject("First-night system information settlement batches must contain exactly two events");
+    }
+
+    validateIntegratedFirstNightSystemInformationBatch(currentState, first, second);
     return;
   }
 

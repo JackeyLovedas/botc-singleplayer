@@ -107,7 +107,20 @@ The base order is:
 
 Role tasks use `REEVALUATE_SOURCE_AT_SETTLEMENT`. System information tasks use `RESOLVE_CURRENT_EVIL_TEAM_AT_SETTLEMENT`.
 
-The model does not yet create active tasks, visible options, task inputs, task results, role ability effects, or information delivery events.
+Slice 2B5 adds settlement only for the two system information tasks:
+
+```text
+SettleFirstNightSystemTask
+-> confirm requested task is the next unsettled supported system task
+-> resolve current evil team from CurrentCharacterStateSet
+-> create MinionInformationDelivered or DemonInformationDelivered
+-> create ScheduledTaskSettled in the same batch
+-> append FirstNightTaskProgress from replay
+```
+
+`ScheduledTaskSettled` is a progress fact, not a replacement for the original task plan. It records task id, task type, night number, settlement version, outcome type, and current character state revision. It must be paired with the matching information delivery event in the same batch.
+
+The model still does not create active role tasks, visible options, task inputs, role task results, role ability effects, dynamic task insertion, or AI decisions.
 
 ## ActionOpportunity Flow
 

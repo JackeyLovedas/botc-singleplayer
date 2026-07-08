@@ -95,6 +95,10 @@ export type ScheduledTaskSettlement = {
   readonly characterStateRevision: number;
 };
 
+export type ScheduledTaskSettledPayload = ScheduledTaskSettlement & {
+  readonly rulesBaselineVersion: string;
+};
+
 export type FirstNightTaskProgress = {
   readonly settlements: readonly ScheduledTaskSettlement[];
 };
@@ -280,6 +284,15 @@ const SCHEDULED_TASK_SETTLEMENT_KEYS = [
   "characterStateRevision",
   "nightNumber",
   "outcomeType",
+  "settlementVersion",
+  "taskId",
+  "taskType"
+] as const;
+const SCHEDULED_TASK_SETTLED_PAYLOAD_KEYS = [
+  "characterStateRevision",
+  "nightNumber",
+  "outcomeType",
+  "rulesBaselineVersion",
   "settlementVersion",
   "taskId",
   "taskType"
@@ -678,6 +691,30 @@ const parseScheduledTaskSettlementShape = (value: unknown): ScheduledTaskSettlem
     outcomeType: value.outcomeType,
     characterStateRevision: value.characterStateRevision
   };
+};
+
+export const validateScheduledTaskSettledPayloadShape = (value: unknown): FirstNightTaskPlanValidationResult => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, SCHEDULED_TASK_SETTLED_PAYLOAD_KEYS)) {
+    return fail("ScheduledTaskSettled payload must have exact runtime shape");
+  }
+
+  const parsed = parseScheduledTaskSettlementShape({
+    characterStateRevision: value.characterStateRevision,
+    nightNumber: value.nightNumber,
+    outcomeType: value.outcomeType,
+    settlementVersion: value.settlementVersion,
+    taskId: value.taskId,
+    taskType: value.taskType
+  });
+  if ("valid" in parsed) {
+    return parsed;
+  }
+
+  if (typeof value.rulesBaselineVersion !== "string") {
+    return fail("ScheduledTaskSettled rulesBaselineVersion must be a string");
+  }
+
+  return { valid: true };
 };
 
 const parseFirstNightTaskProgressShape = (value: unknown): { readonly valid: true; readonly progress: FirstNightTaskProgress } | ValidationFailure => {

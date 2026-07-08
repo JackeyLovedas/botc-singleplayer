@@ -33,6 +33,12 @@ export type CommandRejectionCode =
   | "InitialPrivateKnowledgeGenerationFailed"
   | "FirstNightNotInitialized"
   | "FirstNightTaskPlanAlreadyCreated"
+  | "FirstNightTaskPlanNotCreated"
+  | "ScheduledTaskNotFound"
+  | "ScheduledTaskAlreadySettled"
+  | "ScheduledTaskNotNext"
+  | "UnsupportedSystemTaskSettlement"
+  | "NextTaskRequiresRoleExecution"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 
@@ -137,6 +143,7 @@ export type CommandExecutionFailureStage =
   | "assignment-generation"
   | "initial-knowledge-generation"
   | "first-night-task-planning"
+  | "first-night-system-information"
   | "event-metadata"
   | "prospective-validation"
   | "accepted-commit"

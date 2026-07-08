@@ -13,7 +13,8 @@ import {
   createFixedPlayerRoster,
   eventId,
   gameId,
-  playerId
+  playerId,
+  scheduledTaskId
 } from "@botc/domain-core";
 import type {
   AssignCharactersCommand,
@@ -32,6 +33,8 @@ import type {
   InitializeFirstNightCommandPayload,
   PlanFirstNightTasksCommand,
   PlanFirstNightTasksCommandPayload,
+  SettleFirstNightSystemTaskCommand,
+  SettleFirstNightSystemTaskCommandPayload,
   FirstNightInitializedPayload,
   FirstNightTaskPlanCreatedPayload,
   InitialPrivateKnowledgeEstablishedPayload,
@@ -43,7 +46,7 @@ import type {
   SetupGeneratedPayload
 } from "@botc/domain-core";
 import { SeededCharacterAssignmentGenerator } from "@botc/assignment-engine";
-import { InitialPrivateKnowledgeBuilder } from "@botc/information-engine";
+import { FirstNightSystemInformationResolver, InitialPrivateKnowledgeBuilder } from "@botc/information-engine";
 import { SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG, SECTS_AND_VIOLETS_SCRIPT } from "@botc/rules-snv";
 import { SeededSectsAndVioletsSetupGenerator } from "@botc/setup-engine";
 import { FirstNightTaskPlanner } from "@botc/task-engine";
@@ -191,6 +194,24 @@ export const planFirstNightTasksCommand = (
   ...overrides
 });
 
+export const settleFirstNightSystemTaskPayload = {
+  commandType: "SettleFirstNightSystemTask",
+  taskId: scheduledTaskId("first-night-v1:MINION_INFO:system")
+} as const satisfies SettleFirstNightSystemTaskCommandPayload;
+
+export const settleFirstNightSystemTaskCommand = (
+  overrides: Partial<SettleFirstNightSystemTaskCommand> = {}
+): SettleFirstNightSystemTaskCommand => ({
+  commandId: commandId("command-8"),
+  gameId: ids.game,
+  expectedGameVersion: 7,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:07.000Z",
+  correlationId: correlationId("correlation-8"),
+  payload: settleFirstNightSystemTaskPayload,
+  ...overrides
+});
+
 export const gameCreatedEvent = (
   overrides: Partial<DomainEventEnvelope<"GameCreated">> = {}
 ): DomainEventEnvelope<"GameCreated"> => ({
@@ -278,6 +299,7 @@ export const testAssignmentGenerator = new SeededCharacterAssignmentGenerator();
 export const testInitialPrivateKnowledgeBuilder = new InitialPrivateKnowledgeBuilder();
 export const testFirstNightTaskCatalog = SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG;
 export const testFirstNightTaskPlanner = new FirstNightTaskPlanner(testFirstNightTaskCatalog);
+export const testFirstNightSystemInformationResolver = new FirstNightSystemInformationResolver();
 
 const generatedSetup = () => {
   const result = testSetupGenerator.generate({

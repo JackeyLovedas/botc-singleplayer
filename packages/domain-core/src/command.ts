@@ -1,4 +1,4 @@
-import type { CommandId, CorrelationId, GameId, PlayerId } from "./ids.js";
+import type { CommandId, CorrelationId, GameId, PlayerId, ScheduledTaskId } from "./ids.js";
 import type { SetupGenerationConstraints } from "./setup-types.js";
 
 export type HumanActor = {
@@ -73,6 +73,11 @@ export type PlanFirstNightTasksCommandPayload = {
   readonly commandType: "PlanFirstNightTasks";
 };
 
+export type SettleFirstNightSystemTaskCommandPayload = {
+  readonly commandType: "SettleFirstNightSystemTask";
+  readonly taskId: ScheduledTaskId;
+};
+
 export type SupportedCommandPayload =
   | CreateGameCommandPayload
   | SelectScriptCommandPayload
@@ -80,7 +85,8 @@ export type SupportedCommandPayload =
   | CreatePlayerRosterCommandPayload
   | AssignCharactersCommandPayload
   | InitializeFirstNightCommandPayload
-  | PlanFirstNightTasksCommandPayload;
+  | PlanFirstNightTasksCommandPayload
+  | SettleFirstNightSystemTaskCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
@@ -88,6 +94,7 @@ export type CreatePlayerRosterCommand = CommandEnvelope<CreatePlayerRosterComman
 export type AssignCharactersCommand = CommandEnvelope<AssignCharactersCommandPayload>;
 export type InitializeFirstNightCommand = CommandEnvelope<InitializeFirstNightCommandPayload>;
 export type PlanFirstNightTasksCommand = CommandEnvelope<PlanFirstNightTasksCommandPayload>;
+export type SettleFirstNightSystemTaskCommand = CommandEnvelope<SettleFirstNightSystemTaskCommandPayload>;
 export type SupportedCommandEnvelope =
   | CreateGameCommand
   | SelectScriptCommand
@@ -95,4 +102,5 @@ export type SupportedCommandEnvelope =
   | CreatePlayerRosterCommand
   | AssignCharactersCommand
   | InitializeFirstNightCommand
-  | PlanFirstNightTasksCommand;
+  | PlanFirstNightTasksCommand
+  | SettleFirstNightSystemTaskCommand;

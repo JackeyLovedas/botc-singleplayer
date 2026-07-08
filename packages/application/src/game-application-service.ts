@@ -4,6 +4,9 @@ import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
+  DEMON_INFORMATION_KNOWLEDGE_STAGE,
+  MINION_INFORMATION_KNOWLEDGE_STAGE,
+  SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
   DomainError,
   applyDomainEventBatch,
@@ -12,6 +15,8 @@ import {
   createFixedPlayerRoster,
   compareStableId,
   cloneFirstNightTaskCatalogSnapshot,
+  getNextUnsettledFirstNightTask,
+  isFirstNightTaskSettled,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
   SUPPORTED_SCRIPT_EDITION,
@@ -31,17 +36,25 @@ import type {
   GeneratedSetup,
   GameState,
   CharactersAssignedPayload,
+  DemonInformationDeliveredPayload,
+  DemonInformationEntry,
   FirstNightInitializedPayload,
   FirstNightTaskCatalogSnapshot,
   FirstNightTaskPlan,
   FirstNightTaskPlanCreatedPayload,
   FirstNightTaskPlanningFailure,
   FirstNightTaskPlanningResult,
+  FirstNightSystemInformationFailureCode,
+  FirstNightSystemInformationResolution,
+  FirstNightSystemInformationResolutionResult,
   InitialPrivateKnowledge,
   InitialPrivateKnowledgeEstablishedPayload,
   InitialPrivateKnowledgeGenerationFailure,
+  MinionInformationDeliveredPayload,
+  MinionInformationEntry,
   PhaseTransitionedPayload,
   PlayerRosterCreatedPayload,
+  ScheduledTaskSettledPayload,
   SetupGeneratedPayload,
   SetupGenerationConstraints,
   SetupGenerationFailure,
@@ -60,6 +73,7 @@ import type {
 } from "./command-result.js";
 import type { CharacterAssignmentGeneratorPort } from "./ports/character-assignment-generator.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
+import type { FirstNightSystemInformationResolverPort } from "./ports/first-night-system-information-resolver.js";
 import type { FirstNightTaskPlannerPort } from "./ports/first-night-task-planner.js";
 import type { InitialPrivateKnowledgeBuilderPort } from "./ports/initial-private-knowledge-builder.js";
 import type { SetupGeneratorPort } from "./ports/setup-generator.js";
@@ -81,6 +95,7 @@ export type GameApplicationServiceDependencies = {
   readonly characterAssignmentGenerator?: CharacterAssignmentGeneratorPort;
   readonly initialPrivateKnowledgeBuilder?: InitialPrivateKnowledgeBuilderPort;
   readonly firstNightTaskPlanner?: FirstNightTaskPlannerPort;
+  readonly firstNightSystemInformationResolver?: FirstNightSystemInformationResolverPort;
   readonly firstNightTaskCatalogSnapshot?: FirstNightTaskCatalogSnapshot;
 };
 
@@ -213,6 +228,131 @@ const validateFirstNightTaskPlannerRuntimeResult = (value: unknown): FirstNightT
     );
   }
 };
+
+type FirstNightSystemInformationRuntimeValidationResult =
+  | {
+      readonly valid: true;
+      readonly result: FirstNightSystemInformationResolutionResult;
+    }
+  | {
+      readonly valid: false;
+      readonly message: string;
+    };
+
+const isFirstNightSystemInformationFailureCode = (value: unknown): value is FirstNightSystemInformationFailureCode =>
+  value === "InvalidCurrentCharacterState" ||
+  value === "InvalidTaskType" ||
+  value === "InvalidRoster" ||
+  value === "InvalidSetup" ||
+  value === "InvalidEvilTeam" ||
+  value === "InvalidKnowledgeResult";
+
+const invalidSystemInformationResult = (message: string): FirstNightSystemInformationRuntimeValidationResult => ({
+  valid: false,
+  message
+});
+
+const validateFirstNightSystemInformationResolutionRuntimeShape = (value: unknown): boolean => {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+
+  if (
+    typeof value.taskId !== "string" ||
+    value.taskId.trim().length === 0 ||
+    (value.taskType !== "MINION_INFO" && value.taskType !== "DEMON_INFO") ||
+    typeof value.characterStateRevision !== "number" ||
+    !Number.isInteger(value.characterStateRevision) ||
+    value.characterStateRevision <= 0 ||
+    value.knowledgeModelVersion !== SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION ||
+    !Array.isArray(value.entries) ||
+    !isDenseArray(value.entries) ||
+    value.entries.some((entry) => !isPlainRecord(entry))
+  ) {
+    return false;
+  }
+
+  return value.taskType === "MINION_INFO"
+    ? value.knowledgeStage === MINION_INFORMATION_KNOWLEDGE_STAGE
+    : value.knowledgeStage === DEMON_INFORMATION_KNOWLEDGE_STAGE;
+};
+
+const validateFirstNightSystemInformationResolverRuntimeResultShape = (
+  value: unknown
+): FirstNightSystemInformationRuntimeValidationResult => {
+  if (!isPlainRecord(value)) {
+    return invalidSystemInformationResult("First-night system information resolver returned a malformed result: result must be a non-null plain object");
+  }
+
+  if (value.status === "failure") {
+    if (!isFirstNightSystemInformationFailureCode(value.failureCode)) {
+      return invalidSystemInformationResult("First-night system information resolver returned a malformed failure result: failureCode is invalid");
+    }
+
+    if (typeof value.message !== "string") {
+      return invalidSystemInformationResult("First-night system information resolver returned a malformed failure result: message must be a string");
+    }
+
+    if (!validateStringDenseArray(value.conflictingPlayerIds)) {
+      return invalidSystemInformationResult(
+        "First-night system information resolver returned a malformed failure result: conflictingPlayerIds must be a dense string array"
+      );
+    }
+
+    return { valid: true, result: value as unknown as FirstNightSystemInformationResolutionResult };
+  }
+
+  if (value.status === "success") {
+    if (!Object.hasOwn(value, "resolution")) {
+      return invalidSystemInformationResult("First-night system information resolver returned a malformed success result: resolution is missing");
+    }
+
+    let resolution: unknown;
+    try {
+      resolution = value.resolution;
+    } catch (error: unknown) {
+      return invalidSystemInformationResult(
+        `First-night system information resolver returned a malformed success result: resolution access failed: ${errorMessage(
+          error,
+          "Unknown resolution access failure"
+        )}`
+      );
+    }
+
+    if (!validateFirstNightSystemInformationResolutionRuntimeShape(resolution)) {
+      return invalidSystemInformationResult(
+        "First-night system information resolver returned a malformed success result: resolution must have supported runtime shape"
+      );
+    }
+
+    return { valid: true, result: value as unknown as FirstNightSystemInformationResolutionResult };
+  }
+
+  return invalidSystemInformationResult("First-night system information resolver returned a malformed result: status must be success or failure");
+};
+
+const validateFirstNightSystemInformationResolverRuntimeResult = (
+  value: unknown
+): FirstNightSystemInformationRuntimeValidationResult => {
+  try {
+    return validateFirstNightSystemInformationResolverRuntimeResultShape(value);
+  } catch (error: unknown) {
+    return invalidSystemInformationResult(
+      `First-night system information resolver returned a malformed result: runtime validation failed: ${errorMessage(
+        error,
+        "Unknown system information result validation failure"
+      )}`
+    );
+  }
+};
+
+const firstNightSystemInformationFailureMessage = (
+  failure: Extract<FirstNightSystemInformationResolutionResult, { readonly status: "failure" }>
+): string =>
+  [
+    `${failure.failureCode}: ${failure.message}`,
+    `conflictingPlayerIds=[${failure.conflictingPlayerIds.join(",")}]`
+  ].join("; ");
 
 export class GameApplicationService {
   public constructor(private readonly dependencies: GameApplicationServiceDependencies) {}
@@ -578,6 +718,84 @@ export class GameApplicationService {
 
         return undefined;
       }
+
+      case "SettleFirstNightSystemTask": {
+        if (command.actor.kind !== "system" && command.actor.kind !== "storyteller") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "SettleFirstNightSystemTask requires an existing game" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `SettleFirstNightSystemTask cannot execute during ${state.phase}` };
+        }
+
+        if (state.firstNight === undefined) {
+          return { code: "FirstNightNotInitialized", message: "SettleFirstNightSystemTask requires first night initialization" };
+        }
+
+        if (state.initialPrivateKnowledge === undefined) {
+          return {
+            code: "InitialPrivateKnowledgeNotEstablished",
+            message: "SettleFirstNightSystemTask requires initial own-character knowledge"
+          };
+        }
+
+        if (state.firstNightTaskPlan === undefined) {
+          return { code: "FirstNightTaskPlanNotCreated", message: "SettleFirstNightSystemTask requires a first-night task plan" };
+        }
+
+        if (state.currentCharacterState === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "SettleFirstNightSystemTask requires current character state" };
+        }
+
+        const requestedTaskId = command.payload.taskId;
+        const targetTask = state.firstNightTaskPlan.tasks.find((task) => task.taskId === requestedTaskId);
+        if (targetTask === undefined) {
+          return { code: "ScheduledTaskNotFound", message: `Scheduled task ${requestedTaskId} does not exist in the first-night task plan` };
+        }
+
+        if (isFirstNightTaskSettled(state.firstNightTaskProgress, requestedTaskId)) {
+          return { code: "ScheduledTaskAlreadySettled", message: `Scheduled task ${requestedTaskId} is already settled` };
+        }
+
+        const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+        if (nextTask === undefined) {
+          return { code: "ScheduledTaskAlreadySettled", message: "All first-night tasks are already settled" };
+        }
+
+        if (nextTask.taskId !== targetTask.taskId) {
+          if (nextTask.taskClass !== "SYSTEM_INFORMATION" || (nextTask.taskType !== "MINION_INFO" && nextTask.taskType !== "DEMON_INFO")) {
+            return {
+              code: "NextTaskRequiresRoleExecution",
+              message: `Cannot settle ${targetTask.taskType} before required role task ${nextTask.taskType}`
+            };
+          }
+
+          return {
+            code: "ScheduledTaskNotNext",
+            message: `Scheduled task ${targetTask.taskId} is not the next unsettled first-night task`
+          };
+        }
+
+        if (
+          targetTask.source.kind !== "SYSTEM" ||
+          targetTask.taskClass !== "SYSTEM_INFORMATION" ||
+          (targetTask.taskType !== "MINION_INFO" && targetTask.taskType !== "DEMON_INFO")
+        ) {
+          return {
+            code: "UnsupportedSystemTaskSettlement",
+            message: `SettleFirstNightSystemTask cannot settle ${targetTask.taskType}`
+          };
+        }
+
+        return undefined;
+      }
     }
 
     return assertNever(command.payload);
@@ -621,19 +839,33 @@ export class GameApplicationService {
         return firstNightTaskPlan;
       }
 
-      return this.createBatch(command, state, currentGameVersion, generatedSetup, generatedAssignment, initialPrivateKnowledge, firstNightTaskPlan);
+      const firstNightSystemInformation = this.resolveFirstNightSystemInformationOrReject(command, state, currentGameVersion);
+      if (firstNightSystemInformation !== undefined && "code" in firstNightSystemInformation) {
+        return firstNightSystemInformation;
+      }
+
+      return this.createBatch(
+        command,
+        state,
+        currentGameVersion,
+        generatedSetup,
+        generatedAssignment,
+        initialPrivateKnowledge,
+        firstNightTaskPlan,
+        firstNightSystemInformation
+      );
     } catch (error: unknown) {
       if (error instanceof EventMetadataGenerationError) {
         return failed(command.gameId, "MetadataGenerationFailed", error.message, "event-metadata", currentGameVersion);
       }
 
       if (error instanceof DomainError) {
-        if (command.payload.commandType === "PlanFirstNightTasks") {
+        if (command.payload.commandType === "PlanFirstNightTasks" || command.payload.commandType === "SettleFirstNightSystemTask") {
           return failed(
             command.gameId,
             "DependencyExecutionFailed",
             error.message,
-            "first-night-task-planning",
+            command.payload.commandType === "PlanFirstNightTasks" ? "first-night-task-planning" : "first-night-system-information",
             currentGameVersion
           );
         }
@@ -954,6 +1186,99 @@ export class GameApplicationService {
     return result.taskPlan;
   }
 
+  private resolveFirstNightSystemInformationOrReject(
+    command: SupportedCommandEnvelope,
+    state: GameState | undefined,
+    currentGameVersion: number
+  ): FirstNightSystemInformationResolution | CommandExecutionFailed | undefined {
+    if (command.payload.commandType !== "SettleFirstNightSystemTask") {
+      return undefined;
+    }
+
+    if (
+      state === undefined ||
+      state.setup === undefined ||
+      state.roster === undefined ||
+      state.currentCharacterState === undefined ||
+      state.firstNightTaskPlan === undefined
+    ) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "SettleFirstNightSystemTask requires setup, roster, current character state, and first-night task plan",
+        "first-night-system-information",
+        currentGameVersion
+      );
+    }
+
+    const requestedTaskId = command.payload.taskId;
+    const targetTask = state.firstNightTaskPlan.tasks.find((task) => task.taskId === requestedTaskId);
+    if (targetTask === undefined || (targetTask.taskType !== "MINION_INFO" && targetTask.taskType !== "DEMON_INFO")) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "SettleFirstNightSystemTask requires a supported system information task",
+        "first-night-system-information",
+        currentGameVersion
+      );
+    }
+
+    const resolver = this.dependencies.firstNightSystemInformationResolver;
+    if (resolver === undefined) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "First-night system information resolver dependency is not configured",
+        "first-night-system-information",
+        currentGameVersion
+      );
+    }
+
+    let result;
+    try {
+      result = resolver.resolve({
+        taskType: targetTask.taskType,
+        taskId: targetTask.taskId,
+        currentCharacterState: state.currentCharacterState,
+        roster: state.roster.entries,
+        setup: state.setup
+      });
+    } catch (error: unknown) {
+      return failed(
+        command.gameId,
+        "DependencyExecutionFailed",
+        errorMessage(error, "Unknown first-night system information resolver failure"),
+        "first-night-system-information",
+        currentGameVersion
+      );
+    }
+
+    const runtimeValidation = validateFirstNightSystemInformationResolverRuntimeResult(result);
+    if (!runtimeValidation.valid) {
+      return failed(
+        command.gameId,
+        "DependencyExecutionFailed",
+        runtimeValidation.message,
+        "first-night-system-information",
+        currentGameVersion
+      );
+    }
+
+    result = runtimeValidation.result;
+
+    if (result.status === "failure") {
+      return failed(
+        command.gameId,
+        "DependencyExecutionFailed",
+        firstNightSystemInformationFailureMessage(result),
+        "first-night-system-information",
+        currentGameVersion
+      );
+    }
+
+    return result.resolution;
+  }
+
   private createBatch(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
@@ -961,7 +1286,8 @@ export class GameApplicationService {
     generatedSetup: GeneratedSetup | undefined,
     generatedAssignment: GeneratedCharacterAssignment | undefined,
     initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
-    firstNightTaskPlan: FirstNightTaskPlan | undefined
+    firstNightTaskPlan: FirstNightTaskPlan | undefined,
+    firstNightSystemInformation: FirstNightSystemInformationResolution | undefined
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.createBatchId();
@@ -975,7 +1301,8 @@ export class GameApplicationService {
       generatedSetup,
       generatedAssignment,
       initialPrivateKnowledge,
-      firstNightTaskPlan
+      firstNightTaskPlan,
+      firstNightSystemInformation
     );
 
     return {
@@ -997,7 +1324,8 @@ export class GameApplicationService {
     generatedSetup: GeneratedSetup | undefined,
     generatedAssignment: GeneratedCharacterAssignment | undefined,
     initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
-    firstNightTaskPlan: FirstNightTaskPlan | undefined
+    firstNightTaskPlan: FirstNightTaskPlan | undefined,
+    firstNightSystemInformation: FirstNightSystemInformationResolution | undefined
   ): readonly AnyDomainEventEnvelope[] {
     const common = (eventSequence: number) => this.createEventMetadata(command, eventBatchId, eventSequence, gameVersion);
 
@@ -1252,6 +1580,79 @@ export class GameApplicationService {
 
         return [firstNightTaskPlanCreatedEvent];
       }
+
+      case "SettleFirstNightSystemTask": {
+        if (
+          state === undefined ||
+          state.setup === undefined ||
+          state.roster === undefined ||
+          state.currentCharacterState === undefined ||
+          firstNightSystemInformation === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SettleFirstNightSystemTask event creation requires source facts and resolved system information"
+          );
+        }
+
+        const outcomeType = firstNightSystemInformation.taskType === "MINION_INFO"
+          ? "MINION_INFORMATION_DELIVERED"
+          : "DEMON_INFORMATION_DELIVERED";
+
+        const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "ScheduledTaskSettled" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            nightNumber: 1,
+            taskId: firstNightSystemInformation.taskId,
+            taskType: firstNightSystemInformation.taskType,
+            settlementVersion: "scheduled-task-settlement-v1",
+            outcomeType,
+            characterStateRevision: firstNightSystemInformation.characterStateRevision
+          } satisfies ScheduledTaskSettledPayload
+        };
+
+        if (firstNightSystemInformation.taskType === "MINION_INFO") {
+          const minionInformationDeliveredEvent: DomainEventEnvelope<"MinionInformationDelivered"> = {
+            ...common(firstEventSequence),
+            eventType: "MinionInformationDelivered" as const,
+            payload: {
+              rulesBaselineVersion: RULES_BASELINE_VERSION,
+              nightNumber: 1,
+              taskId: firstNightSystemInformation.taskId,
+              taskType: "MINION_INFO",
+              knowledgeModelVersion: firstNightSystemInformation.knowledgeModelVersion,
+              knowledgeStage: MINION_INFORMATION_KNOWLEDGE_STAGE,
+              characterStateRevision: firstNightSystemInformation.characterStateRevision,
+              rosterVersion: state.roster.rosterVersion,
+              roleCatalogSignature: state.setup.roleCatalogSignature,
+              entries: firstNightSystemInformation.entries as readonly MinionInformationEntry[]
+            } satisfies MinionInformationDeliveredPayload
+          };
+
+          return [minionInformationDeliveredEvent, scheduledTaskSettledEvent];
+        }
+
+        const demonInformationDeliveredEvent: DomainEventEnvelope<"DemonInformationDelivered"> = {
+          ...common(firstEventSequence),
+          eventType: "DemonInformationDelivered" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            nightNumber: 1,
+            taskId: firstNightSystemInformation.taskId,
+            taskType: "DEMON_INFO",
+            knowledgeModelVersion: firstNightSystemInformation.knowledgeModelVersion,
+            knowledgeStage: DEMON_INFORMATION_KNOWLEDGE_STAGE,
+            characterStateRevision: firstNightSystemInformation.characterStateRevision,
+            rosterVersion: state.roster.rosterVersion,
+            roleCatalogSignature: state.setup.roleCatalogSignature,
+            entries: firstNightSystemInformation.entries as readonly DemonInformationEntry[]
+          } satisfies DemonInformationDeliveredPayload
+        };
+
+        return [demonInformationDeliveredEvent, scheduledTaskSettledEvent];
+      }
     }
 
     return assertNever(command.payload);
@@ -1283,6 +1684,16 @@ export class GameApplicationService {
           "DependencyExecutionFailed",
           error.message,
           "prospective-validation",
+          batch.expectedGameVersion
+        );
+      }
+
+      if (command.payload.commandType === "SettleFirstNightSystemTask") {
+        return failed(
+          batch.gameId,
+          "DependencyExecutionFailed",
+          error.message,
+          "first-night-system-information",
           batch.expectedGameVersion
         );
       }

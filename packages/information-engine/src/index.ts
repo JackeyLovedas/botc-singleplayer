@@ -1,8 +1,16 @@
 import {
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+  DEMON_INFORMATION_KNOWLEDGE_STAGE,
+  MINION_INFORMATION_KNOWLEDGE_STAGE,
+  SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   cloneInitialOwnCharacterKnowledgeEntry,
+  cloneFirstNightSystemInformationResolution,
   cloneRoleSetupSnapshot,
+  expectedDemonInformationEntries,
+  expectedMinionInformationEntries,
+  resolveCurrentEvilTeam,
+  validateCurrentCharacterStateSet,
   validateCharacterAssignments,
   validateInitialKnowledgeSourceFacts,
   validateInitialOwnCharacterKnowledgeEntries,
@@ -15,6 +23,10 @@ import type {
   InitialPrivateKnowledgeGenerationResult,
   InitialPrivateKnowledgeGeneratorInput,
   InitialOwnCharacterKnowledgeEntry,
+  FirstNightSystemInformationFailureCode,
+  FirstNightSystemInformationResolutionFailure,
+  FirstNightSystemInformationResolutionResult,
+  FirstNightSystemInformationResolverInput,
   PlayerId,
   RoleId
 } from "@botc/domain-core";
@@ -154,6 +166,71 @@ export class InitialPrivateKnowledgeBuilder {
         knowledgeStage: knowledge.knowledgeStage,
         entries: knowledge.entries.map(cloneInitialOwnCharacterKnowledgeEntry)
       }
+    };
+  }
+}
+
+const systemInformationFailure = (
+  failureCode: FirstNightSystemInformationFailureCode,
+  message: string,
+  conflictingPlayerIds: readonly PlayerId[] = []
+): FirstNightSystemInformationResolutionFailure => ({
+  status: "failure",
+  failureCode,
+  message,
+  conflictingPlayerIds: [...conflictingPlayerIds].sort()
+});
+
+export class FirstNightSystemInformationResolver {
+  public resolve(input: FirstNightSystemInformationResolverInput): FirstNightSystemInformationResolutionResult {
+    if (input.taskType !== "MINION_INFO" && input.taskType !== "DEMON_INFO") {
+      return systemInformationFailure("InvalidTaskType", "First-night system information only supports MINION_INFO and DEMON_INFO");
+    }
+
+    const rosterValidation = validatePlayerRoster(input.roster);
+    if (!rosterValidation.valid) {
+      return systemInformationFailure("InvalidRoster", rosterValidation.reason);
+    }
+
+    const currentValidation = validateCurrentCharacterStateSet({
+      currentCharacterState: input.currentCharacterState,
+      roster: input.roster,
+      setup: input.setup
+    });
+    if (!currentValidation.valid) {
+      return systemInformationFailure("InvalidCurrentCharacterState", currentValidation.reason);
+    }
+
+    if (input.setup.demonBluffs.length !== 3) {
+      return systemInformationFailure("InvalidSetup", "setup.demonBluffs must contain exactly three roles");
+    }
+
+    const team = resolveCurrentEvilTeam({
+      currentCharacterState: input.currentCharacterState,
+      roster: input.roster
+    });
+    if (team.status === "failure") {
+      return systemInformationFailure("InvalidEvilTeam", team.message, team.conflictingPlayerIds);
+    }
+
+    const entries = input.taskType === "MINION_INFO"
+      ? expectedMinionInformationEntries(team.team.demon, team.team.minions)
+      : expectedDemonInformationEntries(team.team.demon, team.team.minions, input.setup.demonBluffs);
+
+    const resolution = {
+      taskId: input.taskId,
+      taskType: input.taskType,
+      characterStateRevision: team.team.characterStateRevision,
+      knowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
+      knowledgeStage: input.taskType === "MINION_INFO"
+        ? MINION_INFORMATION_KNOWLEDGE_STAGE
+        : DEMON_INFORMATION_KNOWLEDGE_STAGE,
+      entries
+    };
+
+    return {
+      status: "success",
+      resolution: cloneFirstNightSystemInformationResolution(resolution)
     };
   }
 }

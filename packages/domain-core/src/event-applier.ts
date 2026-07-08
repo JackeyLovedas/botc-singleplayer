@@ -4,10 +4,13 @@ import { RULES_BASELINE_VERSION, SUPPORTED_DOMAIN_EVENT_VERSION, isCanonicalPlay
 import type {
   AnyDomainEventEnvelope,
   CharactersAssignedPayload,
+  DemonInformationDeliveredPayload,
   FirstNightInitializedPayload,
   FirstNightTaskPlanCreatedPayload,
   InitialPrivateKnowledgeEstablishedPayload,
+  MinionInformationDeliveredPayload,
   PlayerRosterCreatedPayload,
+  ScheduledTaskSettledPayload,
   SetupGeneratedPayload
 } from "./events.js";
 import type { GameState } from "./game-state.js";
@@ -20,8 +23,17 @@ import {
 } from "./character-assignment.js";
 import { deriveInitialCurrentCharacterStateSet } from "./current-character-state.js";
 import {
+  cloneFirstNightTaskProgress,
+  getNextUnsettledFirstNightTask,
+  isFirstNightTaskSettled,
+  validateFirstNightTaskProgress,
   validateFirstNightTaskPlanCreatedPayload,
+  validateScheduledTaskSettledPayloadShape,
 } from "./first-night-task-plan.js";
+import {
+  validateDemonInformationDeliveredPayload,
+  validateMinionInformationDeliveredPayload
+} from "./first-night-team-information.js";
 import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   isPlainRecord,
@@ -546,6 +558,134 @@ const validateFirstNightTaskPlanCreatedPayloadForState = (
   }
 };
 
+const validateMinionInformationDeliveredPayloadForState = (
+  state: GameState,
+  payload: MinionInformationDeliveredPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidMinionInformationDeliveredPayload",
+      "MinionInformationDelivered requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.setup === undefined || state.roster === undefined || state.currentCharacterState === undefined || state.firstNightTaskPlan === undefined) {
+    throw new DomainError(
+      "InvalidMinionInformationDeliveredPayload",
+      "MinionInformationDelivered requires setup, roster, current character state, and first-night task plan"
+    );
+  }
+
+  if (state.minionInformation !== undefined) {
+    throw new DomainError("DuplicateMinionInformationDelivered", "MinionInformationDelivered cannot be applied twice");
+  }
+
+  const validation = validateMinionInformationDeliveredPayload(payload, {
+    currentCharacterState: state.currentCharacterState,
+    roster: state.roster.entries,
+    rosterVersion: state.roster.rosterVersion,
+    setup: state.setup,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidMinionInformationDeliveredPayload", validation.reason);
+  }
+};
+
+const validateDemonInformationDeliveredPayloadForState = (
+  state: GameState,
+  payload: DemonInformationDeliveredPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidDemonInformationDeliveredPayload",
+      "DemonInformationDelivered requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.setup === undefined || state.roster === undefined || state.currentCharacterState === undefined || state.firstNightTaskPlan === undefined) {
+    throw new DomainError(
+      "InvalidDemonInformationDeliveredPayload",
+      "DemonInformationDelivered requires setup, roster, current character state, and first-night task plan"
+    );
+  }
+
+  if (state.demonInformation !== undefined) {
+    throw new DomainError("DuplicateDemonInformationDelivered", "DemonInformationDelivered cannot be applied twice");
+  }
+
+  const validation = validateDemonInformationDeliveredPayload(payload, {
+    currentCharacterState: state.currentCharacterState,
+    roster: state.roster.entries,
+    rosterVersion: state.roster.rosterVersion,
+    setup: state.setup,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidDemonInformationDeliveredPayload", validation.reason);
+  }
+};
+
+const validateScheduledTaskSettledPayloadForState = (
+  state: GameState,
+  payload: ScheduledTaskSettledPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidScheduledTaskSettledPayload",
+      "ScheduledTaskSettled requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.firstNightTaskPlan === undefined) {
+    throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled requires first-night task plan");
+  }
+
+  const shapeValidation = validateScheduledTaskSettledPayloadShape(payload);
+  if (!shapeValidation.valid) {
+    throw new DomainError("InvalidScheduledTaskSettledPayload", shapeValidation.reason);
+  }
+
+  if (isFirstNightTaskSettled(state.firstNightTaskProgress, payload.taskId)) {
+    throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled cannot settle a task twice");
+  }
+
+  const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+  if (nextTask === undefined || nextTask.taskId !== payload.taskId || nextTask.taskType !== payload.taskType) {
+    throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must target the current next unsettled task");
+  }
+
+  if (payload.taskType === "MINION_INFO") {
+    if (
+      state.minionInformation === undefined ||
+      state.minionInformation.taskId !== payload.taskId ||
+      state.minionInformation.taskType !== payload.taskType ||
+      state.minionInformation.characterStateRevision !== payload.characterStateRevision ||
+      payload.outcomeType !== "MINION_INFORMATION_DELIVERED"
+    ) {
+      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match the delivered minion information");
+    }
+    return;
+  }
+
+  if (payload.taskType === "DEMON_INFO") {
+    if (
+      state.demonInformation === undefined ||
+      state.demonInformation.taskId !== payload.taskId ||
+      state.demonInformation.taskType !== payload.taskType ||
+      state.demonInformation.characterStateRevision !== payload.characterStateRevision ||
+      payload.outcomeType !== "DEMON_INFORMATION_DELIVERED"
+    ) {
+      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match the delivered demon information");
+    }
+    return;
+  }
+
+  throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled only supports MINION_INFO and DEMON_INFO in this slice");
+};
+
 const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType"]): DomainErrorCode => {
   switch (eventType) {
     case "GameCreated":
@@ -564,6 +704,12 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidInitialPrivateKnowledgeEstablishedPayload";
     case "FirstNightTaskPlanCreated":
       return "InvalidFirstNightTaskPlanCreatedPayload";
+    case "MinionInformationDelivered":
+      return "InvalidMinionInformationDeliveredPayload";
+    case "DemonInformationDelivered":
+      return "InvalidDemonInformationDeliveredPayload";
+    case "ScheduledTaskSettled":
+      return "InvalidScheduledTaskSettledPayload";
     case "PhaseTransitioned":
       return "InvalidPhaseTransition";
     default:
@@ -807,6 +953,96 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         firstNightTaskPlan: event.payload
+      };
+    }
+
+    case "MinionInformationDelivered": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "MinionInformationDelivered requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidMinionInformationDeliveredPayload",
+          "MinionInformationDelivered payload rules baseline must match game state"
+        );
+      }
+
+      validateMinionInformationDeliveredPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        minionInformation: event.payload
+      };
+    }
+
+    case "DemonInformationDelivered": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "DemonInformationDelivered requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidDemonInformationDeliveredPayload",
+          "DemonInformationDelivered payload rules baseline must match game state"
+        );
+      }
+
+      validateDemonInformationDeliveredPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        demonInformation: event.payload
+      };
+    }
+
+    case "ScheduledTaskSettled": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "ScheduledTaskSettled requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidScheduledTaskSettledPayload",
+          "ScheduledTaskSettled payload rules baseline must match game state"
+        );
+      }
+
+      validateScheduledTaskSettledPayloadForState(state, event.payload);
+
+      const firstNightTaskPlan = state.firstNightTaskPlan;
+      if (firstNightTaskPlan === undefined) {
+        throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled requires first-night task plan");
+      }
+
+      const nextProgress = {
+        settlements: [
+          ...cloneFirstNightTaskProgress(state.firstNightTaskProgress).settlements,
+          {
+            taskId: event.payload.taskId,
+            taskType: event.payload.taskType,
+            nightNumber: event.payload.nightNumber,
+            settlementVersion: event.payload.settlementVersion,
+            outcomeType: event.payload.outcomeType,
+            characterStateRevision: event.payload.characterStateRevision
+          }
+        ]
+      };
+
+      const progressValidation = validateFirstNightTaskProgress(firstNightTaskPlan, nextProgress);
+      if (!progressValidation.valid) {
+        throw new DomainError("InvalidScheduledTaskSettledPayload", progressValidation.reason);
+      }
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightTaskProgress: nextProgress
       };
     }
 

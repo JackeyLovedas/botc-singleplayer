@@ -94,7 +94,7 @@ export type PlayerPrivateKnowledgeView = {
   readonly knownDemon?: KnownPlayerReference;
   readonly knownMinions: readonly KnownPlayerReference[];
   readonly demonBluffs: readonly RoleSetupSnapshot[];
-  readonly knowledgeModelVersion: SupportedInitialKnowledgeModelVersion;
+  readonly knowledgeModelVersion: string;
 };
 
 export type InitialPrivateKnowledgeGenerationFailureCode =

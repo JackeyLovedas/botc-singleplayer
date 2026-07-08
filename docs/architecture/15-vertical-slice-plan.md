@@ -138,6 +138,16 @@ Scope:
 - Do not execute role abilities beyond the two system information tasks.
 - Do not add AI decisions, UI, Electron, or SQLite adapters.
 
+Implementation update:
+
+- `SettleFirstNightSystemTask` is the only new command in this slice.
+- `MinionInformationDelivered` and `DemonInformationDelivered` are always paired with `ScheduledTaskSettled` in the same domain batch.
+- `FirstNightTaskProgress` records settled system tasks without mutating the original task plan.
+- The current evil team is resolved from `CurrentCharacterStateSet` at settlement time.
+- The default golden plan still blocks `MINION_INFO` when `PHILOSOPHER_ACTION` is the next unsettled task.
+- A no-Philosopher fixture validates adjacent `MINION_INFO` then `DEMON_INFO` settlement.
+- Role tasks remain pending and no role ability execution is introduced.
+
 Acceptance:
 
 - `MINION_INFO` settlement uses the current demon/minion facts available at settlement time.

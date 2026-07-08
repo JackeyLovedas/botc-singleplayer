@@ -5,5 +5,6 @@ export * from "./game-session-runner.js";
 export * from "./ports/command-commit-store.js";
 export * from "./ports/character-assignment-generator.js";
 export * from "./ports/first-night-task-planner.js";
+export * from "./ports/first-night-system-information-resolver.js";
 export * from "./ports/initial-private-knowledge-builder.js";
 export * from "./ports/setup-generator.js";

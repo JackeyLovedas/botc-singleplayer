@@ -128,6 +128,17 @@ Registration is evaluated during checks. It may affect apparent role, type, or a
 
 Truth metadata is visible to `storytellerView` and `replayTruth`, not to live players or AI. Player and AI views receive only delivered content and legally known context.
 
+## First-Night Team Information
+
+Slice 2B5 implements only the ordered system information facts for the first night:
+
+- `MinionInformationDelivered` tells each minion the current demon and other minions.
+- `DemonInformationDelivered` tells the demon the current minions and the three setup demon bluffs.
+- Both events use `first-night-team-knowledge-v1`.
+- Both events are valid only when paired with `ScheduledTaskSettled`.
+
+Player and AI private knowledge projections merge these delivered facts only after the matching settlement exists. The projection still excludes complete assignments, teammate role ids, task plan internals, candidate sets, truth metadata, and Storyteller-only reasoning.
+
 ## Mathematician Ledger
 
 The Mathematician must use a dedicated `MathematicianAbnormalityLedger`. Do not use a generic counter. The ledger records players whose abilities worked abnormally due to another character's ability, excluding the Mathematician's own abnormal result.

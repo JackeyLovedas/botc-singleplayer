@@ -15,6 +15,7 @@ import type {
   AnyDomainEventEnvelope,
   BatchId,
   EventId,
+  FirstNightSystemInformationResolutionResult,
   FirstNightTaskCatalogSnapshot,
   FirstNightTaskPlan,
   FirstNightTaskPlanningFailure,
@@ -30,6 +31,7 @@ import type {
   CommandReceiptResult,
   CommandRejected,
   CommandResult,
+  FirstNightSystemInformationResolverPort,
   FirstNightTaskPlannerPort,
   InitialPrivateKnowledgeBuilderPort,
   SetupGeneratorPort
@@ -50,9 +52,11 @@ import {
   planFirstNightTasksCommand,
   scriptSelectedEvent,
   selectScriptCommand,
+  settleFirstNightSystemTaskCommand,
   storytellerActor,
   testAssignmentGenerator,
   testFirstNightTaskCatalog,
+  testFirstNightSystemInformationResolver,
   testFirstNightTaskPlanner,
   testInitialPrivateKnowledgeBuilder,
   testSetupGenerator,
@@ -67,7 +71,8 @@ const makeService = (
   characterAssignmentGenerator: CharacterAssignmentGeneratorPort = testAssignmentGenerator,
   initialPrivateKnowledgeBuilder: InitialPrivateKnowledgeBuilderPort = testInitialPrivateKnowledgeBuilder,
   firstNightTaskPlanner: FirstNightTaskPlannerPort = testFirstNightTaskPlanner,
-  firstNightTaskCatalogSnapshot: FirstNightTaskCatalogSnapshot = testFirstNightTaskCatalog
+  firstNightTaskCatalogSnapshot: FirstNightTaskCatalogSnapshot = testFirstNightTaskCatalog,
+  firstNightSystemInformationResolver: FirstNightSystemInformationResolverPort = testFirstNightSystemInformationResolver
 ) => {
   const service = new GameApplicationService({
     commandStore,
@@ -77,7 +82,27 @@ const makeService = (
     characterAssignmentGenerator,
     initialPrivateKnowledgeBuilder,
     firstNightTaskPlanner,
-    firstNightTaskCatalogSnapshot
+    firstNightTaskCatalogSnapshot,
+    firstNightSystemInformationResolver
+  });
+
+  return { service, commandStore };
+};
+
+const makeServiceWithoutFirstNightSystemInformationResolver = (
+  commandStore = new MemoryCommandCommitStore(),
+  idGenerator = new FixedIdGenerator(),
+  clock = new FixedClock()
+) => {
+  const service = new GameApplicationService({
+    commandStore,
+    ids: idGenerator,
+    clock,
+    setupGenerator: testSetupGenerator,
+    characterAssignmentGenerator: testAssignmentGenerator,
+    initialPrivateKnowledgeBuilder: testInitialPrivateKnowledgeBuilder,
+    firstNightTaskPlanner: testFirstNightTaskPlanner,
+    firstNightTaskCatalogSnapshot: testFirstNightTaskCatalog
   });
 
   return { service, commandStore };
@@ -164,6 +189,43 @@ const reachFirstNight = async (service: GameApplicationService): Promise<void> =
 const reachFirstNightKnowledge = async (service: GameApplicationService): Promise<void> => {
   await reachFirstNight(service);
   await service.execute(initializeFirstNightCommand());
+};
+
+const reachFirstNightTaskPlan = async (service: GameApplicationService): Promise<void> => {
+  await reachFirstNightKnowledge(service);
+  await service.execute(planFirstNightTasksCommand());
+};
+
+const noPhilosopherExactRoleIds = [
+  "clockmaker",
+  "dreamer",
+  "snake_charmer",
+  "mathematician",
+  "flowergirl",
+  "town_crier",
+  "mutant",
+  "sweetheart",
+  "barber",
+  "evil_twin",
+  "witch",
+  "fang_gu"
+].map(roleId);
+
+const reachNoPhilosopherFirstNightTaskPlan = async (service: GameApplicationService): Promise<void> => {
+  await service.execute(createGameCommand());
+  await service.execute(selectScriptCommand());
+  await service.execute(generateSetupCommand({
+    payload: {
+      commandType: "GenerateSetup",
+      constraints: {
+        exactRoleIds: noPhilosopherExactRoleIds
+      }
+    }
+  }));
+  await service.execute(createPlayerRosterCommand());
+  await service.execute(assignCharactersCommand());
+  await service.execute(initializeFirstNightCommand());
+  await service.execute(planFirstNightTasksCommand());
 };
 
 class FakeLengthCommandStore extends MemoryCommandCommitStore {
@@ -298,6 +360,46 @@ const expectRetryableFirstNightTaskPlanningFailureWithoutWrites = async (
   expectAcceptedResult(retried);
   expect(retried.gameVersion).toBe(7);
   expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+
+  return failedResult;
+};
+
+const expectRetryableFirstNightSystemInformationFailureWithoutWrites = async (
+  resolver: FirstNightSystemInformationResolverPort,
+  commandIdValue: string,
+  expectedMessagePart: string
+): Promise<CommandExecutionFailed> => {
+  const commandStore = new MemoryCommandCommitStore();
+  const idGenerator = new FixedIdGenerator();
+  const clock = new FixedClock();
+  const failing = makeService(
+    commandStore,
+    testSetupGenerator,
+    idGenerator,
+    clock,
+    testAssignmentGenerator,
+    testInitialPrivateKnowledgeBuilder,
+    testFirstNightTaskPlanner,
+    testFirstNightTaskCatalog,
+    resolver
+  );
+  const command = settleFirstNightSystemTaskCommand({ commandId: commandId(commandIdValue) });
+
+  await reachNoPhilosopherFirstNightTaskPlan(failing.service);
+  const failedResult = await failing.service.execute(command);
+
+  expectFailedResult(failedResult);
+  expect(failedResult).toMatchObject({
+    code: "DependencyExecutionFailed",
+    failureStage: "first-night-system-information",
+    currentGameVersion: 7,
+    retryable: true
+  });
+  expect(failedResult.message).toContain(expectedMessagePart);
+  expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+  expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+  expect(commandStore.getGameVersion(command.gameId)).toBe(7);
+  expect(commandStore.rejectedCount).toBe(0);
 
   return failedResult;
 };
@@ -2359,6 +2461,451 @@ describe("GameApplicationService", () => {
 
     expectAcceptedResult(retried);
     expect(retried.gameVersion).toBe(7);
+  });
+
+  it("keeps golden MINION_INFO blocked while Philosopher is the next unsettled task", async () => {
+    const { service, commandStore } = makeService();
+    await reachFirstNightTaskPlan(service);
+
+    const command = settleFirstNightSystemTaskCommand();
+    const result = await service.execute(command);
+    const events = await commandStore.loadDomainEvents(command.gameId);
+    const state = rebuildOptionalGameState(events);
+
+    expect(result).toMatchObject({
+      status: "rejected",
+      code: "NextTaskRequiresRoleExecution",
+      currentGameVersion: 7
+    });
+    expect(state?.firstNightTaskPlan?.tasks.slice(0, 3).map((task) => task.taskType)).toStrictEqual([
+      "PHILOSOPHER_ACTION",
+      "MINION_INFO",
+      "DEMON_INFO"
+    ]);
+    expect(state?.minionInformation).toBeUndefined();
+    expect(state?.demonInformation).toBeUndefined();
+    expect(state?.firstNightTaskProgress).toBeUndefined();
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeDefined();
+    expect(events).toHaveLength(11);
+  });
+
+  it("settles MINION_INFO before DEMON_INFO on a no-Philosopher first-night plan", async () => {
+    const { service, commandStore } = makeService();
+    await reachNoPhilosopherFirstNightTaskPlan(service);
+
+    const planState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(planState?.firstNightTaskPlan?.tasks.slice(0, 2).map((task) => task.taskType)).toStrictEqual([
+      "MINION_INFO",
+      "DEMON_INFO"
+    ]);
+
+    const result = await service.execute(settleFirstNightSystemTaskCommand());
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(8);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "MinionInformationDelivered",
+      "ScheduledTaskSettled"
+    ]);
+    expect(result.events[0]).toMatchObject({
+      eventSequence: 12,
+      gameVersion: 8,
+      eventType: "MinionInformationDelivered"
+    });
+    expect(result.events[1]).toMatchObject({
+      eventSequence: 13,
+      gameVersion: 8,
+      eventType: "ScheduledTaskSettled"
+    });
+    expect(state?.phase).toBe("FIRST_NIGHT");
+    expect(state?.nightNumber).toBe(1);
+    expect(state?.dayNumber).toBe(0);
+    expect(state?.minionInformation?.entries).toHaveLength(4);
+    expect(state?.demonInformation).toBeUndefined();
+    expect(state?.firstNightTaskProgress?.settlements).toHaveLength(1);
+    expect(state?.firstNightTaskProgress?.settlements[0]).toMatchObject({
+      taskId: "first-night-v1:MINION_INFO:system",
+      taskType: "MINION_INFO",
+      outcomeType: "MINION_INFORMATION_DELIVERED",
+      settlementVersion: "scheduled-task-settlement-v1"
+    });
+    expect(commandStore.getGameVersion(ids.game)).toBe(8);
+    expect(events).toHaveLength(13);
+  });
+
+  it("settles DEMON_INFO only after MINION_INFO has been settled", async () => {
+    const { service, commandStore } = makeService();
+    await reachNoPhilosopherFirstNightTaskPlan(service);
+    await service.execute(settleFirstNightSystemTaskCommand());
+
+    const command = settleFirstNightSystemTaskCommand({
+      commandId: commandId("settle-demon-info"),
+      expectedGameVersion: 8,
+      payload: {
+        commandType: "SettleFirstNightSystemTask",
+        taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
+      }
+    });
+    const result = await service.execute(command);
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(9);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "DemonInformationDelivered",
+      "ScheduledTaskSettled"
+    ]);
+    expect(state?.phase).toBe("FIRST_NIGHT");
+    expect(state?.demonInformation?.entries).toHaveLength(2);
+    expect(state?.demonInformation?.entries.find((entry) => entry.kind === "DEMON_BLUFFS")).toMatchObject({
+      kind: "DEMON_BLUFFS"
+    });
+    expect(state?.demonInformation?.entries.find((entry) => entry.kind === "DEMON_BLUFFS")?.roles).toHaveLength(3);
+    expect(state?.firstNightTaskProgress?.settlements).toHaveLength(2);
+    expect(state?.firstNightTaskProgress?.settlements[1]).toMatchObject({
+      taskId: "first-night-v1:DEMON_INFO:system",
+      taskType: "DEMON_INFO",
+      outcomeType: "DEMON_INFORMATION_DELIVERED"
+    });
+    expect(events).toHaveLength(15);
+  });
+
+  it("returns accepted MINION_INFO settlement on retry without appending events", async () => {
+    const { service, commandStore } = makeService();
+    const command = settleFirstNightSystemTaskCommand({ commandId: commandId("idempotent-minion-info") });
+
+    await reachNoPhilosopherFirstNightTaskPlan(service);
+    const first = await service.execute(command);
+    const second = await service.execute(command);
+
+    expectAcceptedResult(first);
+    expectAcceptedResult(second);
+    expect(second).toMatchObject({ status: "accepted", idempotent: true, gameVersion: 8 });
+    expect(second.events).toStrictEqual(first.events);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(13);
+  });
+
+  it("rejects DEMON_INFO before MINION_INFO and unsupported role task settlement with saved receipts", async () => {
+    const { service: noPhilosopherService, commandStore: noPhilosopherStore } = makeService();
+    await reachNoPhilosopherFirstNightTaskPlan(noPhilosopherService);
+
+    const earlyDemon = settleFirstNightSystemTaskCommand({
+      commandId: commandId("early-demon-info"),
+      payload: {
+        commandType: "SettleFirstNightSystemTask",
+        taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
+      }
+    });
+    await expect(noPhilosopherService.execute(earlyDemon)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ScheduledTaskNotNext",
+      currentGameVersion: 7
+    });
+    expect((await noPhilosopherStore.findCommandReceipt(earlyDemon.gameId, earlyDemon.commandId))?.result.status).toBe("rejected");
+    expect(await noPhilosopherStore.loadDomainEvents(earlyDemon.gameId)).toHaveLength(11);
+
+    const { service, commandStore } = makeService();
+    await reachFirstNightTaskPlan(service);
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const roleTask = state?.firstNightTaskPlan?.tasks[0];
+    if (roleTask === undefined) {
+      throw new Error("Expected first-night role task");
+    }
+    const roleCommand = settleFirstNightSystemTaskCommand({
+      commandId: commandId("unsupported-role-task-settlement"),
+      payload: {
+        commandType: "SettleFirstNightSystemTask",
+        taskId: roleTask.taskId
+      }
+    });
+
+    await expect(service.execute(roleCommand)).resolves.toMatchObject({
+      status: "rejected",
+      code: "UnsupportedSystemTaskSettlement",
+      currentGameVersion: 7
+    });
+    expect((await commandStore.findCommandReceipt(roleCommand.gameId, roleCommand.commandId))?.result.status).toBe("rejected");
+    expect(await commandStore.loadDomainEvents(roleCommand.gameId)).toHaveLength(11);
+  });
+
+  it("rejects missing, duplicate, stale-version, wrong-phase, and actor-invalid system task settlement with receipts", async () => {
+    const { service, commandStore } = makeService();
+    await reachNoPhilosopherFirstNightTaskPlan(service);
+
+    const missing = settleFirstNightSystemTaskCommand({
+      commandId: commandId("missing-system-task"),
+      payload: {
+        commandType: "SettleFirstNightSystemTask",
+        taskId: scheduledTaskId("first-night-v1:MISSING_INFO:system")
+      }
+    });
+    await expect(service.execute(missing)).resolves.toMatchObject({ status: "rejected", code: "ScheduledTaskNotFound" });
+
+    await service.execute(settleFirstNightSystemTaskCommand());
+    const duplicate = settleFirstNightSystemTaskCommand({
+      commandId: commandId("duplicate-minion-info"),
+      expectedGameVersion: 8
+    });
+    const stale = settleFirstNightSystemTaskCommand({
+      commandId: commandId("stale-demon-info"),
+      expectedGameVersion: 7,
+      payload: {
+        commandType: "SettleFirstNightSystemTask",
+        taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
+      }
+    });
+    await expect(service.execute(duplicate)).resolves.toMatchObject({ status: "rejected", code: "ScheduledTaskAlreadySettled" });
+    await expect(service.execute(stale)).resolves.toMatchObject({ status: "rejected", code: "ExpectedGameVersionMismatch" });
+    expect((await commandStore.findCommandReceipt(missing.gameId, missing.commandId))?.result.status).toBe("rejected");
+    expect((await commandStore.findCommandReceipt(duplicate.gameId, duplicate.commandId))?.result.status).toBe("rejected");
+    expect((await commandStore.findCommandReceipt(stale.gameId, stale.commandId))?.result.status).toBe("rejected");
+
+    const actorStore = new MemoryCommandCommitStore();
+    const { service: actorService } = makeService(actorStore);
+    await reachNoPhilosopherFirstNightTaskPlan(actorService);
+    const humanCommand = settleFirstNightSystemTaskCommand({ commandId: commandId("human-settle-system-task"), actor: humanActor });
+    const aiCommand = settleFirstNightSystemTaskCommand({ commandId: commandId("ai-settle-system-task"), actor: aiActor });
+    await expect(actorService.execute(humanCommand)).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    await expect(actorService.execute(aiCommand)).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    expect((await actorStore.findCommandReceipt(humanCommand.gameId, humanCommand.commandId))?.result.status).toBe("rejected");
+    expect((await actorStore.findCommandReceipt(aiCommand.gameId, aiCommand.commandId))?.result.status).toBe("rejected");
+
+    const phaseStore = new MemoryCommandCommitStore();
+    const { service: phaseService } = makeService(phaseStore);
+    await phaseService.execute(createGameCommand());
+    await phaseService.execute(selectScriptCommand());
+    await phaseService.execute(generateSetupCommand());
+    const phaseCommand = settleFirstNightSystemTaskCommand({
+      commandId: commandId("wrong-phase-system-task"),
+      expectedGameVersion: 3
+    });
+    await expect(phaseService.execute(phaseCommand)).resolves.toMatchObject({
+      status: "rejected",
+      code: "CommandNotAllowedInPhase",
+      currentGameVersion: 3
+    });
+    expect((await phaseStore.findCommandReceipt(phaseCommand.gameId, phaseCommand.commandId))?.result.status).toBe("rejected");
+  });
+
+  it("keeps missing first-night system information resolver failures retryable without receipts", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FixedIdGenerator();
+    const clock = new FixedClock();
+    const failing = makeServiceWithoutFirstNightSystemInformationResolver(commandStore, idGenerator, clock);
+    const command = settleFirstNightSystemTaskCommand({ commandId: commandId("missing-system-information-resolver") });
+
+    await reachNoPhilosopherFirstNightTaskPlan(failing.service);
+    const failedResult = await failing.service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "ApplicationNotConfigured",
+      failureStage: "first-night-system-information",
+      currentGameVersion: 7,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+
+    const fixed = makeService(
+      commandStore,
+      testSetupGenerator,
+      idGenerator,
+      clock,
+      testAssignmentGenerator,
+      testInitialPrivateKnowledgeBuilder,
+      testFirstNightTaskPlanner,
+      testFirstNightTaskCatalog,
+      testFirstNightSystemInformationResolver
+    );
+    const retried = await fixed.service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(8);
+  });
+
+  it("keeps thrown first-night system information resolver failures retryable without receipts", async () => {
+    const throwingResolver: FirstNightSystemInformationResolverPort = {
+      resolve: () => {
+        throw new Error("injected system information resolver failure");
+      }
+    };
+
+    await expectRetryableFirstNightSystemInformationFailureWithoutWrites(
+      throwingResolver,
+      "throwing-system-information-resolver",
+      "injected system information resolver failure"
+    );
+  });
+
+  it.each([
+    [
+      "null result",
+      "malformed-system-info-null-result",
+      () => null as unknown as FirstNightSystemInformationResolutionResult,
+      "result must be a non-null plain object"
+    ],
+    [
+      "unknown status",
+      "malformed-system-info-unknown-status",
+      () => ({ status: "unknown" }) as unknown as FirstNightSystemInformationResolutionResult,
+      "status must be success or failure"
+    ],
+    [
+      "success result without resolution",
+      "malformed-system-info-missing-resolution",
+      () => ({ status: "success" }) as unknown as FirstNightSystemInformationResolutionResult,
+      "resolution is missing"
+    ],
+    [
+      "failure result missing conflict arrays",
+      "malformed-system-info-failure-missing-arrays",
+      () =>
+        ({
+          status: "failure",
+          failureCode: "InvalidKnowledgeResult",
+          message: "missing arrays"
+        }) as unknown as FirstNightSystemInformationResolutionResult,
+      "conflictingPlayerIds must be a dense string array"
+    ]
+  ] as const)("keeps malformed system information resolver runtime %s retryable without receipts or events", async (_name, commandIdValue, makeResult, message) => {
+    const malformedResolver: FirstNightSystemInformationResolverPort = {
+      resolve: () => makeResult()
+    };
+
+    await expectRetryableFirstNightSystemInformationFailureWithoutWrites(malformedResolver, commandIdValue, message);
+  });
+
+  it("keeps sparse system information entries retryable at runtime validation without receipts or events", async () => {
+    const sparseEntriesResolver: FirstNightSystemInformationResolverPort = {
+      resolve: (input) => {
+        const result = testFirstNightSystemInformationResolver.resolve(input);
+        if (result.status === "failure") {
+          return result;
+        }
+
+        const entries = new Array(result.resolution.entries.length) as unknown[];
+        entries[0] = result.resolution.entries[0];
+        return {
+          status: "success",
+          resolution: {
+            ...result.resolution,
+            entries
+          }
+        } as unknown as FirstNightSystemInformationResolutionResult;
+      }
+    };
+
+    await expectRetryableFirstNightSystemInformationFailureWithoutWrites(
+      sparseEntriesResolver,
+      "sparse-system-information-entries",
+      "resolution must have supported runtime shape"
+    );
+  });
+
+  it("keeps malformed-but-present system information retryable at prospective validation without DomainValidationFailed receipts", async () => {
+    const wrongEntriesResolver: FirstNightSystemInformationResolverPort = {
+      resolve: (input) => {
+        const result = testFirstNightSystemInformationResolver.resolve(input);
+        if (result.status === "failure") {
+          return result;
+        }
+
+        return {
+          status: "success",
+          resolution: {
+            ...result.resolution,
+            entries: []
+          }
+        };
+      }
+    };
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FixedIdGenerator();
+    const clock = new FixedClock();
+    const failing = makeService(
+      commandStore,
+      testSetupGenerator,
+      idGenerator,
+      clock,
+      testAssignmentGenerator,
+      testInitialPrivateKnowledgeBuilder,
+      testFirstNightTaskPlanner,
+      testFirstNightTaskCatalog,
+      wrongEntriesResolver
+    );
+    const command = settleFirstNightSystemTaskCommand({ commandId: commandId("wrong-system-information-entries") });
+
+    await reachNoPhilosopherFirstNightTaskPlan(failing.service);
+    const failedResult = await failing.service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "DependencyExecutionFailed",
+      failureStage: "first-night-system-information",
+      currentGameVersion: 7,
+      retryable: true
+    });
+    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+
+    const fixed = makeService(
+      commandStore,
+      testSetupGenerator,
+      idGenerator,
+      clock,
+      testAssignmentGenerator,
+      testInitialPrivateKnowledgeBuilder,
+      testFirstNightTaskPlanner,
+      testFirstNightTaskCatalog,
+      testFirstNightSystemInformationResolver
+    );
+    const retried = await fixed.service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(8);
+  });
+
+  it("keeps system information resolver structured failures retryable without receipts", async () => {
+    const failingResolver: FirstNightSystemInformationResolverPort = {
+      resolve: () => ({
+        status: "failure",
+        failureCode: "InvalidKnowledgeResult",
+        message: "injected system information failure",
+        conflictingPlayerIds: [playerId("player-ai-1")]
+      })
+    };
+
+    await expectRetryableFirstNightSystemInformationFailureWithoutWrites(
+      failingResolver,
+      "structured-system-information-failure",
+      "InvalidKnowledgeResult: injected system information failure"
+    );
+  });
+
+  it("keeps SettleFirstNightSystemTask metadata generation failures classified independently", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FaultInjectingIdGenerator();
+    const { service } = makeService(commandStore, testSetupGenerator, idGenerator);
+    const command = settleFirstNightSystemTaskCommand({ commandId: commandId("system-information-metadata-failure") });
+
+    await reachNoPhilosopherFirstNightTaskPlan(service);
+    idGenerator.failNextBatchId = true;
+    const failedResult = await service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 7,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
   });
 
   it("rejects AI and Storyteller actors for CreateGame and SelectScript", async () => {
