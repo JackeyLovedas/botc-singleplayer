@@ -98,7 +98,13 @@ export class GameApplicationService {
       return failed(command.gameId, "CommandStoreReadFailed", errorMessage(error, "Unknown domain event load failure"), "event-load");
     }
 
-    const state = rebuildOptionalGameState(events);
+    let state;
+    try {
+      state = rebuildOptionalGameState(events);
+    } catch (error: unknown) {
+      return failed(command.gameId, "CanonicalStateRebuildFailed", errorMessage(error, "Unknown canonical state rebuild failure"), "state-rebuild");
+    }
+
     const currentGameVersion = state?.gameVersion ?? 0;
 
     if (command.expectedGameVersion !== currentGameVersion) {

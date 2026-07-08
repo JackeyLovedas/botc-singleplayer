@@ -110,6 +110,22 @@ class FakeLengthCommandStore extends MemoryCommandCommitStore {
   }
 }
 
+class ThrowingCanonicalStreamCommandStore extends MemoryCommandCommitStore {
+  public override async loadDomainEvents(gameIdValue: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
+    const events = await super.loadDomainEvents(gameIdValue);
+    if (events.length === 0) {
+      return events;
+    }
+
+    return {
+      length: events.length,
+      [Symbol.iterator]: () => {
+        throw new Error("Injected canonical stream iteration failure");
+      }
+    } as unknown as readonly AnyDomainEventEnvelope[];
+  }
+}
+
 class FaultInjectingIdGenerator extends FixedIdGenerator {
   public failNextBatchId = false;
   public failEventCallNumber: number | undefined;
@@ -278,6 +294,62 @@ describe("GameApplicationService", () => {
     expect((await commandStore.findCommandReceipt(command.gameId, command.commandId))?.result.status).toBe("accepted");
   });
 
+  it("contains DomainError canonical rebuild failures without saving receipts or appending events", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore);
+    await service.execute(createGameCommand());
+    const storedEvents = await commandStore.loadDomainEvents(ids.game);
+    const created = storedEvents[0] as { eventSequence: number } | undefined;
+    if (created === undefined) {
+      throw new Error("Expected GameCreated event");
+    }
+    created.eventSequence = 2;
+    const command = selectScriptCommand({ commandId: commandId("state-rebuild-domain-error-retry") });
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "CanonicalStateRebuildFailed",
+      failureStage: "state-rebuild",
+      retryable: true
+    });
+    expect("currentGameVersion" in failed).toBe(false);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+
+    created.eventSequence = 1;
+    const retried = await service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(2);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(3);
+    expect((await commandStore.findCommandReceipt(command.gameId, command.commandId))?.result.status).toBe("accepted");
+  });
+
+  it("contains unknown canonical rebuild exceptions as retryable failures without receipts", async () => {
+    const commandStore = new ThrowingCanonicalStreamCommandStore();
+    const { service } = makeService(commandStore);
+    await service.execute(createGameCommand());
+    const command = selectScriptCommand({ commandId: commandId("state-rebuild-unknown-error") });
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "CanonicalStateRebuildFailed",
+      failureStage: "state-rebuild",
+      message: "Injected canonical stream iteration failure",
+      retryable: true
+    });
+    expect("currentGameVersion" in failed).toBe(false);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+  });
+
   it("returns retryable failure when rejected receipt writing fails and preserves retry semantics", async () => {
     const commandStore = new MemoryCommandCommitStore();
     const { service } = makeService(commandStore);
@@ -386,6 +458,8 @@ describe("GameApplicationService", () => {
     rejected(ids.game, "DependencyExecutionFailed", "Dependency failed", 0);
     // @ts-expect-error CommandStoreReadFailed cannot be a rejected receipt.
     rejected(ids.game, "CommandStoreReadFailed", "Read failed", 0);
+    // @ts-expect-error CanonicalStateRebuildFailed cannot be a rejected receipt.
+    rejected(ids.game, "CanonicalStateRebuildFailed", "Rebuild failed", 0);
     // @ts-expect-error CommandReceiptWriteFailed cannot be a rejected receipt.
     rejected(ids.game, "CommandReceiptWriteFailed", "Write failed", 0);
     // @ts-expect-error MetadataGenerationFailed cannot be a rejected receipt.

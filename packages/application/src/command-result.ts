@@ -82,6 +82,7 @@ export type CommandRejected = SetupGenerationCommandRejected | AssignmentGenerat
 
 export type CommandExecutionFailureCode =
   | "ApplicationNotConfigured"
+  | "CanonicalStateRebuildFailed"
   | "DependencyExecutionFailed"
   | "CommandStoreReadFailed"
   | "CommandReceiptWriteFailed"
@@ -91,6 +92,7 @@ export type CommandExecutionFailureCode =
 export type CommandExecutionFailureStage =
   | "receipt-read"
   | "event-load"
+  | "state-rebuild"
   | "command-validation"
   | "setup-generation"
   | "assignment-generation"
