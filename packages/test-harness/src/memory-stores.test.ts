@@ -113,7 +113,9 @@ describe("MemoryCommandCommitStore batch contract", () => {
       events: [transition]
     };
 
-    await expect(store.commitAcceptedCommand(commitInputFor(invalidBatch))).rejects.toThrow("SelectScript");
+    await expect(store.commitAcceptedCommand(commitInputFor(invalidBatch))).rejects.toMatchObject({
+      code: "InvalidDomainBatchSemantics"
+    });
 
     const events = await store.loadDomainEvents(ids.game);
     expect(events).toHaveLength(1);

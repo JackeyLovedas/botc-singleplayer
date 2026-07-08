@@ -18,7 +18,7 @@ const assertSharedBatchMetadata = (
     first.rulesBaselineVersion !== second.rulesBaselineVersion ||
     second.eventSequence !== first.eventSequence + 1
   ) {
-    reject("SelectScript batch events must share batch metadata and have consecutive eventSequence values");
+    reject("Integrated batch events must share batch metadata and have consecutive eventSequence values");
   }
 };
 
@@ -85,6 +85,49 @@ const validateIntegratedSetupGenerationBatch = (
   }
 };
 
+const validatePlayerRosterCreatedBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "CreatePlayerRoster batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (state.phase !== "CHARACTER_ASSIGNMENT" || state.setup === undefined || state.roster !== undefined || state.assignment !== undefined) {
+    reject("CreatePlayerRoster batch requires CHARACTER_ASSIGNMENT with setup and no existing roster or assignment");
+  }
+
+  if (events.length !== 1) {
+    reject("CreatePlayerRoster batch must contain exactly one PlayerRosterCreated event");
+  }
+};
+
+const validateIntegratedCharactersAssignedBatch = (
+  currentState: GameState | undefined,
+  charactersAssigned: DomainEventEnvelope<"CharactersAssigned">,
+  phaseTransitioned: DomainEventEnvelope<"PhaseTransitioned">
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "AssignCharacters batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (state.phase !== "CHARACTER_ASSIGNMENT" || state.setup === undefined || state.roster === undefined || state.assignment !== undefined) {
+    reject("AssignCharacters batch requires CHARACTER_ASSIGNMENT with setup, roster, and no existing assignment");
+  }
+
+  assertSharedBatchMetadata(charactersAssigned, phaseTransitioned);
+
+  if (
+    phaseTransitioned.payload.fromPhase !== "CHARACTER_ASSIGNMENT" ||
+    phaseTransitioned.payload.toPhase !== "FIRST_NIGHT" ||
+    phaseTransitioned.payload.transitionReason !== "CHARACTERS_ASSIGNED"
+  ) {
+    reject("AssignCharacters batch must transition CHARACTER_ASSIGNMENT to FIRST_NIGHT with CHARACTERS_ASSIGNED");
+  }
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -116,8 +159,13 @@ export const validateDomainBatchSemantics = (
     return;
   }
 
+  if (first.eventType === "PlayerRosterCreated") {
+    validatePlayerRosterCreatedBatch(currentState, batchEvents);
+    return;
+  }
+
   if (batchEvents.length !== 2) {
-    reject("Only GameCreated, integrated SelectScript, and integrated GenerateSetup batches are currently supported");
+    reject("Only supported single-fact and integrated two-event batches are currently supported");
   }
 
   if (third !== undefined) {
@@ -131,6 +179,11 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "SetupGenerated" && second !== undefined && second.eventType === "PhaseTransitioned") {
     validateIntegratedSetupGenerationBatch(currentState, first, second);
+    return;
+  }
+
+  if (first.eventType === "CharactersAssigned" && second !== undefined && second.eventType === "PhaseTransitioned") {
+    validateIntegratedCharactersAssignedBatch(currentState, first, second);
     return;
   }
 

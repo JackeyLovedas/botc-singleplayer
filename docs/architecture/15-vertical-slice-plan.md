@@ -63,15 +63,19 @@ Acceptance:
 Scope:
 
 - Execute only after Slice 2B1 is accepted.
-- Build the seat roster and character assignment facts from generated setup.
+- Build a fixed 12-seat roster with exactly one human player and eleven AI-controlled player slots.
+- Build deterministic character assignment facts from generated setup, roster, root seed, and role catalog signature.
 - Keep actual roles, demon bluffs, seats, assignments, and player knowledge separate.
 - Integrate `CHARACTERS_ASSIGNED` only with real assignment facts.
+- Advance from `CHARACTER_ASSIGNMENT` to `FIRST_NIGHT` only in the same batch as `CharactersAssigned`.
 
 Acceptance:
 
-- The generated setup can be assigned to the 12 seats without leaking hidden information.
+- The generated setup can be assigned to the 12 seats without creating player private knowledge or AI prompts.
 - Character assignment is replayable and does not reinterpret old setup events through a future role catalog.
-- No first night entry occurs until assignment is real and validated.
+- Bare `CharactersAssigned` and bare `PhaseTransitioned(CHARACTERS_ASSIGNED)` are rejected.
+- Assignment validation binds player id, seat, role snapshot, setup actual roles, and setup role catalog snapshot.
+- No first night tasks, night order, demon/minion information display, or player private role knowledge is introduced.
 
 ## Slice 2C: Integrated Basic Phase Flow
 

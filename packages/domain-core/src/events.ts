@@ -1,6 +1,8 @@
 import type { BatchId, CausationId, CommandId, CorrelationId, EventId, GameId } from "./ids.js";
 import type { GamePhase } from "./game-phase.js";
 import type { PhaseTransitionReason } from "./phase-transition-policy.js";
+import type { CharacterAssignmentSet } from "./character-assignment.js";
+import type { PlayerRoster } from "./player-roster.js";
 import type { GeneratedSetup, SupportedEdition } from "./setup-types.js";
 
 export const SUPPORTED_DOMAIN_EVENT_VERSION = 1;
@@ -34,6 +36,22 @@ export type SetupGeneratedPayload = GeneratedSetup & {
   readonly rulesBaselineVersion: string;
 };
 
+export type PlayerRosterCreatedPayload = {
+  readonly rulesBaselineVersion: string;
+  readonly rosterVersion: string;
+  readonly entries: PlayerRoster;
+};
+
+export type CharactersAssignedPayload = {
+  readonly rulesBaselineVersion: string;
+  readonly rosterVersion: string;
+  readonly assignmentAlgorithmVersion: string;
+  readonly randomAlgorithmVersion: string;
+  readonly randomStream: string;
+  readonly roleCatalogSignature: string;
+  readonly assignments: CharacterAssignmentSet;
+};
+
 export type PhaseTransitionedPayload = {
   readonly rulesBaselineVersion: string;
   readonly fromPhase: GamePhase;
@@ -49,6 +67,8 @@ export type DomainEventPayloadByType = {
   readonly GameCreated: GameCreatedPayload;
   readonly ScriptSelected: ScriptSelectedPayload;
   readonly SetupGenerated: SetupGeneratedPayload;
+  readonly PlayerRosterCreated: PlayerRosterCreatedPayload;
+  readonly CharactersAssigned: CharactersAssignedPayload;
   readonly PhaseTransitioned: PhaseTransitionedPayload;
 };
 

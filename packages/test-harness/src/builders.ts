@@ -1,16 +1,23 @@
 import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
+  SUPPORTED_ROSTER_VERSION,
   batchId,
   causationId,
   commandId,
   correlationId,
+  createFixedPlayerRoster,
   eventId,
   gameId,
   playerId
 } from "@botc/domain-core";
 import type {
+  AssignCharactersCommand,
+  AssignCharactersCommandPayload,
   AuditEventEnvelope,
+  CharactersAssignedPayload,
+  CreatePlayerRosterCommand,
+  CreatePlayerRosterCommandPayload,
   CreateGameCommand,
   CreateGameCommandPayload,
   DomainEventEnvelope,
@@ -19,10 +26,12 @@ import type {
   GameId,
   InfrastructureEventEnvelope,
   PhaseTransitionedPayload,
+  PlayerRosterCreatedPayload,
   SelectScriptCommand,
   SelectScriptCommandPayload,
   SetupGeneratedPayload
 } from "@botc/domain-core";
+import { SeededCharacterAssignmentGenerator } from "@botc/assignment-engine";
 import { SECTS_AND_VIOLETS_SCRIPT } from "@botc/rules-snv";
 import { SeededSectsAndVioletsSetupGenerator } from "@botc/setup-engine";
 
@@ -95,6 +104,43 @@ export const generateSetupCommand = (
   issuedAt: "2026-07-07T00:00:02.000Z",
   correlationId: correlationId("correlation-3"),
   payload: generateSetupPayload,
+  ...overrides
+});
+
+export const createPlayerRosterPayload = {
+  commandType: "CreatePlayerRoster",
+  humanPlayerId: humanActor.playerId,
+  humanDisplayName: "Human Player",
+  humanSeatNumber: 5
+} as const satisfies CreatePlayerRosterCommandPayload;
+
+export const createPlayerRosterCommand = (
+  overrides: Partial<CreatePlayerRosterCommand> = {}
+): CreatePlayerRosterCommand => ({
+  commandId: commandId("command-4"),
+  gameId: ids.game,
+  expectedGameVersion: 3,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:03.000Z",
+  correlationId: correlationId("correlation-4"),
+  payload: createPlayerRosterPayload,
+  ...overrides
+});
+
+export const assignCharactersPayload = {
+  commandType: "AssignCharacters"
+} as const satisfies AssignCharactersCommandPayload;
+
+export const assignCharactersCommand = (
+  overrides: Partial<AssignCharactersCommand> = {}
+): AssignCharactersCommand => ({
+  commandId: commandId("command-5"),
+  gameId: ids.game,
+  expectedGameVersion: 4,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:04.000Z",
+  correlationId: correlationId("correlation-5"),
+  payload: assignCharactersPayload,
   ...overrides
 });
 
@@ -181,6 +227,7 @@ export const phaseTransitionedEvent = (
 });
 
 export const testSetupGenerator = new SeededSectsAndVioletsSetupGenerator(SECTS_AND_VIOLETS_SCRIPT);
+export const testAssignmentGenerator = new SeededCharacterAssignmentGenerator();
 
 const generatedSetup = () => {
   const result = testSetupGenerator.generate({
@@ -245,6 +292,105 @@ export const setupPhaseTransitionedEvent = (
     dayNumberAfter: 0,
     nightNumberBefore: 0,
     nightNumberAfter: 0
+  } satisfies PhaseTransitionedPayload,
+  ...overrides
+});
+
+const generatedRoster = () => createFixedPlayerRoster({
+  humanPlayerId: humanActor.playerId,
+  humanDisplayName: "Human Player",
+  humanSeatNumber: 5
+});
+
+export const playerRosterCreatedEvent = (
+  overrides: Partial<DomainEventEnvelope<"PlayerRosterCreated">> = {}
+): DomainEventEnvelope<"PlayerRosterCreated"> => ({
+  category: "domain",
+  eventId: eventId("event-6"),
+  gameId: ids.game,
+  eventSequence: 6,
+  batchId: batchId("batch-4"),
+  gameVersion: 4,
+  eventType: "PlayerRosterCreated",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-4"),
+  createdAt: "2026-07-07T00:00:03.000Z",
+  correlationId: correlationId("correlation-4"),
+  causationId: causationId("command-4"),
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    rosterVersion: SUPPORTED_ROSTER_VERSION,
+    entries: generatedRoster()
+  } satisfies PlayerRosterCreatedPayload,
+  ...overrides
+});
+
+const generatedAssignment = () => {
+  const setup = setupGeneratedEvent().payload;
+  const result = testAssignmentGenerator.generate({
+    rootSeed: gameCreatedEvent().payload.rootSeed,
+    rosterVersion: playerRosterCreatedEvent().payload.rosterVersion,
+    roster: playerRosterCreatedEvent().payload.entries,
+    actualRoles: setup.actualRoles,
+    roleCatalogSignature: setup.roleCatalogSignature
+  });
+
+  if (result.status === "failure") {
+    throw new Error(result.message);
+  }
+
+  return result.assignment;
+};
+
+export const charactersAssignedEvent = (
+  overrides: Partial<DomainEventEnvelope<"CharactersAssigned">> = {}
+): DomainEventEnvelope<"CharactersAssigned"> => ({
+  category: "domain",
+  eventId: eventId("event-7"),
+  gameId: ids.game,
+  eventSequence: 7,
+  batchId: batchId("batch-5"),
+  gameVersion: 5,
+  eventType: "CharactersAssigned",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-5"),
+  createdAt: "2026-07-07T00:00:04.000Z",
+  correlationId: correlationId("correlation-5"),
+  causationId: causationId("command-5"),
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...generatedAssignment()
+  } satisfies CharactersAssignedPayload,
+  ...overrides
+});
+
+export const charactersAssignedPhaseTransitionedEvent = (
+  overrides: Partial<DomainEventEnvelope<"PhaseTransitioned">> = {}
+): DomainEventEnvelope<"PhaseTransitioned"> => ({
+  category: "domain",
+  eventId: eventId("event-8"),
+  gameId: ids.game,
+  eventSequence: 8,
+  batchId: batchId("batch-5"),
+  gameVersion: 5,
+  eventType: "PhaseTransitioned",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-5"),
+  createdAt: "2026-07-07T00:00:04.000Z",
+  correlationId: correlationId("correlation-5"),
+  causationId: causationId("command-5"),
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    fromPhase: "CHARACTER_ASSIGNMENT",
+    toPhase: "FIRST_NIGHT",
+    transitionReason: "CHARACTERS_ASSIGNED",
+    dayNumberBefore: 0,
+    dayNumberAfter: 0,
+    nightNumberBefore: 0,
+    nightNumberAfter: 1
   } satisfies PhaseTransitionedPayload,
   ...overrides
 });

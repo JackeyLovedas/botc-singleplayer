@@ -39,7 +39,7 @@ jobs:
       - name: Coverage
         run: pnpm test:coverage
 
-  deterministic-setup-windows:
+  deterministic-setup-and-assignment-windows:
     runs-on: windows-latest
 
     steps:
@@ -63,3 +63,6 @@ jobs:
 
       - name: Deterministic setup tests
         run: pnpm --filter @botc/setup-engine test
+
+      - name: Deterministic assignment tests
+        run: pnpm --filter @botc/assignment-engine test

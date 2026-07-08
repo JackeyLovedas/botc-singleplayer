@@ -1,4 +1,4 @@
-import type { AnyDomainEventEnvelope, GameId, SetupGenerationFailure } from "@botc/domain-core";
+import type { AnyDomainEventEnvelope, AssignmentGenerationFailure, GameId, SetupGenerationFailure } from "@botc/domain-core";
 
 export type CommandRejectionCode =
   | "ExpectedGameVersionMismatch"
@@ -13,12 +13,20 @@ export type CommandRejectionCode =
   | "UnsupportedScript"
   | "SetupAlreadyGenerated"
   | "SetupGenerationFailed"
+  | "SetupNotGenerated"
+  | "PlayerRosterAlreadyCreated"
+  | "PlayerRosterNotCreated"
+  | "InvalidPlayerRoster"
+  | "ActorPlayerMismatch"
+  | "CharacterAssignmentAlreadyCreated"
+  | "AssignmentGenerationFailed"
   | "UnsupportedCommand"
-  | "DomainValidationFailed"
-  | "EventStoreAppendFailed";
+  | "DomainValidationFailed";
 
 export type SetupGenerationRejectionCode = "SetupGenerationFailed";
-export type GeneralCommandRejectionCode = Exclude<CommandRejectionCode, SetupGenerationRejectionCode>;
+export type AssignmentGenerationRejectionCode = "AssignmentGenerationFailed";
+export type StructuredCommandRejectionCode = SetupGenerationRejectionCode | AssignmentGenerationRejectionCode;
+export type GeneralCommandRejectionCode = Exclude<CommandRejectionCode, StructuredCommandRejectionCode>;
 
 export type CommandAccepted = {
   readonly status: "accepted";
@@ -33,7 +41,12 @@ export type SetupGenerationRejectionDetails = {
   readonly failure: SetupGenerationFailure;
 };
 
-export type CommandRejectionDetails = SetupGenerationRejectionDetails;
+export type AssignmentGenerationRejectionDetails = {
+  readonly kind: "assignment-generation";
+  readonly failure: AssignmentGenerationFailure;
+};
+
+export type CommandRejectionDetails = SetupGenerationRejectionDetails | AssignmentGenerationRejectionDetails;
 
 export type SetupGenerationCommandRejected = {
   readonly status: "rejected";
@@ -43,6 +56,16 @@ export type SetupGenerationCommandRejected = {
   readonly currentGameVersion: number;
   readonly idempotent: boolean;
   readonly details: SetupGenerationRejectionDetails;
+};
+
+export type AssignmentGenerationCommandRejected = {
+  readonly status: "rejected";
+  readonly gameId: GameId;
+  readonly code: AssignmentGenerationRejectionCode;
+  readonly message: string;
+  readonly currentGameVersion: number;
+  readonly idempotent: boolean;
+  readonly details: AssignmentGenerationRejectionDetails;
 };
 
 export type GeneralCommandRejected = {
@@ -55,9 +78,39 @@ export type GeneralCommandRejected = {
   readonly details?: never;
 };
 
-export type CommandRejected = SetupGenerationCommandRejected | GeneralCommandRejected;
+export type CommandRejected = SetupGenerationCommandRejected | AssignmentGenerationCommandRejected | GeneralCommandRejected;
 
-export type CommandResult = CommandAccepted | CommandRejected;
+export type CommandExecutionFailureCode =
+  | "ApplicationNotConfigured"
+  | "DependencyExecutionFailed"
+  | "CommandStoreReadFailed"
+  | "CommandReceiptWriteFailed"
+  | "MetadataGenerationFailed"
+  | "EventStoreAppendFailed";
+
+export type CommandExecutionFailureStage =
+  | "receipt-read"
+  | "event-load"
+  | "command-validation"
+  | "setup-generation"
+  | "assignment-generation"
+  | "event-metadata"
+  | "prospective-validation"
+  | "accepted-commit"
+  | "rejected-receipt-write";
+
+export type CommandExecutionFailed = {
+  readonly status: "failed";
+  readonly gameId: GameId;
+  readonly code: CommandExecutionFailureCode;
+  readonly message: string;
+  readonly failureStage: CommandExecutionFailureStage;
+  readonly currentGameVersion?: number;
+  readonly retryable: true;
+};
+
+export type CommandReceiptResult = CommandAccepted | CommandRejected;
+export type CommandResult = CommandReceiptResult | CommandExecutionFailed;
 
 export const accepted = (
   gameId: GameId,
@@ -72,6 +125,32 @@ export const accepted = (
   idempotent
 });
 
+export const failed = (
+  gameId: GameId,
+  code: CommandExecutionFailureCode,
+  message: string,
+  failureStage: CommandExecutionFailureStage,
+  currentGameVersion?: number
+): CommandExecutionFailed => {
+  const result = {
+    status: "failed" as const,
+    gameId,
+    code,
+    message,
+    failureStage,
+    retryable: true as const
+  };
+
+  if (currentGameVersion === undefined) {
+    return result;
+  }
+
+  return {
+    ...result,
+    currentGameVersion
+  };
+};
+
 export function rejected(
   gameId: GameId,
   code: SetupGenerationRejectionCode,
@@ -80,6 +159,14 @@ export function rejected(
   idempotent: boolean,
   details: SetupGenerationRejectionDetails
 ): SetupGenerationCommandRejected;
+export function rejected(
+  gameId: GameId,
+  code: AssignmentGenerationRejectionCode,
+  message: string,
+  currentGameVersion: number,
+  idempotent: boolean,
+  details: AssignmentGenerationRejectionDetails
+): AssignmentGenerationCommandRejected;
 export function rejected(
   gameId: GameId,
   code: GeneralCommandRejectionCode,
@@ -96,8 +183,24 @@ export function rejected(
   details: CommandRejectionDetails | undefined = undefined
 ): CommandRejected {
   if (code === "SetupGenerationFailed") {
-    if (details === undefined) {
-      throw new Error("SetupGenerationFailed requires structured rejection details");
+    if (details === undefined || details.kind !== "setup-generation") {
+      throw new Error(`${code} requires structured rejection details`);
+    }
+
+    return {
+      status: "rejected",
+      gameId,
+      code,
+      message,
+      currentGameVersion,
+      idempotent,
+      details
+    };
+  }
+
+  if (code === "AssignmentGenerationFailed") {
+    if (details === undefined || details.kind !== "assignment-generation") {
+      throw new Error(`${code} requires structured rejection details`);
     }
 
     return {
@@ -122,6 +225,10 @@ export function rejected(
 }
 
 export const markIdempotent = (result: CommandResult): CommandResult => {
+  if (result.status === "failed") {
+    return result;
+  }
+
   if (result.status === "accepted") {
     return { ...result, idempotent: true };
   }

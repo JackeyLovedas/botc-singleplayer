@@ -54,8 +54,31 @@ export type GenerateSetupCommandPayload = {
   readonly constraints: SetupGenerationConstraints;
 };
 
-export type SupportedCommandPayload = CreateGameCommandPayload | SelectScriptCommandPayload | GenerateSetupCommandPayload;
+export type CreatePlayerRosterCommandPayload = {
+  readonly commandType: "CreatePlayerRoster";
+  readonly humanPlayerId: PlayerId;
+  readonly humanDisplayName: string;
+  readonly humanSeatNumber: number;
+};
+
+export type AssignCharactersCommandPayload = {
+  readonly commandType: "AssignCharacters";
+};
+
+export type SupportedCommandPayload =
+  | CreateGameCommandPayload
+  | SelectScriptCommandPayload
+  | GenerateSetupCommandPayload
+  | CreatePlayerRosterCommandPayload
+  | AssignCharactersCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
-export type SupportedCommandEnvelope = CreateGameCommand | SelectScriptCommand | GenerateSetupCommand;
+export type CreatePlayerRosterCommand = CommandEnvelope<CreatePlayerRosterCommandPayload>;
+export type AssignCharactersCommand = CommandEnvelope<AssignCharactersCommandPayload>;
+export type SupportedCommandEnvelope =
+  | CreateGameCommand
+  | SelectScriptCommand
+  | GenerateSetupCommand
+  | CreatePlayerRosterCommand
+  | AssignCharactersCommand;

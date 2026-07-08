@@ -1,5 +1,5 @@
 import type { GameId } from "./ids.js";
-import type { PlayerCounts, ScriptSelectedPayload, SetupGeneratedPayload } from "./events.js";
+import type { CharactersAssignedPayload, PlayerCounts, PlayerRosterCreatedPayload, ScriptSelectedPayload, SetupGeneratedPayload } from "./events.js";
 import type { GamePhase } from "./game-phase.js";
 
 export type GameState = {
@@ -15,4 +15,6 @@ export type GameState = {
   readonly playerCounts: PlayerCounts;
   readonly selectedScript?: ScriptSelectedPayload;
   readonly setup?: SetupGeneratedPayload;
+  readonly roster?: PlayerRosterCreatedPayload;
+  readonly assignment?: CharactersAssignedPayload;
 };
