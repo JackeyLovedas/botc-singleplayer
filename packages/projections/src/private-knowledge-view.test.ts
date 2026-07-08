@@ -69,28 +69,27 @@ describe("private knowledge projections", () => {
     expect(JSON.stringify(view)).not.toContain("assignments");
   });
 
-  it("gives minions their own role, the demon reference, and only the other minion reference", () => {
+  it("gives minions only their own role before MINION_INFO is delivered", () => {
     const state = stateWithPrivateKnowledge();
-    const demon = state.assignment?.assignments.find((assignment) => assignment.role.characterType === "DEMON");
     const minions = state.assignment?.assignments.filter((assignment) => assignment.role.characterType === "MINION") ?? [];
     const minion = minions[0];
-    if (demon === undefined || minion === undefined) {
-      throw new Error("Expected demon and minion assignments");
+    if (minion === undefined) {
+      throw new Error("Expected minion assignment");
     }
 
     const view = buildPlayerPrivateKnowledgeView(state, minion.playerId);
 
     expect(view.ownCharacter).toStrictEqual(minion.role);
-    expect(view.knownDemon).toStrictEqual({ playerId: demon.playerId, seatNumber: demon.seatNumber });
-    expect(Object.keys(view.knownDemon ?? {}).sort()).toStrictEqual(["playerId", "seatNumber"]);
-    expect(view.knownMinions).toHaveLength(1);
-    expect(view.knownMinions[0]?.playerId).not.toBe(minion.playerId);
-    expect(Object.keys(view.knownMinions[0] ?? {}).sort()).toStrictEqual(["playerId", "seatNumber"]);
+    expect("knownDemon" in view).toBe(false);
+    expect(view.knownMinions).toStrictEqual([]);
     expect(view.demonBluffs).toStrictEqual([]);
-    expect(JSON.stringify(view)).not.toContain(minions.find((candidate) => candidate.playerId !== minion.playerId)?.role.roleId);
+    for (const otherMinion of minions.filter((candidate) => candidate.playerId !== minion.playerId)) {
+      expect(JSON.stringify(view)).not.toContain(otherMinion.playerId);
+      expect(JSON.stringify(view)).not.toContain(otherMinion.role.roleId);
+    }
   });
 
-  it("gives the demon minion references and demon bluffs without minion roles", () => {
+  it("gives the demon only their own role before DEMON_INFO is delivered", () => {
     const state = stateWithPrivateKnowledge();
     const demon = state.assignment?.assignments.find((assignment) => assignment.role.characterType === "DEMON");
     const minions = state.assignment?.assignments.filter((assignment) => assignment.role.characterType === "MINION") ?? [];
@@ -101,12 +100,15 @@ describe("private knowledge projections", () => {
     const view = buildPlayerPrivateKnowledgeView(state, demon.playerId);
 
     expect(view.ownCharacter).toStrictEqual(demon.role);
-    expect(view.knownMinions).toHaveLength(2);
-    expect(view.demonBluffs).toStrictEqual(state.setup?.demonBluffs);
     expect("knownDemon" in view).toBe(false);
+    expect(view.knownMinions).toStrictEqual([]);
+    expect(view.demonBluffs).toStrictEqual([]);
     for (const minion of minions) {
-      expect(JSON.stringify(view.knownMinions)).toContain(minion.playerId);
+      expect(JSON.stringify(view)).not.toContain(minion.playerId);
       expect(JSON.stringify(view)).not.toContain(minion.role.roleId);
+    }
+    for (const bluff of state.setup?.demonBluffs ?? []) {
+      expect(JSON.stringify(view)).not.toContain(bluff.roleId);
     }
   });
 
@@ -167,6 +169,57 @@ describe("private knowledge projections", () => {
 
     expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tamperedState, viewer.playerId));
     expectPrivateKnowledgeUnavailable(() => buildAiPrivateKnowledgeView(tamperedState, viewer.playerId));
+  });
+
+  it.each([
+    [
+      "extra field",
+      (state: GameState) => ({
+        ...state.firstNight,
+        storytellerNotes: "hidden"
+      })
+    ],
+    [
+      "unsupported initializationVersion",
+      (state: GameState) => ({
+        ...state.firstNight,
+        initializationVersion: "unsupported-first-night"
+      })
+    ],
+    [
+      "rosterVersion mismatch",
+      (state: GameState) => ({
+        ...state.firstNight,
+        rosterVersion: "wrong-roster-version"
+      })
+    ],
+    [
+      "assignmentAlgorithmVersion mismatch",
+      (state: GameState) => ({
+        ...state.firstNight,
+        assignmentAlgorithmVersion: "wrong-assignment-version"
+      })
+    ],
+    [
+      "roleCatalogSignature mismatch",
+      (state: GameState) => ({
+        ...state.firstNight,
+        roleCatalogSignature: "canonical-role-catalog-v1:deadbeef"
+      })
+    ]
+  ])("fails before projection when FirstNightInitialized payload has %s", (_name, mutateFirstNight) => {
+    const state = stateWithPrivateKnowledge();
+    const viewer = state.roster?.entries[0];
+    if (viewer === undefined) {
+      throw new Error("Expected viewer");
+    }
+
+    const tamperedState = {
+      ...state,
+      firstNight: mutateFirstNight(state)
+    } as unknown as GameState;
+
+    expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tamperedState, viewer.playerId));
   });
 
   it("fails explicitly for an unknown viewer", () => {

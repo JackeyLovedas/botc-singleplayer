@@ -1564,9 +1564,10 @@ describe("GameApplicationService", () => {
     expect(state?.nightNumber).toBe(1);
     expect(state?.dayNumber).toBe(0);
     expect(state?.firstNight?.initializationVersion).toBe("first-night-initialization-v1");
-    expect(state?.initialPrivateKnowledge?.knowledgeModelVersion).toBe("initial-private-knowledge-v1");
+    expect(state?.initialPrivateKnowledge?.knowledgeModelVersion).toBe("initial-own-character-knowledge-v1");
+    expect(state?.initialPrivateKnowledge?.knowledgeStage).toBe("OWN_CHARACTER_BOOTSTRAP");
     expect(state?.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "OWN_CHARACTER")).toHaveLength(12);
-    expect(state?.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "DEMON_BLUFFS")[0]?.roles).toHaveLength(3);
+    expect(state?.initialPrivateKnowledge?.entries).toHaveLength(12);
     expect(commandStore.getGameVersion(command.gameId)).toBe(6);
   });
 

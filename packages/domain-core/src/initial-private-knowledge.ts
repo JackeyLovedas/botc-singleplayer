@@ -17,7 +17,8 @@ import {
 import type { SeatNumber } from "./player-roster.js";
 
 export const SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION = "first-night-initialization-v1" as const;
-export const SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION = "initial-private-knowledge-v1" as const;
+export const SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION = "initial-own-character-knowledge-v1" as const;
+export const INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE = "OWN_CHARACTER_BOOTSTRAP" as const;
 export const INITIAL_KNOWLEDGE_KINDS = [
   "OWN_CHARACTER",
   "DEMON_IDENTITY",
@@ -27,6 +28,7 @@ export const INITIAL_KNOWLEDGE_KINDS = [
 
 export type SupportedFirstNightInitializationVersion = typeof SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION;
 export type SupportedInitialKnowledgeModelVersion = typeof SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION;
+export type InitialOwnCharacterKnowledgeStage = typeof INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE;
 
 export type FirstNightSession = {
   readonly initializationVersion: SupportedFirstNightInitializationVersion;
@@ -71,9 +73,17 @@ export type InitialKnowledgeEntry =
   | MinionIdentitiesKnowledge
   | DemonBluffsKnowledge;
 
+export type InitialOwnCharacterKnowledgeEntry = OwnCharacterKnowledge;
+
+export type DeferredFirstNightTeamKnowledgeEntry =
+  | DemonIdentityKnowledge
+  | MinionIdentitiesKnowledge
+  | DemonBluffsKnowledge;
+
 export type InitialPrivateKnowledge = {
   readonly knowledgeModelVersion: SupportedInitialKnowledgeModelVersion;
-  readonly entries: readonly InitialKnowledgeEntry[];
+  readonly knowledgeStage: InitialOwnCharacterKnowledgeStage;
+  readonly entries: readonly InitialOwnCharacterKnowledgeEntry[];
 };
 
 export type PlayerPrivateKnowledgeView = {
@@ -213,6 +223,7 @@ const FIRST_NIGHT_INITIALIZED_PAYLOAD_KEYS = [
 const INITIAL_PRIVATE_KNOWLEDGE_PAYLOAD_KEYS = [
   "rulesBaselineVersion",
   "knowledgeModelVersion",
+  "knowledgeStage",
   "rosterVersion",
   "assignmentAlgorithmVersion",
   "roleCatalogSignature",
@@ -259,18 +270,6 @@ export const hasExactKnownPlayerReferenceShape = (value: unknown): value is Know
   );
 };
 
-const compareKnownPlayerReference = (left: KnownPlayerReference, right: KnownPlayerReference): number =>
-  left.seatNumber - right.seatNumber;
-
-const knownReferencesAreSorted = (references: readonly KnownPlayerReference[]): boolean =>
-  references.every((reference, index) => {
-    if (!hasExactKnownPlayerReferenceShape(reference)) {
-      return false;
-    }
-
-    return index === 0 || compareKnownPlayerReference(references[index - 1] ?? reference, reference) < 0;
-  });
-
 const roleListIsAsciiSorted = (roles: readonly RoleSetupSnapshot[]): boolean =>
   roles.every((role, index) => index === 0 || compareStableId(roles[index - 1]?.roleId ?? "", role.roleId) < 0);
 
@@ -314,9 +313,18 @@ export const cloneInitialKnowledgeEntry = (entry: InitialKnowledgeEntry): Initia
   }
 };
 
+export const cloneInitialOwnCharacterKnowledgeEntry = (
+  entry: InitialOwnCharacterKnowledgeEntry
+): InitialOwnCharacterKnowledgeEntry => ({
+  kind: entry.kind,
+  recipientPlayerId: entry.recipientPlayerId,
+  role: cloneRoleSetupSnapshot(entry.role)
+});
+
 export const cloneInitialPrivateKnowledge = (knowledge: InitialPrivateKnowledge): InitialPrivateKnowledge => ({
   knowledgeModelVersion: knowledge.knowledgeModelVersion,
-  entries: knowledge.entries.map(cloneInitialKnowledgeEntry)
+  knowledgeStage: knowledge.knowledgeStage,
+  entries: knowledge.entries.map(cloneInitialOwnCharacterKnowledgeEntry)
 });
 
 const fail = (reason: string): InitialPrivateKnowledgeValidationResult => ({ valid: false, reason });
@@ -325,7 +333,7 @@ type InitialKnowledgeEntryShapeValidationResult =
   | { readonly valid: true; readonly entries: readonly InitialKnowledgeEntry[] }
   | { readonly valid: false; readonly reason: string };
 
-const parseInitialKnowledgeEntryShape = (
+export const parsePrivateKnowledgeEntryShape = (
   entry: unknown
 ): InitialKnowledgeEntry | InitialPrivateKnowledgeValidationResult => {
   if (!isPlainRecord(entry)) {
@@ -405,7 +413,7 @@ const parseInitialKnowledgeEntryShapes = (entries: unknown): InitialKnowledgeEnt
 
   const parsed: InitialKnowledgeEntry[] = [];
   for (const entry of entries) {
-    const result = parseInitialKnowledgeEntryShape(entry);
+    const result = parsePrivateKnowledgeEntryShape(entry);
     if ("valid" in result) {
       if (result.valid) {
         return { valid: false, reason: "initial private knowledge entry parser returned no entry" };
@@ -619,7 +627,7 @@ export const validateFirstNightInitializedPayloadShape = (
   return { valid: true };
 };
 
-export const validateInitialPrivateKnowledgePayload = (
+export const validateInitialOwnCharacterKnowledgePayload = (
   value: unknown,
   sourceFacts: InitialKnowledgeSourceFacts
 ): InitialPrivateKnowledgeValidationResult => {
@@ -630,6 +638,7 @@ export const validateInitialPrivateKnowledgePayload = (
   if (
     typeof value.rulesBaselineVersion !== "string" ||
     typeof value.knowledgeModelVersion !== "string" ||
+    typeof value.knowledgeStage !== "string" ||
     typeof value.rosterVersion !== "string" ||
     typeof value.assignmentAlgorithmVersion !== "string" ||
     typeof value.roleCatalogSignature !== "string"
@@ -641,6 +650,10 @@ export const validateInitialPrivateKnowledgePayload = (
     return fail("InitialPrivateKnowledgeEstablished knowledge model version must be supported");
   }
 
+  if (value.knowledgeStage !== INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE) {
+    return fail("InitialPrivateKnowledgeEstablished knowledgeStage must be OWN_CHARACTER_BOOTSTRAP");
+  }
+
   if (
     (sourceFacts.rosterVersion !== undefined && value.rosterVersion !== sourceFacts.rosterVersion) ||
     (sourceFacts.assignmentAlgorithmVersion !== undefined && value.assignmentAlgorithmVersion !== sourceFacts.assignmentAlgorithmVersion) ||
@@ -649,7 +662,7 @@ export const validateInitialPrivateKnowledgePayload = (
     return fail("InitialPrivateKnowledgeEstablished metadata must match roster, assignment, and setup facts");
   }
 
-  return validateInitialPrivateKnowledgeEntries({
+  return validateInitialOwnCharacterKnowledgeEntries({
     ...sourceFacts,
     entries: value.entries
   });
@@ -719,7 +732,7 @@ const validateKnowledgeOrdering = (
   return { valid: true };
 };
 
-export const validateInitialPrivateKnowledgeEntries = (
+export const validateInitialOwnCharacterKnowledgeEntries = (
   input: InitialPrivateKnowledgeValidationInput
 ): InitialPrivateKnowledgeValidationResult => {
   const entriesShapeValidation = parseInitialKnowledgeEntryShapes(input.entries);
@@ -745,71 +758,31 @@ export const validateInitialPrivateKnowledgeEntries = (
   const seatByPlayerId = new Map<PlayerId, SeatNumber>(roster.map((entry) => [entry.playerId, entry.seatNumber]));
   const assignmentByPlayerId = new Map(assignment.map((currentAssignment) => [currentAssignment.playerId, currentAssignment]));
   const catalogByRoleId = new Map(setup.roleCatalogSnapshot.roles.map((role) => [role.roleId, role]));
-  const demonAssignments = assignment.filter((currentAssignment) => currentAssignment.role.characterType === "DEMON");
-  const minionAssignments = assignment.filter((currentAssignment) => currentAssignment.role.characterType === "MINION")
-    .sort((left, right) => left.seatNumber - right.seatNumber);
-  const actualRoleIds = new Set(setup.actualRoles.map((role) => role.roleId));
 
-  if (demonAssignments.length === 0) {
-    return fail("initial private knowledge requires a demon assignment");
+  if (entries.length !== roster.length) {
+    return fail("initial own-character knowledge must contain exactly one OWN_CHARACTER entry per roster player");
   }
 
-  if (demonAssignments.length !== 1) {
-    return fail("initial private knowledge requires exactly one demon assignment");
+  const ownEntries: InitialOwnCharacterKnowledgeEntry[] = [];
+  for (const entry of entries) {
+    if (entry.kind !== "OWN_CHARACTER") {
+      return fail(`${entry.kind} is defined but not yet delivered by initial own-character bootstrap`);
+    }
+    ownEntries.push(entry);
   }
 
-  if (minionAssignments.length !== 2) {
-    return fail("initial private knowledge requires exactly two minion assignments");
-  }
-
-  const demon = demonAssignments[0];
-  if (demon === undefined) {
-    return fail("initial private knowledge requires a demon assignment");
-  }
-
-  const orderingValidation = validateKnowledgeOrdering(entries, seatByPlayerId);
+  const orderingValidation = validateKnowledgeOrdering(ownEntries, seatByPlayerId);
   if (!orderingValidation.valid) {
     return orderingValidation;
   }
 
   const ownByRecipient = new Map<PlayerId, OwnCharacterKnowledge>();
-  const demonIdentityByRecipient = new Map<PlayerId, DemonIdentityKnowledge>();
-  const minionIdentitiesByRecipient = new Map<PlayerId, MinionIdentitiesKnowledge>();
-  const demonBluffsByRecipient = new Map<PlayerId, DemonBluffsKnowledge>();
 
-  for (const entry of entries) {
-    switch (entry.kind) {
-      case "OWN_CHARACTER":
-        if (ownByRecipient.has(entry.recipientPlayerId)) {
-          return fail("each player must receive exactly one OWN_CHARACTER entry");
-        }
-        ownByRecipient.set(entry.recipientPlayerId, entry);
-        break;
-
-      case "DEMON_IDENTITY":
-        if (demonIdentityByRecipient.has(entry.recipientPlayerId)) {
-          return fail("each minion must receive exactly one DEMON_IDENTITY entry");
-        }
-        demonIdentityByRecipient.set(entry.recipientPlayerId, entry);
-        break;
-
-      case "MINION_IDENTITIES":
-        if (minionIdentitiesByRecipient.has(entry.recipientPlayerId)) {
-          return fail("each evil player must receive exactly one MINION_IDENTITIES entry");
-        }
-        minionIdentitiesByRecipient.set(entry.recipientPlayerId, entry);
-        break;
-
-      case "DEMON_BLUFFS":
-        if (demonBluffsByRecipient.has(entry.recipientPlayerId)) {
-          return fail("demon must receive exactly one DEMON_BLUFFS entry");
-        }
-        demonBluffsByRecipient.set(entry.recipientPlayerId, entry);
-        break;
-
-      default:
-        return assertNever(entry);
+  for (const entry of ownEntries) {
+    if (ownByRecipient.has(entry.recipientPlayerId)) {
+      return fail("each player must receive exactly one OWN_CHARACTER entry");
     }
+    ownByRecipient.set(entry.recipientPlayerId, entry);
   }
 
   if (ownByRecipient.size !== roster.length) {
@@ -830,99 +803,6 @@ export const validateInitialPrivateKnowledgeEntries = (
       !sameRoleSetupSnapshot(own.role, catalogRole)
     ) {
       return fail("OWN_CHARACTER role must match assignment and setup catalog");
-    }
-  }
-
-  const minionPlayerIds = new Set(minionAssignments.map((assignment) => assignment.playerId));
-  const evilPlayerIds = new Set([...minionPlayerIds, demon.playerId]);
-  const demonReference = {
-    playerId: demon.playerId,
-    seatNumber: demon.seatNumber
-  } satisfies KnownPlayerReference;
-
-  if (demonIdentityByRecipient.size !== minionAssignments.length) {
-    return fail("each minion must receive exactly one DEMON_IDENTITY entry");
-  }
-
-  for (const minion of minionAssignments) {
-    const entry = demonIdentityByRecipient.get(minion.playerId);
-    if (entry === undefined) {
-      return fail("each minion must receive DEMON_IDENTITY");
-    }
-
-    if (
-      !hasExactKnownPlayerReferenceShape(entry.demon) ||
-      entry.demon.playerId !== demonReference.playerId ||
-      entry.demon.seatNumber !== demonReference.seatNumber ||
-      entry.demon.playerId === entry.recipientPlayerId
-    ) {
-      return fail("DEMON_IDENTITY must point to the unique demon without leaking role fields");
-    }
-  }
-
-  for (const recipient of demonIdentityByRecipient.keys()) {
-    if (!minionPlayerIds.has(recipient)) {
-      return fail("only minions may receive DEMON_IDENTITY");
-    }
-  }
-
-  if (minionIdentitiesByRecipient.size !== evilPlayerIds.size) {
-    return fail("demon and minions must receive MINION_IDENTITIES entries");
-  }
-
-  for (const [recipient, entry] of minionIdentitiesByRecipient.entries()) {
-    if (!evilPlayerIds.has(recipient)) {
-      return fail("only demon or minions may receive MINION_IDENTITIES");
-    }
-
-    if (!knownReferencesAreSorted(entry.minions)) {
-      return fail("MINION_IDENTITIES references must be canonical and role-free");
-    }
-
-    const expected = recipient === demon.playerId
-      ? minionAssignments
-      : minionAssignments.filter((assignment) => assignment.playerId !== recipient);
-
-    if (entry.minions.length !== expected.length) {
-      return fail("MINION_IDENTITIES entry has the wrong number of visible minions");
-    }
-
-    for (const [index, reference] of entry.minions.entries()) {
-      const expectedMinion = expected[index];
-      if (
-        expectedMinion === undefined ||
-        reference.playerId !== expectedMinion.playerId ||
-        reference.seatNumber !== expectedMinion.seatNumber ||
-        reference.playerId === recipient ||
-        reference.playerId === demon.playerId ||
-        !minionPlayerIds.has(reference.playerId)
-      ) {
-        return fail("MINION_IDENTITIES must reference only the permitted other minions");
-      }
-    }
-  }
-
-  if (demonBluffsByRecipient.size !== 1 || !demonBluffsByRecipient.has(demon.playerId)) {
-    return fail("only the demon must receive exactly one DEMON_BLUFFS entry");
-  }
-
-  const demonBluffs = demonBluffsByRecipient.get(demon.playerId);
-  if (demonBluffs === undefined) {
-    return fail("demon must receive DEMON_BLUFFS");
-  }
-
-  if (demonBluffs.roles.length !== setup.demonBluffs.length || !roleListIsAsciiSorted(demonBluffs.roles)) {
-    return fail("DEMON_BLUFFS roles must use canonical setup demon bluff order");
-  }
-
-  for (const [index, role] of demonBluffs.roles.entries()) {
-    const expected = setup.demonBluffs[index];
-    if (
-      expected === undefined ||
-      !sameRoleSetupSnapshot(role, expected) ||
-      actualRoleIds.has(role.roleId)
-    ) {
-      return fail("DEMON_BLUFFS roles must deeply equal setup.demonBluffs and exclude actual roles");
     }
   }
 

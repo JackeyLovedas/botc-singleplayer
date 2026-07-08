@@ -1285,11 +1285,13 @@ describe("domain event rebuild", () => {
     expect(state.gameVersion).toBe(6);
     expect(state.lastEventSequence).toBe(10);
     expect(state.firstNight?.initializationVersion).toBe("first-night-initialization-v1");
-    expect(state.initialPrivateKnowledge?.knowledgeModelVersion).toBe("initial-private-knowledge-v1");
+    expect(state.initialPrivateKnowledge?.knowledgeModelVersion).toBe("initial-own-character-knowledge-v1");
+    expect(state.initialPrivateKnowledge?.knowledgeStage).toBe("OWN_CHARACTER_BOOTSTRAP");
+    expect(state.initialPrivateKnowledge?.entries).toHaveLength(12);
     expect(state.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "OWN_CHARACTER")).toHaveLength(12);
-    expect(state.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "DEMON_IDENTITY")).toHaveLength(2);
-    expect(state.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "MINION_IDENTITIES")).toHaveLength(3);
-    expect(state.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "DEMON_BLUFFS")).toHaveLength(1);
+    expect(JSON.stringify(state.initialPrivateKnowledge?.entries)).not.toContain("DEMON_IDENTITY");
+    expect(JSON.stringify(state.initialPrivateKnowledge?.entries)).not.toContain("MINION_IDENTITIES");
+    expect(JSON.stringify(state.initialPrivateKnowledge?.entries)).not.toContain("DEMON_BLUFFS");
   });
 
   it("rejects bare first night initialization during replay", () => {
@@ -1377,59 +1379,112 @@ describe("domain event rebuild", () => {
     expectDomainCode(() => rebuildGameState(firstNightEventStream(firstNightInitializedEvent(), knowledge)), "InvalidInitialPrivateKnowledgeEstablishedPayload");
   });
 
-  it("rejects known player references that carry hidden role fields", () => {
+  it("rejects DEMON_IDENTITY during own-character bootstrap even with hidden role fields", () => {
     const payload = initialPrivateKnowledgeEstablishedEvent().payload;
-    const minionIdentityIndex = payload.entries.findIndex((entry) => entry.kind === "MINION_IDENTITIES" && entry.minions.length > 0);
-    const entry = payload.entries[minionIdentityIndex];
-    if (entry === undefined || entry.kind !== "MINION_IDENTITIES") {
-      throw new Error("Expected minion identities entry");
+    const demon = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "DEMON");
+    const minion = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "MINION");
+    if (demon === undefined || minion === undefined) {
+      throw new Error("Expected demon and minion assignments");
     }
 
-    const firstReference = entry.minions[0];
-    if (firstReference === undefined) {
-      throw new Error("Expected minion reference");
-    }
-
-    const entries = [...payload.entries];
-    entries[minionIdentityIndex] = {
-      ...entry,
-      minions: [{
-        ...firstReference,
-        roleId: roleId("witch")
-      } as typeof firstReference, ...entry.minions.slice(1)]
-    };
-    const knowledge = initialPrivateKnowledgeEstablishedEvent({
-      payload: {
-        ...payload,
-        entries
+    const entries = [...payload.entries] as unknown[];
+    const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === minion.playerId);
+    entries[targetIndex] = {
+      kind: "DEMON_IDENTITY",
+      recipientPlayerId: minion.playerId,
+      demon: {
+        playerId: demon.playerId,
+        seatNumber: demon.seatNumber,
+        roleId: roleId("vigormortis")
       }
-    });
+    };
 
-    expectDomainCode(() => rebuildGameState(firstNightEventStream(firstNightInitializedEvent(), knowledge)), "InvalidInitialPrivateKnowledgeEstablishedPayload");
+    expectInitialKnowledgePayloadRejected({ ...payload, entries });
   });
 
-  it("rejects demon bluffs that do not deeply equal setup demonBluffs", () => {
+  it("rejects DEMON_BLUFFS during own-character bootstrap even when structurally valid", () => {
     const payload = initialPrivateKnowledgeEstablishedEvent().payload;
-    const demonBluffIndex = payload.entries.findIndex((entry) => entry.kind === "DEMON_BLUFFS");
-    const entry = payload.entries[demonBluffIndex];
-    const actualRole = setupGeneratedEvent().payload.actualRoles[0];
-    if (entry === undefined || entry.kind !== "DEMON_BLUFFS" || actualRole === undefined) {
-      throw new Error("Expected demon bluff entry and actual role");
+    const demon = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "DEMON");
+    if (demon === undefined) {
+      throw new Error("Expected demon assignment");
     }
 
-    const entries = [...payload.entries];
-    entries[demonBluffIndex] = {
-      ...entry,
-      roles: [actualRole, ...entry.roles.slice(1)]
+    const entries = [...payload.entries] as unknown[];
+    const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === demon.playerId);
+    entries[targetIndex] = {
+      kind: "DEMON_BLUFFS",
+      recipientPlayerId: demon.playerId,
+      roles: setupGeneratedEvent().payload.demonBluffs
     };
-    const knowledge = initialPrivateKnowledgeEstablishedEvent({
-      payload: {
-        ...payload,
-        entries
+
+    expectInitialKnowledgePayloadRejected({ ...payload, entries });
+  });
+
+  it.each([
+    [
+      "DEMON_IDENTITY",
+      (payload: InitialKnowledgePayload): readonly unknown[] => {
+        const demon = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "DEMON");
+        const minion = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "MINION");
+        if (demon === undefined || minion === undefined) {
+          throw new Error("Expected demon and minion assignments");
+        }
+
+        const entries = [...payload.entries] as unknown[];
+        const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === minion.playerId);
+        entries[targetIndex] = {
+          kind: "DEMON_IDENTITY",
+          recipientPlayerId: minion.playerId,
+          demon: { playerId: demon.playerId, seatNumber: demon.seatNumber }
+        };
+        return entries;
       }
+    ],
+    [
+      "MINION_IDENTITIES",
+      (payload: InitialKnowledgePayload): readonly unknown[] => {
+        const minions = charactersAssignedEvent().payload.assignments.filter((assignment) => assignment.role.characterType === "MINION");
+        const [recipient, visible] = minions;
+        if (recipient === undefined || visible === undefined) {
+          throw new Error("Expected two minion assignments");
+        }
+
+        const entries = [...payload.entries] as unknown[];
+        const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === recipient.playerId);
+        entries[targetIndex] = {
+          kind: "MINION_IDENTITIES",
+          recipientPlayerId: recipient.playerId,
+          minions: [{ playerId: visible.playerId, seatNumber: visible.seatNumber }]
+        };
+        return entries;
+      }
+    ],
+    [
+      "DEMON_BLUFFS",
+      (payload: InitialKnowledgePayload): readonly unknown[] => {
+        const demon = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "DEMON");
+        if (demon === undefined) {
+          throw new Error("Expected demon assignment");
+        }
+
+        const entries = [...payload.entries] as unknown[];
+        const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === demon.playerId);
+        entries[targetIndex] = {
+          kind: "DEMON_BLUFFS",
+          recipientPlayerId: demon.playerId,
+          roles: setupGeneratedEvent().payload.demonBluffs
+        };
+        return entries;
+      }
+    ]
+  ])("rejects structurally valid but not-yet-delivered %s during own-character bootstrap", (_kind, buildEntries) => {
+    const payload = initialPrivateKnowledgeEstablishedEvent().payload;
+    const error = expectInitialKnowledgePayloadRejected({
+      ...payload,
+      entries: buildEntries(payload)
     });
 
-    expectDomainCode(() => rebuildGameState(firstNightEventStream(firstNightInitializedEvent(), knowledge)), "InvalidInitialPrivateKnowledgeEstablishedPayload");
+    expect(error.message).toContain("not yet delivered");
   });
 
   it.each([
@@ -1537,19 +1592,43 @@ describe("domain event rebuild", () => {
   it.each([
     [
       "DEMON_IDENTITY demonRole",
-      (payload: InitialKnowledgePayload): readonly unknown[] => payload.entries.map((entry) =>
-        entry.kind === "DEMON_IDENTITY"
-          ? { ...entry, demonRole: charactersAssignedEvent().payload.assignments[0]?.role }
-          : entry
-      )
+      (payload: InitialKnowledgePayload): readonly unknown[] => {
+        const demon = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "DEMON");
+        const minion = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "MINION");
+        if (demon === undefined || minion === undefined) {
+          throw new Error("Expected demon and minion assignments");
+        }
+
+        const entries = [...payload.entries] as unknown[];
+        const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === minion.playerId);
+        entries[targetIndex] = {
+          kind: "DEMON_IDENTITY",
+          recipientPlayerId: minion.playerId,
+          demon: { playerId: demon.playerId, seatNumber: demon.seatNumber },
+          demonRole: demon.role
+        };
+        return entries;
+      }
     ],
     [
       "MINION_IDENTITIES minionRoles",
-      (payload: InitialKnowledgePayload): readonly unknown[] => payload.entries.map((entry) =>
-        entry.kind === "MINION_IDENTITIES"
-          ? { ...entry, minionRoles: charactersAssignedEvent().payload.assignments.map((assignment) => assignment.role) }
-          : entry
-      )
+      (payload: InitialKnowledgePayload): readonly unknown[] => {
+        const minions = charactersAssignedEvent().payload.assignments.filter((assignment) => assignment.role.characterType === "MINION");
+        const [recipient, visible] = minions;
+        if (recipient === undefined || visible === undefined) {
+          throw new Error("Expected two minion assignments");
+        }
+
+        const entries = [...payload.entries] as unknown[];
+        const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === recipient.playerId);
+        entries[targetIndex] = {
+          kind: "MINION_IDENTITIES",
+          recipientPlayerId: recipient.playerId,
+          minions: [{ playerId: visible.playerId, seatNumber: visible.seatNumber }],
+          minionRoles: minions.map((assignment) => assignment.role)
+        };
+        return entries;
+      }
     ],
     [
       "OWN_CHARACTER allAssignments",
@@ -1561,19 +1640,41 @@ describe("domain event rebuild", () => {
     ],
     [
       "DEMON_BLUFFS storytellerNotes",
-      (payload: InitialKnowledgePayload): readonly unknown[] => payload.entries.map((entry) =>
-        entry.kind === "DEMON_BLUFFS"
-          ? { ...entry, storytellerNotes: "hidden note" }
-          : entry
-      )
+      (payload: InitialKnowledgePayload): readonly unknown[] => {
+        const demon = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "DEMON");
+        if (demon === undefined) {
+          throw new Error("Expected demon assignment");
+        }
+
+        const entries = [...payload.entries] as unknown[];
+        const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === demon.playerId);
+        entries[targetIndex] = {
+          kind: "DEMON_BLUFFS",
+          recipientPlayerId: demon.playerId,
+          roles: setupGeneratedEvent().payload.demonBluffs,
+          storytellerNotes: "hidden note"
+        };
+        return entries;
+      }
     ],
     [
       "KnownPlayerReference roleId",
-      (payload: InitialKnowledgePayload): readonly unknown[] => payload.entries.map((entry) =>
-        entry.kind === "DEMON_IDENTITY"
-          ? { ...entry, demon: { ...entry.demon, roleId: roleId("vigormortis") } }
-          : entry
-      )
+      (payload: InitialKnowledgePayload): readonly unknown[] => {
+        const demon = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "DEMON");
+        const minion = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "MINION");
+        if (demon === undefined || minion === undefined) {
+          throw new Error("Expected demon and minion assignments");
+        }
+
+        const entries = [...payload.entries] as unknown[];
+        const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === minion.playerId);
+        entries[targetIndex] = {
+          kind: "DEMON_IDENTITY",
+          recipientPlayerId: minion.playerId,
+          demon: { playerId: demon.playerId, seatNumber: demon.seatNumber, roleId: roleId("vigormortis") }
+        };
+        return entries;
+      }
     ],
     [
       "RoleSetupSnapshot actualAlignment",
@@ -1608,14 +1709,21 @@ describe("domain event rebuild", () => {
     ["wrong seatNumber", { playerId: playerRosterCreatedEvent().payload.entries[0]?.playerId, seatNumber: 13 }]
   ])("rejects damaged KnownPlayerReference shape: %s", (_name, damagedReference) => {
     const payload = initialPrivateKnowledgeEstablishedEvent().payload;
+    const minion = charactersAssignedEvent().payload.assignments.find((assignment) => assignment.role.characterType === "MINION");
+    if (minion === undefined) {
+      throw new Error("Expected minion assignment");
+    }
+    const entries = [...payload.entries] as unknown[];
+    const targetIndex = payload.entries.findIndex((entry) => entry.recipientPlayerId === minion.playerId);
+    entries[targetIndex] = {
+      kind: "DEMON_IDENTITY",
+      recipientPlayerId: minion.playerId,
+      demon: damagedReference
+    };
 
     expectInitialKnowledgePayloadRejected({
       ...payload,
-      entries: payload.entries.map((entry) =>
-        entry.kind === "DEMON_IDENTITY"
-          ? { ...entry, demon: damagedReference }
-          : entry
-      )
+      entries
     });
   });
 

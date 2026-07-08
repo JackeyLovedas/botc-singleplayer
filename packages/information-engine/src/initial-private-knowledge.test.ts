@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { InitialPrivateKnowledgeBuilder } from "@botc/information-engine";
-import type { CharacterAssignmentSet, InitialKnowledgeEntry, PlayerId } from "@botc/domain-core";
+import type { CharacterAssignmentSet, InitialOwnCharacterKnowledgeEntry, PlayerId } from "@botc/domain-core";
 import { playerId, roleId } from "@botc/domain-core";
 import {
   charactersAssignedEvent,
@@ -23,7 +23,7 @@ const buildKnowledge = () => {
   return result.knowledge;
 };
 
-const entriesFor = (entries: readonly InitialKnowledgeEntry[], recipientPlayerId: PlayerId): readonly InitialKnowledgeEntry[] =>
+const entriesFor = (entries: readonly InitialOwnCharacterKnowledgeEntry[], recipientPlayerId: PlayerId): readonly InitialOwnCharacterKnowledgeEntry[] =>
   entries.filter((entry) => entry.recipientPlayerId === recipientPlayerId);
 
 describe("InitialPrivateKnowledgeBuilder", () => {
@@ -32,11 +32,10 @@ describe("InitialPrivateKnowledgeBuilder", () => {
     const second = buildKnowledge();
 
     expect(first).toStrictEqual(second);
-    expect(first.knowledgeModelVersion).toBe("initial-private-knowledge-v1");
+    expect(first.knowledgeModelVersion).toBe("initial-own-character-knowledge-v1");
+    expect(first.knowledgeStage).toBe("OWN_CHARACTER_BOOTSTRAP");
+    expect(first.entries).toHaveLength(12);
     expect(first.entries.filter((entry) => entry.kind === "OWN_CHARACTER")).toHaveLength(12);
-    expect(first.entries.filter((entry) => entry.kind === "DEMON_IDENTITY")).toHaveLength(2);
-    expect(first.entries.filter((entry) => entry.kind === "MINION_IDENTITIES")).toHaveLength(3);
-    expect(first.entries.filter((entry) => entry.kind === "DEMON_BLUFFS")).toHaveLength(1);
   });
 
   it("gives every player exactly one own character matching assignment", () => {
@@ -54,7 +53,7 @@ describe("InitialPrivateKnowledgeBuilder", () => {
     }
   });
 
-  it("gives the demon all minions and exactly setup demon bluffs", () => {
+  it("does not deliver demon identity, minion identities, or demon bluffs during bootstrap", () => {
     const input = buildInput();
     const knowledge = buildKnowledge();
     const demon = input.assignment.find((assignment) => assignment.role.characterType === "DEMON");
@@ -63,37 +62,38 @@ describe("InitialPrivateKnowledgeBuilder", () => {
     }
 
     const demonEntries = entriesFor(knowledge.entries, demon.playerId);
-    const minions = demonEntries.find((entry) => entry.kind === "MINION_IDENTITIES");
-    const bluffs = demonEntries.find((entry) => entry.kind === "DEMON_BLUFFS");
 
-    expect(minions?.kind).toBe("MINION_IDENTITIES");
-    expect(minions?.minions).toHaveLength(2);
-    expect(bluffs?.kind).toBe("DEMON_BLUFFS");
-    expect(bluffs?.roles).toStrictEqual(input.setup.demonBluffs);
+    expect(demonEntries).toHaveLength(1);
+    expect(demonEntries[0]?.kind).toBe("OWN_CHARACTER");
+    expect(JSON.stringify(knowledge)).not.toContain("DEMON_IDENTITY");
+    expect(JSON.stringify(knowledge)).not.toContain("MINION_IDENTITIES");
+    expect(JSON.stringify(knowledge)).not.toContain("DEMON_BLUFFS");
   });
 
-  it("gives each minion the demon and only the other minion without role fields", () => {
+  it("does not deliver demon or other-minion references to minions during bootstrap", () => {
     const input = buildInput();
     const knowledge = buildKnowledge();
-    const demon = input.assignment.find((assignment) => assignment.role.characterType === "DEMON");
     const minions = input.assignment.filter((assignment) => assignment.role.characterType === "MINION");
-    if (demon === undefined || minions.length !== 2) {
-      throw new Error("Expected demon and two minions");
+    if (minions.length !== 2) {
+      throw new Error("Expected two minions");
     }
 
     for (const minion of minions) {
       const minionEntries = entriesFor(knowledge.entries, minion.playerId);
-      const demonIdentity = minionEntries.find((entry) => entry.kind === "DEMON_IDENTITY");
-      const visibleMinions = minionEntries.find((entry) => entry.kind === "MINION_IDENTITIES");
 
-      expect(demonIdentity?.kind).toBe("DEMON_IDENTITY");
-      expect(demonIdentity?.demon).toStrictEqual({ playerId: demon.playerId, seatNumber: demon.seatNumber });
-      expect(Object.keys(demonIdentity?.demon ?? {}).sort()).toStrictEqual(["playerId", "seatNumber"]);
-      expect(visibleMinions?.kind).toBe("MINION_IDENTITIES");
-      expect(visibleMinions?.minions).toHaveLength(1);
-      expect(visibleMinions?.minions[0]?.playerId).not.toBe(minion.playerId);
-      expect(Object.keys(visibleMinions?.minions[0] ?? {}).sort()).toStrictEqual(["playerId", "seatNumber"]);
+      expect(minionEntries).toHaveLength(1);
+      expect(minionEntries[0]).toMatchObject({ kind: "OWN_CHARACTER", role: minion.role });
     }
+  });
+
+  it("orders own-character bootstrap entries by recipient seat number", () => {
+    const input = buildInput();
+    const knowledge = buildKnowledge();
+    const seatByPlayerId = new Map(input.roster.map((entry) => [entry.playerId, entry.seatNumber]));
+
+    expect(knowledge.entries.map((entry) => seatByPlayerId.get(entry.recipientPlayerId))).toStrictEqual(
+      input.roster.map((entry) => entry.seatNumber)
+    );
   });
 
   it("gives good players only their own character", () => {

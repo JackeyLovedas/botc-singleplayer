@@ -1,24 +1,22 @@
 import {
+  INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
-  cloneInitialKnowledgeEntry,
+  cloneInitialOwnCharacterKnowledgeEntry,
   cloneRoleSetupSnapshot,
   validateCharacterAssignments,
   validateInitialKnowledgeSourceFacts,
-  validateInitialPrivateKnowledgeEntries,
+  validateInitialOwnCharacterKnowledgeEntries,
   validatePlayerRoster
 } from "@botc/domain-core";
 import type {
-  CharacterAssignment,
-  InitialKnowledgeEntry,
   InitialPrivateKnowledge,
   InitialPrivateKnowledgeGenerationFailure,
   InitialPrivateKnowledgeGenerationFailureCode,
   InitialPrivateKnowledgeGenerationResult,
   InitialPrivateKnowledgeGeneratorInput,
-  KnownPlayerReference,
+  InitialOwnCharacterKnowledgeEntry,
   PlayerId,
-  RoleId,
-  RoleSetupSnapshot
+  RoleId
 } from "@botc/domain-core";
 
 const failure = (
@@ -33,21 +31,6 @@ const failure = (
   conflictingPlayerIds: [...conflictingPlayerIds],
   conflictingRoleIds: [...conflictingRoleIds]
 });
-
-const cloneKnownPlayerReference = (assignment: CharacterAssignment): KnownPlayerReference => ({
-  playerId: assignment.playerId,
-  seatNumber: assignment.seatNumber
-});
-
-const bySeat = (left: CharacterAssignment, right: CharacterAssignment): number => left.seatNumber - right.seatNumber;
-
-const byRoleId = (left: RoleSetupSnapshot, right: RoleSetupSnapshot): number => {
-  if (left.roleId === right.roleId) {
-    return 0;
-  }
-
-  return left.roleId < right.roleId ? -1 : 1;
-};
 
 const validateSetupForInitialKnowledge = (
   input: InitialPrivateKnowledgeGeneratorInput
@@ -132,31 +115,9 @@ export class InitialPrivateKnowledgeBuilder {
       return failure(failureCode, sourceFactsValidation.reason);
     }
 
-    const demonAssignments = input.assignment.filter((assignment) => assignment.role.characterType === "DEMON");
-    if (demonAssignments.length === 0) {
-      return failure("MissingDemon", "assignment must contain one demon");
-    }
-
-    if (demonAssignments.length !== 1) {
-      return failure("InvalidDemonCount", "assignment must contain exactly one demon", demonAssignments.map((entry) => entry.playerId));
-    }
-
-    const [demon] = demonAssignments;
-    if (demon === undefined) {
-      return failure("MissingDemon", "assignment must contain one demon");
-    }
-
-    const minions = input.assignment.filter((assignment) => assignment.role.characterType === "MINION").sort(bySeat);
-    if (minions.length !== 2) {
-      return failure("InvalidMinionCount", "assignment must contain exactly two minions", minions.map((entry) => entry.playerId));
-    }
-
-    const minionPlayerIds = new Set(minions.map((minion) => minion.playerId));
     const assignmentByPlayerId = new Map(input.assignment.map((assignment) => [assignment.playerId, assignment]));
     const orderedRoster = [...input.roster].sort((left, right) => left.seatNumber - right.seatNumber);
-    const demonReference = cloneKnownPlayerReference(demon);
-    const bluffRoles = input.setup.demonBluffs.map(cloneRoleSetupSnapshot).sort(byRoleId);
-    const entries: InitialKnowledgeEntry[] = [];
+    const entries: InitialOwnCharacterKnowledgeEntry[] = [];
 
     for (const rosterEntry of orderedRoster) {
       const assignment = assignmentByPlayerId.get(rosterEntry.playerId);
@@ -169,41 +130,14 @@ export class InitialPrivateKnowledgeBuilder {
         recipientPlayerId: rosterEntry.playerId,
         role: cloneRoleSetupSnapshot(assignment.role)
       });
-
-      if (minionPlayerIds.has(rosterEntry.playerId)) {
-        entries.push({
-          kind: "DEMON_IDENTITY",
-          recipientPlayerId: rosterEntry.playerId,
-          demon: { ...demonReference }
-        });
-        entries.push({
-          kind: "MINION_IDENTITIES",
-          recipientPlayerId: rosterEntry.playerId,
-          minions: minions
-            .filter((minion) => minion.playerId !== rosterEntry.playerId)
-            .map(cloneKnownPlayerReference)
-        });
-      }
-
-      if (rosterEntry.playerId === demon.playerId) {
-        entries.push({
-          kind: "MINION_IDENTITIES",
-          recipientPlayerId: rosterEntry.playerId,
-          minions: minions.map(cloneKnownPlayerReference)
-        });
-        entries.push({
-          kind: "DEMON_BLUFFS",
-          recipientPlayerId: rosterEntry.playerId,
-          roles: bluffRoles.map(cloneRoleSetupSnapshot)
-        });
-      }
     }
 
     const knowledge: InitialPrivateKnowledge = {
       knowledgeModelVersion: SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
+      knowledgeStage: INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
       entries
     };
-    const resultValidation = validateInitialPrivateKnowledgeEntries({
+    const resultValidation = validateInitialOwnCharacterKnowledgeEntries({
       roster: input.roster,
       assignment: input.assignment,
       setup: input.setup,
@@ -217,7 +151,8 @@ export class InitialPrivateKnowledgeBuilder {
       status: "success",
       knowledge: {
         knowledgeModelVersion: knowledge.knowledgeModelVersion,
-        entries: knowledge.entries.map(cloneInitialKnowledgeEntry)
+        knowledgeStage: knowledge.knowledgeStage,
+        entries: knowledge.entries.map(cloneInitialOwnCharacterKnowledgeEntry)
       }
     };
   }

@@ -21,7 +21,7 @@ import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   isPlainRecord,
   validateFirstNightInitializedPayloadShape,
-  validateInitialPrivateKnowledgePayload
+  validateInitialOwnCharacterKnowledgePayload
 } from "./initial-private-knowledge.js";
 import {
   SUPPORTED_ROSTER_VERSION,
@@ -477,7 +477,7 @@ const validateInitialPrivateKnowledgeEstablishedPayload = (
     );
   }
 
-  const validation = validateInitialPrivateKnowledgePayload(payload, {
+  const validation = validateInitialOwnCharacterKnowledgePayload(payload, {
     roster: state.roster.entries,
     assignment: state.assignment.assignments,
     setup: state.setup,

@@ -900,6 +900,7 @@ export class GameApplicationService {
           payload: {
             rulesBaselineVersion: RULES_BASELINE_VERSION,
             knowledgeModelVersion: SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
+            knowledgeStage: initialPrivateKnowledge.knowledgeStage,
             rosterVersion: state.roster.rosterVersion,
             assignmentAlgorithmVersion: state.assignment.assignmentAlgorithmVersion,
             roleCatalogSignature: state.setup.roleCatalogSignature,

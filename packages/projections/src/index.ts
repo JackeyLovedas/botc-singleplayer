@@ -1,15 +1,15 @@
 import {
   DomainError,
+  SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
-  cloneKnownPlayerReference,
   cloneRoleSetupSnapshot,
-  validateInitialPrivateKnowledgePayload
+  validateFirstNightInitializedPayloadShape,
+  validateInitialOwnCharacterKnowledgePayload
 } from "@botc/domain-core";
 import type {
   GameState,
-  InitialKnowledgeEntry,
   InitialPrivateKnowledgeEstablishedPayload,
-  KnownPlayerReference,
+  InitialOwnCharacterKnowledgeEntry,
   PlayerId,
   PlayerPrivateKnowledgeView,
   RoleSetupSnapshot
@@ -17,6 +17,28 @@ import type {
 
 type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishedPayload & {
   readonly knowledgeModelVersion: typeof SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION;
+};
+
+const requireFirstNightInitialized = (state: GameState): void => {
+  if (state.firstNight === undefined || state.setup === undefined || state.roster === undefined || state.assignment === undefined) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Initial private knowledge requires first night, setup, roster, and assignment facts");
+  }
+
+  const shapeValidation = validateFirstNightInitializedPayloadShape(state.firstNight);
+  if (!shapeValidation.valid) {
+    throw new DomainError("PrivateKnowledgeUnavailable", shapeValidation.reason);
+  }
+
+  if (
+    state.firstNight.initializationVersion !== SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION ||
+    state.firstNight.nightNumber !== 1 ||
+    state.firstNight.rosterVersion !== state.roster.rosterVersion ||
+    state.firstNight.assignmentAlgorithmVersion !== state.assignment.assignmentAlgorithmVersion ||
+    state.firstNight.roleCatalogSignature !== state.setup.roleCatalogSignature ||
+    state.firstNight.roleCatalogSignature !== state.assignment.roleCatalogSignature
+  ) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "FirstNightInitialized metadata does not match current setup, roster, and assignment facts");
+  }
 };
 
 const requireInitialPrivateKnowledge = (state: GameState): SupportedInitialPrivateKnowledgePayload => {
@@ -30,7 +52,9 @@ const requireInitialPrivateKnowledge = (state: GameState): SupportedInitialPriva
     throw new DomainError("PrivateKnowledgeUnavailable", "Initial private knowledge is not established for this game");
   }
 
-  const validation = validateInitialPrivateKnowledgePayload(state.initialPrivateKnowledge, {
+  requireFirstNightInitialized(state);
+
+  const validation = validateInitialOwnCharacterKnowledgePayload(state.initialPrivateKnowledge, {
     roster: state.roster.entries,
     assignment: state.assignment.assignments,
     setup: state.setup,
@@ -45,24 +69,9 @@ const requireInitialPrivateKnowledge = (state: GameState): SupportedInitialPriva
   return state.initialPrivateKnowledge as SupportedInitialPrivateKnowledgePayload;
 };
 
-const findOwnCharacter = (entries: readonly InitialKnowledgeEntry[]): RoleSetupSnapshot | undefined => {
+const findOwnCharacter = (entries: readonly InitialOwnCharacterKnowledgeEntry[]): RoleSetupSnapshot | undefined => {
   const entry = entries.find((candidate) => candidate.kind === "OWN_CHARACTER");
   return entry?.kind === "OWN_CHARACTER" ? entry.role : undefined;
-};
-
-const findKnownDemon = (entries: readonly InitialKnowledgeEntry[]): KnownPlayerReference | undefined => {
-  const entry = entries.find((candidate) => candidate.kind === "DEMON_IDENTITY");
-  return entry?.kind === "DEMON_IDENTITY" ? entry.demon : undefined;
-};
-
-const findKnownMinions = (entries: readonly InitialKnowledgeEntry[]): readonly KnownPlayerReference[] => {
-  const entry = entries.find((candidate) => candidate.kind === "MINION_IDENTITIES");
-  return entry?.kind === "MINION_IDENTITIES" ? entry.minions : [];
-};
-
-const findDemonBluffs = (entries: readonly InitialKnowledgeEntry[]): readonly RoleSetupSnapshot[] => {
-  const entry = entries.find((candidate) => candidate.kind === "DEMON_BLUFFS");
-  return entry?.kind === "DEMON_BLUFFS" ? entry.roles : [];
 };
 
 export const buildPlayerPrivateKnowledgeView = (
@@ -81,24 +90,14 @@ export const buildPlayerPrivateKnowledgeView = (
     throw new DomainError("PrivateKnowledgeUnavailable", "Viewer has no OWN_CHARACTER private knowledge entry");
   }
 
-  const knownDemon = findKnownDemon(viewerEntries);
-  const viewBase = {
+  return {
     viewerPlayerId,
     viewerSeatNumber: rosterEntry.seatNumber,
     viewerDisplayName: rosterEntry.displayName,
     ownCharacter: cloneRoleSetupSnapshot(ownCharacter),
-    knownMinions: findKnownMinions(viewerEntries).map(cloneKnownPlayerReference),
-    demonBluffs: findDemonBluffs(viewerEntries).map(cloneRoleSetupSnapshot),
+    knownMinions: [],
+    demonBluffs: [],
     knowledgeModelVersion: privateKnowledge.knowledgeModelVersion
-  };
-
-  if (knownDemon === undefined) {
-    return viewBase;
-  }
-
-  return {
-    ...viewBase,
-    knownDemon: cloneKnownPlayerReference(knownDemon)
   };
 };
 

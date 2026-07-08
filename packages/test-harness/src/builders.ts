@@ -2,6 +2,7 @@ import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+  INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
   batchId,
@@ -480,6 +481,7 @@ export const initialPrivateKnowledgeEstablishedEvent = (
   payload: {
     rulesBaselineVersion: RULES_BASELINE_VERSION,
     knowledgeModelVersion: SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
+    knowledgeStage: INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
     rosterVersion: playerRosterCreatedEvent().payload.rosterVersion,
     assignmentAlgorithmVersion: charactersAssignedEvent().payload.assignmentAlgorithmVersion,
     roleCatalogSignature: setupGeneratedEvent().payload.roleCatalogSignature,
