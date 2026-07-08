@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   RULES_BASELINE_VERSION,
+  DomainError,
   batchId,
   cloneFirstNightTaskCatalogSnapshot,
   commandId,
@@ -17,6 +18,7 @@ import type {
   FirstNightTaskCatalogSnapshot,
   FirstNightTaskPlan,
   FirstNightTaskPlanningFailure,
+  FirstNightTaskPlanningResult,
   GameId,
   GeneratedCharacterAssignment
 } from "@botc/domain-core";
@@ -245,6 +247,60 @@ const taskPlanningFailure = (
   conflictingTaskIds: [scheduledTaskId("first-night-v1:WITCH_ACTION:seat-08")],
   conflictingRoleIds: [roleId("witch")]
 });
+
+const expectRetryableFirstNightTaskPlanningFailureWithoutWrites = async (
+  planner: FirstNightTaskPlannerPort,
+  commandIdValue: string,
+  expectedMessagePart: string
+): Promise<CommandExecutionFailed> => {
+  const commandStore = new MemoryCommandCommitStore();
+  const idGenerator = new FixedIdGenerator();
+  const clock = new FixedClock();
+  const failing = makeService(
+    commandStore,
+    testSetupGenerator,
+    idGenerator,
+    clock,
+    testAssignmentGenerator,
+    testInitialPrivateKnowledgeBuilder,
+    planner
+  );
+  const command = planFirstNightTasksCommand({ commandId: commandId(commandIdValue) });
+
+  await reachFirstNightKnowledge(failing.service);
+  const failedResult = await failing.service.execute(command);
+
+  expectFailedResult(failedResult);
+  expect(failedResult).toMatchObject({
+    code: "DependencyExecutionFailed",
+    failureStage: "first-night-task-planning",
+    currentGameVersion: 6,
+    retryable: true
+  });
+  expect(failedResult.message).toContain(expectedMessagePart);
+  expect(failedResult.message).not.toContain("DomainValidationFailed");
+  expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+  expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+  expect(commandStore.getGameVersion(command.gameId)).toBe(6);
+  expect(commandStore.rejectedCount).toBe(0);
+
+  const fixed = makeService(
+    commandStore,
+    testSetupGenerator,
+    idGenerator,
+    clock,
+    testAssignmentGenerator,
+    testInitialPrivateKnowledgeBuilder,
+    testFirstNightTaskPlanner
+  );
+  const retried = await fixed.service.execute(command);
+
+  expectAcceptedResult(retried);
+  expect(retried.gameVersion).toBe(7);
+  expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+
+  return failedResult;
+};
 
 describe("GameApplicationService", () => {
   it("creates a game with an accepted receipt and one atomic domain event batch", async () => {
@@ -2096,6 +2152,148 @@ describe("GameApplicationService", () => {
 
     expectAcceptedResult(retried);
     expect(retried.gameVersion).toBe(7);
+  });
+
+  it.each([
+    [
+      "success result without taskPlan",
+      "malformed-planner-success-missing-task-plan",
+      () => ({ status: "success" }) as unknown as FirstNightTaskPlanningResult,
+      "taskPlan is missing"
+    ],
+    [
+      "success result with undefined taskPlan",
+      "malformed-planner-success-undefined-task-plan",
+      () => ({ status: "success", taskPlan: undefined }) as unknown as FirstNightTaskPlanningResult,
+      "taskPlan must be a non-null plain object"
+    ],
+    [
+      "null result",
+      "malformed-planner-null-result",
+      () => null as unknown as FirstNightTaskPlanningResult,
+      "result must be a non-null plain object"
+    ],
+    [
+      "unknown status",
+      "malformed-planner-unknown-status",
+      () => ({ status: "unknown" }) as unknown as FirstNightTaskPlanningResult,
+      "status must be success or failure"
+    ],
+    [
+      "failure result missing conflict arrays",
+      "malformed-planner-failure-missing-arrays",
+      () =>
+        ({
+          status: "failure",
+          failureCode: "InvalidTaskPlan",
+          message: "missing arrays"
+        }) as unknown as FirstNightTaskPlanningResult,
+      "conflictingTaskIds must be a dense string array"
+    ]
+  ] as const)("keeps malformed planner runtime %s retryable without command receipts or events", async (_name, commandIdValue, makeResult, message) => {
+    const malformedPlanner: FirstNightTaskPlannerPort = {
+      generate: () => makeResult()
+    };
+
+    await expectRetryableFirstNightTaskPlanningFailureWithoutWrites(malformedPlanner, commandIdValue, message);
+  });
+
+  it("keeps taskPlan property DomainError retryable without command receipts or events", async () => {
+    const result = { status: "success" };
+    Object.defineProperty(result, "taskPlan", {
+      enumerable: true,
+      get: () => {
+        throw new DomainError("InvalidDomainBatchSemantics", "injected taskPlan getter failure");
+      }
+    });
+    const malformedPlanner: FirstNightTaskPlannerPort = {
+      generate: () => result as unknown as FirstNightTaskPlanningResult
+    };
+
+    await expectRetryableFirstNightTaskPlanningFailureWithoutWrites(
+      malformedPlanner,
+      "malformed-planner-task-plan-getter-domain-error",
+      "injected taskPlan getter failure"
+    );
+  });
+
+  it("keeps missing plans discovered during event creation retryable without DomainValidationFailed receipts", async () => {
+    const transientPlanner: FirstNightTaskPlannerPort = {
+      generate: (input) => {
+        const result = testFirstNightTaskPlanner.generate(input);
+        if (result.status === "failure") {
+          return result;
+        }
+
+        let taskPlanReads = 0;
+        return Object.defineProperty({ status: "success" }, "taskPlan", {
+          enumerable: true,
+          get: () => {
+            taskPlanReads += 1;
+            return taskPlanReads === 1 ? result.taskPlan : undefined;
+          }
+        }) as unknown as FirstNightTaskPlanningResult;
+      }
+    };
+
+    await expectRetryableFirstNightTaskPlanningFailureWithoutWrites(
+      transientPlanner,
+      "missing-plan-during-event-creation",
+      "PlanFirstNightTasks event creation requires first-night source facts and a generated task plan"
+    );
+  });
+
+  it("keeps task plan DomainErrors during event creation retryable without command receipts or events", async () => {
+    const getterPlanner: FirstNightTaskPlannerPort = {
+      generate: (input) => {
+        const result = testFirstNightTaskPlanner.generate(input);
+        if (result.status === "failure") {
+          return result;
+        }
+
+        const taskPlan = { ...result.taskPlan };
+        Object.defineProperty(taskPlan, "nightNumber", {
+          enumerable: true,
+          get: () => {
+            throw new DomainError("InvalidDomainBatchSemantics", "injected task plan event construction failure");
+          }
+        });
+
+        return {
+          status: "success",
+          taskPlan
+        };
+      }
+    };
+
+    await expectRetryableFirstNightTaskPlanningFailureWithoutWrites(
+      getterPlanner,
+      "task-plan-event-construction-domain-error",
+      "injected task plan event construction failure"
+    );
+  });
+
+  it("keeps PlanFirstNightTasks metadata generation failures classified independently", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FaultInjectingIdGenerator();
+    const { service } = makeService(commandStore, testSetupGenerator, idGenerator);
+    const command = planFirstNightTasksCommand({ commandId: commandId("task-planning-metadata-failure") });
+
+    await reachFirstNightKnowledge(service);
+    idGenerator.failNextBatchId = true;
+    const failedResult = await service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 6,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+    expect(commandStore.getGameVersion(command.gameId)).toBe(6);
+    expect(commandStore.rejectedCount).toBe(0);
   });
 
   it("keeps internally damaged generated task plans retryable at prospective validation", async () => {

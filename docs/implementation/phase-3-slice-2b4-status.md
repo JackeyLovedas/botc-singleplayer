@@ -224,6 +224,77 @@ InvalidTaskPlan -> failed DependencyExecutionFailed
 
 The failed message preserves the planner `failureCode`, original failure message, `conflictingTaskIds`, and `conflictingRoleIds`.
 
+### Malformed Planner Result Boundary
+
+`FirstNightTaskPlannerPort.generate(...)` is treated as an untrusted dependency boundary at runtime. TypeScript static typing is not sufficient for application safety.
+
+Malformed planner results return:
+
+```text
+status = failed
+code = DependencyExecutionFailed
+failureStage = first-night-task-planning
+retryable = true
+```
+
+They write no command receipt and append no domain event.
+
+### Runtime Validation Of Port Results
+
+Planner failure results must be non-null plain objects with:
+
+```text
+status = failure
+failureCode in InvalidTaskCatalog | InvalidFirstNightState | InvalidTaskPlan
+message: string
+conflictingTaskIds: dense string array
+conflictingRoleIds: dense string array
+```
+
+Planner success results must be non-null plain objects with:
+
+```text
+status = success
+taskPlan: non-null plain object
+```
+
+The application does not duplicate full task-plan domain validation here. Complete task-plan semantics still go through prospective validation before commit.
+
+### Pre-Prospective Plan Construction Failures Are Retryable
+
+For `PlanFirstNightTasks`, `DomainError` raised after planner invocation but before prospective validation is classified as an internal planning dependency failure:
+
+```text
+status = failed
+code = DependencyExecutionFailed
+failureStage = first-night-task-planning
+retryable = true
+currentGameVersion = current known version
+```
+
+This covers malformed success results, `taskPlan` access failures, missing internal plan objects discovered during event construction, and task-plan field access failures during event construction.
+
+`EventMetadataGenerationError` remains higher priority and still returns:
+
+```text
+status = failed
+code = MetadataGenerationFailed
+failureStage = event-metadata
+retryable = true
+```
+
+### No Internal Plan DomainError Receipts
+
+Internal `PlanFirstNightTasks` construction failures never persist:
+
+```text
+DomainValidationFailed
+CommandRejected
+partial domain events
+```
+
+After the planner/application defect is fixed, the same `commandId` can be retried successfully because no receipt was written.
+
 ### Invalid Catalog Is Application Misconfiguration
 
 The application validates `dependencies.firstNightTaskCatalogSnapshot` before calling the planner.
@@ -336,6 +407,9 @@ Covered areas:
 - retryable runtime planning failures.
 - invalid catalog retry without planner invocation.
 - planner failure retry without command receipts.
+- malformed planner runtime result retry without command receipts or events.
+- pre-prospective plan construction `DomainError` retry without `DomainValidationFailed` receipts.
+- metadata generation failure classification remains independent for task planning.
 - generated-plan prospective failure retry without `DomainValidationFailed` receipts.
 - deterministic actor, phase, version, and duplicate-plan rejection receipts.
 - projection leakage after task plan creation.
@@ -346,8 +420,8 @@ Local gates run during implementation:
 ```text
 pnpm typecheck: passed
 pnpm lint: passed
-pnpm test: passed, 412 tests
-pnpm test:coverage: passed, 412 tests
+pnpm test: passed, 421 tests
+pnpm test:coverage: passed, 421 tests
 ```
 
 ## 11. Not Implemented

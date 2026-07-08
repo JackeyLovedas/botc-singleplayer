@@ -36,6 +36,7 @@ import type {
   FirstNightTaskPlan,
   FirstNightTaskPlanCreatedPayload,
   FirstNightTaskPlanningFailure,
+  FirstNightTaskPlanningResult,
   InitialPrivateKnowledge,
   InitialPrivateKnowledgeEstablishedPayload,
   InitialPrivateKnowledgeGenerationFailure,
@@ -101,6 +102,117 @@ const firstNightTaskPlanningFailureMessage = (failure: FirstNightTaskPlanningFai
     `conflictingTaskIds=[${failure.conflictingTaskIds.join(",")}]`,
     `conflictingRoleIds=[${failure.conflictingRoleIds.join(",")}]`
   ].join("; ");
+
+type FirstNightTaskPlannerRuntimeValidationResult =
+  | {
+      readonly valid: true;
+      readonly result: FirstNightTaskPlanningResult;
+    }
+  | {
+      readonly valid: false;
+      readonly message: string;
+    };
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value) as unknown;
+  return prototype === Object.prototype || prototype === null;
+};
+
+const isDenseArray = (value: readonly unknown[]): boolean => {
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const isFirstNightTaskPlanningFailureCode = (value: unknown): value is FirstNightTaskPlanningFailure["failureCode"] =>
+  value === "InvalidTaskCatalog" || value === "InvalidFirstNightState" || value === "InvalidTaskPlan";
+
+const validateStringDenseArray = (value: unknown): boolean =>
+  Array.isArray(value) && isDenseArray(value) && value.every((entry) => typeof entry === "string");
+
+const invalidPlannerResult = (message: string): FirstNightTaskPlannerRuntimeValidationResult => ({
+  valid: false,
+  message
+});
+
+const validateFirstNightTaskPlannerRuntimeResultShape = (value: unknown): FirstNightTaskPlannerRuntimeValidationResult => {
+  if (!isPlainRecord(value)) {
+    return invalidPlannerResult("First-night task planner returned a malformed result: result must be a non-null plain object");
+  }
+
+  if (value.status === "failure") {
+    if (!isFirstNightTaskPlanningFailureCode(value.failureCode)) {
+      return invalidPlannerResult("First-night task planner returned a malformed failure result: failureCode is invalid");
+    }
+
+    if (typeof value.message !== "string") {
+      return invalidPlannerResult("First-night task planner returned a malformed failure result: message must be a string");
+    }
+
+    if (!validateStringDenseArray(value.conflictingTaskIds)) {
+      return invalidPlannerResult(
+        "First-night task planner returned a malformed failure result: conflictingTaskIds must be a dense string array"
+      );
+    }
+
+    if (!validateStringDenseArray(value.conflictingRoleIds)) {
+      return invalidPlannerResult(
+        "First-night task planner returned a malformed failure result: conflictingRoleIds must be a dense string array"
+      );
+    }
+
+    return { valid: true, result: value as unknown as FirstNightTaskPlanningResult };
+  }
+
+  if (value.status === "success") {
+    if (!Object.hasOwn(value, "taskPlan")) {
+      return invalidPlannerResult("First-night task planner returned a malformed success result: taskPlan is missing");
+    }
+
+    let taskPlan: unknown;
+    try {
+      taskPlan = value.taskPlan;
+    } catch (error: unknown) {
+      return invalidPlannerResult(
+        `First-night task planner returned a malformed success result: taskPlan access failed: ${errorMessage(
+          error,
+          "Unknown taskPlan access failure"
+        )}`
+      );
+    }
+
+    if (!isPlainRecord(taskPlan)) {
+      return invalidPlannerResult(
+        "First-night task planner returned a malformed success result: taskPlan must be a non-null plain object"
+      );
+    }
+
+    return { valid: true, result: value as unknown as FirstNightTaskPlanningResult };
+  }
+
+  return invalidPlannerResult("First-night task planner returned a malformed result: status must be success or failure");
+};
+
+const validateFirstNightTaskPlannerRuntimeResult = (value: unknown): FirstNightTaskPlannerRuntimeValidationResult => {
+  try {
+    return validateFirstNightTaskPlannerRuntimeResultShape(value);
+  } catch (error: unknown) {
+    return invalidPlannerResult(
+      `First-night task planner returned a malformed result: runtime validation failed: ${errorMessage(
+        error,
+        "Unknown planner result validation failure"
+      )}`
+    );
+  }
+};
 
 export class GameApplicationService {
   public constructor(private readonly dependencies: GameApplicationServiceDependencies) {}
@@ -516,6 +628,16 @@ export class GameApplicationService {
       }
 
       if (error instanceof DomainError) {
+        if (command.payload.commandType === "PlanFirstNightTasks") {
+          return failed(
+            command.gameId,
+            "DependencyExecutionFailed",
+            error.message,
+            "first-night-task-planning",
+            currentGameVersion
+          );
+        }
+
         return { code: "DomainValidationFailed", message: error.message };
       }
 
@@ -805,6 +927,19 @@ export class GameApplicationService {
         currentGameVersion
       );
     }
+
+    const runtimeValidation = validateFirstNightTaskPlannerRuntimeResult(result);
+    if (!runtimeValidation.valid) {
+      return failed(
+        command.gameId,
+        "DependencyExecutionFailed",
+        runtimeValidation.message,
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    result = runtimeValidation.result;
 
     if (result.status === "failure") {
       return failed(
