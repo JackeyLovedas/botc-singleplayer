@@ -65,20 +65,27 @@ export type AssignCharactersCommandPayload = {
   readonly commandType: "AssignCharacters";
 };
 
+export type InitializeFirstNightCommandPayload = {
+  readonly commandType: "InitializeFirstNight";
+};
+
 export type SupportedCommandPayload =
   | CreateGameCommandPayload
   | SelectScriptCommandPayload
   | GenerateSetupCommandPayload
   | CreatePlayerRosterCommandPayload
-  | AssignCharactersCommandPayload;
+  | AssignCharactersCommandPayload
+  | InitializeFirstNightCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
 export type CreatePlayerRosterCommand = CommandEnvelope<CreatePlayerRosterCommandPayload>;
 export type AssignCharactersCommand = CommandEnvelope<AssignCharactersCommandPayload>;
+export type InitializeFirstNightCommand = CommandEnvelope<InitializeFirstNightCommandPayload>;
 export type SupportedCommandEnvelope =
   | CreateGameCommand
   | SelectScriptCommand
   | GenerateSetupCommand
   | CreatePlayerRosterCommand
-  | AssignCharactersCommand;
+  | AssignCharactersCommand
+  | InitializeFirstNightCommand;

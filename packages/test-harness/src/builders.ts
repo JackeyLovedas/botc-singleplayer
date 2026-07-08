@@ -1,6 +1,8 @@
 import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
+  SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+  SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
   batchId,
   causationId,
@@ -24,6 +26,10 @@ import type {
   GenerateSetupCommand,
   GenerateSetupCommandPayload,
   GameId,
+  InitializeFirstNightCommand,
+  InitializeFirstNightCommandPayload,
+  FirstNightInitializedPayload,
+  InitialPrivateKnowledgeEstablishedPayload,
   InfrastructureEventEnvelope,
   PhaseTransitionedPayload,
   PlayerRosterCreatedPayload,
@@ -32,6 +38,7 @@ import type {
   SetupGeneratedPayload
 } from "@botc/domain-core";
 import { SeededCharacterAssignmentGenerator } from "@botc/assignment-engine";
+import { InitialPrivateKnowledgeBuilder } from "@botc/information-engine";
 import { SECTS_AND_VIOLETS_SCRIPT } from "@botc/rules-snv";
 import { SeededSectsAndVioletsSetupGenerator } from "@botc/setup-engine";
 
@@ -144,6 +151,23 @@ export const assignCharactersCommand = (
   ...overrides
 });
 
+export const initializeFirstNightPayload = {
+  commandType: "InitializeFirstNight"
+} as const satisfies InitializeFirstNightCommandPayload;
+
+export const initializeFirstNightCommand = (
+  overrides: Partial<InitializeFirstNightCommand> = {}
+): InitializeFirstNightCommand => ({
+  commandId: commandId("command-6"),
+  gameId: ids.game,
+  expectedGameVersion: 5,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:05.000Z",
+  correlationId: correlationId("correlation-6"),
+  payload: initializeFirstNightPayload,
+  ...overrides
+});
+
 export const gameCreatedEvent = (
   overrides: Partial<DomainEventEnvelope<"GameCreated">> = {}
 ): DomainEventEnvelope<"GameCreated"> => ({
@@ -228,6 +252,7 @@ export const phaseTransitionedEvent = (
 
 export const testSetupGenerator = new SeededSectsAndVioletsSetupGenerator(SECTS_AND_VIOLETS_SCRIPT);
 export const testAssignmentGenerator = new SeededCharacterAssignmentGenerator();
+export const testInitialPrivateKnowledgeBuilder = new InitialPrivateKnowledgeBuilder();
 
 const generatedSetup = () => {
   const result = testSetupGenerator.generate({
@@ -392,6 +417,74 @@ export const charactersAssignedPhaseTransitionedEvent = (
     nightNumberBefore: 0,
     nightNumberAfter: 1
   } satisfies PhaseTransitionedPayload,
+  ...overrides
+});
+
+const generatedInitialPrivateKnowledge = () => {
+  const result = testInitialPrivateKnowledgeBuilder.generate({
+    roster: playerRosterCreatedEvent().payload.entries,
+    assignment: charactersAssignedEvent().payload.assignments,
+    setup: setupGeneratedEvent().payload
+  });
+
+  if (result.status === "failure") {
+    throw new Error(result.message);
+  }
+
+  return result.knowledge;
+};
+
+export const firstNightInitializedEvent = (
+  overrides: Partial<DomainEventEnvelope<"FirstNightInitialized">> = {}
+): DomainEventEnvelope<"FirstNightInitialized"> => ({
+  category: "domain",
+  eventId: eventId("event-9"),
+  gameId: ids.game,
+  eventSequence: 9,
+  batchId: batchId("batch-6"),
+  gameVersion: 6,
+  eventType: "FirstNightInitialized",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-6"),
+  createdAt: "2026-07-07T00:00:05.000Z",
+  correlationId: correlationId("correlation-6"),
+  causationId: causationId("command-6"),
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    initializationVersion: SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+    nightNumber: 1,
+    rosterVersion: playerRosterCreatedEvent().payload.rosterVersion,
+    assignmentAlgorithmVersion: charactersAssignedEvent().payload.assignmentAlgorithmVersion,
+    roleCatalogSignature: setupGeneratedEvent().payload.roleCatalogSignature
+  } satisfies FirstNightInitializedPayload,
+  ...overrides
+});
+
+export const initialPrivateKnowledgeEstablishedEvent = (
+  overrides: Partial<DomainEventEnvelope<"InitialPrivateKnowledgeEstablished">> = {}
+): DomainEventEnvelope<"InitialPrivateKnowledgeEstablished"> => ({
+  category: "domain",
+  eventId: eventId("event-10"),
+  gameId: ids.game,
+  eventSequence: 10,
+  batchId: batchId("batch-6"),
+  gameVersion: 6,
+  eventType: "InitialPrivateKnowledgeEstablished",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-6"),
+  createdAt: "2026-07-07T00:00:05.000Z",
+  correlationId: correlationId("correlation-6"),
+  causationId: causationId("command-6"),
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    knowledgeModelVersion: SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
+    rosterVersion: playerRosterCreatedEvent().payload.rosterVersion,
+    assignmentAlgorithmVersion: charactersAssignedEvent().payload.assignmentAlgorithmVersion,
+    roleCatalogSignature: setupGeneratedEvent().payload.roleCatalogSignature,
+    entries: generatedInitialPrivateKnowledge().entries
+  } satisfies InitialPrivateKnowledgeEstablishedPayload,
   ...overrides
 });
 

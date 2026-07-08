@@ -1,6 +1,8 @@
 import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
+  SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+  SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
   DomainError,
   applyDomainEventBatch,
@@ -26,6 +28,10 @@ import type {
   GeneratedSetup,
   GameState,
   CharactersAssignedPayload,
+  FirstNightInitializedPayload,
+  InitialPrivateKnowledge,
+  InitialPrivateKnowledgeEstablishedPayload,
+  InitialPrivateKnowledgeGenerationFailure,
   PhaseTransitionedPayload,
   PlayerRosterCreatedPayload,
   SetupGeneratedPayload,
@@ -41,10 +47,12 @@ import type {
   CommandRejected,
   CommandResult,
   GeneralCommandRejectionCode,
+  InitialPrivateKnowledgeGenerationRejectionDetails,
   SetupGenerationRejectionDetails
 } from "./command-result.js";
 import type { CharacterAssignmentGeneratorPort } from "./ports/character-assignment-generator.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
+import type { InitialPrivateKnowledgeBuilderPort } from "./ports/initial-private-knowledge-builder.js";
 import type { SetupGeneratorPort } from "./ports/setup-generator.js";
 
 export type IdGenerator = {
@@ -62,6 +70,7 @@ export type GameApplicationServiceDependencies = {
   readonly clock: Clock;
   readonly setupGenerator?: SetupGeneratorPort;
   readonly characterAssignmentGenerator?: CharacterAssignmentGeneratorPort;
+  readonly initialPrivateKnowledgeBuilder?: InitialPrivateKnowledgeBuilderPort;
 };
 
 type DomainEventMetadata = Omit<DomainEventEnvelope, "eventType" | "payload">;
@@ -135,6 +144,10 @@ export class GameApplicationService {
       }
 
       if (batch.code === "AssignmentGenerationFailed") {
+        return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
+      }
+
+      if (batch.code === "InitialPrivateKnowledgeGenerationFailed") {
         return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
       }
 
@@ -345,6 +358,48 @@ export class GameApplicationService {
 
         return undefined;
       }
+
+      case "InitializeFirstNight": {
+        if (command.actor.kind !== "system" && command.actor.kind !== "storyteller") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "InitializeFirstNight requires an existing game" };
+        }
+
+        if (state.setup === undefined) {
+          return { code: "SetupNotGenerated", message: "InitializeFirstNight requires generated setup" };
+        }
+
+        if (state.roster === undefined) {
+          return { code: "PlayerRosterNotCreated", message: "InitializeFirstNight requires a player roster" };
+        }
+
+        if (state.assignment === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "InitializeFirstNight requires character assignment" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `InitializeFirstNight cannot execute during ${state.phase}` };
+        }
+
+        if (state.firstNight !== undefined) {
+          return { code: "FirstNightAlreadyInitialized", message: "First night has already been initialized" };
+        }
+
+        if (state.initialPrivateKnowledge !== undefined) {
+          return {
+            code: "InitialPrivateKnowledgeAlreadyEstablished",
+            message: "Initial private knowledge has already been established"
+          };
+        }
+
+        return undefined;
+      }
     }
 
     return assertNever(command.payload);
@@ -362,6 +417,10 @@ export class GameApplicationService {
     readonly code: "AssignmentGenerationFailed";
     readonly message: string;
     readonly details: AssignmentGenerationRejectionDetails;
+  } | {
+    readonly code: "InitialPrivateKnowledgeGenerationFailed";
+    readonly message: string;
+    readonly details: InitialPrivateKnowledgeGenerationRejectionDetails;
   } {
     try {
       const generatedSetup = this.generateSetupOrReject(command, state, currentGameVersion);
@@ -374,7 +433,12 @@ export class GameApplicationService {
         return generatedAssignment;
       }
 
-      return this.createBatch(command, state, currentGameVersion, generatedSetup, generatedAssignment);
+      const initialPrivateKnowledge = this.generateInitialPrivateKnowledgeOrReject(command, state, currentGameVersion);
+      if (initialPrivateKnowledge !== undefined && "code" in initialPrivateKnowledge) {
+        return initialPrivateKnowledge;
+      }
+
+      return this.createBatch(command, state, currentGameVersion, generatedSetup, generatedAssignment, initialPrivateKnowledge);
     } catch (error: unknown) {
       if (error instanceof EventMetadataGenerationError) {
         return failed(command.gameId, "MetadataGenerationFailed", error.message, "event-metadata", currentGameVersion);
@@ -519,17 +583,98 @@ export class GameApplicationService {
     return result.assignment;
   }
 
+  private initialPrivateKnowledgeGenerationFailureDetails(
+    failure: InitialPrivateKnowledgeGenerationFailure
+  ): InitialPrivateKnowledgeGenerationRejectionDetails {
+    return {
+      kind: "initial-private-knowledge-generation",
+      failure
+    };
+  }
+
+  private generateInitialPrivateKnowledgeOrReject(
+    command: SupportedCommandEnvelope,
+    state: GameState | undefined,
+    currentGameVersion: number
+  ): InitialPrivateKnowledge | CommandExecutionFailed | {
+    readonly code: "InitialPrivateKnowledgeGenerationFailed";
+    readonly message: string;
+    readonly details: InitialPrivateKnowledgeGenerationRejectionDetails;
+  } | undefined {
+    if (command.payload.commandType !== "InitializeFirstNight") {
+      return undefined;
+    }
+
+    if (state === undefined || state.setup === undefined || state.roster === undefined || state.assignment === undefined) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "InitializeFirstNight requires setup, roster, and assignment state",
+        "initial-knowledge-generation",
+        currentGameVersion
+      );
+    }
+
+    const builder = this.dependencies.initialPrivateKnowledgeBuilder;
+    if (builder === undefined) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "Initial private knowledge builder dependency is not configured",
+        "initial-knowledge-generation",
+        currentGameVersion
+      );
+    }
+
+    let result;
+    try {
+      result = builder.generate({
+        roster: state.roster.entries,
+        assignment: state.assignment.assignments,
+        setup: state.setup
+      });
+    } catch (error: unknown) {
+      return failed(
+        command.gameId,
+        "DependencyExecutionFailed",
+        errorMessage(error, "Unknown initial private knowledge builder failure"),
+        "initial-knowledge-generation",
+        currentGameVersion
+      );
+    }
+
+    if (result.status === "failure") {
+      return {
+        code: "InitialPrivateKnowledgeGenerationFailed",
+        message: `${result.failureCode}: ${result.message}`,
+        details: this.initialPrivateKnowledgeGenerationFailureDetails(result)
+      };
+    }
+
+    return result.knowledge;
+  }
+
   private createBatch(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number,
     generatedSetup: GeneratedSetup | undefined,
-    generatedAssignment: GeneratedCharacterAssignment | undefined
+    generatedAssignment: GeneratedCharacterAssignment | undefined,
+    initialPrivateKnowledge: InitialPrivateKnowledge | undefined
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.createBatchId();
     const eventSequence = (state?.lastEventSequence ?? 0) + 1;
-    const events = this.createEvents(command, batch, eventSequence, newVersion, state, generatedSetup, generatedAssignment);
+    const events = this.createEvents(
+      command,
+      batch,
+      eventSequence,
+      newVersion,
+      state,
+      generatedSetup,
+      generatedAssignment,
+      initialPrivateKnowledge
+    );
 
     return {
       batchId: batch,
@@ -548,7 +693,8 @@ export class GameApplicationService {
     gameVersion: number,
     state: GameState | undefined,
     generatedSetup: GeneratedSetup | undefined,
-    generatedAssignment: GeneratedCharacterAssignment | undefined
+    generatedAssignment: GeneratedCharacterAssignment | undefined,
+    initialPrivateKnowledge: InitialPrivateKnowledge | undefined
   ): readonly AnyDomainEventEnvelope[] {
     const common = (eventSequence: number) => this.createEventMetadata(command, eventBatchId, eventSequence, gameVersion);
 
@@ -719,6 +865,49 @@ export class GameApplicationService {
         };
 
         return [charactersAssignedEvent, phaseTransitionedEvent];
+      }
+
+      case "InitializeFirstNight": {
+        if (
+          state === undefined ||
+          state.setup === undefined ||
+          state.roster === undefined ||
+          state.assignment === undefined ||
+          initialPrivateKnowledge === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "InitializeFirstNight event creation requires setup, roster, assignment, and generated private knowledge"
+          );
+        }
+
+        const firstNightInitializedEvent: DomainEventEnvelope<"FirstNightInitialized"> = {
+          ...common(firstEventSequence),
+          eventType: "FirstNightInitialized" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            initializationVersion: SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+            nightNumber: 1,
+            rosterVersion: state.roster.rosterVersion,
+            assignmentAlgorithmVersion: state.assignment.assignmentAlgorithmVersion,
+            roleCatalogSignature: state.setup.roleCatalogSignature
+          } satisfies FirstNightInitializedPayload
+        };
+
+        const initialPrivateKnowledgeEstablishedEvent: DomainEventEnvelope<"InitialPrivateKnowledgeEstablished"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "InitialPrivateKnowledgeEstablished" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            knowledgeModelVersion: SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
+            rosterVersion: state.roster.rosterVersion,
+            assignmentAlgorithmVersion: state.assignment.assignmentAlgorithmVersion,
+            roleCatalogSignature: state.setup.roleCatalogSignature,
+            entries: initialPrivateKnowledge.entries
+          } satisfies InitialPrivateKnowledgeEstablishedPayload
+        };
+
+        return [firstNightInitializedEvent, initialPrivateKnowledgeEstablishedEvent];
       }
     }
 

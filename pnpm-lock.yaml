@@ -44,6 +44,18 @@ importers:
 
   packages/domain-core: {}
 
+  packages/information-engine:
+    dependencies:
+      '@botc/domain-core':
+        specifier: workspace:*
+        version: link:../domain-core
+
+  packages/projections:
+    dependencies:
+      '@botc/domain-core':
+        specifier: workspace:*
+        version: link:../domain-core
+
   packages/rules-snv:
     dependencies:
       '@botc/domain-core':
@@ -67,6 +79,9 @@ importers:
       '@botc/domain-core':
         specifier: workspace:*
         version: link:../domain-core
+      '@botc/information-engine':
+        specifier: workspace:*
+        version: link:../information-engine
       '@botc/rules-snv':
         specifier: workspace:*
         version: link:../rules-snv

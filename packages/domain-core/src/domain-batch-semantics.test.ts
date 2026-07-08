@@ -14,7 +14,9 @@ import {
   gameCreatedEvent,
   charactersAssignedEvent,
   charactersAssignedPhaseTransitionedEvent,
+  firstNightInitializedEvent,
   phaseTransitionedEvent,
+  initialPrivateKnowledgeEstablishedEvent,
   playerRosterCreatedEvent,
   scriptSelectedEvent,
   setupGeneratedEvent,
@@ -38,6 +40,12 @@ const setupGenerationState = () => rebuildGameState([gameCreatedEvent(), scriptS
 const characterAssignmentState = () =>
   rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent(), setupGeneratedEvent(), setupPhaseTransitionedEvent()]);
 const rosterCreatedState = () => rebuildGameState([...characterAssignmentStateEvents(), playerRosterCreatedEvent()]);
+const firstNightState = () => rebuildGameState([
+  ...characterAssignmentStateEvents(),
+  playerRosterCreatedEvent(),
+  charactersAssignedEvent(),
+  charactersAssignedPhaseTransitionedEvent()
+]);
 
 const characterAssignmentStateEvents = (): readonly AnyDomainEventEnvelope[] => [
   gameCreatedEvent(),
@@ -300,6 +308,59 @@ describe("domain batch semantic validation", () => {
               ...charactersAssignedPhaseTransitionedEvent().payload,
               fromPhase: "SETUP_GENERATION"
             }
+          })
+        ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("accepts a legal InitializeFirstNight two-event batch", () => {
+    expect(() =>
+      validateDomainBatchSemantics(firstNightState(), [firstNightInitializedEvent(), initialPrivateKnowledgeEstablishedEvent()])
+    ).not.toThrow();
+  });
+
+  it("rejects a bare FirstNightInitialized event", () => {
+    expectDomainCode(() => validateDomainBatchSemantics(firstNightState(), [firstNightInitializedEvent()]), "InvalidDomainBatchSemantics");
+  });
+
+  it("rejects a bare InitialPrivateKnowledgeEstablished event", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(firstNightState(), [initialPrivateKnowledgeEstablishedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects reversed InitializeFirstNight batch order", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(firstNightState(), [initialPrivateKnowledgeEstablishedEvent(), firstNightInitializedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects InitializeFirstNight batch metadata mismatch", () => {
+    expectDomainCode(
+      () =>
+        validateDomainBatchSemantics(firstNightState(), [
+          firstNightInitializedEvent(),
+          initialPrivateKnowledgeEstablishedEvent({ batchId: batchId("other-first-night-batch") })
+        ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects third events in the InitializeFirstNight batch", () => {
+    expectDomainCode(
+      () =>
+        validateDomainBatchSemantics(firstNightState(), [
+          firstNightInitializedEvent(),
+          initialPrivateKnowledgeEstablishedEvent(),
+          initialPrivateKnowledgeEstablishedEvent({
+            eventId: eventId("third-first-night-event"),
+            eventSequence: 11,
+            batchId: firstNightInitializedEvent().batchId,
+            commandId: firstNightInitializedEvent().commandId,
+            gameVersion: firstNightInitializedEvent().gameVersion
           })
         ]),
       "InvalidDomainBatchSemantics"

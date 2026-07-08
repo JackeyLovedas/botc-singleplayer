@@ -31,8 +31,10 @@ import {
   auditEvent,
   charactersAssignedEvent,
   charactersAssignedPhaseTransitionedEvent,
+  firstNightInitializedEvent,
   gameCreatedEvent,
   infrastructureEvent,
+  initialPrivateKnowledgeEstablishedEvent,
   otherGameId,
   phaseTransitionedEvent,
   playerRosterCreatedEvent,
@@ -74,6 +76,15 @@ const assignmentEventStream = (
   ...rosterEventStream(),
   assignmentEvent,
   transitionEvent
+];
+
+const firstNightEventStream = (
+  firstNightEvent = firstNightInitializedEvent(),
+  knowledgeEvent = initialPrivateKnowledgeEstablishedEvent()
+): readonly AnyDomainEventEnvelope[] => [
+  ...assignmentEventStream(),
+  firstNightEvent,
+  knowledgeEvent
 ];
 
 const generatedPayloadFor = (constraints: Parameters<typeof testSetupGenerator.generate>[0]["constraints"]): SetupGeneratedPayload => {
@@ -1237,6 +1248,162 @@ describe("domain event rebuild", () => {
     expect(state.roster?.entries).toHaveLength(12);
     expect(state.assignment?.assignments).toHaveLength(12);
     expect(state.assignment?.assignments.map((assignment) => assignment.seatNumber)).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it("rebuilds first night initialization and initial private knowledge while staying in FIRST_NIGHT", () => {
+    const state = rebuildGameState(firstNightEventStream());
+
+    expect(state.phase).toBe("FIRST_NIGHT");
+    expect(state.dayNumber).toBe(0);
+    expect(state.nightNumber).toBe(1);
+    expect(state.gameVersion).toBe(6);
+    expect(state.lastEventSequence).toBe(10);
+    expect(state.firstNight?.initializationVersion).toBe("first-night-initialization-v1");
+    expect(state.initialPrivateKnowledge?.knowledgeModelVersion).toBe("initial-private-knowledge-v1");
+    expect(state.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "OWN_CHARACTER")).toHaveLength(12);
+    expect(state.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "DEMON_IDENTITY")).toHaveLength(2);
+    expect(state.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "MINION_IDENTITIES")).toHaveLength(3);
+    expect(state.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "DEMON_BLUFFS")).toHaveLength(1);
+  });
+
+  it("rejects bare first night initialization during replay", () => {
+    expectDomainCode(
+      () => rebuildGameState([...assignmentEventStream(), firstNightInitializedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects initial private knowledge without FirstNightInitialized during replay", () => {
+    const knowledge = initialPrivateKnowledgeEstablishedEvent({
+      eventId: eventId("event-9-private-knowledge"),
+      eventSequence: 9
+    });
+
+    expectDomainCode(() => rebuildGameState([...assignmentEventStream(), knowledge]), "InvalidDomainBatchSemantics");
+  });
+
+  it("rejects reversed first night initialization event order during replay", () => {
+    const knowledge = initialPrivateKnowledgeEstablishedEvent({
+      eventId: eventId("event-9-private-knowledge"),
+      eventSequence: 9
+    });
+    const initialized = firstNightInitializedEvent({
+      eventId: eventId("event-10-first-night"),
+      eventSequence: 10
+    });
+
+    expectDomainCode(() => rebuildGameState([...assignmentEventStream(), knowledge, initialized]), "InvalidDomainBatchSemantics");
+  });
+
+  it("rejects first night metadata that does not match assignment facts", () => {
+    const initialized = firstNightInitializedEvent({
+      payload: {
+        ...firstNightInitializedEvent().payload,
+        assignmentAlgorithmVersion: "unsupported-assignment"
+      }
+    });
+
+    expectDomainCode(
+      () => rebuildGameState(firstNightEventStream(initialized)),
+      "InvalidFirstNightInitializedPayload"
+    );
+  });
+
+  it("rejects non-canonical initial private knowledge entry order", () => {
+    const payload = initialPrivateKnowledgeEstablishedEvent().payload;
+    const first = payload.entries[0];
+    const second = payload.entries[1];
+    if (first === undefined || second === undefined) {
+      throw new Error("Expected initial private knowledge entries");
+    }
+
+    const knowledge = initialPrivateKnowledgeEstablishedEvent({
+      payload: {
+        ...payload,
+        entries: [second, first, ...payload.entries.slice(2)]
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState(firstNightEventStream(firstNightInitializedEvent(), knowledge)), "InvalidInitialPrivateKnowledgeEstablishedPayload");
+  });
+
+  it("rejects OWN_CHARACTER entries that do not match character assignment", () => {
+    const payload = initialPrivateKnowledgeEstablishedEvent().payload;
+    const firstOwnIndex = payload.entries.findIndex((entry) => entry.kind === "OWN_CHARACTER");
+    const secondOwn = payload.entries.find((entry, index) => index !== firstOwnIndex && entry.kind === "OWN_CHARACTER");
+    const firstOwn = payload.entries[firstOwnIndex];
+    if (firstOwn === undefined || firstOwn.kind !== "OWN_CHARACTER" || secondOwn === undefined || secondOwn.kind !== "OWN_CHARACTER") {
+      throw new Error("Expected two own-character entries");
+    }
+
+    const entries = [...payload.entries];
+    entries[firstOwnIndex] = {
+      ...firstOwn,
+      role: secondOwn.role
+    };
+    const knowledge = initialPrivateKnowledgeEstablishedEvent({
+      payload: {
+        ...payload,
+        entries
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState(firstNightEventStream(firstNightInitializedEvent(), knowledge)), "InvalidInitialPrivateKnowledgeEstablishedPayload");
+  });
+
+  it("rejects known player references that carry hidden role fields", () => {
+    const payload = initialPrivateKnowledgeEstablishedEvent().payload;
+    const minionIdentityIndex = payload.entries.findIndex((entry) => entry.kind === "MINION_IDENTITIES" && entry.minions.length > 0);
+    const entry = payload.entries[minionIdentityIndex];
+    if (entry === undefined || entry.kind !== "MINION_IDENTITIES") {
+      throw new Error("Expected minion identities entry");
+    }
+
+    const firstReference = entry.minions[0];
+    if (firstReference === undefined) {
+      throw new Error("Expected minion reference");
+    }
+
+    const entries = [...payload.entries];
+    entries[minionIdentityIndex] = {
+      ...entry,
+      minions: [{
+        ...firstReference,
+        roleId: roleId("witch")
+      } as typeof firstReference, ...entry.minions.slice(1)]
+    };
+    const knowledge = initialPrivateKnowledgeEstablishedEvent({
+      payload: {
+        ...payload,
+        entries
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState(firstNightEventStream(firstNightInitializedEvent(), knowledge)), "InvalidInitialPrivateKnowledgeEstablishedPayload");
+  });
+
+  it("rejects demon bluffs that do not deeply equal setup demonBluffs", () => {
+    const payload = initialPrivateKnowledgeEstablishedEvent().payload;
+    const demonBluffIndex = payload.entries.findIndex((entry) => entry.kind === "DEMON_BLUFFS");
+    const entry = payload.entries[demonBluffIndex];
+    const actualRole = setupGeneratedEvent().payload.actualRoles[0];
+    if (entry === undefined || entry.kind !== "DEMON_BLUFFS" || actualRole === undefined) {
+      throw new Error("Expected demon bluff entry and actual role");
+    }
+
+    const entries = [...payload.entries];
+    entries[demonBluffIndex] = {
+      ...entry,
+      roles: [actualRole, ...entry.roles.slice(1)]
+    };
+    const knowledge = initialPrivateKnowledgeEstablishedEvent({
+      payload: {
+        ...payload,
+        entries
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState(firstNightEventStream(firstNightInitializedEvent(), knowledge)), "InvalidInitialPrivateKnowledgeEstablishedPayload");
   });
 
   it("rejects CHARACTERS_ASSIGNED transition when assignment fact is missing", () => {

@@ -128,6 +128,32 @@ const validateIntegratedCharactersAssignedBatch = (
   }
 };
 
+const validateIntegratedFirstNightInitializationBatch = (
+  currentState: GameState | undefined,
+  firstNightInitialized: DomainEventEnvelope<"FirstNightInitialized">,
+  initialPrivateKnowledgeEstablished: DomainEventEnvelope<"InitialPrivateKnowledgeEstablished">
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "InitializeFirstNight batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.setup === undefined ||
+    state.roster === undefined ||
+    state.assignment === undefined ||
+    state.firstNight !== undefined ||
+    state.initialPrivateKnowledge !== undefined
+  ) {
+    reject("InitializeFirstNight batch requires FIRST_NIGHT night 1 with setup, roster, assignment, and no existing first night facts");
+  }
+
+  assertSharedBatchMetadata(firstNightInitialized, initialPrivateKnowledgeEstablished);
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -187,5 +213,14 @@ export const validateDomainBatchSemantics = (
     return;
   }
 
-  reject("Integrated two-event batch must contain a supported fact event followed by PhaseTransitioned");
+  if (
+    first.eventType === "FirstNightInitialized" &&
+    second !== undefined &&
+    second.eventType === "InitialPrivateKnowledgeEstablished"
+  ) {
+    validateIntegratedFirstNightInitializationBatch(currentState, first, second);
+    return;
+  }
+
+  reject("Integrated two-event batch must contain a supported fact event followed by its paired domain event");
 };

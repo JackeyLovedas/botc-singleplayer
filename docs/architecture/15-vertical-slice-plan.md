@@ -77,12 +77,37 @@ Acceptance:
 - Assignment validation binds player id, seat, role snapshot, setup actual roles, and setup role catalog snapshot.
 - No first night tasks, night order, demon/minion information display, or player private role knowledge is introduced.
 
+## Slice 2B3: First Night Private Knowledge Bootstrap
+
+Scope:
+
+- Execute only after Slice 2B2 is accepted and merged.
+- Initialize first night with real setup, roster, and character assignment facts.
+- Record `FirstNightInitialized` and `InitialPrivateKnowledgeEstablished` in one atomic batch.
+- Generate initial private knowledge through an application-defined port and a separate `information-engine` package.
+- Give every player their own character.
+- Give minions the demon reference and the other minion reference only.
+- Give the demon both minion references and the three setup demon bluffs.
+- Build player and AI private knowledge projections from established knowledge events only.
+- Keep projection output free of complete assignments, role catalog snapshots, hidden truth labels, and Storyteller internals.
+
+Acceptance:
+
+- `InitializeFirstNight` emits exactly two domain events and leaves phase at `FIRST_NIGHT`.
+- Replay rejects bare, reversed, reordered, metadata-mismatched, and non-canonical private knowledge events.
+- Builder runtime failures are retryable execution failures and do not write command receipts.
+- Deterministic knowledge generation failures become structured rejected command receipts.
+- Good players see only their own role.
+- Minions do not see demon role, minion roles, or bluffs.
+- The demon does not see minion roles or good players' roles.
+- No night task, role ability, AI decision, UI, Electron, or SQLite adapter is introduced.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:
 
-- Execute only after real setup and assignment events exist.
-- Move from role assignment into first night.
+- Execute only after real setup, roster, assignment, and initial private knowledge events exist.
+- Move from first night initialization toward executable first-night task planning.
 - Move from first night to first day.
 - Add nomination, voting, day end, ordinary night, and dawn transitions.
 - Validate one complete day/night loop.

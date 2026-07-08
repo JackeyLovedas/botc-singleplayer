@@ -37,13 +37,18 @@ describe("architecture boundaries", () => {
   it("keeps setup package dependencies pointing inward only", async () => {
     const rulesNames = dependencyNames(await readPackageJson("packages/rules-snv/package.json"));
     const setupNames = dependencyNames(await readPackageJson("packages/setup-engine/package.json"));
+    const informationNames = dependencyNames(await readPackageJson("packages/information-engine/package.json"));
+    const projectionNames = dependencyNames(await readPackageJson("packages/projections/package.json"));
     const testHarnessNames = dependencyNames(await readPackageJson("packages/test-harness/package.json"));
 
     expect(rulesNames).toStrictEqual(["@botc/domain-core"]);
     expect(setupNames).toStrictEqual(["@botc/domain-core"]);
+    expect(informationNames).toStrictEqual(["@botc/domain-core"]);
+    expect(projectionNames).toStrictEqual(["@botc/domain-core"]);
     expect(testHarnessNames).toEqual(expect.arrayContaining([
       "@botc/application",
       "@botc/domain-core",
+      "@botc/information-engine",
       "@botc/rules-snv",
       "@botc/setup-engine"
     ]));
