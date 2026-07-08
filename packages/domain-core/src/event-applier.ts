@@ -1,6 +1,14 @@
 import { DomainError, assertNever } from "./errors.js";
+import type { DomainErrorCode } from "./errors.js";
 import { RULES_BASELINE_VERSION, SUPPORTED_DOMAIN_EVENT_VERSION, isCanonicalPlayerCounts } from "./events.js";
-import type { AnyDomainEventEnvelope, CharactersAssignedPayload, PlayerRosterCreatedPayload, SetupGeneratedPayload } from "./events.js";
+import type {
+  AnyDomainEventEnvelope,
+  CharactersAssignedPayload,
+  FirstNightInitializedPayload,
+  InitialPrivateKnowledgeEstablishedPayload,
+  PlayerRosterCreatedPayload,
+  SetupGeneratedPayload
+} from "./events.js";
 import type { GameState } from "./game-state.js";
 import type { RoleId } from "./ids.js";
 import { evaluatePhaseTransition } from "./phase-transition-policy.js";
@@ -9,6 +17,12 @@ import {
   SUPPORTED_ASSIGNMENT_RANDOM_STREAM,
   validateCharacterAssignments
 } from "./character-assignment.js";
+import {
+  SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+  isPlainRecord,
+  validateFirstNightInitializedPayloadShape,
+  validateInitialOwnCharacterKnowledgePayload
+} from "./initial-private-knowledge.js";
 import {
   SUPPORTED_ROSTER_VERSION,
   validatePlayerRoster
@@ -395,12 +409,124 @@ const validateCharactersAssignedPayload = (state: GameState, payload: Characters
   }
 };
 
+const validateFirstNightInitializedPayload = (state: GameState, payload: FirstNightInitializedPayload): void => {
+  const shapeValidation = validateFirstNightInitializedPayloadShape(payload);
+  if (!shapeValidation.valid) {
+    throw new DomainError("InvalidFirstNightInitializedPayload", shapeValidation.reason);
+  }
+
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError("InvalidFirstNightInitializedPayload", "FirstNightInitialized requires FIRST_NIGHT night 1 before day 1");
+  }
+
+  if (state.setup === undefined || state.roster === undefined || state.assignment === undefined) {
+    throw new DomainError("InvalidFirstNightInitializedPayload", "FirstNightInitialized requires setup, roster, and character assignment facts");
+  }
+
+  if (state.firstNight !== undefined) {
+    throw new DomainError("DuplicateFirstNightInitialized", "FirstNightInitialized cannot overwrite existing first night state");
+  }
+
+  if (state.initialPrivateKnowledge !== undefined) {
+    throw new DomainError("InvalidFirstNightInitializedPayload", "FirstNightInitialized cannot be applied after initial private knowledge");
+  }
+
+  if (payload.initializationVersion !== SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION || payload.nightNumber !== 1) {
+    throw new DomainError("InvalidFirstNightInitializedPayload", "FirstNightInitialized version and nightNumber must be supported");
+  }
+
+  if (
+    payload.rosterVersion !== state.roster.rosterVersion ||
+    payload.assignmentAlgorithmVersion !== state.assignment.assignmentAlgorithmVersion ||
+    payload.roleCatalogSignature !== state.setup.roleCatalogSignature ||
+    payload.roleCatalogSignature !== state.assignment.roleCatalogSignature
+  ) {
+    throw new DomainError("InvalidFirstNightInitializedPayload", "FirstNightInitialized metadata must match roster, assignment, and setup facts");
+  }
+};
+
+const validateInitialPrivateKnowledgeEstablishedPayload = (
+  state: GameState,
+  payload: InitialPrivateKnowledgeEstablishedPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidInitialPrivateKnowledgeEstablishedPayload",
+      "InitialPrivateKnowledgeEstablished requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.setup === undefined || state.roster === undefined || state.assignment === undefined) {
+    throw new DomainError(
+      "InvalidInitialPrivateKnowledgeEstablishedPayload",
+      "InitialPrivateKnowledgeEstablished requires setup, roster, and character assignment facts"
+    );
+  }
+
+  if (state.firstNight === undefined) {
+    throw new DomainError(
+      "InvalidInitialPrivateKnowledgeEstablishedPayload",
+      "InitialPrivateKnowledgeEstablished requires FirstNightInitialized in the rebuilt state"
+    );
+  }
+
+  if (state.initialPrivateKnowledge !== undefined) {
+    throw new DomainError(
+      "DuplicateInitialPrivateKnowledgeEstablished",
+      "InitialPrivateKnowledgeEstablished cannot overwrite existing initial private knowledge"
+    );
+  }
+
+  const validation = validateInitialOwnCharacterKnowledgePayload(payload, {
+    roster: state.roster.entries,
+    assignment: state.assignment.assignments,
+    setup: state.setup,
+    rosterVersion: state.roster.rosterVersion,
+    assignmentAlgorithmVersion: state.assignment.assignmentAlgorithmVersion,
+    roleCatalogSignature: state.setup.roleCatalogSignature
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidInitialPrivateKnowledgeEstablishedPayload", validation.reason);
+  }
+};
+
+const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType"]): DomainErrorCode => {
+  switch (eventType) {
+    case "GameCreated":
+      return "InvalidGameCreatedPayload";
+    case "ScriptSelected":
+      return "InvalidScriptSelectedPayload";
+    case "SetupGenerated":
+      return "InvalidSetupGeneratedPayload";
+    case "PlayerRosterCreated":
+      return "InvalidPlayerRosterCreatedPayload";
+    case "CharactersAssigned":
+      return "InvalidCharactersAssignedPayload";
+    case "FirstNightInitialized":
+      return "InvalidFirstNightInitializedPayload";
+    case "InitialPrivateKnowledgeEstablished":
+      return "InvalidInitialPrivateKnowledgeEstablishedPayload";
+    case "PhaseTransitioned":
+      return "InvalidPhaseTransition";
+    default:
+      return assertNever(eventType);
+  }
+};
+
+const requirePayloadRulesBaseline = (event: AnyDomainEventEnvelope): string => {
+  if (!isPlainRecord(event.payload) || typeof event.payload.rulesBaselineVersion !== "string") {
+    throw new DomainError(invalidPayloadCodeForEvent(event.eventType), "Domain event payload must be a plain object with rulesBaselineVersion");
+  }
+
+  return event.payload.rulesBaselineVersion;
+};
+
 const validateEnvelope = (state: GameState | undefined, event: AnyDomainEventEnvelope): void => {
   if (event.eventVersion !== SUPPORTED_DOMAIN_EVENT_VERSION) {
     throw new DomainError("UnsupportedEventVersion", "Unsupported domain event version");
   }
 
-  if (event.rulesBaselineVersion !== event.payload.rulesBaselineVersion) {
+  if (event.rulesBaselineVersion !== requirePayloadRulesBaseline(event)) {
     throw new DomainError("EventRulesBaselineMismatch", "Event rules baseline metadata must match payload");
   }
 
@@ -548,6 +674,47 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         assignment: event.payload
+      };
+    }
+
+    case "FirstNightInitialized": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "FirstNightInitialized requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidFirstNightInitializedPayload", "FirstNightInitialized payload rules baseline must match game state");
+      }
+
+      validateFirstNightInitializedPayload(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNight: event.payload
+      };
+    }
+
+    case "InitialPrivateKnowledgeEstablished": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "InitialPrivateKnowledgeEstablished requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidInitialPrivateKnowledgeEstablishedPayload",
+          "InitialPrivateKnowledgeEstablished payload rules baseline must match game state"
+        );
+      }
+
+      validateInitialPrivateKnowledgeEstablishedPayload(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        initialPrivateKnowledge: event.payload
       };
     }
 

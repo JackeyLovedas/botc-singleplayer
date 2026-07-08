@@ -17,6 +17,7 @@ import type {
   CommandReceiptResult,
   CommandRejected,
   CommandResult,
+  InitialPrivateKnowledgeBuilderPort,
   SetupGeneratorPort
 } from "@botc/application";
 import {
@@ -30,11 +31,13 @@ import {
   generateSetupCommand,
   humanActor,
   ids,
+  initializeFirstNightCommand,
   otherGameId,
   scriptSelectedEvent,
   selectScriptCommand,
   storytellerActor,
   testAssignmentGenerator,
+  testInitialPrivateKnowledgeBuilder,
   testSetupGenerator,
   systemActor
 } from "@botc/test-harness";
@@ -44,14 +47,16 @@ const makeService = (
   setupGenerator: SetupGeneratorPort = testSetupGenerator,
   idGenerator = new FixedIdGenerator(),
   clock = new FixedClock(),
-  characterAssignmentGenerator: CharacterAssignmentGeneratorPort = testAssignmentGenerator
+  characterAssignmentGenerator: CharacterAssignmentGeneratorPort = testAssignmentGenerator,
+  initialPrivateKnowledgeBuilder: InitialPrivateKnowledgeBuilderPort = testInitialPrivateKnowledgeBuilder
 ) => {
   const service = new GameApplicationService({
     commandStore,
     ids: idGenerator,
     clock,
     setupGenerator,
-    characterAssignmentGenerator
+    characterAssignmentGenerator,
+    initialPrivateKnowledgeBuilder
   });
 
   return { service, commandStore };
@@ -86,12 +91,36 @@ const makeServiceWithoutAssignmentGenerator = (
   return { service, commandStore };
 };
 
+const makeServiceWithoutInitialPrivateKnowledgeBuilder = (
+  commandStore = new MemoryCommandCommitStore(),
+  idGenerator = new FixedIdGenerator(),
+  clock = new FixedClock()
+) => {
+  const service = new GameApplicationService({
+    commandStore,
+    ids: idGenerator,
+    clock,
+    setupGenerator: testSetupGenerator,
+    characterAssignmentGenerator: testAssignmentGenerator
+  });
+
+  return { service, commandStore };
+};
+
 const expectAcceptedResult: (result: CommandResult) => asserts result is CommandAccepted = (result) => {
   expect(result.status).toBe("accepted");
 };
 
 const expectFailedResult: (result: CommandResult) => asserts result is CommandExecutionFailed = (result) => {
   expect(result.status).toBe("failed");
+};
+
+const reachFirstNight = async (service: GameApplicationService): Promise<void> => {
+  await service.execute(createGameCommand());
+  await service.execute(selectScriptCommand());
+  await service.execute(generateSetupCommand());
+  await service.execute(createPlayerRosterCommand());
+  await service.execute(assignCharactersCommand());
 };
 
 class FakeLengthCommandStore extends MemoryCommandCommitStore {
@@ -105,6 +134,22 @@ class FakeLengthCommandStore extends MemoryCommandCommitStore {
       length: 99,
       [Symbol.iterator]: function* iterateEvents() {
         yield* events;
+      }
+    } as unknown as readonly AnyDomainEventEnvelope[];
+  }
+}
+
+class ThrowingCanonicalStreamCommandStore extends MemoryCommandCommitStore {
+  public override async loadDomainEvents(gameIdValue: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
+    const events = await super.loadDomainEvents(gameIdValue);
+    if (events.length === 0) {
+      return events;
+    }
+
+    return {
+      length: events.length,
+      [Symbol.iterator]: () => {
+        throw new Error("Injected canonical stream iteration failure");
       }
     } as unknown as readonly AnyDomainEventEnvelope[];
   }
@@ -278,6 +323,62 @@ describe("GameApplicationService", () => {
     expect((await commandStore.findCommandReceipt(command.gameId, command.commandId))?.result.status).toBe("accepted");
   });
 
+  it("contains DomainError canonical rebuild failures without saving receipts or appending events", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore);
+    await service.execute(createGameCommand());
+    const storedEvents = await commandStore.loadDomainEvents(ids.game);
+    const created = storedEvents[0] as { eventSequence: number } | undefined;
+    if (created === undefined) {
+      throw new Error("Expected GameCreated event");
+    }
+    created.eventSequence = 2;
+    const command = selectScriptCommand({ commandId: commandId("state-rebuild-domain-error-retry") });
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "CanonicalStateRebuildFailed",
+      failureStage: "state-rebuild",
+      retryable: true
+    });
+    expect("currentGameVersion" in failed).toBe(false);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+
+    created.eventSequence = 1;
+    const retried = await service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(2);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(3);
+    expect((await commandStore.findCommandReceipt(command.gameId, command.commandId))?.result.status).toBe("accepted");
+  });
+
+  it("contains unknown canonical rebuild exceptions as retryable failures without receipts", async () => {
+    const commandStore = new ThrowingCanonicalStreamCommandStore();
+    const { service } = makeService(commandStore);
+    await service.execute(createGameCommand());
+    const command = selectScriptCommand({ commandId: commandId("state-rebuild-unknown-error") });
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "CanonicalStateRebuildFailed",
+      failureStage: "state-rebuild",
+      message: "Injected canonical stream iteration failure",
+      retryable: true
+    });
+    expect("currentGameVersion" in failed).toBe(false);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+  });
+
   it("returns retryable failure when rejected receipt writing fails and preserves retry semantics", async () => {
     const commandStore = new MemoryCommandCommitStore();
     const { service } = makeService(commandStore);
@@ -386,6 +487,8 @@ describe("GameApplicationService", () => {
     rejected(ids.game, "DependencyExecutionFailed", "Dependency failed", 0);
     // @ts-expect-error CommandStoreReadFailed cannot be a rejected receipt.
     rejected(ids.game, "CommandStoreReadFailed", "Read failed", 0);
+    // @ts-expect-error CanonicalStateRebuildFailed cannot be a rejected receipt.
+    rejected(ids.game, "CanonicalStateRebuildFailed", "Rebuild failed", 0);
     // @ts-expect-error CommandReceiptWriteFailed cannot be a rejected receipt.
     rejected(ids.game, "CommandReceiptWriteFailed", "Write failed", 0);
     // @ts-expect-error MetadataGenerationFailed cannot be a rejected receipt.
@@ -1429,6 +1532,209 @@ describe("GameApplicationService", () => {
 
     expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
     expect(commandStore.acceptedCount).toBe(1);
+  });
+
+  it("initializes first night private knowledge with one atomic two-event batch", async () => {
+    const { service, commandStore } = makeService();
+    const command = initializeFirstNightCommand();
+
+    await reachFirstNight(service);
+    const result = await service.execute(command);
+    const events = await commandStore.loadDomainEvents(command.gameId);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(6);
+    expect(result.events).toHaveLength(2);
+    expect(result.events[0]).toMatchObject({
+      eventType: "FirstNightInitialized",
+      eventSequence: 9,
+      gameVersion: 6,
+      commandId: command.commandId
+    });
+    expect(result.events[1]).toMatchObject({
+      eventType: "InitialPrivateKnowledgeEstablished",
+      eventSequence: 10,
+      gameVersion: 6,
+      commandId: command.commandId
+    });
+    expect(result.events[0]?.batchId).toBe(result.events[1]?.batchId);
+    expect(events).toHaveLength(10);
+    expect(state?.phase).toBe("FIRST_NIGHT");
+    expect(state?.nightNumber).toBe(1);
+    expect(state?.dayNumber).toBe(0);
+    expect(state?.firstNight?.initializationVersion).toBe("first-night-initialization-v1");
+    expect(state?.initialPrivateKnowledge?.knowledgeModelVersion).toBe("initial-own-character-knowledge-v1");
+    expect(state?.initialPrivateKnowledge?.knowledgeStage).toBe("OWN_CHARACTER_BOOTSTRAP");
+    expect(state?.initialPrivateKnowledge?.entries.filter((entry) => entry.kind === "OWN_CHARACTER")).toHaveLength(12);
+    expect(state?.initialPrivateKnowledge?.entries).toHaveLength(12);
+    expect(commandStore.getGameVersion(command.gameId)).toBe(6);
+  });
+
+  it("returns the accepted first-night initialization result on retry without appending events", async () => {
+    const { service, commandStore } = makeService();
+    const command = initializeFirstNightCommand({ commandId: commandId("idempotent-first-night") });
+
+    await reachFirstNight(service);
+    const first = await service.execute(command);
+    const second = await service.execute(command);
+
+    expectAcceptedResult(first);
+    expectAcceptedResult(second);
+    expect(second).toMatchObject({ status: "accepted", idempotent: true, gameVersion: 6 });
+    expect(second.events).toStrictEqual(first.events);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+  });
+
+  it("rejects InitializeFirstNight before setup, roster, assignment, or FIRST_NIGHT prerequisites exist", async () => {
+    const { service } = makeService();
+
+    await expect(service.execute(initializeFirstNightCommand({ expectedGameVersion: 0 }))).resolves.toMatchObject({
+      status: "rejected",
+      code: "GameNotCreated"
+    });
+    await service.execute(createGameCommand());
+    await expect(service.execute(initializeFirstNightCommand({ commandId: commandId("first-night-no-setup"), expectedGameVersion: 1 })))
+      .resolves.toMatchObject({ status: "rejected", code: "SetupNotGenerated" });
+    await service.execute(selectScriptCommand());
+    await service.execute(generateSetupCommand());
+    await expect(service.execute(initializeFirstNightCommand({ commandId: commandId("first-night-no-roster"), expectedGameVersion: 3 })))
+      .resolves.toMatchObject({ status: "rejected", code: "PlayerRosterNotCreated" });
+    await service.execute(createPlayerRosterCommand());
+    await expect(service.execute(initializeFirstNightCommand({ commandId: commandId("first-night-no-assignment"), expectedGameVersion: 4 })))
+      .resolves.toMatchObject({ status: "rejected", code: "CharacterAssignmentNotCreated" });
+  });
+
+  it("rejects human and AI actors for InitializeFirstNight", async () => {
+    const { service } = makeService();
+    await reachFirstNight(service);
+
+    await expect(
+      service.execute(initializeFirstNightCommand({ commandId: commandId("human-first-night"), actor: humanActor }))
+    ).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    await expect(
+      service.execute(initializeFirstNightCommand({ commandId: commandId("ai-first-night"), actor: aiActor }))
+    ).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    await expect(
+      service.execute(initializeFirstNightCommand({ commandId: commandId("storyteller-first-night"), actor: storytellerActor }))
+    ).resolves.toMatchObject({ status: "accepted" });
+  });
+
+  it("rejects reinitialization after first-night private knowledge exists", async () => {
+    const { service, commandStore } = makeService();
+    await reachFirstNight(service);
+    await service.execute(initializeFirstNightCommand());
+
+    const result = await service.execute(initializeFirstNightCommand({
+      commandId: commandId("duplicate-first-night"),
+      expectedGameVersion: 6
+    }));
+
+    expect(result).toMatchObject({
+      status: "rejected",
+      code: "FirstNightAlreadyInitialized",
+      currentGameVersion: 6
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(10);
+  });
+
+  it("keeps missing initial private knowledge builder failures retryable without receipts", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FixedIdGenerator();
+    const clock = new FixedClock();
+    const failing = makeServiceWithoutInitialPrivateKnowledgeBuilder(commandStore, idGenerator, clock);
+    const command = initializeFirstNightCommand({ commandId: commandId("missing-initial-knowledge-builder") });
+
+    await reachFirstNight(failing.service);
+    const failedResult = await failing.service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "ApplicationNotConfigured",
+      failureStage: "initial-knowledge-generation",
+      currentGameVersion: 5,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(8);
+
+    const fixed = makeService(commandStore, testSetupGenerator, idGenerator, clock, testAssignmentGenerator, testInitialPrivateKnowledgeBuilder);
+    const retried = await fixed.service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(6);
+  });
+
+  it("keeps thrown initial private knowledge builder failures retryable without receipts", async () => {
+    const throwingBuilder: InitialPrivateKnowledgeBuilderPort = {
+      generate: () => {
+        throw new Error("injected initial knowledge failure");
+      }
+    };
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FixedIdGenerator();
+    const clock = new FixedClock();
+    const failing = makeService(commandStore, testSetupGenerator, idGenerator, clock, testAssignmentGenerator, throwingBuilder);
+    const command = initializeFirstNightCommand({ commandId: commandId("throwing-initial-knowledge-builder") });
+
+    await reachFirstNight(failing.service);
+    const failedResult = await failing.service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "DependencyExecutionFailed",
+      failureStage: "initial-knowledge-generation",
+      message: "injected initial knowledge failure",
+      currentGameVersion: 5,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+
+    const fixed = makeService(commandStore, testSetupGenerator, idGenerator, clock, testAssignmentGenerator, testInitialPrivateKnowledgeBuilder);
+    const retried = await fixed.service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(6);
+  });
+
+  it("persists deterministic initial private knowledge generation failures through receipts", async () => {
+    const generationFailure = {
+      status: "failure" as const,
+      failureCode: "InvalidKnowledgeResult" as const,
+      message: "Generated knowledge was not canonical",
+      conflictingPlayerIds: [playerId("human-1")],
+      conflictingRoleIds: []
+    };
+    const failingBuilder: InitialPrivateKnowledgeBuilderPort = {
+      generate: () => generationFailure
+    };
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore, testSetupGenerator, new FixedIdGenerator(), new FixedClock(), testAssignmentGenerator, failingBuilder);
+    const command = initializeFirstNightCommand({ commandId: commandId("structured-initial-knowledge-failure") });
+
+    await reachFirstNight(service);
+    const first = await service.execute(command);
+    const second = await service.execute(command);
+
+    expect(first).toMatchObject({
+      status: "rejected",
+      code: "InitialPrivateKnowledgeGenerationFailed",
+      idempotent: false,
+      details: {
+        kind: "initial-private-knowledge-generation",
+        failure: generationFailure
+      }
+    });
+    expect(second).toMatchObject({
+      status: "rejected",
+      code: "InitialPrivateKnowledgeGenerationFailed",
+      idempotent: true,
+      details: {
+        kind: "initial-private-knowledge-generation",
+        failure: generationFailure
+      }
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(8);
   });
 
   it("rejects AI and Storyteller actors for CreateGame and SelectScript", async () => {

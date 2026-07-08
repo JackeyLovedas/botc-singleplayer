@@ -39,7 +39,7 @@ jobs:
       - name: Coverage
         run: pnpm test:coverage
 
-  deterministic-setup-and-assignment-windows:
+  deterministic-setup-assignment-knowledge-projections-windows:
     runs-on: windows-latest
 
     steps:
@@ -66,3 +66,9 @@ jobs:
 
       - name: Deterministic assignment tests
         run: pnpm --filter @botc/assignment-engine test
+
+      - name: Initial private knowledge tests
+        run: pnpm --filter @botc/information-engine test
+
+      - name: Projection leakage tests
+        run: pnpm --filter @botc/projections test

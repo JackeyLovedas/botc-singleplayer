@@ -1,4 +1,10 @@
-import type { AnyDomainEventEnvelope, AssignmentGenerationFailure, GameId, SetupGenerationFailure } from "@botc/domain-core";
+import type {
+  AnyDomainEventEnvelope,
+  AssignmentGenerationFailure,
+  GameId,
+  InitialPrivateKnowledgeGenerationFailure,
+  SetupGenerationFailure
+} from "@botc/domain-core";
 
 export type CommandRejectionCode =
   | "ExpectedGameVersionMismatch"
@@ -18,14 +24,22 @@ export type CommandRejectionCode =
   | "PlayerRosterNotCreated"
   | "InvalidPlayerRoster"
   | "ActorPlayerMismatch"
+  | "CharacterAssignmentNotCreated"
   | "CharacterAssignmentAlreadyCreated"
   | "AssignmentGenerationFailed"
+  | "FirstNightAlreadyInitialized"
+  | "InitialPrivateKnowledgeAlreadyEstablished"
+  | "InitialPrivateKnowledgeGenerationFailed"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 
 export type SetupGenerationRejectionCode = "SetupGenerationFailed";
 export type AssignmentGenerationRejectionCode = "AssignmentGenerationFailed";
-export type StructuredCommandRejectionCode = SetupGenerationRejectionCode | AssignmentGenerationRejectionCode;
+export type InitialPrivateKnowledgeGenerationRejectionCode = "InitialPrivateKnowledgeGenerationFailed";
+export type StructuredCommandRejectionCode =
+  | SetupGenerationRejectionCode
+  | AssignmentGenerationRejectionCode
+  | InitialPrivateKnowledgeGenerationRejectionCode;
 export type GeneralCommandRejectionCode = Exclude<CommandRejectionCode, StructuredCommandRejectionCode>;
 
 export type CommandAccepted = {
@@ -46,7 +60,15 @@ export type AssignmentGenerationRejectionDetails = {
   readonly failure: AssignmentGenerationFailure;
 };
 
-export type CommandRejectionDetails = SetupGenerationRejectionDetails | AssignmentGenerationRejectionDetails;
+export type InitialPrivateKnowledgeGenerationRejectionDetails = {
+  readonly kind: "initial-private-knowledge-generation";
+  readonly failure: InitialPrivateKnowledgeGenerationFailure;
+};
+
+export type CommandRejectionDetails =
+  | SetupGenerationRejectionDetails
+  | AssignmentGenerationRejectionDetails
+  | InitialPrivateKnowledgeGenerationRejectionDetails;
 
 export type SetupGenerationCommandRejected = {
   readonly status: "rejected";
@@ -68,6 +90,16 @@ export type AssignmentGenerationCommandRejected = {
   readonly details: AssignmentGenerationRejectionDetails;
 };
 
+export type InitialPrivateKnowledgeGenerationCommandRejected = {
+  readonly status: "rejected";
+  readonly gameId: GameId;
+  readonly code: InitialPrivateKnowledgeGenerationRejectionCode;
+  readonly message: string;
+  readonly currentGameVersion: number;
+  readonly idempotent: boolean;
+  readonly details: InitialPrivateKnowledgeGenerationRejectionDetails;
+};
+
 export type GeneralCommandRejected = {
   readonly status: "rejected";
   readonly gameId: GameId;
@@ -78,10 +110,15 @@ export type GeneralCommandRejected = {
   readonly details?: never;
 };
 
-export type CommandRejected = SetupGenerationCommandRejected | AssignmentGenerationCommandRejected | GeneralCommandRejected;
+export type CommandRejected =
+  | SetupGenerationCommandRejected
+  | AssignmentGenerationCommandRejected
+  | InitialPrivateKnowledgeGenerationCommandRejected
+  | GeneralCommandRejected;
 
 export type CommandExecutionFailureCode =
   | "ApplicationNotConfigured"
+  | "CanonicalStateRebuildFailed"
   | "DependencyExecutionFailed"
   | "CommandStoreReadFailed"
   | "CommandReceiptWriteFailed"
@@ -91,9 +128,11 @@ export type CommandExecutionFailureCode =
 export type CommandExecutionFailureStage =
   | "receipt-read"
   | "event-load"
+  | "state-rebuild"
   | "command-validation"
   | "setup-generation"
   | "assignment-generation"
+  | "initial-knowledge-generation"
   | "event-metadata"
   | "prospective-validation"
   | "accepted-commit"
@@ -169,6 +208,14 @@ export function rejected(
 ): AssignmentGenerationCommandRejected;
 export function rejected(
   gameId: GameId,
+  code: InitialPrivateKnowledgeGenerationRejectionCode,
+  message: string,
+  currentGameVersion: number,
+  idempotent: boolean,
+  details: InitialPrivateKnowledgeGenerationRejectionDetails
+): InitialPrivateKnowledgeGenerationCommandRejected;
+export function rejected(
+  gameId: GameId,
   code: GeneralCommandRejectionCode,
   message: string,
   currentGameVersion: number,
@@ -200,6 +247,22 @@ export function rejected(
 
   if (code === "AssignmentGenerationFailed") {
     if (details === undefined || details.kind !== "assignment-generation") {
+      throw new Error(`${code} requires structured rejection details`);
+    }
+
+    return {
+      status: "rejected",
+      gameId,
+      code,
+      message,
+      currentGameVersion,
+      idempotent,
+      details
+    };
+  }
+
+  if (code === "InitialPrivateKnowledgeGenerationFailed") {
+    if (details === undefined || details.kind !== "initial-private-knowledge-generation") {
       throw new Error(`${code} requires structured rejection details`);
     }
 

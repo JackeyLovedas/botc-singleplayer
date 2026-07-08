@@ -10,6 +10,7 @@ export * from "./events.js";
 export * from "./game-phase.js";
 export * from "./game-state.js";
 export * from "./ids.js";
+export * from "./initial-private-knowledge.js";
 export * from "./phase-transition-policy.js";
 export * from "./player-roster.js";
 export * from "./prospective-events.js";

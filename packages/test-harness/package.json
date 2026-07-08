@@ -10,6 +10,7 @@
     "@botc/application": "workspace:*",
     "@botc/assignment-engine": "workspace:*",
     "@botc/domain-core": "workspace:*",
+    "@botc/information-engine": "workspace:*",
     "@botc/rules-snv": "workspace:*",
     "@botc/setup-engine": "workspace:*"
   }
