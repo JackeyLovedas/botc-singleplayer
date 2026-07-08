@@ -12,6 +12,7 @@
     "@botc/domain-core": "workspace:*",
     "@botc/information-engine": "workspace:*",
     "@botc/rules-snv": "workspace:*",
-    "@botc/setup-engine": "workspace:*"
+    "@botc/setup-engine": "workspace:*",
+    "@botc/task-engine": "workspace:*"
   }
 }

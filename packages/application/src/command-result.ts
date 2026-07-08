@@ -29,7 +29,10 @@ export type CommandRejectionCode =
   | "AssignmentGenerationFailed"
   | "FirstNightAlreadyInitialized"
   | "InitialPrivateKnowledgeAlreadyEstablished"
+  | "InitialPrivateKnowledgeNotEstablished"
   | "InitialPrivateKnowledgeGenerationFailed"
+  | "FirstNightNotInitialized"
+  | "FirstNightTaskPlanAlreadyCreated"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 
@@ -133,6 +136,7 @@ export type CommandExecutionFailureStage =
   | "setup-generation"
   | "assignment-generation"
   | "initial-knowledge-generation"
+  | "first-night-task-planning"
   | "event-metadata"
   | "prospective-validation"
   | "accepted-commit"

@@ -73,6 +73,42 @@ build scheduled task candidates
 
 Example: a poisoned Cerenovus may be presented and may choose a target, but final settlement records ineffective ability and creates no `MadnessRequirement`.
 
+## First-Night Task Plan Skeleton
+
+Slice 2B4 implements only the planning boundary for first-night `ScheduledTask` values.
+
+The current plan model records:
+
+- a fixed first-night task catalog snapshot;
+- deterministic task ids;
+- `FirstNightTaskOrderKey(baseOrder, insertionOrder)`;
+- `PENDING` status only;
+- source facts for role tasks;
+- system task markers for `MINION_INFO` and `DEMON_INFO`;
+- settlement policies that force source or evil-team re-resolution at settlement time.
+
+The base order is:
+
+```text
+100  PHILOSOPHER_ACTION
+200  MINION_INFO
+300  DEMON_INFO
+400  SNAKE_CHARMER_ACTION
+500  EVIL_TWIN_SETUP
+600  WITCH_ACTION
+700  CERENOVUS_ACTION
+800  CLOCKMAKER_INFORMATION
+900  DREAMER_ACTION
+1000 SEAMSTRESS_ACTION
+1100 MATHEMATICIAN_INFORMATION
+```
+
+`MINION_INFO` and `DEMON_INFO` are system information tasks. They do not freeze recipients, demon identity, minion identities, or demon bluffs in the task plan. Those facts must be resolved when the task settles.
+
+Role tasks use `REEVALUATE_SOURCE_AT_SETTLEMENT`. System information tasks use `RESOLVE_CURRENT_EVIL_TEAM_AT_SETTLEMENT`.
+
+The model does not yet create active tasks, visible options, task inputs, task results, role ability effects, or information delivery events.
+
 ## ActionOpportunity Flow
 
 ```text

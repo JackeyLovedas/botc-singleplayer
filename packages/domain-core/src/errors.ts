@@ -29,6 +29,8 @@ export type DomainErrorCode =
   | "DuplicateFirstNightInitialized"
   | "InvalidInitialPrivateKnowledgeEstablishedPayload"
   | "DuplicateInitialPrivateKnowledgeEstablished"
+  | "InvalidFirstNightTaskPlanCreatedPayload"
+  | "DuplicateFirstNightTaskPlanCreated"
   | "PrivateKnowledgeUnavailable"
   | "UnknownPlayerPrivateKnowledgeViewer"
   | "InvalidPhaseTransition"

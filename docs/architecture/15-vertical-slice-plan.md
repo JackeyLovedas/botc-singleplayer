@@ -126,6 +126,27 @@ Acceptance:
 - Player and AI private knowledge projections do not expose the task plan or task sources.
 - No task execution, role ability, minion/demon information delivery, AI decision, UI, Electron, or SQLite adapter is introduced.
 
+## Slice 2B5: MINION_INFO and DEMON_INFO Ordered Settlement
+
+Scope:
+
+- Execute only after Slice 2B4 is accepted and merged.
+- Consume the pending `MINION_INFO` and `DEMON_INFO` scheduled tasks in first-night order.
+- Resolve the current evil team at settlement time, not from frozen task recipients.
+- Deliver minion/demon information through explicit private knowledge or information delivery events.
+- Keep `canonicalGameState`, full assignment, task source roles, and Storyteller-only reasons out of player and AI projections.
+- Do not execute role abilities beyond the two system information tasks.
+- Do not add AI decisions, UI, Electron, or SQLite adapters.
+
+Acceptance:
+
+- `MINION_INFO` settlement uses the current demon/minion facts available at settlement time.
+- `DEMON_INFO` settlement uses current demon identity and setup demon bluffs at settlement time.
+- Replaying the same event stream reproduces the same delivered information.
+- Settling the same task twice is rejected.
+- Role tasks remain pending after this slice.
+- Projection leakage tests cover delivered information and still do not expose task plan internals.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:

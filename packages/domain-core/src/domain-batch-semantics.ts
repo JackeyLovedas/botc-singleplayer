@@ -154,6 +154,34 @@ const validateIntegratedFirstNightInitializationBatch = (
   assertSharedBatchMetadata(firstNightInitialized, initialPrivateKnowledgeEstablished);
 };
 
+const validateFirstNightTaskPlanCreatedBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "PlanFirstNightTasks batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.setup === undefined ||
+    state.roster === undefined ||
+    state.assignment === undefined ||
+    state.firstNight === undefined ||
+    state.initialPrivateKnowledge === undefined ||
+    state.firstNightTaskPlan !== undefined
+  ) {
+    reject("PlanFirstNightTasks batch requires FIRST_NIGHT night 1 with setup, roster, assignment, first-night knowledge, and no existing task plan");
+  }
+
+  if (events.length !== 1) {
+    reject("PlanFirstNightTasks batch must contain exactly one FirstNightTaskPlanCreated event");
+  }
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -187,6 +215,11 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "PlayerRosterCreated") {
     validatePlayerRosterCreatedBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (first.eventType === "FirstNightTaskPlanCreated") {
+    validateFirstNightTaskPlanCreatedBatch(currentState, batchEvents);
     return;
   }
 

@@ -2,6 +2,7 @@ import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+  INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
   DomainError,
@@ -10,11 +11,13 @@ import {
   causationIdFromCommandId,
   createFixedPlayerRoster,
   compareStableId,
+  cloneFirstNightTaskCatalogSnapshot,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
   SUPPORTED_SCRIPT_EDITION,
   SUPPORTED_SCRIPT_ID,
   SUPPORTED_SCRIPT_NAME,
+  validateFirstNightTaskCatalogSnapshot,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
 import type {
@@ -29,6 +32,11 @@ import type {
   GameState,
   CharactersAssignedPayload,
   FirstNightInitializedPayload,
+  FirstNightTaskCatalogSnapshot,
+  FirstNightTaskPlan,
+  FirstNightTaskPlanCreatedPayload,
+  FirstNightTaskPlanningFailure,
+  FirstNightTaskPlanningResult,
   InitialPrivateKnowledge,
   InitialPrivateKnowledgeEstablishedPayload,
   InitialPrivateKnowledgeGenerationFailure,
@@ -52,6 +60,7 @@ import type {
 } from "./command-result.js";
 import type { CharacterAssignmentGeneratorPort } from "./ports/character-assignment-generator.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
+import type { FirstNightTaskPlannerPort } from "./ports/first-night-task-planner.js";
 import type { InitialPrivateKnowledgeBuilderPort } from "./ports/initial-private-knowledge-builder.js";
 import type { SetupGeneratorPort } from "./ports/setup-generator.js";
 
@@ -71,6 +80,8 @@ export type GameApplicationServiceDependencies = {
   readonly setupGenerator?: SetupGeneratorPort;
   readonly characterAssignmentGenerator?: CharacterAssignmentGeneratorPort;
   readonly initialPrivateKnowledgeBuilder?: InitialPrivateKnowledgeBuilderPort;
+  readonly firstNightTaskPlanner?: FirstNightTaskPlannerPort;
+  readonly firstNightTaskCatalogSnapshot?: FirstNightTaskCatalogSnapshot;
 };
 
 type DomainEventMetadata = Omit<DomainEventEnvelope, "eventType" | "payload">;
@@ -84,6 +95,124 @@ class EventMetadataGenerationError extends Error {
 
 const errorMessage = (error: unknown, fallback: string): string =>
   error instanceof Error ? error.message : fallback;
+
+const firstNightTaskPlanningFailureMessage = (failure: FirstNightTaskPlanningFailure): string =>
+  [
+    `${failure.failureCode}: ${failure.message}`,
+    `conflictingTaskIds=[${failure.conflictingTaskIds.join(",")}]`,
+    `conflictingRoleIds=[${failure.conflictingRoleIds.join(",")}]`
+  ].join("; ");
+
+type FirstNightTaskPlannerRuntimeValidationResult =
+  | {
+      readonly valid: true;
+      readonly result: FirstNightTaskPlanningResult;
+    }
+  | {
+      readonly valid: false;
+      readonly message: string;
+    };
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value) as unknown;
+  return prototype === Object.prototype || prototype === null;
+};
+
+const isDenseArray = (value: readonly unknown[]): boolean => {
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const isFirstNightTaskPlanningFailureCode = (value: unknown): value is FirstNightTaskPlanningFailure["failureCode"] =>
+  value === "InvalidTaskCatalog" || value === "InvalidFirstNightState" || value === "InvalidTaskPlan";
+
+const validateStringDenseArray = (value: unknown): boolean =>
+  Array.isArray(value) && isDenseArray(value) && value.every((entry) => typeof entry === "string");
+
+const invalidPlannerResult = (message: string): FirstNightTaskPlannerRuntimeValidationResult => ({
+  valid: false,
+  message
+});
+
+const validateFirstNightTaskPlannerRuntimeResultShape = (value: unknown): FirstNightTaskPlannerRuntimeValidationResult => {
+  if (!isPlainRecord(value)) {
+    return invalidPlannerResult("First-night task planner returned a malformed result: result must be a non-null plain object");
+  }
+
+  if (value.status === "failure") {
+    if (!isFirstNightTaskPlanningFailureCode(value.failureCode)) {
+      return invalidPlannerResult("First-night task planner returned a malformed failure result: failureCode is invalid");
+    }
+
+    if (typeof value.message !== "string") {
+      return invalidPlannerResult("First-night task planner returned a malformed failure result: message must be a string");
+    }
+
+    if (!validateStringDenseArray(value.conflictingTaskIds)) {
+      return invalidPlannerResult(
+        "First-night task planner returned a malformed failure result: conflictingTaskIds must be a dense string array"
+      );
+    }
+
+    if (!validateStringDenseArray(value.conflictingRoleIds)) {
+      return invalidPlannerResult(
+        "First-night task planner returned a malformed failure result: conflictingRoleIds must be a dense string array"
+      );
+    }
+
+    return { valid: true, result: value as unknown as FirstNightTaskPlanningResult };
+  }
+
+  if (value.status === "success") {
+    if (!Object.hasOwn(value, "taskPlan")) {
+      return invalidPlannerResult("First-night task planner returned a malformed success result: taskPlan is missing");
+    }
+
+    let taskPlan: unknown;
+    try {
+      taskPlan = value.taskPlan;
+    } catch (error: unknown) {
+      return invalidPlannerResult(
+        `First-night task planner returned a malformed success result: taskPlan access failed: ${errorMessage(
+          error,
+          "Unknown taskPlan access failure"
+        )}`
+      );
+    }
+
+    if (!isPlainRecord(taskPlan)) {
+      return invalidPlannerResult(
+        "First-night task planner returned a malformed success result: taskPlan must be a non-null plain object"
+      );
+    }
+
+    return { valid: true, result: value as unknown as FirstNightTaskPlanningResult };
+  }
+
+  return invalidPlannerResult("First-night task planner returned a malformed result: status must be success or failure");
+};
+
+const validateFirstNightTaskPlannerRuntimeResult = (value: unknown): FirstNightTaskPlannerRuntimeValidationResult => {
+  try {
+    return validateFirstNightTaskPlannerRuntimeResultShape(value);
+  } catch (error: unknown) {
+    return invalidPlannerResult(
+      `First-night task planner returned a malformed result: runtime validation failed: ${errorMessage(
+        error,
+        "Unknown planner result validation failure"
+      )}`
+    );
+  }
+};
 
 export class GameApplicationService {
   public constructor(private readonly dependencies: GameApplicationServiceDependencies) {}
@@ -154,7 +283,7 @@ export class GameApplicationService {
       return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion));
     }
 
-    const prospective = this.validateProspectiveBatch(state, batch);
+    const prospective = this.validateProspectiveBatch(command, state, batch);
     if (prospective !== undefined) {
       if ("status" in prospective) {
         return prospective;
@@ -400,6 +529,55 @@ export class GameApplicationService {
 
         return undefined;
       }
+
+      case "PlanFirstNightTasks": {
+        if (command.actor.kind !== "system" && command.actor.kind !== "storyteller") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "PlanFirstNightTasks requires an existing game" };
+        }
+
+        if (state.setup === undefined) {
+          return { code: "SetupNotGenerated", message: "PlanFirstNightTasks requires generated setup" };
+        }
+
+        if (state.roster === undefined) {
+          return { code: "PlayerRosterNotCreated", message: "PlanFirstNightTasks requires a player roster" };
+        }
+
+        if (state.assignment === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "PlanFirstNightTasks requires character assignment" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `PlanFirstNightTasks cannot execute during ${state.phase}` };
+        }
+
+        if (state.firstNight === undefined) {
+          return { code: "FirstNightNotInitialized", message: "PlanFirstNightTasks requires first night initialization" };
+        }
+
+        if (
+          state.initialPrivateKnowledge === undefined ||
+          state.initialPrivateKnowledge.knowledgeStage !== INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE
+        ) {
+          return {
+            code: "InitialPrivateKnowledgeNotEstablished",
+            message: "PlanFirstNightTasks requires initial own-character knowledge"
+          };
+        }
+
+        if (state.firstNightTaskPlan !== undefined) {
+          return { code: "FirstNightTaskPlanAlreadyCreated", message: "First-night task plan has already been created" };
+        }
+
+        return undefined;
+      }
     }
 
     return assertNever(command.payload);
@@ -438,13 +616,28 @@ export class GameApplicationService {
         return initialPrivateKnowledge;
       }
 
-      return this.createBatch(command, state, currentGameVersion, generatedSetup, generatedAssignment, initialPrivateKnowledge);
+      const firstNightTaskPlan = this.generateFirstNightTaskPlanOrReject(command, state, currentGameVersion);
+      if (firstNightTaskPlan !== undefined && "code" in firstNightTaskPlan) {
+        return firstNightTaskPlan;
+      }
+
+      return this.createBatch(command, state, currentGameVersion, generatedSetup, generatedAssignment, initialPrivateKnowledge, firstNightTaskPlan);
     } catch (error: unknown) {
       if (error instanceof EventMetadataGenerationError) {
         return failed(command.gameId, "MetadataGenerationFailed", error.message, "event-metadata", currentGameVersion);
       }
 
       if (error instanceof DomainError) {
+        if (command.payload.commandType === "PlanFirstNightTasks") {
+          return failed(
+            command.gameId,
+            "DependencyExecutionFailed",
+            error.message,
+            "first-night-task-planning",
+            currentGameVersion
+          );
+        }
+
         return { code: "DomainValidationFailed", message: error.message };
       }
 
@@ -654,13 +847,121 @@ export class GameApplicationService {
     return result.knowledge;
   }
 
+  private generateFirstNightTaskPlanOrReject(
+    command: SupportedCommandEnvelope,
+    state: GameState | undefined,
+    currentGameVersion: number
+  ): FirstNightTaskPlan | CommandExecutionFailed | undefined {
+    if (command.payload.commandType !== "PlanFirstNightTasks") {
+      return undefined;
+    }
+
+    if (
+      state === undefined ||
+      state.setup === undefined ||
+      state.roster === undefined ||
+      state.assignment === undefined ||
+      state.firstNight === undefined ||
+      state.initialPrivateKnowledge === undefined
+    ) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "PlanFirstNightTasks requires setup, roster, assignment, first night, and initial private knowledge state",
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    const planner = this.dependencies.firstNightTaskPlanner;
+    if (planner === undefined) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "First-night task planner dependency is not configured",
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    const taskCatalogSnapshot = this.dependencies.firstNightTaskCatalogSnapshot;
+    if (taskCatalogSnapshot === undefined) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "First-night task catalog dependency is not configured",
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    const catalogValidation = validateFirstNightTaskCatalogSnapshot(taskCatalogSnapshot);
+    if (!catalogValidation.valid) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        `Invalid first-night task catalog dependency: ${catalogValidation.reason}`,
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    const taskCatalogSnapshotCopy = cloneFirstNightTaskCatalogSnapshot(taskCatalogSnapshot);
+    let result;
+    try {
+      result = planner.generate({
+        nightNumber: 1,
+        setup: state.setup,
+        roster: state.roster.entries,
+        assignment: state.assignment.assignments,
+        firstNight: state.firstNight,
+        initialPrivateKnowledge: state.initialPrivateKnowledge,
+        taskCatalogSnapshot: taskCatalogSnapshotCopy
+      });
+    } catch (error: unknown) {
+      return failed(
+        command.gameId,
+        "DependencyExecutionFailed",
+        errorMessage(error, "Unknown first-night task planner failure"),
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    const runtimeValidation = validateFirstNightTaskPlannerRuntimeResult(result);
+    if (!runtimeValidation.valid) {
+      return failed(
+        command.gameId,
+        "DependencyExecutionFailed",
+        runtimeValidation.message,
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    result = runtimeValidation.result;
+
+    if (result.status === "failure") {
+      return failed(
+        command.gameId,
+        result.failureCode === "InvalidTaskCatalog" ? "ApplicationNotConfigured" : "DependencyExecutionFailed",
+        firstNightTaskPlanningFailureMessage(result),
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    return result.taskPlan;
+  }
+
   private createBatch(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number,
     generatedSetup: GeneratedSetup | undefined,
     generatedAssignment: GeneratedCharacterAssignment | undefined,
-    initialPrivateKnowledge: InitialPrivateKnowledge | undefined
+    initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
+    firstNightTaskPlan: FirstNightTaskPlan | undefined
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.createBatchId();
@@ -673,7 +974,8 @@ export class GameApplicationService {
       state,
       generatedSetup,
       generatedAssignment,
-      initialPrivateKnowledge
+      initialPrivateKnowledge,
+      firstNightTaskPlan
     );
 
     return {
@@ -694,7 +996,8 @@ export class GameApplicationService {
     state: GameState | undefined,
     generatedSetup: GeneratedSetup | undefined,
     generatedAssignment: GeneratedCharacterAssignment | undefined,
-    initialPrivateKnowledge: InitialPrivateKnowledge | undefined
+    initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
+    firstNightTaskPlan: FirstNightTaskPlan | undefined
   ): readonly AnyDomainEventEnvelope[] {
     const common = (eventSequence: number) => this.createEventMetadata(command, eventBatchId, eventSequence, gameVersion);
 
@@ -910,12 +1213,52 @@ export class GameApplicationService {
 
         return [firstNightInitializedEvent, initialPrivateKnowledgeEstablishedEvent];
       }
+
+      case "PlanFirstNightTasks": {
+        if (
+          state === undefined ||
+          state.setup === undefined ||
+          state.roster === undefined ||
+          state.assignment === undefined ||
+          state.firstNight === undefined ||
+          state.initialPrivateKnowledge === undefined ||
+          firstNightTaskPlan === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "PlanFirstNightTasks event creation requires first-night source facts and a generated task plan"
+          );
+        }
+
+        const firstNightTaskPlanCreatedEvent: DomainEventEnvelope<"FirstNightTaskPlanCreated"> = {
+          ...common(firstEventSequence),
+          eventType: "FirstNightTaskPlanCreated" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            nightNumber: firstNightTaskPlan.nightNumber,
+            taskPlanVersion: firstNightTaskPlan.taskPlanVersion,
+            taskCatalogVersion: firstNightTaskPlan.taskCatalogVersion,
+            taskCatalogSignatureAlgorithm: firstNightTaskPlan.taskCatalogSignatureAlgorithm,
+            taskCatalogSignature: firstNightTaskPlan.taskCatalogSignature,
+            taskCatalogSnapshot: firstNightTaskPlan.taskCatalogSnapshot,
+            rosterVersion: firstNightTaskPlan.rosterVersion,
+            assignmentAlgorithmVersion: firstNightTaskPlan.assignmentAlgorithmVersion,
+            roleCatalogSignature: firstNightTaskPlan.roleCatalogSignature,
+            knowledgeModelVersion: firstNightTaskPlan.knowledgeModelVersion,
+            knowledgeStage: firstNightTaskPlan.knowledgeStage,
+            tasks: firstNightTaskPlan.tasks
+          } satisfies FirstNightTaskPlanCreatedPayload
+        };
+
+        return [firstNightTaskPlanCreatedEvent];
+      }
     }
 
     return assertNever(command.payload);
   }
 
   private validateProspectiveBatch(
+    command: SupportedCommandEnvelope,
     state: GameState | undefined,
     batch: DomainEventBatch
   ): CommandExecutionFailed | { readonly code: "DomainValidationFailed"; readonly message: string } | undefined {
@@ -929,6 +1272,16 @@ export class GameApplicationService {
           batch.gameId,
           "DependencyExecutionFailed",
           errorMessage(error, "Unknown prospective validation failure"),
+          "prospective-validation",
+          batch.expectedGameVersion
+        );
+      }
+
+      if (command.payload.commandType === "PlanFirstNightTasks") {
+        return failed(
+          batch.gameId,
+          "DependencyExecutionFailed",
+          error.message,
           "prospective-validation",
           batch.expectedGameVersion
         );

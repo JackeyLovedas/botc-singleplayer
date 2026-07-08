@@ -68,6 +68,12 @@ importers:
         specifier: workspace:*
         version: link:../domain-core
 
+  packages/task-engine:
+    dependencies:
+      '@botc/domain-core':
+        specifier: workspace:*
+        version: link:../domain-core
+
   packages/test-harness:
     dependencies:
       '@botc/application':
@@ -88,6 +94,9 @@ importers:
       '@botc/setup-engine':
         specifier: workspace:*
         version: link:../setup-engine
+      '@botc/task-engine':
+        specifier: workspace:*
+        version: link:../task-engine
 
 packages:
 

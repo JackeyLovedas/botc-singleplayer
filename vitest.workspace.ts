@@ -8,6 +8,7 @@ const informationEngine = fileURLToPath(new URL("./packages/information-engine/s
 const projections = fileURLToPath(new URL("./packages/projections/src/index.ts", import.meta.url));
 const rulesSnv = fileURLToPath(new URL("./packages/rules-snv/src/index.ts", import.meta.url));
 const setupEngine = fileURLToPath(new URL("./packages/setup-engine/src/index.ts", import.meta.url));
+const taskEngine = fileURLToPath(new URL("./packages/task-engine/src/index.ts", import.meta.url));
 const testHarness = fileURLToPath(new URL("./packages/test-harness/src/index.ts", import.meta.url));
 
 const aliases = {
@@ -18,6 +19,7 @@ const aliases = {
   "@botc/projections": projections,
   "@botc/rules-snv": rulesSnv,
   "@botc/setup-engine": setupEngine,
+  "@botc/task-engine": taskEngine,
   "@botc/test-harness": testHarness
 };
 
@@ -80,6 +82,15 @@ export default defineWorkspace([
     test: {
       name: "setup-engine",
       include: ["packages/setup-engine/src/**/*.test.ts"]
+    },
+    resolve: {
+      alias: aliases
+    }
+  },
+  {
+    test: {
+      name: "task-engine",
+      include: ["packages/task-engine/src/**/*.test.ts"]
     },
     resolve: {
       alias: aliases

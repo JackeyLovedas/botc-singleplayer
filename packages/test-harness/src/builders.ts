@@ -3,6 +3,7 @@ import {
   SUPPORTED_DOMAIN_EVENT_VERSION,
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+  SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
   batchId,
@@ -29,7 +30,10 @@ import type {
   GameId,
   InitializeFirstNightCommand,
   InitializeFirstNightCommandPayload,
+  PlanFirstNightTasksCommand,
+  PlanFirstNightTasksCommandPayload,
   FirstNightInitializedPayload,
+  FirstNightTaskPlanCreatedPayload,
   InitialPrivateKnowledgeEstablishedPayload,
   InfrastructureEventEnvelope,
   PhaseTransitionedPayload,
@@ -40,8 +44,9 @@ import type {
 } from "@botc/domain-core";
 import { SeededCharacterAssignmentGenerator } from "@botc/assignment-engine";
 import { InitialPrivateKnowledgeBuilder } from "@botc/information-engine";
-import { SECTS_AND_VIOLETS_SCRIPT } from "@botc/rules-snv";
+import { SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG, SECTS_AND_VIOLETS_SCRIPT } from "@botc/rules-snv";
 import { SeededSectsAndVioletsSetupGenerator } from "@botc/setup-engine";
+import { FirstNightTaskPlanner } from "@botc/task-engine";
 
 export const ids = {
   game: gameId("game-1"),
@@ -169,6 +174,23 @@ export const initializeFirstNightCommand = (
   ...overrides
 });
 
+export const planFirstNightTasksPayload = {
+  commandType: "PlanFirstNightTasks"
+} as const satisfies PlanFirstNightTasksCommandPayload;
+
+export const planFirstNightTasksCommand = (
+  overrides: Partial<PlanFirstNightTasksCommand> = {}
+): PlanFirstNightTasksCommand => ({
+  commandId: commandId("command-7"),
+  gameId: ids.game,
+  expectedGameVersion: 6,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:06.000Z",
+  correlationId: correlationId("correlation-7"),
+  payload: planFirstNightTasksPayload,
+  ...overrides
+});
+
 export const gameCreatedEvent = (
   overrides: Partial<DomainEventEnvelope<"GameCreated">> = {}
 ): DomainEventEnvelope<"GameCreated"> => ({
@@ -254,6 +276,8 @@ export const phaseTransitionedEvent = (
 export const testSetupGenerator = new SeededSectsAndVioletsSetupGenerator(SECTS_AND_VIOLETS_SCRIPT);
 export const testAssignmentGenerator = new SeededCharacterAssignmentGenerator();
 export const testInitialPrivateKnowledgeBuilder = new InitialPrivateKnowledgeBuilder();
+export const testFirstNightTaskCatalog = SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG;
+export const testFirstNightTaskPlanner = new FirstNightTaskPlanner(testFirstNightTaskCatalog);
 
 const generatedSetup = () => {
   const result = testSetupGenerator.generate({
@@ -489,6 +513,61 @@ export const initialPrivateKnowledgeEstablishedEvent = (
   } satisfies InitialPrivateKnowledgeEstablishedPayload,
   ...overrides
 });
+
+const generatedFirstNightTaskPlan = () => {
+  const result = testFirstNightTaskPlanner.generate({
+    nightNumber: 1,
+    setup: setupGeneratedEvent().payload,
+    roster: playerRosterCreatedEvent().payload.entries,
+    assignment: charactersAssignedEvent().payload.assignments,
+    firstNight: firstNightInitializedEvent().payload,
+    initialPrivateKnowledge: initialPrivateKnowledgeEstablishedEvent().payload,
+    taskCatalogSnapshot: testFirstNightTaskCatalog
+  });
+
+  if (result.status === "failure") {
+    throw new Error(result.message);
+  }
+
+  return result.taskPlan;
+};
+
+export const firstNightTaskPlanCreatedEvent = (
+  overrides: Partial<DomainEventEnvelope<"FirstNightTaskPlanCreated">> = {}
+): DomainEventEnvelope<"FirstNightTaskPlanCreated"> => {
+  const taskPlan = generatedFirstNightTaskPlan();
+  return {
+    category: "domain",
+    eventId: eventId("event-11"),
+    gameId: ids.game,
+    eventSequence: 11,
+    batchId: batchId("batch-7"),
+    gameVersion: 7,
+    eventType: "FirstNightTaskPlanCreated",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-7"),
+    createdAt: "2026-07-07T00:00:06.000Z",
+    correlationId: correlationId("correlation-7"),
+    causationId: causationId("command-7"),
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      nightNumber: 1,
+      taskPlanVersion: SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
+      taskCatalogVersion: taskPlan.taskCatalogVersion,
+      taskCatalogSignatureAlgorithm: taskPlan.taskCatalogSignatureAlgorithm,
+      taskCatalogSignature: taskPlan.taskCatalogSignature,
+      taskCatalogSnapshot: taskPlan.taskCatalogSnapshot,
+      rosterVersion: taskPlan.rosterVersion,
+      assignmentAlgorithmVersion: taskPlan.assignmentAlgorithmVersion,
+      roleCatalogSignature: taskPlan.roleCatalogSignature,
+      knowledgeModelVersion: taskPlan.knowledgeModelVersion,
+      knowledgeStage: taskPlan.knowledgeStage,
+      tasks: taskPlan.tasks
+    } satisfies FirstNightTaskPlanCreatedPayload,
+    ...overrides
+  };
+};
 
 export const auditEvent = (): AuditEventEnvelope => ({
   category: "audit",

@@ -2,6 +2,7 @@ import type { BatchId, CausationId, CommandId, CorrelationId, EventId, GameId } 
 import type { GamePhase } from "./game-phase.js";
 import type { PhaseTransitionReason } from "./phase-transition-policy.js";
 import type { CharacterAssignmentSet } from "./character-assignment.js";
+import type { FirstNightTaskPlan } from "./first-night-task-plan.js";
 import type { InitialOwnCharacterKnowledgeEntry } from "./initial-private-knowledge.js";
 import type { PlayerRoster } from "./player-roster.js";
 import type { GeneratedSetup, SupportedEdition } from "./setup-types.js";
@@ -83,6 +84,10 @@ export type InitialPrivateKnowledgeEstablishedPayload = {
   readonly entries: readonly InitialOwnCharacterKnowledgeEntry[];
 };
 
+export type FirstNightTaskPlanCreatedPayload = FirstNightTaskPlan & {
+  readonly rulesBaselineVersion: string;
+};
+
 export type DomainEventPayloadByType = {
   readonly GameCreated: GameCreatedPayload;
   readonly ScriptSelected: ScriptSelectedPayload;
@@ -92,6 +97,7 @@ export type DomainEventPayloadByType = {
   readonly PhaseTransitioned: PhaseTransitionedPayload;
   readonly FirstNightInitialized: FirstNightInitializedPayload;
   readonly InitialPrivateKnowledgeEstablished: InitialPrivateKnowledgeEstablishedPayload;
+  readonly FirstNightTaskPlanCreated: FirstNightTaskPlanCreatedPayload;
 };
 
 export type DomainEventType = keyof DomainEventPayloadByType;

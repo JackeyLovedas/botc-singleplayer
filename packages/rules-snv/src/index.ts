@@ -1,11 +1,23 @@
 import {
+  SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM,
+  SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION,
   SUPPORTED_SCRIPT_EDITION,
   SUPPORTED_SCRIPT_ID,
   SUPPORTED_SCRIPT_NAME,
+  calculateFirstNightTaskCatalogSignature,
+  cloneFirstNightTaskCatalogSnapshot,
   compareStableId,
   roleId
 } from "@botc/domain-core";
-import type { CharacterType, DefaultAlignment, RoleDefinition, ScriptDefinition, SetupModifier } from "@botc/domain-core";
+import type {
+  CharacterType,
+  DefaultAlignment,
+  FirstNightTaskCatalogSnapshot,
+  FirstNightTaskDefinition,
+  RoleDefinition,
+  ScriptDefinition,
+  SetupModifier
+} from "@botc/domain-core";
 
 const zeroModifier: SetupModifier = {
   outsiderDelta: 0,
@@ -179,3 +191,58 @@ export const assertValidSectsAndVioletsCatalog = (script: ScriptDefinition = SEC
 };
 
 assertValidSectsAndVioletsCatalog();
+
+const firstNightRoleTask = (
+  taskType: FirstNightTaskDefinition["taskType"],
+  taskClass: Extract<FirstNightTaskDefinition, { readonly sourceKind: "ROLE" }>["taskClass"],
+  baseOrder: number,
+  roleIdValue: string
+): FirstNightTaskDefinition => ({
+  taskType,
+  taskClass,
+  baseOrder,
+  sourceKind: "ROLE",
+  settlementPolicy: "REEVALUATE_SOURCE_AT_SETTLEMENT",
+  roleId: roleId(roleIdValue)
+});
+
+const firstNightSystemTask = (
+  taskType: "MINION_INFO" | "DEMON_INFO",
+  baseOrder: number
+): FirstNightTaskDefinition => ({
+  taskType,
+  taskClass: "SYSTEM_INFORMATION",
+  baseOrder,
+  sourceKind: "SYSTEM",
+  settlementPolicy: "RESOLVE_CURRENT_EVIL_TEAM_AT_SETTLEMENT",
+  systemTaskType: taskType
+});
+
+const SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_DEFINITIONS: readonly FirstNightTaskDefinition[] = [
+  firstNightRoleTask("PHILOSOPHER_ACTION", "ROLE_ACTION", 100, "philosopher"),
+  firstNightSystemTask("MINION_INFO", 200),
+  firstNightSystemTask("DEMON_INFO", 300),
+  firstNightRoleTask("SNAKE_CHARMER_ACTION", "ROLE_ACTION", 400, "snake_charmer"),
+  firstNightRoleTask("EVIL_TWIN_SETUP", "ROLE_SETUP", 500, "evil_twin"),
+  firstNightRoleTask("WITCH_ACTION", "ROLE_ACTION", 600, "witch"),
+  firstNightRoleTask("CERENOVUS_ACTION", "ROLE_ACTION", 700, "cerenovus"),
+  firstNightRoleTask("CLOCKMAKER_INFORMATION", "ROLE_INFORMATION", 800, "clockmaker"),
+  firstNightRoleTask("DREAMER_ACTION", "ROLE_ACTION", 900, "dreamer"),
+  firstNightRoleTask("SEAMSTRESS_ACTION", "ROLE_ACTION", 1000, "seamstress"),
+  firstNightRoleTask("MATHEMATICIAN_INFORMATION", "ROLE_INFORMATION", 1100, "mathematician")
+] as const;
+
+const taskCatalogSignature = calculateFirstNightTaskCatalogSignature({
+  taskCatalogVersion: SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION,
+  definitions: SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_DEFINITIONS
+});
+
+export const SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG: FirstNightTaskCatalogSnapshot = {
+  taskCatalogVersion: SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION,
+  taskCatalogSignatureAlgorithm: SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM,
+  taskCatalogSignature: taskCatalogSignature,
+  definitions: SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_DEFINITIONS
+};
+
+export const createSectsAndVioletsFirstNightTaskCatalogSnapshot = (): FirstNightTaskCatalogSnapshot =>
+  cloneFirstNightTaskCatalogSnapshot(SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG);
