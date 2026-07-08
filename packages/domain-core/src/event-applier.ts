@@ -367,6 +367,10 @@ const validateCharactersAssignedPayload = (state: GameState, payload: Characters
     throw new DomainError("DuplicateCharactersAssigned", "CharactersAssigned cannot overwrite an existing assignment");
   }
 
+  if (payload.rosterVersion !== state.roster.rosterVersion) {
+    throw new DomainError("InvalidCharactersAssignedPayload", "CharactersAssigned rosterVersion must match the applied player roster");
+  }
+
   if (
     payload.rosterVersion !== SUPPORTED_ROSTER_VERSION ||
     payload.assignmentAlgorithmVersion !== SUPPORTED_ASSIGNMENT_ALGORITHM_VERSION ||

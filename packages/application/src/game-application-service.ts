@@ -2,6 +2,7 @@ import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
   SUPPORTED_ROSTER_VERSION,
+  DomainError,
   applyDomainEventBatch,
   assertNever,
   causationIdFromCommandId,
@@ -63,16 +64,40 @@ export type GameApplicationServiceDependencies = {
   readonly characterAssignmentGenerator?: CharacterAssignmentGeneratorPort;
 };
 
+type DomainEventMetadata = Omit<DomainEventEnvelope, "eventType" | "payload">;
+
+class EventMetadataGenerationError extends Error {
+  public constructor(message: string) {
+    super(message);
+    this.name = "EventMetadataGenerationError";
+  }
+}
+
+const errorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error ? error.message : fallback;
+
 export class GameApplicationService {
   public constructor(private readonly dependencies: GameApplicationServiceDependencies) {}
 
   public async execute(command: SupportedCommandEnvelope): Promise<CommandResult> {
-    const existingReceipt = await this.dependencies.commandStore.findCommandReceipt(command.gameId, command.commandId);
+    let existingReceipt;
+    try {
+      existingReceipt = await this.dependencies.commandStore.findCommandReceipt(command.gameId, command.commandId);
+    } catch (error: unknown) {
+      return failed(command.gameId, "CommandStoreReadFailed", errorMessage(error, "Unknown command receipt read failure"), "receipt-read");
+    }
+
     if (existingReceipt !== undefined) {
       return markIdempotent(existingReceipt.result);
     }
 
-    const events = await this.dependencies.commandStore.loadDomainEvents(command.gameId);
+    let events;
+    try {
+      events = await this.dependencies.commandStore.loadDomainEvents(command.gameId);
+    } catch (error: unknown) {
+      return failed(command.gameId, "CommandStoreReadFailed", errorMessage(error, "Unknown domain event load failure"), "event-load");
+    }
+
     const state = rebuildOptionalGameState(events);
     const currentGameVersion = state?.gameVersion ?? 0;
 
@@ -112,6 +137,10 @@ export class GameApplicationService {
 
     const prospective = this.validateProspectiveBatch(state, batch);
     if (prospective !== undefined) {
+      if ("status" in prospective) {
+        return prospective;
+      }
+
       return this.recordRejected(command, rejected(command.gameId, prospective.code, prospective.message, currentGameVersion));
     }
 
@@ -125,8 +154,7 @@ export class GameApplicationService {
         receipt
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown event store failure";
-      return failed(command.gameId, "EventStoreAppendFailed", message, currentGameVersion);
+      return failed(command.gameId, "EventStoreAppendFailed", errorMessage(error, "Unknown event store failure"), "accepted-commit", currentGameVersion);
     }
 
     return result;
@@ -342,8 +370,15 @@ export class GameApplicationService {
 
       return this.createBatch(command, state, currentGameVersion, generatedSetup, generatedAssignment);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown domain validation failure";
-      return { code: "DomainValidationFailed", message };
+      if (error instanceof EventMetadataGenerationError) {
+        return failed(command.gameId, "MetadataGenerationFailed", error.message, "event-metadata", currentGameVersion);
+      }
+
+      if (error instanceof DomainError) {
+        return { code: "DomainValidationFailed", message: error.message };
+      }
+
+      return failed(command.gameId, "DependencyExecutionFailed", errorMessage(error, "Unknown batch construction failure"), "command-validation", currentGameVersion);
     }
   }
 
@@ -394,7 +429,7 @@ export class GameApplicationService {
 
     const setupGenerator = this.dependencies.setupGenerator;
     if (setupGenerator === undefined) {
-      return failed(command.gameId, "ApplicationNotConfigured", "Setup generator dependency is not configured", currentGameVersion);
+      return failed(command.gameId, "ApplicationNotConfigured", "Setup generator dependency is not configured", "setup-generation", currentGameVersion);
     }
 
     let result;
@@ -406,8 +441,7 @@ export class GameApplicationService {
         constraints: command.payload.constraints
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown setup generator failure";
-      return failed(command.gameId, "DependencyExecutionFailed", message, currentGameVersion);
+      return failed(command.gameId, "DependencyExecutionFailed", errorMessage(error, "Unknown setup generator failure"), "setup-generation", currentGameVersion);
     }
 
     if (result.status === "failure") {
@@ -447,25 +481,25 @@ export class GameApplicationService {
     }
 
     if (state === undefined || state.setup === undefined || state.roster === undefined) {
-      return failed(command.gameId, "ApplicationNotConfigured", "AssignCharacters requires setup and roster state", currentGameVersion);
+      return failed(command.gameId, "ApplicationNotConfigured", "AssignCharacters requires setup and roster state", "assignment-generation", currentGameVersion);
     }
 
     const assignmentGenerator = this.dependencies.characterAssignmentGenerator;
     if (assignmentGenerator === undefined) {
-      return failed(command.gameId, "ApplicationNotConfigured", "Character assignment generator dependency is not configured", currentGameVersion);
+      return failed(command.gameId, "ApplicationNotConfigured", "Character assignment generator dependency is not configured", "assignment-generation", currentGameVersion);
     }
 
     let result;
     try {
       result = assignmentGenerator.generate({
         rootSeed: state.rootSeed,
+        rosterVersion: state.roster.rosterVersion,
         roster: state.roster.entries,
         actualRoles: state.setup.actualRoles,
         roleCatalogSignature: state.setup.roleCatalogSignature
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown character assignment generator failure";
-      return failed(command.gameId, "DependencyExecutionFailed", message, currentGameVersion);
+      return failed(command.gameId, "DependencyExecutionFailed", errorMessage(error, "Unknown character assignment generator failure"), "assignment-generation", currentGameVersion);
     }
 
     if (result.status === "failure") {
@@ -487,7 +521,7 @@ export class GameApplicationService {
     generatedAssignment: GeneratedCharacterAssignment | undefined
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
-    const batch = this.dependencies.ids.nextBatchId();
+    const batch = this.createBatchId();
     const eventSequence = (state?.lastEventSequence ?? 0) + 1;
     const events = this.createEvents(command, batch, eventSequence, newVersion, state, generatedSetup, generatedAssignment);
 
@@ -510,20 +544,7 @@ export class GameApplicationService {
     generatedSetup: GeneratedSetup | undefined,
     generatedAssignment: GeneratedCharacterAssignment | undefined
   ): readonly AnyDomainEventEnvelope[] {
-    const common = (eventSequence: number) => ({
-      category: "domain" as const,
-      eventId: this.dependencies.ids.nextEventId(),
-      gameId: command.gameId,
-      eventSequence,
-      batchId: eventBatchId,
-      gameVersion,
-      eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
-      rulesBaselineVersion: RULES_BASELINE_VERSION,
-      commandId: command.commandId,
-      createdAt: this.dependencies.clock.now(),
-      correlationId: command.correlationId,
-      causationId: causationIdFromCommandId(command.commandId)
-    }) as const;
+    const common = (eventSequence: number) => this.createEventMetadata(command, eventBatchId, eventSequence, gameVersion);
 
     switch (command.payload.commandType) {
       case "CreateGame":
@@ -543,7 +564,7 @@ export class GameApplicationService {
 
       case "SelectScript": {
         if (state === undefined) {
-          throw new Error("SelectScript event creation requires an existing game state");
+          throw new DomainError("InvalidDomainBatchSemantics", "SelectScript event creation requires an existing game state");
         }
 
         const transition = evaluatePhaseTransition({
@@ -554,7 +575,7 @@ export class GameApplicationService {
         });
 
         if (!transition.allowed || transition.reasonCode === undefined) {
-          throw new Error(`SelectScript phase transition is not allowed: ${transition.reason}`);
+          throw new DomainError("InvalidDomainBatchSemantics", `SelectScript phase transition is not allowed: ${transition.reason}`);
         }
 
         const scriptSelectedEvent: DomainEventEnvelope<"ScriptSelected"> = {
@@ -588,7 +609,7 @@ export class GameApplicationService {
 
       case "GenerateSetup": {
         if (state === undefined || generatedSetup === undefined) {
-          throw new Error("GenerateSetup event creation requires current state and generated setup");
+          throw new DomainError("InvalidDomainBatchSemantics", "GenerateSetup event creation requires current state and generated setup");
         }
 
         const transition = evaluatePhaseTransition({
@@ -599,7 +620,7 @@ export class GameApplicationService {
         });
 
         if (!transition.allowed || transition.reasonCode === undefined) {
-          throw new Error(`GenerateSetup phase transition is not allowed: ${transition.reason}`);
+          throw new DomainError("InvalidDomainBatchSemantics", `GenerateSetup phase transition is not allowed: ${transition.reason}`);
         }
 
         const setupGeneratedEvent: DomainEventEnvelope<"SetupGenerated"> = {
@@ -631,7 +652,7 @@ export class GameApplicationService {
 
       case "CreatePlayerRoster": {
         if (state === undefined) {
-          throw new Error("CreatePlayerRoster event creation requires current state");
+          throw new DomainError("InvalidDomainBatchSemantics", "CreatePlayerRoster event creation requires current state");
         }
 
         const playerRosterCreatedEvent: DomainEventEnvelope<"PlayerRosterCreated"> = {
@@ -653,7 +674,7 @@ export class GameApplicationService {
 
       case "AssignCharacters": {
         if (state === undefined || generatedAssignment === undefined) {
-          throw new Error("AssignCharacters event creation requires current state and generated assignment");
+          throw new DomainError("InvalidDomainBatchSemantics", "AssignCharacters event creation requires current state and generated assignment");
         }
 
         const transition = evaluatePhaseTransition({
@@ -664,7 +685,7 @@ export class GameApplicationService {
         });
 
         if (!transition.allowed || transition.reasonCode === undefined) {
-          throw new Error(`AssignCharacters phase transition is not allowed: ${transition.reason}`);
+          throw new DomainError("InvalidDomainBatchSemantics", `AssignCharacters phase transition is not allowed: ${transition.reason}`);
         }
 
         const charactersAssignedEvent: DomainEventEnvelope<"CharactersAssigned"> = {
@@ -701,30 +722,83 @@ export class GameApplicationService {
   private validateProspectiveBatch(
     state: GameState | undefined,
     batch: DomainEventBatch
-  ): { readonly code: "DomainValidationFailed"; readonly message: string } | undefined {
+  ): CommandExecutionFailed | { readonly code: "DomainValidationFailed"; readonly message: string } | undefined {
     try {
       validateDomainBatchSemantics(state, batch.events);
       applyDomainEventBatch(state, batch.events);
       return undefined;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown domain validation failure";
+      if (!(error instanceof DomainError)) {
+        return failed(
+          batch.gameId,
+          "DependencyExecutionFailed",
+          errorMessage(error, "Unknown prospective validation failure"),
+          "prospective-validation",
+          batch.expectedGameVersion
+        );
+      }
+
       return {
         code: "DomainValidationFailed",
-        message
+        message: error.message
       };
     }
   }
 
-  private async recordRejected(command: SupportedCommandEnvelope, result: CommandRejected): Promise<CommandRejected> {
-    await this.dependencies.commandStore.recordRejectedCommand({
-      gameId: command.gameId,
-      commandId: command.commandId,
-      receipt: {
-        commandId: command.commandId,
+  private createBatchId(): BatchId {
+    try {
+      return this.dependencies.ids.nextBatchId();
+    } catch (error: unknown) {
+      throw new EventMetadataGenerationError(errorMessage(error, "Unknown batch id generation failure"));
+    }
+  }
+
+  private createEventMetadata(
+    command: SupportedCommandEnvelope,
+    eventBatchId: BatchId,
+    eventSequence: number,
+    gameVersion: number
+  ): DomainEventMetadata {
+    try {
+      return {
+        category: "domain",
+        eventId: this.dependencies.ids.nextEventId(),
         gameId: command.gameId,
-        result
-      }
-    });
+        eventSequence,
+        batchId: eventBatchId,
+        gameVersion,
+        eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+        rulesBaselineVersion: RULES_BASELINE_VERSION,
+        commandId: command.commandId,
+        createdAt: this.dependencies.clock.now(),
+        correlationId: command.correlationId,
+        causationId: causationIdFromCommandId(command.commandId)
+      };
+    } catch (error: unknown) {
+      throw new EventMetadataGenerationError(errorMessage(error, "Unknown event metadata generation failure"));
+    }
+  }
+
+  private async recordRejected(command: SupportedCommandEnvelope, result: CommandRejected): Promise<CommandResult> {
+    try {
+      await this.dependencies.commandStore.recordRejectedCommand({
+        gameId: command.gameId,
+        commandId: command.commandId,
+        receipt: {
+          commandId: command.commandId,
+          gameId: command.gameId,
+          result
+        }
+      });
+    } catch (error: unknown) {
+      return failed(
+        command.gameId,
+        "CommandReceiptWriteFailed",
+        errorMessage(error, "Unknown rejected command receipt write failure"),
+        "rejected-receipt-write",
+        result.currentGameVersion
+      );
+    }
 
     return result;
   }

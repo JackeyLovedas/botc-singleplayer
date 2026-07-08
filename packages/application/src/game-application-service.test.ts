@@ -8,8 +8,8 @@ import {
   rebuildOptionalGameState,
   roleId
 } from "@botc/domain-core";
-import type { AnyDomainEventEnvelope, GameId } from "@botc/domain-core";
-import { GameApplicationService, accepted } from "@botc/application";
+import type { AnyDomainEventEnvelope, BatchId, EventId, GameId, GeneratedCharacterAssignment } from "@botc/domain-core";
+import { GameApplicationService, accepted, rejected } from "@botc/application";
 import type {
   CharacterAssignmentGeneratorPort,
   CommandAccepted,
@@ -110,6 +110,46 @@ class FakeLengthCommandStore extends MemoryCommandCommitStore {
   }
 }
 
+class FaultInjectingIdGenerator extends FixedIdGenerator {
+  public failNextBatchId = false;
+  public failEventCallNumber: number | undefined;
+  private eventCallCount = 0;
+
+  public override nextBatchId(): BatchId {
+    if (this.failNextBatchId) {
+      this.failNextBatchId = false;
+      throw new Error("injected batch id failure");
+    }
+
+    return super.nextBatchId();
+  }
+
+  public override nextEventId(): EventId {
+    this.eventCallCount += 1;
+    if (this.failEventCallNumber === this.eventCallCount) {
+      this.failEventCallNumber = undefined;
+      throw new Error(`injected event id failure ${this.eventCallCount}`);
+    }
+
+    return super.nextEventId();
+  }
+}
+
+class FaultInjectingClock extends FixedClock {
+  public failClockCallNumber: number | undefined;
+  private clockCallCount = 0;
+
+  public override now(): string {
+    this.clockCallCount += 1;
+    if (this.failClockCallNumber === this.clockCallCount) {
+      this.failClockCallNumber = undefined;
+      throw new Error(`injected clock failure ${this.clockCallCount}`);
+    }
+
+    return super.now();
+  }
+}
+
 describe("GameApplicationService", () => {
   it("creates a game with an accepted receipt and one atomic domain event batch", async () => {
     const { service, commandStore } = makeService();
@@ -182,6 +222,98 @@ describe("GameApplicationService", () => {
     expect(commandStore.getGameVersion(command.gameId)).toBe(0);
   });
 
+  it("returns retryable failure when command receipt read fails and allows retry", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore);
+    const command = createGameCommand({ commandId: commandId("receipt-read-retry") });
+    commandStore.failReceiptRead = true;
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "CommandStoreReadFailed",
+      failureStage: "receipt-read",
+      retryable: true
+    });
+    expect("currentGameVersion" in failed).toBe(false);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(0);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(commandStore.acceptedCount).toBe(0);
+    expect(commandStore.rejectedCount).toBe(0);
+    expect(commandStore.getGameVersion(command.gameId)).toBe(0);
+
+    const retried = await service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+    expect((await commandStore.findCommandReceipt(command.gameId, command.commandId))?.result.status).toBe("accepted");
+  });
+
+  it("returns retryable failure when domain event loading fails and allows retry", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore);
+    const command = createGameCommand({ commandId: commandId("event-load-retry") });
+    commandStore.failEventLoad = true;
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "CommandStoreReadFailed",
+      failureStage: "event-load",
+      retryable: true
+    });
+    expect("currentGameVersion" in failed).toBe(false);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(0);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(commandStore.acceptedCount).toBe(0);
+    expect(commandStore.rejectedCount).toBe(0);
+    expect(commandStore.getGameVersion(command.gameId)).toBe(0);
+
+    const retried = await service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+    expect((await commandStore.findCommandReceipt(command.gameId, command.commandId))?.result.status).toBe("accepted");
+  });
+
+  it("returns retryable failure when rejected receipt writing fails and preserves retry semantics", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore);
+    const command = createGameCommand({ commandId: commandId("rejected-write-retry"), expectedGameVersion: 5 });
+    commandStore.failRejectedReceiptWrite = true;
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "CommandReceiptWriteFailed",
+      failureStage: "rejected-receipt-write",
+      currentGameVersion: 0,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(0);
+    expect(commandStore.acceptedCount).toBe(0);
+    expect(commandStore.rejectedCount).toBe(0);
+
+    const retried = await service.execute(command);
+    const idempotent = await service.execute(command);
+
+    expect(retried).toMatchObject({
+      status: "rejected",
+      code: "ExpectedGameVersionMismatch",
+      idempotent: false
+    });
+    expect(idempotent).toMatchObject({
+      status: "rejected",
+      code: "ExpectedGameVersionMismatch",
+      idempotent: true
+    });
+    expect(commandStore.rejectedCount).toBe(1);
+  });
+
   it("enforces setup-generation rejection details at the type boundary", () => {
     const setupFailure = {
       status: "failure" as const,
@@ -235,16 +367,41 @@ describe("GameApplicationService", () => {
       gameId: ids.game,
       code: "ApplicationNotConfigured",
       message: "Dependency missing",
+      failureStage: "setup-generation",
       currentGameVersion: 2,
       retryable: true
     };
+    const appendFailure: CommandExecutionFailed = {
+      status: "failed",
+      gameId: ids.game,
+      code: "EventStoreAppendFailed",
+      message: "Append failed",
+      failureStage: "accepted-commit",
+      currentGameVersion: 2,
+      retryable: true
+    };
+    // @ts-expect-error ApplicationNotConfigured cannot be a rejected receipt.
+    rejected(ids.game, "ApplicationNotConfigured", "Dependency missing", 0);
+    // @ts-expect-error DependencyExecutionFailed cannot be a rejected receipt.
+    rejected(ids.game, "DependencyExecutionFailed", "Dependency failed", 0);
+    // @ts-expect-error CommandStoreReadFailed cannot be a rejected receipt.
+    rejected(ids.game, "CommandStoreReadFailed", "Read failed", 0);
+    // @ts-expect-error CommandReceiptWriteFailed cannot be a rejected receipt.
+    rejected(ids.game, "CommandReceiptWriteFailed", "Write failed", 0);
+    // @ts-expect-error MetadataGenerationFailed cannot be a rejected receipt.
+    rejected(ids.game, "MetadataGenerationFailed", "Metadata failed", 0);
+    // @ts-expect-error EventStoreAppendFailed cannot be a rejected receipt.
+    rejected(ids.game, "EventStoreAppendFailed", "Append failed", 0);
     // @ts-expect-error Retryable runtime failures must not be persisted as command receipts.
     const failedReceiptResult: CommandReceiptResult = retryableFailure;
+    // @ts-expect-error EventStoreAppendFailed must not be persisted as a command receipt.
+    const appendFailureReceiptResult: CommandReceiptResult = appendFailure;
 
     void validSetupRejected;
     void missingDetails;
     void invalidGeneralRejected;
     void failedReceiptResult;
+    void appendFailureReceiptResult;
   });
 
   it("rejects invalid create-game counts without appending events", async () => {
@@ -515,6 +672,7 @@ describe("GameApplicationService", () => {
     expectFailedResult(failedResult);
     expect(failedResult).toMatchObject({
       code: "ApplicationNotConfigured",
+      failureStage: "setup-generation",
       currentGameVersion: 2,
       retryable: true
     });
@@ -552,6 +710,7 @@ describe("GameApplicationService", () => {
     expectFailedResult(failedResult);
     expect(failedResult).toMatchObject({
       code: "DependencyExecutionFailed",
+      failureStage: "setup-generation",
       message: "injected setup generator failure",
       currentGameVersion: 2,
       retryable: true
@@ -741,7 +900,11 @@ describe("GameApplicationService", () => {
     }))).resolves.toMatchObject({ status: "rejected", code: "InvalidPlayerRoster" });
 
     const humanRoster = await service.execute(createPlayerRosterCommand({
-      actor: humanActor
+      actor: humanActor,
+      payload: {
+        ...createPlayerRosterCommand().payload,
+        humanDisplayName: "  Alice  "
+      }
     }));
     const events = await commandStore.loadDomainEvents(ids.game);
     const state = rebuildOptionalGameState(events);
@@ -751,7 +914,7 @@ describe("GameApplicationService", () => {
     expect(humanRoster.events[0]?.eventType).toBe("PlayerRosterCreated");
     expect(state?.roster?.entries).toHaveLength(12);
     expect(state?.roster?.entries.filter((entry) => entry.playerKind === "HUMAN")).toHaveLength(1);
-    expect(state?.roster?.entries[4]).toMatchObject({ playerKind: "HUMAN", seatNumber: 5 });
+    expect(state?.roster?.entries[4]).toMatchObject({ playerKind: "HUMAN", seatNumber: 5, displayName: "Alice" });
 
     await expect(service.execute(createPlayerRosterCommand({
       commandId: commandId("roster-duplicate"),
@@ -834,6 +997,7 @@ describe("GameApplicationService", () => {
     expectFailedResult(failedResult);
     expect(failedResult).toMatchObject({
       code: "ApplicationNotConfigured",
+      failureStage: "assignment-generation",
       retryable: true
     });
     expect(failedReceipt).toBeUndefined();
@@ -869,6 +1033,7 @@ describe("GameApplicationService", () => {
     expectFailedResult(failedResult);
     expect(failedResult).toMatchObject({
       code: "DependencyExecutionFailed",
+      failureStage: "assignment-generation",
       message: "injected assignment generator failure",
       retryable: true
     });
@@ -932,13 +1097,232 @@ describe("GameApplicationService", () => {
     expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(6);
   });
 
+  it("keeps unknown batch construction failures retryable without saving DomainValidationFailed receipts", async () => {
+    const throwingAssignmentGenerator: CharacterAssignmentGeneratorPort = {
+      generate: (input) => {
+        const result = testAssignmentGenerator.generate(input);
+        if (result.status === "failure") {
+          return result;
+        }
+
+        const assignment: Partial<GeneratedCharacterAssignment> = {
+          rosterVersion: result.assignment.rosterVersion,
+          assignmentAlgorithmVersion: result.assignment.assignmentAlgorithmVersion,
+          randomAlgorithmVersion: result.assignment.randomAlgorithmVersion,
+          randomStream: result.assignment.randomStream,
+          roleCatalogSignature: result.assignment.roleCatalogSignature
+        };
+        Object.defineProperty(assignment, "assignments", {
+          enumerable: true,
+          get: () => {
+            throw new Error("injected assignment payload construction failure");
+          }
+        });
+
+        return {
+          status: "success",
+          assignment: assignment as GeneratedCharacterAssignment
+        };
+      }
+    };
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FixedIdGenerator();
+    const clock = new FixedClock();
+    const failing = makeService(commandStore, testSetupGenerator, idGenerator, clock, throwingAssignmentGenerator);
+    const command = assignCharactersCommand({ commandId: commandId("unknown-batch-construction-retry") });
+
+    await failing.service.execute(createGameCommand());
+    await failing.service.execute(selectScriptCommand());
+    await failing.service.execute(generateSetupCommand());
+    await failing.service.execute(createPlayerRosterCommand());
+    const failed = await failing.service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "DependencyExecutionFailed",
+      failureStage: "command-validation",
+      currentGameVersion: 4,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(6);
+
+    const fixed = makeService(commandStore, testSetupGenerator, idGenerator, clock, testAssignmentGenerator);
+    const retried = await fixed.service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(5);
+  });
+
+  it("persists true DomainError validation failures as deterministic rejected receipts", async () => {
+    const invalidAssignmentGenerator: CharacterAssignmentGeneratorPort = {
+      generate: (input) => {
+        const result = testAssignmentGenerator.generate(input);
+        if (result.status === "failure") {
+          return result;
+        }
+
+        const first = result.assignment.assignments[0];
+        const second = result.assignment.assignments[1];
+        if (first === undefined || second === undefined) {
+          throw new Error("Expected two assignments");
+        }
+
+        return {
+          status: "success",
+          assignment: {
+            ...result.assignment,
+            assignments: [first, { ...second, role: first.role }, ...result.assignment.assignments.slice(2)]
+          }
+        };
+      }
+    };
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore, testSetupGenerator, new FixedIdGenerator(), new FixedClock(), invalidAssignmentGenerator);
+    const command = assignCharactersCommand({ commandId: commandId("domain-error-assignment-rejection") });
+
+    await service.execute(createGameCommand());
+    await service.execute(selectScriptCommand());
+    await service.execute(generateSetupCommand());
+    await service.execute(createPlayerRosterCommand());
+    const first = await service.execute(command);
+    const second = await service.execute(command);
+    const receipt = await commandStore.findCommandReceipt(command.gameId, command.commandId);
+
+    expect(first).toMatchObject({
+      status: "rejected",
+      code: "DomainValidationFailed",
+      idempotent: false,
+      currentGameVersion: 4
+    });
+    expect(second).toMatchObject({
+      status: "rejected",
+      code: "DomainValidationFailed",
+      idempotent: true,
+      currentGameVersion: 4
+    });
+    expect(receipt?.result.status).toBe("rejected");
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(6);
+  });
+
+  it("keeps nextBatchId failures retryable without events or receipts", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FaultInjectingIdGenerator();
+    const { service } = makeService(commandStore, testSetupGenerator, idGenerator);
+    const command = createGameCommand({ commandId: commandId("metadata-batch-retry") });
+    idGenerator.failNextBatchId = true;
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 0,
+      retryable: true
+    });
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(0);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(commandStore.getGameVersion(command.gameId)).toBe(0);
+
+    const retried = await service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+  });
+
+  it("keeps first nextEventId failures retryable without events or receipts", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FaultInjectingIdGenerator();
+    const { service } = makeService(commandStore, testSetupGenerator, idGenerator);
+    const command = createGameCommand({ commandId: commandId("metadata-first-event-retry") });
+    idGenerator.failEventCallNumber = 1;
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 0,
+      retryable: true
+    });
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(0);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(commandStore.getGameVersion(command.gameId)).toBe(0);
+
+    const retried = await service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+  });
+
+  it("keeps second nextEventId failures in two-event batches retryable without partial events", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FaultInjectingIdGenerator();
+    const { service } = makeService(commandStore, testSetupGenerator, idGenerator);
+    const command = selectScriptCommand({ commandId: commandId("metadata-second-event-retry") });
+
+    await service.execute(createGameCommand());
+    idGenerator.failEventCallNumber = 3;
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 1,
+      retryable: true
+    });
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(commandStore.getGameVersion(command.gameId)).toBe(1);
+
+    const retried = await service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(3);
+  });
+
+  it("keeps clock failures retryable without events or receipts", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const clock = new FaultInjectingClock();
+    const { service } = makeService(commandStore, testSetupGenerator, new FixedIdGenerator(), clock);
+    const command = createGameCommand({ commandId: commandId("metadata-clock-retry") });
+    clock.failClockCallNumber = 1;
+
+    const failed = await service.execute(command);
+
+    expectFailedResult(failed);
+    expect(failed).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 0,
+      retryable: true
+    });
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(0);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(commandStore.getGameVersion(command.gameId)).toBe(0);
+
+    const retried = await service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+  });
+
   it("leaves no partial writes when atomic accepted commit fails before commit", async () => {
     const { service, commandStore } = makeService();
     commandStore.failBeforeCommit = true;
 
     const result = await service.execute(createGameCommand());
 
-    expect(result).toMatchObject({ status: "failed", code: "EventStoreAppendFailed", retryable: true });
+    expect(result).toMatchObject({
+      status: "failed",
+      code: "EventStoreAppendFailed",
+      failureStage: "accepted-commit",
+      currentGameVersion: 0,
+      retryable: true
+    });
     expect(await commandStore.loadDomainEvents(createGameCommand().gameId)).toHaveLength(0);
     expect(await commandStore.findCommandReceipt(createGameCommand().gameId, createGameCommand().commandId)).toBeUndefined();
     expect(commandStore.acceptedCount).toBe(0);
@@ -955,7 +1339,13 @@ describe("GameApplicationService", () => {
     const events = await commandStore.loadDomainEvents(command.gameId);
     const receipt = await commandStore.findCommandReceipt(command.gameId, command.commandId);
 
-    expect(failed).toMatchObject({ status: "failed", code: "EventStoreAppendFailed", retryable: true });
+    expect(failed).toMatchObject({
+      status: "failed",
+      code: "EventStoreAppendFailed",
+      failureStage: "accepted-commit",
+      currentGameVersion: 0,
+      retryable: true
+    });
     expect(retried).toMatchObject({ status: "accepted", idempotent: false, gameVersion: 1 });
     expect(events).toHaveLength(1);
     expect(receipt?.result.status).toBe("accepted");
@@ -990,7 +1380,13 @@ describe("GameApplicationService", () => {
     const retried = await service.execute(selectScriptCommand());
     const eventsAfterRetry = await commandStore.loadDomainEvents(ids.game);
 
-    expect(failed).toMatchObject({ status: "failed", code: "EventStoreAppendFailed", retryable: true });
+    expect(failed).toMatchObject({
+      status: "failed",
+      code: "EventStoreAppendFailed",
+      failureStage: "accepted-commit",
+      currentGameVersion: 1,
+      retryable: true
+    });
     expect(eventsAfterFailure).toHaveLength(1);
     expect(eventsAfterFailure[0]?.eventType).toBe("GameCreated");
     expectAcceptedResult(retried);

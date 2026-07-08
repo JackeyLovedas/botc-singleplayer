@@ -25,14 +25,27 @@ export class MemoryCommandCommitStore implements CommandCommitStore {
 
   public failBeforeCommit = false;
   public failDuringCommit = false;
+  public failReceiptRead = false;
+  public failEventLoad = false;
+  public failRejectedReceiptWrite = false;
   public acceptedCount = 0;
   public rejectedCount = 0;
 
   public loadDomainEvents(gameId: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
+    if (this.failEventLoad) {
+      this.failEventLoad = false;
+      return Promise.reject(new Error("Injected domain event load failure"));
+    }
+
     return Promise.resolve([...(this.events.get(gameId) ?? [])]);
   }
 
   public findCommandReceipt(gameId: GameId, commandId: CommandId): Promise<CommandReceipt | undefined> {
+    if (this.failReceiptRead) {
+      this.failReceiptRead = false;
+      return Promise.reject(new Error("Injected command receipt read failure"));
+    }
+
     return Promise.resolve(this.receipts.get(compositeCommandKey(gameId, commandId)));
   }
 
@@ -66,6 +79,11 @@ export class MemoryCommandCommitStore implements CommandCommitStore {
   }
 
   public recordRejectedCommand(input: RecordRejectedCommandInput): Promise<void> {
+    if (this.failRejectedReceiptWrite) {
+      this.failRejectedReceiptWrite = false;
+      return Promise.reject(new Error("Injected rejected receipt write failure"));
+    }
+
     if (input.receipt.gameId !== input.gameId || input.receipt.commandId !== input.commandId) {
       return Promise.reject(new Error("Rejected receipt key must match recordRejectedCommand input"));
     }

@@ -4,6 +4,7 @@ import {
   SUPPORTED_ASSIGNMENT_RANDOM_STREAM,
   SUPPORTED_RANDOM_ALGORITHM_VERSION,
   SUPPORTED_ROLE_CATALOG_SIGNATURE,
+  SUPPORTED_ROSTER_VERSION,
   compareStableId,
   createFixedPlayerRoster,
   playerId,
@@ -44,6 +45,7 @@ const roster = (displayName = "Human Player") => createFixedPlayerRoster({
 
 const generate = (displayName = "Human Player") => assignmentGenerator().generate({
   rootSeed: "golden-seed",
+  rosterVersion: SUPPORTED_ROSTER_VERSION,
   roster: roster(displayName),
   actualRoles: goldenSetup().actualRoles,
   roleCatalogSignature: goldenSetup().roleCatalogSignature
@@ -79,6 +81,7 @@ describe("SeededCharacterAssignmentGenerator", () => {
     const first = generate();
     assignmentGenerator().generate({
       rootSeed: "other-seed",
+      rosterVersion: SUPPORTED_ROSTER_VERSION,
       roster: roster(),
       actualRoles: goldenSetup().actualRoles,
       roleCatalogSignature: goldenSetup().roleCatalogSignature
@@ -152,6 +155,7 @@ describe("SeededCharacterAssignmentGenerator", () => {
   it("fails on invalid rosters, invalid actual role counts, and duplicate roles", () => {
     expect(assignmentGenerator().generate({
       rootSeed: "golden-seed",
+      rosterVersion: SUPPORTED_ROSTER_VERSION,
       roster: roster().slice(1),
       actualRoles: goldenSetup().actualRoles,
       roleCatalogSignature: SUPPORTED_ROLE_CATALOG_SIGNATURE
@@ -159,6 +163,7 @@ describe("SeededCharacterAssignmentGenerator", () => {
 
     expect(assignmentGenerator().generate({
       rootSeed: "golden-seed",
+      rosterVersion: SUPPORTED_ROSTER_VERSION,
       roster: roster(),
       actualRoles: goldenSetup().actualRoles.slice(1),
       roleCatalogSignature: SUPPORTED_ROLE_CATALOG_SIGNATURE
@@ -172,6 +177,7 @@ describe("SeededCharacterAssignmentGenerator", () => {
     duplicateRoles[1] = firstRole;
     expect(assignmentGenerator().generate({
       rootSeed: "golden-seed",
+      rosterVersion: SUPPORTED_ROSTER_VERSION,
       roster: roster(),
       actualRoles: duplicateRoles,
       roleCatalogSignature: SUPPORTED_ROLE_CATALOG_SIGNATURE
@@ -181,10 +187,31 @@ describe("SeededCharacterAssignmentGenerator", () => {
   it("fails on an empty role catalog signature", () => {
     expect(assignmentGenerator().generate({
       rootSeed: "golden-seed",
+      rosterVersion: SUPPORTED_ROSTER_VERSION,
       roster: roster(),
       actualRoles: goldenSetup().actualRoles,
       roleCatalogSignature: " "
     })).toMatchObject({ status: "failure", failureCode: "InvalidRoleCatalogSignature" });
+  });
+
+  it("fails on a non-empty unsupported role catalog signature", () => {
+    expect(assignmentGenerator().generate({
+      rootSeed: "golden-seed",
+      rosterVersion: SUPPORTED_ROSTER_VERSION,
+      roster: roster(),
+      actualRoles: goldenSetup().actualRoles,
+      roleCatalogSignature: "canonical-role-catalog-v1:00000000"
+    })).toMatchObject({ status: "failure", failureCode: "InvalidRoleCatalogSignature" });
+  });
+
+  it("fails when rosterVersion is not the supported version", () => {
+    expect(assignmentGenerator().generate({
+      rootSeed: "golden-seed",
+      rosterVersion: "future-roster-version",
+      roster: roster(),
+      actualRoles: goldenSetup().actualRoles,
+      roleCatalogSignature: SUPPORTED_ROLE_CATALOG_SIGNATURE
+    })).toMatchObject({ status: "failure", failureCode: "InvalidRoster" });
   });
 
   it("does not invent roles outside actualRoles", () => {
@@ -200,6 +227,7 @@ describe("SeededCharacterAssignmentGenerator", () => {
 
     const assignment = expectSuccess(assignmentGenerator().generate({
       rootSeed: "golden-seed",
+      rosterVersion: SUPPORTED_ROSTER_VERSION,
       roster: roster(),
       actualRoles: fakeActualRoles,
       roleCatalogSignature: setup.roleCatalogSignature

@@ -1203,6 +1203,19 @@ describe("domain event rebuild", () => {
     expectDomainCode(() => rebuildGameState(rosterEventStream(damaged)), "InvalidPlayerRosterCreatedPayload");
   });
 
+  it("rejects PlayerRosterCreated with untrimmed display names", () => {
+    const damaged = playerRosterCreatedEvent({
+      payload: {
+        ...playerRosterCreatedEvent().payload,
+        entries: playerRosterCreatedEvent().payload.entries.map((entry, index) =>
+          index === 0 ? { ...entry, displayName: ` ${entry.displayName}` } : entry
+        )
+      }
+    });
+
+    expectDomainCode(() => rebuildGameState(rosterEventStream(damaged)), "InvalidPlayerRosterCreatedPayload");
+  });
+
   it("rejects duplicate PlayerRosterCreated facts", () => {
     const state = rebuildGameState(rosterEventStream());
 
@@ -1266,6 +1279,23 @@ describe("domain event rebuild", () => {
     }));
 
     expectDomainCode(() => rebuildGameState(assignmentEventStream(damaged)), "InvalidCharactersAssignedPayload");
+  });
+
+  it("rejects CharactersAssigned when rosterVersion differs from the applied roster", () => {
+    const state = rebuildGameState(rosterEventStream());
+    if (state.roster === undefined) {
+      throw new Error("Expected roster state");
+    }
+
+    const stateWithFutureRosterVersion = {
+      ...state,
+      roster: {
+        ...state.roster,
+        rosterVersion: "future-roster-version"
+      }
+    };
+
+    expectDomainCode(() => applyDomainEvent(stateWithFutureRosterVersion, charactersAssignedEvent()), "InvalidCharactersAssignedPayload");
   });
 
   it("rejects CharactersAssigned when player and seat do not match the roster", () => {

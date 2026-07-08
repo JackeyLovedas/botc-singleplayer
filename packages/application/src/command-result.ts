@@ -21,8 +21,7 @@ export type CommandRejectionCode =
   | "CharacterAssignmentAlreadyCreated"
   | "AssignmentGenerationFailed"
   | "UnsupportedCommand"
-  | "DomainValidationFailed"
-  | "EventStoreAppendFailed";
+  | "DomainValidationFailed";
 
 export type SetupGenerationRejectionCode = "SetupGenerationFailed";
 export type AssignmentGenerationRejectionCode = "AssignmentGenerationFailed";
@@ -84,14 +83,29 @@ export type CommandRejected = SetupGenerationCommandRejected | AssignmentGenerat
 export type CommandExecutionFailureCode =
   | "ApplicationNotConfigured"
   | "DependencyExecutionFailed"
+  | "CommandStoreReadFailed"
+  | "CommandReceiptWriteFailed"
+  | "MetadataGenerationFailed"
   | "EventStoreAppendFailed";
+
+export type CommandExecutionFailureStage =
+  | "receipt-read"
+  | "event-load"
+  | "command-validation"
+  | "setup-generation"
+  | "assignment-generation"
+  | "event-metadata"
+  | "prospective-validation"
+  | "accepted-commit"
+  | "rejected-receipt-write";
 
 export type CommandExecutionFailed = {
   readonly status: "failed";
   readonly gameId: GameId;
   readonly code: CommandExecutionFailureCode;
   readonly message: string;
-  readonly currentGameVersion: number;
+  readonly failureStage: CommandExecutionFailureStage;
+  readonly currentGameVersion?: number;
   readonly retryable: true;
 };
 
@@ -115,15 +129,27 @@ export const failed = (
   gameId: GameId,
   code: CommandExecutionFailureCode,
   message: string,
-  currentGameVersion: number
-): CommandExecutionFailed => ({
-  status: "failed",
-  gameId,
-  code,
-  message,
-  currentGameVersion,
-  retryable: true
-});
+  failureStage: CommandExecutionFailureStage,
+  currentGameVersion?: number
+): CommandExecutionFailed => {
+  const result = {
+    status: "failed" as const,
+    gameId,
+    code,
+    message,
+    failureStage,
+    retryable: true as const
+  };
+
+  if (currentGameVersion === undefined) {
+    return result;
+  }
+
+  return {
+    ...result,
+    currentGameVersion
+  };
+};
 
 export function rejected(
   gameId: GameId,

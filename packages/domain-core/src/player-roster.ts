@@ -32,8 +32,8 @@ const EXPECTED_PLAYER_COUNT = 12;
 const padSeat = (value: number): string => value.toString().padStart(2, "0");
 const hasControlCharacter = (value: string): boolean => {
   for (const character of value) {
-    const code = character.charCodeAt(0);
-    if (code <= 31 || code === 127) {
+    const code = character.codePointAt(0);
+    if (code !== undefined && ((code >= 0x0000 && code <= 0x001F) || code === 0x007F || (code >= 0x0080 && code <= 0x009F))) {
       return true;
     }
   }
@@ -60,6 +60,10 @@ export const validateDisplayName = (value: string): PlayerRosterValidationResult
   const normalized = normalizeDisplayName(value);
   if (hasControlCharacter(value)) {
     return { valid: false, reason: "displayName must not contain control characters" };
+  }
+
+  if (value !== normalized) {
+    return { valid: false, reason: "displayName must already be trimmed" };
   }
 
   if (normalized.length === 0) {
@@ -127,12 +131,16 @@ export const validatePlayerRoster = (entries: readonly PlayerRosterEntry[]): Pla
 
 export const createFixedPlayerRoster = (input: FixedPlayerRosterInput): PlayerRoster => {
   const humanSeat = seatNumber(input.humanSeatNumber);
-  const displayNameValidation = validateDisplayName(input.humanDisplayName);
+  if (hasControlCharacter(input.humanDisplayName)) {
+    throw new Error("displayName must not contain control characters");
+  }
+
+  const humanDisplayName = normalizeDisplayName(input.humanDisplayName);
+  const displayNameValidation = validateDisplayName(humanDisplayName);
   if (!displayNameValidation.valid) {
     throw new Error(displayNameValidation.reason);
   }
 
-  const humanDisplayName = normalizeDisplayName(input.humanDisplayName);
   const entries: PlayerRosterEntry[] = [];
   for (let value = 1; value <= EXPECTED_PLAYER_COUNT; value += 1) {
     const currentSeat = seatNumber(value);

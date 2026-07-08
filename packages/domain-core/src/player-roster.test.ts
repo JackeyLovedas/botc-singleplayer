@@ -42,6 +42,29 @@ describe("PlayerRoster", () => {
     expect(() => createFixedPlayerRoster({ humanPlayerId: playerId("human-1"), humanDisplayName: "x".repeat(65), humanSeatNumber: 1 })).toThrow("displayName");
     expect(() => createFixedPlayerRoster({ humanPlayerId: playerId("human-1"), humanDisplayName: "Human\u0007", humanSeatNumber: 1 })).toThrow("displayName");
     expect(() => createFixedPlayerRoster({ humanPlayerId: playerId("human-1"), humanDisplayName: "\nHuman", humanSeatNumber: 1 })).toThrow("displayName");
+    expect(() => createFixedPlayerRoster({ humanPlayerId: playerId("human-1"), humanDisplayName: "Human\tName", humanSeatNumber: 1 })).toThrow("displayName");
+    expect(() => createFixedPlayerRoster({ humanPlayerId: playerId("human-1"), humanDisplayName: "Human\u007F", humanSeatNumber: 1 })).toThrow("displayName");
+    expect(() => createFixedPlayerRoster({ humanPlayerId: playerId("human-1"), humanDisplayName: "Human\u0085", humanSeatNumber: 1 })).toThrow("displayName");
+  });
+
+  it("allows legal internal spaces, Chinese, and emoji display names", () => {
+    expect(createFixedPlayerRoster({ humanPlayerId: playerId("human-1"), humanDisplayName: "Alice Smith", humanSeatNumber: 1 })[0]?.displayName).toBe("Alice Smith");
+    expect(createFixedPlayerRoster({ humanPlayerId: playerId("human-1"), humanDisplayName: "玩家 一", humanSeatNumber: 1 })[0]?.displayName).toBe("玩家 一");
+    expect(createFixedPlayerRoster({ humanPlayerId: playerId("human-1"), humanDisplayName: "Alice 😀", humanSeatNumber: 1 })[0]?.displayName).toBe("Alice 😀");
+  });
+
+  it("rejects untrimmed display names in roster events while command creation trims input", () => {
+    const roster = createFixedPlayerRoster({
+      humanPlayerId: playerId("human-1"),
+      humanDisplayName: "  Alice  ",
+      humanSeatNumber: 1
+    });
+
+    expect(roster[0]?.displayName).toBe("Alice");
+    expect(validatePlayerRoster(roster).valid).toBe(true);
+    expect(validatePlayerRoster(roster.map((entry, index) => index === 0 ? { ...entry, displayName: " Alice" } : entry)).valid).toBe(false);
+    expect(validatePlayerRoster(roster.map((entry, index) => index === 0 ? { ...entry, displayName: "Alice " } : entry)).valid).toBe(false);
+    expect(validatePlayerRoster(roster.map((entry, index) => index === 0 ? { ...entry, displayName: "  Alice  " } : entry)).valid).toBe(false);
   });
 
   it("rejects duplicate player ids and storyteller-like roster entries", () => {

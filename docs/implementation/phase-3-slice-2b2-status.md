@@ -50,6 +50,7 @@ fixed-12-player-roster-v1
 `assignment-engine` takes:
 
 - `rootSeed`
+- `rosterVersion`
 - `PlayerRoster`
 - generated setup `actualRoles`
 - setup `roleCatalogSignature`
@@ -95,6 +96,7 @@ Replay validates assignment events against the historical setup event payload:
 - supported assignment algorithm version.
 - supported random algorithm version.
 - supported assignment random stream.
+- `CharactersAssigned.rosterVersion` must match the already applied `PlayerRosterCreated.rosterVersion`.
 - assignment role catalog signature must equal setup role catalog signature.
 - assignments must be sorted by seat.
 - every assignment player and seat must match the roster.
@@ -104,7 +106,7 @@ Replay validates assignment events against the historical setup event payload:
 
 This prevents replay from reinterpreting old setup events through a future role catalog.
 
-## 7. Runtime Failure Handling
+## 7. Complete Retryable Failure Boundary
 
 Before Slice 2B2, application dependency failures during generated setup could be recorded as permanent command rejections. This branch separates retryable runtime failures from valid command rejections:
 
@@ -113,7 +115,117 @@ Before Slice 2B2, application dependency failures during generated setup could b
 - event-store append failures return `CommandExecutionFailed`.
 - retryable failures do not write rejected command receipts.
 
-## 8. Golden Assignment
+`CommandExecutionFailed` now records:
+
+```text
+status = failed
+retryable = true
+failureStage
+currentGameVersion only when the version is known
+```
+
+Unknown current versions are not represented as fake `0` values.
+
+## 8. Disjoint Rejection And Execution Failure Codes
+
+`CommandRejected` and `CommandExecutionFailed` have disjoint code sets.
+
+Runtime-only codes:
+
+```text
+ApplicationNotConfigured
+DependencyExecutionFailed
+CommandStoreReadFailed
+CommandReceiptWriteFailed
+EventStoreAppendFailed
+MetadataGenerationFailed
+```
+
+These codes cannot be used to construct rejected command receipts at the type boundary. `EventStoreAppendFailed` is accepted-commit failure only and cannot enter `CommandReceiptResult`.
+
+## 9. Command Store Read Failure Handling
+
+`findCommandReceipt` and `loadDomainEvents` are individually protected:
+
+- receipt read failure returns `CommandStoreReadFailed` at `receipt-read`.
+- event load failure returns `CommandStoreReadFailed` at `event-load`.
+- both omit `currentGameVersion`.
+- neither writes domain events or command receipts.
+- once storage recovers, the same command id can be retried normally.
+
+Rejected receipt writes are also protected:
+
+- `recordRejectedCommand` failure returns `CommandReceiptWriteFailed`.
+- failure stage is `rejected-receipt-write`.
+- the deterministic rejection is not claimed as persisted.
+- after storage recovers, the same command id can re-run and then become idempotent only after the receipt is successfully written.
+
+## 10. Metadata Dependency Failure Handling
+
+Event metadata dependencies are protected separately from domain validation:
+
+- `ids.nextBatchId()`
+- `ids.nextEventId()`
+- `clock.now()`
+
+Failures return:
+
+```text
+code = MetadataGenerationFailed
+failureStage = event-metadata
+retryable = true
+```
+
+No domain event or command receipt is written, and the same command id remains reusable.
+
+## 11. DomainError And Unknown Exception Classification
+
+Only explicit `DomainError` instances become deterministic `DomainValidationFailed` rejected receipts.
+
+Unexpected ordinary `Error` values or unknown thrown objects become retryable `DependencyExecutionFailed` results and do not persist receipts. This applies to batch construction and prospective validation.
+
+## 12. Canonical Player Display Names
+
+Roster event display names must be canonical:
+
+```text
+displayName === displayName.trim()
+```
+
+`CreatePlayerRoster` still accepts command input with surrounding whitespace and trims it before writing `PlayerRosterCreated`.
+
+Display names reject:
+
+```text
+U+0000-U+001F
+U+007F
+U+0080-U+009F
+```
+
+Internal ordinary spaces remain legal, including names such as `Alice Smith` and `玩家 一`. Chinese and emoji display names are allowed when they do not contain control characters.
+
+## 13. Roster Version Binding
+
+`CharactersAssigned` validates:
+
+```text
+payload.rosterVersion === SUPPORTED_ROSTER_VERSION
+payload.rosterVersion === state.roster.rosterVersion
+```
+
+This keeps assignment facts bound to the actual roster event that was applied before assignment.
+
+## 14. Assignment Catalog Signature Constraint
+
+`assignment-engine` now requires:
+
+```text
+roleCatalogSignature = canonical-role-catalog-v1:60ac4718
+```
+
+Empty signatures and arbitrary non-empty signatures return `InvalidRoleCatalogSignature`.
+
+## 15. Golden Assignment
 
 Golden input:
 
@@ -142,20 +254,20 @@ Golden seat-role mapping:
 12:dreamer
 ```
 
-## 9. Quality Gates
+## 16. Quality Gates
 
-Latest local gates before PR creation:
+Latest local gates after PR #4 final hardening:
 
 ```text
 pnpm typecheck: passed
 pnpm lint: passed
-pnpm test: passed, 280 tests
-pnpm test:coverage: passed, 280 tests
+pnpm test: passed, 295 tests
+pnpm test:coverage: passed, 295 tests
 pnpm --filter @botc/setup-engine test: passed, 50 tests
-pnpm --filter @botc/assignment-engine test: passed, 11 tests
+pnpm --filter @botc/assignment-engine test: passed, 13 tests
 ```
 
-## 10. Not Implemented
+## 17. Not Implemented
 
 - first-night task initialization.
 - night order.
@@ -173,11 +285,11 @@ pnpm --filter @botc/assignment-engine test: passed, 11 tests
 - Electron.
 - SQLite.
 
-## 11. BLOCKER Status
+## 18. BLOCKER Status
 
 No implementation-level Slice 2B2 blocker is known before final local and CI verification.
 
-## 12. Next Step
+## 19. Next Step
 
 Recommended next slice after this PR is reviewed and merged:
 

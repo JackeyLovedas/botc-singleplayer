@@ -51,6 +51,7 @@ export type AssignmentGenerationResult = AssignmentGenerationSuccess | Assignmen
 
 export type AssignmentGeneratorInput = {
   readonly rootSeed: string;
+  readonly rosterVersion: string;
   readonly roster: PlayerRoster;
   readonly actualRoles: readonly RoleSetupSnapshot[];
   readonly roleCatalogSignature: string;

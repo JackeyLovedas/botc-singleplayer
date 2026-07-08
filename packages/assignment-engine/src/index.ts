@@ -3,6 +3,7 @@ import {
   SUPPORTED_ASSIGNMENT_ALGORITHM_VERSION,
   SUPPORTED_ASSIGNMENT_RANDOM_STREAM,
   SUPPORTED_RANDOM_ALGORITHM_VERSION,
+  SUPPORTED_ROLE_CATALOG_SIGNATURE,
   SUPPORTED_ROSTER_VERSION,
   canonicalActualRoles,
   cloneRoleSetupSnapshot,
@@ -66,8 +67,12 @@ export class SeededCharacterAssignmentGenerator {
       return failure("InvalidRoster", rosterValidation.reason);
     }
 
-    if (input.roleCatalogSignature.trim().length === 0) {
-      return failure("InvalidRoleCatalogSignature", "roleCatalogSignature must be non-empty");
+    if (input.rosterVersion !== SUPPORTED_ROSTER_VERSION) {
+      return failure("InvalidRoster", "rosterVersion must be supported");
+    }
+
+    if (input.roleCatalogSignature !== SUPPORTED_ROLE_CATALOG_SIGNATURE) {
+      return failure("InvalidRoleCatalogSignature", "roleCatalogSignature must match the supported Sects & Violets catalog");
     }
 
     const canonicalRoles = canonicalActualRoles(input.actualRoles);
@@ -114,7 +119,7 @@ export class SeededCharacterAssignmentGenerator {
     return {
       status: "success",
       assignment: {
-        rosterVersion: SUPPORTED_ROSTER_VERSION,
+        rosterVersion: input.rosterVersion,
         assignmentAlgorithmVersion: ASSIGNMENT_ALGORITHM_VERSION,
         randomAlgorithmVersion: RANDOM_ALGORITHM_VERSION,
         randomStream: ASSIGNMENT_RANDOM_STREAM,

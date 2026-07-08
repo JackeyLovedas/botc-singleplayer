@@ -330,6 +330,7 @@ const generatedAssignment = () => {
   const setup = setupGeneratedEvent().payload;
   const result = testAssignmentGenerator.generate({
     rootSeed: gameCreatedEvent().payload.rootSeed,
+    rosterVersion: playerRosterCreatedEvent().payload.rosterVersion,
     roster: playerRosterCreatedEvent().payload.entries,
     actualRoles: setup.actualRoles,
     roleCatalogSignature: setup.roleCatalogSignature
