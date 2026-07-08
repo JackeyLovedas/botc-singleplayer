@@ -1,4 +1,5 @@
 import type { GameId } from "./ids.js";
+import type { CurrentCharacterStateSet } from "./current-character-state.js";
 import type {
   CharactersAssignedPayload,
   FirstNightInitializedPayload,
@@ -26,6 +27,7 @@ export type GameState = {
   readonly setup?: SetupGeneratedPayload;
   readonly roster?: PlayerRosterCreatedPayload;
   readonly assignment?: CharactersAssignedPayload;
+  readonly currentCharacterState?: CurrentCharacterStateSet;
   readonly firstNight?: FirstNightInitializedPayload;
   readonly initialPrivateKnowledge?: InitialPrivateKnowledgeEstablishedPayload;
   readonly firstNightTaskPlan?: FirstNightTaskPlanCreatedPayload;

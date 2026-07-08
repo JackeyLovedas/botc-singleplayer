@@ -11,11 +11,14 @@ import {
   compareRoleSetupSnapshot,
   commandId,
   compareStableId,
+  cloneCurrentCharacterStateSet,
   eventId,
   applyDomainEventBatch,
   playerId,
+  resolveCurrentEvilTeam,
   roleId,
   rebuildGameState,
+  validateInitialCurrentCharacterStateSet,
   validateDomainEventStream
 } from "@botc/domain-core";
 import type {
@@ -1291,6 +1294,116 @@ describe("domain event rebuild", () => {
     expect(state.roster?.entries).toHaveLength(12);
     expect(state.assignment?.assignments).toHaveLength(12);
     expect(state.assignment?.assignments.map((assignment) => assignment.seatNumber)).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it("derives initial current character state from CharactersAssigned without changing the event payload", () => {
+    const state = rebuildGameState(assignmentEventStream());
+
+    expect(state.currentCharacterState?.revision).toBe(1);
+    expect(state.currentCharacterState?.entries).toHaveLength(12);
+    expect(state.currentCharacterState?.entries.map((entry) => entry.seatNumber)).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(state.currentCharacterState?.entries.map((entry) => entry.currentAlignment)).toStrictEqual(
+      state.assignment?.assignments.map((assignment) => assignment.role.defaultAlignment)
+    );
+    expect(state.currentCharacterState?.entries.map((entry) => entry.role)).toStrictEqual(
+      state.assignment?.assignments.map((assignment) => assignment.role)
+    );
+    expect(Object.keys(charactersAssignedEvent().payload).sort()).not.toContain("currentCharacterState");
+  });
+
+  it("validates initial current character state against roster, setup, and assignment facts", () => {
+    const state = rebuildGameState(assignmentEventStream());
+
+    if (state.currentCharacterState === undefined || state.roster === undefined || state.assignment === undefined || state.setup === undefined) {
+      throw new Error("Expected current character state source facts");
+    }
+
+    expect(validateInitialCurrentCharacterStateSet({
+      currentCharacterState: state.currentCharacterState,
+      roster: state.roster.entries,
+      assignment: state.assignment.assignments,
+      setup: state.setup
+    })).toStrictEqual({ valid: true });
+  });
+
+  it("clones current character state without mutating assignment snapshots", () => {
+    const state = rebuildGameState(assignmentEventStream());
+    if (state.currentCharacterState === undefined || state.assignment === undefined) {
+      throw new Error("Expected current character state and assignment");
+    }
+
+    const clone = cloneCurrentCharacterStateSet(state.currentCharacterState);
+    const firstClonedRole = clone.entries[0]?.role;
+    if (firstClonedRole === undefined) {
+      throw new Error("Expected cloned current character state entry");
+    }
+
+    (firstClonedRole.setupModifier as { townsfolkDelta: number }).townsfolkDelta = 99;
+
+    expect(state.currentCharacterState.entries[0]?.role.setupModifier.townsfolkDelta).not.toBe(99);
+    expect(state.assignment.assignments[0]?.role.setupModifier.townsfolkDelta).not.toBe(99);
+  });
+
+  it("resolves the current evil team from current character state", () => {
+    const state = rebuildGameState(assignmentEventStream());
+    if (state.currentCharacterState === undefined || state.roster === undefined) {
+      throw new Error("Expected current character state and roster");
+    }
+
+    const result = resolveCurrentEvilTeam({
+      currentCharacterState: state.currentCharacterState,
+      roster: state.roster.entries
+    });
+
+    expect(result.status).toBe("success");
+    if (result.status === "failure") {
+      throw new Error(result.message);
+    }
+    expect(result.team.characterStateRevision).toBe(1);
+    expect(result.team.demon.playerId).toBe(state.currentCharacterState.entries.find((entry) => entry.role.characterType === "DEMON")?.playerId);
+    expect(result.team.minions).toHaveLength(2);
+    expect(result.team.minions.map((minion) => minion.seatNumber)).toStrictEqual(
+      [...result.team.minions].map((minion) => minion.seatNumber).sort((left, right) => left - right)
+    );
+  });
+
+  it("resolves a simulated current role swap from current character state instead of assignment", () => {
+    const state = rebuildGameState(assignmentEventStream());
+    if (state.currentCharacterState === undefined || state.roster === undefined) {
+      throw new Error("Expected current character state and roster");
+    }
+
+    const originalDemon = state.currentCharacterState.entries.find((entry) => entry.role.characterType === "DEMON");
+    const originalMinion = state.currentCharacterState.entries.find((entry) => entry.role.characterType === "MINION");
+    if (originalDemon === undefined || originalMinion === undefined) {
+      throw new Error("Expected demon and minion current character states");
+    }
+
+    const swapped = {
+      revision: 2,
+      entries: state.currentCharacterState.entries.map((entry) => {
+        if (entry.playerId === originalDemon.playerId) {
+          return { ...entry, role: originalMinion.role, currentAlignment: originalMinion.role.defaultAlignment };
+        }
+        if (entry.playerId === originalMinion.playerId) {
+          return { ...entry, role: originalDemon.role, currentAlignment: originalDemon.role.defaultAlignment };
+        }
+        return entry;
+      })
+    };
+
+    const result = resolveCurrentEvilTeam({
+      currentCharacterState: swapped,
+      roster: state.roster.entries
+    });
+
+    expect(result.status).toBe("success");
+    if (result.status === "failure") {
+      throw new Error(result.message);
+    }
+    expect(result.team.characterStateRevision).toBe(2);
+    expect(result.team.demon.playerId).toBe(originalMinion.playerId);
+    expect(result.team.demon.playerId).not.toBe(originalDemon.playerId);
   });
 
   it("rebuilds first night initialization and initial private knowledge while staying in FIRST_NIGHT", () => {

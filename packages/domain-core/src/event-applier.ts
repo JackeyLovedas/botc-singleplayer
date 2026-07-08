@@ -18,6 +18,7 @@ import {
   SUPPORTED_ASSIGNMENT_RANDOM_STREAM,
   validateCharacterAssignments
 } from "./character-assignment.js";
+import { deriveInitialCurrentCharacterStateSet } from "./current-character-state.js";
 import {
   validateFirstNightTaskPlanCreatedPayload,
 } from "./first-night-task-plan.js";
@@ -726,11 +727,23 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
 
       validateCharactersAssignedPayload(state, event.payload);
 
+      if (state.setup === undefined || state.roster === undefined) {
+        throw new DomainError(
+          "InvalidCharactersAssignedPayload",
+          "CharactersAssigned current character state derivation requires setup and roster"
+        );
+      }
+
       return {
         ...state,
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
-        assignment: event.payload
+        assignment: event.payload,
+        currentCharacterState: deriveInitialCurrentCharacterStateSet({
+          roster: state.roster.entries,
+          assignment: event.payload.assignments,
+          setup: state.setup
+        })
       };
     }
 
