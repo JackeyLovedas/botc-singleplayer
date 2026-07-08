@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { InitialPrivateKnowledgeBuilder } from "@botc/information-engine";
 import type { CharacterAssignmentSet, InitialKnowledgeEntry, PlayerId } from "@botc/domain-core";
-import { playerId } from "@botc/domain-core";
+import { playerId, roleId } from "@botc/domain-core";
 import {
   charactersAssignedEvent,
   playerRosterCreatedEvent,
@@ -185,5 +185,80 @@ describe("InitialPrivateKnowledgeBuilder", () => {
     });
 
     expect(result).toMatchObject({ status: "failure", failureCode: "InvalidDemonBluffs" });
+  });
+
+  it("rejects demon bluff roles that are not present in the current role catalog", () => {
+    const input = buildInput();
+    const lastBluff = input.setup.demonBluffs.at(-1);
+    if (lastBluff === undefined) {
+      throw new Error("Expected demon bluff");
+    }
+
+    const result = new InitialPrivateKnowledgeBuilder().generate({
+      ...input,
+      setup: {
+        ...input.setup,
+        demonBluffs: [
+          ...input.setup.demonBluffs.slice(0, -1),
+          {
+            ...lastBluff,
+            roleId: roleId("zzz_forged_good_bluff")
+          }
+        ]
+      }
+    });
+
+    expect(result).toMatchObject({ status: "failure" });
+  });
+
+  it("rejects demon bluff snapshots that differ from the catalog role with the same roleId", () => {
+    const input = buildInput();
+    const lastBluff = input.setup.demonBluffs.at(-1);
+    if (lastBluff === undefined) {
+      throw new Error("Expected demon bluff");
+    }
+
+    const result = new InitialPrivateKnowledgeBuilder().generate({
+      ...input,
+      setup: {
+        ...input.setup,
+        demonBluffs: [
+          ...input.setup.demonBluffs.slice(0, -1),
+          {
+            ...lastBluff,
+            characterType: lastBluff.characterType === "TOWNSFOLK" ? "OUTSIDER" : "TOWNSFOLK",
+            defaultAlignment: "GOOD",
+            setupModifier: {
+              outsiderDelta: 0,
+              townsfolkDelta: 0
+            }
+          }
+        ]
+      }
+    });
+
+    expect(result).toMatchObject({ status: "failure" });
+  });
+
+  it("rejects role catalog signatures that do not match the supported catalog", () => {
+    const input = buildInput();
+    const result = new InitialPrivateKnowledgeBuilder().generate({
+      ...input,
+      setup: {
+        ...input.setup,
+        roleCatalogSignature: "canonical-role-catalog-v1:deadbeef"
+      }
+    });
+
+    expect(result).toMatchObject({ status: "failure" });
+  });
+
+  it("does not mutate the input object while producing legal initial private knowledge", () => {
+    const input = buildInput();
+    const before = JSON.stringify(input);
+    const result = new InitialPrivateKnowledgeBuilder().generate(input);
+
+    expect(result).toMatchObject({ status: "success" });
+    expect(JSON.stringify(input)).toBe(before);
   });
 });

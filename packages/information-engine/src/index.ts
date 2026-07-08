@@ -3,6 +3,7 @@ import {
   cloneInitialKnowledgeEntry,
   cloneRoleSetupSnapshot,
   validateCharacterAssignments,
+  validateInitialKnowledgeSourceFacts,
   validateInitialPrivateKnowledgeEntries,
   validatePlayerRoster
 } from "@botc/domain-core";
@@ -121,6 +122,14 @@ export class InitialPrivateKnowledgeBuilder {
     });
     if (!assignmentValidation.valid) {
       return failure("InvalidAssignment", assignmentValidation.reason);
+    }
+
+    const sourceFactsValidation = validateInitialKnowledgeSourceFacts(input);
+    if (!sourceFactsValidation.valid) {
+      const failureCode = sourceFactsValidation.reason.toLowerCase().includes("assignment")
+        ? "InvalidAssignment"
+        : "InvalidSetup";
+      return failure(failureCode, sourceFactsValidation.reason);
     }
 
     const demonAssignments = input.assignment.filter((assignment) => assignment.role.characterType === "DEMON");

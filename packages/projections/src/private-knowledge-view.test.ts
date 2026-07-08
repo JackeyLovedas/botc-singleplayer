@@ -39,6 +39,18 @@ const viewKeys = [
   "viewerSeatNumber"
 ];
 
+const expectPrivateKnowledgeUnavailable = (action: () => void): void => {
+  let caught: unknown;
+  try {
+    action();
+  } catch (error) {
+    caught = error;
+  }
+
+  expect(caught).toBeInstanceOf(DomainError);
+  expect((caught as DomainError).code).toBe("PrivateKnowledgeUnavailable");
+};
+
 describe("private knowledge projections", () => {
   it("gives good players only their own character and no evil-team private facts", () => {
     const state = stateWithPrivateKnowledge();
@@ -106,6 +118,55 @@ describe("private knowledge projections", () => {
     }
 
     expect(buildAiPrivateKnowledgeView(state, viewer.playerId)).toStrictEqual(buildPlayerPrivateKnowledgeView(state, viewer.playerId));
+  });
+
+  it("fails before projection when canonical private knowledge contains an unknown entry kind", () => {
+    const state = stateWithPrivateKnowledge();
+    const viewer = state.roster?.entries[0];
+    if (viewer === undefined || state.initialPrivateKnowledge === undefined) {
+      throw new Error("Expected viewer and private knowledge");
+    }
+
+    const tamperedState = {
+      ...state,
+      initialPrivateKnowledge: {
+        ...state.initialPrivateKnowledge,
+        entries: [
+          ...state.initialPrivateKnowledge.entries,
+          {
+            kind: "FULL_SECRET_DUMP",
+            recipientPlayerId: viewer.playerId,
+            fullAssignments: state.assignment?.assignments
+          }
+        ]
+      }
+    } as unknown as GameState;
+
+    expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tamperedState, viewer.playerId));
+    expectPrivateKnowledgeUnavailable(() => buildAiPrivateKnowledgeView(tamperedState, viewer.playerId));
+  });
+
+  it("fails before projection when canonical private knowledge carries extra secret fields", () => {
+    const state = stateWithPrivateKnowledge();
+    const viewer = state.roster?.entries[0];
+    if (viewer === undefined || state.initialPrivateKnowledge === undefined) {
+      throw new Error("Expected viewer and private knowledge");
+    }
+
+    const tamperedState = {
+      ...state,
+      initialPrivateKnowledge: {
+        ...state.initialPrivateKnowledge,
+        entries: state.initialPrivateKnowledge.entries.map((entry) =>
+          entry.kind === "OWN_CHARACTER" && entry.recipientPlayerId === viewer.playerId
+            ? { ...entry, allAssignments: state.assignment?.assignments }
+            : entry
+        )
+      }
+    } as unknown as GameState;
+
+    expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tamperedState, viewer.playerId));
+    expectPrivateKnowledgeUnavailable(() => buildAiPrivateKnowledgeView(tamperedState, viewer.playerId));
   });
 
   it("fails explicitly for an unknown viewer", () => {

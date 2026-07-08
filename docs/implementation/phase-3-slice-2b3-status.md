@@ -43,7 +43,65 @@ knowledgeModelVersion = initial-private-knowledge-v1
 
 Replay rejects bare `FirstNightInitialized`, bare `InitialPrivateKnowledgeEstablished`, reversed order, third events in the batch, metadata mismatch, reinitialization, and private knowledge entries that do not match assignment/setup facts.
 
-## 4. information-engine
+## 4. Strict Runtime Knowledge Schema
+
+`InitialPrivateKnowledgeEstablished` is validated as untrusted runtime data before any entry reaches sorting, switch dispatch, canonical state rebuild, or projections.
+
+Supported initial knowledge kinds are closed to:
+
+```text
+OWN_CHARACTER
+DEMON_IDENTITY
+MINION_IDENTITIES
+DEMON_BLUFFS
+```
+
+### Unknown Knowledge Kind Rejection
+
+Unknown kinds, including secret-dump style entries, fail with `InvalidInitialPrivateKnowledgeEstablishedPayload` and the message `unknown initial private knowledge kind`.
+
+Unknown kinds are rejected before `KNOWLEDGE_KIND_ORDER`, canonical ordering, exhaustive switches, or state storage can consume them.
+
+### Exact Hidden Payload Shapes
+
+Initial private knowledge entries now require exact enumerable fields:
+
+- `OWN_CHARACTER`: `kind`, `recipientPlayerId`, `role`
+- `DEMON_IDENTITY`: `kind`, `recipientPlayerId`, `demon`
+- `MINION_IDENTITIES`: `kind`, `recipientPlayerId`, `minions`
+- `DEMON_BLUFFS`: `kind`, `recipientPlayerId`, `roles`
+
+`KnownPlayerReference` is exactly `playerId` and `seatNumber`; `seatNumber` must be an integer from 1 to 12.
+
+`RoleSetupSnapshot` is exactly `roleId`, `characterType`, `defaultAlignment`, `edition`, and `setupModifier`; `setupModifier` is exactly `outsiderDelta` and `townsfolkDelta`.
+
+### Malformed JSON Domain Errors
+
+Malformed entries, sparse arrays, missing required fields, extra secret fields, null entries, arrays, strings, and primitive payloads fail as `DomainError` values, not raw runtime exceptions.
+
+`FirstNightInitialized` also requires its exact payload shape:
+
+```text
+rulesBaselineVersion
+initializationVersion
+nightNumber
+rosterVersion
+assignmentAlgorithmVersion
+roleCatalogSignature
+```
+
+`InitialPrivateKnowledgeEstablished` requires its exact payload shape:
+
+```text
+rulesBaselineVersion
+knowledgeModelVersion
+rosterVersion
+assignmentAlgorithmVersion
+roleCatalogSignature
+entries
+```
+
+## 5. information-engine
 
 New package:
 
@@ -67,7 +125,19 @@ It does not depend on application, setup-engine, assignment-engine, rules-snv, A
 
 Generation validates roster, assignment, setup role composition, demon count, minion count, demon bluffs, canonical result ordering, and replay-valid knowledge entries.
 
-## 5. Knowledge Rules
+### Catalog-Bound Demon Bluff Validation
+
+Demon bluff roles are validated against the current setup role catalog:
+
+- each bluff `roleId` must exist in `setup.roleCatalogSnapshot.roles`.
+- each bluff snapshot must deeply match the corresponding catalog snapshot.
+- each bluff snapshot must have exact `RoleSetupSnapshot` shape.
+- `roleCatalogSignature` must match the supported catalog signature.
+- `roleCatalogSnapshot.canonicalSignature` must match the recalculated catalog content.
+
+Forged good-looking bluff roles outside the catalog are rejected.
+
+## 6. Knowledge Rules
 
 Every player receives exactly one `OWN_CHARACTER` entry matching their assigned role snapshot.
 
@@ -99,7 +169,7 @@ Canonical ordering is enforced:
 - player references by seat.
 - bluff roles by ASCII `roleId`.
 
-## 6. Application Runtime Boundary
+## 7. Application Runtime Boundary
 
 `application` defines `InitialPrivateKnowledgeBuilderPort` and does not import `information-engine`.
 
@@ -109,7 +179,7 @@ Runtime failures:
 - Builder throws: `DependencyExecutionFailed`, `initial-knowledge-generation`, retryable.
 - Deterministic generation failure: rejected command receipt with `InitialPrivateKnowledgeGenerationFailed` and details kind `initial-private-knowledge-generation`.
 
-## 7. projections
+## 8. projections
 
 New package:
 
@@ -143,12 +213,26 @@ Projection output does not expose complete assignments, role catalog snapshots, 
 
 Projection results are defensive copies.
 
-## 8. Tests
+### Projection Revalidation Boundary
+
+Before building a player or AI private knowledge view, projections revalidate:
+
+- `firstNight`
+- `setup`
+- `roster`
+- `assignment`
+- `initialPrivateKnowledge`
+- supported `knowledgeModelVersion`
+- entries matching current setup, roster, assignment, catalog, and metadata
+
+Tampered manual `GameState` values with unknown entries or extra secret fields fail with `PrivateKnowledgeUnavailable`.
+
+## 9. Tests
 
 Local test count after this slice:
 
 ```text
-337 tests
+370 tests
 ```
 
 Covered areas:
@@ -160,6 +244,11 @@ Covered areas:
 - replay rejection for forged or non-canonical private knowledge.
 - projection leakage boundaries.
 - defensive copy behavior.
+- strict runtime private knowledge schema.
+- unknown knowledge kind rejection.
+- exact hidden payload shape rejection.
+- projection revalidation before player and AI views.
+- catalog-bound demon bluff validation.
 - architecture dependency boundaries.
 
 Local gates run during implementation:
@@ -167,11 +256,11 @@ Local gates run during implementation:
 ```text
 pnpm typecheck: passed
 pnpm lint: passed
-pnpm test: passed, 337 tests
-pnpm test:coverage: passed, 337 tests
+pnpm test: passed, 370 tests
+pnpm test:coverage: passed, 370 tests
 ```
 
-## 9. Not Implemented
+## 10. Not Implemented
 
 - first-night task plan.
 - scheduled night task skeleton.
@@ -192,13 +281,13 @@ pnpm test:coverage: passed, 337 tests
 - Electron.
 - SQLite.
 
-## 10. BLOCKER Status
+## 11. BLOCKER Status
 
 No implementation-level Slice 2B3 blocker is known after local typecheck, lint, test, and coverage.
 
 CI status is not claimed here until the PR checks complete.
 
-## 11. Next Step
+## 12. Next Step
 
 Recommended next slice after this PR is reviewed and merged:
 

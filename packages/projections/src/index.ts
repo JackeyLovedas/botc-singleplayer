@@ -2,7 +2,8 @@ import {
   DomainError,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   cloneKnownPlayerReference,
-  cloneRoleSetupSnapshot
+  cloneRoleSetupSnapshot,
+  validateInitialPrivateKnowledgePayload
 } from "@botc/domain-core";
 import type {
   GameState,
@@ -19,12 +20,26 @@ type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishe
 };
 
 const requireInitialPrivateKnowledge = (state: GameState): SupportedInitialPrivateKnowledgePayload => {
-  if (state.roster === undefined || state.initialPrivateKnowledge === undefined) {
+  if (
+    state.firstNight === undefined ||
+    state.setup === undefined ||
+    state.roster === undefined ||
+    state.assignment === undefined ||
+    state.initialPrivateKnowledge === undefined
+  ) {
     throw new DomainError("PrivateKnowledgeUnavailable", "Initial private knowledge is not established for this game");
   }
 
-  if (state.initialPrivateKnowledge.knowledgeModelVersion !== SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION) {
-    throw new DomainError("PrivateKnowledgeUnavailable", "Unsupported initial private knowledge model version");
+  const validation = validateInitialPrivateKnowledgePayload(state.initialPrivateKnowledge, {
+    roster: state.roster.entries,
+    assignment: state.assignment.assignments,
+    setup: state.setup,
+    rosterVersion: state.roster.rosterVersion,
+    assignmentAlgorithmVersion: state.assignment.assignmentAlgorithmVersion,
+    roleCatalogSignature: state.setup.roleCatalogSignature
+  });
+  if (!validation.valid) {
+    throw new DomainError("PrivateKnowledgeUnavailable", validation.reason);
   }
 
   return state.initialPrivateKnowledge as SupportedInitialPrivateKnowledgePayload;

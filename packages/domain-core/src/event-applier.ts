@@ -1,4 +1,5 @@
 import { DomainError, assertNever } from "./errors.js";
+import type { DomainErrorCode } from "./errors.js";
 import { RULES_BASELINE_VERSION, SUPPORTED_DOMAIN_EVENT_VERSION, isCanonicalPlayerCounts } from "./events.js";
 import type {
   AnyDomainEventEnvelope,
@@ -18,8 +19,9 @@ import {
 } from "./character-assignment.js";
 import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
-  SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
-  validateInitialPrivateKnowledgeEntries
+  isPlainRecord,
+  validateFirstNightInitializedPayloadShape,
+  validateInitialPrivateKnowledgePayload
 } from "./initial-private-knowledge.js";
 import {
   SUPPORTED_ROSTER_VERSION,
@@ -408,6 +410,11 @@ const validateCharactersAssignedPayload = (state: GameState, payload: Characters
 };
 
 const validateFirstNightInitializedPayload = (state: GameState, payload: FirstNightInitializedPayload): void => {
+  const shapeValidation = validateFirstNightInitializedPayloadShape(payload);
+  if (!shapeValidation.valid) {
+    throw new DomainError("InvalidFirstNightInitializedPayload", shapeValidation.reason);
+  }
+
   if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
     throw new DomainError("InvalidFirstNightInitializedPayload", "FirstNightInitialized requires FIRST_NIGHT night 1 before day 1");
   }
@@ -470,34 +477,48 @@ const validateInitialPrivateKnowledgeEstablishedPayload = (
     );
   }
 
-  if (payload.knowledgeModelVersion !== SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION) {
-    throw new DomainError(
-      "InvalidInitialPrivateKnowledgeEstablishedPayload",
-      "InitialPrivateKnowledgeEstablished knowledge model version must be supported"
-    );
-  }
-
-  if (
-    payload.rosterVersion !== state.roster.rosterVersion ||
-    payload.assignmentAlgorithmVersion !== state.assignment.assignmentAlgorithmVersion ||
-    payload.roleCatalogSignature !== state.setup.roleCatalogSignature ||
-    payload.roleCatalogSignature !== state.assignment.roleCatalogSignature
-  ) {
-    throw new DomainError(
-      "InvalidInitialPrivateKnowledgeEstablishedPayload",
-      "InitialPrivateKnowledgeEstablished metadata must match roster, assignment, and setup facts"
-    );
-  }
-
-  const validation = validateInitialPrivateKnowledgeEntries({
+  const validation = validateInitialPrivateKnowledgePayload(payload, {
     roster: state.roster.entries,
     assignment: state.assignment.assignments,
     setup: state.setup,
-    entries: payload.entries
+    rosterVersion: state.roster.rosterVersion,
+    assignmentAlgorithmVersion: state.assignment.assignmentAlgorithmVersion,
+    roleCatalogSignature: state.setup.roleCatalogSignature
   });
   if (!validation.valid) {
     throw new DomainError("InvalidInitialPrivateKnowledgeEstablishedPayload", validation.reason);
   }
+};
+
+const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType"]): DomainErrorCode => {
+  switch (eventType) {
+    case "GameCreated":
+      return "InvalidGameCreatedPayload";
+    case "ScriptSelected":
+      return "InvalidScriptSelectedPayload";
+    case "SetupGenerated":
+      return "InvalidSetupGeneratedPayload";
+    case "PlayerRosterCreated":
+      return "InvalidPlayerRosterCreatedPayload";
+    case "CharactersAssigned":
+      return "InvalidCharactersAssignedPayload";
+    case "FirstNightInitialized":
+      return "InvalidFirstNightInitializedPayload";
+    case "InitialPrivateKnowledgeEstablished":
+      return "InvalidInitialPrivateKnowledgeEstablishedPayload";
+    case "PhaseTransitioned":
+      return "InvalidPhaseTransition";
+    default:
+      return assertNever(eventType);
+  }
+};
+
+const requirePayloadRulesBaseline = (event: AnyDomainEventEnvelope): string => {
+  if (!isPlainRecord(event.payload) || typeof event.payload.rulesBaselineVersion !== "string") {
+    throw new DomainError(invalidPayloadCodeForEvent(event.eventType), "Domain event payload must be a plain object with rulesBaselineVersion");
+  }
+
+  return event.payload.rulesBaselineVersion;
 };
 
 const validateEnvelope = (state: GameState | undefined, event: AnyDomainEventEnvelope): void => {
@@ -505,7 +526,7 @@ const validateEnvelope = (state: GameState | undefined, event: AnyDomainEventEnv
     throw new DomainError("UnsupportedEventVersion", "Unsupported domain event version");
   }
 
-  if (event.rulesBaselineVersion !== event.payload.rulesBaselineVersion) {
+  if (event.rulesBaselineVersion !== requirePayloadRulesBaseline(event)) {
     throw new DomainError("EventRulesBaselineMismatch", "Event rules baseline metadata must match payload");
   }
 
