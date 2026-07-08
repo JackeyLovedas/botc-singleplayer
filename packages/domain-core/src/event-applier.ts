@@ -5,6 +5,7 @@ import type {
   AnyDomainEventEnvelope,
   CharactersAssignedPayload,
   FirstNightInitializedPayload,
+  FirstNightTaskPlanCreatedPayload,
   InitialPrivateKnowledgeEstablishedPayload,
   PlayerRosterCreatedPayload,
   SetupGeneratedPayload
@@ -17,6 +18,9 @@ import {
   SUPPORTED_ASSIGNMENT_RANDOM_STREAM,
   validateCharacterAssignments
 } from "./character-assignment.js";
+import {
+  validateFirstNightTaskPlanCreatedPayload,
+} from "./first-night-task-plan.js";
 import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   isPlainRecord,
@@ -490,6 +494,57 @@ const validateInitialPrivateKnowledgeEstablishedPayload = (
   }
 };
 
+const validateFirstNightTaskPlanCreatedPayloadForState = (
+  state: GameState,
+  payload: FirstNightTaskPlanCreatedPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidFirstNightTaskPlanCreatedPayload",
+      "FirstNightTaskPlanCreated requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.setup === undefined || state.roster === undefined || state.assignment === undefined) {
+    throw new DomainError(
+      "InvalidFirstNightTaskPlanCreatedPayload",
+      "FirstNightTaskPlanCreated requires setup, roster, and character assignment facts"
+    );
+  }
+
+  if (state.firstNight === undefined) {
+    throw new DomainError(
+      "InvalidFirstNightTaskPlanCreatedPayload",
+      "FirstNightTaskPlanCreated requires FirstNightInitialized in the rebuilt state"
+    );
+  }
+
+  if (state.initialPrivateKnowledge === undefined) {
+    throw new DomainError(
+      "InvalidFirstNightTaskPlanCreatedPayload",
+      "FirstNightTaskPlanCreated requires InitialPrivateKnowledgeEstablished in the rebuilt state"
+    );
+  }
+
+  if (state.firstNightTaskPlan !== undefined) {
+    throw new DomainError(
+      "DuplicateFirstNightTaskPlanCreated",
+      "FirstNightTaskPlanCreated cannot overwrite an existing first-night task plan"
+    );
+  }
+
+  const validation = validateFirstNightTaskPlanCreatedPayload(payload, {
+    setup: state.setup,
+    roster: state.roster.entries,
+    assignment: state.assignment.assignments,
+    firstNight: state.firstNight,
+    initialPrivateKnowledge: state.initialPrivateKnowledge
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidFirstNightTaskPlanCreatedPayload", validation.reason);
+  }
+};
+
 const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType"]): DomainErrorCode => {
   switch (eventType) {
     case "GameCreated":
@@ -506,6 +561,8 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidFirstNightInitializedPayload";
     case "InitialPrivateKnowledgeEstablished":
       return "InvalidInitialPrivateKnowledgeEstablishedPayload";
+    case "FirstNightTaskPlanCreated":
+      return "InvalidFirstNightTaskPlanCreatedPayload";
     case "PhaseTransitioned":
       return "InvalidPhaseTransition";
     default:
@@ -715,6 +772,28 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         initialPrivateKnowledge: event.payload
+      };
+    }
+
+    case "FirstNightTaskPlanCreated": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "FirstNightTaskPlanCreated requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidFirstNightTaskPlanCreatedPayload",
+          "FirstNightTaskPlanCreated payload rules baseline must match game state"
+        );
+      }
+
+      validateFirstNightTaskPlanCreatedPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightTaskPlan: event.payload
       };
     }
 

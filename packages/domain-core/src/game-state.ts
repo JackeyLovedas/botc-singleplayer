@@ -2,6 +2,7 @@ import type { GameId } from "./ids.js";
 import type {
   CharactersAssignedPayload,
   FirstNightInitializedPayload,
+  FirstNightTaskPlanCreatedPayload,
   InitialPrivateKnowledgeEstablishedPayload,
   PlayerCounts,
   PlayerRosterCreatedPayload,
@@ -27,4 +28,5 @@ export type GameState = {
   readonly assignment?: CharactersAssignedPayload;
   readonly firstNight?: FirstNightInitializedPayload;
   readonly initialPrivateKnowledge?: InitialPrivateKnowledgeEstablishedPayload;
+  readonly firstNightTaskPlan?: FirstNightTaskPlanCreatedPayload;
 };

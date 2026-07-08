@@ -19,6 +19,7 @@
       "@botc/application": ["./packages/application/src/index.ts"],
       "@botc/assignment-engine": ["./packages/assignment-engine/src/index.ts"],
       "@botc/rules-snv": ["./packages/rules-snv/src/index.ts"],
+      "@botc/task-engine": ["./packages/task-engine/src/index.ts"],
       "@botc/information-engine": ["./packages/information-engine/src/index.ts"],
       "@botc/projections": ["./packages/projections/src/index.ts"],
       "@botc/setup-engine": ["./packages/setup-engine/src/index.ts"],

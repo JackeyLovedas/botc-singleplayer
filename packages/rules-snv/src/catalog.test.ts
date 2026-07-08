@@ -2,12 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   SUPPORTED_ROLE_CATALOG_SIGNATURE,
   SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
+  SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE,
   calculateRoleCatalogSignature,
+  calculateFirstNightTaskCatalogSignature,
   compareStableId,
   roleId
 } from "@botc/domain-core";
-import type { RoleDefinition, ScriptDefinition } from "@botc/domain-core";
-import { SECTS_AND_VIOLETS_ROLES, assertValidSectsAndVioletsCatalog } from "@botc/rules-snv";
+import type { FirstNightTaskDefinition, RoleDefinition, ScriptDefinition } from "@botc/domain-core";
+import {
+  SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG,
+  SECTS_AND_VIOLETS_ROLES,
+  assertValidSectsAndVioletsCatalog
+} from "@botc/rules-snv";
 
 const cloneRole = (role: RoleDefinition): RoleDefinition => ({
   ...role,
@@ -176,5 +182,85 @@ describe("Sects & Violets role catalog", () => {
         defaultAlignment: "EVIL"
       }))
     ).toThrow("role metadata");
+  });
+});
+
+describe("Sects & Violets first-night task catalog", () => {
+  const definitions = SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG.definitions;
+
+  it("contains exactly 11 canonical first-night task definitions", () => {
+    expect(definitions.map((definition) => definition.taskType)).toStrictEqual([
+      "PHILOSOPHER_ACTION",
+      "MINION_INFO",
+      "DEMON_INFO",
+      "SNAKE_CHARMER_ACTION",
+      "EVIL_TWIN_SETUP",
+      "WITCH_ACTION",
+      "CERENOVUS_ACTION",
+      "CLOCKMAKER_INFORMATION",
+      "DREAMER_ACTION",
+      "SEAMSTRESS_ACTION",
+      "MATHEMATICIAN_INFORMATION"
+    ]);
+  });
+
+  it("uses unique taskType and baseOrder values", () => {
+    expect(new Set(definitions.map((definition) => definition.taskType)).size).toBe(11);
+    expect(new Set(definitions.map((definition) => definition.baseOrder)).size).toBe(11);
+  });
+
+  it("uses the fixed official catalog signature", () => {
+    expect(SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG.taskCatalogSignature).toBe(SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE);
+    expect(calculateFirstNightTaskCatalogSignature(SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG)).toBe(
+      "canonical-first-night-task-catalog-v1:20514c1a"
+    );
+  });
+
+  it("changes the task catalog signature when order, class, or settlement policy changes", () => {
+    const swappedOrder = definitions.map((definition) => {
+      if (definition.taskType === "MINION_INFO") {
+        return { ...definition, baseOrder: 300 };
+      }
+
+      if (definition.taskType === "DEMON_INFO") {
+        return { ...definition, baseOrder: 200 };
+      }
+
+      return definition;
+    });
+    const changedClass = definitions.map((definition) =>
+      definition.taskType === "WITCH_ACTION" ? { ...definition, taskClass: "ROLE_INFORMATION" as const } : definition
+    );
+    const changedPolicy = definitions.map((definition) =>
+      definition.taskType === "DEMON_INFO"
+        ? { ...definition, settlementPolicy: "REEVALUATE_SOURCE_AT_SETTLEMENT" as const }
+        : definition
+    ) as readonly FirstNightTaskDefinition[];
+
+    expect(calculateFirstNightTaskCatalogSignature({
+      taskCatalogVersion: SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG.taskCatalogVersion,
+      definitions: swappedOrder
+    })).not.toBe(SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE);
+    expect(calculateFirstNightTaskCatalogSignature({
+      taskCatalogVersion: SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG.taskCatalogVersion,
+      definitions: changedClass
+    })).not.toBe(SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE);
+    expect(calculateFirstNightTaskCatalogSignature({
+      taskCatalogVersion: SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG.taskCatalogVersion,
+      definitions: changedPolicy
+    })).not.toBe(SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE);
+  });
+
+  it("does not create first-night base tasks for Pit-Hag or demons", () => {
+    const roleTaskRoleIds = definitions
+      .filter((definition): definition is Extract<FirstNightTaskDefinition, { readonly sourceKind: "ROLE" }> => definition.sourceKind === "ROLE")
+      .map((definition) => definition.roleId)
+      .sort(compareStableId);
+
+    expect(roleTaskRoleIds).not.toContain("pit_hag");
+    expect(roleTaskRoleIds).not.toContain("fang_gu");
+    expect(roleTaskRoleIds).not.toContain("vigormortis");
+    expect(roleTaskRoleIds).not.toContain("no_dashii");
+    expect(roleTaskRoleIds).not.toContain("vortox");
   });
 });

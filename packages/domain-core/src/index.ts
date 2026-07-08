@@ -7,6 +7,7 @@ export * from "./event-applier.js";
 export * from "./event-batch.js";
 export * from "./event-stream-validator.js";
 export * from "./events.js";
+export * from "./first-night-task-plan.js";
 export * from "./game-phase.js";
 export * from "./game-state.js";
 export * from "./ids.js";

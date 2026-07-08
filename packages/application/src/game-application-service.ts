@@ -2,6 +2,7 @@ import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+  INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
   DomainError,
@@ -10,6 +11,7 @@ import {
   causationIdFromCommandId,
   createFixedPlayerRoster,
   compareStableId,
+  cloneFirstNightTaskCatalogSnapshot,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
   SUPPORTED_SCRIPT_EDITION,
@@ -29,6 +31,10 @@ import type {
   GameState,
   CharactersAssignedPayload,
   FirstNightInitializedPayload,
+  FirstNightTaskCatalogSnapshot,
+  FirstNightTaskPlan,
+  FirstNightTaskPlanCreatedPayload,
+  FirstNightTaskPlanningFailure,
   InitialPrivateKnowledge,
   InitialPrivateKnowledgeEstablishedPayload,
   InitialPrivateKnowledgeGenerationFailure,
@@ -48,10 +54,12 @@ import type {
   CommandResult,
   GeneralCommandRejectionCode,
   InitialPrivateKnowledgeGenerationRejectionDetails,
+  FirstNightTaskPlanningRejectionDetails,
   SetupGenerationRejectionDetails
 } from "./command-result.js";
 import type { CharacterAssignmentGeneratorPort } from "./ports/character-assignment-generator.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
+import type { FirstNightTaskPlannerPort } from "./ports/first-night-task-planner.js";
 import type { InitialPrivateKnowledgeBuilderPort } from "./ports/initial-private-knowledge-builder.js";
 import type { SetupGeneratorPort } from "./ports/setup-generator.js";
 
@@ -71,6 +79,8 @@ export type GameApplicationServiceDependencies = {
   readonly setupGenerator?: SetupGeneratorPort;
   readonly characterAssignmentGenerator?: CharacterAssignmentGeneratorPort;
   readonly initialPrivateKnowledgeBuilder?: InitialPrivateKnowledgeBuilderPort;
+  readonly firstNightTaskPlanner?: FirstNightTaskPlannerPort;
+  readonly firstNightTaskCatalogSnapshot?: FirstNightTaskCatalogSnapshot;
 };
 
 type DomainEventMetadata = Omit<DomainEventEnvelope, "eventType" | "payload">;
@@ -148,6 +158,10 @@ export class GameApplicationService {
       }
 
       if (batch.code === "InitialPrivateKnowledgeGenerationFailed") {
+        return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
+      }
+
+      if (batch.code === "FirstNightTaskPlanningFailed") {
         return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
       }
 
@@ -400,6 +414,55 @@ export class GameApplicationService {
 
         return undefined;
       }
+
+      case "PlanFirstNightTasks": {
+        if (command.actor.kind !== "system" && command.actor.kind !== "storyteller") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "PlanFirstNightTasks requires an existing game" };
+        }
+
+        if (state.setup === undefined) {
+          return { code: "SetupNotGenerated", message: "PlanFirstNightTasks requires generated setup" };
+        }
+
+        if (state.roster === undefined) {
+          return { code: "PlayerRosterNotCreated", message: "PlanFirstNightTasks requires a player roster" };
+        }
+
+        if (state.assignment === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "PlanFirstNightTasks requires character assignment" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `PlanFirstNightTasks cannot execute during ${state.phase}` };
+        }
+
+        if (state.firstNight === undefined) {
+          return { code: "FirstNightNotInitialized", message: "PlanFirstNightTasks requires first night initialization" };
+        }
+
+        if (
+          state.initialPrivateKnowledge === undefined ||
+          state.initialPrivateKnowledge.knowledgeStage !== INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE
+        ) {
+          return {
+            code: "InitialPrivateKnowledgeNotEstablished",
+            message: "PlanFirstNightTasks requires initial own-character knowledge"
+          };
+        }
+
+        if (state.firstNightTaskPlan !== undefined) {
+          return { code: "FirstNightTaskPlanAlreadyCreated", message: "First-night task plan has already been created" };
+        }
+
+        return undefined;
+      }
     }
 
     return assertNever(command.payload);
@@ -421,6 +484,10 @@ export class GameApplicationService {
     readonly code: "InitialPrivateKnowledgeGenerationFailed";
     readonly message: string;
     readonly details: InitialPrivateKnowledgeGenerationRejectionDetails;
+  } | {
+    readonly code: "FirstNightTaskPlanningFailed";
+    readonly message: string;
+    readonly details: FirstNightTaskPlanningRejectionDetails;
   } {
     try {
       const generatedSetup = this.generateSetupOrReject(command, state, currentGameVersion);
@@ -438,7 +505,12 @@ export class GameApplicationService {
         return initialPrivateKnowledge;
       }
 
-      return this.createBatch(command, state, currentGameVersion, generatedSetup, generatedAssignment, initialPrivateKnowledge);
+      const firstNightTaskPlan = this.generateFirstNightTaskPlanOrReject(command, state, currentGameVersion);
+      if (firstNightTaskPlan !== undefined && "code" in firstNightTaskPlan) {
+        return firstNightTaskPlan;
+      }
+
+      return this.createBatch(command, state, currentGameVersion, generatedSetup, generatedAssignment, initialPrivateKnowledge, firstNightTaskPlan);
     } catch (error: unknown) {
       if (error instanceof EventMetadataGenerationError) {
         return failed(command.gameId, "MetadataGenerationFailed", error.message, "event-metadata", currentGameVersion);
@@ -592,6 +664,15 @@ export class GameApplicationService {
     };
   }
 
+  private firstNightTaskPlanningFailureDetails(
+    failure: FirstNightTaskPlanningFailure
+  ): FirstNightTaskPlanningRejectionDetails {
+    return {
+      kind: "first-night-task-planning",
+      failure
+    };
+  }
+
   private generateInitialPrivateKnowledgeOrReject(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
@@ -654,13 +735,98 @@ export class GameApplicationService {
     return result.knowledge;
   }
 
+  private generateFirstNightTaskPlanOrReject(
+    command: SupportedCommandEnvelope,
+    state: GameState | undefined,
+    currentGameVersion: number
+  ): FirstNightTaskPlan | CommandExecutionFailed | {
+    readonly code: "FirstNightTaskPlanningFailed";
+    readonly message: string;
+    readonly details: FirstNightTaskPlanningRejectionDetails;
+  } | undefined {
+    if (command.payload.commandType !== "PlanFirstNightTasks") {
+      return undefined;
+    }
+
+    if (
+      state === undefined ||
+      state.setup === undefined ||
+      state.roster === undefined ||
+      state.assignment === undefined ||
+      state.firstNight === undefined ||
+      state.initialPrivateKnowledge === undefined
+    ) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "PlanFirstNightTasks requires setup, roster, assignment, first night, and initial private knowledge state",
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    const planner = this.dependencies.firstNightTaskPlanner;
+    if (planner === undefined) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "First-night task planner dependency is not configured",
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    const taskCatalogSnapshot = this.dependencies.firstNightTaskCatalogSnapshot;
+    if (taskCatalogSnapshot === undefined) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "First-night task catalog dependency is not configured",
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    let result;
+    try {
+      result = planner.generate({
+        nightNumber: 1,
+        setup: state.setup,
+        roster: state.roster.entries,
+        assignment: state.assignment.assignments,
+        firstNight: state.firstNight,
+        initialPrivateKnowledge: state.initialPrivateKnowledge,
+        taskCatalogSnapshot: cloneFirstNightTaskCatalogSnapshot(taskCatalogSnapshot)
+      });
+    } catch (error: unknown) {
+      return failed(
+        command.gameId,
+        "DependencyExecutionFailed",
+        errorMessage(error, "Unknown first-night task planner failure"),
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    if (result.status === "failure") {
+      return {
+        code: "FirstNightTaskPlanningFailed",
+        message: `${result.failureCode}: ${result.message}`,
+        details: this.firstNightTaskPlanningFailureDetails(result)
+      };
+    }
+
+    return result.taskPlan;
+  }
+
   private createBatch(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number,
     generatedSetup: GeneratedSetup | undefined,
     generatedAssignment: GeneratedCharacterAssignment | undefined,
-    initialPrivateKnowledge: InitialPrivateKnowledge | undefined
+    initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
+    firstNightTaskPlan: FirstNightTaskPlan | undefined
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.createBatchId();
@@ -673,7 +839,8 @@ export class GameApplicationService {
       state,
       generatedSetup,
       generatedAssignment,
-      initialPrivateKnowledge
+      initialPrivateKnowledge,
+      firstNightTaskPlan
     );
 
     return {
@@ -694,7 +861,8 @@ export class GameApplicationService {
     state: GameState | undefined,
     generatedSetup: GeneratedSetup | undefined,
     generatedAssignment: GeneratedCharacterAssignment | undefined,
-    initialPrivateKnowledge: InitialPrivateKnowledge | undefined
+    initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
+    firstNightTaskPlan: FirstNightTaskPlan | undefined
   ): readonly AnyDomainEventEnvelope[] {
     const common = (eventSequence: number) => this.createEventMetadata(command, eventBatchId, eventSequence, gameVersion);
 
@@ -909,6 +1077,45 @@ export class GameApplicationService {
         };
 
         return [firstNightInitializedEvent, initialPrivateKnowledgeEstablishedEvent];
+      }
+
+      case "PlanFirstNightTasks": {
+        if (
+          state === undefined ||
+          state.setup === undefined ||
+          state.roster === undefined ||
+          state.assignment === undefined ||
+          state.firstNight === undefined ||
+          state.initialPrivateKnowledge === undefined ||
+          firstNightTaskPlan === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "PlanFirstNightTasks event creation requires first-night source facts and a generated task plan"
+          );
+        }
+
+        const firstNightTaskPlanCreatedEvent: DomainEventEnvelope<"FirstNightTaskPlanCreated"> = {
+          ...common(firstEventSequence),
+          eventType: "FirstNightTaskPlanCreated" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            nightNumber: firstNightTaskPlan.nightNumber,
+            taskPlanVersion: firstNightTaskPlan.taskPlanVersion,
+            taskCatalogVersion: firstNightTaskPlan.taskCatalogVersion,
+            taskCatalogSignatureAlgorithm: firstNightTaskPlan.taskCatalogSignatureAlgorithm,
+            taskCatalogSignature: firstNightTaskPlan.taskCatalogSignature,
+            taskCatalogSnapshot: firstNightTaskPlan.taskCatalogSnapshot,
+            rosterVersion: firstNightTaskPlan.rosterVersion,
+            assignmentAlgorithmVersion: firstNightTaskPlan.assignmentAlgorithmVersion,
+            roleCatalogSignature: firstNightTaskPlan.roleCatalogSignature,
+            knowledgeModelVersion: firstNightTaskPlan.knowledgeModelVersion,
+            knowledgeStage: firstNightTaskPlan.knowledgeStage,
+            tasks: firstNightTaskPlan.tasks
+          } satisfies FirstNightTaskPlanCreatedPayload
+        };
+
+        return [firstNightTaskPlanCreatedEvent];
       }
     }
 

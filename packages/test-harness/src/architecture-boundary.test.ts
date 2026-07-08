@@ -39,18 +39,21 @@ describe("architecture boundaries", () => {
     const setupNames = dependencyNames(await readPackageJson("packages/setup-engine/package.json"));
     const informationNames = dependencyNames(await readPackageJson("packages/information-engine/package.json"));
     const projectionNames = dependencyNames(await readPackageJson("packages/projections/package.json"));
+    const taskNames = dependencyNames(await readPackageJson("packages/task-engine/package.json"));
     const testHarnessNames = dependencyNames(await readPackageJson("packages/test-harness/package.json"));
 
     expect(rulesNames).toStrictEqual(["@botc/domain-core"]);
     expect(setupNames).toStrictEqual(["@botc/domain-core"]);
     expect(informationNames).toStrictEqual(["@botc/domain-core"]);
     expect(projectionNames).toStrictEqual(["@botc/domain-core"]);
+    expect(taskNames).toStrictEqual(["@botc/domain-core"]);
     expect(testHarnessNames).toEqual(expect.arrayContaining([
       "@botc/application",
       "@botc/domain-core",
       "@botc/information-engine",
       "@botc/rules-snv",
-      "@botc/setup-engine"
+      "@botc/setup-engine",
+      "@botc/task-engine"
     ]));
   });
 

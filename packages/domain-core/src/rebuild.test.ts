@@ -32,6 +32,7 @@ import {
   charactersAssignedEvent,
   charactersAssignedPhaseTransitionedEvent,
   firstNightInitializedEvent,
+  firstNightTaskPlanCreatedEvent,
   gameCreatedEvent,
   infrastructureEvent,
   initialPrivateKnowledgeEstablishedEvent,
@@ -46,6 +47,7 @@ import {
 
 type FirstNightPayload = ReturnType<typeof firstNightInitializedEvent>["payload"];
 type InitialKnowledgePayload = ReturnType<typeof initialPrivateKnowledgeEstablishedEvent>["payload"];
+type FirstNightTaskPlanPayload = ReturnType<typeof firstNightTaskPlanCreatedEvent>["payload"];
 
 const captureDomainError = (action: () => void, code: DomainErrorCode): DomainError => {
   let caught: unknown;
@@ -95,6 +97,13 @@ const firstNightEventStream = (
   knowledgeEvent
 ];
 
+const firstNightTaskPlanEventStream = (
+  taskPlanEvent = firstNightTaskPlanCreatedEvent()
+): readonly AnyDomainEventEnvelope[] => [
+  ...firstNightEventStream(),
+  taskPlanEvent
+];
+
 const expectInitialKnowledgePayloadRejected = (payload: unknown): DomainError =>
   captureDomainError(
     () => rebuildGameState(firstNightEventStream(
@@ -111,6 +120,14 @@ const expectFirstNightPayloadRejected = (payload: unknown): DomainError =>
       initialPrivateKnowledgeEstablishedEvent()
     )),
     "InvalidFirstNightInitializedPayload"
+  );
+
+const expectFirstNightTaskPlanPayloadRejected = (payload: unknown): DomainError =>
+  captureDomainError(
+    () => rebuildGameState(firstNightTaskPlanEventStream(
+      firstNightTaskPlanCreatedEvent({ payload: payload as FirstNightTaskPlanPayload })
+    )),
+    "InvalidFirstNightTaskPlanCreatedPayload"
   );
 
 const generatedPayloadFor = (constraints: Parameters<typeof testSetupGenerator.generate>[0]["constraints"]): SetupGeneratedPayload => {
@@ -1902,6 +1919,156 @@ describe("domain event rebuild", () => {
     });
 
     expectDomainCode(() => rebuildGameState(assignmentEventStream(damaged)), "InvalidCharactersAssignedPayload");
+  });
+
+  it("rebuilds FirstNightTaskPlanCreated and keeps the game in FIRST_NIGHT", () => {
+    const state = rebuildGameState(firstNightTaskPlanEventStream());
+
+    expect(state.firstNightTaskPlan).toBeDefined();
+    expect(state.firstNightTaskPlan?.tasks.map((task) => task.status)).toEqual(expect.arrayContaining(["PENDING"]));
+    expect(state.phase).toBe("FIRST_NIGHT");
+    expect(state.nightNumber).toBe(1);
+    expect(state.dayNumber).toBe(0);
+  });
+
+  it("rejects FirstNightTaskPlanCreated before first-night knowledge exists", () => {
+    expectDomainCode(
+      () => rebuildGameState([
+        ...assignmentEventStream(),
+        firstNightTaskPlanCreatedEvent({
+          eventSequence: 9,
+          batchId: batchId("batch-invalid-task-plan"),
+          gameVersion: 6
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects duplicate FirstNightTaskPlanCreated facts", () => {
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        firstNightTaskPlanCreatedEvent({
+          eventId: eventId("event-12"),
+          eventSequence: 12,
+          batchId: batchId("batch-8"),
+          gameVersion: 8
+        })
+      ]),
+      "DuplicateCommandBatch"
+    );
+  });
+
+  it("rejects FirstNightTaskPlanCreated payloads with extra fields or sparse tasks", () => {
+    const payload = firstNightTaskPlanCreatedEvent().payload;
+
+    expectFirstNightTaskPlanPayloadRejected({ ...payload, currentTask: "forbidden" });
+
+    const sparseTasks = new Array(payload.tasks.length) as unknown[];
+    for (const [index, task] of payload.tasks.entries()) {
+      if (index !== 1) {
+        sparseTasks[index] = task;
+      }
+    }
+    expectFirstNightTaskPlanPayloadRejected({ ...payload, tasks: sparseTasks });
+  });
+
+  it("rejects task catalog signature, missing system task, duplicate system task, and malformed task ids", () => {
+    const payload = firstNightTaskPlanCreatedEvent().payload;
+    const minionTask = payload.tasks.find((task) => task.taskType === "MINION_INFO");
+    const demonTask = payload.tasks.find((task) => task.taskType === "DEMON_INFO");
+    if (minionTask === undefined || demonTask === undefined) {
+      throw new Error("test plan missing system tasks");
+    }
+
+    expectFirstNightTaskPlanPayloadRejected({ ...payload, taskCatalogSignature: "canonical-first-night-task-catalog-v1:00000000" });
+    expectFirstNightTaskPlanPayloadRejected({ ...payload, tasks: payload.tasks.filter((task) => task.taskType !== "MINION_INFO") });
+    expectFirstNightTaskPlanPayloadRejected({
+      ...payload,
+      tasks: payload.tasks.map((task) => task.taskType === "DEMON_INFO" ? { ...minionTask, taskId: "first-night-v1:MINION_INFO:system-copy" } : task)
+    });
+    expectFirstNightTaskPlanPayloadRejected({
+      ...payload,
+      tasks: payload.tasks.map((task) => task.taskType === "MINION_INFO" ? { ...task, taskId: "bad-task-id" } : task)
+    });
+  });
+
+  it("rejects role task omission, role source mismatch, and tasks for unsupported in-play roles", () => {
+    const payload = firstNightTaskPlanCreatedEvent().payload;
+    const roleTask = payload.tasks.find((task) => task.source.kind === "ROLE");
+    if (roleTask === undefined || roleTask.source.kind !== "ROLE") {
+      throw new Error("test plan missing role task");
+    }
+
+    const roleSource = roleTask.source;
+    const plannedRoleIds = new Set(payload.tasks
+      .filter((task) => task.source.kind === "ROLE")
+      .map((task) => task.source.kind === "ROLE" ? task.source.role.roleId : ""));
+    const unsupportedAssignment = charactersAssignedEvent().payload.assignments.find((assignment) => !plannedRoleIds.has(assignment.role.roleId));
+    if (unsupportedAssignment === undefined) {
+      throw new Error("test assignment missing unsupported role");
+    }
+
+    expectFirstNightTaskPlanPayloadRejected({ ...payload, tasks: payload.tasks.filter((task) => task.taskType !== roleTask.taskType) });
+    expectFirstNightTaskPlanPayloadRejected({
+      ...payload,
+      tasks: payload.tasks.map((task) => task.taskId === roleTask.taskId
+        ? { ...task, source: { ...roleSource, seatNumber: roleSource.seatNumber === 1 ? 2 : 1 } }
+        : task)
+    });
+    expectFirstNightTaskPlanPayloadRejected({
+      ...payload,
+      tasks: [
+        ...payload.tasks,
+        {
+          ...roleTask,
+          taskId: `first-night-v1:${roleTask.taskType}:seat-${String(unsupportedAssignment.seatNumber).padStart(2, "0")}`,
+          source: {
+            kind: "ROLE",
+            playerId: unsupportedAssignment.playerId,
+            seatNumber: unsupportedAssignment.seatNumber,
+            role: unsupportedAssignment.role
+          }
+        }
+      ]
+    });
+  });
+
+  it("rejects system task hidden recipients, duplicate ids, wrong order, nonzero insertion, non-PENDING status, and task extra fields", () => {
+    const payload = firstNightTaskPlanCreatedEvent().payload;
+    const [firstTask, secondTask] = payload.tasks;
+    const systemTask = payload.tasks.find((task) => task.source.kind === "SYSTEM");
+    if (firstTask === undefined || secondTask === undefined || systemTask === undefined) {
+      throw new Error("test plan missing tasks");
+    }
+
+    expectFirstNightTaskPlanPayloadRejected({
+      ...payload,
+      tasks: payload.tasks.map((task) => task.taskId === systemTask.taskId
+        ? { ...task, source: { ...task.source, playerId: "player-hidden" } }
+        : task)
+    });
+    expectFirstNightTaskPlanPayloadRejected({
+      ...payload,
+      tasks: payload.tasks.map((task) => task.taskId === systemTask.taskId
+        ? { ...task, source: { ...task.source, recipientPlayerIds: ["player-hidden"] } }
+        : task)
+    });
+    expectFirstNightTaskPlanPayloadRejected({ ...payload, tasks: [firstTask, { ...secondTask, taskId: firstTask.taskId }, ...payload.tasks.slice(2)] });
+    expectFirstNightTaskPlanPayloadRejected({ ...payload, tasks: [secondTask, firstTask, ...payload.tasks.slice(2)] });
+    expectFirstNightTaskPlanPayloadRejected({
+      ...payload,
+      tasks: payload.tasks.map((task) => task.taskId === firstTask.taskId ? { ...task, orderKey: { ...task.orderKey, insertionOrder: 1 } } : task)
+    });
+    expectFirstNightTaskPlanPayloadRejected({
+      ...payload,
+      tasks: payload.tasks.map((task) => task.taskId === firstTask.taskId ? { ...task, status: "SETTLED" } : task)
+    });
+    expectFirstNightTaskPlanPayloadRejected({
+      ...payload,
+      tasks: payload.tasks.map((task) => task.taskId === firstTask.taskId ? { ...task, finalLegalTargets: [] } : task)
+    });
   });
 
   it("does not allow AuditEvent streams at the type boundary", () => {

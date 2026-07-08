@@ -6,6 +6,7 @@ import {
   charactersAssignedEvent,
   charactersAssignedPhaseTransitionedEvent,
   firstNightInitializedEvent,
+  firstNightTaskPlanCreatedEvent,
   gameCreatedEvent,
   initialPrivateKnowledgeEstablishedEvent,
   phaseTransitionedEvent,
@@ -26,6 +27,20 @@ const stateWithPrivateKnowledge = (): GameState => rebuildGameState([
   charactersAssignedPhaseTransitionedEvent(),
   firstNightInitializedEvent(),
   initialPrivateKnowledgeEstablishedEvent()
+]);
+
+const stateWithTaskPlan = (): GameState => rebuildGameState([
+  gameCreatedEvent(),
+  scriptSelectedEvent(),
+  phaseTransitionedEvent(),
+  setupGeneratedEvent(),
+  setupPhaseTransitionedEvent(),
+  playerRosterCreatedEvent(),
+  charactersAssignedEvent(),
+  charactersAssignedPhaseTransitionedEvent(),
+  firstNightInitializedEvent(),
+  initialPrivateKnowledgeEstablishedEvent(),
+  firstNightTaskPlanCreatedEvent()
 ]);
 
 const viewKeys = [
@@ -120,6 +135,32 @@ describe("private knowledge projections", () => {
     }
 
     expect(buildAiPrivateKnowledgeView(state, viewer.playerId)).toStrictEqual(buildPlayerPrivateKnowledgeView(state, viewer.playerId));
+  });
+
+  it("does not expose first-night task plans through player or AI private knowledge views", () => {
+    const state = stateWithTaskPlan();
+    const viewer = state.roster?.entries[0];
+    if (viewer === undefined) {
+      throw new Error("Expected viewer");
+    }
+
+    const playerView = buildPlayerPrivateKnowledgeView(state, viewer.playerId);
+    const aiView = buildAiPrivateKnowledgeView(state, viewer.playerId);
+    const playerSerialized = JSON.stringify(playerView);
+    const aiSerialized = JSON.stringify(aiView);
+
+    expect(Object.keys(playerView).sort()).toStrictEqual(viewKeys.filter((key) => key !== "knownDemon").sort());
+    expect(Object.keys(aiView).sort()).toStrictEqual(Object.keys(playerView).sort());
+    for (const serialized of [playerSerialized, aiSerialized]) {
+      expect(serialized).not.toContain("taskPlan");
+      expect(serialized).not.toContain("tasks");
+      expect(serialized).not.toContain("taskType");
+      expect(serialized).not.toContain("sourcePlayerId");
+      expect(serialized).not.toContain("pendingRoleTasks");
+      expect(serialized).not.toContain("PHILOSOPHER_ACTION");
+      expect(serialized).not.toContain("MINION_INFO");
+      expect(serialized).not.toContain("DEMON_INFO");
+    }
   });
 
   it("fails before projection when canonical private knowledge contains an unknown entry kind", () => {
