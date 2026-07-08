@@ -190,7 +190,21 @@ Preconditions:
 - initial own-character private knowledge exists;
 - no first-night task plan exists.
 
-Missing planner, missing catalog, and thrown planner errors are retryable runtime failures with:
+### Task Planning Has No User-Supplied Domain Input
+
+`PlanFirstNightTasks` carries no user-supplied task, role, ordering, or catalog parameter:
+
+```text
+{ commandType: "PlanFirstNightTasks" }
+```
+
+Actor, phase, version, setup, roster, assignment, first-night initialization, own-character knowledge, and duplicate-plan preconditions are validated before planner invocation.
+
+Those deterministic command-state failures remain persisted rejected receipts. Planner, catalog, generated-plan, and prospective validation failures are internal execution failures because the task plan is built entirely by application and planner code.
+
+### Planner Failure Is Retryable
+
+Missing planner, missing catalog, thrown planner errors, and planner failure results are retryable runtime failures with:
 
 ```text
 failureStage = first-night-task-planning
@@ -198,14 +212,55 @@ failureStage = first-night-task-planning
 
 They write no receipt and append no domain event.
 
-Deterministic planning failures are persisted rejected receipts:
+Planner structured failure values remain available only as internal diagnostics. They are not command receipt content.
+
+Planner failure classification:
 
 ```text
-code = FirstNightTaskPlanningFailed
-details.kind = first-night-task-planning
+InvalidTaskCatalog -> failed ApplicationNotConfigured
+InvalidFirstNightState -> failed DependencyExecutionFailed
+InvalidTaskPlan -> failed DependencyExecutionFailed
 ```
 
-They are idempotent on retry with the same command id.
+The failed message preserves the planner `failureCode`, original failure message, `conflictingTaskIds`, and `conflictingRoleIds`.
+
+### Invalid Catalog Is Application Misconfiguration
+
+The application validates `dependencies.firstNightTaskCatalogSnapshot` before calling the planner.
+
+Invalid or mismatched task catalogs return:
+
+```text
+status = failed
+code = ApplicationNotConfigured
+failureStage = first-night-task-planning
+retryable = true
+```
+
+Invalid catalogs do not call the planner, do not write accepted or rejected receipts, and do not append domain events.
+
+The application still passes a defensive copy of the validated catalog snapshot to the planner.
+
+### Generated Plan Prospective Failure Is Retryable
+
+For `PlanFirstNightTasks`, prospective validation `DomainError` means the internally generated event or task plan is invalid.
+
+It returns:
+
+```text
+status = failed
+code = DependencyExecutionFailed
+failureStage = prospective-validation
+retryable = true
+```
+
+It does not save a `DomainValidationFailed` rejected receipt. Fixing the planner or application allows the same `commandId` to retry successfully.
+
+### No Planning Failure Command Receipts
+
+No planner failure, invalid task catalog, thrown planner error, or generated-plan prospective failure is stored as a command receipt.
+
+Persisted command rejections remain only for deterministic command-state failures, including actor, phase, version, missing prerequisite facts, and duplicate task-plan facts.
 
 ## 7. Domain Event
 
@@ -279,7 +334,10 @@ Covered areas:
 - replay validation for `FirstNightTaskPlanCreated`.
 - application command preconditions and actor rules.
 - retryable runtime planning failures.
-- deterministic planning rejection receipts.
+- invalid catalog retry without planner invocation.
+- planner failure retry without command receipts.
+- generated-plan prospective failure retry without `DomainValidationFailed` receipts.
+- deterministic actor, phase, version, and duplicate-plan rejection receipts.
 - projection leakage after task plan creation.
 - Windows CI focused task coverage.
 
@@ -288,8 +346,8 @@ Local gates run during implementation:
 ```text
 pnpm typecheck: passed
 pnpm lint: passed
-pnpm test: passed, 408 tests
-pnpm test:coverage: passed, 408 tests
+pnpm test: passed, 412 tests
+pnpm test:coverage: passed, 412 tests
 ```
 
 ## 11. Not Implemented

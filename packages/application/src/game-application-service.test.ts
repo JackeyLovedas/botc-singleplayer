@@ -2,13 +2,24 @@ import { describe, expect, it } from "vitest";
 import {
   RULES_BASELINE_VERSION,
   batchId,
+  cloneFirstNightTaskCatalogSnapshot,
   commandId,
   correlationId,
   playerId,
   rebuildOptionalGameState,
-  roleId
+  roleId,
+  scheduledTaskId
 } from "@botc/domain-core";
-import type { AnyDomainEventEnvelope, BatchId, EventId, GameId, GeneratedCharacterAssignment } from "@botc/domain-core";
+import type {
+  AnyDomainEventEnvelope,
+  BatchId,
+  EventId,
+  FirstNightTaskCatalogSnapshot,
+  FirstNightTaskPlan,
+  FirstNightTaskPlanningFailure,
+  GameId,
+  GeneratedCharacterAssignment
+} from "@botc/domain-core";
 import { GameApplicationService, accepted, rejected } from "@botc/application";
 import type {
   CharacterAssignmentGeneratorPort,
@@ -53,7 +64,8 @@ const makeService = (
   clock = new FixedClock(),
   characterAssignmentGenerator: CharacterAssignmentGeneratorPort = testAssignmentGenerator,
   initialPrivateKnowledgeBuilder: InitialPrivateKnowledgeBuilderPort = testInitialPrivateKnowledgeBuilder,
-  firstNightTaskPlanner: FirstNightTaskPlannerPort = testFirstNightTaskPlanner
+  firstNightTaskPlanner: FirstNightTaskPlannerPort = testFirstNightTaskPlanner,
+  firstNightTaskCatalogSnapshot: FirstNightTaskCatalogSnapshot = testFirstNightTaskCatalog
 ) => {
   const service = new GameApplicationService({
     commandStore,
@@ -63,7 +75,7 @@ const makeService = (
     characterAssignmentGenerator,
     initialPrivateKnowledgeBuilder,
     firstNightTaskPlanner,
-    firstNightTaskCatalogSnapshot: testFirstNightTaskCatalog
+    firstNightTaskCatalogSnapshot
   });
 
   return { service, commandStore };
@@ -223,6 +235,16 @@ class FaultInjectingClock extends FixedClock {
     return super.now();
   }
 }
+
+const taskPlanningFailure = (
+  failureCode: FirstNightTaskPlanningFailure["failureCode"]
+): FirstNightTaskPlanningFailure => ({
+  status: "failure",
+  failureCode,
+  message: `${failureCode} injected`,
+  conflictingTaskIds: [scheduledTaskId("first-night-v1:WITCH_ACTION:seat-08")],
+  conflictingRoleIds: [roleId("witch")]
+});
 
 describe("GameApplicationService", () => {
   it("creates a game with an accepted receipt and one atomic domain event batch", async () => {
@@ -524,6 +546,17 @@ describe("GameApplicationService", () => {
     rejected(ids.game, "MetadataGenerationFailed", "Metadata failed", 0);
     // @ts-expect-error EventStoreAppendFailed cannot be a rejected receipt.
     rejected(ids.game, "EventStoreAppendFailed", "Append failed", 0);
+    // @ts-expect-error Planning dependency failure cannot be a rejected receipt.
+    rejected(ids.game, "FirstNightTaskPlanningFailed", "Planning failed", 6, false, {
+      kind: "first-night-task-planning",
+      failure: {
+        status: "failure",
+        failureCode: "InvalidTaskPlan",
+        message: "Generated task plan was not canonical",
+        conflictingTaskIds: [],
+        conflictingRoleIds: []
+      }
+    });
     // @ts-expect-error Retryable runtime failures must not be persisted as command receipts.
     const failedReceiptResult: CommandReceiptResult = retryableFailure;
     // @ts-expect-error EventStoreAppendFailed must not be persisted as a command receipt.
@@ -1834,14 +1867,21 @@ describe("GameApplicationService", () => {
   });
 
   it("rejects human and AI actors for PlanFirstNightTasks and allows Storyteller", async () => {
-    const { service } = makeService();
+    const { service, commandStore } = makeService();
     await reachFirstNightKnowledge(service);
 
-    await expect(service.execute(planFirstNightTasksCommand({ commandId: commandId("human-task-plan"), actor: humanActor })))
+    const humanCommand = planFirstNightTasksCommand({ commandId: commandId("human-task-plan"), actor: humanActor });
+    const aiCommand = planFirstNightTasksCommand({ commandId: commandId("ai-task-plan"), actor: aiActor });
+    const storytellerCommand = planFirstNightTasksCommand({ commandId: commandId("storyteller-task-plan"), actor: storytellerActor });
+
+    await expect(service.execute(humanCommand))
       .resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
-    await expect(service.execute(planFirstNightTasksCommand({ commandId: commandId("ai-task-plan"), actor: aiActor })))
+    await expect(service.execute(aiCommand))
       .resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
-    await expect(service.execute(planFirstNightTasksCommand({ commandId: commandId("storyteller-task-plan"), actor: storytellerActor })))
+    expect((await commandStore.findCommandReceipt(humanCommand.gameId, humanCommand.commandId))?.result.status).toBe("rejected");
+    expect((await commandStore.findCommandReceipt(aiCommand.gameId, aiCommand.commandId))?.result.status).toBe("rejected");
+
+    await expect(service.execute(storytellerCommand))
       .resolves.toMatchObject({ status: "accepted" });
   });
 
@@ -1850,22 +1890,27 @@ describe("GameApplicationService", () => {
     await reachFirstNightKnowledge(service);
 
     await service.execute(planFirstNightTasksCommand());
-    await expect(service.execute(planFirstNightTasksCommand({
+    const duplicateCommand = planFirstNightTasksCommand({
       commandId: commandId("duplicate-task-plan"),
       expectedGameVersion: 7
-    }))).resolves.toMatchObject({
+    });
+    const staleCommand = planFirstNightTasksCommand({
+      commandId: commandId("stale-task-plan"),
+      expectedGameVersion: 6
+    });
+
+    await expect(service.execute(duplicateCommand)).resolves.toMatchObject({
       status: "rejected",
       code: "FirstNightTaskPlanAlreadyCreated",
       currentGameVersion: 7
     });
-    await expect(service.execute(planFirstNightTasksCommand({
-      commandId: commandId("stale-task-plan"),
-      expectedGameVersion: 6
-    }))).resolves.toMatchObject({
+    await expect(service.execute(staleCommand)).resolves.toMatchObject({
       status: "rejected",
       code: "ExpectedGameVersionMismatch",
       currentGameVersion: 7
     });
+    expect((await commandStore.findCommandReceipt(duplicateCommand.gameId, duplicateCommand.commandId))?.result.status).toBe("rejected");
+    expect((await commandStore.findCommandReceipt(staleCommand.gameId, staleCommand.commandId))?.result.status).toBe("rejected");
     expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(11);
   });
 
@@ -1936,52 +1981,186 @@ describe("GameApplicationService", () => {
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
   });
 
-  it("persists deterministic first-night task planning failures through receipts", async () => {
-    const planningFailure = {
-      status: "failure" as const,
-      failureCode: "InvalidTaskPlan" as const,
-      message: "Generated task plan was not canonical",
-      conflictingTaskIds: [],
-      conflictingRoleIds: [roleId("witch")]
-    };
-    const failingPlanner: FirstNightTaskPlannerPort = {
-      generate: () => planningFailure
+  it("keeps invalid application task catalogs retryable without calling the planner, receipts, or events", async () => {
+    const invalidCatalog = {
+      ...cloneFirstNightTaskCatalogSnapshot(testFirstNightTaskCatalog),
+      taskCatalogSignature: "canonical-first-night-task-catalog-v1:00000000"
     };
     const commandStore = new MemoryCommandCommitStore();
-    const { service } = makeService(
+    const idGenerator = new FixedIdGenerator();
+    const clock = new FixedClock();
+    let plannerCalls = 0;
+    const countingPlanner: FirstNightTaskPlannerPort = {
+      generate: (input) => {
+        plannerCalls += 1;
+        return testFirstNightTaskPlanner.generate(input);
+      }
+    };
+    const failing = makeService(
       commandStore,
       testSetupGenerator,
-      new FixedIdGenerator(),
-      new FixedClock(),
+      idGenerator,
+      clock,
+      testAssignmentGenerator,
+      testInitialPrivateKnowledgeBuilder,
+      countingPlanner,
+      invalidCatalog
+    );
+    const command = planFirstNightTasksCommand({ commandId: commandId("invalid-application-task-catalog") });
+
+    await reachFirstNightKnowledge(failing.service);
+    const failedResult = await failing.service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "ApplicationNotConfigured",
+      failureStage: "first-night-task-planning",
+      currentGameVersion: 6,
+      retryable: true
+    });
+    expect(failedResult.message).toContain("Invalid first-night task catalog dependency");
+    expect(plannerCalls).toBe(0);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+    expect(commandStore.acceptedCount).toBe(6);
+    expect(commandStore.rejectedCount).toBe(0);
+
+    const fixed = makeService(
+      commandStore,
+      testSetupGenerator,
+      idGenerator,
+      clock,
+      testAssignmentGenerator,
+      testInitialPrivateKnowledgeBuilder,
+      countingPlanner,
+      testFirstNightTaskCatalog
+    );
+    const retried = await fixed.service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(7);
+    expect(plannerCalls).toBe(1);
+  });
+
+  it.each([
+    ["InvalidTaskCatalog", "ApplicationNotConfigured"],
+    ["InvalidFirstNightState", "DependencyExecutionFailed"],
+    ["InvalidTaskPlan", "DependencyExecutionFailed"]
+  ] as const)("keeps planner %s failures retryable without command receipts", async (failureCode, expectedCode) => {
+    const failure = taskPlanningFailure(failureCode);
+    const failingPlanner: FirstNightTaskPlannerPort = {
+      generate: () => failure
+    };
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FixedIdGenerator();
+    const clock = new FixedClock();
+    const failing = makeService(
+      commandStore,
+      testSetupGenerator,
+      idGenerator,
+      clock,
       testAssignmentGenerator,
       testInitialPrivateKnowledgeBuilder,
       failingPlanner
     );
-    const command = planFirstNightTasksCommand({ commandId: commandId("structured-task-plan-failure") });
+    const command = planFirstNightTasksCommand({ commandId: commandId(`planner-${failureCode}`) });
 
-    await reachFirstNightKnowledge(service);
-    const first = await service.execute(command);
-    const second = await service.execute(command);
+    await reachFirstNightKnowledge(failing.service);
+    const failedResult = await failing.service.execute(command);
 
-    expect(first).toMatchObject({
-      status: "rejected",
-      code: "FirstNightTaskPlanningFailed",
-      idempotent: false,
-      details: {
-        kind: "first-night-task-planning",
-        failure: planningFailure
-      }
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: expectedCode,
+      failureStage: "first-night-task-planning",
+      currentGameVersion: 6,
+      retryable: true
     });
-    expect(second).toMatchObject({
-      status: "rejected",
-      code: "FirstNightTaskPlanningFailed",
-      idempotent: true,
-      details: {
-        kind: "first-night-task-planning",
-        failure: planningFailure
+    expect(failedResult.message).toContain(failure.failureCode);
+    expect(failedResult.message).toContain(failure.message);
+    expect(failedResult.message).toContain("first-night-v1:WITCH_ACTION:seat-08");
+    expect(failedResult.message).toContain("witch");
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+    expect(commandStore.rejectedCount).toBe(0);
+
+    const fixed = makeService(
+      commandStore,
+      testSetupGenerator,
+      idGenerator,
+      clock,
+      testAssignmentGenerator,
+      testInitialPrivateKnowledgeBuilder,
+      testFirstNightTaskPlanner
+    );
+    const retried = await fixed.service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(7);
+  });
+
+  it("keeps internally damaged generated task plans retryable at prospective validation", async () => {
+    const corruptingPlanner: FirstNightTaskPlannerPort = {
+      generate: (input) => {
+        const result = testFirstNightTaskPlanner.generate(input);
+        if (result.status === "failure") {
+          return result;
+        }
+
+        const damagedPlan: FirstNightTaskPlan = {
+          ...result.taskPlan,
+          tasks: result.taskPlan.tasks.map((task, index) =>
+            index === 0 ? { ...task, status: "SETTLED" as unknown as "PENDING" } : task
+          )
+        };
+
+        return {
+          status: "success",
+          taskPlan: damagedPlan
+        };
       }
+    };
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FixedIdGenerator();
+    const clock = new FixedClock();
+    const failing = makeService(
+      commandStore,
+      testSetupGenerator,
+      idGenerator,
+      clock,
+      testAssignmentGenerator,
+      testInitialPrivateKnowledgeBuilder,
+      corruptingPlanner
+    );
+    const command = planFirstNightTasksCommand({ commandId: commandId("corrupt-generated-task-plan") });
+
+    await reachFirstNightKnowledge(failing.service);
+    const failedResult = await failing.service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "DependencyExecutionFailed",
+      failureStage: "prospective-validation",
+      currentGameVersion: 6,
+      retryable: true
     });
+    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
     expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(10);
+    expect(commandStore.rejectedCount).toBe(0);
+
+    const fixed = makeService(
+      commandStore,
+      testSetupGenerator,
+      idGenerator,
+      clock,
+      testAssignmentGenerator,
+      testInitialPrivateKnowledgeBuilder,
+      testFirstNightTaskPlanner
+    );
+    const retried = await fixed.service.execute(command);
+
+    expectAcceptedResult(retried);
+    expect(retried.gameVersion).toBe(7);
   });
 
   it("rejects AI and Storyteller actors for CreateGame and SelectScript", async () => {

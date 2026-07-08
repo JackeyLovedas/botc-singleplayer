@@ -17,6 +17,7 @@ import {
   SUPPORTED_SCRIPT_EDITION,
   SUPPORTED_SCRIPT_ID,
   SUPPORTED_SCRIPT_NAME,
+  validateFirstNightTaskCatalogSnapshot,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
 import type {
@@ -54,7 +55,6 @@ import type {
   CommandResult,
   GeneralCommandRejectionCode,
   InitialPrivateKnowledgeGenerationRejectionDetails,
-  FirstNightTaskPlanningRejectionDetails,
   SetupGenerationRejectionDetails
 } from "./command-result.js";
 import type { CharacterAssignmentGeneratorPort } from "./ports/character-assignment-generator.js";
@@ -94,6 +94,13 @@ class EventMetadataGenerationError extends Error {
 
 const errorMessage = (error: unknown, fallback: string): string =>
   error instanceof Error ? error.message : fallback;
+
+const firstNightTaskPlanningFailureMessage = (failure: FirstNightTaskPlanningFailure): string =>
+  [
+    `${failure.failureCode}: ${failure.message}`,
+    `conflictingTaskIds=[${failure.conflictingTaskIds.join(",")}]`,
+    `conflictingRoleIds=[${failure.conflictingRoleIds.join(",")}]`
+  ].join("; ");
 
 export class GameApplicationService {
   public constructor(private readonly dependencies: GameApplicationServiceDependencies) {}
@@ -161,14 +168,10 @@ export class GameApplicationService {
         return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
       }
 
-      if (batch.code === "FirstNightTaskPlanningFailed") {
-        return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
-      }
-
       return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion));
     }
 
-    const prospective = this.validateProspectiveBatch(state, batch);
+    const prospective = this.validateProspectiveBatch(command, state, batch);
     if (prospective !== undefined) {
       if ("status" in prospective) {
         return prospective;
@@ -484,10 +487,6 @@ export class GameApplicationService {
     readonly code: "InitialPrivateKnowledgeGenerationFailed";
     readonly message: string;
     readonly details: InitialPrivateKnowledgeGenerationRejectionDetails;
-  } | {
-    readonly code: "FirstNightTaskPlanningFailed";
-    readonly message: string;
-    readonly details: FirstNightTaskPlanningRejectionDetails;
   } {
     try {
       const generatedSetup = this.generateSetupOrReject(command, state, currentGameVersion);
@@ -664,15 +663,6 @@ export class GameApplicationService {
     };
   }
 
-  private firstNightTaskPlanningFailureDetails(
-    failure: FirstNightTaskPlanningFailure
-  ): FirstNightTaskPlanningRejectionDetails {
-    return {
-      kind: "first-night-task-planning",
-      failure
-    };
-  }
-
   private generateInitialPrivateKnowledgeOrReject(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
@@ -739,11 +729,7 @@ export class GameApplicationService {
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number
-  ): FirstNightTaskPlan | CommandExecutionFailed | {
-    readonly code: "FirstNightTaskPlanningFailed";
-    readonly message: string;
-    readonly details: FirstNightTaskPlanningRejectionDetails;
-  } | undefined {
+  ): FirstNightTaskPlan | CommandExecutionFailed | undefined {
     if (command.payload.commandType !== "PlanFirstNightTasks") {
       return undefined;
     }
@@ -787,6 +773,18 @@ export class GameApplicationService {
       );
     }
 
+    const catalogValidation = validateFirstNightTaskCatalogSnapshot(taskCatalogSnapshot);
+    if (!catalogValidation.valid) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        `Invalid first-night task catalog dependency: ${catalogValidation.reason}`,
+        "first-night-task-planning",
+        currentGameVersion
+      );
+    }
+
+    const taskCatalogSnapshotCopy = cloneFirstNightTaskCatalogSnapshot(taskCatalogSnapshot);
     let result;
     try {
       result = planner.generate({
@@ -796,7 +794,7 @@ export class GameApplicationService {
         assignment: state.assignment.assignments,
         firstNight: state.firstNight,
         initialPrivateKnowledge: state.initialPrivateKnowledge,
-        taskCatalogSnapshot: cloneFirstNightTaskCatalogSnapshot(taskCatalogSnapshot)
+        taskCatalogSnapshot: taskCatalogSnapshotCopy
       });
     } catch (error: unknown) {
       return failed(
@@ -809,11 +807,13 @@ export class GameApplicationService {
     }
 
     if (result.status === "failure") {
-      return {
-        code: "FirstNightTaskPlanningFailed",
-        message: `${result.failureCode}: ${result.message}`,
-        details: this.firstNightTaskPlanningFailureDetails(result)
-      };
+      return failed(
+        command.gameId,
+        result.failureCode === "InvalidTaskCatalog" ? "ApplicationNotConfigured" : "DependencyExecutionFailed",
+        firstNightTaskPlanningFailureMessage(result),
+        "first-night-task-planning",
+        currentGameVersion
+      );
     }
 
     return result.taskPlan;
@@ -1123,6 +1123,7 @@ export class GameApplicationService {
   }
 
   private validateProspectiveBatch(
+    command: SupportedCommandEnvelope,
     state: GameState | undefined,
     batch: DomainEventBatch
   ): CommandExecutionFailed | { readonly code: "DomainValidationFailed"; readonly message: string } | undefined {
@@ -1136,6 +1137,16 @@ export class GameApplicationService {
           batch.gameId,
           "DependencyExecutionFailed",
           errorMessage(error, "Unknown prospective validation failure"),
+          "prospective-validation",
+          batch.expectedGameVersion
+        );
+      }
+
+      if (command.payload.commandType === "PlanFirstNightTasks") {
+        return failed(
+          batch.gameId,
+          "DependencyExecutionFailed",
+          error.message,
           "prospective-validation",
           batch.expectedGameVersion
         );

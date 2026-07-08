@@ -1,7 +1,6 @@
 import type {
   AnyDomainEventEnvelope,
   AssignmentGenerationFailure,
-  FirstNightTaskPlanningFailure,
   GameId,
   InitialPrivateKnowledgeGenerationFailure,
   SetupGenerationFailure
@@ -34,19 +33,16 @@ export type CommandRejectionCode =
   | "InitialPrivateKnowledgeGenerationFailed"
   | "FirstNightNotInitialized"
   | "FirstNightTaskPlanAlreadyCreated"
-  | "FirstNightTaskPlanningFailed"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 
 export type SetupGenerationRejectionCode = "SetupGenerationFailed";
 export type AssignmentGenerationRejectionCode = "AssignmentGenerationFailed";
 export type InitialPrivateKnowledgeGenerationRejectionCode = "InitialPrivateKnowledgeGenerationFailed";
-export type FirstNightTaskPlanningRejectionCode = "FirstNightTaskPlanningFailed";
 export type StructuredCommandRejectionCode =
   | SetupGenerationRejectionCode
   | AssignmentGenerationRejectionCode
-  | InitialPrivateKnowledgeGenerationRejectionCode
-  | FirstNightTaskPlanningRejectionCode;
+  | InitialPrivateKnowledgeGenerationRejectionCode;
 export type GeneralCommandRejectionCode = Exclude<CommandRejectionCode, StructuredCommandRejectionCode>;
 
 export type CommandAccepted = {
@@ -72,16 +68,10 @@ export type InitialPrivateKnowledgeGenerationRejectionDetails = {
   readonly failure: InitialPrivateKnowledgeGenerationFailure;
 };
 
-export type FirstNightTaskPlanningRejectionDetails = {
-  readonly kind: "first-night-task-planning";
-  readonly failure: FirstNightTaskPlanningFailure;
-};
-
 export type CommandRejectionDetails =
   | SetupGenerationRejectionDetails
   | AssignmentGenerationRejectionDetails
-  | InitialPrivateKnowledgeGenerationRejectionDetails
-  | FirstNightTaskPlanningRejectionDetails;
+  | InitialPrivateKnowledgeGenerationRejectionDetails;
 
 export type SetupGenerationCommandRejected = {
   readonly status: "rejected";
@@ -113,16 +103,6 @@ export type InitialPrivateKnowledgeGenerationCommandRejected = {
   readonly details: InitialPrivateKnowledgeGenerationRejectionDetails;
 };
 
-export type FirstNightTaskPlanningCommandRejected = {
-  readonly status: "rejected";
-  readonly gameId: GameId;
-  readonly code: FirstNightTaskPlanningRejectionCode;
-  readonly message: string;
-  readonly currentGameVersion: number;
-  readonly idempotent: boolean;
-  readonly details: FirstNightTaskPlanningRejectionDetails;
-};
-
 export type GeneralCommandRejected = {
   readonly status: "rejected";
   readonly gameId: GameId;
@@ -137,7 +117,6 @@ export type CommandRejected =
   | SetupGenerationCommandRejected
   | AssignmentGenerationCommandRejected
   | InitialPrivateKnowledgeGenerationCommandRejected
-  | FirstNightTaskPlanningCommandRejected
   | GeneralCommandRejected;
 
 export type CommandExecutionFailureCode =
@@ -241,14 +220,6 @@ export function rejected(
 ): InitialPrivateKnowledgeGenerationCommandRejected;
 export function rejected(
   gameId: GameId,
-  code: FirstNightTaskPlanningRejectionCode,
-  message: string,
-  currentGameVersion: number,
-  idempotent: boolean,
-  details: FirstNightTaskPlanningRejectionDetails
-): FirstNightTaskPlanningCommandRejected;
-export function rejected(
-  gameId: GameId,
   code: GeneralCommandRejectionCode,
   message: string,
   currentGameVersion: number,
@@ -296,22 +267,6 @@ export function rejected(
 
   if (code === "InitialPrivateKnowledgeGenerationFailed") {
     if (details === undefined || details.kind !== "initial-private-knowledge-generation") {
-      throw new Error(`${code} requires structured rejection details`);
-    }
-
-    return {
-      status: "rejected",
-      gameId,
-      code,
-      message,
-      currentGameVersion,
-      idempotent,
-      details
-    };
-  }
-
-  if (code === "FirstNightTaskPlanningFailed") {
-    if (details === undefined || details.kind !== "first-night-task-planning") {
       throw new Error(`${code} requires structured rejection details`);
     }
 
