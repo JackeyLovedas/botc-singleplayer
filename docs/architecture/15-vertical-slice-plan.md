@@ -157,6 +157,27 @@ Acceptance:
 - Role tasks remain pending after this slice.
 - Projection leakage tests cover delivered information and still do not expose task plan internals.
 
+## Slice 2B6: Philosopher Action Opportunity And Defer Settlement
+
+Scope:
+
+- Execute only after Slice 2B5 is accepted and merged.
+- Open the current next `PHILOSOPHER_ACTION` task as a deterministic first-night `ActionOpportunity`.
+- Expose only a safe opportunity schema: `canDefer`, `supportedDecisionKinds = [DEFER]`, and `futureUnsupportedDecisionKinds = [CHOOSE_GOOD_CHARACTER]`.
+- Accept `SubmitPhilosopherAction` only for `DEFER`.
+- Close the opportunity through `PhilosopherActionDeferred`.
+- Settle the scheduled task with `ScheduledTaskSettled.outcomeType = PHILOSOPHER_DEFERRED`.
+- Keep player and AI private knowledge projections free of opportunity ids, task ids, role-action task types, and decision schemas.
+
+Acceptance:
+
+- Golden `MINION_INFO` is still blocked before Philosopher action handling.
+- `FirstNightActionOpportunityCreated` is a single-event batch.
+- `PhilosopherActionDeferred -> ScheduledTaskSettled` is the only accepted DEFER settlement batch.
+- After DEFER, `MINION_INFO` and then `DEMON_INFO` can settle in order.
+- `CHOOSE_GOOD_CHARACTER` is rejected as not implemented.
+- No ability gain, no drunkenness, no dynamic task insertion, and no other role ability behavior is implemented.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:
