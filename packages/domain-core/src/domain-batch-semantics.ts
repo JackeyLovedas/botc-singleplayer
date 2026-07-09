@@ -3,6 +3,10 @@ import type { AnyDomainEventEnvelope, DomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
 import { isIntegratedTransitionReason } from "./phase-transition-policy.js";
 import { firstNightTaskTypeForPhilosopherChoice } from "./philosopher-ability.js";
+import { evaluateSnakeCharmerEffectiveness } from "./snake-charmer.js";
+import type { SnakeCharmerEffectivenessResult } from "./snake-charmer.js";
+
+type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
 
 const reject = (message: string): never => {
   throw new DomainError("InvalidDomainBatchSemantics", message);
@@ -456,6 +460,20 @@ const validateIntegratedPhilosopherAbilityChoiceBatch = (
   }
 };
 
+const assertSnakeCharmerSourceEffective = (
+  currentState: GameState,
+  targetChosen: DomainEventEnvelope<"SnakeCharmerTargetChosen">
+): void => {
+  const effectiveness = evaluateSnakeCharmerEffectiveness({
+    sourcePlayerId: targetChosen.payload.sourcePlayerId,
+    abilityImpairments: currentState.abilityImpairments
+  });
+
+  if (!effectiveness.effective) {
+    reject("Snake Charmer mechanical resolution requires an effective source");
+  }
+};
+
 const validateIntegratedSnakeCharmerNoSwapBatch = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -496,6 +514,7 @@ const validateIntegratedSnakeCharmerNoSwapBatch = (
   const targetChosen = first as DomainEventEnvelope<"SnakeCharmerTargetChosen">;
   const noSwap = second as DomainEventEnvelope<"SnakeCharmerNoSwapResolved">;
   const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
+  assertSnakeCharmerSourceEffective(state, targetChosen);
 
   if (
     noSwap.payload.taskId !== targetChosen.payload.taskId ||
@@ -518,6 +537,82 @@ const validateIntegratedSnakeCharmerNoSwapBatch = (
     settlement.payload.outcomeType !== "SNAKE_CHARMER_NON_DEMON_NO_SWAP"
   ) {
     reject("ScheduledTaskSettled must match the Snake Charmer no-swap resolution");
+  }
+};
+
+const validateIntegratedSnakeCharmerIneffectiveBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Snake Charmer ineffective batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    reject("Snake Charmer ineffective batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  if (events.length !== 3) {
+    reject("Snake Charmer ineffective batch must contain exactly three events");
+  }
+
+  assertSharedBatchMetadataForAll(events);
+
+  const [first, second, third] = events;
+  if (
+    first === undefined ||
+    second === undefined ||
+    third === undefined ||
+    first.eventType !== "SnakeCharmerTargetChosen" ||
+    second.eventType !== "SnakeCharmerIneffectiveResolved" ||
+    third.eventType !== "ScheduledTaskSettled"
+  ) {
+    reject("Snake Charmer ineffective batch must be TargetChosen, IneffectiveResolved, ScheduledTaskSettled");
+  }
+
+  const targetChosen = first as DomainEventEnvelope<"SnakeCharmerTargetChosen">;
+  const ineffective = second as DomainEventEnvelope<"SnakeCharmerIneffectiveResolved">;
+  const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
+  const effectiveness = evaluateSnakeCharmerEffectiveness({
+    sourcePlayerId: targetChosen.payload.sourcePlayerId,
+    abilityImpairments: state.abilityImpairments
+  });
+  if (effectiveness.effective === true) {
+    reject("Snake Charmer ineffective batch requires an impaired source");
+  }
+  const ineffectiveResult = effectiveness as IneffectiveSnakeCharmerEffectiveness;
+
+  if (
+    ineffective.payload.taskId !== targetChosen.payload.taskId ||
+    ineffective.payload.taskType !== targetChosen.payload.taskType ||
+    ineffective.payload.opportunityId !== targetChosen.payload.opportunityId ||
+    ineffective.payload.sourcePlayerId !== targetChosen.payload.sourcePlayerId ||
+    ineffective.payload.sourceSeatNumber !== targetChosen.payload.sourceSeatNumber ||
+    ineffective.payload.sourceCharacterStateRevision !== targetChosen.payload.sourceCharacterStateRevision ||
+    ineffective.payload.targetPlayerId !== targetChosen.payload.targetPlayerId ||
+    ineffective.payload.targetSeatNumber !== targetChosen.payload.targetSeatNumber ||
+    ineffective.payload.outcomeType !== "SOURCE_IMPAIRED_NO_EFFECT" ||
+    ineffective.payload.reason !== ineffectiveResult.reason ||
+    ineffective.payload.sourceImpairmentId !== ineffectiveResult.impairmentId ||
+    ineffective.payload.sourceImpairmentKind !== ineffectiveResult.impairmentKind
+  ) {
+    reject("SnakeCharmerIneffectiveResolved must match the preceding target choice and active source impairment");
+  }
+
+  if (
+    settlement.payload.taskId !== ineffective.payload.taskId ||
+    settlement.payload.taskType !== ineffective.payload.taskType ||
+    settlement.payload.characterStateRevision !== ineffective.payload.sourceCharacterStateRevision ||
+    settlement.payload.outcomeType !== "SNAKE_CHARMER_INEFFECTIVE"
+  ) {
+    reject("ScheduledTaskSettled must match the Snake Charmer ineffective resolution");
   }
 };
 
@@ -580,6 +675,7 @@ const validateIntegratedSnakeCharmerDemonHitBatch = (
   const swap = second as DomainEventEnvelope<"SnakeCharmerDemonSwapApplied">;
   const poison = third as DomainEventEnvelope<"AbilityImpairmentApplied">;
   const settlement = fourth as DomainEventEnvelope<"ScheduledTaskSettled">;
+  assertSnakeCharmerSourceEffective(state, targetChosen);
 
   const targetChoice = targetChosen.payload;
   const swapPayload = swap.payload;
@@ -717,7 +813,12 @@ export const validateDomainBatchSemantics = (
       return;
     }
 
-    reject("Snake Charmer batch must continue with NoSwapResolved or DemonSwapApplied");
+    if (second?.eventType === "SnakeCharmerIneffectiveResolved") {
+      validateIntegratedSnakeCharmerIneffectiveBatch(currentState, batchEvents);
+      return;
+    }
+
+    reject("Snake Charmer batch must continue with NoSwapResolved, DemonSwapApplied, or IneffectiveResolved");
     return;
   }
 

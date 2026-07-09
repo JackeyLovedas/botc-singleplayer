@@ -39,6 +39,7 @@ export type DomainErrorCode =
   | "InvalidFirstNightTaskInsertedPayload"
   | "InvalidSnakeCharmerTargetChosenPayload"
   | "InvalidSnakeCharmerNoSwapResolvedPayload"
+  | "InvalidSnakeCharmerIneffectiveResolvedPayload"
   | "InvalidSnakeCharmerDemonSwapAppliedPayload"
   | "InvalidMinionInformationDeliveredPayload"
   | "DuplicateMinionInformationDelivered"

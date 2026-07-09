@@ -28,12 +28,16 @@ import {
   createPhilosopherAbilityGrantedPayload,
   createSnakeCharmerDemonHitScheduledTaskSettlement,
   createSnakeCharmerDemonSwapAppliedPayload,
+  createSnakeCharmerIneffectiveResolvedPayload,
+  createSnakeCharmerIneffectiveScheduledTaskSettlement,
   createSnakeCharmerNoSwapResolvedPayload,
   createSnakeCharmerNoSwapScheduledTaskSettlement,
   createSnakeCharmerPoisonedImpairmentPayload,
   createSnakeCharmerTargetChosenPayload,
+  evaluateSnakeCharmerEffectiveness,
   getNextUnsettledFirstNightTask,
   cloneCurrentCharacterStateSet,
+  abilityImpairmentId,
   eventId,
   expectedDemonInformationEntries,
   expectedMinionInformationEntries,
@@ -53,6 +57,7 @@ import {
 } from "@botc/domain-core";
 import type {
   AnyDomainEventEnvelope,
+  AbilityImpairmentSet,
   CharactersAssignedPayload,
   DomainErrorCode,
   DomainEventEnvelope,
@@ -732,6 +737,62 @@ const openSnakeCharmerStream = (): readonly AnyDomainEventEnvelope[] => [
   snakeCharmerActionOpportunityCreatedEvent()
 ];
 
+const baseSnakeCharmerTaskStream = (): readonly AnyDomainEventEnvelope[] => [
+  ...noPhilosopherTaskPlanEventStream(),
+  minionInformationDeliveredEvent(),
+  minionTaskSettledEvent(),
+  demonInformationDeliveredEvent(),
+  demonTaskSettledEvent()
+];
+
+const baseSnakeCharmerActionOpportunityCreatedEvent = (
+  overrides: Partial<DomainEventEnvelope<"FirstNightActionOpportunityCreated">> = {}
+): DomainEventEnvelope<"FirstNightActionOpportunityCreated"> => {
+  const state = rebuildGameState(baseSnakeCharmerTaskStream());
+  const task = state.firstNightTaskPlan?.tasks.find((candidate) =>
+    candidate.taskType === "SNAKE_CHARMER_ACTION" &&
+    candidate.source.kind === "ROLE" &&
+    candidate.source.role.roleId === "snake_charmer"
+  );
+  if (task === undefined || state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined) {
+    throw new Error("Expected base Snake Charmer task state");
+  }
+
+  const opportunity = createFirstNightRoleActionOpportunity({
+    taskId: task.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+
+  return {
+    category: "domain",
+    eventId: eventId("event-16"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 16,
+    batchId: batchId("batch-10"),
+    gameVersion: 10,
+    eventType: "FirstNightActionOpportunityCreated",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-10"),
+    createdAt: "2026-07-07T00:00:09.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      ...opportunity
+    },
+    ...overrides
+  };
+};
+
+const openBaseSnakeCharmerStream = (): readonly AnyDomainEventEnvelope[] => [
+  ...baseSnakeCharmerTaskStream(),
+  baseSnakeCharmerActionOpportunityCreatedEvent()
+];
+
 const snakeCharmerBatchEnvelope = <EventType extends AnyDomainEventEnvelope["eventType"]>(
   eventType: EventType,
   payload: DomainEventEnvelope<EventType>["payload"],
@@ -741,6 +802,27 @@ const snakeCharmerBatchEnvelope = <EventType extends AnyDomainEventEnvelope["eve
   eventId: eventId(`event-${19 + offset}`),
   gameId: gameCreatedEvent().gameId,
   eventSequence: 19 + offset,
+  batchId: batchId("batch-11"),
+  gameVersion: 11,
+  eventType,
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-11"),
+  createdAt: "2026-07-07T00:00:10.000Z",
+  correlationId: gameCreatedEvent().correlationId,
+  causationId: gameCreatedEvent().causationId,
+  payload
+});
+
+const baseSnakeCharmerBatchEnvelope = <EventType extends AnyDomainEventEnvelope["eventType"]>(
+  eventType: EventType,
+  payload: DomainEventEnvelope<EventType>["payload"],
+  offset: number
+): DomainEventEnvelope<EventType> => ({
+  category: "domain",
+  eventId: eventId(`event-${17 + offset}`),
+  gameId: gameCreatedEvent().gameId,
+  eventSequence: 17 + offset,
   batchId: batchId("batch-11"),
   gameVersion: 11,
   eventType,
@@ -850,6 +932,82 @@ const snakeCharmerDemonHitBatchEvents = (): readonly [
     snakeCharmerBatchEnvelope("SnakeCharmerDemonSwapApplied", swap, 1),
     snakeCharmerBatchEnvelope("AbilityImpairmentApplied", poison, 2),
     snakeCharmerBatchEnvelope("ScheduledTaskSettled", settlement, 3)
+  ];
+};
+
+const poisonedBaseSnakeCharmerState = () => {
+  const state = rebuildGameState(openBaseSnakeCharmerStream());
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION" &&
+    candidate.taskType === "SNAKE_CHARMER_ACTION"
+  );
+  if (opportunity === undefined || state.currentCharacterState === undefined) {
+    throw new Error("Expected open base Snake Charmer opportunity");
+  }
+
+  const abilityImpairments: AbilityImpairmentSet = {
+    impairments: [{
+      impairmentId: abilityImpairmentId("ability-impairment-v1:a-poisoned-base-snake"),
+      kind: "POISONED",
+      sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+      sourcePlayerId: playerId("player-ai-1"),
+      affectedPlayerId: opportunity.sourcePlayerId,
+      affectedSeatNumber: opportunity.sourceSeatNumber,
+      affectedRole: opportunity.sourceRole,
+      sourceCharacterStateRevision: state.currentCharacterState.revision
+    }]
+  };
+
+  return {
+    ...state,
+    abilityImpairments
+  };
+};
+
+const baseSnakeCharmerIneffectiveBatchEvents = (): readonly [
+  DomainEventEnvelope<"SnakeCharmerTargetChosen">,
+  DomainEventEnvelope<"SnakeCharmerIneffectiveResolved">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = poisonedBaseSnakeCharmerState();
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION" &&
+    candidate.taskType === "SNAKE_CHARMER_ACTION"
+  );
+  const target = state.currentCharacterState?.entries.find((entry) => entry.role.characterType === "DEMON");
+  if (opportunity === undefined || target === undefined || state.roster === undefined) {
+    throw new Error("Expected poisoned base Snake Charmer opportunity, Demon target, and roster");
+  }
+
+  const targetChosen = createSnakeCharmerTargetChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId: opportunity.taskId,
+    opportunityId: opportunity.opportunityId,
+    targetPlayerId: target.playerId,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    roster: state.roster.entries
+  });
+  const effectiveness = evaluateSnakeCharmerEffectiveness({
+    sourcePlayerId: targetChosen.sourcePlayerId,
+    abilityImpairments: state.abilityImpairments
+  });
+  const ineffective = createSnakeCharmerIneffectiveResolvedPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    targetChoice: targetChosen,
+    effectiveness
+  });
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createSnakeCharmerIneffectiveScheduledTaskSettlement({
+      taskId: opportunity.taskId,
+      characterStateRevision: opportunity.sourceCharacterStateRevision
+    })
+  };
+
+  return [
+    baseSnakeCharmerBatchEnvelope("SnakeCharmerTargetChosen", targetChosen, 0),
+    baseSnakeCharmerBatchEnvelope("SnakeCharmerIneffectiveResolved", ineffective, 1),
+    baseSnakeCharmerBatchEnvelope("ScheduledTaskSettled", settlement, 2)
   ];
 };
 
@@ -3362,6 +3520,66 @@ describe("domain event rebuild", () => {
     expect(state.firstNightTaskPlan?.tasks[state.firstNightTaskProgress?.settlements.length ?? -1]?.taskType).toBe("MINION_INFO");
     expect(state.lastEventSequence).toBe(22);
     expect(state.gameVersion).toBe(11);
+  });
+
+  it("applies poisoned base Snake Charmer ineffective settlement without state mutation", () => {
+    const before = poisonedBaseSnakeCharmerState();
+    const [targetChosen, ineffective, settlement] = baseSnakeCharmerIneffectiveBatchEvents();
+    const state = applyDomainEventBatch(before, [
+      targetChosen,
+      ineffective,
+      settlement
+    ]);
+
+    expect(state.snakeCharmerTargetChoices?.choices.at(-1)).toMatchObject({
+      taskId: targetChosen.payload.taskId,
+      taskType: "SNAKE_CHARMER_ACTION",
+      targetPlayerId: targetChosen.payload.targetPlayerId,
+      sourceCharacterStateRevision: 1
+    });
+    expect(state.snakeCharmerIneffectiveResolutions?.resolutions.at(-1)).toMatchObject({
+      taskId: targetChosen.payload.taskId,
+      outcomeType: "SOURCE_IMPAIRED_NO_EFFECT",
+      reason: "SOURCE_POISONED",
+      sourceImpairmentId: ineffective.payload.sourceImpairmentId,
+      sourceImpairmentKind: "POISONED"
+    });
+    expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
+      opportunity.opportunityId === targetChosen.payload.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightTaskProgress?.settlements.at(-1)).toMatchObject({
+      taskType: "SNAKE_CHARMER_ACTION",
+      outcomeType: "SNAKE_CHARMER_INEFFECTIVE",
+      characterStateRevision: 1
+    });
+    expect(state.currentCharacterState).toStrictEqual(before.currentCharacterState);
+    expect(state.assignment).toStrictEqual(before.assignment);
+    expect(state.snakeCharmerDemonSwaps).toBeUndefined();
+  });
+
+  it("rejects mechanical Snake Charmer resolution when the source is impaired", () => {
+    const before = poisonedBaseSnakeCharmerState();
+    const [targetChosen] = baseSnakeCharmerIneffectiveBatchEvents();
+    const noSwap = createSnakeCharmerNoSwapResolvedPayload({
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      targetChoice: targetChosen.payload
+    });
+    const settlement = {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      ...createSnakeCharmerNoSwapScheduledTaskSettlement({
+        taskId: targetChosen.payload.taskId,
+        characterStateRevision: targetChosen.payload.sourceCharacterStateRevision
+      })
+    };
+
+    expectDomainCode(
+      () => applyDomainEventBatch(before, [
+        targetChosen,
+        baseSnakeCharmerBatchEnvelope("SnakeCharmerNoSwapResolved", noSwap, 1),
+        baseSnakeCharmerBatchEnvelope("ScheduledTaskSettled", settlement, 2)
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
   });
 
   it("rejects malformed Snake Charmer Demon-hit replay batches", () => {

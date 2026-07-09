@@ -25,10 +25,13 @@ import {
   createFirstNightRoleActionOpportunity,
   createSnakeCharmerDemonHitScheduledTaskSettlement,
   createSnakeCharmerDemonSwapAppliedPayload,
+  createSnakeCharmerIneffectiveResolvedPayload,
+  createSnakeCharmerIneffectiveScheduledTaskSettlement,
   createSnakeCharmerNoSwapResolvedPayload,
   createSnakeCharmerNoSwapScheduledTaskSettlement,
   createSnakeCharmerPoisonedImpairmentPayload,
   createSnakeCharmerTargetChosenPayload,
+  evaluateSnakeCharmerEffectiveness,
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
   getNextUnsettledFirstNightTask,
@@ -83,6 +86,7 @@ import type {
   PlayerRosterCreatedPayload,
   ScheduledTaskSettledPayload,
   SnakeCharmerDemonSwapAppliedPayload,
+  SnakeCharmerIneffectiveResolvedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload,
   SetupGeneratedPayload,
@@ -1218,16 +1222,10 @@ export class GameApplicationService {
           };
         }
 
-        if (
-          targetTask.taskType !== "SNAKE_CHARMER_ACTION" ||
-          targetTask.source.kind !== "PHILOSOPHER_GAINED_ABILITY" ||
-          targetTask.source.chosenRole.roleId !== "snake_charmer" ||
-          targetTask.source.sourceRole.roleId !== "philosopher" ||
-          targetTask.source.sourceCharacterStateRevision !== opportunity.sourceCharacterStateRevision
-        ) {
+        if (targetTask.taskType !== "SNAKE_CHARMER_ACTION") {
           return {
             code: "UnsupportedRoleActionOpportunity",
-            message: "SubmitSnakeCharmerAction requires a Philosopher gained Snake Charmer task"
+            message: "SubmitSnakeCharmerAction requires a Snake Charmer action task"
           };
         }
 
@@ -1235,15 +1233,33 @@ export class GameApplicationService {
           entry.playerId === opportunity.sourcePlayerId &&
           entry.seatNumber === opportunity.sourceSeatNumber
         );
-        if (
-          currentSourceEntry === undefined ||
-          currentSourceEntry.role.roleId !== "philosopher" ||
-          !sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) ||
-          state.currentCharacterState.revision !== opportunity.sourceCharacterStateRevision
-        ) {
+        const baseSnakeCharmerSourceValid =
+          targetTask.source.kind === "ROLE" &&
+          targetTask.source.role.roleId === "snake_charmer" &&
+          targetTask.source.playerId === opportunity.sourcePlayerId &&
+          targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+          currentSourceEntry !== undefined &&
+          currentSourceEntry.role.roleId === "snake_charmer" &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.role) &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
+          state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
+        const philosopherGainedSnakeCharmerSourceValid =
+          targetTask.source.kind === "PHILOSOPHER_GAINED_ABILITY" &&
+          targetTask.source.chosenRole.roleId === "snake_charmer" &&
+          targetTask.source.sourceRole.roleId === "philosopher" &&
+          targetTask.source.playerId === opportunity.sourcePlayerId &&
+          targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+          targetTask.source.sourceCharacterStateRevision === opportunity.sourceCharacterStateRevision &&
+          currentSourceEntry !== undefined &&
+          currentSourceEntry.role.roleId === "philosopher" &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.sourceRole) &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
+          state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
+
+        if (!baseSnakeCharmerSourceValid && !philosopherGainedSnakeCharmerSourceValid) {
           return {
             code: "ActionSourceNoLongerValid",
-            message: "SubmitSnakeCharmerAction source is no longer the same current Philosopher state"
+            message: "SubmitSnakeCharmerAction source is no longer the same current Snake Charmer-capable state"
           };
         }
 
@@ -2285,6 +2301,41 @@ export class GameApplicationService {
           eventType: "SnakeCharmerTargetChosen" as const,
           payload: targetChoicePayload satisfies SnakeCharmerTargetChosenPayload
         };
+
+        const effectiveness = evaluateSnakeCharmerEffectiveness({
+          sourcePlayerId: targetChoicePayload.sourcePlayerId,
+          abilityImpairments: state.abilityImpairments
+        });
+        if (!effectiveness.effective) {
+          const ineffectivePayload = createSnakeCharmerIneffectiveResolvedPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            targetChoice: targetChoicePayload,
+            effectiveness
+          });
+          const snakeCharmerIneffectiveResolvedEvent: DomainEventEnvelope<"SnakeCharmerIneffectiveResolved"> = {
+            ...common(firstEventSequence + 1),
+            eventType: "SnakeCharmerIneffectiveResolved" as const,
+            payload: ineffectivePayload satisfies SnakeCharmerIneffectiveResolvedPayload
+          };
+          const settlement = createSnakeCharmerIneffectiveScheduledTaskSettlement({
+            taskId: opportunity.taskId,
+            characterStateRevision: opportunity.sourceCharacterStateRevision
+          });
+          const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+            ...common(firstEventSequence + 2),
+            eventType: "ScheduledTaskSettled" as const,
+            payload: {
+              rulesBaselineVersion: RULES_BASELINE_VERSION,
+              ...settlement
+            } satisfies ScheduledTaskSettledPayload
+          };
+
+          return [
+            snakeCharmerTargetChosenEvent,
+            snakeCharmerIneffectiveResolvedEvent,
+            scheduledTaskSettledEvent
+          ];
+        }
 
         const targetStateEntry = state.currentCharacterState.entries.find((entry) =>
           entry.playerId === targetChoicePayload.targetPlayerId &&

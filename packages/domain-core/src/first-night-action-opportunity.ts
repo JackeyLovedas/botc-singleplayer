@@ -180,7 +180,7 @@ const PHILOSOPHER_ACTION_DEFERRED_PAYLOAD_KEYS = [
 const PHILOSOPHER_ROLE_ID = "philosopher" as RoleId;
 const SNAKE_CHARMER_ROLE_ID = "snake_charmer" as RoleId;
 const FIRST_NIGHT_ACTION_OPPORTUNITY_ID_PATTERN =
-  /^first-night-v1:(?:(PHILOSOPHER_ACTION):seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(SNAKE_CHARMER_ACTION):seat-(0[1-9]|1[0-2]):from-snake_charmer:opportunity-(0[1-9][0-9]*))$/;
+  /^first-night-v1:(?:(PHILOSOPHER_ACTION|SNAKE_CHARMER_ACTION):seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(SNAKE_CHARMER_ACTION):seat-(0[1-9]|1[0-2]):from-snake_charmer:opportunity-(0[1-9][0-9]*))$/;
 
 const fail = (reason: string): ValidationResult => ({ valid: false, reason });
 
@@ -429,8 +429,39 @@ const currentPhilosopherGainedSnakeCharmerEntryForTask = (
   return currentEntry;
 };
 
+const currentBaseSnakeCharmerEntryForTask = (
+  task: ScheduledTask,
+  currentCharacterState: CurrentCharacterStateSet
+) => {
+  const source = task.source;
+  if (
+    task.taskType !== "SNAKE_CHARMER_ACTION" ||
+    task.taskClass !== "ROLE_ACTION" ||
+    source.kind !== "ROLE" ||
+    source.role.roleId !== SNAKE_CHARMER_ROLE_ID
+  ) {
+    return undefined;
+  }
+
+  const currentEntry = currentCharacterState.entries.find(
+    (entry) =>
+      entry.playerId === source.playerId &&
+      entry.seatNumber === source.seatNumber
+  );
+
+  if (
+    currentEntry === undefined ||
+    currentEntry.role.roleId !== SNAKE_CHARMER_ROLE_ID ||
+    !sameRoleSetupSnapshot(currentEntry.role, source.role)
+  ) {
+    return undefined;
+  }
+
+  return currentEntry;
+};
+
 export const formatFirstNightActionOpportunityId = (input: {
-  readonly taskType: "PHILOSOPHER_ACTION";
+  readonly taskType: "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION";
   readonly seatNumber: SeatNumber;
   readonly opportunityIndex?: number;
 }): ActionOpportunityId => {
@@ -623,9 +654,33 @@ export const tryCreateSnakeCharmerFirstNightActionOpportunity = (
   }
 
   const targetTask = common.targetTask;
+  const baseCurrentEntry = currentBaseSnakeCharmerEntryForTask(targetTask, input.currentCharacterState);
+  if (baseCurrentEntry !== undefined) {
+    return {
+      valid: true,
+      opportunity: {
+        nightNumber: 1,
+        opportunityId: formatFirstNightActionOpportunityId({
+          taskType: "SNAKE_CHARMER_ACTION",
+          seatNumber: baseCurrentEntry.seatNumber,
+          opportunityIndex: 1
+        }),
+        opportunityKind: "SNAKE_CHARMER_FIRST_NIGHT_ACTION",
+        opportunityStatus: "OPEN",
+        taskId: targetTask.taskId,
+        taskType: "SNAKE_CHARMER_ACTION",
+        sourcePlayerId: baseCurrentEntry.playerId,
+        sourceSeatNumber: baseCurrentEntry.seatNumber,
+        sourceRole: cloneRoleSetupSnapshot(baseCurrentEntry.role),
+        sourceCharacterStateRevision: input.currentCharacterState.revision,
+        visibility: createSnakeCharmerActionOpportunityVisibility()
+      }
+    };
+  }
+
   const currentEntry = currentPhilosopherGainedSnakeCharmerEntryForTask(targetTask, input.currentCharacterState);
   if (currentEntry === undefined) {
-    return { valid: false, reason: "FirstNightActionOpportunityCreated source is not a current Philosopher gained snake_charmer task" };
+    return { valid: false, reason: "FirstNightActionOpportunityCreated source is not a current Snake Charmer or Philosopher gained snake_charmer task" };
   }
 
   return {
@@ -873,6 +928,11 @@ export const isSupportedFirstNightRoleActionTask = (
   task: ScheduledTask
 ): boolean =>
   task.taskType === "PHILOSOPHER_ACTION" ||
+  (
+    task.taskType === "SNAKE_CHARMER_ACTION" &&
+    task.source.kind === "ROLE" &&
+    task.source.role.roleId === SNAKE_CHARMER_ROLE_ID
+  ) ||
   (
     task.taskType === "SNAKE_CHARMER_ACTION" &&
     task.source.kind === "PHILOSOPHER_GAINED_ABILITY" &&

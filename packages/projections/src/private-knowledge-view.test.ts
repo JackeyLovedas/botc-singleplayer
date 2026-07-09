@@ -687,6 +687,17 @@ describe("private knowledge projections", () => {
         sourceAfter: "secret-source-after",
         targetAfter: "secret-target-after"
       }]
+    } as never,
+    snakeCharmerIneffectiveResolutions: {
+      resolutions: [{
+        eventType: "SnakeCharmerIneffectiveResolved",
+        targetPlayerId: "secret-target",
+        opportunityId: "secret-opportunity",
+        taskId: "secret-task",
+        outcomeType: "SOURCE_IMPAIRED_NO_EFFECT",
+        reason: "SOURCE_DRUNK",
+        sourceImpairmentId: "secret-impairment"
+      }]
     } as never
   };
     const viewer = state.roster?.entries[0];
@@ -736,7 +747,11 @@ describe("private knowledge projections", () => {
       expect(serialized).not.toContain("SnakeCharmerTargetChosen");
       expect(serialized).not.toContain("SnakeCharmerNoSwapResolved");
       expect(serialized).not.toContain("SnakeCharmerDemonSwapApplied");
+      expect(serialized).not.toContain("SnakeCharmerIneffectiveResolved");
       expect(serialized).not.toContain("NON_DEMON_TARGET_NO_SWAP");
+      expect(serialized).not.toContain("SOURCE_IMPAIRED_NO_EFFECT");
+      expect(serialized).not.toContain("SOURCE_DRUNK");
+      expect(serialized).not.toContain("secret-impairment");
       expect(serialized).not.toContain("pendingRoleTasks");
       expect(serialized).not.toContain("PHILOSOPHER_ACTION");
       expect(serialized).not.toContain("MINION_INFO");
