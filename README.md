@@ -24,7 +24,9 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Phase Three Slice 2B6：Philosopher Action Opportunity and Defer Settlement 已合并
 - Phase Three Slice 2B7：Philosopher Ability Choice and Dynamic Task Insertion Foundation 已合并
 - Phase Three Slice 2B8：Philosopher-Gained Snake Charmer Non-Demon Settlement 已合并
-- Phase Three Slice 2B9：Snake Charmer Demon-Hit Swap and Poison Marker 评审中
+- Phase Three Slice 2B9：Snake Charmer Demon-Hit Swap and Poison Marker 已合并
+- Phase Three Slice 2B10：Base Snake Charmer Action and Effectiveness Gate 已合并
+- Phase Three Slice 2B11：Evil Twin Setup and Pair Knowledge 评审中
 
 当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口、固定种子可复现的 12 人《梦殒春宵》真实配板基础、固定 12 人座位名单、可复现角色分配基础、首夜初始化事实、初始自身角色私有知识生成、玩家/AI 私有知识安全投影、首夜 `ScheduledTask` 计划骨架，`MINION_INFO`/`DEMON_INFO` 有序系统信息结算，Philosopher 首夜能力选择、能力授予事实、重复在场角色醉酒标记、获得能力首夜任务动态插入基础，以及 Philosopher 获得的 Snake Charmer 行动机会、非恶魔目标无交换结算、恶魔命中后的当前角色/阵营交换和旧恶魔中毒标记。它不包含醉酒/中毒效果求值、基础 Snake Charmer 角色行动、AI 决策、完整昼夜可玩流程、UI、Electron 或 SQLite 正式适配器。
 
@@ -46,3 +48,5 @@ Windows 本地《血染钟楼》单机游戏项目。
 - `docs/implementation/phase-3-slice-2b7-status.md`
 - `docs/implementation/phase-3-slice-2b8-status.md`
 - `docs/implementation/phase-3-slice-2b9-status.md`
+- `docs/implementation/phase-3-slice-2b10-status.md`
+- `docs/implementation/phase-3-slice-2b11-status.md`

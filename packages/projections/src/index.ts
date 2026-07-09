@@ -4,15 +4,20 @@ import {
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   MINION_INFORMATION_KNOWLEDGE_STAGE,
   DEMON_INFORMATION_KNOWLEDGE_STAGE,
+  EVIL_TWIN_SETUP_KNOWLEDGE_STAGE,
+  SUPPORTED_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   cloneRoleSetupSnapshot,
   cloneKnownPlayerReference,
+  findEvilTwinCounterpartForViewer,
   validateFirstNightInitializedPayloadShape,
   validateInitialOwnCharacterKnowledgePayload,
   validatePlayerPrivateKnowledgeViewShape,
   validateStoredMinionInformationDelivered,
-  validateStoredDemonInformationDelivered
+  validateStoredDemonInformationDelivered,
+  validateStoredEvilTwinInformationDelivered,
+  validateStoredEvilTwinPairEstablished
 } from "@botc/domain-core";
 import type {
   GameState,
@@ -146,6 +151,45 @@ const requireDeliveredTeamInformationIsSettled = (state: GameState): readonly In
   return deliveredEntries;
 };
 
+const requireDeliveredEvilTwinInformationIsSettled = (state: GameState): void => {
+  if (state.evilTwinPairs === undefined && state.evilTwinInformation === undefined && state.firstNightTaskProgress === undefined) {
+    return;
+  }
+
+  if (state.firstNightTaskPlan === undefined) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Evil Twin information projection requires task plan facts");
+  }
+
+  const pair = state.evilTwinPairs?.pairs[0];
+  if (pair !== undefined) {
+    const settlement = findSettlement(state, pair.taskId, pair.taskType);
+    const pairValidation = validateStoredEvilTwinPairEstablished(pair, {
+      firstNightTaskPlan: state.firstNightTaskPlan,
+      settlement
+    });
+    if (!pairValidation.valid) {
+      throw new DomainError("PrivateKnowledgeUnavailable", pairValidation.reason);
+    }
+  }
+
+  if (state.evilTwinInformation !== undefined) {
+    const settlement = findSettlement(state, state.evilTwinInformation.taskId, state.evilTwinInformation.taskType);
+    const validation = validateStoredEvilTwinInformationDelivered(state.evilTwinInformation, {
+      pair,
+      settlement
+    });
+    if (!validation.valid) {
+      throw new DomainError("PrivateKnowledgeUnavailable", validation.reason);
+    }
+  }
+
+  for (const settlement of state.firstNightTaskProgress?.settlements ?? []) {
+    if (settlement.taskType === "EVIL_TWIN_SETUP" && state.evilTwinInformation === undefined) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "EVIL_TWIN_SETUP settlement exists without delivered Evil Twin information");
+    }
+  }
+};
+
 const deliveredStagesForViewer = (
   state: GameState,
   viewerPlayerId: PlayerId
@@ -157,6 +201,10 @@ const deliveredStagesForViewer = (
 
   if (state.demonInformation?.entries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
     stages.push(DEMON_INFORMATION_KNOWLEDGE_STAGE);
+  }
+
+  if (state.evilTwinInformation?.entries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
+    stages.push(EVIL_TWIN_SETUP_KNOWLEDGE_STAGE);
   }
 
   return stages;
@@ -179,6 +227,7 @@ export const buildPlayerPrivateKnowledgeView = (
   }
 
   const deliveredTeamEntries = requireDeliveredTeamInformationIsSettled(state).filter((entry) => entry.recipientPlayerId === viewerPlayerId);
+  requireDeliveredEvilTwinInformationIsSettled(state);
   const knownDemon = deliveredTeamEntries.find((entry) => entry.kind === "DEMON_IDENTITY");
   const knownMinions = deliveredTeamEntries
     .filter((entry) => entry.kind === "MINION_IDENTITIES")
@@ -186,8 +235,13 @@ export const buildPlayerPrivateKnowledgeView = (
   const demonBluffs = deliveredTeamEntries
     .filter((entry) => entry.kind === "DEMON_BLUFFS")
     .flatMap((entry) => entry.kind === "DEMON_BLUFFS" ? entry.roles.map(cloneRoleSetupSnapshot) : []);
+  const evilTwinCounterpart = findEvilTwinCounterpartForViewer(state.evilTwinInformation, viewerPlayerId);
 
   const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId);
+  const hasTeamKnowledge = deliveredKnowledgeStages.some((stage) =>
+    stage === MINION_INFORMATION_KNOWLEDGE_STAGE ||
+    stage === DEMON_INFORMATION_KNOWLEDGE_STAGE
+  );
   const view = {
     viewerPlayerId,
     viewerSeatNumber: rosterEntry.seatNumber,
@@ -196,8 +250,14 @@ export const buildPlayerPrivateKnowledgeView = (
     ...(knownDemon?.kind === "DEMON_IDENTITY" ? { knownDemon: cloneKnownPlayerReference(knownDemon.demon) } : {}),
     knownMinions,
     demonBluffs,
+    ...(evilTwinCounterpart === undefined
+      ? {}
+      : {
+          evilTwinCounterpart: cloneKnownPlayerReference(evilTwinCounterpart),
+          evilTwinKnowledgeModelVersion: SUPPORTED_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION
+        }),
     ownCharacterKnowledgeModelVersion: privateKnowledge.knowledgeModelVersion,
-    ...(deliveredKnowledgeStages.length > 1
+    ...(hasTeamKnowledge
       ? { teamKnowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION }
       : {}),
     deliveredKnowledgeStages

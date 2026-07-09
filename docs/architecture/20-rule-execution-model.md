@@ -242,6 +242,56 @@ nextCharacterStateRevision = previousCharacterStateRevision + 1
 
 `assignment`, `setup`, the original task catalog snapshot, and initial private knowledge remain historical facts. The old Demon poison marker is recorded as a fact, but poisoned or drunk effectiveness evaluation, base Snake Charmer action support, and AI target selection remain unimplemented.
 
+Slice 2B10 adds base Snake Charmer action support and source-effectiveness gating:
+
+```text
+OpenFirstNightRoleActionOpportunity
+-> confirm the next unsettled task is either base ROLE SNAKE_CHARMER_ACTION or a PHILOSOPHER_GAINED_ABILITY SNAKE_CHARMER_ACTION
+-> create deterministic FirstNightActionOpportunityCreated(opportunityKind = SNAKE_CHARMER_FIRST_NIGHT_ACTION)
+
+SubmitSnakeCharmerAction(CHOOSE_PLAYER)
+-> validate actor, open opportunity, task id, current next task, source snapshot, and target player
+-> record SnakeCharmerTargetChosen
+-> evaluate source DRUNK or POISONED impairment at settlement time
+-> if impaired, create SnakeCharmerIneffectiveResolved
+-> create ScheduledTaskSettled(outcomeType = SNAKE_CHARMER_INEFFECTIVE)
+```
+
+The impaired path is a no-effect branch. It does not create no-swap or demon-hit effects, does not mutate `currentCharacterState`, does not mutate `assignment`, and does not expose impairment internals to player or AI private views.
+
+Valid impaired Snake Charmer batches are:
+
+```text
+SnakeCharmerTargetChosen
+SnakeCharmerIneffectiveResolved
+ScheduledTaskSettled
+```
+
+Slice 2B11 adds settlement for the Evil Twin setup task:
+
+```text
+SettleEvilTwinSetup
+-> confirm the next unsettled task is EVIL_TWIN_SETUP
+-> revalidate the task source as current evil_twin with current EVIL alignment
+-> select the lowest-seat current GOOD player who is not the Evil Twin source
+-> create EvilTwinPairEstablished(pairingPolicyVersion = evil-twin-pairing-policy-v1)
+-> create EvilTwinInformationDelivered(knowledgeModelVersion = evil-twin-knowledge-model-v1)
+-> create ScheduledTaskSettled(outcomeType = EVIL_TWIN_PAIR_ESTABLISHED)
+-> append FirstNightTaskProgress from replay
+```
+
+Valid Evil Twin setup batches are:
+
+```text
+EvilTwinPairEstablished
+EvilTwinInformationDelivered
+ScheduledTaskSettled
+```
+
+`EvilTwinPairEstablished` is the canonical pair fact and records task id, night number, both player references, both role snapshots, both current alignments, the current character-state revision, and the pairing policy version. `EvilTwinInformationDelivered` records exactly two mutual `EVIL_TWIN_PAIR` entries, each containing only the recipient and counterpart player reference.
+
+The private projection may expose `evilTwinCounterpart` only to the two paired players. It must not expose counterpart role, counterpart alignment, full pair fact, assignment, `currentCharacterState`, `pairId`, `pairingPolicyVersion`, task id, or Storyteller-only selection reasons. Evil Twin victory conditions, death interactions, Vigormortis special rules, AI decisions, and first-night completion remain unimplemented.
+
 ### Settlement And Snapshot Revision Binding
 
 System team information settlement requires three revision facts to agree:
@@ -267,7 +317,7 @@ That means:
 - each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
 - projections must preserve each delivered fact independently.
 
-The model still does not execute broad inserted role tasks, create general role ability effects, apply drunkenness or poisoning effectiveness, support base Snake Charmer actions, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, plus the Philosopher-gained Snake Charmer target-selection opportunity for non-Demon no-swap and Demon-hit swap branches.
+The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, plus Snake Charmer target-selection opportunities for base and Philosopher-gained sources.
 
 ## ActionOpportunity Flow
 

@@ -326,6 +326,69 @@ Acceptance:
 - Replay rejects naked, incomplete, reversed, non-Demon swap, Demon-target no-swap, mismatched swap, mismatched poison, mismatched settlement, mixed-event, and extra-field demon-hit batches.
 - Player and AI projections do not expose the swap or poison marker before team information is delivered.
 
+## Slice 2B10: Base Snake Charmer Action And Effectiveness Gate
+
+Scope:
+
+- Execute only after Slice 2B9 is accepted and merged.
+- Open base in-play `snake_charmer` first-night `SNAKE_CHARMER_ACTION` tasks.
+- Reuse the existing safe Snake Charmer target selection schema for base and Philosopher-gained sources.
+- Evaluate source drunkenness or poisoning at settlement time.
+- Record ineffective settlements without no-swap or demon-hit mechanical effects when the source is impaired.
+- Preserve historical assignment and setup facts while allowing current character state to remain authoritative for settlement.
+- Do not implement broader drunk/poison duration rules, AI decisions, UI, Electron, SQLite, or first-night completion.
+
+Implementation update:
+
+- Base and Philosopher-gained Snake Charmer source forms are both accepted by `SubmitSnakeCharmerAction`.
+- `SnakeCharmerIneffectiveResolved` records an impaired source no-effect fact.
+- `ScheduledTaskSettled.outcomeType = SNAKE_CHARMER_INEFFECTIVE` settles the impaired path.
+- The effective non-Demon and Demon-hit paths from Slices 2B8 and 2B9 remain unchanged.
+
+Acceptance:
+
+- Base Snake Charmer can open an action opportunity when it is the next task.
+- Source `DRUNK` or `POISONED` impairment prevents no-swap and demon-hit effects.
+- Ineffective settlement leaves `assignment` and `currentCharacterState` unchanged.
+- Player and AI projections do not expose opportunity, target, swap, poison, or ineffective internals.
+- Golden base task count remains six and golden base order is unchanged.
+
+## Slice 2B11: Evil Twin Setup And Pair Knowledge
+
+Scope:
+
+- Execute only after Slice 2B10 is accepted and merged.
+- Settle the supported first-night `EVIL_TWIN_SETUP` role setup task.
+- Establish one deterministic Evil Twin pair from the current Evil Twin source and the lowest-seat current GOOD candidate.
+- Deliver exactly two mutual private knowledge entries so each twin knows only the counterpart identity.
+- Settle the scheduled task with `ScheduledTaskSettled.outcomeType = EVIL_TWIN_PAIR_ESTABLISHED`.
+- Keep `assignment` and `currentCharacterState` unchanged.
+- Keep player and AI private projections free of full pair facts, roles, assignment, pairing policy, and task internals.
+- Do not implement Evil Twin victory conditions, death interactions, Vigormortis special rules, AI decisions, UI, Electron, SQLite, or first-night completion.
+
+Implementation update:
+
+- `SettleEvilTwinSetup` is the new command for this slice.
+- Valid Evil Twin setup batches contain exactly:
+
+```text
+EvilTwinPairEstablished
+EvilTwinInformationDelivered
+ScheduledTaskSettled
+```
+
+- Pairing uses `pairingPolicyVersion = evil-twin-pairing-policy-v1`.
+- Private knowledge uses `knowledgeModelVersion = evil-twin-knowledge-model-v1` and `knowledgeStage = EVIL_TWIN_SETUP_INFORMATION`.
+
+Acceptance:
+
+- Evil Twin setup succeeds only when the next unsettled task is `EVIL_TWIN_SETUP`.
+- The source must still be current `evil_twin` and current `EVIL`.
+- If no legal current GOOD candidate exists, the command is rejected as `NoLegalEvilTwinPair`.
+- After settlement, `WITCH_ACTION` becomes the next task in the current supported no-Philosopher path.
+- Replay rejects naked, reversed, incomplete, wrong-outcome, wrong-revision, mismatched-pair, and malformed-knowledge batches.
+- Player and AI views expose only `evilTwinCounterpart` to the two twin players.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:
