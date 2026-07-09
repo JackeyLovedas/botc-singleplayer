@@ -16,6 +16,9 @@ import type {
   SnakeCharmerIneffectiveResolvedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload,
+  WitchDeathPendingPayload,
+  WitchIneffectiveResolvedPayload,
+  WitchTargetChosenPayload,
   SetupGeneratedPayload
 } from "./events.js";
 import {
@@ -86,6 +89,16 @@ import {
   validateSnakeCharmerPoisonedImpairmentPayload,
   validateSnakeCharmerTargetChosenPayload
 } from "./snake-charmer.js";
+import {
+  appendWitchDeathPending,
+  appendWitchIneffectiveResolution,
+  appendWitchTargetChoice,
+  hasWitchDeathPendingForSettlement,
+  hasWitchIneffectiveResolutionForSettlement,
+  validateWitchDeathPendingMarkedPayload,
+  validateWitchIneffectiveResolvedPayload,
+  validateWitchTargetChosenPayload
+} from "./witch.js";
 import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   isPlainRecord,
@@ -1063,6 +1076,91 @@ const validateSnakeCharmerDemonSwapAppliedPayloadForState = (
   }
 };
 
+const validateWitchTargetChosenPayloadForState = (
+  state: GameState,
+  payload: WitchTargetChosenPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidWitchTargetChosenPayload",
+      "WitchTargetChosen requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined ||
+    state.roster === undefined
+  ) {
+    throw new DomainError(
+      "InvalidWitchTargetChosenPayload",
+      "WitchTargetChosen requires first-night task plan, current character state, and roster"
+    );
+  }
+
+  validateFirstNightTaskPlanRuntimeStateForState(state, {
+    plan: state.firstNightTaskPlan,
+    insertions: state.firstNightTaskInsertions,
+    errorCode: "InvalidWitchTargetChosenPayload"
+  });
+
+  const validation = validateWitchTargetChosenPayload(payload, {
+    taskId: payload.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    roster: state.roster.entries
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidWitchTargetChosenPayload", validation.reason);
+  }
+};
+
+const validateWitchDeathPendingMarkedPayloadForState = (
+  state: GameState,
+  payload: WitchDeathPendingPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidWitchDeathPendingMarkedPayload",
+      "WitchDeathPendingMarked requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  const validation = validateWitchDeathPendingMarkedPayload(payload, {
+    choices: state.witchTargetChoices,
+    pendingDeaths: state.witchDeathPending,
+    abilityImpairments: state.abilityImpairments,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidWitchDeathPendingMarkedPayload", validation.reason);
+  }
+};
+
+const validateWitchIneffectiveResolvedPayloadForState = (
+  state: GameState,
+  payload: WitchIneffectiveResolvedPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidWitchIneffectiveResolvedPayload",
+      "WitchIneffectiveResolved requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  const validation = validateWitchIneffectiveResolvedPayload(payload, {
+    choices: state.witchTargetChoices,
+    resolutions: state.witchIneffectiveResolutions,
+    abilityImpairments: state.abilityImpairments,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidWitchIneffectiveResolvedPayload", validation.reason);
+  }
+};
+
 const validateScheduledTaskSettledPayloadForState = (
   state: GameState,
   payload: ScheduledTaskSettledPayload
@@ -1186,9 +1284,27 @@ const validateScheduledTaskSettledPayloadForState = (
     return;
   }
 
+  if (payload.taskType === "WITCH_ACTION") {
+    if (payload.outcomeType === "WITCH_DEATH_PENDING_MARKED") {
+      if (!hasWitchDeathPendingForSettlement(state.witchDeathPending, payload)) {
+        throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a Witch pending death marker");
+      }
+      return;
+    }
+
+    if (payload.outcomeType === "WITCH_INEFFECTIVE") {
+      if (!hasWitchIneffectiveResolutionForSettlement(state.witchIneffectiveResolutions, payload)) {
+        throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a Witch ineffective resolution");
+      }
+      return;
+    }
+
+    throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled uses an unsupported Witch outcome");
+  }
+
   throw new DomainError(
     "InvalidScheduledTaskSettledPayload",
-    "ScheduledTaskSettled only supports PHILOSOPHER_ACTION, SNAKE_CHARMER_ACTION, EVIL_TWIN_SETUP, MINION_INFO, and DEMON_INFO in this slice"
+    "ScheduledTaskSettled only supports PHILOSOPHER_ACTION, SNAKE_CHARMER_ACTION, EVIL_TWIN_SETUP, WITCH_ACTION, MINION_INFO, and DEMON_INFO in this slice"
   );
 };
 
@@ -1230,6 +1346,12 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidSnakeCharmerNoSwapResolvedPayload";
     case "SnakeCharmerIneffectiveResolved":
       return "InvalidSnakeCharmerIneffectiveResolvedPayload";
+    case "WitchTargetChosen":
+      return "InvalidWitchTargetChosenPayload";
+    case "WitchDeathPendingMarked":
+      return "InvalidWitchDeathPendingMarkedPayload";
+    case "WitchIneffectiveResolved":
+      return "InvalidWitchIneffectiveResolvedPayload";
     case "EvilTwinPairEstablished":
       return "InvalidEvilTwinPairEstablishedPayload";
     case "EvilTwinInformationDelivered":
@@ -1740,6 +1862,77 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
         snakeCharmerIneffectiveResolutions: appendSnakeCharmerIneffectiveResolution(
           state.snakeCharmerIneffectiveResolutions,
+          event.payload
+        )
+      };
+    }
+
+    case "WitchTargetChosen": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "WitchTargetChosen requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidWitchTargetChosenPayload",
+          "WitchTargetChosen payload rules baseline must match game state"
+        );
+      }
+
+      validateWitchTargetChosenPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        witchTargetChoices: appendWitchTargetChoice(state.witchTargetChoices, event.payload)
+      };
+    }
+
+    case "WitchDeathPendingMarked": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "WitchDeathPendingMarked requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidWitchDeathPendingMarkedPayload",
+          "WitchDeathPendingMarked payload rules baseline must match game state"
+        );
+      }
+
+      validateWitchDeathPendingMarkedPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
+        witchDeathPending: appendWitchDeathPending(state.witchDeathPending, event.payload)
+      };
+    }
+
+    case "WitchIneffectiveResolved": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "WitchIneffectiveResolved requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidWitchIneffectiveResolvedPayload",
+          "WitchIneffectiveResolved payload rules baseline must match game state"
+        );
+      }
+
+      validateWitchIneffectiveResolvedPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
+        witchIneffectiveResolutions: appendWitchIneffectiveResolution(
+          state.witchIneffectiveResolutions,
           event.payload
         )
       };

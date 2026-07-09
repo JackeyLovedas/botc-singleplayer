@@ -58,6 +58,7 @@ import {
   settleEvilTwinSetupCommand,
   submitPhilosopherActionCommand,
   submitSnakeCharmerActionCommand,
+  submitWitchActionCommand,
   storytellerActor,
   testAssignmentGenerator,
   testFirstNightTaskCatalog,
@@ -242,12 +243,12 @@ const choosePhilosopherRoleCommand = (
 });
 
 const noPhilosopherExactRoleIds = [
-  "clockmaker",
   "dreamer",
   "snake_charmer",
   "mathematician",
   "flowergirl",
   "town_crier",
+  "oracle",
   "mutant",
   "sweetheart",
   "barber",
@@ -367,6 +368,62 @@ const reachEvilTwinSetupTask = async (
   ).toBe("EVIL_TWIN_SETUP");
 
   return { beforeEvilTwin, evilTwinTask };
+};
+
+const reachWitchActionTask = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore
+) => {
+  const { evilTwinTask } = await reachEvilTwinSetupTask(service, commandStore);
+  const evilTwinResult = await service.execute(settleEvilTwinSetupCommand({
+    commandId: commandId("settle-evil-twin-before-witch"),
+    expectedGameVersion: 11,
+    payload: {
+      commandType: "SettleEvilTwinSetup",
+      taskId: evilTwinTask.taskId
+    }
+  }));
+  expectAcceptedResult(evilTwinResult);
+
+  const beforeWitch = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const witchTask = beforeWitch?.firstNightTaskPlan?.tasks.find((task) => task.taskType === "WITCH_ACTION");
+  if (beforeWitch === undefined || witchTask === undefined) {
+    throw new Error("Expected Witch action task");
+  }
+
+  expect(beforeWitch.firstNightTaskPlan && beforeWitch.firstNightTaskProgress
+    ? beforeWitch.firstNightTaskPlan.tasks[beforeWitch.firstNightTaskProgress.settlements.length]?.taskType
+    : undefined
+  ).toBe("WITCH_ACTION");
+
+  return { beforeWitch, witchTask };
+};
+
+const reachOpenWitchActionOpportunity = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore
+) => {
+  const { beforeWitch, witchTask } = await reachWitchActionTask(service, commandStore);
+  const openResult = await service.execute(openFirstNightRoleActionOpportunityCommand({
+    commandId: commandId("open-witch-action"),
+    expectedGameVersion: 12,
+    payload: {
+      commandType: "OpenFirstNightRoleActionOpportunity",
+      taskId: witchTask.taskId
+    }
+  }));
+  expectAcceptedResult(openResult);
+
+  const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const opportunity = state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.taskId === witchTask.taskId &&
+    candidate.opportunityKind === "WITCH_FIRST_NIGHT_ACTION"
+  );
+  if (state === undefined || opportunity === undefined) {
+    throw new Error("Expected open Witch opportunity");
+  }
+
+  return { beforeWitch, witchTask, opportunity, state };
 };
 
 const reachOpenDrunkBaseSnakeCharmerOpportunity = async (
@@ -4845,6 +4902,425 @@ describe("GameApplicationService", () => {
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
     expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(19);
+  });
+
+  it("opens WITCH_ACTION as a safe deterministic first-night action opportunity", async () => {
+    const { service, commandStore } = makeService();
+    const { witchTask } = await reachWitchActionTask(service, commandStore);
+
+    const result = await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-witch-safe-opportunity"),
+      expectedGameVersion: 12,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: witchTask.taskId
+      }
+    }));
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const opportunity = state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
+      candidate.taskId === witchTask.taskId
+    );
+
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(13);
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]?.eventType).toBe("FirstNightActionOpportunityCreated");
+    expect(opportunity).toMatchObject({
+      opportunityId: actionOpportunityId(`first-night-v1:WITCH_ACTION:seat-${String(witchTask.source.kind === "ROLE" ? witchTask.source.seatNumber : 0).padStart(2, "0")}:opportunity-01`),
+      opportunityKind: "WITCH_FIRST_NIGHT_ACTION",
+      taskId: witchTask.taskId,
+      taskType: "WITCH_ACTION",
+      opportunityStatus: "OPEN",
+      visibility: {
+        canChooseTarget: true,
+        supportedDecisionKinds: ["CHOOSE_PLAYER"],
+        targetSchema: "ANY_PLAYER"
+      }
+    });
+
+    const serialized = JSON.stringify(opportunity);
+    expect(serialized).not.toContain("willDie");
+    expect(serialized).not.toContain("isEffective");
+    expect(serialized).not.toContain("targetRole");
+    expect(serialized).not.toContain("targetAlignment");
+    expect(serialized).not.toContain("currentCharacterState");
+    expect(serialized).not.toContain("assignment");
+  });
+
+  it("rejects invalid WITCH_ACTION opportunity opening attempts with deterministic receipts", async () => {
+    const { service, commandStore } = makeService();
+    await reachWitchActionTask(service, commandStore);
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const witchTask = state?.firstNightTaskPlan?.tasks.find((task) => task.taskType === "WITCH_ACTION");
+    const dreamerTask = state?.firstNightTaskPlan?.tasks.find((task) => task.taskType === "DREAMER_ACTION");
+    if (witchTask === undefined || dreamerTask === undefined) {
+      throw new Error("Expected Witch and Dreamer tasks");
+    }
+
+    const humanOpen = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("human-open-witch"),
+      expectedGameVersion: 12,
+      actor: humanActor,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: witchTask.taskId
+      }
+    });
+    await expect(service.execute(humanOpen)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActorNotAllowed"
+    });
+
+    const earlyDreamer = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("early-open-dreamer-before-witch"),
+      expectedGameVersion: 12,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: dreamerTask.taskId
+      }
+    });
+    await expect(service.execute(earlyDreamer)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ScheduledTaskNotNext"
+    });
+
+    const open = await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-witch-before-duplicate"),
+      expectedGameVersion: 12,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: witchTask.taskId
+      }
+    }));
+    expectAcceptedResult(open);
+
+    const duplicate = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("duplicate-open-witch"),
+      expectedGameVersion: 13,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: witchTask.taskId
+      }
+    });
+    await expect(service.execute(duplicate)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActionOpportunityAlreadyOpen"
+    });
+    expect((await commandStore.findCommandReceipt(duplicate.gameId, duplicate.commandId))?.result.status).toBe("rejected");
+  });
+
+  it("submits an effective Witch target choice and records a deferred death marker", async () => {
+    const { service, commandStore } = makeService();
+    const { witchTask, opportunity, state: beforeSubmit } = await reachOpenWitchActionOpportunity(service, commandStore);
+    const target = beforeSubmit.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) {
+      throw new Error("Expected Witch target");
+    }
+
+    const result = await service.execute(submitWitchActionCommand({
+      commandId: commandId("submit-effective-witch-target"),
+      expectedGameVersion: 13,
+      actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+      payload: {
+        commandType: "SubmitWitchAction",
+        taskId: witchTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: {
+          kind: "CHOOSE_PLAYER",
+          targetPlayerId: target.playerId
+        }
+      }
+    }));
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(14);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "WitchTargetChosen",
+      "WitchDeathPendingMarked",
+      "ScheduledTaskSettled"
+    ]);
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([24, 25, 26]);
+    expect(state?.witchTargetChoices?.choices).toHaveLength(1);
+    expect(state?.witchDeathPending?.pendingDeaths).toHaveLength(1);
+    expect(state?.witchIneffectiveResolutions).toBeUndefined();
+    expect(state?.witchDeathPending?.pendingDeaths[0]).toMatchObject({
+      taskId: witchTask.taskId,
+      taskType: "WITCH_ACTION",
+      opportunityId: opportunity.opportunityId,
+      targetPlayerId: target.playerId,
+      targetSeatNumber: target.seatNumber,
+      pendingDeathId: `witch-death-pending-v1:${witchTask.taskId}:source-seat-${String(opportunity.sourceSeatNumber).padStart(2, "0")}:target-seat-${String(target.seatNumber).padStart(2, "0")}`,
+      trigger: "TARGET_NOMINATES_TOMORROW",
+      markerVersion: "witch-death-pending-v1"
+    });
+    expect(state?.firstNightTaskProgress?.settlements.at(-1)).toMatchObject({
+      taskType: "WITCH_ACTION",
+      outcomeType: "WITCH_DEATH_PENDING_MARKED",
+      characterStateRevision: opportunity.sourceCharacterStateRevision
+    });
+    expect(state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
+      candidate.opportunityId === opportunity.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(state?.firstNightTaskPlan && state.firstNightTaskProgress
+      ? state.firstNightTaskPlan.tasks[state.firstNightTaskProgress.settlements.length]?.taskType
+      : undefined
+    ).toBe("DREAMER_ACTION");
+    expect(state?.currentCharacterState).toStrictEqual(beforeSubmit.currentCharacterState);
+    expect(state?.assignment).toStrictEqual(beforeSubmit.assignment);
+    expect(state?.firstNightTaskPlan).toStrictEqual(beforeSubmit.firstNightTaskPlan);
+    expect(JSON.stringify(result.events[0]?.payload)).not.toContain("targetRole");
+    expect(JSON.stringify(result.events[1]?.payload)).not.toContain("targetAlignment");
+  });
+
+  it("accepts Storyteller, System, source Human, and self-target Witch submissions", async () => {
+    const { service, commandStore } = makeService();
+    const { witchTask, opportunity } = await reachOpenWitchActionOpportunity(service, commandStore);
+
+    const result = await service.execute(submitWitchActionCommand({
+      commandId: commandId("source-human-witch-self-target"),
+      expectedGameVersion: 13,
+      actor: { kind: "human", playerId: opportunity.sourcePlayerId },
+      payload: {
+        commandType: "SubmitWitchAction",
+        taskId: witchTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: {
+          kind: "CHOOSE_PLAYER",
+          targetPlayerId: opportunity.sourcePlayerId
+        }
+      }
+    }));
+    expectAcceptedResult(result);
+
+    for (const [actorName, actor] of [
+      ["storyteller", storytellerActor],
+      ["system", systemActor]
+    ] as const) {
+      const nextStore = new MemoryCommandCommitStore();
+      const { service: nextService, commandStore: nextCommandStore } = makeService(nextStore);
+      const next = await reachOpenWitchActionOpportunity(nextService, nextCommandStore);
+      const nextTarget = next.state.roster?.entries.find((entry) => entry.playerId !== next.opportunity.sourcePlayerId);
+      if (nextTarget === undefined) {
+        throw new Error("Expected Witch target");
+      }
+      await expect(nextService.execute(submitWitchActionCommand({
+        commandId: commandId(`${actorName}-witch-submit`),
+        expectedGameVersion: 13,
+        actor,
+        payload: {
+          commandType: "SubmitWitchAction",
+          taskId: next.witchTask.taskId,
+          opportunityId: next.opportunity.opportunityId,
+          decision: {
+            kind: "CHOOSE_PLAYER",
+            targetPlayerId: nextTarget.playerId
+          }
+        }
+      }))).resolves.toMatchObject({ status: "accepted", gameVersion: 14 });
+    }
+  });
+
+  it("rejects invalid Witch submissions and unsupported next Dreamer opening", async () => {
+    const { service, commandStore } = makeService();
+    const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) {
+      throw new Error("Expected Witch target");
+    }
+
+    const nonSource = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (nonSource === undefined) {
+      throw new Error("Expected non-source actor");
+    }
+    await expect(service.execute(submitWitchActionCommand({
+      commandId: commandId("non-source-witch-submit"),
+      expectedGameVersion: 13,
+      actor: { kind: "ai", playerId: nonSource.playerId },
+      payload: {
+        commandType: "SubmitWitchAction",
+        taskId: witchTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: {
+          kind: "CHOOSE_PLAYER",
+          targetPlayerId: target.playerId
+        }
+      }
+    }))).resolves.toMatchObject({ status: "rejected", code: "ActorPlayerMismatch" });
+
+    await expect(service.execute(submitWitchActionCommand({
+      commandId: commandId("unknown-witch-target"),
+      expectedGameVersion: 13,
+      payload: {
+        commandType: "SubmitWitchAction",
+        taskId: witchTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: {
+          kind: "CHOOSE_PLAYER",
+          targetPlayerId: playerId("unknown-player")
+        }
+      }
+    }))).resolves.toMatchObject({ status: "rejected", code: "InvalidWitchTarget" });
+
+    await expect(service.execute(submitWitchActionCommand({
+      commandId: commandId("extra-field-witch-target"),
+      expectedGameVersion: 13,
+      payload: {
+        commandType: "SubmitWitchAction",
+        taskId: witchTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: {
+          kind: "CHOOSE_PLAYER",
+          targetPlayerId: target.playerId,
+          targetSeatNumber: target.seatNumber
+        } as never
+      }
+    }))).resolves.toMatchObject({ status: "rejected", code: "InvalidWitchTarget" });
+
+    const acceptedWitch = await service.execute(submitWitchActionCommand({
+      commandId: commandId("settle-witch-before-dreamer-rejection"),
+      expectedGameVersion: 13,
+      payload: {
+        commandType: "SubmitWitchAction",
+        taskId: witchTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: {
+          kind: "CHOOSE_PLAYER",
+          targetPlayerId: target.playerId
+        }
+      }
+    }));
+    expectAcceptedResult(acceptedWitch);
+    const afterWitch = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const dreamerTask = afterWitch?.firstNightTaskPlan?.tasks.find((task) =>
+      task.taskType === "DREAMER_ACTION" &&
+      afterWitch.firstNightTaskProgress !== undefined &&
+      afterWitch.firstNightTaskPlan?.tasks[afterWitch.firstNightTaskProgress.settlements.length]?.taskId === task.taskId
+    );
+    if (dreamerTask === undefined) {
+      throw new Error("Expected next Dreamer task");
+    }
+
+    await expect(service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-dreamer-not-supported-yet"),
+      expectedGameVersion: 14,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: dreamerTask.taskId
+      }
+    }))).resolves.toMatchObject({
+      status: "rejected",
+      code: "UnsupportedRoleActionOpportunity"
+    });
+  });
+
+  it("keeps SubmitWitchAction metadata generation failures classified independently", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FaultInjectingIdGenerator();
+    const { service } = makeService(commandStore, testSetupGenerator, idGenerator);
+    const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) {
+      throw new Error("Expected Witch target");
+    }
+    const command = submitWitchActionCommand({
+      commandId: commandId("witch-metadata-failure"),
+      expectedGameVersion: 13,
+      payload: {
+        commandType: "SubmitWitchAction",
+        taskId: witchTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: {
+          kind: "CHOOSE_PLAYER",
+          targetPlayerId: target.playerId
+        }
+      }
+    });
+
+    idGenerator.failNextBatchId = true;
+    const failedResult = await service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 13,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(23);
+  });
+
+  it("keeps Witch opportunity construction DomainErrors retryable without receipts or events", async () => {
+    const { service, commandStore } = makeService();
+    const { witchTask } = await reachWitchActionTask(service, commandStore);
+    let taskIdReads = 0;
+    const command = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("mutating-open-witch-action"),
+      expectedGameVersion: 12,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        get taskId() {
+          taskIdReads += 1;
+          return taskIdReads === 1 ? witchTask.taskId : scheduledTaskId("first-night-v1:MINION_INFO:system");
+        }
+      } as never
+    });
+
+    const failedResult = await service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "DependencyExecutionFailed",
+      failureStage: "first-night-role-action",
+      currentGameVersion: 12,
+      retryable: true
+    });
+    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(22);
+  });
+
+  it("keeps SubmitWitchAction construction DomainErrors retryable without receipts or events", async () => {
+    const { service, commandStore } = makeService();
+    const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) {
+      throw new Error("Expected Witch target");
+    }
+
+    let opportunityIdReads = 0;
+    const command = submitWitchActionCommand({
+      commandId: commandId("mutating-submit-witch-action"),
+      expectedGameVersion: 13,
+      payload: {
+        commandType: "SubmitWitchAction",
+        taskId: witchTask.taskId,
+        get opportunityId() {
+          opportunityIdReads += 1;
+          return opportunityIdReads === 1
+            ? opportunity.opportunityId
+            : actionOpportunityId("first-night-v1:WITCH_ACTION:seat-99:opportunity-01");
+        },
+        decision: {
+          kind: "CHOOSE_PLAYER",
+          targetPlayerId: target.playerId
+        }
+      } as never
+    });
+
+    const failedResult = await service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "DependencyExecutionFailed",
+      failureStage: "first-night-role-action",
+      currentGameVersion: 13,
+      retryable: true
+    });
+    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(23);
   });
 
   it("rejects AI and Storyteller actors for CreateGame and SelectScript", async () => {

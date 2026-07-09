@@ -25,9 +25,13 @@ import type { RoleSetupSnapshot } from "./setup-types.js";
 import { sameRoleSetupSnapshot } from "./setup-types.js";
 
 export type ActionOpportunityStatus = "OPEN" | "CLOSED";
-export type ActionOpportunityKind = "PHILOSOPHER_FIRST_NIGHT_ACTION" | "SNAKE_CHARMER_FIRST_NIGHT_ACTION";
+export type ActionOpportunityKind =
+  | "PHILOSOPHER_FIRST_NIGHT_ACTION"
+  | "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+  | "WITCH_FIRST_NIGHT_ACTION";
 export type PhilosopherActionDecisionKind = "DEFER" | "CHOOSE_GOOD_CHARACTER";
 export type SnakeCharmerActionDecisionKind = "CHOOSE_PLAYER";
+export type WitchActionDecisionKind = "CHOOSE_PLAYER";
 
 export type PhilosopherActionDecision =
   | {
@@ -50,9 +54,16 @@ export type SnakeCharmerActionOpportunityVisibility = {
   readonly targetSchema: "ANY_LIVING_PLAYER";
 };
 
+export type WitchActionOpportunityVisibility = {
+  readonly canChooseTarget: true;
+  readonly supportedDecisionKinds: readonly ["CHOOSE_PLAYER"];
+  readonly targetSchema: "ANY_PLAYER";
+};
+
 export type ActionOpportunityVisibility =
   | PhilosopherActionOpportunityVisibility
-  | SnakeCharmerActionOpportunityVisibility;
+  | SnakeCharmerActionOpportunityVisibility
+  | WitchActionOpportunityVisibility;
 
 export type PhilosopherActionOpportunitySource = {
   readonly taskId: ScheduledTaskId;
@@ -66,6 +77,15 @@ export type PhilosopherActionOpportunitySource = {
 export type SnakeCharmerActionOpportunitySource = {
   readonly taskId: ScheduledTaskId;
   readonly taskType: "SNAKE_CHARMER_ACTION";
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly sourceRole: RoleSetupSnapshot;
+  readonly sourceCharacterStateRevision: number;
+};
+
+export type WitchActionOpportunitySource = {
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: "WITCH_ACTION";
   readonly sourcePlayerId: PlayerId;
   readonly sourceSeatNumber: SeatNumber;
   readonly sourceRole: RoleSetupSnapshot;
@@ -88,7 +108,18 @@ export type SnakeCharmerActionOpportunity = SnakeCharmerActionOpportunitySource 
   readonly visibility: SnakeCharmerActionOpportunityVisibility;
 };
 
-export type FirstNightActionOpportunity = PhilosopherActionOpportunity | SnakeCharmerActionOpportunity;
+export type WitchActionOpportunity = WitchActionOpportunitySource & {
+  readonly nightNumber: 1;
+  readonly opportunityId: ActionOpportunityId;
+  readonly opportunityKind: "WITCH_FIRST_NIGHT_ACTION";
+  readonly opportunityStatus: ActionOpportunityStatus;
+  readonly visibility: WitchActionOpportunityVisibility;
+};
+
+export type FirstNightActionOpportunity =
+  | PhilosopherActionOpportunity
+  | SnakeCharmerActionOpportunity
+  | WitchActionOpportunity;
 
 export type FirstNightActionOpportunityState = {
   readonly opportunities: readonly FirstNightActionOpportunity[];
@@ -126,6 +157,9 @@ type CreatePhilosopherOpportunityResult =
 type CreateSnakeCharmerOpportunityResult =
   | { readonly valid: true; readonly opportunity: SnakeCharmerActionOpportunity }
   | { readonly valid: false; readonly reason: string };
+type CreateWitchOpportunityResult =
+  | { readonly valid: true; readonly opportunity: WitchActionOpportunity }
+  | { readonly valid: false; readonly reason: string };
 
 const PHILOSOPHER_ACTION_OPPORTUNITY_VISIBILITY_KEYS = [
   "canDefer",
@@ -133,6 +167,11 @@ const PHILOSOPHER_ACTION_OPPORTUNITY_VISIBILITY_KEYS = [
   "supportedDecisionKinds"
 ] as const;
 const SNAKE_CHARMER_ACTION_OPPORTUNITY_VISIBILITY_KEYS = [
+  "canChooseTarget",
+  "supportedDecisionKinds",
+  "targetSchema"
+] as const;
+const WITCH_ACTION_OPPORTUNITY_VISIBILITY_KEYS = [
   "canChooseTarget",
   "supportedDecisionKinds",
   "targetSchema"
@@ -179,8 +218,9 @@ const PHILOSOPHER_ACTION_DEFERRED_PAYLOAD_KEYS = [
 
 const PHILOSOPHER_ROLE_ID = "philosopher" as RoleId;
 const SNAKE_CHARMER_ROLE_ID = "snake_charmer" as RoleId;
+const WITCH_ROLE_ID = "witch" as RoleId;
 const FIRST_NIGHT_ACTION_OPPORTUNITY_ID_PATTERN =
-  /^first-night-v1:(?:(PHILOSOPHER_ACTION|SNAKE_CHARMER_ACTION):seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(SNAKE_CHARMER_ACTION):seat-(0[1-9]|1[0-2]):from-snake_charmer:opportunity-(0[1-9][0-9]*))$/;
+  /^first-night-v1:(?:(PHILOSOPHER_ACTION|SNAKE_CHARMER_ACTION|WITCH_ACTION):seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(SNAKE_CHARMER_ACTION):seat-(0[1-9]|1[0-2]):from-snake_charmer:opportunity-(0[1-9][0-9]*))$/;
 
 const fail = (reason: string): ValidationResult => ({ valid: false, reason });
 
@@ -194,6 +234,12 @@ const createSnakeCharmerActionOpportunityVisibility = (): SnakeCharmerActionOppo
   canChooseTarget: true,
   supportedDecisionKinds: ["CHOOSE_PLAYER"],
   targetSchema: "ANY_LIVING_PLAYER"
+});
+
+const createWitchActionOpportunityVisibility = (): WitchActionOpportunityVisibility => ({
+  canChooseTarget: true,
+  supportedDecisionKinds: ["CHOOSE_PLAYER"],
+  targetSchema: "ANY_PLAYER"
 });
 
 const isDenseArray = (value: readonly unknown[]): boolean => {
@@ -228,6 +274,16 @@ const hasExactSnakeCharmerActionOpportunityVisibilityShape = (value: unknown): v
   value.supportedDecisionKinds.length === 1 &&
   value.supportedDecisionKinds[0] === "CHOOSE_PLAYER" &&
   value.targetSchema === "ANY_LIVING_PLAYER";
+
+const hasExactWitchActionOpportunityVisibilityShape = (value: unknown): value is WitchActionOpportunityVisibility =>
+  isPlainRecord(value) &&
+  hasExactEnumerableKeys(value, WITCH_ACTION_OPPORTUNITY_VISIBILITY_KEYS) &&
+  value.canChooseTarget === true &&
+  Array.isArray(value.supportedDecisionKinds) &&
+  isDenseArray(value.supportedDecisionKinds) &&
+  value.supportedDecisionKinds.length === 1 &&
+  value.supportedDecisionKinds[0] === "CHOOSE_PLAYER" &&
+  value.targetSchema === "ANY_PLAYER";
 
 const hasExactFirstNightActionOpportunityShape = (value: unknown): value is FirstNightActionOpportunity => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS)) {
@@ -273,6 +329,14 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
       value.taskType === "SNAKE_CHARMER_ACTION" &&
       parsedId.taskType === "SNAKE_CHARMER_ACTION" &&
       hasExactSnakeCharmerActionOpportunityVisibilityShape(value.visibility)
+    );
+  }
+
+  if (value.opportunityKind === "WITCH_FIRST_NIGHT_ACTION") {
+    return (
+      value.taskType === "WITCH_ACTION" &&
+      parsedId.taskType === "WITCH_ACTION" &&
+      hasExactWitchActionOpportunityVisibilityShape(value.visibility)
     );
   }
 
@@ -334,6 +398,22 @@ const cloneFirstNightActionOpportunity = (
     };
   }
 
+  if (opportunity.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION") {
+    return {
+      nightNumber: opportunity.nightNumber,
+      opportunityId: opportunity.opportunityId,
+      opportunityKind: opportunity.opportunityKind,
+      opportunityStatus: opportunity.opportunityStatus,
+      taskId: opportunity.taskId,
+      taskType: opportunity.taskType,
+      sourcePlayerId: opportunity.sourcePlayerId,
+      sourceSeatNumber: opportunity.sourceSeatNumber,
+      sourceRole: cloneRoleSetupSnapshot(opportunity.sourceRole),
+      sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision,
+      visibility: cloneVisibility(opportunity.visibility) as SnakeCharmerActionOpportunityVisibility
+    };
+  }
+
   return {
     nightNumber: opportunity.nightNumber,
     opportunityId: opportunity.opportunityId,
@@ -345,7 +425,7 @@ const cloneFirstNightActionOpportunity = (
     sourceSeatNumber: opportunity.sourceSeatNumber,
     sourceRole: cloneRoleSetupSnapshot(opportunity.sourceRole),
     sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision,
-    visibility: cloneVisibility(opportunity.visibility) as SnakeCharmerActionOpportunityVisibility
+    visibility: cloneVisibility(opportunity.visibility) as WitchActionOpportunityVisibility
   };
 };
 
@@ -460,8 +540,39 @@ const currentBaseSnakeCharmerEntryForTask = (
   return currentEntry;
 };
 
+const currentWitchEntryForTask = (
+  task: ScheduledTask,
+  currentCharacterState: CurrentCharacterStateSet
+) => {
+  const source = task.source;
+  if (
+    task.taskType !== "WITCH_ACTION" ||
+    task.taskClass !== "ROLE_ACTION" ||
+    source.kind !== "ROLE" ||
+    source.role.roleId !== WITCH_ROLE_ID
+  ) {
+    return undefined;
+  }
+
+  const currentEntry = currentCharacterState.entries.find(
+    (entry) =>
+      entry.playerId === source.playerId &&
+      entry.seatNumber === source.seatNumber
+  );
+
+  if (
+    currentEntry === undefined ||
+    currentEntry.role.roleId !== WITCH_ROLE_ID ||
+    !sameRoleSetupSnapshot(currentEntry.role, source.role)
+  ) {
+    return undefined;
+  }
+
+  return currentEntry;
+};
+
 export const formatFirstNightActionOpportunityId = (input: {
-  readonly taskType: "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION";
+  readonly taskType: "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION" | "WITCH_ACTION";
   readonly seatNumber: SeatNumber;
   readonly opportunityIndex?: number;
 }): ActionOpportunityId => {
@@ -501,7 +612,7 @@ export const parseFirstNightActionOpportunityId = (
   value: ActionOpportunityId
 ): {
   readonly valid: true;
-  readonly taskType: "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION";
+  readonly taskType: "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION" | "WITCH_ACTION";
   readonly seatNumber: SeatNumber;
   readonly opportunityIndex: number;
 } | {
@@ -513,7 +624,7 @@ export const parseFirstNightActionOpportunityId = (
     return { valid: false, reason: "ActionOpportunityId must use a supported first-night action opportunity format" };
   }
 
-  const taskType = (match[1] ?? match[4]) as "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION";
+  const taskType = (match[1] ?? match[4]) as "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION" | "WITCH_ACTION";
   const seatNumber = Number(match[2] ?? match[5]);
   const opportunityIndex = Number(match[3] ?? match[6]);
   if (
@@ -704,6 +815,42 @@ export const tryCreateSnakeCharmerFirstNightActionOpportunity = (
   };
 };
 
+export const tryCreateWitchFirstNightActionOpportunity = (
+  input: OpportunityValidationInput
+): CreateWitchOpportunityResult => {
+  const common = validateCommonOpportunityTarget(input);
+  if (!common.valid) {
+    return common;
+  }
+
+  const targetTask = common.targetTask;
+  const currentEntry = currentWitchEntryForTask(targetTask, input.currentCharacterState);
+  if (currentEntry === undefined) {
+    return { valid: false, reason: "FirstNightActionOpportunityCreated source is no longer a current Witch" };
+  }
+
+  return {
+    valid: true,
+    opportunity: {
+      nightNumber: 1,
+      opportunityId: formatFirstNightActionOpportunityId({
+        taskType: "WITCH_ACTION",
+        seatNumber: currentEntry.seatNumber,
+        opportunityIndex: 1
+      }),
+      opportunityKind: "WITCH_FIRST_NIGHT_ACTION",
+      opportunityStatus: "OPEN",
+      taskId: targetTask.taskId,
+      taskType: "WITCH_ACTION",
+      sourcePlayerId: currentEntry.playerId,
+      sourceSeatNumber: currentEntry.seatNumber,
+      sourceRole: cloneRoleSetupSnapshot(currentEntry.role),
+      sourceCharacterStateRevision: input.currentCharacterState.revision,
+      visibility: createWitchActionOpportunityVisibility()
+    }
+  };
+};
+
 export const tryCreateFirstNightRoleActionOpportunity = (
   input: OpportunityValidationInput
 ): CreateOpportunityResult => {
@@ -714,6 +861,10 @@ export const tryCreateFirstNightRoleActionOpportunity = (
 
   if (targetTask?.taskType === "SNAKE_CHARMER_ACTION") {
     return tryCreateSnakeCharmerFirstNightActionOpportunity(input);
+  }
+
+  if (targetTask?.taskType === "WITCH_ACTION") {
+    return tryCreateWitchFirstNightActionOpportunity(input);
   }
 
   return { valid: false, reason: "FirstNightActionOpportunityCreated task type is not supported as a first-night role action opportunity" };
@@ -921,8 +1072,8 @@ export const hasClosedPhilosopherOpportunityForSettlement = (
 
 export const isSupportedFirstNightRoleActionTaskType = (
   taskType: FirstNightTaskType
-): taskType is "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION" =>
-  taskType === "PHILOSOPHER_ACTION" || taskType === "SNAKE_CHARMER_ACTION";
+): taskType is "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION" | "WITCH_ACTION" =>
+  taskType === "PHILOSOPHER_ACTION" || taskType === "SNAKE_CHARMER_ACTION" || taskType === "WITCH_ACTION";
 
 export const isSupportedFirstNightRoleActionTask = (
   task: ScheduledTask
@@ -938,4 +1089,9 @@ export const isSupportedFirstNightRoleActionTask = (
     task.source.kind === "PHILOSOPHER_GAINED_ABILITY" &&
     task.source.sourceRole.roleId === PHILOSOPHER_ROLE_ID &&
     task.source.chosenRole.roleId === SNAKE_CHARMER_ROLE_ID
+  ) ||
+  (
+    task.taskType === "WITCH_ACTION" &&
+    task.source.kind === "ROLE" &&
+    task.source.role.roleId === WITCH_ROLE_ID
   );

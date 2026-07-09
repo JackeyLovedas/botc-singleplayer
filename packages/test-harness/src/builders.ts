@@ -38,6 +38,8 @@ import type {
   SubmitPhilosopherActionCommandPayload,
   SubmitSnakeCharmerActionCommand,
   SubmitSnakeCharmerActionCommandPayload,
+  SubmitWitchActionCommand,
+  SubmitWitchActionCommandPayload,
   PlanFirstNightTasksCommand,
   PlanFirstNightTasksCommandPayload,
   SettleFirstNightSystemTaskCommand,
@@ -299,6 +301,29 @@ export const submitSnakeCharmerActionCommand = (
   issuedAt: "2026-07-07T00:00:09.000Z",
   correlationId: correlationId("correlation-10-snake-charmer-target"),
   payload: submitSnakeCharmerActionPayload,
+  ...overrides
+});
+
+export const submitWitchActionPayload = {
+  commandType: "SubmitWitchAction",
+  taskId: scheduledTaskId("first-night-v1:WITCH_ACTION:seat-11"),
+  opportunityId: actionOpportunityId("first-night-v1:WITCH_ACTION:seat-11:opportunity-01"),
+  decision: {
+    kind: "CHOOSE_PLAYER",
+    targetPlayerId: playerId("player-ai-1")
+  }
+} as const satisfies SubmitWitchActionCommandPayload;
+
+export const submitWitchActionCommand = (
+  overrides: Partial<SubmitWitchActionCommand> = {}
+): SubmitWitchActionCommand => ({
+  commandId: commandId("command-12-witch-target"),
+  gameId: ids.game,
+  expectedGameVersion: 13,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:12.000Z",
+  correlationId: correlationId("correlation-12-witch-target"),
+  payload: submitWitchActionPayload,
   ...overrides
 });
 

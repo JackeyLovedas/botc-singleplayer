@@ -37,7 +37,13 @@ import {
   createSnakeCharmerNoSwapScheduledTaskSettlement,
   createSnakeCharmerPoisonedImpairmentPayload,
   createSnakeCharmerTargetChosenPayload,
+  createWitchDeathPendingMarkedPayload,
+  createWitchDeathPendingScheduledTaskSettlement,
+  createWitchIneffectiveResolvedPayload,
+  createWitchIneffectiveScheduledTaskSettlement,
+  createWitchTargetChosenPayload,
   evaluateSnakeCharmerEffectiveness,
+  evaluateWitchEffectiveness,
   getNextUnsettledFirstNightTask,
   cloneCurrentCharacterStateSet,
   abilityImpairmentId,
@@ -154,12 +160,12 @@ const firstNightTaskPlanEventStream = (
 ];
 
 const noPhilosopherExactRoleIds = [
-  "clockmaker",
   "dreamer",
   "snake_charmer",
   "mathematician",
   "flowergirl",
   "town_crier",
+  "oracle",
   "mutant",
   "sweetheart",
   "barber",
@@ -990,6 +996,211 @@ const evilTwinSetupBatchEvents = (): readonly [
     evilTwinBatchEnvelope("EvilTwinPairEstablished", pair, 0),
     evilTwinBatchEnvelope("EvilTwinInformationDelivered", information, 1),
     evilTwinBatchEnvelope("ScheduledTaskSettled", settlement, 2)
+  ];
+};
+
+const witchReadyStream = (): readonly AnyDomainEventEnvelope[] => [
+  ...evilTwinReadyStream(),
+  ...evilTwinSetupBatchEvents()
+];
+
+const witchActionOpportunityCreatedEvent = (
+  overrides: Partial<DomainEventEnvelope<"FirstNightActionOpportunityCreated">> = {}
+): DomainEventEnvelope<"FirstNightActionOpportunityCreated"> => {
+  const state = rebuildGameState(witchReadyStream());
+  const task = getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress);
+  if (task === undefined || task.taskType !== "WITCH_ACTION" || state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined) {
+    throw new Error("Expected next Witch action task");
+  }
+
+  const opportunity = createFirstNightRoleActionOpportunity({
+    taskId: task.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+
+  return {
+    category: "domain",
+    eventId: eventId("event-23"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 23,
+    batchId: batchId("batch-13"),
+    gameVersion: 13,
+    eventType: "FirstNightActionOpportunityCreated",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-13"),
+    createdAt: "2026-07-07T00:00:12.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      ...opportunity
+    },
+    ...overrides
+  };
+};
+
+const openWitchActionStream = (): readonly AnyDomainEventEnvelope[] => [
+  ...witchReadyStream(),
+  witchActionOpportunityCreatedEvent()
+];
+
+const witchBatchEnvelope = <EventType extends AnyDomainEventEnvelope["eventType"]>(
+  eventType: EventType,
+  payload: DomainEventEnvelope<EventType>["payload"],
+  offset: number
+): DomainEventEnvelope<EventType> => ({
+  category: "domain",
+  eventId: eventId(`event-${24 + offset}`),
+  gameId: gameCreatedEvent().gameId,
+  eventSequence: 24 + offset,
+  batchId: batchId("batch-14"),
+  gameVersion: 14,
+  eventType,
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-14"),
+  createdAt: "2026-07-07T00:00:13.000Z",
+  correlationId: gameCreatedEvent().correlationId,
+  causationId: gameCreatedEvent().causationId,
+  payload
+});
+
+const witchDeathPendingBatchEvents = (input: {
+  readonly targetSelf?: boolean;
+} = {}): readonly [
+  DomainEventEnvelope<"WitchTargetChosen">,
+  DomainEventEnvelope<"WitchDeathPendingMarked">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = rebuildGameState(openWitchActionStream());
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "WITCH_FIRST_NIGHT_ACTION"
+  );
+  const target = state.roster?.entries.find((entry) =>
+    input.targetSelf === true
+      ? entry.playerId === opportunity?.sourcePlayerId
+      : entry.playerId !== opportunity?.sourcePlayerId
+  );
+  if (opportunity === undefined || target === undefined || state.roster === undefined) {
+    throw new Error("Expected open Witch opportunity and target");
+  }
+
+  const targetChosen = createWitchTargetChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId: opportunity.taskId,
+    opportunityId: opportunity.opportunityId,
+    targetPlayerId: target.playerId,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    roster: state.roster.entries
+  });
+  const pendingDeath = createWitchDeathPendingMarkedPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    targetChoice: targetChosen
+  });
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createWitchDeathPendingScheduledTaskSettlement({
+      taskId: opportunity.taskId,
+      characterStateRevision: opportunity.sourceCharacterStateRevision
+    })
+  };
+
+  return [
+    witchBatchEnvelope("WitchTargetChosen", targetChosen, 0),
+    witchBatchEnvelope("WitchDeathPendingMarked", pendingDeath, 1),
+    witchBatchEnvelope("ScheduledTaskSettled", settlement, 2)
+  ];
+};
+
+const impairedWitchState = (kind: "DRUNK" | "POISONED" = "POISONED") => {
+  const state = rebuildGameState(openWitchActionStream());
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "WITCH_FIRST_NIGHT_ACTION"
+  );
+  if (opportunity === undefined) {
+    throw new Error("Expected open Witch opportunity");
+  }
+
+  const abilityImpairments: AbilityImpairmentSet = {
+    impairments: [
+      kind === "DRUNK"
+        ? {
+          impairmentId: abilityImpairmentId("ability-impairment-v1:a-drunk-witch"),
+          kind: "DRUNK",
+          sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+          sourcePlayerId: playerId("player-ai-10"),
+          affectedPlayerId: opportunity.sourcePlayerId,
+          affectedSeatNumber: opportunity.sourceSeatNumber,
+          affectedRole: opportunity.sourceRole,
+          chosenRoleId: roleId("witch"),
+          sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
+        }
+        : {
+          impairmentId: abilityImpairmentId("ability-impairment-v1:a-poisoned-witch"),
+          kind: "POISONED",
+          sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+          sourcePlayerId: playerId("player-ai-4"),
+          affectedPlayerId: opportunity.sourcePlayerId,
+          affectedSeatNumber: opportunity.sourceSeatNumber,
+          affectedRole: opportunity.sourceRole,
+          sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
+        }
+    ]
+  };
+
+  return {
+    ...state,
+    abilityImpairments
+  };
+};
+
+const witchIneffectiveBatchEvents = (kind: "DRUNK" | "POISONED" = "POISONED"): readonly [
+  DomainEventEnvelope<"WitchTargetChosen">,
+  DomainEventEnvelope<"WitchIneffectiveResolved">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = impairedWitchState(kind);
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "WITCH_FIRST_NIGHT_ACTION"
+  );
+  const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity?.sourcePlayerId);
+  if (opportunity === undefined || target === undefined || state.roster === undefined) {
+    throw new Error("Expected impaired Witch opportunity and target");
+  }
+
+  const targetChosen = createWitchTargetChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId: opportunity.taskId,
+    opportunityId: opportunity.opportunityId,
+    targetPlayerId: target.playerId,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    roster: state.roster.entries
+  });
+  const effectiveness = evaluateWitchEffectiveness({
+    sourcePlayerId: targetChosen.sourcePlayerId,
+    abilityImpairments: state.abilityImpairments
+  });
+  const ineffective = createWitchIneffectiveResolvedPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    targetChoice: targetChosen,
+    effectiveness
+  });
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createWitchIneffectiveScheduledTaskSettlement({
+      taskId: opportunity.taskId,
+      characterStateRevision: opportunity.sourceCharacterStateRevision
+    })
+  };
+
+  return [
+    witchBatchEnvelope("WitchTargetChosen", targetChosen, 0),
+    witchBatchEnvelope("WitchIneffectiveResolved", ineffective, 1),
+    witchBatchEnvelope("ScheduledTaskSettled", settlement, 2)
   ];
 };
 
@@ -3699,6 +3910,216 @@ describe("domain event rebuild", () => {
     expectDomainCode(
       () => applyDomainEventBatch(noGoodState, [pair, information, settlement]),
       "InvalidEvilTwinPairEstablishedPayload"
+    );
+  });
+
+  it("rebuilds effective Witch target choice and pending death marker without hidden state mutation", () => {
+    const before = rebuildGameState(openWitchActionStream());
+    const [targetChosen, pendingDeath, settlement] = witchDeathPendingBatchEvents();
+    const state = rebuildGameState([
+      ...openWitchActionStream(),
+      targetChosen,
+      pendingDeath,
+      settlement
+    ]);
+
+    expect(state.witchTargetChoices?.choices).toStrictEqual([targetChosen.payload]);
+    expect(state.witchDeathPending?.pendingDeaths).toStrictEqual([pendingDeath.payload]);
+    expect(state.witchIneffectiveResolutions).toBeUndefined();
+    expect(pendingDeath.payload).toMatchObject({
+      taskId: targetChosen.payload.taskId,
+      taskType: "WITCH_ACTION",
+      opportunityId: targetChosen.payload.opportunityId,
+      targetPlayerId: targetChosen.payload.targetPlayerId,
+      targetSeatNumber: targetChosen.payload.targetSeatNumber,
+      trigger: "TARGET_NOMINATES_TOMORROW",
+      markerVersion: "witch-death-pending-v1"
+    });
+    expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
+      opportunity.opportunityId === targetChosen.payload.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightTaskProgress?.settlements.at(-1)).toStrictEqual({
+      taskId: targetChosen.payload.taskId,
+      taskType: "WITCH_ACTION",
+      nightNumber: 1,
+      settlementVersion: "scheduled-task-settlement-v1",
+      outcomeType: "WITCH_DEATH_PENDING_MARKED",
+      characterStateRevision: targetChosen.payload.sourceCharacterStateRevision
+    });
+    expect(getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress)?.taskType).toBe("DREAMER_ACTION");
+    expect(state.currentCharacterState).toStrictEqual(before.currentCharacterState);
+    expect(state.assignment).toStrictEqual(before.assignment);
+    expect(state.firstNightTaskPlan).toStrictEqual(before.firstNightTaskPlan);
+    expect(JSON.stringify(targetChosen.payload)).not.toContain("willDie");
+    expect(JSON.stringify(targetChosen.payload)).not.toContain("isEffective");
+    expect(JSON.stringify(pendingDeath.payload)).not.toContain("targetRole");
+    expect(JSON.stringify(pendingDeath.payload)).not.toContain("targetAlignment");
+    expect(state.lastEventSequence).toBe(26);
+    expect(state.gameVersion).toBe(14);
+  });
+
+  it("applies impaired Witch target choice as ineffective without marking pending death", () => {
+    const before = impairedWitchState("POISONED");
+    const [targetChosen, ineffective, settlement] = witchIneffectiveBatchEvents("POISONED");
+    const state = applyDomainEventBatch(before, [
+      targetChosen,
+      ineffective,
+      settlement
+    ]);
+
+    expect(state.witchTargetChoices?.choices.at(-1)).toStrictEqual(targetChosen.payload);
+    expect(state.witchIneffectiveResolutions?.resolutions.at(-1)).toMatchObject({
+      taskId: targetChosen.payload.taskId,
+      taskType: "WITCH_ACTION",
+      opportunityId: targetChosen.payload.opportunityId,
+      targetPlayerId: targetChosen.payload.targetPlayerId,
+      outcomeType: "SOURCE_IMPAIRED_NO_EFFECT",
+      reason: "SOURCE_POISONED",
+      sourceImpairmentId: ineffective.payload.sourceImpairmentId,
+      sourceImpairmentKind: "POISONED"
+    });
+    expect(state.witchDeathPending).toBeUndefined();
+    expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
+      opportunity.opportunityId === targetChosen.payload.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightTaskProgress?.settlements.at(-1)).toMatchObject({
+      taskType: "WITCH_ACTION",
+      outcomeType: "WITCH_INEFFECTIVE",
+      characterStateRevision: targetChosen.payload.sourceCharacterStateRevision
+    });
+    expect(getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress)?.taskType).toBe("DREAMER_ACTION");
+    expect(state.currentCharacterState).toStrictEqual(before.currentCharacterState);
+    expect(state.assignment).toStrictEqual(before.assignment);
+  });
+
+  it("rejects malformed Witch target, pending death, and ineffective replay batches", () => {
+    const baseStream = openWitchActionStream();
+    const [targetChosen, pendingDeath, settlement] = witchDeathPendingBatchEvents();
+    const [ineffectiveTarget, ineffective, ineffectiveSettlement] = witchIneffectiveBatchEvents("POISONED");
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...pendingDeath,
+          eventId: eventId("event-24-reversed-witch-pending"),
+          eventSequence: 24
+        },
+        {
+          ...targetChosen,
+          eventId: eventId("event-25-reversed-witch-target"),
+          eventSequence: 25
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen,
+        {
+          ...pendingDeath,
+          payload: {
+            ...pendingDeath.payload,
+            targetPlayerId: playerId("different-witch-target")
+          }
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ineffectiveTarget,
+        ineffective,
+        ineffectiveSettlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => applyDomainEventBatch(impairedWitchState("DRUNK"), [
+        targetChosen,
+        pendingDeath,
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => applyDomainEventBatch(impairedWitchState("POISONED"), [
+        ineffectiveTarget,
+        {
+          ...ineffective,
+          payload: {
+            ...ineffective.payload,
+            sourceImpairmentId: abilityImpairmentId("ability-impairment-v1:wrong-witch")
+          }
+        },
+        ineffectiveSettlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen,
+        pendingDeath,
+        {
+          ...settlement,
+          payload: {
+            ...settlement.payload,
+            outcomeType: "WITCH_INEFFECTIVE"
+          } as never
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...targetChosen,
+          payload: {
+            ...targetChosen.payload,
+            targetRoleId: "fang_gu"
+          } as never
+        },
+        pendingDeath,
+        settlement
+      ]),
+      "InvalidWitchTargetChosenPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen,
+        pendingDeath,
+        {
+          ...phaseTransitionedEvent(),
+          eventId: eventId("event-26-mixed-witch-transition"),
+          eventSequence: 26,
+          batchId: targetChosen.batchId,
+          commandId: targetChosen.commandId,
+          gameVersion: targetChosen.gameVersion
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
     );
   });
 

@@ -292,6 +292,52 @@ ScheduledTaskSettled
 
 The private projection may expose `evilTwinCounterpart` only to the two paired players. It must not expose counterpart role, counterpart alignment, full pair fact, assignment, `currentCharacterState`, `pairId`, `pairingPolicyVersion`, task id, or Storyteller-only selection reasons. Evil Twin victory conditions, death interactions, Vigormortis special rules, AI decisions, and first-night completion remain unimplemented.
 
+Slice 2B12 adds settlement for the base Witch first-night action task:
+
+```text
+OpenFirstNightRoleActionOpportunity
+-> confirm the next unsettled task is base ROLE WITCH_ACTION
+-> create deterministic FirstNightActionOpportunityCreated(opportunityKind = WITCH_FIRST_NIGHT_ACTION)
+
+SubmitWitchAction(CHOOSE_PLAYER)
+-> validate actor, open opportunity, task id, current next task, source snapshot, and roster target
+-> record WitchTargetChosen
+-> evaluate source DRUNK or POISONED impairment at settlement time
+-> if effective, create WitchDeathPendingMarked(trigger = TARGET_NOMINATES_TOMORROW)
+-> if impaired, create WitchIneffectiveResolved
+-> create ScheduledTaskSettled(outcomeType = WITCH_DEATH_PENDING_MARKED | WITCH_INEFFECTIVE)
+```
+
+The Witch visible action schema is intentionally safe:
+
+```text
+canChooseTarget = true
+supportedDecisionKinds = [CHOOSE_PLAYER]
+targetSchema = ANY_PLAYER
+```
+
+It does not expose target role, target alignment, whether the target will die, source impairment, effectiveness, assignment, or current character state.
+
+Valid effective Witch batches are:
+
+```text
+WitchTargetChosen
+WitchDeathPendingMarked
+ScheduledTaskSettled
+```
+
+Valid impaired Witch batches are:
+
+```text
+WitchTargetChosen
+WitchIneffectiveResolved
+ScheduledTaskSettled
+```
+
+`WitchDeathPendingMarked` records only a deferred marker for a future daytime nomination trigger. Slice 2B12 does not implement the trigger, actual death, living-player target filtering, the Witch three-alive rule, or AI target choice. The ineffective path records the chosen target as an auditable input fact, then records no effect and creates no pending death marker. Both branches keep `assignment`, `currentCharacterState`, and the original task plan unchanged.
+
+Player and AI private projections must not expose `WitchTargetChosen`, `WitchDeathPendingMarked`, `WitchIneffectiveResolved`, `targetPlayerId`, `pendingDeathId`, `trigger`, `sourceImpairmentId`, `SOURCE_DRUNK`, `SOURCE_POISONED`, task id, or opportunity id.
+
 ### Settlement And Snapshot Revision Binding
 
 System team information settlement requires three revision facts to agree:
@@ -317,7 +363,7 @@ That means:
 - each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
 - projections must preserve each delivered fact independently.
 
-The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, plus Snake Charmer target-selection opportunities for base and Philosopher-gained sources.
+The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, implement Witch nomination-triggered death, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, Snake Charmer target-selection opportunities for base and Philosopher-gained sources, and the base Witch target-selection opportunity.
 
 ## ActionOpportunity Flow
 

@@ -765,6 +765,36 @@ describe("private knowledge projections", () => {
         reason: "SOURCE_DRUNK",
         sourceImpairmentId: "secret-impairment"
       }]
+    } as never,
+    witchTargetChoices: {
+      choices: [{
+        eventType: "WitchTargetChosen",
+        targetPlayerId: "secret-witch-target",
+        opportunityId: "secret-witch-opportunity",
+        taskId: "secret-witch-task",
+        decisionKind: "CHOOSE_PLAYER"
+      }]
+    } as never,
+    witchDeathPending: {
+      pendingDeaths: [{
+        eventType: "WitchDeathPendingMarked",
+        targetPlayerId: "secret-witch-target",
+        pendingDeathId: "secret-pending-death",
+        trigger: "TARGET_NOMINATES_TOMORROW",
+        opportunityId: "secret-witch-opportunity",
+        taskId: "secret-witch-task"
+      }]
+    } as never,
+    witchIneffectiveResolutions: {
+      resolutions: [{
+        eventType: "WitchIneffectiveResolved",
+        targetPlayerId: "secret-witch-target",
+        opportunityId: "secret-witch-opportunity",
+        taskId: "secret-witch-task",
+        outcomeType: "SOURCE_IMPAIRED_NO_EFFECT",
+        reason: "SOURCE_POISONED",
+        sourceImpairmentId: "secret-witch-impairment"
+      }]
     } as never
   };
     const viewer = state.roster?.entries[0];
@@ -815,10 +845,18 @@ describe("private knowledge projections", () => {
       expect(serialized).not.toContain("SnakeCharmerNoSwapResolved");
       expect(serialized).not.toContain("SnakeCharmerDemonSwapApplied");
       expect(serialized).not.toContain("SnakeCharmerIneffectiveResolved");
+      expect(serialized).not.toContain("WitchTargetChosen");
+      expect(serialized).not.toContain("WitchDeathPendingMarked");
+      expect(serialized).not.toContain("WitchIneffectiveResolved");
       expect(serialized).not.toContain("NON_DEMON_TARGET_NO_SWAP");
       expect(serialized).not.toContain("SOURCE_IMPAIRED_NO_EFFECT");
       expect(serialized).not.toContain("SOURCE_DRUNK");
       expect(serialized).not.toContain("secret-impairment");
+      expect(serialized).not.toContain("secret-witch-target");
+      expect(serialized).not.toContain("pendingDeathId");
+      expect(serialized).not.toContain("secret-pending-death");
+      expect(serialized).not.toContain("TARGET_NOMINATES_TOMORROW");
+      expect(serialized).not.toContain("secret-witch-impairment");
       expect(serialized).not.toContain("pendingRoleTasks");
       expect(serialized).not.toContain("PHILOSOPHER_ACTION");
       expect(serialized).not.toContain("MINION_INFO");

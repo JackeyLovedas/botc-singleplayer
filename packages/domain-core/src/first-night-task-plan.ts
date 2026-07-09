@@ -100,7 +100,9 @@ export type ScheduledTaskSettlementOutcomeType =
   | "SNAKE_CHARMER_NON_DEMON_NO_SWAP"
   | "SNAKE_CHARMER_INEFFECTIVE"
   | "SNAKE_CHARMER_DEMON_HIT_SWAP"
-  | "EVIL_TWIN_PAIR_ESTABLISHED";
+  | "EVIL_TWIN_PAIR_ESTABLISHED"
+  | "WITCH_DEATH_PENDING_MARKED"
+  | "WITCH_INEFFECTIVE";
 
 export type ScheduledTaskSettlement = {
   readonly taskId: ScheduledTaskId;
@@ -357,7 +359,9 @@ export const isScheduledTaskSettlementOutcomeType = (value: unknown): value is S
   value === "SNAKE_CHARMER_NON_DEMON_NO_SWAP" ||
   value === "SNAKE_CHARMER_INEFFECTIVE" ||
   value === "SNAKE_CHARMER_DEMON_HIT_SWAP" ||
-  value === "EVIL_TWIN_PAIR_ESTABLISHED";
+  value === "EVIL_TWIN_PAIR_ESTABLISHED" ||
+  value === "WITCH_DEATH_PENDING_MARKED" ||
+  value === "WITCH_INEFFECTIVE";
 
 export const compareFirstNightTaskOrder = (left: ScheduledTask, right: ScheduledTask): number => {
   const base = left.orderKey.baseOrder - right.orderKey.baseOrder;

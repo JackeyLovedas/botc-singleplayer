@@ -15,6 +15,11 @@ import type {
   SnakeCharmerTargetChoiceSet
 } from "./snake-charmer.js";
 import type {
+  WitchDeathPendingSet,
+  WitchIneffectiveResolutionSet,
+  WitchTargetChoiceSet
+} from "./witch.js";
+import type {
   EvilTwinInformationDeliveredPayload,
   EvilTwinPairSet
 } from "./evil-twin.js";
@@ -60,6 +65,9 @@ export type GameState = {
   readonly snakeCharmerNoSwapResolutions?: SnakeCharmerNoSwapResolutionSet;
   readonly snakeCharmerIneffectiveResolutions?: SnakeCharmerIneffectiveResolutionSet;
   readonly snakeCharmerDemonSwaps?: SnakeCharmerDemonSwapSet;
+  readonly witchTargetChoices?: WitchTargetChoiceSet;
+  readonly witchDeathPending?: WitchDeathPendingSet;
+  readonly witchIneffectiveResolutions?: WitchIneffectiveResolutionSet;
   readonly evilTwinPairs?: EvilTwinPairSet;
   readonly evilTwinInformation?: EvilTwinInformationDeliveredPayload;
   readonly minionInformation?: MinionInformationDeliveredPayload;

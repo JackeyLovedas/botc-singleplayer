@@ -31,10 +31,16 @@ import {
   createSnakeCharmerNoSwapScheduledTaskSettlement,
   createSnakeCharmerPoisonedImpairmentPayload,
   createSnakeCharmerTargetChosenPayload,
+  createWitchDeathPendingMarkedPayload,
+  createWitchDeathPendingScheduledTaskSettlement,
+  createWitchIneffectiveResolvedPayload,
+  createWitchIneffectiveScheduledTaskSettlement,
+  createWitchTargetChosenPayload,
   createEvilTwinInformationDeliveredPayload,
   createEvilTwinPairEstablishedPayload,
   createEvilTwinPairEstablishedScheduledTaskSettlement,
   evaluateSnakeCharmerEffectiveness,
+  evaluateWitchEffectiveness,
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
   getNextUnsettledFirstNightTask,
@@ -50,6 +56,7 @@ import {
   validateFirstNightTaskCatalogSnapshot,
   validatePhilosopherGoodCharacterChoice,
   validateSnakeCharmerActionDecision,
+  validateWitchActionDecision,
   tryCreateEvilTwinPair,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
@@ -95,6 +102,9 @@ import type {
   SnakeCharmerIneffectiveResolvedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload,
+  WitchDeathPendingPayload,
+  WitchIneffectiveResolvedPayload,
+  WitchTargetChosenPayload,
   SetupGeneratedPayload,
   SetupGenerationConstraints,
   SetupGenerationFailure,
@@ -1336,6 +1346,143 @@ export class GameApplicationService {
 
         return undefined;
       }
+
+      case "SubmitWitchAction": {
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "SubmitWitchAction requires an existing game" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `SubmitWitchAction cannot execute during ${state.phase}` };
+        }
+
+        if (state.firstNight === undefined) {
+          return { code: "FirstNightNotInitialized", message: "SubmitWitchAction requires first night initialization" };
+        }
+
+        if (state.firstNightTaskPlan === undefined) {
+          return { code: "FirstNightTaskPlanNotCreated", message: "SubmitWitchAction requires a first-night task plan" };
+        }
+
+        if (state.currentCharacterState === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "SubmitWitchAction requires current character state" };
+        }
+
+        if (state.roster === undefined) {
+          return { code: "PlayerRosterNotCreated", message: "SubmitWitchAction requires player roster" };
+        }
+
+        const requestedTaskId = command.payload.taskId;
+        const targetTask = state.firstNightTaskPlan.tasks.find((task) => task.taskId === requestedTaskId);
+        if (targetTask === undefined) {
+          return { code: "ScheduledTaskNotFound", message: `Scheduled task ${requestedTaskId} does not exist in the first-night task plan` };
+        }
+
+        const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, command.payload.opportunityId);
+        if (opportunity === undefined) {
+          return {
+            code: "ActionOpportunityNotFound",
+            message: `Action opportunity ${command.payload.opportunityId} does not exist`
+          };
+        }
+
+        if (opportunity.opportunityStatus === "CLOSED") {
+          return {
+            code: "ActionOpportunityAlreadyClosed",
+            message: `Action opportunity ${command.payload.opportunityId} is already closed`
+          };
+        }
+
+        if (
+          opportunity.opportunityKind !== "WITCH_FIRST_NIGHT_ACTION" ||
+          opportunity.taskType !== "WITCH_ACTION"
+        ) {
+          return {
+            code: "UnsupportedRoleActionOpportunity",
+            message: "SubmitWitchAction requires a Witch action opportunity"
+          };
+        }
+
+        if (command.actor.kind === "human" || command.actor.kind === "ai") {
+          if (command.actor.playerId !== opportunity.sourcePlayerId) {
+            return {
+              code: "ActorPlayerMismatch",
+              message: "SubmitWitchAction actor must match the action opportunity source player"
+            };
+          }
+        }
+
+        const decisionValidation = validateWitchActionDecision(command.payload.decision);
+        if (!decisionValidation.valid) {
+          return {
+            code: "InvalidWitchTarget",
+            message: decisionValidation.reason
+          };
+        }
+
+        if (opportunity.taskId !== requestedTaskId) {
+          return {
+            code: "ScheduledTaskNotNext",
+            message: "SubmitWitchAction taskId must match the referenced action opportunity"
+          };
+        }
+
+        if (isFirstNightTaskSettled(state.firstNightTaskProgress, requestedTaskId)) {
+          return { code: "ScheduledTaskAlreadySettled", message: `Scheduled task ${requestedTaskId} is already settled` };
+        }
+
+        const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+        if (nextTask === undefined) {
+          return { code: "ScheduledTaskAlreadySettled", message: "All first-night tasks are already settled" };
+        }
+
+        if (nextTask.taskId !== targetTask.taskId) {
+          return {
+            code: "ScheduledTaskNotNext",
+            message: `Scheduled task ${targetTask.taskId} is not the next unsettled first-night task`
+          };
+        }
+
+        if (targetTask.taskType !== "WITCH_ACTION") {
+          return {
+            code: "UnsupportedRoleActionOpportunity",
+            message: "SubmitWitchAction requires a Witch action task"
+          };
+        }
+
+        const currentSourceEntry = state.currentCharacterState.entries.find((entry) =>
+          entry.playerId === opportunity.sourcePlayerId &&
+          entry.seatNumber === opportunity.sourceSeatNumber
+        );
+        const witchSourceValid =
+          targetTask.source.kind === "ROLE" &&
+          targetTask.source.role.roleId === "witch" &&
+          targetTask.source.playerId === opportunity.sourcePlayerId &&
+          targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+          currentSourceEntry !== undefined &&
+          currentSourceEntry.role.roleId === "witch" &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.role) &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
+          state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
+
+        if (!witchSourceValid) {
+          return {
+            code: "ActionSourceNoLongerValid",
+            message: "SubmitWitchAction source is no longer the same current Witch state"
+          };
+        }
+
+        const witchTargetPlayerId = command.payload.decision.targetPlayerId;
+        const targetRosterEntry = state.roster.entries.find((entry) => entry.playerId === witchTargetPlayerId);
+        if (targetRosterEntry === undefined) {
+          return {
+            code: "InvalidWitchTarget",
+            message: "SubmitWitchAction targetPlayerId must exist in roster"
+          };
+        }
+
+        return undefined;
+      }
     }
 
     return assertNever(command.payload);
@@ -1406,7 +1553,8 @@ export class GameApplicationService {
           command.payload.commandType === "SettleEvilTwinSetup" ||
           command.payload.commandType === "OpenFirstNightRoleActionOpportunity" ||
           command.payload.commandType === "SubmitPhilosopherAction" ||
-          command.payload.commandType === "SubmitSnakeCharmerAction"
+          command.payload.commandType === "SubmitSnakeCharmerAction" ||
+          command.payload.commandType === "SubmitWitchAction"
         ) {
           const failureStage = command.payload.commandType === "PlanFirstNightTasks"
             ? "first-night-task-planning"
@@ -2473,6 +2621,115 @@ export class GameApplicationService {
         return [snakeCharmerTargetChosenEvent, snakeCharmerNoSwapResolvedEvent, scheduledTaskSettledEvent];
       }
 
+      case "SubmitWitchAction": {
+        if (
+          state === undefined ||
+          state.firstNightTaskPlan === undefined ||
+          state.currentCharacterState === undefined ||
+          state.roster === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SubmitWitchAction event creation requires task plan, current character state, and roster"
+          );
+        }
+
+        const opportunity = findFirstNightActionOpportunityById(
+          state.firstNightActionOpportunities,
+          command.payload.opportunityId
+        );
+        if (
+          opportunity === undefined ||
+          opportunity.opportunityStatus !== "OPEN" ||
+          opportunity.opportunityKind !== "WITCH_FIRST_NIGHT_ACTION" ||
+          opportunity.taskType !== "WITCH_ACTION"
+        ) {
+          throw new DomainError(
+            "InvalidWitchTargetChosenPayload",
+            "SubmitWitchAction event creation requires an open Witch action opportunity"
+          );
+        }
+
+        const targetChoicePayload = createWitchTargetChosenPayload({
+          rulesBaselineVersion: RULES_BASELINE_VERSION,
+          taskId: command.payload.taskId,
+          opportunityId: command.payload.opportunityId,
+          targetPlayerId: command.payload.decision.targetPlayerId,
+          firstNightActionOpportunities: state.firstNightActionOpportunities,
+          roster: state.roster.entries
+        });
+
+        const witchTargetChosenEvent: DomainEventEnvelope<"WitchTargetChosen"> = {
+          ...common(firstEventSequence),
+          eventType: "WitchTargetChosen" as const,
+          payload: targetChoicePayload satisfies WitchTargetChosenPayload
+        };
+
+        const effectiveness = evaluateWitchEffectiveness({
+          sourcePlayerId: targetChoicePayload.sourcePlayerId,
+          abilityImpairments: state.abilityImpairments
+        });
+        if (!effectiveness.effective) {
+          const ineffectivePayload = createWitchIneffectiveResolvedPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            targetChoice: targetChoicePayload,
+            effectiveness
+          });
+          const witchIneffectiveResolvedEvent: DomainEventEnvelope<"WitchIneffectiveResolved"> = {
+            ...common(firstEventSequence + 1),
+            eventType: "WitchIneffectiveResolved" as const,
+            payload: ineffectivePayload satisfies WitchIneffectiveResolvedPayload
+          };
+          const settlement = createWitchIneffectiveScheduledTaskSettlement({
+            taskId: opportunity.taskId,
+            characterStateRevision: opportunity.sourceCharacterStateRevision
+          });
+          const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+            ...common(firstEventSequence + 2),
+            eventType: "ScheduledTaskSettled" as const,
+            payload: {
+              rulesBaselineVersion: RULES_BASELINE_VERSION,
+              ...settlement
+            } satisfies ScheduledTaskSettledPayload
+          };
+
+          return [
+            witchTargetChosenEvent,
+            witchIneffectiveResolvedEvent,
+            scheduledTaskSettledEvent
+          ];
+        }
+
+        const deathPendingPayload = createWitchDeathPendingMarkedPayload({
+          rulesBaselineVersion: RULES_BASELINE_VERSION,
+          targetChoice: targetChoicePayload
+        });
+        const witchDeathPendingMarkedEvent: DomainEventEnvelope<"WitchDeathPendingMarked"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "WitchDeathPendingMarked" as const,
+          payload: deathPendingPayload satisfies WitchDeathPendingPayload
+        };
+
+        const settlement = createWitchDeathPendingScheduledTaskSettlement({
+          taskId: opportunity.taskId,
+          characterStateRevision: opportunity.sourceCharacterStateRevision
+        });
+        const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+          ...common(firstEventSequence + 2),
+          eventType: "ScheduledTaskSettled" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            ...settlement
+          } satisfies ScheduledTaskSettledPayload
+        };
+
+        return [
+          witchTargetChosenEvent,
+          witchDeathPendingMarkedEvent,
+          scheduledTaskSettledEvent
+        ];
+      }
+
       case "SettleEvilTwinSetup": {
         if (
           state === undefined ||
@@ -2659,7 +2916,8 @@ export class GameApplicationService {
       if (
         command.payload.commandType === "OpenFirstNightRoleActionOpportunity" ||
         command.payload.commandType === "SubmitPhilosopherAction" ||
-        command.payload.commandType === "SubmitSnakeCharmerAction"
+        command.payload.commandType === "SubmitSnakeCharmerAction" ||
+        command.payload.commandType === "SubmitWitchAction"
       ) {
         return failed(
           batch.gameId,
