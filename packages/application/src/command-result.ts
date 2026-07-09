@@ -46,6 +46,8 @@ export type CommandRejectionCode =
   | "ActionSourceNoLongerValid"
   | "InvalidPhilosopherAbilityChoice"
   | "UnsupportedPhilosopherAbilityChoice"
+  | "InvalidSnakeCharmerTarget"
+  | "SnakeCharmerDemonHitNotImplemented"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 

@@ -9,6 +9,10 @@ import type {
   PhilosopherAbilityChoiceSet
 } from "./philosopher-ability.js";
 import type {
+  SnakeCharmerNoSwapResolutionSet,
+  SnakeCharmerTargetChoiceSet
+} from "./snake-charmer.js";
+import type {
   CharactersAssignedPayload,
   DemonInformationDeliveredPayload,
   FirstNightInitializedPayload,
@@ -46,6 +50,8 @@ export type GameState = {
   readonly philosopherGrantedAbilities?: GrantedAbilitySet;
   readonly abilityImpairments?: AbilityImpairmentSet;
   readonly firstNightTaskInsertions?: FirstNightTaskInsertion;
+  readonly snakeCharmerTargetChoices?: SnakeCharmerTargetChoiceSet;
+  readonly snakeCharmerNoSwapResolutions?: SnakeCharmerNoSwapResolutionSet;
   readonly minionInformation?: MinionInformationDeliveredPayload;
   readonly demonInformation?: DemonInformationDeliveredPayload;
   readonly firstNightTaskProgress?: FirstNightTaskProgress;

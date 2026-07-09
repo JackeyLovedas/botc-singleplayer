@@ -37,6 +37,8 @@ export type DomainErrorCode =
   | "InvalidPhilosopherAbilityGrantedPayload"
   | "InvalidAbilityImpairmentAppliedPayload"
   | "InvalidFirstNightTaskInsertedPayload"
+  | "InvalidSnakeCharmerTargetChosenPayload"
+  | "InvalidSnakeCharmerNoSwapResolvedPayload"
   | "InvalidMinionInformationDeliveredPayload"
   | "DuplicateMinionInformationDelivered"
   | "InvalidDemonInformationDeliveredPayload"

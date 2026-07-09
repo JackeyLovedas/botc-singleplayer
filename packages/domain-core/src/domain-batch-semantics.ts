@@ -455,6 +455,71 @@ const validateIntegratedPhilosopherAbilityChoiceBatch = (
   }
 };
 
+const validateIntegratedSnakeCharmerNoSwapBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Snake Charmer no-swap batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    reject("Snake Charmer no-swap batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  if (events.length !== 3) {
+    reject("Snake Charmer no-swap batch must contain exactly three events");
+  }
+
+  assertSharedBatchMetadataForAll(events);
+
+  const [first, second, third] = events;
+  if (
+    first === undefined ||
+    second === undefined ||
+    third === undefined ||
+    first.eventType !== "SnakeCharmerTargetChosen" ||
+    second.eventType !== "SnakeCharmerNoSwapResolved" ||
+    third.eventType !== "ScheduledTaskSettled"
+  ) {
+    reject("Snake Charmer no-swap batch must be TargetChosen, NoSwapResolved, ScheduledTaskSettled");
+  }
+
+  const targetChosen = first as DomainEventEnvelope<"SnakeCharmerTargetChosen">;
+  const noSwap = second as DomainEventEnvelope<"SnakeCharmerNoSwapResolved">;
+  const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
+
+  if (
+    noSwap.payload.taskId !== targetChosen.payload.taskId ||
+    noSwap.payload.taskType !== targetChosen.payload.taskType ||
+    noSwap.payload.opportunityId !== targetChosen.payload.opportunityId ||
+    noSwap.payload.sourcePlayerId !== targetChosen.payload.sourcePlayerId ||
+    noSwap.payload.sourceSeatNumber !== targetChosen.payload.sourceSeatNumber ||
+    noSwap.payload.sourceCharacterStateRevision !== targetChosen.payload.sourceCharacterStateRevision ||
+    noSwap.payload.targetPlayerId !== targetChosen.payload.targetPlayerId ||
+    noSwap.payload.targetSeatNumber !== targetChosen.payload.targetSeatNumber ||
+    noSwap.payload.outcomeType !== "NON_DEMON_TARGET_NO_SWAP"
+  ) {
+    reject("SnakeCharmerNoSwapResolved must match the preceding target choice");
+  }
+
+  if (
+    settlement.payload.taskId !== noSwap.payload.taskId ||
+    settlement.payload.taskType !== noSwap.payload.taskType ||
+    settlement.payload.characterStateRevision !== noSwap.payload.sourceCharacterStateRevision ||
+    settlement.payload.outcomeType !== "SNAKE_CHARMER_NON_DEMON_NO_SWAP"
+  ) {
+    reject("ScheduledTaskSettled must match the Snake Charmer no-swap resolution");
+  }
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -503,6 +568,11 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "PhilosopherAbilityChosen") {
     validateIntegratedPhilosopherAbilityChoiceBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (first.eventType === "SnakeCharmerTargetChosen") {
+    validateIntegratedSnakeCharmerNoSwapBatch(currentState, batchEvents);
     return;
   }
 
