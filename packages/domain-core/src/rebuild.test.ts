@@ -14,6 +14,7 @@ import {
   SUPPORTED_ROLE_CATALOG_SIGNATURE,
   SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
   SUPPORTED_ROSTER_VERSION,
+  actionOpportunityId,
   batchId,
   calculateRoleCatalogSignature,
   compareRoleSetupSnapshot,
@@ -408,6 +409,122 @@ const demonTaskSettledEvent = (
   },
   ...overrides
 });
+
+const philosopherActionOpportunityCreatedEvent = (
+  overrides: Partial<DomainEventEnvelope<"FirstNightActionOpportunityCreated">> = {}
+): DomainEventEnvelope<"FirstNightActionOpportunityCreated"> => {
+  const state = rebuildGameState(firstNightTaskPlanEventStream());
+  const task = state.firstNightTaskPlan?.tasks.find((candidate) => candidate.taskType === "PHILOSOPHER_ACTION");
+  const source = task?.source;
+  if (task === undefined || source === undefined || source.kind !== "ROLE" || state.currentCharacterState === undefined) {
+    throw new Error("Expected Philosopher task source facts");
+  }
+
+  const currentEntry = state.currentCharacterState.entries.find((entry) => entry.playerId === source.playerId);
+  if (currentEntry === undefined) {
+    throw new Error("Expected current Philosopher state entry");
+  }
+
+  return {
+    category: "domain",
+    eventId: eventId("event-12"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 12,
+    batchId: batchId("batch-8"),
+    gameVersion: 8,
+    eventType: "FirstNightActionOpportunityCreated",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-8"),
+    createdAt: "2026-07-07T00:00:07.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      nightNumber: 1,
+      opportunityId: actionOpportunityId(`first-night-v1:PHILOSOPHER_ACTION:seat-${String(currentEntry.seatNumber).padStart(2, "0")}:opportunity-01`),
+      opportunityKind: "PHILOSOPHER_FIRST_NIGHT_ACTION",
+      opportunityStatus: "OPEN",
+      taskId: task.taskId,
+      taskType: "PHILOSOPHER_ACTION",
+      sourcePlayerId: currentEntry.playerId,
+      sourceSeatNumber: currentEntry.seatNumber,
+      sourceRole: currentEntry.role,
+      sourceCharacterStateRevision: state.currentCharacterState.revision,
+      visibility: {
+        canDefer: true,
+        supportedDecisionKinds: ["DEFER"],
+        futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+      }
+    },
+    ...overrides
+  };
+};
+
+const philosopherActionDeferredEvent = (
+  overrides: Partial<DomainEventEnvelope<"PhilosopherActionDeferred">> = {}
+): DomainEventEnvelope<"PhilosopherActionDeferred"> => {
+  const opportunity = philosopherActionOpportunityCreatedEvent().payload;
+  return {
+    category: "domain",
+    eventId: eventId("event-13"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 13,
+    batchId: batchId("batch-9"),
+    gameVersion: 9,
+    eventType: "PhilosopherActionDeferred",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-9"),
+    createdAt: "2026-07-07T00:00:08.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      nightNumber: 1,
+      taskId: opportunity.taskId,
+      taskType: "PHILOSOPHER_ACTION",
+      opportunityId: opportunity.opportunityId,
+      decisionKind: "DEFER",
+      sourcePlayerId: opportunity.sourcePlayerId,
+      sourceSeatNumber: opportunity.sourceSeatNumber,
+      sourceRole: opportunity.sourceRole,
+      sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
+    },
+    ...overrides
+  };
+};
+
+const philosopherTaskSettledEvent = (
+  overrides: Partial<DomainEventEnvelope<"ScheduledTaskSettled">> = {}
+): DomainEventEnvelope<"ScheduledTaskSettled"> => {
+  const deferred = philosopherActionDeferredEvent().payload;
+  return {
+    category: "domain",
+    eventId: eventId("event-14"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 14,
+    batchId: batchId("batch-9"),
+    gameVersion: 9,
+    eventType: "ScheduledTaskSettled",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-9"),
+    createdAt: "2026-07-07T00:00:08.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      nightNumber: 1,
+      taskId: deferred.taskId,
+      taskType: "PHILOSOPHER_ACTION",
+      settlementVersion: "scheduled-task-settlement-v1",
+      outcomeType: "PHILOSOPHER_DEFERRED",
+      characterStateRevision: deferred.sourceCharacterStateRevision
+    },
+    ...overrides
+  };
+};
 
 const expectInitialKnowledgePayloadRejected = (payload: unknown): DomainError =>
   captureDomainError(
@@ -2504,6 +2621,187 @@ describe("domain event rebuild", () => {
     ]);
     expect(state.gameVersion).toBe(9);
     expect(state.lastEventSequence).toBe(15);
+  });
+
+  it("rebuilds Philosopher first-night action opportunity creation without settling the task", () => {
+    const state = rebuildGameState([
+      ...firstNightTaskPlanEventStream(),
+      philosopherActionOpportunityCreatedEvent()
+    ]);
+
+    expect(state.firstNightActionOpportunities?.opportunities).toHaveLength(1);
+    expect(state.firstNightActionOpportunities?.opportunities[0]).toMatchObject({
+      opportunityId: "first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01",
+      opportunityKind: "PHILOSOPHER_FIRST_NIGHT_ACTION",
+      opportunityStatus: "OPEN",
+      taskId: "first-night-v1:PHILOSOPHER_ACTION:seat-10",
+      taskType: "PHILOSOPHER_ACTION",
+      sourceSeatNumber: 10,
+      sourceCharacterStateRevision: 1,
+      visibility: {
+        canDefer: true,
+        supportedDecisionKinds: ["DEFER"],
+        futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+      }
+    });
+    expect(state.firstNightTaskProgress?.settlements).toBeUndefined();
+  });
+
+  it("rebuilds Philosopher DEFER followed by scheduled task settlement", () => {
+    const state = rebuildGameState([
+      ...firstNightTaskPlanEventStream(),
+      philosopherActionOpportunityCreatedEvent(),
+      philosopherActionDeferredEvent(),
+      philosopherTaskSettledEvent()
+    ]);
+
+    expect(state.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightTaskProgress?.settlements).toStrictEqual([
+      {
+        taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
+        taskType: "PHILOSOPHER_ACTION",
+        nightNumber: 1,
+        settlementVersion: "scheduled-task-settlement-v1",
+        outcomeType: "PHILOSOPHER_DEFERRED",
+        characterStateRevision: 1
+      }
+    ]);
+    expect(state.gameVersion).toBe(9);
+    expect(state.lastEventSequence).toBe(14);
+  });
+
+  it("rejects naked, reversed, mismatched, and overlong Philosopher settlement batches", () => {
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionDeferredEvent({
+          batchId: batchId("batch-8"),
+          commandId: commandId("command-8"),
+          eventId: eventId("event-12"),
+          eventSequence: 12,
+          gameVersion: 8
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionOpportunityCreatedEvent(),
+        philosopherTaskSettledEvent({ eventId: eventId("event-13"), eventSequence: 13 }),
+        philosopherActionDeferredEvent({ eventId: eventId("event-14"), eventSequence: 14 })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionOpportunityCreatedEvent(),
+        philosopherActionDeferredEvent(),
+        philosopherTaskSettledEvent({
+          payload: {
+            ...philosopherTaskSettledEvent().payload,
+            taskId: scheduledTaskId("first-night-v1:MINION_INFO:system")
+          }
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionOpportunityCreatedEvent(),
+        philosopherActionDeferredEvent(),
+        philosopherTaskSettledEvent(),
+        minionInformationDeliveredEvent({
+          batchId: batchId("batch-9"),
+          commandId: commandId("command-9"),
+          eventId: eventId("event-15"),
+          eventSequence: 15,
+          gameVersion: 9
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects malformed Philosopher opportunity and defer payloads", () => {
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionOpportunityCreatedEvent({
+          payload: {
+            ...philosopherActionOpportunityCreatedEvent().payload,
+            visibility: {
+              ...philosopherActionOpportunityCreatedEvent().payload.visibility,
+              taskId: "hidden"
+            }
+          } as never
+        })
+      ]),
+      "InvalidFirstNightActionOpportunityCreatedPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionOpportunityCreatedEvent({
+          payload: {
+            ...philosopherActionOpportunityCreatedEvent().payload,
+            opportunityId: actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-06:opportunity-01")
+          }
+        })
+      ]),
+      "InvalidFirstNightActionOpportunityCreatedPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionOpportunityCreatedEvent(),
+        philosopherActionDeferredEvent({
+          payload: {
+            ...philosopherActionDeferredEvent().payload,
+            decisionKind: "CHOOSE_GOOD_CHARACTER"
+          } as never
+        }),
+        philosopherTaskSettledEvent()
+      ]),
+      "InvalidPhilosopherActionDeferredPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionOpportunityCreatedEvent(),
+        philosopherActionDeferredEvent({
+          payload: {
+            ...philosopherActionDeferredEvent().payload,
+            hidden: true
+          } as never
+        }),
+        philosopherTaskSettledEvent()
+      ]),
+      "InvalidPhilosopherActionDeferredPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionOpportunityCreatedEvent(),
+        philosopherActionDeferredEvent(),
+        philosopherTaskSettledEvent({
+          payload: {
+            ...philosopherTaskSettledEvent().payload,
+            outcomeType: "MINION_INFORMATION_DELIVERED"
+          } as never
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
   });
 
   it("rejects naked team information and naked scheduled task settlement events", () => {

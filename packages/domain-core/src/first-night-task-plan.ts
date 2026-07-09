@@ -84,7 +84,8 @@ export const SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION = "scheduled-task-settl
 
 export type ScheduledTaskSettlementOutcomeType =
   | "MINION_INFORMATION_DELIVERED"
-  | "DEMON_INFORMATION_DELIVERED";
+  | "DEMON_INFORMATION_DELIVERED"
+  | "PHILOSOPHER_DEFERRED";
 
 export type ScheduledTaskSettlement = {
   readonly taskId: ScheduledTaskId;
@@ -324,7 +325,9 @@ const isSettlementPolicy = (value: unknown): value is ScheduledTaskSettlementPol
   value === "REEVALUATE_SOURCE_AT_SETTLEMENT" || value === "RESOLVE_CURRENT_EVIL_TEAM_AT_SETTLEMENT";
 
 export const isScheduledTaskSettlementOutcomeType = (value: unknown): value is ScheduledTaskSettlementOutcomeType =>
-  value === "MINION_INFORMATION_DELIVERED" || value === "DEMON_INFORMATION_DELIVERED";
+  value === "MINION_INFORMATION_DELIVERED" ||
+  value === "DEMON_INFORMATION_DELIVERED" ||
+  value === "PHILOSOPHER_DEFERRED";
 
 export const compareFirstNightTaskOrder = (left: ScheduledTask, right: ScheduledTask): number => {
   const base = left.orderKey.baseOrder - right.orderKey.baseOrder;

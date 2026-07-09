@@ -5,6 +5,10 @@ import type { CharacterAssignmentSet } from "./character-assignment.js";
 import type { FirstNightTaskPlan } from "./first-night-task-plan.js";
 import type { ScheduledTaskSettledPayload } from "./first-night-task-plan.js";
 import type {
+  FirstNightActionOpportunityCreatedPayload,
+  PhilosopherActionDeferredPayload
+} from "./first-night-action-opportunity.js";
+import type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
 } from "./first-night-team-information.js";
@@ -13,6 +17,10 @@ import type { PlayerRoster } from "./player-roster.js";
 import type { GeneratedSetup, SupportedEdition } from "./setup-types.js";
 
 export type { ScheduledTaskSettledPayload } from "./first-night-task-plan.js";
+export type {
+  FirstNightActionOpportunityCreatedPayload,
+  PhilosopherActionDeferredPayload
+} from "./first-night-action-opportunity.js";
 export type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
@@ -109,6 +117,8 @@ export type DomainEventPayloadByType = {
   readonly FirstNightInitialized: FirstNightInitializedPayload;
   readonly InitialPrivateKnowledgeEstablished: InitialPrivateKnowledgeEstablishedPayload;
   readonly FirstNightTaskPlanCreated: FirstNightTaskPlanCreatedPayload;
+  readonly FirstNightActionOpportunityCreated: FirstNightActionOpportunityCreatedPayload;
+  readonly PhilosopherActionDeferred: PhilosopherActionDeferredPayload;
   readonly MinionInformationDelivered: MinionInformationDeliveredPayload;
   readonly DemonInformationDelivered: DemonInformationDeliveredPayload;
   readonly ScheduledTaskSettled: ScheduledTaskSettledPayload;

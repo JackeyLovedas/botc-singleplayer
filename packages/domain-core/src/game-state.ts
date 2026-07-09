@@ -1,5 +1,6 @@
 import type { GameId } from "./ids.js";
 import type { CurrentCharacterStateSet } from "./current-character-state.js";
+import type { FirstNightActionOpportunityState } from "./first-night-action-opportunity.js";
 import type { FirstNightTaskProgress } from "./first-night-task-plan.js";
 import type {
   CharactersAssignedPayload,
@@ -34,6 +35,7 @@ export type GameState = {
   readonly firstNight?: FirstNightInitializedPayload;
   readonly initialPrivateKnowledge?: InitialPrivateKnowledgeEstablishedPayload;
   readonly firstNightTaskPlan?: FirstNightTaskPlanCreatedPayload;
+  readonly firstNightActionOpportunities?: FirstNightActionOpportunityState;
   readonly minionInformation?: MinionInformationDeliveredPayload;
   readonly demonInformation?: DemonInformationDeliveredPayload;
   readonly firstNightTaskProgress?: FirstNightTaskProgress;

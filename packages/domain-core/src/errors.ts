@@ -31,6 +31,8 @@ export type DomainErrorCode =
   | "DuplicateInitialPrivateKnowledgeEstablished"
   | "InvalidFirstNightTaskPlanCreatedPayload"
   | "DuplicateFirstNightTaskPlanCreated"
+  | "InvalidFirstNightActionOpportunityCreatedPayload"
+  | "InvalidPhilosopherActionDeferredPayload"
   | "InvalidMinionInformationDeliveredPayload"
   | "DuplicateMinionInformationDelivered"
   | "InvalidDemonInformationDeliveredPayload"

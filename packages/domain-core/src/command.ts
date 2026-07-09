@@ -1,4 +1,5 @@
-import type { CommandId, CorrelationId, GameId, PlayerId, ScheduledTaskId } from "./ids.js";
+import type { ActionOpportunityId, CommandId, CorrelationId, GameId, PlayerId, ScheduledTaskId } from "./ids.js";
+import type { PhilosopherActionDecision } from "./first-night-action-opportunity.js";
 import type { SetupGenerationConstraints } from "./setup-types.js";
 
 export type HumanActor = {
@@ -78,6 +79,18 @@ export type SettleFirstNightSystemTaskCommandPayload = {
   readonly taskId: ScheduledTaskId;
 };
 
+export type OpenFirstNightRoleActionOpportunityCommandPayload = {
+  readonly commandType: "OpenFirstNightRoleActionOpportunity";
+  readonly taskId: ScheduledTaskId;
+};
+
+export type SubmitPhilosopherActionCommandPayload = {
+  readonly commandType: "SubmitPhilosopherAction";
+  readonly taskId: ScheduledTaskId;
+  readonly opportunityId: ActionOpportunityId;
+  readonly decision: PhilosopherActionDecision;
+};
+
 export type SupportedCommandPayload =
   | CreateGameCommandPayload
   | SelectScriptCommandPayload
@@ -86,7 +99,9 @@ export type SupportedCommandPayload =
   | AssignCharactersCommandPayload
   | InitializeFirstNightCommandPayload
   | PlanFirstNightTasksCommandPayload
-  | SettleFirstNightSystemTaskCommandPayload;
+  | SettleFirstNightSystemTaskCommandPayload
+  | OpenFirstNightRoleActionOpportunityCommandPayload
+  | SubmitPhilosopherActionCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
@@ -95,6 +110,8 @@ export type AssignCharactersCommand = CommandEnvelope<AssignCharactersCommandPay
 export type InitializeFirstNightCommand = CommandEnvelope<InitializeFirstNightCommandPayload>;
 export type PlanFirstNightTasksCommand = CommandEnvelope<PlanFirstNightTasksCommandPayload>;
 export type SettleFirstNightSystemTaskCommand = CommandEnvelope<SettleFirstNightSystemTaskCommandPayload>;
+export type OpenFirstNightRoleActionOpportunityCommand = CommandEnvelope<OpenFirstNightRoleActionOpportunityCommandPayload>;
+export type SubmitPhilosopherActionCommand = CommandEnvelope<SubmitPhilosopherActionCommandPayload>;
 export type SupportedCommandEnvelope =
   | CreateGameCommand
   | SelectScriptCommand
@@ -103,4 +120,6 @@ export type SupportedCommandEnvelope =
   | AssignCharactersCommand
   | InitializeFirstNightCommand
   | PlanFirstNightTasksCommand
-  | SettleFirstNightSystemTaskCommand;
+  | SettleFirstNightSystemTaskCommand
+  | OpenFirstNightRoleActionOpportunityCommand
+  | SubmitPhilosopherActionCommand;
