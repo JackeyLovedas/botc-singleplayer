@@ -639,9 +639,18 @@ describe("private knowledge projections", () => {
       }]
     } as never,
     abilityImpairments: {
-      impairments: [{
-        impairment: "PHILOSOPHER_CHOSEN_DUPLICATE"
-      }]
+      impairments: [
+        {
+          impairment: "PHILOSOPHER_CHOSEN_DUPLICATE"
+        },
+        {
+          eventType: "AbilityImpairmentApplied",
+          kind: "POISONED",
+          sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+          affectedPlayerId: "secret-target",
+          affectedRole: "secret-role"
+        }
+      ]
     } as never,
     firstNightTaskInsertions: {
       insertions: [{
@@ -665,6 +674,18 @@ describe("private knowledge projections", () => {
         opportunityId: "secret-opportunity",
         taskId: "secret-task",
         outcomeType: "NON_DEMON_TARGET_NO_SWAP"
+      }]
+    } as never,
+    snakeCharmerDemonSwaps: {
+      swaps: [{
+        eventType: "SnakeCharmerDemonSwapApplied",
+        targetPlayerId: "secret-target",
+        opportunityId: "secret-opportunity",
+        taskId: "secret-task",
+        sourceBefore: "secret-source-before",
+        targetBefore: "secret-target-before",
+        sourceAfter: "secret-source-after",
+        targetAfter: "secret-target-after"
       }]
     } as never
   };
@@ -700,14 +721,21 @@ describe("private knowledge projections", () => {
       expect(serialized).not.toContain("CHOOSE_PLAYER");
       expect(serialized).not.toContain("targetPlayerId");
       expect(serialized).not.toContain("targetSeatNumber");
+      expect(serialized).not.toContain("sourceBefore");
+      expect(serialized).not.toContain("targetBefore");
+      expect(serialized).not.toContain("sourceAfter");
+      expect(serialized).not.toContain("targetAfter");
       expect(serialized).not.toContain("chosenRole");
       expect(serialized).not.toContain("grantedAbility");
       expect(serialized).not.toContain("impairment");
+      expect(serialized).not.toContain("POISONED");
       expect(serialized).not.toContain("insertedTask");
       expect(serialized).not.toContain("PhilosopherAbilityChosen");
+      expect(serialized).not.toContain("AbilityImpairmentApplied");
       expect(serialized).not.toContain("FirstNightTaskInserted");
       expect(serialized).not.toContain("SnakeCharmerTargetChosen");
       expect(serialized).not.toContain("SnakeCharmerNoSwapResolved");
+      expect(serialized).not.toContain("SnakeCharmerDemonSwapApplied");
       expect(serialized).not.toContain("NON_DEMON_TARGET_NO_SWAP");
       expect(serialized).not.toContain("pendingRoleTasks");
       expect(serialized).not.toContain("PHILOSOPHER_ACTION");

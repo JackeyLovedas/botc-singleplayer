@@ -26,8 +26,11 @@ import {
   createPhilosopherAbilityChosenPayload,
   createPhilosopherAbilityChosenScheduledTaskSettlement,
   createPhilosopherAbilityGrantedPayload,
+  createSnakeCharmerDemonHitScheduledTaskSettlement,
+  createSnakeCharmerDemonSwapAppliedPayload,
   createSnakeCharmerNoSwapResolvedPayload,
   createSnakeCharmerNoSwapScheduledTaskSettlement,
+  createSnakeCharmerPoisonedImpairmentPayload,
   createSnakeCharmerTargetChosenPayload,
   getNextUnsettledFirstNightTask,
   cloneCurrentCharacterStateSet,
@@ -796,6 +799,68 @@ const snakeCharmerNoSwapBatchEvents = (input: {
     snakeCharmerBatchEnvelope("ScheduledTaskSettled", settlement, 2)
   ];
 };
+
+const snakeCharmerDemonHitBatchEvents = (): readonly [
+  DomainEventEnvelope<"SnakeCharmerTargetChosen">,
+  DomainEventEnvelope<"SnakeCharmerDemonSwapApplied">,
+  DomainEventEnvelope<"AbilityImpairmentApplied">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = rebuildGameState(openSnakeCharmerStream());
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+  );
+  const target = state.currentCharacterState?.entries.find((entry) => entry.role.characterType === "DEMON");
+  if (
+    opportunity === undefined ||
+    target === undefined ||
+    state.roster === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    throw new Error("Expected open Snake Charmer opportunity, Demon target, roster, and current state");
+  }
+
+  const targetChosen = createSnakeCharmerTargetChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId: opportunity.taskId,
+    opportunityId: opportunity.opportunityId,
+    targetPlayerId: target.playerId,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    roster: state.roster.entries
+  });
+  const swap = createSnakeCharmerDemonSwapAppliedPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    targetChoice: targetChosen,
+    currentCharacterState: state.currentCharacterState
+  });
+  const poison = createSnakeCharmerPoisonedImpairmentPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    swap
+  });
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createSnakeCharmerDemonHitScheduledTaskSettlement({
+      taskId: opportunity.taskId,
+      characterStateRevision: swap.nextCharacterStateRevision
+    })
+  };
+
+  return [
+    snakeCharmerBatchEnvelope("SnakeCharmerTargetChosen", targetChosen, 0),
+    snakeCharmerBatchEnvelope("SnakeCharmerDemonSwapApplied", swap, 1),
+    snakeCharmerBatchEnvelope("AbilityImpairmentApplied", poison, 2),
+    snakeCharmerBatchEnvelope("ScheduledTaskSettled", settlement, 3)
+  ];
+};
+
+const resequenceSnakeCharmerBatch = (
+  events: readonly AnyDomainEventEnvelope[]
+): readonly AnyDomainEventEnvelope[] =>
+  events.map((event, index) => ({
+    ...event,
+    eventId: eventId(`event-${19 + index}-${event.eventType}`),
+    eventSequence: 19 + index
+  }));
 
 const expectInitialKnowledgePayloadRejected = (payload: unknown): DomainError =>
   captureDomainError(
@@ -3246,6 +3311,290 @@ describe("domain event rebuild", () => {
         ...snakeCharmerNoSwapBatchEvents({ targetKind: "demon" })
       ]),
       "InvalidSnakeCharmerNoSwapResolvedPayload"
+    );
+  });
+
+  it("rebuilds Philosopher gained Snake Charmer Demon-hit swap and poison marker", () => {
+    const before = rebuildGameState(openSnakeCharmerStream());
+    const [targetChosen, swap, poison, settlement] = snakeCharmerDemonHitBatchEvents();
+    const state = rebuildGameState([
+      ...openSnakeCharmerStream(),
+      targetChosen,
+      swap,
+      poison,
+      settlement
+    ]);
+
+    expect(state.snakeCharmerTargetChoices?.choices[0]).toMatchObject({
+      taskId: targetChosen.payload.taskId,
+      taskType: "SNAKE_CHARMER_ACTION",
+      targetPlayerId: targetChosen.payload.targetPlayerId,
+      sourceCharacterStateRevision: 1
+    });
+    expect(state.snakeCharmerDemonSwaps?.swaps[0]).toStrictEqual(swap.payload);
+    expect(state.abilityImpairments?.impairments).toContainEqual(expect.objectContaining({
+      affectedPlayerId: swap.payload.targetPlayerId,
+      affectedRole: swap.payload.targetAfter.role,
+      affectedSeatNumber: swap.payload.targetSeatNumber,
+      impairmentId: poison.payload.impairmentId,
+      kind: "POISONED",
+      sourceCharacterStateRevision: swap.payload.nextCharacterStateRevision,
+      sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+      sourcePlayerId: swap.payload.sourcePlayerId
+    }));
+    expect(state.currentCharacterState?.revision).toBe(swap.payload.nextCharacterStateRevision);
+    expect(state.currentCharacterState?.entries.find((entry) => entry.playerId === swap.payload.sourcePlayerId)).toStrictEqual(
+      swap.payload.sourceAfter
+    );
+    expect(state.currentCharacterState?.entries.find((entry) => entry.playerId === swap.payload.targetPlayerId)).toStrictEqual(
+      swap.payload.targetAfter
+    );
+    expect(state.assignment).toStrictEqual(before.assignment);
+    expect(state.setup).toStrictEqual(before.setup);
+    expect(state.firstNightTaskPlan).toStrictEqual(before.firstNightTaskPlan);
+    expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
+      opportunity.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightTaskProgress?.settlements.map((candidate) => candidate.outcomeType)).toStrictEqual([
+      "PHILOSOPHER_ABILITY_CHOSEN",
+      "SNAKE_CHARMER_DEMON_HIT_SWAP"
+    ]);
+    expect(state.firstNightTaskPlan?.tasks[state.firstNightTaskProgress?.settlements.length ?? -1]?.taskType).toBe("MINION_INFO");
+    expect(state.lastEventSequence).toBe(22);
+    expect(state.gameVersion).toBe(11);
+  });
+
+  it("rejects malformed Snake Charmer Demon-hit replay batches", () => {
+    const baseStream = openSnakeCharmerStream();
+    const [targetChosen, swap, poison, settlement] = snakeCharmerDemonHitBatchEvents();
+    const [nonDemonTargetChosen] = snakeCharmerNoSwapBatchEvents();
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([swap, poison, settlement])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([targetChosen, swap, settlement])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([targetChosen, swap, poison])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([targetChosen, poison, swap, settlement])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          nonDemonTargetChosen,
+          {
+            ...swap,
+            payload: {
+              ...swap.payload,
+              targetPlayerId: nonDemonTargetChosen.payload.targetPlayerId,
+              targetSeatNumber: nonDemonTargetChosen.payload.targetSeatNumber
+            }
+          },
+          poison,
+          settlement
+        ])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          targetChosen,
+          {
+            ...swap,
+            payload: {
+              ...swap.payload,
+              sourceAfter: {
+                ...swap.payload.sourceAfter,
+                role: swap.payload.sourceBefore.role
+              }
+            }
+          },
+          poison,
+          settlement
+        ])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          targetChosen,
+          {
+            ...swap,
+            payload: {
+              ...swap.payload,
+              targetAfter: {
+                ...swap.payload.targetAfter,
+                role: swap.payload.targetBefore.role
+              }
+            }
+          },
+          poison,
+          settlement
+        ])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          targetChosen,
+          {
+            ...swap,
+            payload: {
+              ...swap.payload,
+              nextCharacterStateRevision: swap.payload.nextCharacterStateRevision + 1
+            }
+          },
+          poison,
+          settlement
+        ])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          targetChosen,
+          swap,
+          {
+            ...poison,
+            payload: {
+              ...poison.payload,
+              affectedPlayerId: swap.payload.sourcePlayerId
+            }
+          },
+          settlement
+        ])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          targetChosen,
+          swap,
+          {
+            ...poison,
+            payload: {
+              ...poison.payload,
+              affectedRole: swap.payload.targetBefore.role
+            }
+          },
+          settlement
+        ])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          targetChosen,
+          swap,
+          poison,
+          {
+            ...settlement,
+            payload: {
+              ...settlement.payload,
+              outcomeType: "SNAKE_CHARMER_NON_DEMON_NO_SWAP"
+            } as never
+          }
+        ])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          targetChosen,
+          swap,
+          poison,
+          {
+            ...settlement,
+            payload: {
+              ...settlement.payload,
+              characterStateRevision: swap.payload.previousCharacterStateRevision
+            }
+          }
+        ])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          targetChosen,
+          swap,
+          poison,
+          {
+            ...phaseTransitionedEvent(),
+            batchId: targetChosen.batchId,
+            commandId: targetChosen.commandId,
+            gameVersion: targetChosen.gameVersion
+          }
+        ])
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...resequenceSnakeCharmerBatch([
+          targetChosen,
+          {
+            ...swap,
+            payload: {
+              ...swap.payload,
+              extra: "not-allowed"
+            } as never
+          },
+          poison,
+          settlement
+        ])
+      ]),
+      "InvalidSnakeCharmerDemonSwapAppliedPayload"
     );
   });
 

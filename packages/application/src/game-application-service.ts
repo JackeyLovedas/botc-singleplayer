@@ -23,8 +23,11 @@ import {
   createPhilosopherAbilityChosenScheduledTaskSettlement,
   createPhilosopherAbilityGrantedPayload,
   createFirstNightRoleActionOpportunity,
+  createSnakeCharmerDemonHitScheduledTaskSettlement,
+  createSnakeCharmerDemonSwapAppliedPayload,
   createSnakeCharmerNoSwapResolvedPayload,
   createSnakeCharmerNoSwapScheduledTaskSettlement,
+  createSnakeCharmerPoisonedImpairmentPayload,
   createSnakeCharmerTargetChosenPayload,
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
@@ -79,6 +82,7 @@ import type {
   PhilosopherAbilityGrantedPayload,
   PlayerRosterCreatedPayload,
   ScheduledTaskSettledPayload,
+  SnakeCharmerDemonSwapAppliedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload,
   SetupGeneratedPayload,
@@ -1257,13 +1261,6 @@ export class GameApplicationService {
           };
         }
 
-        if (targetStateEntry.role.characterType === "DEMON") {
-          return {
-            code: "SnakeCharmerDemonHitNotImplemented",
-            message: "Snake Charmer Demon hit swap is not implemented in this slice"
-          };
-        }
-
         return undefined;
       }
     }
@@ -2288,6 +2285,54 @@ export class GameApplicationService {
           eventType: "SnakeCharmerTargetChosen" as const,
           payload: targetChoicePayload satisfies SnakeCharmerTargetChosenPayload
         };
+
+        const targetStateEntry = state.currentCharacterState.entries.find((entry) =>
+          entry.playerId === targetChoicePayload.targetPlayerId &&
+          entry.seatNumber === targetChoicePayload.targetSeatNumber
+        );
+        if (targetStateEntry?.role.characterType === "DEMON") {
+          const swapPayload = createSnakeCharmerDemonSwapAppliedPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            targetChoice: targetChoicePayload,
+            currentCharacterState: state.currentCharacterState
+          });
+          const snakeCharmerDemonSwapAppliedEvent: DomainEventEnvelope<"SnakeCharmerDemonSwapApplied"> = {
+            ...common(firstEventSequence + 1),
+            eventType: "SnakeCharmerDemonSwapApplied" as const,
+            payload: swapPayload satisfies SnakeCharmerDemonSwapAppliedPayload
+          };
+
+          const poisonPayload = createSnakeCharmerPoisonedImpairmentPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            swap: swapPayload
+          });
+          const poisonAppliedEvent: DomainEventEnvelope<"AbilityImpairmentApplied"> = {
+            ...common(firstEventSequence + 2),
+            eventType: "AbilityImpairmentApplied" as const,
+            payload: poisonPayload satisfies AbilityImpairmentAppliedPayload
+          };
+
+          const settlement = createSnakeCharmerDemonHitScheduledTaskSettlement({
+            taskId: opportunity.taskId,
+            characterStateRevision: swapPayload.nextCharacterStateRevision
+          });
+
+          const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+            ...common(firstEventSequence + 3),
+            eventType: "ScheduledTaskSettled" as const,
+            payload: {
+              rulesBaselineVersion: RULES_BASELINE_VERSION,
+              ...settlement
+            } satisfies ScheduledTaskSettledPayload
+          };
+
+          return [
+            snakeCharmerTargetChosenEvent,
+            snakeCharmerDemonSwapAppliedEvent,
+            poisonAppliedEvent,
+            scheduledTaskSettledEvent
+          ];
+        }
 
         const noSwapPayload = createSnakeCharmerNoSwapResolvedPayload({
           rulesBaselineVersion: RULES_BASELINE_VERSION,

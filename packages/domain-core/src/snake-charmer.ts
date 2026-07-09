@@ -1,5 +1,6 @@
 import { cloneRoleSetupSnapshot } from "./character-assignment.js";
-import type { CurrentCharacterStateSet } from "./current-character-state.js";
+import type { CurrentCharacterState, CurrentCharacterStateSet } from "./current-character-state.js";
+import { hasExactCurrentCharacterStateShape } from "./current-character-state.js";
 import { DomainError } from "./errors.js";
 import type { FirstNightActionOpportunityState } from "./first-night-action-opportunity.js";
 import {
@@ -15,12 +16,14 @@ import type {
   FirstNightTaskProgress,
   ScheduledTaskSettlement
 } from "./first-night-task-plan.js";
-import type { ActionOpportunityId, PlayerId, ScheduledTaskId } from "./ids.js";
 import {
   hasExactEnumerableKeys,
   hasExactRoleSetupSnapshotShape,
   isPlainRecord
 } from "./initial-private-knowledge.js";
+import type { AbilityImpairmentId, ActionOpportunityId, PlayerId, ScheduledTaskId } from "./ids.js";
+import { abilityImpairmentId } from "./ids.js";
+import type { SnakeCharmerPoisonedAbilityImpairmentAppliedPayload } from "./philosopher-ability.js";
 import type { PlayerRoster, SeatNumber } from "./player-roster.js";
 import type { RoleSetupSnapshot } from "./setup-types.js";
 import { sameRoleSetupSnapshot } from "./setup-types.js";
@@ -61,12 +64,37 @@ export type SnakeCharmerNoSwapResolvedPayload = {
   readonly outcomeType: SnakeCharmerNoSwapOutcomeType;
 };
 
+export type SnakeCharmerDemonSwapReason = "SNAKE_CHARMER_DEMON_HIT";
+
+export type SnakeCharmerDemonSwapAppliedPayload = {
+  readonly rulesBaselineVersion: string;
+  readonly nightNumber: 1;
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: "SNAKE_CHARMER_ACTION";
+  readonly opportunityId: ActionOpportunityId;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly targetPlayerId: PlayerId;
+  readonly targetSeatNumber: SeatNumber;
+  readonly previousCharacterStateRevision: number;
+  readonly nextCharacterStateRevision: number;
+  readonly sourceBefore: CurrentCharacterState;
+  readonly targetBefore: CurrentCharacterState;
+  readonly sourceAfter: CurrentCharacterState;
+  readonly targetAfter: CurrentCharacterState;
+  readonly swapReason: SnakeCharmerDemonSwapReason;
+};
+
 export type SnakeCharmerTargetChoiceSet = {
   readonly choices: readonly SnakeCharmerTargetChosenPayload[];
 };
 
 export type SnakeCharmerNoSwapResolutionSet = {
   readonly resolutions: readonly SnakeCharmerNoSwapResolvedPayload[];
+};
+
+export type SnakeCharmerDemonSwapSet = {
+  readonly swaps: readonly SnakeCharmerDemonSwapAppliedPayload[];
 };
 
 type ValidationResult =
@@ -109,6 +137,24 @@ const SNAKE_CHARMER_NO_SWAP_RESOLVED_PAYLOAD_KEYS = [
   "taskId",
   "taskType"
 ] as const;
+const SNAKE_CHARMER_DEMON_SWAP_APPLIED_PAYLOAD_KEYS = [
+  "nextCharacterStateRevision",
+  "nightNumber",
+  "opportunityId",
+  "previousCharacterStateRevision",
+  "rulesBaselineVersion",
+  "sourceAfter",
+  "sourceBefore",
+  "sourcePlayerId",
+  "sourceSeatNumber",
+  "swapReason",
+  "targetAfter",
+  "targetBefore",
+  "targetPlayerId",
+  "targetSeatNumber",
+  "taskId",
+  "taskType"
+] as const;
 const SNAKE_CHARMER_DECISION_KEYS = ["kind", "targetPlayerId"] as const;
 const PHILOSOPHER_ROLE_ID = "philosopher";
 const SNAKE_CHARMER_ROLE_ID = "snake_charmer";
@@ -144,6 +190,32 @@ const cloneNoSwapResolution = (resolution: SnakeCharmerNoSwapResolvedPayload): S
   outcomeType: resolution.outcomeType
 });
 
+const cloneCurrentStateEntry = (entry: CurrentCharacterState): CurrentCharacterState => ({
+  playerId: entry.playerId,
+  seatNumber: entry.seatNumber,
+  role: cloneRoleSetupSnapshot(entry.role),
+  currentAlignment: entry.currentAlignment
+});
+
+const cloneDemonSwap = (swap: SnakeCharmerDemonSwapAppliedPayload): SnakeCharmerDemonSwapAppliedPayload => ({
+  rulesBaselineVersion: swap.rulesBaselineVersion,
+  nightNumber: swap.nightNumber,
+  taskId: swap.taskId,
+  taskType: swap.taskType,
+  opportunityId: swap.opportunityId,
+  sourcePlayerId: swap.sourcePlayerId,
+  sourceSeatNumber: swap.sourceSeatNumber,
+  targetPlayerId: swap.targetPlayerId,
+  targetSeatNumber: swap.targetSeatNumber,
+  previousCharacterStateRevision: swap.previousCharacterStateRevision,
+  nextCharacterStateRevision: swap.nextCharacterStateRevision,
+  sourceBefore: cloneCurrentStateEntry(swap.sourceBefore),
+  targetBefore: cloneCurrentStateEntry(swap.targetBefore),
+  sourceAfter: cloneCurrentStateEntry(swap.sourceAfter),
+  targetAfter: cloneCurrentStateEntry(swap.targetAfter),
+  swapReason: swap.swapReason
+});
+
 export const cloneSnakeCharmerTargetChoiceSet = (
   state: SnakeCharmerTargetChoiceSet | undefined
 ): SnakeCharmerTargetChoiceSet => ({
@@ -154,6 +226,12 @@ export const cloneSnakeCharmerNoSwapResolutionSet = (
   state: SnakeCharmerNoSwapResolutionSet | undefined
 ): SnakeCharmerNoSwapResolutionSet => ({
   resolutions: state?.resolutions.map(cloneNoSwapResolution) ?? []
+});
+
+export const cloneSnakeCharmerDemonSwapSet = (
+  state: SnakeCharmerDemonSwapSet | undefined
+): SnakeCharmerDemonSwapSet => ({
+  swaps: state?.swaps.map(cloneDemonSwap) ?? []
 });
 
 export const validateSnakeCharmerActionDecision = (decision: unknown): ValidationResult => {
@@ -294,6 +372,114 @@ export const createSnakeCharmerNoSwapScheduledTaskSettlement = (input: {
   nightNumber: 1,
   settlementVersion: SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION,
   outcomeType: "SNAKE_CHARMER_NON_DEMON_NO_SWAP",
+  characterStateRevision: input.characterStateRevision
+});
+
+const findCurrentCharacterStateEntry = (
+  currentCharacterState: CurrentCharacterStateSet,
+  playerId: PlayerId,
+  seatNumber: SeatNumber
+): CurrentCharacterState | undefined =>
+  currentCharacterState.entries.find((entry) => entry.playerId === playerId && entry.seatNumber === seatNumber);
+
+export const createSnakeCharmerDemonSwapAppliedPayload = (input: {
+  readonly rulesBaselineVersion: string;
+  readonly targetChoice: SnakeCharmerTargetChosenPayload;
+  readonly currentCharacterState: CurrentCharacterStateSet;
+}): SnakeCharmerDemonSwapAppliedPayload => {
+  const sourceBefore = findCurrentCharacterStateEntry(
+    input.currentCharacterState,
+    input.targetChoice.sourcePlayerId,
+    input.targetChoice.sourceSeatNumber
+  );
+  const targetBefore = findCurrentCharacterStateEntry(
+    input.currentCharacterState,
+    input.targetChoice.targetPlayerId,
+    input.targetChoice.targetSeatNumber
+  );
+
+  if (sourceBefore === undefined || targetBefore === undefined) {
+    throw new DomainError("InvalidSnakeCharmerDemonSwapAppliedPayload", "SnakeCharmerDemonSwapApplied requires current source and target entries");
+  }
+
+  if (targetBefore.role.characterType !== "DEMON") {
+    throw new DomainError("InvalidSnakeCharmerDemonSwapAppliedPayload", "SnakeCharmerDemonSwapApplied requires a Demon target");
+  }
+
+  const previousCharacterStateRevision = input.currentCharacterState.revision;
+  const nextCharacterStateRevision = previousCharacterStateRevision + 1;
+  const sourceAfter: CurrentCharacterState = {
+    playerId: sourceBefore.playerId,
+    seatNumber: sourceBefore.seatNumber,
+    role: cloneRoleSetupSnapshot(targetBefore.role),
+    currentAlignment: targetBefore.currentAlignment
+  };
+  const targetAfter: CurrentCharacterState = {
+    playerId: targetBefore.playerId,
+    seatNumber: targetBefore.seatNumber,
+    role: cloneRoleSetupSnapshot(sourceBefore.role),
+    currentAlignment: sourceBefore.currentAlignment
+  };
+
+  return {
+    rulesBaselineVersion: input.rulesBaselineVersion,
+    nightNumber: 1,
+    taskId: input.targetChoice.taskId,
+    taskType: input.targetChoice.taskType,
+    opportunityId: input.targetChoice.opportunityId,
+    sourcePlayerId: input.targetChoice.sourcePlayerId,
+    sourceSeatNumber: input.targetChoice.sourceSeatNumber,
+    targetPlayerId: input.targetChoice.targetPlayerId,
+    targetSeatNumber: input.targetChoice.targetSeatNumber,
+    previousCharacterStateRevision,
+    nextCharacterStateRevision,
+    sourceBefore: cloneCurrentStateEntry(sourceBefore),
+    targetBefore: cloneCurrentStateEntry(targetBefore),
+    sourceAfter,
+    targetAfter,
+    swapReason: "SNAKE_CHARMER_DEMON_HIT"
+  };
+};
+
+export const formatSnakeCharmerPoisonImpairmentId = (input: {
+  readonly sourceSeatNumber: SeatNumber;
+  readonly affectedSeatNumber: SeatNumber;
+  readonly nextCharacterStateRevision: number;
+}): AbilityImpairmentId =>
+  abilityImpairmentId(
+    `ability-impairment-v1:SNAKE_CHARMER_DEMON_HIT:seat-${String(input.sourceSeatNumber).padStart(2, "0")}:poisons-seat-${String(
+      input.affectedSeatNumber
+    ).padStart(2, "0")}:revision-${String(input.nextCharacterStateRevision).padStart(2, "0")}`
+  );
+
+export const createSnakeCharmerPoisonedImpairmentPayload = (input: {
+  readonly rulesBaselineVersion: string;
+  readonly swap: SnakeCharmerDemonSwapAppliedPayload;
+}): SnakeCharmerPoisonedAbilityImpairmentAppliedPayload => ({
+  rulesBaselineVersion: input.rulesBaselineVersion,
+  impairmentId: formatSnakeCharmerPoisonImpairmentId({
+    sourceSeatNumber: input.swap.sourceSeatNumber,
+    affectedSeatNumber: input.swap.targetSeatNumber,
+    nextCharacterStateRevision: input.swap.nextCharacterStateRevision
+  }),
+  kind: "POISONED",
+  sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+  sourcePlayerId: input.swap.sourcePlayerId,
+  affectedPlayerId: input.swap.targetPlayerId,
+  affectedSeatNumber: input.swap.targetSeatNumber,
+  affectedRole: cloneRoleSetupSnapshot(input.swap.targetAfter.role),
+  sourceCharacterStateRevision: input.swap.nextCharacterStateRevision
+});
+
+export const createSnakeCharmerDemonHitScheduledTaskSettlement = (input: {
+  readonly taskId: ScheduledTaskId;
+  readonly characterStateRevision: number;
+}): ScheduledTaskSettlement => ({
+  taskId: input.taskId,
+  taskType: "SNAKE_CHARMER_ACTION",
+  nightNumber: 1,
+  settlementVersion: SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION,
+  outcomeType: "SNAKE_CHARMER_DEMON_HIT_SWAP",
   characterStateRevision: input.characterStateRevision
 });
 
@@ -496,6 +682,186 @@ export const validateSnakeCharmerNoSwapResolvedPayload = (
   return { valid: true };
 };
 
+const findTargetChoiceForDemonSwap = (
+  state: SnakeCharmerTargetChoiceSet | undefined,
+  payload: Pick<SnakeCharmerDemonSwapAppliedPayload, "taskId" | "opportunityId" | "targetPlayerId">
+): SnakeCharmerTargetChosenPayload | undefined =>
+  state?.choices.find((choice) =>
+    choice.taskId === payload.taskId &&
+    choice.opportunityId === payload.opportunityId &&
+    choice.targetPlayerId === payload.targetPlayerId
+  );
+
+const sameCurrentStateEntry = (left: CurrentCharacterState, right: CurrentCharacterState): boolean =>
+  left.playerId === right.playerId &&
+  left.seatNumber === right.seatNumber &&
+  left.currentAlignment === right.currentAlignment &&
+  sameRoleSetupSnapshot(left.role, right.role);
+
+export const validateSnakeCharmerDemonSwapAppliedPayload = (
+  payload: unknown,
+  input: {
+    readonly choices: SnakeCharmerTargetChoiceSet | undefined;
+    readonly swaps: SnakeCharmerDemonSwapSet | undefined;
+    readonly currentCharacterState: CurrentCharacterStateSet;
+    readonly firstNightActionOpportunities: FirstNightActionOpportunityState | undefined;
+  }
+): ValidationResult => {
+  if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, SNAKE_CHARMER_DEMON_SWAP_APPLIED_PAYLOAD_KEYS)) {
+    return fail("SnakeCharmerDemonSwapApplied payload must have exact runtime shape");
+  }
+
+  if (
+    typeof payload.rulesBaselineVersion !== "string" ||
+    payload.nightNumber !== 1 ||
+    typeof payload.taskId !== "string" ||
+    payload.taskId.trim().length === 0 ||
+    payload.taskType !== "SNAKE_CHARMER_ACTION" ||
+    typeof payload.opportunityId !== "string" ||
+    payload.opportunityId.trim().length === 0 ||
+    typeof payload.sourcePlayerId !== "string" ||
+    payload.sourcePlayerId.trim().length === 0 ||
+    typeof payload.sourceSeatNumber !== "number" ||
+    !Number.isInteger(payload.sourceSeatNumber) ||
+    payload.sourceSeatNumber < 1 ||
+    payload.sourceSeatNumber > 12 ||
+    typeof payload.targetPlayerId !== "string" ||
+    payload.targetPlayerId.trim().length === 0 ||
+    typeof payload.targetSeatNumber !== "number" ||
+    !Number.isInteger(payload.targetSeatNumber) ||
+    payload.targetSeatNumber < 1 ||
+    payload.targetSeatNumber > 12 ||
+    typeof payload.previousCharacterStateRevision !== "number" ||
+    !Number.isInteger(payload.previousCharacterStateRevision) ||
+    payload.previousCharacterStateRevision <= 0 ||
+    typeof payload.nextCharacterStateRevision !== "number" ||
+    !Number.isInteger(payload.nextCharacterStateRevision) ||
+    payload.nextCharacterStateRevision !== payload.previousCharacterStateRevision + 1 ||
+    !hasExactCurrentCharacterStateShape(payload.sourceBefore) ||
+    !hasExactCurrentCharacterStateShape(payload.targetBefore) ||
+    !hasExactCurrentCharacterStateShape(payload.sourceAfter) ||
+    !hasExactCurrentCharacterStateShape(payload.targetAfter) ||
+    payload.swapReason !== "SNAKE_CHARMER_DEMON_HIT"
+  ) {
+    return fail("SnakeCharmerDemonSwapApplied fields must use supported primitive values");
+  }
+
+  if (
+    input.swaps?.swaps.some((swap) =>
+      swap.taskId === payload.taskId &&
+      swap.opportunityId === payload.opportunityId
+    ) === true
+  ) {
+    return fail("SnakeCharmerDemonSwapApplied cannot resolve the same opportunity twice");
+  }
+
+  const choice = findTargetChoiceForDemonSwap(input.choices, {
+    taskId: payload.taskId as ScheduledTaskId,
+    opportunityId: payload.opportunityId as ActionOpportunityId,
+    targetPlayerId: payload.targetPlayerId as PlayerId
+  });
+  if (choice === undefined) {
+    return fail("SnakeCharmerDemonSwapApplied must follow a matching SnakeCharmerTargetChosen event");
+  }
+
+  const opportunity = findFirstNightActionOpportunityById(input.firstNightActionOpportunities, choice.opportunityId);
+  if (
+    opportunity === undefined ||
+    opportunity.opportunityStatus !== "OPEN" ||
+    opportunity.opportunityKind !== "SNAKE_CHARMER_FIRST_NIGHT_ACTION" ||
+    opportunity.taskId !== choice.taskId
+  ) {
+    return fail("SnakeCharmerDemonSwapApplied must close a matching OPEN Snake Charmer action opportunity");
+  }
+
+  if (payload.previousCharacterStateRevision !== input.currentCharacterState.revision) {
+    return fail("SnakeCharmerDemonSwapApplied previous revision must match current character state revision");
+  }
+
+  const expected = createSnakeCharmerDemonSwapAppliedPayload({
+    rulesBaselineVersion: payload.rulesBaselineVersion,
+    targetChoice: choice,
+    currentCharacterState: input.currentCharacterState
+  });
+  const candidate = payload as unknown as SnakeCharmerDemonSwapAppliedPayload;
+  if (
+    candidate.taskId !== expected.taskId ||
+    candidate.taskType !== expected.taskType ||
+    candidate.opportunityId !== expected.opportunityId ||
+    candidate.sourcePlayerId !== expected.sourcePlayerId ||
+    candidate.sourceSeatNumber !== expected.sourceSeatNumber ||
+    candidate.targetPlayerId !== expected.targetPlayerId ||
+    candidate.targetSeatNumber !== expected.targetSeatNumber ||
+    candidate.previousCharacterStateRevision !== expected.previousCharacterStateRevision ||
+    candidate.nextCharacterStateRevision !== expected.nextCharacterStateRevision ||
+    !sameCurrentStateEntry(candidate.sourceBefore, expected.sourceBefore) ||
+    !sameCurrentStateEntry(candidate.targetBefore, expected.targetBefore) ||
+    !sameCurrentStateEntry(candidate.sourceAfter, expected.sourceAfter) ||
+    !sameCurrentStateEntry(candidate.targetAfter, expected.targetAfter) ||
+    candidate.swapReason !== expected.swapReason
+  ) {
+    return fail("SnakeCharmerDemonSwapApplied must match the current Demon target swap");
+  }
+
+  return { valid: true };
+};
+
+export const applySnakeCharmerDemonSwapToCurrentCharacterState = (
+  currentCharacterState: CurrentCharacterStateSet,
+  payload: SnakeCharmerDemonSwapAppliedPayload
+): CurrentCharacterStateSet => ({
+  revision: payload.nextCharacterStateRevision,
+  entries: currentCharacterState.entries
+    .map((entry) => {
+      if (entry.playerId === payload.sourcePlayerId) {
+        return cloneCurrentStateEntry(payload.sourceAfter);
+      }
+
+      if (entry.playerId === payload.targetPlayerId) {
+        return cloneCurrentStateEntry(payload.targetAfter);
+      }
+
+      return cloneCurrentStateEntry(entry);
+    })
+    .sort((left, right) => left.seatNumber - right.seatNumber)
+});
+
+export const validateSnakeCharmerPoisonedImpairmentPayload = (
+  payload: SnakeCharmerPoisonedAbilityImpairmentAppliedPayload,
+  input: {
+    readonly swaps: SnakeCharmerDemonSwapSet | undefined;
+  }
+): ValidationResult => {
+  const swap = input.swaps?.swaps.find((candidate) =>
+    candidate.sourcePlayerId === payload.sourcePlayerId &&
+    candidate.targetPlayerId === payload.affectedPlayerId &&
+    candidate.targetSeatNumber === payload.affectedSeatNumber &&
+    candidate.nextCharacterStateRevision === payload.sourceCharacterStateRevision
+  );
+  if (swap === undefined) {
+    return fail("Snake Charmer poisoned impairment must follow a matching Demon swap");
+  }
+
+  const expected = createSnakeCharmerPoisonedImpairmentPayload({
+    rulesBaselineVersion: payload.rulesBaselineVersion,
+    swap
+  });
+  if (
+    payload.impairmentId !== expected.impairmentId ||
+    payload.kind !== expected.kind ||
+    payload.sourceKind !== expected.sourceKind ||
+    payload.sourcePlayerId !== expected.sourcePlayerId ||
+    payload.affectedPlayerId !== expected.affectedPlayerId ||
+    payload.affectedSeatNumber !== expected.affectedSeatNumber ||
+    !sameRoleSetupSnapshot(payload.affectedRole, expected.affectedRole) ||
+    payload.sourceCharacterStateRevision !== expected.sourceCharacterStateRevision
+  ) {
+    return fail("Snake Charmer poisoned impairment must match the old Demon after swap");
+  }
+
+  return { valid: true };
+};
+
 export const appendSnakeCharmerTargetChoice = (
   state: SnakeCharmerTargetChoiceSet | undefined,
   payload: SnakeCharmerTargetChosenPayload
@@ -510,6 +876,13 @@ export const appendSnakeCharmerNoSwapResolution = (
   resolutions: [...cloneSnakeCharmerNoSwapResolutionSet(state).resolutions, cloneNoSwapResolution(payload)]
 });
 
+export const appendSnakeCharmerDemonSwap = (
+  state: SnakeCharmerDemonSwapSet | undefined,
+  payload: SnakeCharmerDemonSwapAppliedPayload
+): SnakeCharmerDemonSwapSet => ({
+  swaps: [...cloneSnakeCharmerDemonSwapSet(state).swaps, cloneDemonSwap(payload)]
+});
+
 export const hasSnakeCharmerNoSwapResolutionForSettlement = (
   resolutions: SnakeCharmerNoSwapResolutionSet | undefined,
   settlement: Pick<ScheduledTaskSettlement, "taskId" | "taskType" | "characterStateRevision">
@@ -521,4 +894,16 @@ export const hasSnakeCharmerNoSwapResolutionForSettlement = (
     resolution.taskType === settlement.taskType &&
     resolution.sourceCharacterStateRevision === settlement.characterStateRevision &&
     resolution.outcomeType === "NON_DEMON_TARGET_NO_SWAP"
+  ) ?? false);
+
+export const hasSnakeCharmerDemonSwapForSettlement = (
+  swaps: SnakeCharmerDemonSwapSet | undefined,
+  settlement: Pick<ScheduledTaskSettlement, "taskId" | "taskType" | "characterStateRevision" | "outcomeType">
+): boolean =>
+  settlement.taskType === "SNAKE_CHARMER_ACTION" &&
+  settlement.outcomeType === "SNAKE_CHARMER_DEMON_HIT_SWAP" &&
+  (swaps?.swaps.some((swap) =>
+    swap.taskId === settlement.taskId &&
+    swap.taskType === settlement.taskType &&
+    swap.nextCharacterStateRevision === settlement.characterStateRevision
   ) ?? false);

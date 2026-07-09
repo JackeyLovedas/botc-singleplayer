@@ -77,7 +77,7 @@ const isDenseArray = (value: readonly unknown[]): boolean => {
 const isCurrentAlignment = (value: unknown): value is CurrentAlignment =>
   value === "GOOD" || value === "EVIL";
 
-const hasExactCurrentCharacterStateShape = (value: unknown): value is CurrentCharacterState => {
+export const hasExactCurrentCharacterStateShape = (value: unknown): value is CurrentCharacterState => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, CURRENT_CHARACTER_STATE_KEYS)) {
     return false;
   }
