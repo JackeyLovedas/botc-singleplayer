@@ -16,6 +16,8 @@ import type {
   SnakeCharmerIneffectiveResolvedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload,
+  DreamerInformationDeliveredPayload,
+  DreamerTargetChosenPayload,
   WitchDeathPendingPayload,
   WitchIneffectiveResolvedPayload,
   WitchTargetChosenPayload,
@@ -99,6 +101,13 @@ import {
   validateWitchIneffectiveResolvedPayload,
   validateWitchTargetChosenPayload
 } from "./witch.js";
+import {
+  appendDreamerInformationDelivery,
+  appendDreamerTargetChoice,
+  hasDreamerInformationForSettlement,
+  validateDreamerInformationDeliveredPayload,
+  validateDreamerTargetChosenPayload
+} from "./dreamer.js";
 import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   isPlainRecord,
@@ -1161,6 +1170,78 @@ const validateWitchIneffectiveResolvedPayloadForState = (
   }
 };
 
+const validateDreamerTargetChosenPayloadForState = (
+  state: GameState,
+  payload: DreamerTargetChosenPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidDreamerTargetChosenPayload",
+      "DreamerTargetChosen requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined ||
+    state.roster === undefined
+  ) {
+    throw new DomainError(
+      "InvalidDreamerTargetChosenPayload",
+      "DreamerTargetChosen requires first-night task plan, current character state, and roster"
+    );
+  }
+
+  validateFirstNightTaskPlanRuntimeStateForState(state, {
+    plan: state.firstNightTaskPlan,
+    insertions: state.firstNightTaskInsertions,
+    errorCode: "InvalidDreamerTargetChosenPayload"
+  });
+
+  const validation = validateDreamerTargetChosenPayload(payload, {
+    taskId: payload.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    roster: state.roster.entries
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidDreamerTargetChosenPayload", validation.reason);
+  }
+};
+
+const validateDreamerInformationDeliveredPayloadForState = (
+  state: GameState,
+  payload: DreamerInformationDeliveredPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidDreamerInformationDeliveredPayload",
+      "DreamerInformationDelivered requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.setup === undefined || state.currentCharacterState === undefined) {
+    throw new DomainError(
+      "InvalidDreamerInformationDeliveredPayload",
+      "DreamerInformationDelivered requires setup and current character state"
+    );
+  }
+
+  const validation = validateDreamerInformationDeliveredPayload(payload, {
+    choices: state.dreamerTargetChoices,
+    deliveries: state.dreamerInformation,
+    setup: state.setup,
+    currentCharacterState: state.currentCharacterState,
+    abilityImpairments: state.abilityImpairments,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidDreamerInformationDeliveredPayload", validation.reason);
+  }
+};
+
 const validateScheduledTaskSettledPayloadForState = (
   state: GameState,
   payload: ScheduledTaskSettledPayload
@@ -1302,9 +1383,19 @@ const validateScheduledTaskSettledPayloadForState = (
     throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled uses an unsupported Witch outcome");
   }
 
+  if (payload.taskType === "DREAMER_ACTION") {
+    if (
+      payload.outcomeType !== "DREAMER_INFORMATION_DELIVERED" ||
+      !hasDreamerInformationForSettlement(state.dreamerInformation, payload)
+    ) {
+      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match delivered Dreamer information");
+    }
+    return;
+  }
+
   throw new DomainError(
     "InvalidScheduledTaskSettledPayload",
-    "ScheduledTaskSettled only supports PHILOSOPHER_ACTION, SNAKE_CHARMER_ACTION, EVIL_TWIN_SETUP, WITCH_ACTION, MINION_INFO, and DEMON_INFO in this slice"
+    "ScheduledTaskSettled only supports PHILOSOPHER_ACTION, SNAKE_CHARMER_ACTION, EVIL_TWIN_SETUP, WITCH_ACTION, DREAMER_ACTION, MINION_INFO, and DEMON_INFO in this slice"
   );
 };
 
@@ -1352,6 +1443,10 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidWitchDeathPendingMarkedPayload";
     case "WitchIneffectiveResolved":
       return "InvalidWitchIneffectiveResolvedPayload";
+    case "DreamerTargetChosen":
+      return "InvalidDreamerTargetChosenPayload";
+    case "DreamerInformationDelivered":
+      return "InvalidDreamerInformationDeliveredPayload";
     case "EvilTwinPairEstablished":
       return "InvalidEvilTwinPairEstablishedPayload";
     case "EvilTwinInformationDelivered":
@@ -1935,6 +2030,51 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
           state.witchIneffectiveResolutions,
           event.payload
         )
+      };
+    }
+
+    case "DreamerTargetChosen": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "DreamerTargetChosen requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidDreamerTargetChosenPayload",
+          "DreamerTargetChosen payload rules baseline must match game state"
+        );
+      }
+
+      validateDreamerTargetChosenPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        dreamerTargetChoices: appendDreamerTargetChoice(state.dreamerTargetChoices, event.payload)
+      };
+    }
+
+    case "DreamerInformationDelivered": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "DreamerInformationDelivered requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidDreamerInformationDeliveredPayload",
+          "DreamerInformationDelivered payload rules baseline must match game state"
+        );
+      }
+
+      validateDreamerInformationDeliveredPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
+        dreamerInformation: appendDreamerInformationDelivery(state.dreamerInformation, event.payload)
       };
     }
 
