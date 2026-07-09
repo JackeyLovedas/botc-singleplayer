@@ -83,6 +83,21 @@ DRUNK    -> SOURCE_DRUNK
 POISONED -> SOURCE_POISONED
 ```
 
+### Witch Effectiveness Stable ASCII Impairment Ordering
+
+When multiple DRUNK or POISONED impairments affect the Witch source at the same time, `evaluateWitchEffectiveness` chooses the first impairment by no-locale stable ascending `impairmentId` comparison.
+
+The ordering uses direct string comparison only:
+
+```text
+left.impairmentId < right.impairmentId
+left.impairmentId > right.impairmentId
+```
+
+### No Locale-Based Sorting
+
+Witch effectiveness ordering must not use locale-sensitive comparator APIs, default object sorting, or any runtime locale setting. This keeps replay and tests stable across Ubuntu, Windows, and other supported runtimes.
+
 ## Effective Settlement
 
 An effective Witch source produces this atomic batch:
@@ -235,7 +250,7 @@ pnpm test:coverage
 Test count after this slice:
 
 ```text
-526 passed
+529 passed
 ```
 
 ## CI

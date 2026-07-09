@@ -443,7 +443,17 @@ export const evaluateWitchEffectiveness = (input: {
       candidate.affectedPlayerId === input.sourcePlayerId &&
       (candidate.kind === "DRUNK" || candidate.kind === "POISONED")
     )
-    .sort((left, right) => left.impairmentId.localeCompare(right.impairmentId))[0];
+    .sort((left, right) => {
+      if (left.impairmentId < right.impairmentId) {
+        return -1;
+      }
+
+      if (left.impairmentId > right.impairmentId) {
+        return 1;
+      }
+
+      return 0;
+    })[0];
 
   if (impairment === undefined) {
     return { effective: true };

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   abilityImpairmentId,
+  evaluateSnakeCharmerEffectiveness,
   evaluateWitchEffectiveness,
   playerId,
   roleId,
@@ -114,6 +116,116 @@ describe("Witch effectiveness gate", () => {
       effective: false,
       reason: "SOURCE_POISONED",
       impairmentId: abilityImpairmentId("ability-impairment-v1:a-poisoned-witch")
+    });
+  });
+
+  it("uses stable ASCII impairmentId order without locale-sensitive collation", () => {
+    const abilityImpairments: AbilityImpairmentSet = {
+      impairments: [
+        {
+          impairmentId: abilityImpairmentId("ability-impairment-v1:a-drunk"),
+          kind: "DRUNK",
+          sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+          sourcePlayerId: playerId("player-ai-10"),
+          affectedPlayerId: sourcePlayerId,
+          affectedSeatNumber: seatNumber(8),
+          affectedRole: witchRole,
+          sourceCharacterStateRevision: 1,
+          chosenRoleId: roleId("witch")
+        },
+        {
+          impairmentId: abilityImpairmentId("ability-impairment-v1:_poisoned"),
+          kind: "POISONED",
+          sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+          sourcePlayerId: playerId("player-ai-4"),
+          affectedPlayerId: sourcePlayerId,
+          affectedSeatNumber: seatNumber(8),
+          affectedRole: witchRole,
+          sourceCharacterStateRevision: 2
+        },
+        {
+          impairmentId: abilityImpairmentId("ability-impairment-v1:Z-drunk"),
+          kind: "DRUNK",
+          sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+          sourcePlayerId: playerId("player-ai-10"),
+          affectedPlayerId: sourcePlayerId,
+          affectedSeatNumber: seatNumber(8),
+          affectedRole: witchRole,
+          sourceCharacterStateRevision: 1,
+          chosenRoleId: roleId("witch")
+        },
+        {
+          impairmentId: abilityImpairmentId("ability-impairment-v1:9-poisoned"),
+          kind: "POISONED",
+          sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+          sourcePlayerId: playerId("player-ai-4"),
+          affectedPlayerId: sourcePlayerId,
+          affectedSeatNumber: seatNumber(8),
+          affectedRole: witchRole,
+          sourceCharacterStateRevision: 2
+        }
+      ]
+    };
+
+    expect("ability-impairment-v1:9-poisoned" < "ability-impairment-v1:Z-drunk").toBe(true);
+    expect("ability-impairment-v1:Z-drunk" < "ability-impairment-v1:_poisoned").toBe(true);
+    expect("ability-impairment-v1:_poisoned" < "ability-impairment-v1:a-drunk").toBe(true);
+
+    expect(evaluateWitchEffectiveness({
+      sourcePlayerId,
+      abilityImpairments
+    })).toStrictEqual({
+      effective: false,
+      reason: "SOURCE_POISONED",
+      impairmentId: abilityImpairmentId("ability-impairment-v1:9-poisoned"),
+      impairmentKind: "POISONED"
+    });
+  });
+
+  it("does not reintroduce locale-sensitive Witch impairment ordering", () => {
+    const source = readFileSync(new URL("./witch.ts", import.meta.url), "utf8");
+    const localeSensitiveComparatorName = "locale" + "Compare";
+    const runtimeCollatorName = "Intl" + ".Collator";
+
+    expect(source).not.toContain(localeSensitiveComparatorName);
+    expect(source).not.toContain(runtimeCollatorName);
+  });
+
+  it("leaves Snake Charmer effectiveness ordering unchanged", () => {
+    const abilityImpairments: AbilityImpairmentSet = {
+      impairments: [
+        {
+          impairmentId: abilityImpairmentId("ability-impairment-v1:z-drunk"),
+          kind: "DRUNK",
+          sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+          sourcePlayerId: playerId("player-ai-10"),
+          affectedPlayerId: sourcePlayerId,
+          affectedSeatNumber: seatNumber(8),
+          affectedRole: witchRole,
+          sourceCharacterStateRevision: 1,
+          chosenRoleId: roleId("snake_charmer")
+        },
+        {
+          impairmentId: abilityImpairmentId("ability-impairment-v1:a-poisoned"),
+          kind: "POISONED",
+          sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+          sourcePlayerId: playerId("player-ai-4"),
+          affectedPlayerId: sourcePlayerId,
+          affectedSeatNumber: seatNumber(8),
+          affectedRole: witchRole,
+          sourceCharacterStateRevision: 2
+        }
+      ]
+    };
+
+    expect(evaluateSnakeCharmerEffectiveness({
+      sourcePlayerId,
+      abilityImpairments
+    })).toStrictEqual({
+      effective: false,
+      reason: "SOURCE_POISONED",
+      impairmentId: abilityImpairmentId("ability-impairment-v1:a-poisoned"),
+      impairmentKind: "POISONED"
     });
   });
 });
