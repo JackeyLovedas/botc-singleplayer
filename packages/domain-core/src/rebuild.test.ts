@@ -25,6 +25,7 @@ import {
   createPhilosopherAbilityChosenPayload,
   createPhilosopherAbilityChosenScheduledTaskSettlement,
   createPhilosopherAbilityGrantedPayload,
+  getNextUnsettledFirstNightTask,
   cloneCurrentCharacterStateSet,
   eventId,
   expectedDemonInformationEntries,
@@ -35,7 +36,11 @@ import {
   resolveCurrentEvilTeam,
   roleId,
   scheduledTaskId,
+  scheduledTaskFromFirstNightTaskInsertedPayload,
   rebuildGameState,
+  validateFirstNightTaskPlanCreatedPayload,
+  validateFirstNightTaskPlanRuntimeState,
+  validateFirstNightTaskProgress,
   validateInitialCurrentCharacterStateSet,
   validateDomainEventStream
 } from "@botc/domain-core";
@@ -2880,6 +2885,120 @@ describe("domain event rebuild", () => {
     expect(state.currentCharacterState?.entries.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
     expect(state.assignment?.assignments.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
     expect(state.lastEventSequence).toBe(17);
+  });
+
+  it("validates runtime first-night task plans with only real inserted tasks", () => {
+    const state = rebuildGameState([
+      ...firstNightTaskPlanEventStream(),
+      philosopherActionOpportunityCreatedEvent(),
+      ...philosopherAbilityChoiceBatchEvents({
+        chosenRole: roleSnapshotById("snake_charmer"),
+        includeImpairment: true,
+        includeInsertion: true
+      })
+    ]);
+    if (
+      state.setup === undefined ||
+      state.roster === undefined ||
+      state.assignment === undefined ||
+      state.firstNight === undefined ||
+      state.initialPrivateKnowledge === undefined ||
+      state.firstNightTaskPlan === undefined ||
+      state.firstNightTaskInsertions?.insertions[0] === undefined
+    ) {
+      throw new Error("Expected runtime first-night task plan facts");
+    }
+
+    const sourceFacts = {
+      setup: state.setup,
+      roster: state.roster.entries,
+      assignment: state.assignment.assignments,
+      firstNight: state.firstNight,
+      initialPrivateKnowledge: state.initialPrivateKnowledge
+    };
+    const insertedTask = scheduledTaskFromFirstNightTaskInsertedPayload(state.firstNightTaskInsertions.insertions[0]);
+
+    expect(validateFirstNightTaskPlanCreatedPayload(state.firstNightTaskPlan, sourceFacts)).toMatchObject({
+      valid: false
+    });
+    expect(validateFirstNightTaskPlanRuntimeState(state.firstNightTaskPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toStrictEqual({ valid: true });
+
+    const forgedPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: state.firstNightTaskPlan.tasks
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(forgedPlan, {
+      sourceFacts,
+      insertedTasks: []
+    })).toMatchObject({ valid: false });
+
+    const wrongOrderPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: [
+        ...state.firstNightTaskPlan.tasks.filter((task) => task.taskId !== insertedTask.taskId),
+        insertedTask
+      ]
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(wrongOrderPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toMatchObject({ valid: false });
+
+    const wrongIdPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: state.firstNightTaskPlan.tasks.map((task) =>
+        task.taskId === insertedTask.taskId
+          ? {
+            ...task,
+            taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-dreamer")
+          }
+          : task
+      )
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(wrongIdPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toMatchObject({ valid: false });
+
+    const extraSourceFieldPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: state.firstNightTaskPlan.tasks.map((task) =>
+        task.taskId === insertedTask.taskId
+          ? {
+            ...task,
+            source: {
+              ...task.source,
+              targetRoleId: "fang_gu"
+            }
+          }
+          : task
+      )
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(extraSourceFieldPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toMatchObject({ valid: false });
+
+    const multipleInsertionPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: [
+        ...state.firstNightTaskPlan.tasks,
+        {
+          ...insertedTask,
+          taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-10:from-snake_charmer")
+        }
+      ]
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(multipleInsertionPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toMatchObject({ valid: false });
+
+    expect(getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress)?.taskType).toBe("SNAKE_CHARMER_ACTION");
+    expect(validateFirstNightTaskProgress(state.firstNightTaskPlan, state.firstNightTaskProgress)).toStrictEqual({ valid: true });
   });
 
   it("rejects naked, reversed, incomplete, and mixed Philosopher ability choice batches", () => {

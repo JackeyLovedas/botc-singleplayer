@@ -46,7 +46,7 @@ export type FirstNightTaskType =
   | "SEAMSTRESS_ACTION"
   | "MATHEMATICIAN_INFORMATION";
 export type FirstNightSystemTaskType = "MINION_INFO" | "DEMON_INFO";
-export type FirstNightTaskSourceKind = "ROLE" | "SYSTEM";
+export type FirstNightTaskSourceKind = "ROLE" | "SYSTEM" | "PHILOSOPHER_GAINED_ABILITY";
 export type ScheduledTaskSettlementPolicy =
   | "REEVALUATE_SOURCE_AT_SETTLEMENT"
   | "RESOLVE_CURRENT_EVIL_TEAM_AT_SETTLEMENT";
@@ -280,6 +280,7 @@ const FIRST_NIGHT_TASK_PLAN_PAYLOAD_KEYS = [
   "knowledgeStage",
   "tasks"
 ] as const;
+const FIRST_NIGHT_TASK_PLAN_RUNTIME_STATE_KEYS = FIRST_NIGHT_TASK_PLAN_PAYLOAD_KEYS;
 const FIRST_NIGHT_TASK_CATALOG_SNAPSHOT_KEYS = [
   "taskCatalogVersion",
   "taskCatalogSignatureAlgorithm",
@@ -1066,6 +1067,203 @@ export const validateScheduledTasksAgainstSourceFacts = (
     if (task.source.kind === "ROLE" && !roleDefinitionByRoleId.has(task.source.role.roleId)) {
       return fail("first-night task plan must not include role tasks for roles without first-night definitions");
     }
+  }
+
+  return { valid: true };
+};
+
+const scheduledTaskSourcesEqual = (left: ScheduledTaskSource, right: ScheduledTaskSource): boolean => {
+  if (left.kind !== right.kind) {
+    return false;
+  }
+
+  switch (left.kind) {
+    case "SYSTEM":
+      return right.kind === "SYSTEM" && left.systemTaskType === right.systemTaskType;
+
+    case "ROLE":
+      return right.kind === "ROLE" &&
+        left.playerId === right.playerId &&
+        left.seatNumber === right.seatNumber &&
+        sameRoleSetupSnapshot(left.role, right.role);
+
+    case "PHILOSOPHER_GAINED_ABILITY":
+      return right.kind === "PHILOSOPHER_GAINED_ABILITY" &&
+        left.playerId === right.playerId &&
+        left.seatNumber === right.seatNumber &&
+        left.opportunityId === right.opportunityId &&
+        left.sourceCharacterStateRevision === right.sourceCharacterStateRevision &&
+        sameRoleSetupSnapshot(left.sourceRole, right.sourceRole) &&
+        sameRoleSetupSnapshot(left.chosenRole, right.chosenRole);
+
+    default:
+      return assertNever(left);
+  }
+};
+
+const scheduledTasksEqual = (left: ScheduledTask, right: ScheduledTask): boolean =>
+  left.taskId === right.taskId &&
+  left.taskType === right.taskType &&
+  left.taskClass === right.taskClass &&
+  left.orderKey.baseOrder === right.orderKey.baseOrder &&
+  left.orderKey.insertionOrder === right.orderKey.insertionOrder &&
+  left.status === right.status &&
+  left.settlementPolicy === right.settlementPolicy &&
+  scheduledTaskSourcesEqual(left.source, right.source);
+
+const validateRuntimeInsertedTask = (
+  task: ScheduledTask,
+  catalog: FirstNightTaskCatalogSnapshot
+): FirstNightTaskPlanValidationResult => {
+  if (task.source.kind !== "PHILOSOPHER_GAINED_ABILITY") {
+    return fail("runtime inserted first-night task must use PHILOSOPHER_GAINED_ABILITY source");
+  }
+
+  const expectedRoleId = ROLE_ID_BY_FIRST_NIGHT_TASK_TYPE[task.taskType];
+  const definition = catalog.definitions.find((candidate) => candidate.taskType === task.taskType);
+  if (
+    expectedRoleId === undefined ||
+    definition === undefined ||
+    definition.sourceKind !== "ROLE" ||
+    task.source.sourceRole.roleId !== ("philosopher" as RoleId) ||
+    task.source.chosenRole.roleId !== expectedRoleId ||
+    task.taskClass !== definition.taskClass ||
+    task.orderKey.baseOrder !== 100 ||
+    task.orderKey.insertionOrder !== 1 ||
+    task.status !== "PENDING" ||
+    task.settlementPolicy !== definition.settlementPolicy
+  ) {
+    return fail("runtime inserted first-night task must match its philosopher gained role definition");
+  }
+
+  const expectedId = `first-night-v1:PHILOSOPHER_GAINED:${task.taskType}:seat-${String(task.source.seatNumber).padStart(2, "0")}:from-${task.source.chosenRole.roleId}`;
+  if (task.taskId !== expectedId) {
+    return fail("runtime inserted first-night task id must match the deterministic philosopher gained format");
+  }
+
+  return { valid: true };
+};
+
+export const validateFirstNightTaskPlanRuntimeState = (
+  value: unknown,
+  input: {
+    readonly sourceFacts: FirstNightTaskPlanValidationSourceFacts;
+    readonly insertedTasks?: readonly unknown[];
+  }
+): FirstNightTaskPlanValidationResult => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, FIRST_NIGHT_TASK_PLAN_RUNTIME_STATE_KEYS)) {
+    return fail("runtime first-night task plan state must have exact runtime shape");
+  }
+
+  if (
+    typeof value.rulesBaselineVersion !== "string" ||
+    value.nightNumber !== 1 ||
+    value.taskPlanVersion !== SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION ||
+    value.taskCatalogVersion !== SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION ||
+    value.taskCatalogSignatureAlgorithm !== SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM ||
+    typeof value.taskCatalogSignature !== "string" ||
+    typeof value.rosterVersion !== "string" ||
+    typeof value.assignmentAlgorithmVersion !== "string" ||
+    typeof value.roleCatalogSignature !== "string" ||
+    value.knowledgeModelVersion !== SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION ||
+    value.knowledgeStage !== INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE
+  ) {
+    return fail("runtime first-night task plan state fields must use supported primitive values");
+  }
+
+  const catalogValidation = validateFirstNightTaskCatalogSnapshot(value.taskCatalogSnapshot);
+  if (!catalogValidation.valid) {
+    return catalogValidation;
+  }
+
+  const catalog = value.taskCatalogSnapshot as FirstNightTaskCatalogSnapshot;
+  if (
+    value.taskCatalogVersion !== catalog.taskCatalogVersion ||
+    value.taskCatalogSignatureAlgorithm !== catalog.taskCatalogSignatureAlgorithm ||
+    value.taskCatalogSignature !== catalog.taskCatalogSignature
+  ) {
+    return fail("runtime first-night task plan catalog metadata must match taskCatalogSnapshot");
+  }
+
+  const firstNight = input.sourceFacts.firstNight as FirstNightInitializedPayload;
+  const initialKnowledge = input.sourceFacts.initialPrivateKnowledge as InitialPrivateKnowledgeEstablishedPayload;
+  if (
+    value.rosterVersion !== firstNight.rosterVersion ||
+    value.assignmentAlgorithmVersion !== firstNight.assignmentAlgorithmVersion ||
+    value.roleCatalogSignature !== firstNight.roleCatalogSignature ||
+    value.knowledgeModelVersion !== initialKnowledge.knowledgeModelVersion ||
+    value.knowledgeStage !== initialKnowledge.knowledgeStage
+  ) {
+    return fail("runtime first-night task plan metadata must match first-night and private knowledge facts");
+  }
+
+  const parsedPlanTasks = parseScheduledTasks(value.tasks);
+  if (!parsedPlanTasks.valid) {
+    return parsedPlanTasks;
+  }
+
+  const parsedInsertedTasks = parseScheduledTasks(input.insertedTasks ?? []);
+  if (!parsedInsertedTasks.valid) {
+    return parsedInsertedTasks;
+  }
+
+  if (parsedInsertedTasks.tasks.some((task) => task.source.kind !== "PHILOSOPHER_GAINED_ABILITY")) {
+    return fail("runtime inserted task facts must come from FirstNightTaskInserted philosopher gained tasks");
+  }
+
+  const runtimeInsertedTasks = parsedPlanTasks.tasks.filter((task) => task.source.kind === "PHILOSOPHER_GAINED_ABILITY");
+  const baseTasks = parsedPlanTasks.tasks.filter((task) => task.source.kind !== "PHILOSOPHER_GAINED_ABILITY");
+
+  if (runtimeInsertedTasks.length > 1 || parsedInsertedTasks.tasks.length > 1) {
+    return fail("runtime first-night task plan supports at most one philosopher gained inserted task");
+  }
+
+  if (runtimeInsertedTasks.length !== parsedInsertedTasks.tasks.length) {
+    return fail("runtime inserted first-night task must come from a matching FirstNightTaskInserted event");
+  }
+
+  const taskIds = new Set<ScheduledTaskId>();
+  for (const [index, task] of parsedPlanTasks.tasks.entries()) {
+    if (taskIds.has(task.taskId)) {
+      return fail("runtime first-night task ids must be unique");
+    }
+    taskIds.add(task.taskId);
+
+    if (index > 0 && compareFirstNightTaskOrder(parsedPlanTasks.tasks[index - 1] ?? task, task) >= 0) {
+      return fail("runtime first-night tasks must use canonical order");
+    }
+  }
+
+  const baseValidation = validateScheduledTasksAgainstSourceFacts(baseTasks, catalog, input.sourceFacts);
+  if (!baseValidation.valid) {
+    return baseValidation;
+  }
+
+  const [runtimeInsertedTask] = runtimeInsertedTasks;
+  const [expectedInsertedTask] = parsedInsertedTasks.tasks;
+  if (runtimeInsertedTask === undefined || expectedInsertedTask === undefined) {
+    return { valid: true };
+  }
+
+  const insertedValidation = validateRuntimeInsertedTask(runtimeInsertedTask, catalog);
+  if (!insertedValidation.valid) {
+    return insertedValidation;
+  }
+
+  if (!scheduledTasksEqual(runtimeInsertedTask, expectedInsertedTask)) {
+    return fail("runtime inserted first-night task must exactly match the FirstNightTaskInserted event");
+  }
+
+  const philosopherIndex = parsedPlanTasks.tasks.findIndex((task) => task.taskType === "PHILOSOPHER_ACTION");
+  const minionInfoIndex = parsedPlanTasks.tasks.findIndex((task) => task.taskType === "MINION_INFO");
+  const insertedIndex = parsedPlanTasks.tasks.findIndex((task) => task.taskId === runtimeInsertedTask.taskId);
+  if (
+    philosopherIndex < 0 ||
+    minionInfoIndex < 0 ||
+    insertedIndex <= philosopherIndex ||
+    insertedIndex >= minionInfoIndex
+  ) {
+    return fail("runtime inserted first-night task must be after PHILOSOPHER_ACTION and before MINION_INFO");
   }
 
   return { valid: true };

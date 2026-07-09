@@ -740,6 +740,8 @@ describe("GameApplicationService", () => {
         conflictingRoleIds: []
       }
     });
+    // @ts-expect-error Obsolete philosopher not-implemented code must not be a command rejection.
+    rejected(ids.game, "PhilosopherAbilityChoiceNotImplemented", "Obsolete rejection", 8, false);
     // @ts-expect-error Retryable runtime failures must not be persisted as command receipts.
     const failedReceiptResult: CommandReceiptResult = retryableFailure;
     // @ts-expect-error EventStoreAppendFailed must not be persisted as a command receipt.

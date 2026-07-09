@@ -36,6 +36,7 @@ import {
   isFirstNightTaskSettled,
   validateFirstNightTaskProgress,
   validateFirstNightTaskPlanCreatedPayload,
+  validateFirstNightTaskPlanRuntimeState,
   validateScheduledTaskSettledPayloadShape,
 } from "./first-night-task-plan.js";
 import {
@@ -49,6 +50,7 @@ import {
   appendPhilosopherGrantedAbility,
   applyFirstNightTaskInsertionToPlan,
   hasPhilosopherAbilityGrantForSettlement,
+  scheduledTaskFromFirstNightTaskInsertedPayload,
   validateAbilityImpairmentAppliedPayload,
   validateFirstNightTaskInsertedPayload,
   validatePhilosopherAbilityChosenPayload,
@@ -578,6 +580,40 @@ const validateFirstNightTaskPlanCreatedPayloadForState = (
   }
 };
 
+const validateFirstNightTaskPlanRuntimeStateForState = (
+  state: GameState,
+  input: {
+    readonly plan: GameState["firstNightTaskPlan"];
+    readonly insertions: GameState["firstNightTaskInsertions"];
+    readonly errorCode: DomainErrorCode;
+  }
+): void => {
+  if (
+    input.plan === undefined ||
+    state.setup === undefined ||
+    state.roster === undefined ||
+    state.assignment === undefined ||
+    state.firstNight === undefined ||
+    state.initialPrivateKnowledge === undefined
+  ) {
+    throw new DomainError(input.errorCode, "Runtime first-night task plan validation requires setup, roster, assignment, first-night, private knowledge, and task plan");
+  }
+
+  const validation = validateFirstNightTaskPlanRuntimeState(input.plan, {
+    sourceFacts: {
+      setup: state.setup,
+      roster: state.roster.entries,
+      assignment: state.assignment.assignments,
+      firstNight: state.firstNight,
+      initialPrivateKnowledge: state.initialPrivateKnowledge
+    },
+    insertedTasks: input.insertions?.insertions.map(scheduledTaskFromFirstNightTaskInsertedPayload) ?? []
+  });
+  if (!validation.valid) {
+    throw new DomainError(input.errorCode, validation.reason);
+  }
+};
+
 const validateMinionInformationDeliveredPayloadForState = (
   state: GameState,
   payload: MinionInformationDeliveredPayload
@@ -599,6 +635,12 @@ const validateMinionInformationDeliveredPayloadForState = (
   if (state.minionInformation !== undefined) {
     throw new DomainError("DuplicateMinionInformationDelivered", "MinionInformationDelivered cannot be applied twice");
   }
+
+  validateFirstNightTaskPlanRuntimeStateForState(state, {
+    plan: state.firstNightTaskPlan,
+    insertions: state.firstNightTaskInsertions,
+    errorCode: "InvalidMinionInformationDeliveredPayload"
+  });
 
   const validation = validateMinionInformationDeliveredAtSettlement(payload, {
     currentCharacterState: state.currentCharacterState,
@@ -635,6 +677,12 @@ const validateDemonInformationDeliveredPayloadForState = (
     throw new DomainError("DuplicateDemonInformationDelivered", "DemonInformationDelivered cannot be applied twice");
   }
 
+  validateFirstNightTaskPlanRuntimeStateForState(state, {
+    plan: state.firstNightTaskPlan,
+    insertions: state.firstNightTaskInsertions,
+    errorCode: "InvalidDemonInformationDeliveredPayload"
+  });
+
   const validation = validateDemonInformationDeliveredAtSettlement(payload, {
     currentCharacterState: state.currentCharacterState,
     roster: state.roster.entries,
@@ -665,6 +713,12 @@ const validateFirstNightActionOpportunityCreatedPayloadForState = (
       "FirstNightActionOpportunityCreated requires first-night task plan and current character state"
     );
   }
+
+  validateFirstNightTaskPlanRuntimeStateForState(state, {
+    plan: state.firstNightTaskPlan,
+    insertions: state.firstNightTaskInsertions,
+    errorCode: "InvalidFirstNightActionOpportunityCreatedPayload"
+  });
 
   const validation = validateFirstNightActionOpportunityCreatedPayload(payload, {
     taskId: payload.taskId,
@@ -801,6 +855,12 @@ const validateScheduledTaskSettledPayloadForState = (
   if (state.firstNightTaskPlan === undefined) {
     throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled requires first-night task plan");
   }
+
+  validateFirstNightTaskPlanRuntimeStateForState(state, {
+    plan: state.firstNightTaskPlan,
+    insertions: state.firstNightTaskInsertions,
+    errorCode: "InvalidScheduledTaskSettledPayload"
+  });
 
   const shapeValidation = validateScheduledTaskSettledPayloadShape(payload);
   if (!shapeValidation.valid) {
@@ -1284,15 +1344,23 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         throw new DomainError("InvalidFirstNightTaskInsertedPayload", "FirstNightTaskInserted requires first-night task plan");
       }
 
+      const nextFirstNightTaskPlan = {
+        ...applyFirstNightTaskInsertionToPlan(state.firstNightTaskPlan, event.payload),
+        rulesBaselineVersion: state.firstNightTaskPlan.rulesBaselineVersion
+      };
+      const nextFirstNightTaskInsertions = appendFirstNightTaskInsertion(state.firstNightTaskInsertions, event.payload);
+      validateFirstNightTaskPlanRuntimeStateForState(state, {
+        plan: nextFirstNightTaskPlan,
+        insertions: nextFirstNightTaskInsertions,
+        errorCode: "InvalidFirstNightTaskInsertedPayload"
+      });
+
       return {
         ...state,
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
-        firstNightTaskPlan: {
-          ...applyFirstNightTaskInsertionToPlan(state.firstNightTaskPlan, event.payload),
-          rulesBaselineVersion: state.firstNightTaskPlan.rulesBaselineVersion
-        },
-        firstNightTaskInsertions: appendFirstNightTaskInsertion(state.firstNightTaskInsertions, event.payload)
+        firstNightTaskPlan: nextFirstNightTaskPlan,
+        firstNightTaskInsertions: nextFirstNightTaskInsertions
       };
     }
 
