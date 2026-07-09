@@ -15,6 +15,7 @@ import type {
   PhilosopherAbilityGrantedPayload
 } from "./philosopher-ability.js";
 import type {
+  SnakeCharmerDemonSwapAppliedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload
 } from "./snake-charmer.js";
@@ -38,6 +39,7 @@ export type {
   PhilosopherAbilityGrantedPayload
 } from "./philosopher-ability.js";
 export type {
+  SnakeCharmerDemonSwapAppliedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload
 } from "./snake-charmer.js";
@@ -144,6 +146,7 @@ export type DomainEventPayloadByType = {
   readonly AbilityImpairmentApplied: AbilityImpairmentAppliedPayload;
   readonly FirstNightTaskInserted: FirstNightTaskInsertedPayload;
   readonly SnakeCharmerTargetChosen: SnakeCharmerTargetChosenPayload;
+  readonly SnakeCharmerDemonSwapApplied: SnakeCharmerDemonSwapAppliedPayload;
   readonly SnakeCharmerNoSwapResolved: SnakeCharmerNoSwapResolvedPayload;
   readonly MinionInformationDelivered: MinionInformationDeliveredPayload;
   readonly DemonInformationDelivered: DemonInformationDeliveredPayload;

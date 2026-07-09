@@ -97,7 +97,8 @@ export type ScheduledTaskSettlementOutcomeType =
   | "DEMON_INFORMATION_DELIVERED"
   | "PHILOSOPHER_DEFERRED"
   | "PHILOSOPHER_ABILITY_CHOSEN"
-  | "SNAKE_CHARMER_NON_DEMON_NO_SWAP";
+  | "SNAKE_CHARMER_NON_DEMON_NO_SWAP"
+  | "SNAKE_CHARMER_DEMON_HIT_SWAP";
 
 export type ScheduledTaskSettlement = {
   readonly taskId: ScheduledTaskId;
@@ -351,7 +352,8 @@ export const isScheduledTaskSettlementOutcomeType = (value: unknown): value is S
   value === "DEMON_INFORMATION_DELIVERED" ||
   value === "PHILOSOPHER_DEFERRED" ||
   value === "PHILOSOPHER_ABILITY_CHOSEN" ||
-  value === "SNAKE_CHARMER_NON_DEMON_NO_SWAP";
+  value === "SNAKE_CHARMER_NON_DEMON_NO_SWAP" ||
+  value === "SNAKE_CHARMER_DEMON_HIT_SWAP";
 
 export const compareFirstNightTaskOrder = (left: ScheduledTask, right: ScheduledTask): number => {
   const base = left.orderKey.baseOrder - right.orderKey.baseOrder;

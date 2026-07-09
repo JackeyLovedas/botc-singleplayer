@@ -425,6 +425,7 @@ const validateIntegratedPhilosopherAbilityChoiceBatch = (
   for (const event of middle) {
     if (event.eventType === "AbilityImpairmentApplied") {
       if (
+        event.payload.sourceKind !== "PHILOSOPHER_CHOSEN_DUPLICATE" ||
         event.payload.sourcePlayerId !== choice.sourcePlayerId ||
         event.payload.chosenRoleId !== choice.chosenRoleId ||
         event.payload.sourceCharacterStateRevision !== choice.sourceCharacterStateRevision
@@ -520,6 +521,140 @@ const validateIntegratedSnakeCharmerNoSwapBatch = (
   }
 };
 
+const sameCurrentStateEntryPayload = (
+  left: DomainEventEnvelope<"SnakeCharmerDemonSwapApplied">["payload"]["sourceBefore"],
+  right: DomainEventEnvelope<"SnakeCharmerDemonSwapApplied">["payload"]["sourceBefore"]
+): boolean =>
+  left.playerId === right.playerId &&
+  left.seatNumber === right.seatNumber &&
+  left.currentAlignment === right.currentAlignment &&
+  sameRoleSnapshot(left.role, right.role);
+
+const validateIntegratedSnakeCharmerDemonHitBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Snake Charmer Demon-hit batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined
+  ) {
+    reject("Snake Charmer Demon-hit batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  if (state.currentCharacterState === undefined) {
+    throw new DomainError(
+      "InvalidDomainBatchSemantics",
+      "Snake Charmer Demon-hit batch requires FIRST_NIGHT night 1 with task plan and current character state"
+    );
+  }
+  const currentCharacterState = state.currentCharacterState;
+
+  if (events.length !== 4) {
+    reject("Snake Charmer Demon-hit batch must contain exactly four events");
+  }
+
+  assertSharedBatchMetadataForAll(events);
+
+  const [first, second, third, fourth] = events;
+  if (
+    first === undefined ||
+    second === undefined ||
+    third === undefined ||
+    fourth === undefined ||
+    first.eventType !== "SnakeCharmerTargetChosen" ||
+    second.eventType !== "SnakeCharmerDemonSwapApplied" ||
+    third.eventType !== "AbilityImpairmentApplied" ||
+    fourth.eventType !== "ScheduledTaskSettled"
+  ) {
+    reject("Snake Charmer Demon-hit batch must be TargetChosen, DemonSwapApplied, AbilityImpairmentApplied, ScheduledTaskSettled");
+  }
+
+  const targetChosen = first as DomainEventEnvelope<"SnakeCharmerTargetChosen">;
+  const swap = second as DomainEventEnvelope<"SnakeCharmerDemonSwapApplied">;
+  const poison = third as DomainEventEnvelope<"AbilityImpairmentApplied">;
+  const settlement = fourth as DomainEventEnvelope<"ScheduledTaskSettled">;
+
+  const targetChoice = targetChosen.payload;
+  const swapPayload = swap.payload;
+  const sourceBefore = currentCharacterState.entries.find((entry) =>
+    entry.playerId === targetChoice.sourcePlayerId &&
+    entry.seatNumber === targetChoice.sourceSeatNumber
+  );
+  const targetBefore = currentCharacterState.entries.find((entry) =>
+    entry.playerId === targetChoice.targetPlayerId &&
+    entry.seatNumber === targetChoice.targetSeatNumber
+  );
+
+  if (sourceBefore === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Snake Charmer Demon-hit batch target must be the current Demon");
+  }
+
+  if (targetBefore === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Snake Charmer Demon-hit batch target must be the current Demon");
+  }
+
+  const sourceEntry = sourceBefore;
+  const targetEntry = targetBefore;
+
+  if (targetEntry.role.characterType !== "DEMON") {
+    reject("Snake Charmer Demon-hit batch target must be the current Demon");
+  }
+
+  if (
+    swapPayload.taskId !== targetChoice.taskId ||
+    swapPayload.taskType !== targetChoice.taskType ||
+    swapPayload.opportunityId !== targetChoice.opportunityId ||
+    swapPayload.sourcePlayerId !== targetChoice.sourcePlayerId ||
+    swapPayload.sourceSeatNumber !== targetChoice.sourceSeatNumber ||
+    swapPayload.targetPlayerId !== targetChoice.targetPlayerId ||
+    swapPayload.targetSeatNumber !== targetChoice.targetSeatNumber ||
+    swapPayload.previousCharacterStateRevision !== targetChoice.sourceCharacterStateRevision ||
+    swapPayload.previousCharacterStateRevision !== currentCharacterState.revision ||
+    swapPayload.nextCharacterStateRevision !== swapPayload.previousCharacterStateRevision + 1 ||
+    swapPayload.swapReason !== "SNAKE_CHARMER_DEMON_HIT" ||
+    !sameCurrentStateEntryPayload(swapPayload.sourceBefore, sourceEntry) ||
+    !sameCurrentStateEntryPayload(swapPayload.targetBefore, targetEntry) ||
+    swapPayload.sourceAfter.playerId !== sourceEntry.playerId ||
+    swapPayload.sourceAfter.seatNumber !== sourceEntry.seatNumber ||
+    !sameRoleSnapshot(swapPayload.sourceAfter.role, targetEntry.role) ||
+    swapPayload.sourceAfter.currentAlignment !== targetEntry.currentAlignment ||
+    swapPayload.targetAfter.playerId !== targetEntry.playerId ||
+    swapPayload.targetAfter.seatNumber !== targetEntry.seatNumber ||
+    !sameRoleSnapshot(swapPayload.targetAfter.role, sourceEntry.role) ||
+    swapPayload.targetAfter.currentAlignment !== sourceEntry.currentAlignment
+  ) {
+    reject("SnakeCharmerDemonSwapApplied must match the preceding target choice and current Demon swap");
+  }
+
+  if (
+    poison.payload.kind !== "POISONED" ||
+    poison.payload.sourceKind !== "SNAKE_CHARMER_DEMON_HIT" ||
+    poison.payload.sourcePlayerId !== swapPayload.sourcePlayerId ||
+    poison.payload.affectedPlayerId !== swapPayload.targetPlayerId ||
+    poison.payload.affectedSeatNumber !== swapPayload.targetSeatNumber ||
+    !sameRoleSnapshot(poison.payload.affectedRole, swapPayload.targetAfter.role) ||
+    poison.payload.sourceCharacterStateRevision !== swapPayload.nextCharacterStateRevision
+  ) {
+    reject("AbilityImpairmentApplied must poison the old Demon after Snake Charmer swap");
+  }
+
+  if (
+    settlement.payload.taskId !== swapPayload.taskId ||
+    settlement.payload.taskType !== swapPayload.taskType ||
+    settlement.payload.characterStateRevision !== swapPayload.nextCharacterStateRevision ||
+    settlement.payload.outcomeType !== "SNAKE_CHARMER_DEMON_HIT_SWAP"
+  ) {
+    reject("ScheduledTaskSettled must match the Snake Charmer Demon-hit swap");
+  }
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -572,7 +707,17 @@ export const validateDomainBatchSemantics = (
   }
 
   if (first.eventType === "SnakeCharmerTargetChosen") {
-    validateIntegratedSnakeCharmerNoSwapBatch(currentState, batchEvents);
+    if (second?.eventType === "SnakeCharmerNoSwapResolved") {
+      validateIntegratedSnakeCharmerNoSwapBatch(currentState, batchEvents);
+      return;
+    }
+
+    if (second?.eventType === "SnakeCharmerDemonSwapApplied") {
+      validateIntegratedSnakeCharmerDemonHitBatch(currentState, batchEvents);
+      return;
+    }
+
+    reject("Snake Charmer batch must continue with NoSwapResolved or DemonSwapApplied");
     return;
   }
 

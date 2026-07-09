@@ -101,7 +101,7 @@ export type GrantedAbilitySet = {
   readonly abilities: readonly PhilosopherGrantedAbility[];
 };
 
-export type AbilityImpairment = {
+export type PhilosopherDuplicateAbilityImpairment = {
   readonly impairmentId: AbilityImpairmentId;
   readonly kind: "DRUNK";
   readonly sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE";
@@ -113,9 +113,32 @@ export type AbilityImpairment = {
   readonly sourceCharacterStateRevision: number;
 };
 
-export type AbilityImpairmentAppliedPayload = AbilityImpairment & {
+export type SnakeCharmerPoisonedAbilityImpairment = {
+  readonly impairmentId: AbilityImpairmentId;
+  readonly kind: "POISONED";
+  readonly sourceKind: "SNAKE_CHARMER_DEMON_HIT";
+  readonly sourcePlayerId: PlayerId;
+  readonly affectedPlayerId: PlayerId;
+  readonly affectedSeatNumber: SeatNumber;
+  readonly affectedRole: RoleSetupSnapshot;
+  readonly sourceCharacterStateRevision: number;
+};
+
+export type AbilityImpairment =
+  | PhilosopherDuplicateAbilityImpairment
+  | SnakeCharmerPoisonedAbilityImpairment;
+
+export type PhilosopherDuplicateAbilityImpairmentAppliedPayload = PhilosopherDuplicateAbilityImpairment & {
   readonly rulesBaselineVersion: string;
 };
+
+export type SnakeCharmerPoisonedAbilityImpairmentAppliedPayload = SnakeCharmerPoisonedAbilityImpairment & {
+  readonly rulesBaselineVersion: string;
+};
+
+export type AbilityImpairmentAppliedPayload =
+  | PhilosopherDuplicateAbilityImpairmentAppliedPayload
+  | SnakeCharmerPoisonedAbilityImpairmentAppliedPayload;
 
 export type AbilityImpairmentSet = {
   readonly impairments: readonly AbilityImpairment[];
@@ -221,6 +244,17 @@ const ABILITY_IMPAIRMENT_APPLIED_PAYLOAD_KEYS = [
   "sourceKind",
   "sourcePlayerId"
 ] as const;
+const SNAKE_CHARMER_POISONED_IMPAIRMENT_APPLIED_PAYLOAD_KEYS = [
+  "affectedPlayerId",
+  "affectedRole",
+  "affectedSeatNumber",
+  "impairmentId",
+  "kind",
+  "rulesBaselineVersion",
+  "sourceCharacterStateRevision",
+  "sourceKind",
+  "sourcePlayerId"
+] as const;
 const PHILOSOPHER_GAINED_ABILITY_TASK_SOURCE_KEYS = [
   "chosenRole",
   "kind",
@@ -303,17 +337,32 @@ const cloneGrant = (grant: PhilosopherGrantedAbility): PhilosopherGrantedAbility
   grantedAtOpportunityId: grant.grantedAtOpportunityId
 });
 
-const cloneImpairment = (impairment: AbilityImpairment): AbilityImpairment => ({
-  impairmentId: impairment.impairmentId,
-  kind: impairment.kind,
-  sourceKind: impairment.sourceKind,
-  sourcePlayerId: impairment.sourcePlayerId,
-  affectedPlayerId: impairment.affectedPlayerId,
-  affectedSeatNumber: impairment.affectedSeatNumber,
-  affectedRole: cloneRoleSetupSnapshot(impairment.affectedRole),
-  chosenRoleId: impairment.chosenRoleId,
-  sourceCharacterStateRevision: impairment.sourceCharacterStateRevision
-});
+const cloneImpairment = (impairment: AbilityImpairment): AbilityImpairment => {
+  if (impairment.sourceKind === "SNAKE_CHARMER_DEMON_HIT") {
+    return {
+      impairmentId: impairment.impairmentId,
+      kind: impairment.kind,
+      sourceKind: impairment.sourceKind,
+      sourcePlayerId: impairment.sourcePlayerId,
+      affectedPlayerId: impairment.affectedPlayerId,
+      affectedSeatNumber: impairment.affectedSeatNumber,
+      affectedRole: cloneRoleSetupSnapshot(impairment.affectedRole),
+      sourceCharacterStateRevision: impairment.sourceCharacterStateRevision
+    };
+  }
+
+  return {
+    impairmentId: impairment.impairmentId,
+    kind: impairment.kind,
+    sourceKind: impairment.sourceKind,
+    sourcePlayerId: impairment.sourcePlayerId,
+    affectedPlayerId: impairment.affectedPlayerId,
+    affectedSeatNumber: impairment.affectedSeatNumber,
+    affectedRole: cloneRoleSetupSnapshot(impairment.affectedRole),
+    sourceCharacterStateRevision: impairment.sourceCharacterStateRevision,
+    chosenRoleId: impairment.chosenRoleId
+  };
+};
 
 const cloneInsertion = (insertion: FirstNightTaskInsertedPayload): FirstNightTaskInsertedPayload => ({
   rulesBaselineVersion: insertion.rulesBaselineVersion,
@@ -851,7 +900,37 @@ export const validateAbilityImpairmentAppliedPayload = (
     readonly grants: GrantedAbilitySet | undefined;
   }
 ): ValidationResult => {
-  if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, ABILITY_IMPAIRMENT_APPLIED_PAYLOAD_KEYS)) {
+  if (!isPlainRecord(payload)) {
+    return fail("AbilityImpairmentApplied payload must have exact runtime shape");
+  }
+
+  if (payload.sourceKind === "SNAKE_CHARMER_DEMON_HIT") {
+    if (
+      !hasExactEnumerableKeys(payload, SNAKE_CHARMER_POISONED_IMPAIRMENT_APPLIED_PAYLOAD_KEYS) ||
+      typeof payload.rulesBaselineVersion !== "string" ||
+      typeof payload.impairmentId !== "string" ||
+      payload.impairmentId.trim().length === 0 ||
+      payload.kind !== "POISONED" ||
+      typeof payload.sourcePlayerId !== "string" ||
+      payload.sourcePlayerId.trim().length === 0 ||
+      typeof payload.affectedPlayerId !== "string" ||
+      payload.affectedPlayerId.trim().length === 0 ||
+      typeof payload.affectedSeatNumber !== "number" ||
+      !Number.isInteger(payload.affectedSeatNumber) ||
+      payload.affectedSeatNumber < 1 ||
+      payload.affectedSeatNumber > 12 ||
+      !hasExactRoleSetupSnapshotShape(payload.affectedRole) ||
+      typeof payload.sourceCharacterStateRevision !== "number" ||
+      !Number.isInteger(payload.sourceCharacterStateRevision) ||
+      payload.sourceCharacterStateRevision <= 0
+    ) {
+      return fail("AbilityImpairmentApplied poisoned fields must use supported primitive values");
+    }
+
+    return { valid: true };
+  }
+
+  if (!hasExactEnumerableKeys(payload, ABILITY_IMPAIRMENT_APPLIED_PAYLOAD_KEYS)) {
     return fail("AbilityImpairmentApplied payload must have exact runtime shape");
   }
 
@@ -915,7 +994,7 @@ export const validateAbilityImpairmentAppliedPayload = (
     },
     currentCharacterState: input.currentCharacterState
   });
-  const candidate = payload as unknown as AbilityImpairmentAppliedPayload;
+  const candidate = payload as unknown as PhilosopherDuplicateAbilityImpairmentAppliedPayload;
   if (
     expected === undefined ||
     candidate.impairmentId !== expected.impairmentId ||

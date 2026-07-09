@@ -12,6 +12,7 @@ import type {
   MinionInformationDeliveredPayload,
   PlayerRosterCreatedPayload,
   ScheduledTaskSettledPayload,
+  SnakeCharmerDemonSwapAppliedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload,
   SetupGeneratedPayload
@@ -31,7 +32,10 @@ import {
   SUPPORTED_ASSIGNMENT_RANDOM_STREAM,
   validateCharacterAssignments
 } from "./character-assignment.js";
-import { deriveInitialCurrentCharacterStateSet } from "./current-character-state.js";
+import {
+  deriveInitialCurrentCharacterStateSet,
+  validateCurrentCharacterStateSet
+} from "./current-character-state.js";
 import {
   cloneFirstNightTaskProgress,
   getNextUnsettledFirstNightTask,
@@ -60,9 +64,14 @@ import {
 } from "./philosopher-ability.js";
 import {
   appendSnakeCharmerNoSwapResolution,
+  appendSnakeCharmerDemonSwap,
   appendSnakeCharmerTargetChoice,
+  applySnakeCharmerDemonSwapToCurrentCharacterState,
+  hasSnakeCharmerDemonSwapForSettlement,
   hasSnakeCharmerNoSwapResolutionForSettlement,
+  validateSnakeCharmerDemonSwapAppliedPayload,
   validateSnakeCharmerNoSwapResolvedPayload,
+  validateSnakeCharmerPoisonedImpairmentPayload,
   validateSnakeCharmerTargetChosenPayload
 } from "./snake-charmer.js";
 import {
@@ -830,6 +839,15 @@ const validateAbilityImpairmentAppliedPayloadForState = (
   if (!validation.valid) {
     throw new DomainError("InvalidAbilityImpairmentAppliedPayload", validation.reason);
   }
+
+  if (payload.sourceKind === "SNAKE_CHARMER_DEMON_HIT") {
+    const poisonValidation = validateSnakeCharmerPoisonedImpairmentPayload(payload, {
+      swaps: state.snakeCharmerDemonSwaps
+    });
+    if (!poisonValidation.valid) {
+      throw new DomainError("InvalidAbilityImpairmentAppliedPayload", poisonValidation.reason);
+    }
+  }
 };
 
 const validateFirstNightTaskInsertedPayloadForState = (
@@ -917,6 +935,35 @@ const validateSnakeCharmerNoSwapResolvedPayloadForState = (
   });
   if (!validation.valid) {
     throw new DomainError("InvalidSnakeCharmerNoSwapResolvedPayload", validation.reason);
+  }
+};
+
+const validateSnakeCharmerDemonSwapAppliedPayloadForState = (
+  state: GameState,
+  payload: SnakeCharmerDemonSwapAppliedPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidSnakeCharmerDemonSwapAppliedPayload",
+      "SnakeCharmerDemonSwapApplied requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.currentCharacterState === undefined) {
+    throw new DomainError(
+      "InvalidSnakeCharmerDemonSwapAppliedPayload",
+      "SnakeCharmerDemonSwapApplied requires current character state"
+    );
+  }
+
+  const validation = validateSnakeCharmerDemonSwapAppliedPayload(payload, {
+    choices: state.snakeCharmerTargetChoices,
+    swaps: state.snakeCharmerDemonSwaps,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidSnakeCharmerDemonSwapAppliedPayload", validation.reason);
   }
 };
 
@@ -1008,13 +1055,21 @@ const validateScheduledTaskSettledPayloadForState = (
   }
 
   if (payload.taskType === "SNAKE_CHARMER_ACTION") {
-    if (
-      payload.outcomeType !== "SNAKE_CHARMER_NON_DEMON_NO_SWAP" ||
-      !hasSnakeCharmerNoSwapResolutionForSettlement(state.snakeCharmerNoSwapResolutions, payload)
-    ) {
-      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a Snake Charmer no-swap resolution");
+    if (payload.outcomeType === "SNAKE_CHARMER_NON_DEMON_NO_SWAP") {
+      if (!hasSnakeCharmerNoSwapResolutionForSettlement(state.snakeCharmerNoSwapResolutions, payload)) {
+        throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a Snake Charmer no-swap resolution");
+      }
+      return;
     }
-    return;
+
+    if (payload.outcomeType === "SNAKE_CHARMER_DEMON_HIT_SWAP") {
+      if (!hasSnakeCharmerDemonSwapForSettlement(state.snakeCharmerDemonSwaps, payload)) {
+        throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a Snake Charmer Demon swap");
+      }
+      return;
+    }
+
+    throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled uses an unsupported Snake Charmer outcome");
   }
 
   throw new DomainError(
@@ -1055,6 +1110,8 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidFirstNightTaskInsertedPayload";
     case "SnakeCharmerTargetChosen":
       return "InvalidSnakeCharmerTargetChosenPayload";
+    case "SnakeCharmerDemonSwapApplied":
+      return "InvalidSnakeCharmerDemonSwapAppliedPayload";
     case "SnakeCharmerNoSwapResolved":
       return "InvalidSnakeCharmerNoSwapResolvedPayload";
     case "MinionInformationDelivered":
@@ -1476,6 +1533,46 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         snakeCharmerTargetChoices: appendSnakeCharmerTargetChoice(state.snakeCharmerTargetChoices, event.payload)
+      };
+    }
+
+    case "SnakeCharmerDemonSwapApplied": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "SnakeCharmerDemonSwapApplied requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidSnakeCharmerDemonSwapAppliedPayload",
+          "SnakeCharmerDemonSwapApplied payload rules baseline must match game state"
+        );
+      }
+
+      validateSnakeCharmerDemonSwapAppliedPayloadForState(state, event.payload);
+      if (state.currentCharacterState === undefined || state.roster === undefined) {
+        throw new DomainError(
+          "InvalidSnakeCharmerDemonSwapAppliedPayload",
+          "SnakeCharmerDemonSwapApplied requires current character state and roster"
+        );
+      }
+
+      const nextCurrentCharacterState = applySnakeCharmerDemonSwapToCurrentCharacterState(state.currentCharacterState, event.payload);
+      const currentStateValidation = validateCurrentCharacterStateSet({
+        currentCharacterState: nextCurrentCharacterState,
+        roster: state.roster.entries,
+        ...(state.setup === undefined ? {} : { setup: state.setup })
+      });
+      if (!currentStateValidation.valid) {
+        throw new DomainError("InvalidSnakeCharmerDemonSwapAppliedPayload", currentStateValidation.reason);
+      }
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        currentCharacterState: nextCurrentCharacterState,
+        firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
+        snakeCharmerDemonSwaps: appendSnakeCharmerDemonSwap(state.snakeCharmerDemonSwaps, event.payload)
       };
     }
 
