@@ -80,6 +80,11 @@ export type SettleFirstNightSystemTaskCommandPayload = {
   readonly taskId: ScheduledTaskId;
 };
 
+export type SettleEvilTwinSetupCommandPayload = {
+  readonly commandType: "SettleEvilTwinSetup";
+  readonly taskId: ScheduledTaskId;
+};
+
 export type OpenFirstNightRoleActionOpportunityCommandPayload = {
   readonly commandType: "OpenFirstNightRoleActionOpportunity";
   readonly taskId: ScheduledTaskId;
@@ -108,6 +113,7 @@ export type SupportedCommandPayload =
   | InitializeFirstNightCommandPayload
   | PlanFirstNightTasksCommandPayload
   | SettleFirstNightSystemTaskCommandPayload
+  | SettleEvilTwinSetupCommandPayload
   | OpenFirstNightRoleActionOpportunityCommandPayload
   | SubmitPhilosopherActionCommandPayload
   | SubmitSnakeCharmerActionCommandPayload;
@@ -119,6 +125,7 @@ export type AssignCharactersCommand = CommandEnvelope<AssignCharactersCommandPay
 export type InitializeFirstNightCommand = CommandEnvelope<InitializeFirstNightCommandPayload>;
 export type PlanFirstNightTasksCommand = CommandEnvelope<PlanFirstNightTasksCommandPayload>;
 export type SettleFirstNightSystemTaskCommand = CommandEnvelope<SettleFirstNightSystemTaskCommandPayload>;
+export type SettleEvilTwinSetupCommand = CommandEnvelope<SettleEvilTwinSetupCommandPayload>;
 export type OpenFirstNightRoleActionOpportunityCommand = CommandEnvelope<OpenFirstNightRoleActionOpportunityCommandPayload>;
 export type SubmitPhilosopherActionCommand = CommandEnvelope<SubmitPhilosopherActionCommandPayload>;
 export type SubmitSnakeCharmerActionCommand = CommandEnvelope<SubmitSnakeCharmerActionCommandPayload>;
@@ -131,6 +138,7 @@ export type SupportedCommandEnvelope =
   | InitializeFirstNightCommand
   | PlanFirstNightTasksCommand
   | SettleFirstNightSystemTaskCommand
+  | SettleEvilTwinSetupCommand
   | OpenFirstNightRoleActionOpportunityCommand
   | SubmitPhilosopherActionCommand
   | SubmitSnakeCharmerActionCommand;

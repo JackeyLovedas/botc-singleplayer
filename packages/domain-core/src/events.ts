@@ -24,6 +24,10 @@ import type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
 } from "./first-night-team-information.js";
+import type {
+  EvilTwinInformationDeliveredPayload,
+  EvilTwinPairEstablishedPayload
+} from "./evil-twin.js";
 import type { InitialOwnCharacterKnowledgeEntry } from "./initial-private-knowledge.js";
 import type { PlayerRoster } from "./player-roster.js";
 import type { GeneratedSetup, SupportedEdition } from "./setup-types.js";
@@ -49,6 +53,10 @@ export type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
 } from "./first-night-team-information.js";
+export type {
+  EvilTwinInformationDeliveredPayload,
+  EvilTwinPairEstablishedPayload
+} from "./evil-twin.js";
 
 export const SUPPORTED_DOMAIN_EVENT_VERSION = 1;
 export const RULES_BASELINE_VERSION = "Phase One v2.1";
@@ -151,6 +159,8 @@ export type DomainEventPayloadByType = {
   readonly SnakeCharmerDemonSwapApplied: SnakeCharmerDemonSwapAppliedPayload;
   readonly SnakeCharmerNoSwapResolved: SnakeCharmerNoSwapResolvedPayload;
   readonly SnakeCharmerIneffectiveResolved: SnakeCharmerIneffectiveResolvedPayload;
+  readonly EvilTwinPairEstablished: EvilTwinPairEstablishedPayload;
+  readonly EvilTwinInformationDelivered: EvilTwinInformationDeliveredPayload;
   readonly MinionInformationDelivered: MinionInformationDeliveredPayload;
   readonly DemonInformationDelivered: DemonInformationDeliveredPayload;
   readonly ScheduledTaskSettled: ScheduledTaskSettledPayload;

@@ -42,6 +42,8 @@ import type {
   PlanFirstNightTasksCommandPayload,
   SettleFirstNightSystemTaskCommand,
   SettleFirstNightSystemTaskCommandPayload,
+  SettleEvilTwinSetupCommand,
+  SettleEvilTwinSetupCommandPayload,
   FirstNightInitializedPayload,
   FirstNightTaskPlanCreatedPayload,
   InitialPrivateKnowledgeEstablishedPayload,
@@ -216,6 +218,24 @@ export const settleFirstNightSystemTaskCommand = (
   issuedAt: "2026-07-07T00:00:07.000Z",
   correlationId: correlationId("correlation-8"),
   payload: settleFirstNightSystemTaskPayload,
+  ...overrides
+});
+
+export const settleEvilTwinSetupPayload = {
+  commandType: "SettleEvilTwinSetup",
+  taskId: scheduledTaskId("first-night-v1:EVIL_TWIN_SETUP:seat-02")
+} as const satisfies SettleEvilTwinSetupCommandPayload;
+
+export const settleEvilTwinSetupCommand = (
+  overrides: Partial<SettleEvilTwinSetupCommand> = {}
+): SettleEvilTwinSetupCommand => ({
+  commandId: commandId("command-evil-twin-setup"),
+  gameId: ids.game,
+  expectedGameVersion: 10,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:10.000Z",
+  correlationId: correlationId("correlation-evil-twin-setup"),
+  payload: settleEvilTwinSetupPayload,
   ...overrides
 });
 

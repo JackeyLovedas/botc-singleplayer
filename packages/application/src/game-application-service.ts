@@ -31,6 +31,9 @@ import {
   createSnakeCharmerNoSwapScheduledTaskSettlement,
   createSnakeCharmerPoisonedImpairmentPayload,
   createSnakeCharmerTargetChosenPayload,
+  createEvilTwinInformationDeliveredPayload,
+  createEvilTwinPairEstablishedPayload,
+  createEvilTwinPairEstablishedScheduledTaskSettlement,
   evaluateSnakeCharmerEffectiveness,
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
@@ -47,6 +50,7 @@ import {
   validateFirstNightTaskCatalogSnapshot,
   validatePhilosopherGoodCharacterChoice,
   validateSnakeCharmerActionDecision,
+  tryCreateEvilTwinPair,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
 import type {
@@ -59,6 +63,8 @@ import type {
   FirstNightActionOpportunityCreatedPayload,
   AbilityImpairmentAppliedPayload,
   FirstNightTaskInsertedPayload,
+  EvilTwinInformationDeliveredPayload,
+  EvilTwinPairEstablishedPayload,
   GeneratedCharacterAssignment,
   GeneratedSetup,
   GameState,
@@ -895,6 +901,57 @@ export class GameApplicationService {
         return undefined;
       }
 
+      case "SettleEvilTwinSetup": {
+        if (command.actor.kind !== "system" && command.actor.kind !== "storyteller") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "SettleEvilTwinSetup requires an existing game" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `SettleEvilTwinSetup cannot execute during ${state.phase}` };
+        }
+
+        if (state.firstNight === undefined) {
+          return { code: "FirstNightNotInitialized", message: "SettleEvilTwinSetup requires first night initialization" };
+        }
+
+        if (state.initialPrivateKnowledge === undefined) {
+          return {
+            code: "InitialPrivateKnowledgeNotEstablished",
+            message: "SettleEvilTwinSetup requires initial own-character knowledge"
+          };
+        }
+
+        if (state.firstNightTaskPlan === undefined) {
+          return { code: "FirstNightTaskPlanNotCreated", message: "SettleEvilTwinSetup requires a first-night task plan" };
+        }
+
+        if (state.currentCharacterState === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "SettleEvilTwinSetup requires current character state" };
+        }
+
+        const result = tryCreateEvilTwinPair({
+          taskId: command.payload.taskId,
+          firstNightTaskPlan: state.firstNightTaskPlan,
+          firstNightTaskProgress: state.firstNightTaskProgress,
+          currentCharacterState: state.currentCharacterState
+        });
+        if (result.status === "failure") {
+          return {
+            code: result.failureCode,
+            message: result.message
+          };
+        }
+
+        return undefined;
+      }
+
       case "OpenFirstNightRoleActionOpportunity": {
         if (command.actor.kind !== "system" && command.actor.kind !== "storyteller") {
           return {
@@ -1346,6 +1403,7 @@ export class GameApplicationService {
         if (
           command.payload.commandType === "PlanFirstNightTasks" ||
           command.payload.commandType === "SettleFirstNightSystemTask" ||
+          command.payload.commandType === "SettleEvilTwinSetup" ||
           command.payload.commandType === "OpenFirstNightRoleActionOpportunity" ||
           command.payload.commandType === "SubmitPhilosopherAction" ||
           command.payload.commandType === "SubmitSnakeCharmerAction"
@@ -1354,6 +1412,8 @@ export class GameApplicationService {
             ? "first-night-task-planning"
             : command.payload.commandType === "SettleFirstNightSystemTask"
               ? "first-night-system-information"
+              : command.payload.commandType === "SettleEvilTwinSetup"
+                ? "first-night-role-setup"
               : "first-night-role-action";
           return failed(
             command.gameId,
@@ -2413,6 +2473,60 @@ export class GameApplicationService {
         return [snakeCharmerTargetChosenEvent, snakeCharmerNoSwapResolvedEvent, scheduledTaskSettledEvent];
       }
 
+      case "SettleEvilTwinSetup": {
+        if (
+          state === undefined ||
+          state.firstNightTaskPlan === undefined ||
+          state.currentCharacterState === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SettleEvilTwinSetup event creation requires task plan and current character state"
+          );
+        }
+
+        const pairPayload = createEvilTwinPairEstablishedPayload({
+          rulesBaselineVersion: RULES_BASELINE_VERSION,
+          taskId: command.payload.taskId,
+          firstNightTaskPlan: state.firstNightTaskPlan,
+          firstNightTaskProgress: state.firstNightTaskProgress,
+          currentCharacterState: state.currentCharacterState
+        });
+
+        const pairEstablishedEvent: DomainEventEnvelope<"EvilTwinPairEstablished"> = {
+          ...common(firstEventSequence),
+          eventType: "EvilTwinPairEstablished" as const,
+          payload: pairPayload satisfies EvilTwinPairEstablishedPayload
+        };
+
+        const informationPayload = createEvilTwinInformationDeliveredPayload({
+          rulesBaselineVersion: RULES_BASELINE_VERSION,
+          pair: pairPayload
+        });
+
+        const informationDeliveredEvent: DomainEventEnvelope<"EvilTwinInformationDelivered"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "EvilTwinInformationDelivered" as const,
+          payload: informationPayload satisfies EvilTwinInformationDeliveredPayload
+        };
+
+        const settlement = createEvilTwinPairEstablishedScheduledTaskSettlement({
+          taskId: pairPayload.taskId,
+          characterStateRevision: pairPayload.characterStateRevision
+        });
+
+        const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+          ...common(firstEventSequence + 2),
+          eventType: "ScheduledTaskSettled" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            ...settlement
+          } satisfies ScheduledTaskSettledPayload
+        };
+
+        return [pairEstablishedEvent, informationDeliveredEvent, scheduledTaskSettledEvent];
+      }
+
       case "SettleFirstNightSystemTask": {
         if (
           state === undefined ||
@@ -2528,6 +2642,16 @@ export class GameApplicationService {
           "DependencyExecutionFailed",
           error.message,
           "first-night-system-information",
+          batch.expectedGameVersion
+        );
+      }
+
+      if (command.payload.commandType === "SettleEvilTwinSetup") {
+        return failed(
+          batch.gameId,
+          "DependencyExecutionFailed",
+          error.message,
+          "first-night-role-setup",
           batch.expectedGameVersion
         );
       }

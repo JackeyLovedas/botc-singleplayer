@@ -18,6 +18,14 @@ import type {
   SnakeCharmerTargetChosenPayload,
   SetupGeneratedPayload
 } from "./events.js";
+import {
+  appendEvilTwinPair,
+  cloneEvilTwinInformationDeliveredPayload,
+  hasEvilTwinInformationForSettlement,
+  hasEvilTwinPairForSettlement,
+  validateEvilTwinInformationDeliveredForState,
+  validateEvilTwinPairEstablishedPayloadAtSettlement
+} from "./evil-twin.js";
 import type { GameState } from "./game-state.js";
 import type { RoleId } from "./ids.js";
 import { evaluatePhaseTransition } from "./phase-transition-policy.js";
@@ -718,6 +726,68 @@ const validateDemonInformationDeliveredPayloadForState = (
   }
 };
 
+const validateEvilTwinPairEstablishedPayloadForState = (
+  state: GameState,
+  payload: DomainEventEnvelope<"EvilTwinPairEstablished">["payload"]
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidEvilTwinPairEstablishedPayload",
+      "EvilTwinPairEstablished requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined || state.roster === undefined) {
+    throw new DomainError(
+      "InvalidEvilTwinPairEstablishedPayload",
+      "EvilTwinPairEstablished requires first-night task plan, current character state, and roster"
+    );
+  }
+
+  if (state.evilTwinPairs !== undefined) {
+    throw new DomainError("DuplicateEvilTwinPairEstablished", "EvilTwinPairEstablished cannot be applied twice");
+  }
+
+  validateFirstNightTaskPlanRuntimeStateForState(state, {
+    plan: state.firstNightTaskPlan,
+    insertions: state.firstNightTaskInsertions,
+    errorCode: "InvalidEvilTwinPairEstablishedPayload"
+  });
+
+  const validation = validateEvilTwinPairEstablishedPayloadAtSettlement(payload, {
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    roster: state.roster.entries
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidEvilTwinPairEstablishedPayload", validation.reason);
+  }
+};
+
+const validateEvilTwinInformationDeliveredPayloadForState = (
+  state: GameState,
+  payload: DomainEventEnvelope<"EvilTwinInformationDelivered">["payload"]
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidEvilTwinInformationDeliveredPayload",
+      "EvilTwinInformationDelivered requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.evilTwinInformation !== undefined) {
+    throw new DomainError("DuplicateEvilTwinInformationDelivered", "EvilTwinInformationDelivered cannot be applied twice");
+  }
+
+  const validation = validateEvilTwinInformationDeliveredForState(payload, {
+    pairs: state.evilTwinPairs
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidEvilTwinInformationDeliveredPayload", validation.reason);
+  }
+};
+
 const validateFirstNightActionOpportunityCreatedPayloadForState = (
   state: GameState,
   payload: DomainEventEnvelope<"FirstNightActionOpportunityCreated">["payload"]
@@ -1105,9 +1175,20 @@ const validateScheduledTaskSettledPayloadForState = (
     throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled uses an unsupported Snake Charmer outcome");
   }
 
+  if (payload.taskType === "EVIL_TWIN_SETUP") {
+    if (
+      payload.outcomeType !== "EVIL_TWIN_PAIR_ESTABLISHED" ||
+      !hasEvilTwinPairForSettlement(state.evilTwinPairs, payload) ||
+      !hasEvilTwinInformationForSettlement(state.evilTwinInformation, payload)
+    ) {
+      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match delivered Evil Twin pair information");
+    }
+    return;
+  }
+
   throw new DomainError(
     "InvalidScheduledTaskSettledPayload",
-    "ScheduledTaskSettled only supports PHILOSOPHER_ACTION, SNAKE_CHARMER_ACTION, MINION_INFO, and DEMON_INFO in this slice"
+    "ScheduledTaskSettled only supports PHILOSOPHER_ACTION, SNAKE_CHARMER_ACTION, EVIL_TWIN_SETUP, MINION_INFO, and DEMON_INFO in this slice"
   );
 };
 
@@ -1149,6 +1230,10 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidSnakeCharmerNoSwapResolvedPayload";
     case "SnakeCharmerIneffectiveResolved":
       return "InvalidSnakeCharmerIneffectiveResolvedPayload";
+    case "EvilTwinPairEstablished":
+      return "InvalidEvilTwinPairEstablishedPayload";
+    case "EvilTwinInformationDelivered":
+      return "InvalidEvilTwinInformationDeliveredPayload";
     case "MinionInformationDelivered":
       return "InvalidMinionInformationDeliveredPayload";
     case "DemonInformationDelivered":
@@ -1657,6 +1742,50 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
           state.snakeCharmerIneffectiveResolutions,
           event.payload
         )
+      };
+    }
+
+    case "EvilTwinPairEstablished": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "EvilTwinPairEstablished requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidEvilTwinPairEstablishedPayload",
+          "EvilTwinPairEstablished payload rules baseline must match game state"
+        );
+      }
+
+      validateEvilTwinPairEstablishedPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        evilTwinPairs: appendEvilTwinPair(state.evilTwinPairs, event.payload)
+      };
+    }
+
+    case "EvilTwinInformationDelivered": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "EvilTwinInformationDelivered requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidEvilTwinInformationDeliveredPayload",
+          "EvilTwinInformationDelivered payload rules baseline must match game state"
+        );
+      }
+
+      validateEvilTwinInformationDeliveredPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        evilTwinInformation: cloneEvilTwinInformationDeliveredPayload(event.payload)
       };
     }
 

@@ -1,6 +1,10 @@
 import { DomainError } from "./errors.js";
 import type { AnyDomainEventEnvelope, DomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
+import {
+  evilTwinInformationEntriesEqual,
+  expectedEvilTwinInformationEntries
+} from "./evil-twin.js";
 import { isIntegratedTransitionReason } from "./phase-transition-policy.js";
 import { firstNightTaskTypeForPhilosopherChoice } from "./philosopher-ability.js";
 import { evaluateSnakeCharmerEffectiveness } from "./snake-charmer.js";
@@ -751,6 +755,71 @@ const validateIntegratedSnakeCharmerDemonHitBatch = (
   }
 };
 
+const validateIntegratedEvilTwinSetupBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Evil Twin setup batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    reject("Evil Twin setup batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  if (events.length !== 3) {
+    reject("Evil Twin setup batch must contain exactly three events");
+  }
+
+  assertSharedBatchMetadataForAll(events);
+
+  const [first, second, third] = events;
+  if (
+    first === undefined ||
+    second === undefined ||
+    third === undefined ||
+    first.eventType !== "EvilTwinPairEstablished" ||
+    second.eventType !== "EvilTwinInformationDelivered" ||
+    third.eventType !== "ScheduledTaskSettled"
+  ) {
+    reject("Evil Twin setup batch must be PairEstablished, InformationDelivered, ScheduledTaskSettled");
+  }
+
+  const pair = first as DomainEventEnvelope<"EvilTwinPairEstablished">;
+  const information = second as DomainEventEnvelope<"EvilTwinInformationDelivered">;
+  const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
+
+  if (
+    information.payload.taskId !== pair.payload.taskId ||
+    information.payload.taskType !== pair.payload.taskType ||
+    information.payload.pairId !== pair.payload.pairId ||
+    information.payload.characterStateRevision !== pair.payload.characterStateRevision
+  ) {
+    reject("EvilTwinInformationDelivered must match the preceding EvilTwinPairEstablished event");
+  }
+
+  const expectedEntries = expectedEvilTwinInformationEntries(pair.payload);
+  if (!evilTwinInformationEntriesEqual(information.payload.entries, expectedEntries)) {
+    reject("EvilTwinInformationDelivered entries must be mutual and match the established Evil Twin pair");
+  }
+
+  if (
+    settlement.payload.taskId !== pair.payload.taskId ||
+    settlement.payload.taskType !== pair.payload.taskType ||
+    settlement.payload.characterStateRevision !== pair.payload.characterStateRevision ||
+    settlement.payload.outcomeType !== "EVIL_TWIN_PAIR_ESTABLISHED"
+  ) {
+    reject("ScheduledTaskSettled must match the Evil Twin setup pair and information delivery");
+  }
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -819,6 +888,11 @@ export const validateDomainBatchSemantics = (
     }
 
     reject("Snake Charmer batch must continue with NoSwapResolved, DemonSwapApplied, or IneffectiveResolved");
+    return;
+  }
+
+  if (first.eventType === "EvilTwinPairEstablished") {
+    validateIntegratedEvilTwinSetupBatch(currentState, batchEvents);
     return;
   }
 

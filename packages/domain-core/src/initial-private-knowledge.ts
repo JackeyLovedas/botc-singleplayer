@@ -32,7 +32,8 @@ export type InitialOwnCharacterKnowledgeStage = typeof INITIAL_OWN_CHARACTER_KNO
 export type PlayerPrivateKnowledgeStage =
   | typeof INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE
   | "MINION_INFORMATION"
-  | "DEMON_INFORMATION";
+  | "DEMON_INFORMATION"
+  | "EVIL_TWIN_SETUP_INFORMATION";
 
 export type FirstNightSession = {
   readonly initializationVersion: SupportedFirstNightInitializationVersion;
@@ -97,9 +98,11 @@ export type PlayerPrivateKnowledgeView = {
   readonly ownCharacter: RoleSetupSnapshot;
   readonly knownDemon?: KnownPlayerReference;
   readonly knownMinions: readonly KnownPlayerReference[];
+  readonly evilTwinCounterpart?: KnownPlayerReference;
   readonly demonBluffs: readonly RoleSetupSnapshot[];
   readonly ownCharacterKnowledgeModelVersion: SupportedInitialKnowledgeModelVersion;
   readonly teamKnowledgeModelVersion?: string;
+  readonly evilTwinKnowledgeModelVersion?: string;
   readonly deliveredKnowledgeStages: readonly PlayerPrivateKnowledgeStage[];
 };
 
@@ -248,9 +251,11 @@ const PLAYER_PRIVATE_KNOWLEDGE_VIEW_BASE_KEYS = [
 const PLAYER_PRIVATE_KNOWLEDGE_STAGE_ORDER = [
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   "MINION_INFORMATION",
-  "DEMON_INFORMATION"
+  "DEMON_INFORMATION",
+  "EVIL_TWIN_SETUP_INFORMATION"
 ] as const;
 const SUPPORTED_PRIVATE_VIEW_TEAM_KNOWLEDGE_MODEL_VERSION = "first-night-team-knowledge-v1" as const;
+const SUPPORTED_PRIVATE_VIEW_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION = "evil-twin-knowledge-model-v1" as const;
 
 export const hasExactRoleSetupSnapshotShape = (value: unknown): value is RoleSetupSnapshot => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ROLE_SETUP_SNAPSHOT_KEYS)) {
@@ -372,7 +377,9 @@ const knownPlayerReferencesAreSortedAndUnique = (references: readonly KnownPlaye
 
 const validatePrivateKnowledgeViewStages = (
   stages: unknown,
-  hasTeamKnowledgeModelVersion: boolean
+  hasTeamKnowledgeModelVersion: boolean,
+  hasEvilTwinKnowledgeModelVersion: boolean,
+  hasEvilTwinCounterpart: boolean
 ): InitialPrivateKnowledgeValidationResult => {
   if (!Array.isArray(stages) || !isDenseArray(stages)) {
     return fail("PlayerPrivateKnowledgeView deliveredKnowledgeStages must be a dense array");
@@ -411,6 +418,11 @@ const validatePrivateKnowledgeViewStages = (
     return fail("PlayerPrivateKnowledgeView teamKnowledgeModelVersion must be present exactly when team stages are delivered");
   }
 
+  const hasEvilTwinStage = stageValues.some((stage) => stage === "EVIL_TWIN_SETUP_INFORMATION");
+  if (hasEvilTwinKnowledgeModelVersion !== hasEvilTwinStage || hasEvilTwinCounterpart !== hasEvilTwinStage) {
+    return fail("PlayerPrivateKnowledgeView Evil Twin counterpart and model version must be present exactly when Evil Twin information is delivered");
+  }
+
   return { valid: true };
 };
 
@@ -423,7 +435,9 @@ export const validatePlayerPrivateKnowledgeViewShape = (
 
   const optionalKeys = [
     ...(Object.hasOwn(value, "knownDemon") ? ["knownDemon"] : []),
-    ...(Object.hasOwn(value, "teamKnowledgeModelVersion") ? ["teamKnowledgeModelVersion"] : [])
+    ...(Object.hasOwn(value, "teamKnowledgeModelVersion") ? ["teamKnowledgeModelVersion"] : []),
+    ...(Object.hasOwn(value, "evilTwinCounterpart") ? ["evilTwinCounterpart"] : []),
+    ...(Object.hasOwn(value, "evilTwinKnowledgeModelVersion") ? ["evilTwinKnowledgeModelVersion"] : [])
   ];
   if (!hasExactEnumerableKeys(value, [...PLAYER_PRIVATE_KNOWLEDGE_VIEW_BASE_KEYS, ...optionalKeys])) {
     return fail("PlayerPrivateKnowledgeView must have exact runtime shape");
@@ -446,6 +460,18 @@ export const validatePlayerPrivateKnowledgeViewShape = (
 
   if (Object.hasOwn(value, "knownDemon") && !hasExactKnownPlayerReferenceShape(value.knownDemon)) {
     return fail("PlayerPrivateKnowledgeView knownDemon must have exact runtime shape");
+  }
+
+  if (Object.hasOwn(value, "evilTwinCounterpart") && !hasExactKnownPlayerReferenceShape(value.evilTwinCounterpart)) {
+    return fail("PlayerPrivateKnowledgeView evilTwinCounterpart must have exact runtime shape");
+  }
+
+  if (
+    Object.hasOwn(value, "evilTwinCounterpart") &&
+    ((value.evilTwinCounterpart as KnownPlayerReference).playerId === value.viewerPlayerId ||
+      (value.evilTwinCounterpart as KnownPlayerReference).seatNumber === value.viewerSeatNumber)
+  ) {
+    return fail("PlayerPrivateKnowledgeView evilTwinCounterpart must not be the viewer");
   }
 
   if (
@@ -486,7 +512,20 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     return fail("PlayerPrivateKnowledgeView teamKnowledgeModelVersion must be supported");
   }
 
-  return validatePrivateKnowledgeViewStages(value.deliveredKnowledgeStages, hasTeamKnowledgeModelVersion);
+  const hasEvilTwinKnowledgeModelVersion = Object.hasOwn(value, "evilTwinKnowledgeModelVersion");
+  if (
+    hasEvilTwinKnowledgeModelVersion &&
+    value.evilTwinKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION
+  ) {
+    return fail("PlayerPrivateKnowledgeView evilTwinKnowledgeModelVersion must be supported");
+  }
+
+  return validatePrivateKnowledgeViewStages(
+    value.deliveredKnowledgeStages,
+    hasTeamKnowledgeModelVersion,
+    hasEvilTwinKnowledgeModelVersion,
+    Object.hasOwn(value, "evilTwinCounterpart")
+  );
 };
 
 type InitialKnowledgeEntryShapeValidationResult =

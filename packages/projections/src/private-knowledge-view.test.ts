@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEMON_INFORMATION_KNOWLEDGE_STAGE,
+  EVIL_TWIN_SETUP_KNOWLEDGE_STAGE,
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   MINION_INFORMATION_KNOWLEDGE_STAGE,
   RULES_BASELINE_VERSION,
@@ -17,6 +18,9 @@ import {
   correlationId,
   eventId,
   DomainError,
+  createEvilTwinInformationDeliveredPayload,
+  createEvilTwinPairEstablishedPayload,
+  createEvilTwinPairEstablishedScheduledTaskSettlement,
   expectedDemonInformationEntries,
   expectedMinionInformationEntries,
   playerId,
@@ -389,6 +393,69 @@ const stateWithDemonInformation = (): GameState => rebuildGameState([
   demonInformationDeliveredEvent(),
   demonTaskSettledEvent()
 ]);
+
+const stateReadyForEvilTwinSetup = (): GameState => {
+  const state = stateWithDemonInformation();
+  const snakeTask = state.firstNightTaskPlan?.tasks.find((task) => task.taskType === "SNAKE_CHARMER_ACTION");
+  if (snakeTask === undefined || state.firstNightTaskProgress === undefined) {
+    throw new Error("Expected Snake Charmer task and progress");
+  }
+
+  return {
+    ...state,
+    firstNightTaskProgress: {
+      settlements: [
+        ...state.firstNightTaskProgress.settlements,
+        {
+          taskId: snakeTask.taskId,
+          taskType: "SNAKE_CHARMER_ACTION",
+          nightNumber: 1 as const,
+          settlementVersion: "scheduled-task-settlement-v1" as const,
+          outcomeType: "SNAKE_CHARMER_NON_DEMON_NO_SWAP" as const,
+          characterStateRevision: 1
+        }
+      ]
+    }
+  };
+};
+
+const stateWithEvilTwinInformation = (): GameState => {
+  const state = stateReadyForEvilTwinSetup();
+  const task = state.firstNightTaskPlan?.tasks.find((candidate) => candidate.taskType === "EVIL_TWIN_SETUP");
+  if (task === undefined || state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined || state.firstNightTaskProgress === undefined) {
+    throw new Error("Expected Evil Twin setup source facts");
+  }
+
+  const pair = createEvilTwinPairEstablishedPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId: task.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState
+  });
+  const information = createEvilTwinInformationDeliveredPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    pair
+  });
+  const settlement = createEvilTwinPairEstablishedScheduledTaskSettlement({
+    taskId: pair.taskId,
+    characterStateRevision: pair.characterStateRevision
+  });
+
+  return {
+    ...state,
+    evilTwinPairs: {
+      pairs: [pair]
+    },
+    evilTwinInformation: information,
+    firstNightTaskProgress: {
+      settlements: [
+        ...state.firstNightTaskProgress.settlements,
+        settlement
+      ]
+    }
+  };
+};
 
 const requireCurrentEvilTeam = (state: GameState) => {
   if (state.currentCharacterState === undefined || state.roster === undefined) {
@@ -852,6 +919,86 @@ describe("private knowledge projections", () => {
         MINION_INFORMATION_KNOWLEDGE_STAGE
       ]);
     }
+  });
+
+  it("projects settled EVIL_TWIN_SETUP only to the twin pair without leaking roles or assignment", () => {
+    const state = stateWithEvilTwinInformation();
+    const pair = state.evilTwinPairs?.pairs[0];
+    if (pair === undefined) {
+      throw new Error("Expected Evil Twin pair");
+    }
+
+    const evilTwinView = buildPlayerPrivateKnowledgeView(state, pair.evilTwinPlayer.playerId);
+    expect(evilTwinView.evilTwinCounterpart).toStrictEqual(pair.goodTwinPlayer);
+    expect(evilTwinView.evilTwinKnowledgeModelVersion).toBe("evil-twin-knowledge-model-v1");
+    expect(evilTwinView.deliveredKnowledgeStages).toStrictEqual([
+      INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+      MINION_INFORMATION_KNOWLEDGE_STAGE,
+      EVIL_TWIN_SETUP_KNOWLEDGE_STAGE
+    ]);
+
+    const goodTwinView = buildPlayerPrivateKnowledgeView(state, pair.goodTwinPlayer.playerId);
+    expect(goodTwinView.evilTwinCounterpart).toStrictEqual(pair.evilTwinPlayer);
+    expect(goodTwinView.evilTwinKnowledgeModelVersion).toBe("evil-twin-knowledge-model-v1");
+    expect(goodTwinView.deliveredKnowledgeStages).toStrictEqual([
+      INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+      EVIL_TWIN_SETUP_KNOWLEDGE_STAGE
+    ]);
+
+    const evilTwinSerialized = JSON.stringify(evilTwinView);
+    const goodTwinSerialized = JSON.stringify(goodTwinView);
+    expect(evilTwinSerialized).not.toContain(pair.goodTwinRole.roleId);
+    expect(goodTwinSerialized).not.toContain(pair.evilTwinRole.roleId);
+    expect(goodTwinSerialized).not.toContain("assignment");
+    expect(goodTwinSerialized).not.toContain("pairingPolicyVersion");
+    expect(goodTwinSerialized).not.toContain("evilTwinPairs");
+
+    const other = state.roster?.entries.find((entry) =>
+      entry.playerId !== pair.evilTwinPlayer.playerId &&
+      entry.playerId !== pair.goodTwinPlayer.playerId
+    );
+    if (other === undefined) {
+      throw new Error("Expected non-twin player");
+    }
+    const otherView = buildPlayerPrivateKnowledgeView(state, other.playerId);
+    expect("evilTwinCounterpart" in otherView).toBe(false);
+    expect("evilTwinKnowledgeModelVersion" in otherView).toBe(false);
+    expect(otherView.deliveredKnowledgeStages).not.toContain(EVIL_TWIN_SETUP_KNOWLEDGE_STAGE);
+  });
+
+  it("projects Evil Twin knowledge identically to AI without leaking hidden pair facts", () => {
+    const state = stateWithEvilTwinInformation();
+    const pair = state.evilTwinPairs?.pairs[0];
+    if (pair === undefined) {
+      throw new Error("Expected Evil Twin pair");
+    }
+
+    const playerView = buildPlayerPrivateKnowledgeView(state, pair.goodTwinPlayer.playerId);
+    const aiView = buildAiPrivateKnowledgeView(state, pair.goodTwinPlayer.playerId);
+
+    expect(aiView).toStrictEqual(playerView);
+    expect(JSON.stringify(aiView)).not.toContain(pair.evilTwinRole.roleId);
+    expect(JSON.stringify(aiView)).not.toContain("currentCharacterState");
+    expect(JSON.stringify(aiView)).not.toContain("evilTwinPlayer");
+    expect(JSON.stringify(aiView)).not.toContain("goodTwinPlayer");
+  });
+
+  it("refuses Evil Twin projection when the delivered event has not been settled", () => {
+    const state = stateWithEvilTwinInformation();
+    const pair = state.evilTwinPairs?.pairs[0];
+    if (pair === undefined || state.firstNightTaskProgress === undefined) {
+      throw new Error("Expected Evil Twin pair and progress");
+    }
+
+    const tamperedState = {
+      ...state,
+      firstNightTaskProgress: {
+        settlements: state.firstNightTaskProgress.settlements.filter((settlement) => settlement.taskType !== "EVIL_TWIN_SETUP")
+      }
+    } as GameState;
+
+    expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tamperedState, pair.evilTwinPlayer.playerId));
+    expectPrivateKnowledgeUnavailable(() => buildAiPrivateKnowledgeView(tamperedState, pair.goodTwinPlayer.playerId));
   });
 
   it("preserves delivered MINION_INFO from its settlement snapshot after current evil team revision changes", () => {

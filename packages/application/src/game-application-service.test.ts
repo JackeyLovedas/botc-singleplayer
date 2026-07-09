@@ -55,6 +55,7 @@ import {
   scriptSelectedEvent,
   selectScriptCommand,
   settleFirstNightSystemTaskCommand,
+  settleEvilTwinSetupCommand,
   submitPhilosopherActionCommand,
   submitSnakeCharmerActionCommand,
   storytellerActor,
@@ -319,6 +320,53 @@ const reachOpenBaseSnakeCharmerOpportunity = async (
   }
 
   return { baseTask, opportunity, state };
+};
+
+const reachEvilTwinSetupTask = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore
+) => {
+  const { baseTask, opportunity, state } = await reachOpenBaseSnakeCharmerOpportunity(service, commandStore);
+  const target = state.currentCharacterState?.entries.find((entry) =>
+    entry.role.characterType !== "DEMON" &&
+    entry.playerId !== opportunity.sourcePlayerId
+  );
+  if (target === undefined) {
+    throw new Error("Expected base Snake Charmer non-Demon target");
+  }
+
+  const snakeResult = await service.execute(submitSnakeCharmerActionCommand({
+    commandId: commandId("settle-base-snake-before-evil-twin"),
+    expectedGameVersion: 10,
+    payload: {
+      commandType: "SubmitSnakeCharmerAction",
+      taskId: baseTask.taskId,
+      opportunityId: opportunity.opportunityId,
+      decision: {
+        kind: "CHOOSE_PLAYER",
+        targetPlayerId: target.playerId
+      }
+    }
+  }));
+  expectAcceptedResult(snakeResult);
+
+  const beforeEvilTwin = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const evilTwinTask = beforeEvilTwin?.firstNightTaskPlan?.tasks.find((task) => task.taskType === "EVIL_TWIN_SETUP");
+  if (beforeEvilTwin === undefined || evilTwinTask === undefined) {
+    throw new Error("Expected Evil Twin setup task");
+  }
+
+  expect(beforeEvilTwin.firstNightTaskProgress?.settlements.map((settlement) => settlement.taskType)).toStrictEqual([
+    "MINION_INFO",
+    "DEMON_INFO",
+    "SNAKE_CHARMER_ACTION"
+  ]);
+  expect(beforeEvilTwin.firstNightTaskPlan && beforeEvilTwin.firstNightTaskProgress
+    ? beforeEvilTwin.firstNightTaskPlan.tasks[beforeEvilTwin.firstNightTaskProgress.settlements.length]?.taskType
+    : undefined
+  ).toBe("EVIL_TWIN_SETUP");
+
+  return { beforeEvilTwin, evilTwinTask };
 };
 
 const reachOpenDrunkBaseSnakeCharmerOpportunity = async (
@@ -4603,6 +4651,200 @@ describe("GameApplicationService", () => {
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
     expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+  });
+
+  it("settles EVIL_TWIN_SETUP as pair, private information, and scheduled settlement", async () => {
+    const { service, commandStore } = makeService();
+    const { evilTwinTask, beforeEvilTwin } = await reachEvilTwinSetupTask(service, commandStore);
+
+    const result = await service.execute(settleEvilTwinSetupCommand({
+      commandId: commandId("settle-evil-twin-setup"),
+      expectedGameVersion: 11,
+      payload: {
+        commandType: "SettleEvilTwinSetup",
+        taskId: evilTwinTask.taskId
+      }
+    }));
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(12);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "EvilTwinPairEstablished",
+      "EvilTwinInformationDelivered",
+      "ScheduledTaskSettled"
+    ]);
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([20, 21, 22]);
+    expect(state?.evilTwinPairs?.pairs).toHaveLength(1);
+    expect(state?.evilTwinInformation?.entries).toHaveLength(2);
+    expect(state?.evilTwinInformation?.entries.map((entry) => entry.kind)).toStrictEqual([
+      "EVIL_TWIN_PAIR",
+      "EVIL_TWIN_PAIR"
+    ]);
+    expect(state?.firstNightTaskProgress?.settlements.map((settlement) => settlement.taskType)).toStrictEqual([
+      "MINION_INFO",
+      "DEMON_INFO",
+      "SNAKE_CHARMER_ACTION",
+      "EVIL_TWIN_SETUP"
+    ]);
+    expect(state?.firstNightTaskProgress?.settlements.at(-1)).toMatchObject({
+      taskType: "EVIL_TWIN_SETUP",
+      outcomeType: "EVIL_TWIN_PAIR_ESTABLISHED",
+      characterStateRevision: state?.evilTwinPairs?.pairs[0]?.characterStateRevision
+    });
+    expect(state?.firstNightTaskPlan && state.firstNightTaskProgress
+      ? state.firstNightTaskPlan.tasks[state.firstNightTaskProgress.settlements.length]?.taskType
+      : undefined
+    ).toBe("WITCH_ACTION");
+    expect(state?.currentCharacterState).toStrictEqual(beforeEvilTwin.currentCharacterState);
+    expect(state?.assignment).toStrictEqual(beforeEvilTwin.assignment);
+  });
+
+  it("keeps EVIL_TWIN_SETUP pair deterministic and uses the lowest-seat GOOD candidate", async () => {
+    const { service, commandStore } = makeService();
+    const { evilTwinTask, beforeEvilTwin } = await reachEvilTwinSetupTask(service, commandStore);
+    const result = await service.execute(settleEvilTwinSetupCommand({
+      commandId: commandId("settle-deterministic-evil-twin"),
+      expectedGameVersion: 11,
+      payload: {
+        commandType: "SettleEvilTwinSetup",
+        taskId: evilTwinTask.taskId
+      }
+    }));
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const pair = state?.evilTwinPairs?.pairs[0];
+    const source = evilTwinTask.source;
+    if (pair === undefined || source.kind !== "ROLE" || beforeEvilTwin.currentCharacterState === undefined) {
+      throw new Error("Expected Evil Twin pair and source");
+    }
+
+    const expectedGood = beforeEvilTwin.currentCharacterState.entries.find((entry) =>
+      entry.currentAlignment === "GOOD" &&
+      entry.playerId !== source.playerId &&
+      entry.seatNumber !== source.seatNumber
+    );
+    expectAcceptedResult(result);
+    expect(pair.pairingPolicyVersion).toBe("evil-twin-pairing-policy-v1");
+    expect(pair.pairId).toBe(`evil-twin-pair-v1:${evilTwinTask.taskId}:evil-seat-${String(source.seatNumber).padStart(2, "0")}:good-seat-${String(expectedGood?.seatNumber).padStart(2, "0")}`);
+    expect(pair.evilTwinPlayer).toStrictEqual({
+      playerId: source.playerId,
+      seatNumber: source.seatNumber
+    });
+    expect(pair.evilTwinAlignment).toBe("EVIL");
+    expect(pair.goodTwinAlignment).toBe("GOOD");
+    expect(pair.goodTwinPlayer).toStrictEqual({
+      playerId: expectedGood?.playerId,
+      seatNumber: expectedGood?.seatNumber
+    });
+  });
+
+  it("rejects unsupported, early, duplicate, actor-invalid, and stale Evil Twin setup commands with receipts", async () => {
+    const { service, commandStore } = makeService();
+    await reachNoPhilosopherFirstNightTaskPlan(service);
+    const earlyState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const earlyEvilTwinTask = earlyState?.firstNightTaskPlan?.tasks.find((task) => task.taskType === "EVIL_TWIN_SETUP");
+    if (earlyEvilTwinTask === undefined) {
+      throw new Error("Expected planned Evil Twin setup task");
+    }
+
+    const early = settleEvilTwinSetupCommand({
+      commandId: commandId("early-evil-twin-setup"),
+      expectedGameVersion: 7,
+      payload: {
+        commandType: "SettleEvilTwinSetup",
+        taskId: earlyEvilTwinTask.taskId
+      }
+    });
+    await expect(service.execute(early)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ScheduledTaskNotNext",
+      currentGameVersion: 7
+    });
+    expect((await commandStore.findCommandReceipt(early.gameId, early.commandId))?.result.status).toBe("rejected");
+
+    const unsupported = settleEvilTwinSetupCommand({
+      commandId: commandId("unsupported-evil-twin-setup"),
+      expectedGameVersion: 7,
+      payload: {
+        commandType: "SettleEvilTwinSetup",
+        taskId: scheduledTaskId("first-night-v1:MINION_INFO:system")
+      }
+    });
+    await expect(service.execute(unsupported)).resolves.toMatchObject({
+      status: "rejected",
+      code: "UnsupportedRoleSetupTask"
+    });
+
+    const { service: readyService, commandStore: readyStore } = makeService();
+    const { evilTwinTask } = await reachEvilTwinSetupTask(readyService, readyStore);
+    const human = settleEvilTwinSetupCommand({
+      commandId: commandId("human-evil-twin-setup"),
+      expectedGameVersion: 11,
+      actor: humanActor,
+      payload: {
+        commandType: "SettleEvilTwinSetup",
+        taskId: evilTwinTask.taskId
+      }
+    });
+    await expect(readyService.execute(human)).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+
+    await readyService.execute(settleEvilTwinSetupCommand({
+      commandId: commandId("settle-before-duplicate-evil-twin"),
+      expectedGameVersion: 11,
+      payload: {
+        commandType: "SettleEvilTwinSetup",
+        taskId: evilTwinTask.taskId
+      }
+    }));
+    const duplicate = settleEvilTwinSetupCommand({
+      commandId: commandId("duplicate-evil-twin-setup"),
+      expectedGameVersion: 12,
+      payload: {
+        commandType: "SettleEvilTwinSetup",
+        taskId: evilTwinTask.taskId
+      }
+    });
+    const stale = settleEvilTwinSetupCommand({
+      commandId: commandId("stale-evil-twin-setup"),
+      expectedGameVersion: 11,
+      payload: {
+        commandType: "SettleEvilTwinSetup",
+        taskId: evilTwinTask.taskId
+      }
+    });
+    await expect(readyService.execute(duplicate)).resolves.toMatchObject({ status: "rejected", code: "ScheduledTaskAlreadySettled" });
+    await expect(readyService.execute(stale)).resolves.toMatchObject({ status: "rejected", code: "ExpectedGameVersionMismatch" });
+    expect((await readyStore.findCommandReceipt(human.gameId, human.commandId))?.result.status).toBe("rejected");
+    expect((await readyStore.findCommandReceipt(duplicate.gameId, duplicate.commandId))?.result.status).toBe("rejected");
+    expect((await readyStore.findCommandReceipt(stale.gameId, stale.commandId))?.result.status).toBe("rejected");
+  });
+
+  it("keeps SettleEvilTwinSetup metadata generation failures classified independently", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FaultInjectingIdGenerator();
+    const { service } = makeService(commandStore, testSetupGenerator, idGenerator);
+    const { evilTwinTask } = await reachEvilTwinSetupTask(service, commandStore);
+    const command = settleEvilTwinSetupCommand({
+      commandId: commandId("evil-twin-metadata-failure"),
+      expectedGameVersion: 11,
+      payload: {
+        commandType: "SettleEvilTwinSetup",
+        taskId: evilTwinTask.taskId
+      }
+    });
+
+    idGenerator.failNextBatchId = true;
+    const failedResult = await service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 11,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(19);
   });
 
   it("rejects AI and Storyteller actors for CreateGame and SelectScript", async () => {
