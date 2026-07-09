@@ -128,6 +128,51 @@ Registration is evaluated during checks. It may affect apparent role, type, or a
 
 Truth metadata is visible to `storytellerView` and `replayTruth`, not to live players or AI. Player and AI views receive only delivered content and legally known context.
 
+## First-Night Team Information
+
+Slice 2B5 implements only the ordered system information facts for the first night:
+
+- `MinionInformationDelivered` tells each minion the current demon and other minions.
+- `DemonInformationDelivered` tells the demon the current minions and the three setup demon bluffs.
+- Both events use `first-night-team-knowledge-v1`.
+- Both events are valid only when paired with `ScheduledTaskSettled`.
+
+Player and AI private knowledge projections merge these delivered facts only after the matching settlement exists. The projection still excludes complete assignments, teammate role ids, task plan internals, candidate sets, truth metadata, and Storyteller-only reasoning.
+
+### Immutable Delivery-Time Evil Team Snapshot
+
+First-night team information stores the evil team resolved at delivery time as `DeliveredEvilTeamSnapshot`.
+
+The snapshot contains only:
+
+- `characterStateRevision`;
+- demon player reference;
+- minion player references.
+
+It does not contain role ids, assignments, alignment truth metadata, or Storyteller reasoning.
+
+### Delivered Knowledge Is Historical Fact
+
+Delivered `MINION_INFO` and `DEMON_INFO` are historical knowledge facts. Later current-character-state revisions must not rewrite what a player was already told.
+
+If a future role-change slice changes the current demon or current minions after `MINION_INFO`, the old minions still retain the already-delivered `MINION_INFO`. New minions do not inherit it automatically. The same rule applies to `DEMON_INFO`.
+
+### No Projection-Time Evil Team Recalculation
+
+Private knowledge projections validate stored team information against the delivered snapshot and matching settlement, not against latest `CurrentCharacterStateSet`.
+
+Current evil-team resolution remains a settlement-time operation. It is not a projection-time operation for historical delivered knowledge.
+
+### Private Knowledge View Model Attribution
+
+`PlayerPrivateKnowledgeView` attributes knowledge by source model:
+
+- `ownCharacterKnowledgeModelVersion` for own-character bootstrap facts;
+- optional `teamKnowledgeModelVersion` for delivered first-night team facts;
+- `deliveredKnowledgeStages` for the stages actually delivered to that viewer.
+
+This prevents a view containing both own-character and team information from presenting them as one undifferentiated model version.
+
 ## Mathematician Ledger
 
 The Mathematician must use a dedicated `MathematicianAbnormalityLedger`. Do not use a generic counter. The ledger records players whose abilities worked abnormally due to another character's ability, excluding the Mathematician's own abnormal result.

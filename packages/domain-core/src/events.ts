@@ -3,9 +3,20 @@ import type { GamePhase } from "./game-phase.js";
 import type { PhaseTransitionReason } from "./phase-transition-policy.js";
 import type { CharacterAssignmentSet } from "./character-assignment.js";
 import type { FirstNightTaskPlan } from "./first-night-task-plan.js";
+import type { ScheduledTaskSettledPayload } from "./first-night-task-plan.js";
+import type {
+  DemonInformationDeliveredPayload,
+  MinionInformationDeliveredPayload
+} from "./first-night-team-information.js";
 import type { InitialOwnCharacterKnowledgeEntry } from "./initial-private-knowledge.js";
 import type { PlayerRoster } from "./player-roster.js";
 import type { GeneratedSetup, SupportedEdition } from "./setup-types.js";
+
+export type { ScheduledTaskSettledPayload } from "./first-night-task-plan.js";
+export type {
+  DemonInformationDeliveredPayload,
+  MinionInformationDeliveredPayload
+} from "./first-night-team-information.js";
 
 export const SUPPORTED_DOMAIN_EVENT_VERSION = 1;
 export const RULES_BASELINE_VERSION = "Phase One v2.1";
@@ -98,6 +109,9 @@ export type DomainEventPayloadByType = {
   readonly FirstNightInitialized: FirstNightInitializedPayload;
   readonly InitialPrivateKnowledgeEstablished: InitialPrivateKnowledgeEstablishedPayload;
   readonly FirstNightTaskPlanCreated: FirstNightTaskPlanCreatedPayload;
+  readonly MinionInformationDelivered: MinionInformationDeliveredPayload;
+  readonly DemonInformationDelivered: DemonInformationDeliveredPayload;
+  readonly ScheduledTaskSettled: ScheduledTaskSettledPayload;
 };
 
 export type DomainEventType = keyof DomainEventPayloadByType;

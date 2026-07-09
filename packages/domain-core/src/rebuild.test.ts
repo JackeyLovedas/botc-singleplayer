@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   applyDomainEvent,
   DomainError,
+  DEMON_INFORMATION_KNOWLEDGE_STAGE,
+  INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+  MINION_INFORMATION_KNOWLEDGE_STAGE,
   RULES_BASELINE_VERSION,
+  SUPPORTED_DOMAIN_EVENT_VERSION,
+  SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+  SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
+  SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
+  SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROLE_CATALOG_SIGNATURE,
   SUPPORTED_ROLE_CATALOG_SIGNATURE_ALGORITHM,
   SUPPORTED_ROSTER_VERSION,
@@ -11,17 +19,27 @@ import {
   compareRoleSetupSnapshot,
   commandId,
   compareStableId,
+  cloneCurrentCharacterStateSet,
   eventId,
+  expectedDemonInformationEntries,
+  expectedMinionInformationEntries,
   applyDomainEventBatch,
   playerId,
+  resolveCurrentEvilTeam,
   roleId,
+  scheduledTaskId,
   rebuildGameState,
+  validateInitialCurrentCharacterStateSet,
   validateDomainEventStream
 } from "@botc/domain-core";
 import type {
   AnyDomainEventEnvelope,
   CharactersAssignedPayload,
   DomainErrorCode,
+  DomainEventEnvelope,
+  FirstNightInitializedPayload,
+  FirstNightTaskPlanCreatedPayload,
+  InitialPrivateKnowledgeEstablishedPayload,
   RoleCatalogSnapshot,
   RoleId,
   RoleSetupSnapshot,
@@ -42,6 +60,10 @@ import {
   scriptSelectedEvent,
   setupGeneratedEvent,
   setupPhaseTransitionedEvent,
+  testAssignmentGenerator,
+  testFirstNightTaskCatalog,
+  testFirstNightTaskPlanner,
+  testInitialPrivateKnowledgeBuilder,
   testSetupGenerator
 } from "@botc/test-harness";
 
@@ -103,6 +125,289 @@ const firstNightTaskPlanEventStream = (
   ...firstNightEventStream(),
   taskPlanEvent
 ];
+
+const noPhilosopherExactRoleIds = [
+  "clockmaker",
+  "dreamer",
+  "snake_charmer",
+  "mathematician",
+  "flowergirl",
+  "town_crier",
+  "mutant",
+  "sweetheart",
+  "barber",
+  "evil_twin",
+  "witch",
+  "fang_gu"
+].map(roleId);
+
+const noPhilosopherSetupGeneratedEvent = (): DomainEventEnvelope<"SetupGenerated"> =>
+  setupGeneratedEvent({ payload: generatedPayloadFor({ exactRoleIds: noPhilosopherExactRoleIds }) });
+
+const noPhilosopherCharactersAssignedPayload = (): CharactersAssignedPayload => {
+  const setup = noPhilosopherSetupGeneratedEvent().payload;
+  const roster = playerRosterCreatedEvent().payload;
+  const result = testAssignmentGenerator.generate({
+    rootSeed: gameCreatedEvent().payload.rootSeed,
+    rosterVersion: roster.rosterVersion,
+    roster: roster.entries,
+    actualRoles: setup.actualRoles,
+    roleCatalogSignature: setup.roleCatalogSignature
+  });
+  if (result.status === "failure") {
+    throw new Error(result.message);
+  }
+
+  return {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...result.assignment
+  };
+};
+
+const noPhilosopherCharactersAssignedEvent = (): DomainEventEnvelope<"CharactersAssigned"> =>
+  charactersAssignedEvent({ payload: noPhilosopherCharactersAssignedPayload() });
+
+const noPhilosopherFirstNightPayload = (): FirstNightInitializedPayload => ({
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  initializationVersion: SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+  nightNumber: 1,
+  rosterVersion: SUPPORTED_ROSTER_VERSION,
+  assignmentAlgorithmVersion: noPhilosopherCharactersAssignedEvent().payload.assignmentAlgorithmVersion,
+  roleCatalogSignature: noPhilosopherSetupGeneratedEvent().payload.roleCatalogSignature
+});
+
+const noPhilosopherFirstNightInitializedEvent = (): DomainEventEnvelope<"FirstNightInitialized"> =>
+  firstNightInitializedEvent({ payload: noPhilosopherFirstNightPayload() });
+
+const noPhilosopherInitialKnowledgePayload = (): InitialPrivateKnowledgeEstablishedPayload => {
+  const setup = noPhilosopherSetupGeneratedEvent().payload;
+  const assignment = noPhilosopherCharactersAssignedEvent().payload;
+  const result = testInitialPrivateKnowledgeBuilder.generate({
+    roster: playerRosterCreatedEvent().payload.entries,
+    assignment: assignment.assignments,
+    setup
+  });
+  if (result.status === "failure") {
+    throw new Error(result.message);
+  }
+
+  return {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    knowledgeModelVersion: SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
+    knowledgeStage: INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+    rosterVersion: SUPPORTED_ROSTER_VERSION,
+    assignmentAlgorithmVersion: assignment.assignmentAlgorithmVersion,
+    roleCatalogSignature: setup.roleCatalogSignature,
+    entries: result.knowledge.entries
+  };
+};
+
+const noPhilosopherInitialPrivateKnowledgeEstablishedEvent = (): DomainEventEnvelope<"InitialPrivateKnowledgeEstablished"> =>
+  initialPrivateKnowledgeEstablishedEvent({ payload: noPhilosopherInitialKnowledgePayload() });
+
+const noPhilosopherTaskPlanPayload = (): FirstNightTaskPlanCreatedPayload => {
+  const setup = noPhilosopherSetupGeneratedEvent().payload;
+  const assignment = noPhilosopherCharactersAssignedEvent().payload;
+  const firstNight = noPhilosopherFirstNightInitializedEvent().payload;
+  const initialPrivateKnowledge = noPhilosopherInitialPrivateKnowledgeEstablishedEvent().payload;
+  const result = testFirstNightTaskPlanner.generate({
+    nightNumber: 1,
+    setup,
+    roster: playerRosterCreatedEvent().payload.entries,
+    assignment: assignment.assignments,
+    firstNight,
+    initialPrivateKnowledge,
+    taskCatalogSnapshot: testFirstNightTaskCatalog
+  });
+  if (result.status === "failure") {
+    throw new Error(result.message);
+  }
+
+  return {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    nightNumber: 1,
+    taskPlanVersion: SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
+    taskCatalogVersion: result.taskPlan.taskCatalogVersion,
+    taskCatalogSignatureAlgorithm: result.taskPlan.taskCatalogSignatureAlgorithm,
+    taskCatalogSignature: result.taskPlan.taskCatalogSignature,
+    taskCatalogSnapshot: result.taskPlan.taskCatalogSnapshot,
+    rosterVersion: result.taskPlan.rosterVersion,
+    assignmentAlgorithmVersion: result.taskPlan.assignmentAlgorithmVersion,
+    roleCatalogSignature: result.taskPlan.roleCatalogSignature,
+    knowledgeModelVersion: result.taskPlan.knowledgeModelVersion,
+    knowledgeStage: result.taskPlan.knowledgeStage,
+    tasks: result.taskPlan.tasks
+  };
+};
+
+const noPhilosopherFirstNightTaskPlanCreatedEvent = (): DomainEventEnvelope<"FirstNightTaskPlanCreated"> =>
+  firstNightTaskPlanCreatedEvent({ payload: noPhilosopherTaskPlanPayload() });
+
+const noPhilosopherTaskPlanEventStream = (): readonly AnyDomainEventEnvelope[] => [
+  gameCreatedEvent(),
+  scriptSelectedEvent(),
+  phaseTransitionedEvent(),
+  noPhilosopherSetupGeneratedEvent(),
+  setupPhaseTransitionedEvent(),
+  playerRosterCreatedEvent(),
+  noPhilosopherCharactersAssignedEvent(),
+  charactersAssignedPhaseTransitionedEvent(),
+  noPhilosopherFirstNightInitializedEvent(),
+  noPhilosopherInitialPrivateKnowledgeEstablishedEvent(),
+  noPhilosopherFirstNightTaskPlanCreatedEvent()
+];
+
+const minionInformationDeliveredEvent = (
+  overrides: Partial<DomainEventEnvelope<"MinionInformationDelivered">> = {}
+): DomainEventEnvelope<"MinionInformationDelivered"> => {
+  const state = rebuildGameState(noPhilosopherTaskPlanEventStream());
+  if (state.currentCharacterState === undefined || state.roster === undefined || state.setup === undefined) {
+    throw new Error("Expected first-night system information source facts");
+  }
+  const team = resolveCurrentEvilTeam({
+    currentCharacterState: state.currentCharacterState,
+    roster: state.roster.entries
+  });
+  if (team.status === "failure") {
+    throw new Error(team.message);
+  }
+
+  return {
+    category: "domain",
+    eventId: eventId("event-12"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 12,
+    batchId: batchId("batch-8"),
+    gameVersion: 8,
+    eventType: "MinionInformationDelivered",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-8"),
+    createdAt: "2026-07-07T00:00:07.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      nightNumber: 1,
+      taskId: scheduledTaskId("first-night-v1:MINION_INFO:system"),
+      taskType: "MINION_INFO",
+      knowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
+      knowledgeStage: MINION_INFORMATION_KNOWLEDGE_STAGE,
+      characterStateRevision: team.team.characterStateRevision,
+      resolvedEvilTeam: team.team,
+      rosterVersion: state.roster.rosterVersion,
+      roleCatalogSignature: state.setup.roleCatalogSignature,
+      entries: expectedMinionInformationEntries(team.team.demon, team.team.minions)
+    },
+    ...overrides
+  };
+};
+
+const minionTaskSettledEvent = (
+  overrides: Partial<DomainEventEnvelope<"ScheduledTaskSettled">> = {}
+): DomainEventEnvelope<"ScheduledTaskSettled"> => ({
+  category: "domain",
+  eventId: eventId("event-13"),
+  gameId: gameCreatedEvent().gameId,
+  eventSequence: 13,
+  batchId: batchId("batch-8"),
+  gameVersion: 8,
+  eventType: "ScheduledTaskSettled",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-8"),
+  createdAt: "2026-07-07T00:00:07.000Z",
+  correlationId: gameCreatedEvent().correlationId,
+  causationId: gameCreatedEvent().causationId,
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    nightNumber: 1,
+    taskId: scheduledTaskId("first-night-v1:MINION_INFO:system"),
+    taskType: "MINION_INFO",
+    settlementVersion: "scheduled-task-settlement-v1",
+    outcomeType: "MINION_INFORMATION_DELIVERED",
+    characterStateRevision: 1
+  },
+  ...overrides
+});
+
+const demonInformationDeliveredEvent = (
+  overrides: Partial<DomainEventEnvelope<"DemonInformationDelivered">> = {}
+): DomainEventEnvelope<"DemonInformationDelivered"> => {
+  const state = rebuildGameState([
+    ...noPhilosopherTaskPlanEventStream(),
+    minionInformationDeliveredEvent(),
+    minionTaskSettledEvent()
+  ]);
+  if (state.currentCharacterState === undefined || state.roster === undefined || state.setup === undefined) {
+    throw new Error("Expected first-night system information source facts");
+  }
+  const team = resolveCurrentEvilTeam({
+    currentCharacterState: state.currentCharacterState,
+    roster: state.roster.entries
+  });
+  if (team.status === "failure") {
+    throw new Error(team.message);
+  }
+
+  return {
+    category: "domain",
+    eventId: eventId("event-14"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 14,
+    batchId: batchId("batch-9"),
+    gameVersion: 9,
+    eventType: "DemonInformationDelivered",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-9"),
+    createdAt: "2026-07-07T00:00:08.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      nightNumber: 1,
+      taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system"),
+      taskType: "DEMON_INFO",
+      knowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
+      knowledgeStage: DEMON_INFORMATION_KNOWLEDGE_STAGE,
+      characterStateRevision: team.team.characterStateRevision,
+      resolvedEvilTeam: team.team,
+      rosterVersion: state.roster.rosterVersion,
+      roleCatalogSignature: state.setup.roleCatalogSignature,
+      entries: expectedDemonInformationEntries(team.team.demon, team.team.minions, state.setup.demonBluffs)
+    },
+    ...overrides
+  };
+};
+
+const demonTaskSettledEvent = (
+  overrides: Partial<DomainEventEnvelope<"ScheduledTaskSettled">> = {}
+): DomainEventEnvelope<"ScheduledTaskSettled"> => ({
+  category: "domain",
+  eventId: eventId("event-15"),
+  gameId: gameCreatedEvent().gameId,
+  eventSequence: 15,
+  batchId: batchId("batch-9"),
+  gameVersion: 9,
+  eventType: "ScheduledTaskSettled",
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-9"),
+  createdAt: "2026-07-07T00:00:08.000Z",
+  correlationId: gameCreatedEvent().correlationId,
+  causationId: gameCreatedEvent().causationId,
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    nightNumber: 1,
+    taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system"),
+    taskType: "DEMON_INFO",
+    settlementVersion: "scheduled-task-settlement-v1",
+    outcomeType: "DEMON_INFORMATION_DELIVERED",
+    characterStateRevision: 1
+  },
+  ...overrides
+});
 
 const expectInitialKnowledgePayloadRejected = (payload: unknown): DomainError =>
   captureDomainError(
@@ -1293,6 +1598,116 @@ describe("domain event rebuild", () => {
     expect(state.assignment?.assignments.map((assignment) => assignment.seatNumber)).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   });
 
+  it("derives initial current character state from CharactersAssigned without changing the event payload", () => {
+    const state = rebuildGameState(assignmentEventStream());
+
+    expect(state.currentCharacterState?.revision).toBe(1);
+    expect(state.currentCharacterState?.entries).toHaveLength(12);
+    expect(state.currentCharacterState?.entries.map((entry) => entry.seatNumber)).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(state.currentCharacterState?.entries.map((entry) => entry.currentAlignment)).toStrictEqual(
+      state.assignment?.assignments.map((assignment) => assignment.role.defaultAlignment)
+    );
+    expect(state.currentCharacterState?.entries.map((entry) => entry.role)).toStrictEqual(
+      state.assignment?.assignments.map((assignment) => assignment.role)
+    );
+    expect(Object.keys(charactersAssignedEvent().payload).sort()).not.toContain("currentCharacterState");
+  });
+
+  it("validates initial current character state against roster, setup, and assignment facts", () => {
+    const state = rebuildGameState(assignmentEventStream());
+
+    if (state.currentCharacterState === undefined || state.roster === undefined || state.assignment === undefined || state.setup === undefined) {
+      throw new Error("Expected current character state source facts");
+    }
+
+    expect(validateInitialCurrentCharacterStateSet({
+      currentCharacterState: state.currentCharacterState,
+      roster: state.roster.entries,
+      assignment: state.assignment.assignments,
+      setup: state.setup
+    })).toStrictEqual({ valid: true });
+  });
+
+  it("clones current character state without mutating assignment snapshots", () => {
+    const state = rebuildGameState(assignmentEventStream());
+    if (state.currentCharacterState === undefined || state.assignment === undefined) {
+      throw new Error("Expected current character state and assignment");
+    }
+
+    const clone = cloneCurrentCharacterStateSet(state.currentCharacterState);
+    const firstClonedRole = clone.entries[0]?.role;
+    if (firstClonedRole === undefined) {
+      throw new Error("Expected cloned current character state entry");
+    }
+
+    (firstClonedRole.setupModifier as { townsfolkDelta: number }).townsfolkDelta = 99;
+
+    expect(state.currentCharacterState.entries[0]?.role.setupModifier.townsfolkDelta).not.toBe(99);
+    expect(state.assignment.assignments[0]?.role.setupModifier.townsfolkDelta).not.toBe(99);
+  });
+
+  it("resolves the current evil team from current character state", () => {
+    const state = rebuildGameState(assignmentEventStream());
+    if (state.currentCharacterState === undefined || state.roster === undefined) {
+      throw new Error("Expected current character state and roster");
+    }
+
+    const result = resolveCurrentEvilTeam({
+      currentCharacterState: state.currentCharacterState,
+      roster: state.roster.entries
+    });
+
+    expect(result.status).toBe("success");
+    if (result.status === "failure") {
+      throw new Error(result.message);
+    }
+    expect(result.team.characterStateRevision).toBe(1);
+    expect(result.team.demon.playerId).toBe(state.currentCharacterState.entries.find((entry) => entry.role.characterType === "DEMON")?.playerId);
+    expect(result.team.minions).toHaveLength(2);
+    expect(result.team.minions.map((minion) => minion.seatNumber)).toStrictEqual(
+      [...result.team.minions].map((minion) => minion.seatNumber).sort((left, right) => left - right)
+    );
+  });
+
+  it("resolves a simulated current role swap from current character state instead of assignment", () => {
+    const state = rebuildGameState(assignmentEventStream());
+    if (state.currentCharacterState === undefined || state.roster === undefined) {
+      throw new Error("Expected current character state and roster");
+    }
+
+    const originalDemon = state.currentCharacterState.entries.find((entry) => entry.role.characterType === "DEMON");
+    const originalMinion = state.currentCharacterState.entries.find((entry) => entry.role.characterType === "MINION");
+    if (originalDemon === undefined || originalMinion === undefined) {
+      throw new Error("Expected demon and minion current character states");
+    }
+
+    const swapped = {
+      revision: 2,
+      entries: state.currentCharacterState.entries.map((entry) => {
+        if (entry.playerId === originalDemon.playerId) {
+          return { ...entry, role: originalMinion.role, currentAlignment: originalMinion.role.defaultAlignment };
+        }
+        if (entry.playerId === originalMinion.playerId) {
+          return { ...entry, role: originalDemon.role, currentAlignment: originalDemon.role.defaultAlignment };
+        }
+        return entry;
+      })
+    };
+
+    const result = resolveCurrentEvilTeam({
+      currentCharacterState: swapped,
+      roster: state.roster.entries
+    });
+
+    expect(result.status).toBe("success");
+    if (result.status === "failure") {
+      throw new Error(result.message);
+    }
+    expect(result.team.characterStateRevision).toBe(2);
+    expect(result.team.demon.playerId).toBe(originalMinion.playerId);
+    expect(result.team.demon.playerId).not.toBe(originalDemon.playerId);
+  });
+
   it("rebuilds first night initialization and initial private knowledge while staying in FIRST_NIGHT", () => {
     const state = rebuildGameState(firstNightEventStream());
 
@@ -2069,6 +2484,213 @@ describe("domain event rebuild", () => {
       ...payload,
       tasks: payload.tasks.map((task) => task.taskId === firstTask.taskId ? { ...task, finalLegalTargets: [] } : task)
     });
+  });
+
+  it("rebuilds settled MINION_INFO and DEMON_INFO as ordered two-event batches", () => {
+    const state = rebuildGameState([
+      ...noPhilosopherTaskPlanEventStream(),
+      minionInformationDeliveredEvent(),
+      minionTaskSettledEvent(),
+      demonInformationDeliveredEvent(),
+      demonTaskSettledEvent()
+    ]);
+
+    expect(state.phase).toBe("FIRST_NIGHT");
+    expect(state.minionInformation?.entries).toHaveLength(4);
+    expect(state.demonInformation?.entries).toHaveLength(2);
+    expect(state.firstNightTaskProgress?.settlements.map((settlement) => settlement.taskType)).toStrictEqual([
+      "MINION_INFO",
+      "DEMON_INFO"
+    ]);
+    expect(state.gameVersion).toBe(9);
+    expect(state.lastEventSequence).toBe(15);
+  });
+
+  it("rejects naked team information and naked scheduled task settlement events", () => {
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent()
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionTaskSettledEvent({ eventId: eventId("event-12"), eventSequence: 12 })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects reversed and mismatched system information settlement batches", () => {
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionTaskSettledEvent({ eventId: eventId("event-12"), eventSequence: 12 }),
+        minionInformationDeliveredEvent({ eventId: eventId("event-13"), eventSequence: 13 })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent(),
+        minionTaskSettledEvent({
+          payload: {
+            ...minionTaskSettledEvent().payload,
+            taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
+          }
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects team information events whose delivered evil team snapshot is missing or revision-mismatched", () => {
+    const payloadWithoutSnapshot = { ...minionInformationDeliveredEvent().payload } as Record<string, unknown>;
+    delete payloadWithoutSnapshot.resolvedEvilTeam;
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent({
+          payload: payloadWithoutSnapshot as never
+        }),
+        minionTaskSettledEvent()
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent({
+          payload: {
+            ...minionInformationDeliveredEvent().payload,
+            resolvedEvilTeam: {
+              ...minionInformationDeliveredEvent().payload.resolvedEvilTeam,
+              characterStateRevision: 2
+            }
+          }
+        }),
+        minionTaskSettledEvent()
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent(),
+        minionTaskSettledEvent({
+          payload: {
+            ...minionTaskSettledEvent().payload,
+            characterStateRevision: 2
+          }
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects delivered evil team snapshots with unknown, duplicate, or unsorted player references", () => {
+    const basePayload = minionInformationDeliveredEvent().payload;
+    const [firstMinion, secondMinion] = basePayload.resolvedEvilTeam.minions;
+    if (firstMinion === undefined || secondMinion === undefined) {
+      throw new Error("Expected two minions");
+    }
+
+    const invalidSnapshots = [
+      {
+        ...basePayload.resolvedEvilTeam,
+        demon: {
+          playerId: playerId("missing-player"),
+          seatNumber: basePayload.resolvedEvilTeam.demon.seatNumber
+        }
+      },
+      {
+        ...basePayload.resolvedEvilTeam,
+        minions: [firstMinion, firstMinion]
+      },
+      {
+        ...basePayload.resolvedEvilTeam,
+        minions: [secondMinion, firstMinion]
+      }
+    ];
+
+    for (const resolvedEvilTeam of invalidSnapshots) {
+      expectDomainCode(
+        () => rebuildGameState([
+          ...noPhilosopherTaskPlanEventStream(),
+          minionInformationDeliveredEvent({
+            payload: {
+              ...basePayload,
+              resolvedEvilTeam
+            }
+          }),
+          minionTaskSettledEvent()
+        ]),
+        "InvalidMinionInformationDeliveredPayload"
+      );
+    }
+  });
+
+  it("rejects sparse, noncanonical, and duplicate system information settlement facts", () => {
+    const sparseEntries = new Array(minionInformationDeliveredEvent().payload.entries.length) as unknown[];
+    sparseEntries[0] = minionInformationDeliveredEvent().payload.entries[0];
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent({
+          payload: {
+            ...minionInformationDeliveredEvent().payload,
+            entries: sparseEntries as never
+          }
+        }),
+        minionTaskSettledEvent()
+      ]),
+      "InvalidMinionInformationDeliveredPayload"
+    );
+
+    const reversedEntries = [...minionInformationDeliveredEvent().payload.entries].reverse();
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent({
+          payload: {
+            ...minionInformationDeliveredEvent().payload,
+            entries: reversedEntries
+          }
+        }),
+        minionTaskSettledEvent()
+      ]),
+      "InvalidMinionInformationDeliveredPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent(),
+        minionTaskSettledEvent(),
+        minionInformationDeliveredEvent({
+          eventId: eventId("event-14"),
+          eventSequence: 14,
+          batchId: batchId("batch-9"),
+          gameVersion: 9,
+          commandId: commandId("command-9")
+        }),
+        minionTaskSettledEvent({
+          eventId: eventId("event-15"),
+          eventSequence: 15,
+          batchId: batchId("batch-9"),
+          gameVersion: 9,
+          commandId: commandId("command-9")
+        })
+      ]),
+      "DuplicateMinionInformationDelivered"
+    );
   });
 
   it("does not allow AuditEvent streams at the type boundary", () => {

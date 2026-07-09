@@ -80,6 +80,29 @@ export type ScheduledTask = {
   readonly settlementPolicy: ScheduledTaskSettlementPolicy;
 };
 
+export const SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION = "scheduled-task-settlement-v1" as const;
+
+export type ScheduledTaskSettlementOutcomeType =
+  | "MINION_INFORMATION_DELIVERED"
+  | "DEMON_INFORMATION_DELIVERED";
+
+export type ScheduledTaskSettlement = {
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: FirstNightTaskType;
+  readonly nightNumber: 1;
+  readonly settlementVersion: typeof SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION;
+  readonly outcomeType: ScheduledTaskSettlementOutcomeType;
+  readonly characterStateRevision: number;
+};
+
+export type ScheduledTaskSettledPayload = ScheduledTaskSettlement & {
+  readonly rulesBaselineVersion: string;
+};
+
+export type FirstNightTaskProgress = {
+  readonly settlements: readonly ScheduledTaskSettlement[];
+};
+
 export type RoleFirstNightTaskDefinition = {
   readonly taskType: FirstNightTaskType;
   readonly taskClass: ScheduledTaskClass;
@@ -257,6 +280,24 @@ const SCHEDULED_TASK_KEYS = ["taskId", "taskType", "taskClass", "orderKey", "sou
 const TASK_ORDER_KEY_KEYS = ["baseOrder", "insertionOrder"] as const;
 const ROLE_TASK_SOURCE_KEYS = ["kind", "playerId", "seatNumber", "role"] as const;
 const SYSTEM_TASK_SOURCE_KEYS = ["kind", "systemTaskType"] as const;
+const SCHEDULED_TASK_SETTLEMENT_KEYS = [
+  "characterStateRevision",
+  "nightNumber",
+  "outcomeType",
+  "settlementVersion",
+  "taskId",
+  "taskType"
+] as const;
+const SCHEDULED_TASK_SETTLED_PAYLOAD_KEYS = [
+  "characterStateRevision",
+  "nightNumber",
+  "outcomeType",
+  "rulesBaselineVersion",
+  "settlementVersion",
+  "taskId",
+  "taskType"
+] as const;
+const FIRST_NIGHT_TASK_PROGRESS_KEYS = ["settlements"] as const;
 
 const fail = (reason: string): ValidationFailure => ({ valid: false, reason });
 
@@ -281,6 +322,9 @@ const isScheduledTaskClass = (value: unknown): value is ScheduledTaskClass =>
 
 const isSettlementPolicy = (value: unknown): value is ScheduledTaskSettlementPolicy =>
   value === "REEVALUATE_SOURCE_AT_SETTLEMENT" || value === "RESOLVE_CURRENT_EVIL_TEAM_AT_SETTLEMENT";
+
+export const isScheduledTaskSettlementOutcomeType = (value: unknown): value is ScheduledTaskSettlementOutcomeType =>
+  value === "MINION_INFORMATION_DELIVERED" || value === "DEMON_INFORMATION_DELIVERED";
 
 export const compareFirstNightTaskOrder = (left: ScheduledTask, right: ScheduledTask): number => {
   const base = left.orderKey.baseOrder - right.orderKey.baseOrder;
@@ -618,6 +662,144 @@ export const parseScheduledTaskShape = (value: unknown): ScheduledTask | Validat
     status: value.status,
     settlementPolicy: value.settlementPolicy
   };
+};
+
+const parseScheduledTaskSettlementShape = (value: unknown): ScheduledTaskSettlement | ValidationFailure => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, SCHEDULED_TASK_SETTLEMENT_KEYS)) {
+    return fail("ScheduledTaskSettlement must have exact runtime shape");
+  }
+
+  if (
+    typeof value.taskId !== "string" ||
+    value.taskId.trim().length === 0 ||
+    !isFirstNightTaskType(value.taskType) ||
+    value.nightNumber !== 1 ||
+    value.settlementVersion !== SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION ||
+    !isScheduledTaskSettlementOutcomeType(value.outcomeType) ||
+    typeof value.characterStateRevision !== "number" ||
+    !Number.isInteger(value.characterStateRevision) ||
+    value.characterStateRevision <= 0
+  ) {
+    return fail("ScheduledTaskSettlement fields must use supported primitive values");
+  }
+
+  return {
+    taskId: scheduledTaskId(value.taskId),
+    taskType: value.taskType,
+    nightNumber: value.nightNumber,
+    settlementVersion: value.settlementVersion,
+    outcomeType: value.outcomeType,
+    characterStateRevision: value.characterStateRevision
+  };
+};
+
+export const validateScheduledTaskSettledPayloadShape = (value: unknown): FirstNightTaskPlanValidationResult => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, SCHEDULED_TASK_SETTLED_PAYLOAD_KEYS)) {
+    return fail("ScheduledTaskSettled payload must have exact runtime shape");
+  }
+
+  const parsed = parseScheduledTaskSettlementShape({
+    characterStateRevision: value.characterStateRevision,
+    nightNumber: value.nightNumber,
+    outcomeType: value.outcomeType,
+    settlementVersion: value.settlementVersion,
+    taskId: value.taskId,
+    taskType: value.taskType
+  });
+  if ("valid" in parsed) {
+    return parsed;
+  }
+
+  if (typeof value.rulesBaselineVersion !== "string") {
+    return fail("ScheduledTaskSettled rulesBaselineVersion must be a string");
+  }
+
+  return { valid: true };
+};
+
+const parseFirstNightTaskProgressShape = (value: unknown): { readonly valid: true; readonly progress: FirstNightTaskProgress } | ValidationFailure => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, FIRST_NIGHT_TASK_PROGRESS_KEYS)) {
+    return fail("FirstNightTaskProgress must have exact runtime shape");
+  }
+
+  if (!Array.isArray(value.settlements) || !isDenseArray(value.settlements)) {
+    return fail("FirstNightTaskProgress settlements must be a dense array");
+  }
+
+  const settlements: ScheduledTaskSettlement[] = [];
+  for (const settlement of value.settlements) {
+    const parsed = parseScheduledTaskSettlementShape(settlement);
+    if ("valid" in parsed) {
+      return parsed;
+    }
+    settlements.push(parsed);
+  }
+
+  return { valid: true, progress: { settlements } };
+};
+
+export const cloneScheduledTaskSettlement = (settlement: ScheduledTaskSettlement): ScheduledTaskSettlement => ({
+  taskId: settlement.taskId,
+  taskType: settlement.taskType,
+  nightNumber: settlement.nightNumber,
+  settlementVersion: settlement.settlementVersion,
+  outcomeType: settlement.outcomeType,
+  characterStateRevision: settlement.characterStateRevision
+});
+
+export const cloneFirstNightTaskProgress = (progress: FirstNightTaskProgress | undefined): FirstNightTaskProgress => ({
+  settlements: progress?.settlements.map(cloneScheduledTaskSettlement) ?? []
+});
+
+export const isFirstNightTaskSettled = (
+  progress: FirstNightTaskProgress | undefined,
+  taskIdValue: ScheduledTaskId
+): boolean => progress?.settlements.some((settlement) => settlement.taskId === taskIdValue) ?? false;
+
+export const getNextUnsettledFirstNightTask = (
+  plan: Pick<FirstNightTaskPlan, "tasks">,
+  progress: FirstNightTaskProgress | undefined
+): ScheduledTask | undefined => {
+  const settledTaskIds = new Set(progress?.settlements.map((settlement) => settlement.taskId) ?? []);
+  return plan.tasks.find((task) => !settledTaskIds.has(task.taskId));
+};
+
+export const validateFirstNightTaskProgress = (
+  plan: Pick<FirstNightTaskPlan, "tasks">,
+  value: unknown
+): FirstNightTaskPlanValidationResult => {
+  const parsedProgress = parseFirstNightTaskProgressShape(value);
+  if (!parsedProgress.valid) {
+    return parsedProgress;
+  }
+
+  const progress = parsedProgress.progress;
+  const taskById = new Map<ScheduledTaskId, ScheduledTask>(plan.tasks.map((task) => [task.taskId, task]));
+  const settledTaskIds = new Set<ScheduledTaskId>();
+
+  for (const [index, settlement] of progress.settlements.entries()) {
+    const plannedTask = taskById.get(settlement.taskId);
+    if (plannedTask === undefined) {
+      return fail("ScheduledTaskSettlement must reference a task in the first-night task plan");
+    }
+
+    if (plannedTask.taskType !== settlement.taskType) {
+      return fail("ScheduledTaskSettlement taskType must match the planned task");
+    }
+
+    if (settledTaskIds.has(settlement.taskId)) {
+      return fail("ScheduledTaskSettlement taskId values must be unique");
+    }
+
+    const expectedTask = plan.tasks[index];
+    if (expectedTask === undefined || expectedTask.taskId !== settlement.taskId) {
+      return fail("FirstNightTaskProgress settlements must be a prefix of the first-night task plan order");
+    }
+
+    settledTaskIds.add(settlement.taskId);
+  }
+
+  return { valid: true };
 };
 
 const parseScheduledTasks = (tasks: unknown): ScheduledTaskParseResult => {

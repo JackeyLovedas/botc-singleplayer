@@ -19,9 +19,10 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Phase Three Slice 2B1：Seeded Sects & Violets Setup Foundation 已合并
 - Phase Three Slice 2B2：Seat Roster and Character Assignment 已合并
 - Phase Three Slice 2B3：First Night Private Knowledge Bootstrap 已合并
-- Phase Three Slice 2B4：First Night Task Plan and ScheduledTask Skeleton 进行中
+- Phase Three Slice 2B4：First Night Task Plan and ScheduledTask Skeleton 已合并
+- Phase Three Slice 2B5：MINION_INFO and DEMON_INFO Ordered Settlement 进行中
 
-当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口、固定种子可复现的 12 人《梦殒春宵》真实配板基础、固定 12 人座位名单、可复现角色分配基础、首夜初始化事实、初始自身角色私有知识生成、玩家/AI 私有知识安全投影，以及首夜 `ScheduledTask` 计划骨架。它不包含夜间任务执行、完整昼夜可玩流程、角色能力执行、邪恶团队信息交付、AI 决策、UI、Electron 或 SQLite 正式适配器。
+当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口、固定种子可复现的 12 人《梦殒春宵》真实配板基础、固定 12 人座位名单、可复现角色分配基础、首夜初始化事实、初始自身角色私有知识生成、玩家/AI 私有知识安全投影、首夜 `ScheduledTask` 计划骨架，以及 `MINION_INFO`/`DEMON_INFO` 有序系统信息结算。它不包含角色能力执行、动态夜间任务插入、完整昼夜可玩流程、AI 决策、UI、Electron 或 SQLite 正式适配器。
 
 重要文档：
 
@@ -36,3 +37,4 @@ Windows 本地《血染钟楼》单机游戏项目。
 - `docs/implementation/phase-3-slice-2b2-status.md`
 - `docs/implementation/phase-3-slice-2b3-status.md`
 - `docs/implementation/phase-3-slice-2b4-status.md`
+- `docs/implementation/phase-3-slice-2b5-status.md`

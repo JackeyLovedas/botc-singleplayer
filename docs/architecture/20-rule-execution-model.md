@@ -107,7 +107,46 @@ The base order is:
 
 Role tasks use `REEVALUATE_SOURCE_AT_SETTLEMENT`. System information tasks use `RESOLVE_CURRENT_EVIL_TEAM_AT_SETTLEMENT`.
 
-The model does not yet create active tasks, visible options, task inputs, task results, role ability effects, or information delivery events.
+Slice 2B5 adds settlement only for the two system information tasks:
+
+```text
+SettleFirstNightSystemTask
+-> confirm requested task is the next unsettled supported system task
+-> resolve current evil team from CurrentCharacterStateSet
+-> freeze DeliveredEvilTeamSnapshot for this delivery
+-> create MinionInformationDelivered or DemonInformationDelivered
+-> create ScheduledTaskSettled in the same batch
+-> append FirstNightTaskProgress from replay
+```
+
+`ScheduledTaskSettled` is a progress fact, not a replacement for the original task plan. It records task id, task type, night number, settlement version, outcome type, and current character state revision. It must be paired with the matching information delivery event in the same batch.
+
+### Settlement And Snapshot Revision Binding
+
+System team information settlement requires three revision facts to agree:
+
+```text
+InformationDelivered.characterStateRevision
+InformationDelivered.resolvedEvilTeam.characterStateRevision
+ScheduledTaskSettled.characterStateRevision
+```
+
+The settlement validator still uses `CurrentCharacterStateSet` to resolve the current demon and minions at the moment of settlement.
+
+Stored-fact projection validation uses the delivered snapshot plus the matching settlement. It does not recalculate historical team knowledge from the latest current character state.
+
+### Different Tasks May Use Different Character Revisions
+
+`MINION_INFO` and `DEMON_INFO` are separate scheduled tasks. A future role-change implementation may produce a new current character revision between them.
+
+That means:
+
+- `MINION_INFO` can be bound to revision `N`;
+- `DEMON_INFO` can be bound to revision `N + 1`;
+- each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
+- projections must preserve each delivered fact independently.
+
+The model still does not create active role tasks, visible options, task inputs, role task results, role ability effects, dynamic task insertion, or AI decisions.
 
 ## ActionOpportunity Flow
 

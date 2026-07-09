@@ -1,5 +1,6 @@
 export * from "./character-assignment.js";
 export * from "./command.js";
+export * from "./current-character-state.js";
 export * from "./deterministic-random.js";
 export * from "./domain-batch-semantics.js";
 export * from "./errors.js";
@@ -8,6 +9,7 @@ export * from "./event-batch.js";
 export * from "./event-stream-validator.js";
 export * from "./events.js";
 export * from "./first-night-task-plan.js";
+export * from "./first-night-team-information.js";
 export * from "./game-phase.js";
 export * from "./game-state.js";
 export * from "./ids.js";
