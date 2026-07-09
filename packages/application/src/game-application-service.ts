@@ -22,13 +22,13 @@ import {
   createPhilosopherAbilityChosenPayload,
   createPhilosopherAbilityChosenScheduledTaskSettlement,
   createPhilosopherAbilityGrantedPayload,
-  createPhilosopherFirstNightActionOpportunity,
+  createFirstNightRoleActionOpportunity,
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
   getNextUnsettledFirstNightTask,
   isFirstNightTaskSettled,
-  isSupportedFirstNightRoleActionTaskType,
-  tryCreatePhilosopherFirstNightActionOpportunity,
+  isSupportedFirstNightRoleActionTask,
+  tryCreateFirstNightRoleActionOpportunity,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
   sameRoleSetupSnapshot,
@@ -949,14 +949,14 @@ export class GameApplicationService {
           };
         }
 
-        if (!isSupportedFirstNightRoleActionTaskType(targetTask.taskType)) {
+        if (!isSupportedFirstNightRoleActionTask(targetTask)) {
           return {
             code: "UnsupportedRoleActionOpportunity",
             message: `OpenFirstNightRoleActionOpportunity cannot open ${targetTask.taskType}`
           };
         }
 
-        const sourceValidation = tryCreatePhilosopherFirstNightActionOpportunity({
+        const sourceValidation = tryCreateFirstNightRoleActionOpportunity({
           taskId: requestedTaskId,
           firstNightTaskPlan: state.firstNightTaskPlan,
           firstNightTaskProgress: state.firstNightTaskProgress,
@@ -1067,7 +1067,7 @@ export class GameApplicationService {
           };
         }
 
-        if (!isSupportedFirstNightRoleActionTaskType(targetTask.taskType)) {
+        if (targetTask.taskType !== "PHILOSOPHER_ACTION" || opportunity.opportunityKind !== "PHILOSOPHER_FIRST_NIGHT_ACTION") {
           return {
             code: "UnsupportedRoleActionOpportunity",
             message: `SubmitPhilosopherAction cannot settle ${targetTask.taskType}`
@@ -1918,7 +1918,7 @@ export class GameApplicationService {
           );
         }
 
-        const opportunity = createPhilosopherFirstNightActionOpportunity({
+        const opportunity = createFirstNightRoleActionOpportunity({
           taskId: command.payload.taskId,
           firstNightTaskPlan: state.firstNightTaskPlan,
           firstNightTaskProgress: state.firstNightTaskProgress,
@@ -1958,6 +1958,12 @@ export class GameApplicationService {
           throw new DomainError(
             "InvalidDomainBatchSemantics",
             "SubmitPhilosopherAction event creation requires an open action opportunity"
+          );
+        }
+        if (opportunity.opportunityKind !== "PHILOSOPHER_FIRST_NIGHT_ACTION" || opportunity.taskType !== "PHILOSOPHER_ACTION") {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SubmitPhilosopherAction event creation requires a Philosopher action opportunity"
           );
         }
 

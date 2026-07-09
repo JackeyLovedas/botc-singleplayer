@@ -204,6 +204,11 @@ const reachOpenPhilosopherActionOpportunity = async (service: GameApplicationSer
   await service.execute(openFirstNightRoleActionOpportunityCommand());
 };
 
+const philosopherGainedSnakeCharmerTaskId = scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer");
+const philosopherGainedSnakeCharmerOpportunityId = actionOpportunityId(
+  "first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer:opportunity-01"
+);
+
 const choosePhilosopherRoleCommand = (
   chosenRoleId: string,
   overrides: Parameters<typeof submitPhilosopherActionCommand>[0] = {}
@@ -2932,6 +2937,171 @@ describe("GameApplicationService", () => {
     expect(minionResult).toMatchObject({
       status: "rejected",
       code: "NextTaskRequiresRoleExecution",
+      currentGameVersion: 9
+    });
+  });
+
+  it("opens a deterministic Philosopher gained Snake Charmer opportunity with safe visibility", async () => {
+    const { service, commandStore } = makeService();
+    await reachOpenPhilosopherActionOpportunity(service);
+    await service.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-before-open") }));
+
+    const command = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-philosopher-gained-snake-charmer"),
+      expectedGameVersion: 9,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: philosopherGainedSnakeCharmerTaskId
+      }
+    });
+    const result = await service.execute(command);
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(result);
+    expect(result).toMatchObject({ status: "accepted", gameVersion: 10, idempotent: false });
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]).toMatchObject({
+      eventSequence: 18,
+      gameVersion: 10,
+      eventType: "FirstNightActionOpportunityCreated",
+      payload: {
+        opportunityId: philosopherGainedSnakeCharmerOpportunityId,
+        opportunityKind: "SNAKE_CHARMER_FIRST_NIGHT_ACTION",
+        opportunityStatus: "OPEN",
+        taskId: philosopherGainedSnakeCharmerTaskId,
+        taskType: "SNAKE_CHARMER_ACTION",
+        sourceSeatNumber: 10,
+        sourceRole: {
+          roleId: "philosopher"
+        },
+        sourceCharacterStateRevision: 1,
+        visibility: {
+          canChooseTarget: true,
+          supportedDecisionKinds: ["CHOOSE_PLAYER"],
+          targetSchema: "ANY_LIVING_PLAYER"
+        }
+      }
+    });
+    expect(result.events[0]?.payload).not.toHaveProperty("targetRoleId");
+    expect(result.events[0]?.payload).not.toHaveProperty("isDemon");
+    expect(state?.firstNightActionOpportunities?.opportunities[1]).toMatchObject({
+      opportunityId: philosopherGainedSnakeCharmerOpportunityId,
+      opportunityKind: "SNAKE_CHARMER_FIRST_NIGHT_ACTION",
+      opportunityStatus: "OPEN"
+    });
+    expect(state?.firstNightTaskProgress?.settlements).toHaveLength(1);
+
+    const duplicate = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("duplicate-open-philosopher-gained-snake"),
+      expectedGameVersion: 10,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: philosopherGainedSnakeCharmerTaskId
+      }
+    });
+    await expect(service.execute(duplicate)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActionOpportunityAlreadyOpen",
+      currentGameVersion: 10
+    });
+    expect((await commandStore.findCommandReceipt(duplicate.gameId, duplicate.commandId))?.result.status).toBe("rejected");
+  });
+
+  it("allows only system or Storyteller actors to open the gained Snake Charmer opportunity", async () => {
+    const storytellerStore = new MemoryCommandCommitStore();
+    const { service: storytellerService } = makeService(storytellerStore);
+    await reachOpenPhilosopherActionOpportunity(storytellerService);
+    await storytellerService.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-storyteller-open") }));
+    await expect(storytellerService.execute(openFirstNightRoleActionOpportunityCommand({
+      actor: storytellerActor,
+      commandId: commandId("storyteller-open-philosopher-gained-snake"),
+      expectedGameVersion: 9,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: philosopherGainedSnakeCharmerTaskId
+      }
+    }))).resolves.toMatchObject({ status: "accepted", gameVersion: 10 });
+
+    const actorStore = new MemoryCommandCommitStore();
+    const { service: actorService } = makeService(actorStore);
+    await reachOpenPhilosopherActionOpportunity(actorService);
+    await actorService.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-actor-open") }));
+    const humanCommand = openFirstNightRoleActionOpportunityCommand({
+      actor: humanActor,
+      commandId: commandId("human-open-philosopher-gained-snake"),
+      expectedGameVersion: 9,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: philosopherGainedSnakeCharmerTaskId
+      }
+    });
+    const aiCommand = openFirstNightRoleActionOpportunityCommand({
+      actor: aiActor,
+      commandId: commandId("ai-open-philosopher-gained-snake"),
+      expectedGameVersion: 9,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: philosopherGainedSnakeCharmerTaskId
+      }
+    });
+
+    await expect(actorService.execute(humanCommand)).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    await expect(actorService.execute(aiCommand)).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    expect((await actorStore.findCommandReceipt(humanCommand.gameId, humanCommand.commandId))?.result.status).toBe("rejected");
+    expect((await actorStore.findCommandReceipt(aiCommand.gameId, aiCommand.commandId))?.result.status).toBe("rejected");
+  });
+
+  it("rejects unsupported inserted and base Snake Charmer opportunities", async () => {
+    const dreamerStore = new MemoryCommandCommitStore();
+    const { service: dreamerService } = makeService(dreamerStore);
+    await reachOpenPhilosopherActionOpportunity(dreamerService);
+    await dreamerService.execute(choosePhilosopherRoleCommand("dreamer", { commandId: commandId("choose-dreamer-before-open") }));
+    const dreamerTaskId = scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-10:from-dreamer");
+    await expect(dreamerService.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-gained-dreamer-unsupported"),
+      expectedGameVersion: 9,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: dreamerTaskId
+      }
+    }))).resolves.toMatchObject({
+      status: "rejected",
+      code: "UnsupportedRoleActionOpportunity",
+      currentGameVersion: 9
+    });
+
+    const baseSnakeStore = new MemoryCommandCommitStore();
+    const { service: baseSnakeService } = makeService(baseSnakeStore);
+    await reachNoPhilosopherFirstNightTaskPlan(baseSnakeService);
+    await baseSnakeService.execute(settleFirstNightSystemTaskCommand({
+      commandId: commandId("settle-minion-before-base-snake-open"),
+      expectedGameVersion: 7
+    }));
+    await baseSnakeService.execute(settleFirstNightSystemTaskCommand({
+      commandId: commandId("settle-demon-before-base-snake-open"),
+      expectedGameVersion: 8,
+      payload: {
+        commandType: "SettleFirstNightSystemTask",
+        taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
+      }
+    }));
+    const baseSnakeState = rebuildOptionalGameState(await baseSnakeStore.loadDomainEvents(ids.game));
+    const baseSnakeTask = baseSnakeState?.firstNightTaskPlan?.tasks.find((task) => task.taskType === "SNAKE_CHARMER_ACTION");
+    if (baseSnakeTask === undefined) {
+      throw new Error("Expected base Snake Charmer task");
+    }
+
+    await expect(baseSnakeService.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-base-snake-unsupported"),
+      expectedGameVersion: 9,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: baseSnakeTask.taskId
+      }
+    }))).resolves.toMatchObject({
+      status: "rejected",
+      code: "UnsupportedRoleActionOpportunity",
       currentGameVersion: 9
     });
   });
