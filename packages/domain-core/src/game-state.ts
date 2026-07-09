@@ -20,6 +20,10 @@ import type {
   WitchTargetChoiceSet
 } from "./witch.js";
 import type {
+  DreamerInformationSet,
+  DreamerTargetChoiceSet
+} from "./dreamer.js";
+import type {
   EvilTwinInformationDeliveredPayload,
   EvilTwinPairSet
 } from "./evil-twin.js";
@@ -68,6 +72,8 @@ export type GameState = {
   readonly witchTargetChoices?: WitchTargetChoiceSet;
   readonly witchDeathPending?: WitchDeathPendingSet;
   readonly witchIneffectiveResolutions?: WitchIneffectiveResolutionSet;
+  readonly dreamerTargetChoices?: DreamerTargetChoiceSet;
+  readonly dreamerInformation?: DreamerInformationSet;
   readonly evilTwinPairs?: EvilTwinPairSet;
   readonly evilTwinInformation?: EvilTwinInformationDeliveredPayload;
   readonly minionInformation?: MinionInformationDeliveredPayload;

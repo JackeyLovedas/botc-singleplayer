@@ -44,6 +44,8 @@ export type DomainErrorCode =
   | "InvalidWitchTargetChosenPayload"
   | "InvalidWitchDeathPendingMarkedPayload"
   | "InvalidWitchIneffectiveResolvedPayload"
+  | "InvalidDreamerTargetChosenPayload"
+  | "InvalidDreamerInformationDeliveredPayload"
   | "InvalidEvilTwinPairEstablishedPayload"
   | "DuplicateEvilTwinPairEstablished"
   | "InvalidEvilTwinInformationDeliveredPayload"

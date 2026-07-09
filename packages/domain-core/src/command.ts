@@ -2,6 +2,7 @@ import type { ActionOpportunityId, CommandId, CorrelationId, GameId, PlayerId, S
 import type { PhilosopherActionDecision } from "./first-night-action-opportunity.js";
 import type { SnakeCharmerActionDecision } from "./snake-charmer.js";
 import type { WitchActionDecision } from "./witch.js";
+import type { DreamerActionDecision } from "./dreamer.js";
 import type { SetupGenerationConstraints } from "./setup-types.js";
 
 export type HumanActor = {
@@ -112,6 +113,13 @@ export type SubmitWitchActionCommandPayload = {
   readonly decision: WitchActionDecision;
 };
 
+export type SubmitDreamerActionCommandPayload = {
+  readonly commandType: "SubmitDreamerAction";
+  readonly taskId: ScheduledTaskId;
+  readonly opportunityId: ActionOpportunityId;
+  readonly decision: DreamerActionDecision;
+};
+
 export type SupportedCommandPayload =
   | CreateGameCommandPayload
   | SelectScriptCommandPayload
@@ -125,7 +133,8 @@ export type SupportedCommandPayload =
   | OpenFirstNightRoleActionOpportunityCommandPayload
   | SubmitPhilosopherActionCommandPayload
   | SubmitSnakeCharmerActionCommandPayload
-  | SubmitWitchActionCommandPayload;
+  | SubmitWitchActionCommandPayload
+  | SubmitDreamerActionCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
@@ -139,6 +148,7 @@ export type OpenFirstNightRoleActionOpportunityCommand = CommandEnvelope<OpenFir
 export type SubmitPhilosopherActionCommand = CommandEnvelope<SubmitPhilosopherActionCommandPayload>;
 export type SubmitSnakeCharmerActionCommand = CommandEnvelope<SubmitSnakeCharmerActionCommandPayload>;
 export type SubmitWitchActionCommand = CommandEnvelope<SubmitWitchActionCommandPayload>;
+export type SubmitDreamerActionCommand = CommandEnvelope<SubmitDreamerActionCommandPayload>;
 export type SupportedCommandEnvelope =
   | CreateGameCommand
   | SelectScriptCommand
@@ -152,4 +162,5 @@ export type SupportedCommandEnvelope =
   | OpenFirstNightRoleActionOpportunityCommand
   | SubmitPhilosopherActionCommand
   | SubmitSnakeCharmerActionCommand
-  | SubmitWitchActionCommand;
+  | SubmitWitchActionCommand
+  | SubmitDreamerActionCommand;
