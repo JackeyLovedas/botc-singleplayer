@@ -33,7 +33,8 @@ export type PlayerPrivateKnowledgeStage =
   | typeof INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE
   | "MINION_INFORMATION"
   | "DEMON_INFORMATION"
-  | "EVIL_TWIN_SETUP_INFORMATION";
+  | "EVIL_TWIN_SETUP_INFORMATION"
+  | "DREAMER_INFORMATION";
 
 export type FirstNightSession = {
   readonly initializationVersion: SupportedFirstNightInitializationVersion;
@@ -99,11 +100,19 @@ export type PlayerPrivateKnowledgeView = {
   readonly knownDemon?: KnownPlayerReference;
   readonly knownMinions: readonly KnownPlayerReference[];
   readonly evilTwinCounterpart?: KnownPlayerReference;
+  readonly dreamerInformation?: PlayerDreamerInformationView;
   readonly demonBluffs: readonly RoleSetupSnapshot[];
   readonly ownCharacterKnowledgeModelVersion: SupportedInitialKnowledgeModelVersion;
   readonly teamKnowledgeModelVersion?: string;
   readonly evilTwinKnowledgeModelVersion?: string;
+  readonly dreamerKnowledgeModelVersion?: string;
   readonly deliveredKnowledgeStages: readonly PlayerPrivateKnowledgeStage[];
+};
+
+export type PlayerDreamerInformationView = {
+  readonly target: KnownPlayerReference;
+  readonly goodRole: RoleSetupSnapshot;
+  readonly evilRole: RoleSetupSnapshot;
 };
 
 export type InitialPrivateKnowledgeGenerationFailureCode =
@@ -252,10 +261,12 @@ const PLAYER_PRIVATE_KNOWLEDGE_STAGE_ORDER = [
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   "MINION_INFORMATION",
   "DEMON_INFORMATION",
-  "EVIL_TWIN_SETUP_INFORMATION"
+  "EVIL_TWIN_SETUP_INFORMATION",
+  "DREAMER_INFORMATION"
 ] as const;
 const SUPPORTED_PRIVATE_VIEW_TEAM_KNOWLEDGE_MODEL_VERSION = "first-night-team-knowledge-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION = "evil-twin-knowledge-model-v1" as const;
+const SUPPORTED_PRIVATE_VIEW_DREAMER_KNOWLEDGE_MODEL_VERSION = "dreamer-information-model-v1" as const;
 
 export const hasExactRoleSetupSnapshotShape = (value: unknown): value is RoleSetupSnapshot => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ROLE_SETUP_SNAPSHOT_KEYS)) {
@@ -379,7 +390,9 @@ const validatePrivateKnowledgeViewStages = (
   stages: unknown,
   hasTeamKnowledgeModelVersion: boolean,
   hasEvilTwinKnowledgeModelVersion: boolean,
-  hasEvilTwinCounterpart: boolean
+  hasEvilTwinCounterpart: boolean,
+  hasDreamerKnowledgeModelVersion: boolean,
+  hasDreamerInformation: boolean
 ): InitialPrivateKnowledgeValidationResult => {
   if (!Array.isArray(stages) || !isDenseArray(stages)) {
     return fail("PlayerPrivateKnowledgeView deliveredKnowledgeStages must be a dense array");
@@ -423,7 +436,26 @@ const validatePrivateKnowledgeViewStages = (
     return fail("PlayerPrivateKnowledgeView Evil Twin counterpart and model version must be present exactly when Evil Twin information is delivered");
   }
 
+  const hasDreamerStage = stageValues.some((stage) => stage === "DREAMER_INFORMATION");
+  if (hasDreamerKnowledgeModelVersion !== hasDreamerStage || hasDreamerInformation !== hasDreamerStage) {
+    return fail("PlayerPrivateKnowledgeView Dreamer information and model version must be present exactly when Dreamer information is delivered");
+  }
+
   return { valid: true };
+};
+
+const hasExactDreamerInformationViewShape = (value: unknown): value is PlayerDreamerInformationView => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["evilRole", "goodRole", "target"])) {
+    return false;
+  }
+
+  return (
+    hasExactKnownPlayerReferenceShape(value.target) &&
+    hasExactRoleSetupSnapshotShape(value.goodRole) &&
+    hasExactRoleSetupSnapshotShape(value.evilRole) &&
+    value.goodRole.defaultAlignment === "GOOD" &&
+    value.evilRole.defaultAlignment === "EVIL"
+  );
 };
 
 export const validatePlayerPrivateKnowledgeViewShape = (
@@ -437,7 +469,9 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     ...(Object.hasOwn(value, "knownDemon") ? ["knownDemon"] : []),
     ...(Object.hasOwn(value, "teamKnowledgeModelVersion") ? ["teamKnowledgeModelVersion"] : []),
     ...(Object.hasOwn(value, "evilTwinCounterpart") ? ["evilTwinCounterpart"] : []),
-    ...(Object.hasOwn(value, "evilTwinKnowledgeModelVersion") ? ["evilTwinKnowledgeModelVersion"] : [])
+    ...(Object.hasOwn(value, "evilTwinKnowledgeModelVersion") ? ["evilTwinKnowledgeModelVersion"] : []),
+    ...(Object.hasOwn(value, "dreamerInformation") ? ["dreamerInformation"] : []),
+    ...(Object.hasOwn(value, "dreamerKnowledgeModelVersion") ? ["dreamerKnowledgeModelVersion"] : [])
   ];
   if (!hasExactEnumerableKeys(value, [...PLAYER_PRIVATE_KNOWLEDGE_VIEW_BASE_KEYS, ...optionalKeys])) {
     return fail("PlayerPrivateKnowledgeView must have exact runtime shape");
@@ -466,12 +500,24 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     return fail("PlayerPrivateKnowledgeView evilTwinCounterpart must have exact runtime shape");
   }
 
+  if (Object.hasOwn(value, "dreamerInformation") && !hasExactDreamerInformationViewShape(value.dreamerInformation)) {
+    return fail("PlayerPrivateKnowledgeView dreamerInformation must have exact runtime shape");
+  }
+
   if (
     Object.hasOwn(value, "evilTwinCounterpart") &&
     ((value.evilTwinCounterpart as KnownPlayerReference).playerId === value.viewerPlayerId ||
       (value.evilTwinCounterpart as KnownPlayerReference).seatNumber === value.viewerSeatNumber)
   ) {
     return fail("PlayerPrivateKnowledgeView evilTwinCounterpart must not be the viewer");
+  }
+
+  if (
+    Object.hasOwn(value, "dreamerInformation") &&
+    (((value.dreamerInformation as PlayerDreamerInformationView).target.playerId === value.viewerPlayerId) ||
+      ((value.dreamerInformation as PlayerDreamerInformationView).target.seatNumber === value.viewerSeatNumber))
+  ) {
+    return fail("PlayerPrivateKnowledgeView dreamerInformation target must not be the viewer");
   }
 
   if (
@@ -520,11 +566,21 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     return fail("PlayerPrivateKnowledgeView evilTwinKnowledgeModelVersion must be supported");
   }
 
+  const hasDreamerKnowledgeModelVersion = Object.hasOwn(value, "dreamerKnowledgeModelVersion");
+  if (
+    hasDreamerKnowledgeModelVersion &&
+    value.dreamerKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_DREAMER_KNOWLEDGE_MODEL_VERSION
+  ) {
+    return fail("PlayerPrivateKnowledgeView dreamerKnowledgeModelVersion must be supported");
+  }
+
   return validatePrivateKnowledgeViewStages(
     value.deliveredKnowledgeStages,
     hasTeamKnowledgeModelVersion,
     hasEvilTwinKnowledgeModelVersion,
-    Object.hasOwn(value, "evilTwinCounterpart")
+    Object.hasOwn(value, "evilTwinCounterpart"),
+    hasDreamerKnowledgeModelVersion,
+    Object.hasOwn(value, "dreamerInformation")
   );
 };
 

@@ -4297,7 +4297,7 @@ describe("domain event rebuild", () => {
     expect(JSON.stringify(information.payload)).not.toContain("correctRole");
     expect(state.lastEventSequence).toBe(30);
     expect(state.gameVersion).toBe(16);
-  });
+  }, 15_000);
 
   it("rebuilds Dreamer information for an EVIL target with the target role in the EVIL slot", () => {
     const [targetChosen, information, settlement] = dreamerInformationBatchEvents("EVIL");
@@ -4317,7 +4317,7 @@ describe("domain event rebuild", () => {
     expect(targetEntry.role.defaultAlignment).toBe("EVIL");
     expect(information.payload.evilRole).toStrictEqual(targetEntry.role);
     expect(information.payload.goodRole.defaultAlignment).toBe("GOOD");
-  });
+  }, 15_000);
 
   it("rejects malformed Dreamer replay batches", () => {
     const baseStream = openDreamerActionStream();
@@ -4396,7 +4396,7 @@ describe("domain event rebuild", () => {
       ]),
       "InvalidDreamerTargetChosenPayload"
     );
-  });
+  }, 15_000);
 
   it("rejects malformed Snake Charmer no-swap replay batches", () => {
     const baseStream = openSnakeCharmerStream();

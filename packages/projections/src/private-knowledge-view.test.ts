@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEMON_INFORMATION_KNOWLEDGE_STAGE,
+  DREAMER_INFORMATION_STAGE,
   EVIL_TWIN_SETUP_KNOWLEDGE_STAGE,
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   MINION_INFORMATION_KNOWLEDGE_STAGE,
@@ -8,9 +9,11 @@ import {
   SUPPORTED_DOMAIN_EVENT_VERSION,
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
+  SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
   SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
+  abilityImpairmentId,
   actionOpportunityId,
   batchId,
   causationId,
@@ -452,6 +455,72 @@ const stateWithEvilTwinInformation = (): GameState => {
       settlements: [
         ...state.firstNightTaskProgress.settlements,
         settlement
+      ]
+    }
+  };
+};
+
+const stateWithDreamerInformation = (): GameState => {
+  const state = stateWithDemonInformation();
+  const dreamerTask = state.firstNightTaskPlan?.tasks.find((task) => task.taskType === "DREAMER_ACTION");
+  const source = state.currentCharacterState?.entries.find((entry) => entry.role.roleId === "dreamer");
+  const target = state.currentCharacterState?.entries.find((entry) =>
+    entry.playerId !== source?.playerId &&
+    entry.role.defaultAlignment === "GOOD"
+  );
+  const evilRole = state.setup?.roleCatalogSnapshot.roles
+    .filter((role) => role.defaultAlignment === "EVIL")
+    .sort((left, right) => left.roleId < right.roleId ? -1 : left.roleId > right.roleId ? 1 : 0)[0];
+  if (
+    dreamerTask === undefined ||
+    source === undefined ||
+    target === undefined ||
+    evilRole === undefined ||
+    state.firstNightTaskProgress === undefined
+  ) {
+    throw new Error("Expected Dreamer projection source facts");
+  }
+
+  const delivery = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    nightNumber: 1 as const,
+    taskId: dreamerTask.taskId,
+    taskType: "DREAMER_ACTION" as const,
+    opportunityId: actionOpportunityId(`first-night-v1:DREAMER_ACTION:seat-${String(source.seatNumber).padStart(2, "0")}:opportunity-01`),
+    knowledgeModelVersion: SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
+    knowledgeStage: DREAMER_INFORMATION_STAGE,
+    sourcePlayerId: source.playerId,
+    sourceSeatNumber: source.seatNumber,
+    sourceCharacterStateRevision: state.currentCharacterState?.revision ?? 1,
+    targetPlayerId: target.playerId,
+    targetSeatNumber: target.seatNumber,
+    informationReliability: {
+      kind: "SOURCE_IMPAIRED" as const,
+      reason: "SOURCE_POISONED" as const,
+      sourceImpairmentId: abilityImpairmentId("ability-impairment-v1:projection-hidden"),
+      sourceImpairmentKind: "POISONED" as const
+    },
+    goodRole: target.role,
+    evilRole,
+    falseRolePolicyVersion: "dreamer-false-role-policy-v1" as const
+  };
+
+  return {
+    ...state,
+    dreamerInformation: {
+      deliveries: [delivery]
+    },
+    firstNightTaskProgress: {
+      settlements: [
+        ...state.firstNightTaskProgress.settlements,
+        {
+          taskId: delivery.taskId,
+          taskType: delivery.taskType,
+          nightNumber: 1 as const,
+          settlementVersion: "scheduled-task-settlement-v1" as const,
+          outcomeType: "DREAMER_INFORMATION_DELIVERED" as const,
+          characterStateRevision: delivery.sourceCharacterStateRevision
+        }
       ]
     }
   };
@@ -1019,6 +1088,57 @@ describe("private knowledge projections", () => {
     expect(JSON.stringify(aiView)).not.toContain("currentCharacterState");
     expect(JSON.stringify(aiView)).not.toContain("evilTwinPlayer");
     expect(JSON.stringify(aiView)).not.toContain("goodTwinPlayer");
+  });
+
+  it("projects settled DREAMER_INFORMATION only to the Dreamer without leaking reliability facts", () => {
+    const state = stateWithDreamerInformation();
+    const delivery = state.dreamerInformation?.deliveries[0];
+    if (delivery === undefined) {
+      throw new Error("Expected Dreamer delivery");
+    }
+
+    const dreamerView = buildPlayerPrivateKnowledgeView(state, delivery.sourcePlayerId);
+    expect(dreamerView.dreamerInformation).toStrictEqual({
+      target: {
+        playerId: delivery.targetPlayerId,
+        seatNumber: delivery.targetSeatNumber
+      },
+      goodRole: delivery.goodRole,
+      evilRole: delivery.evilRole
+    });
+    expect(dreamerView.dreamerKnowledgeModelVersion).toBe(SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION);
+    expect(dreamerView.deliveredKnowledgeStages).toContain(DREAMER_INFORMATION_STAGE);
+
+    const serialized = JSON.stringify(dreamerView);
+    expect(serialized).not.toContain("informationReliability");
+    expect(serialized).not.toContain("SOURCE_POISONED");
+    expect(serialized).not.toContain("sourceImpairmentId");
+    expect(serialized).not.toContain("falseRolePolicyVersion");
+    expect(serialized).not.toContain("currentCharacterState");
+    expect(serialized).not.toContain("assignment");
+    expect(serialized).not.toContain("currentAlignment");
+  });
+
+  it("does not project Dreamer information to non-source players or AI views", () => {
+    const state = stateWithDreamerInformation();
+    const delivery = state.dreamerInformation?.deliveries[0];
+    const other = state.roster?.entries.find((entry) =>
+      entry.playerId !== delivery?.sourcePlayerId &&
+      entry.playerId !== delivery?.targetPlayerId
+    );
+    if (delivery === undefined || other === undefined) {
+      throw new Error("Expected Dreamer delivery and other player");
+    }
+
+    const playerView = buildPlayerPrivateKnowledgeView(state, other.playerId);
+    const aiView = buildAiPrivateKnowledgeView(state, other.playerId);
+
+    expect("dreamerInformation" in playerView).toBe(false);
+    expect("dreamerKnowledgeModelVersion" in playerView).toBe(false);
+    expect(playerView.deliveredKnowledgeStages).not.toContain(DREAMER_INFORMATION_STAGE);
+    expect(aiView).toStrictEqual(playerView);
+    expect(JSON.stringify(aiView)).not.toContain("sourceImpairmentId");
+    expect(JSON.stringify(aiView)).not.toContain(delivery.targetPlayerId);
   });
 
   it("refuses Evil Twin projection when the delivered event has not been settled", () => {

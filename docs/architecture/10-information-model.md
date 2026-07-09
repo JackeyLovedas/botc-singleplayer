@@ -173,6 +173,40 @@ Current evil-team resolution remains a settlement-time operation. It is not a pr
 
 This prevents a view containing both own-character and team information from presenting them as one undifferentiated model version.
 
+## Dreamer First-Night Information Skeleton
+
+Slice 2B13 implements only the base first-night Dreamer information skeleton:
+
+- `DreamerTargetChosen` records the selected target without target role, target alignment, correct-answer, false-role, impairment, or effectiveness leakage.
+- `DreamerInformationDelivered` records one GOOD role and one EVIL role with `dreamer-information-model-v1`.
+- `DreamerInformationDelivered.falseRolePolicyVersion` is `dreamer-false-role-policy-v1`.
+- Effective Dreamer information includes the target's current role in the matching GOOD or EVIL slot.
+- Source-impaired Dreamer information is still delivered and is marked canonically as `SOURCE_IMPAIRED`.
+- Both effective and source-impaired information must be paired with `ScheduledTaskSettled.outcomeType = DREAMER_INFORMATION_DELIVERED`.
+
+The first deterministic false-role policy uses only the role catalog snapshot. It selects the lowest matching `roleId` in explicit stable string order. It does not use randomness, assignment order, current roster order, `localeCompare`, `Intl.Collator`, or Storyteller free choice.
+
+### Dreamer Reliability Separation
+
+Dreamer reliability is a canonical fact, not a player-visible explanation. The event may record:
+
+```text
+informationReliability.kind = EFFECTIVE
+```
+
+or:
+
+```text
+informationReliability.kind = SOURCE_IMPAIRED
+reason = SOURCE_DRUNK | SOURCE_POISONED
+sourceImpairmentId
+sourceImpairmentKind = DRUNK | POISONED
+```
+
+Player and AI views must not expose reliability, source impairment, false-role policy, correct-role markers, target true role, target alignment, assignment, or current character state. The Dreamer source player may see only the delivered target reference, `goodRole`, `evilRole`, and `dreamerKnowledgeModelVersion`.
+
+Vortox-forced false Dreamer information and Storyteller-selected false roles remain unimplemented. Those require role-specific false-candidate solving and recorded Storyteller candidate selection before they can be added safely.
+
 ## Mathematician Ledger
 
 The Mathematician must use a dedicated `MathematicianAbnormalityLedger`. Do not use a generic counter. The ledger records players whose abilities worked abnormally due to another character's ability, excluding the Mathematician's own abnormal result.

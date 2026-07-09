@@ -4,7 +4,9 @@ import {
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   MINION_INFORMATION_KNOWLEDGE_STAGE,
   DEMON_INFORMATION_KNOWLEDGE_STAGE,
+  DREAMER_INFORMATION_STAGE,
   EVIL_TWIN_SETUP_KNOWLEDGE_STAGE,
+  SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
   SUPPORTED_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
@@ -190,6 +192,33 @@ const requireDeliveredEvilTwinInformationIsSettled = (state: GameState): void =>
   }
 };
 
+const requireDeliveredDreamerInformationIsSettled = (state: GameState): void => {
+  if (state.dreamerInformation === undefined && state.firstNightTaskProgress === undefined) {
+    return;
+  }
+
+  if (state.firstNightTaskPlan === undefined) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Dreamer information projection requires task plan facts");
+  }
+
+  for (const delivery of state.dreamerInformation?.deliveries ?? []) {
+    const settlement = findSettlement(state, delivery.taskId, delivery.taskType);
+    if (
+      settlement === undefined ||
+      settlement.outcomeType !== "DREAMER_INFORMATION_DELIVERED" ||
+      settlement.characterStateRevision !== delivery.sourceCharacterStateRevision
+    ) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Dreamer information projection requires matching ScheduledTaskSettled");
+    }
+  }
+
+  for (const settlement of state.firstNightTaskProgress?.settlements ?? []) {
+    if (settlement.taskType === "DREAMER_ACTION" && state.dreamerInformation === undefined) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "DREAMER_ACTION settlement exists without delivered Dreamer information");
+    }
+  }
+};
+
 const deliveredStagesForViewer = (
   state: GameState,
   viewerPlayerId: PlayerId
@@ -205,6 +234,10 @@ const deliveredStagesForViewer = (
 
   if (state.evilTwinInformation?.entries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
     stages.push(EVIL_TWIN_SETUP_KNOWLEDGE_STAGE);
+  }
+
+  if (state.dreamerInformation?.deliveries.some((delivery) => delivery.sourcePlayerId === viewerPlayerId) === true) {
+    stages.push(DREAMER_INFORMATION_STAGE);
   }
 
   return stages;
@@ -228,6 +261,7 @@ export const buildPlayerPrivateKnowledgeView = (
 
   const deliveredTeamEntries = requireDeliveredTeamInformationIsSettled(state).filter((entry) => entry.recipientPlayerId === viewerPlayerId);
   requireDeliveredEvilTwinInformationIsSettled(state);
+  requireDeliveredDreamerInformationIsSettled(state);
   const knownDemon = deliveredTeamEntries.find((entry) => entry.kind === "DEMON_IDENTITY");
   const knownMinions = deliveredTeamEntries
     .filter((entry) => entry.kind === "MINION_IDENTITIES")
@@ -236,6 +270,7 @@ export const buildPlayerPrivateKnowledgeView = (
     .filter((entry) => entry.kind === "DEMON_BLUFFS")
     .flatMap((entry) => entry.kind === "DEMON_BLUFFS" ? entry.roles.map(cloneRoleSetupSnapshot) : []);
   const evilTwinCounterpart = findEvilTwinCounterpartForViewer(state.evilTwinInformation, viewerPlayerId);
+  const dreamerDelivery = state.dreamerInformation?.deliveries.find((delivery) => delivery.sourcePlayerId === viewerPlayerId);
 
   const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId);
   const hasTeamKnowledge = deliveredKnowledgeStages.some((stage) =>
@@ -255,6 +290,19 @@ export const buildPlayerPrivateKnowledgeView = (
       : {
           evilTwinCounterpart: cloneKnownPlayerReference(evilTwinCounterpart),
           evilTwinKnowledgeModelVersion: SUPPORTED_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION
+        }),
+    ...(dreamerDelivery === undefined
+      ? {}
+      : {
+          dreamerInformation: {
+            target: cloneKnownPlayerReference({
+              playerId: dreamerDelivery.targetPlayerId,
+              seatNumber: dreamerDelivery.targetSeatNumber
+            }),
+            goodRole: cloneRoleSetupSnapshot(dreamerDelivery.goodRole),
+            evilRole: cloneRoleSetupSnapshot(dreamerDelivery.evilRole)
+          },
+          dreamerKnowledgeModelVersion: SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION
         }),
     ownCharacterKnowledgeModelVersion: privateKnowledge.knowledgeModelVersion,
     ...(hasTeamKnowledge
