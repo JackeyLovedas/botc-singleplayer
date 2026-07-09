@@ -11,6 +11,7 @@ export * from "./events.js";
 export * from "./first-night-action-opportunity.js";
 export * from "./first-night-task-plan.js";
 export * from "./first-night-team-information.js";
+export * from "./philosopher-ability.js";
 export * from "./game-phase.js";
 export * from "./game-state.js";
 export * from "./ids.js";

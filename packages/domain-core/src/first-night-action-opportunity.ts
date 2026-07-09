@@ -39,8 +39,8 @@ export type PhilosopherActionDecision =
 
 export type ActionOpportunityVisibility = {
   readonly canDefer: true;
-  readonly supportedDecisionKinds: readonly ["DEFER"];
-  readonly futureUnsupportedDecisionKinds: readonly ["CHOOSE_GOOD_CHARACTER"];
+  readonly supportedDecisionKinds: readonly ["DEFER", "CHOOSE_GOOD_CHARACTER"];
+  readonly futureUnsupportedDecisionKinds: readonly [];
 };
 
 export type ActionOpportunitySource = {
@@ -146,8 +146,8 @@ const fail = (reason: string): ValidationResult => ({ valid: false, reason });
 
 const createActionOpportunityVisibility = (): ActionOpportunityVisibility => ({
   canDefer: true,
-  supportedDecisionKinds: ["DEFER"],
-  futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+  supportedDecisionKinds: ["DEFER", "CHOOSE_GOOD_CHARACTER"],
+  futureUnsupportedDecisionKinds: []
 });
 
 const isDenseArray = (value: readonly unknown[]): boolean => {
@@ -166,12 +166,12 @@ const hasExactActionOpportunityVisibilityShape = (value: unknown): value is Acti
   value.canDefer === true &&
   Array.isArray(value.supportedDecisionKinds) &&
   isDenseArray(value.supportedDecisionKinds) &&
-  value.supportedDecisionKinds.length === 1 &&
+  value.supportedDecisionKinds.length === 2 &&
   value.supportedDecisionKinds[0] === "DEFER" &&
+  value.supportedDecisionKinds[1] === "CHOOSE_GOOD_CHARACTER" &&
   Array.isArray(value.futureUnsupportedDecisionKinds) &&
   isDenseArray(value.futureUnsupportedDecisionKinds) &&
-  value.futureUnsupportedDecisionKinds.length === 1 &&
-  value.futureUnsupportedDecisionKinds[0] === "CHOOSE_GOOD_CHARACTER";
+  value.futureUnsupportedDecisionKinds.length === 0;
 
 const hasExactFirstNightActionOpportunityShape = (value: unknown): value is FirstNightActionOpportunity => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS)) {
@@ -203,18 +203,18 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
 
 const cloneVisibility = (visibility: ActionOpportunityVisibility): ActionOpportunityVisibility => ({
   canDefer: visibility.canDefer,
-  supportedDecisionKinds: ["DEFER"],
-  futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+  supportedDecisionKinds: ["DEFER", "CHOOSE_GOOD_CHARACTER"],
+  futureUnsupportedDecisionKinds: []
 });
 
 const sameVisibility = (left: ActionOpportunityVisibility, right: ActionOpportunityVisibility): boolean =>
   left.canDefer === right.canDefer &&
-  left.supportedDecisionKinds.length === 1 &&
-  right.supportedDecisionKinds.length === 1 &&
+  left.supportedDecisionKinds.length === 2 &&
+  right.supportedDecisionKinds.length === 2 &&
   left.supportedDecisionKinds[0] === right.supportedDecisionKinds[0] &&
-  left.futureUnsupportedDecisionKinds.length === 1 &&
-  right.futureUnsupportedDecisionKinds.length === 1 &&
-  left.futureUnsupportedDecisionKinds[0] === right.futureUnsupportedDecisionKinds[0];
+  left.supportedDecisionKinds[1] === right.supportedDecisionKinds[1] &&
+  left.futureUnsupportedDecisionKinds.length === 0 &&
+  right.futureUnsupportedDecisionKinds.length === 0;
 
 const cloneFirstNightActionOpportunity = (
   opportunity: FirstNightActionOpportunity
@@ -557,7 +557,7 @@ export const appendFirstNightActionOpportunity = (
 
 export const closeFirstNightActionOpportunity = (
   state: FirstNightActionOpportunityState | undefined,
-  payload: PhilosopherActionDeferredPayload
+  payload: Pick<PhilosopherActionDeferredPayload, "opportunityId">
 ): FirstNightActionOpportunityState => {
   const opportunities = cloneFirstNightActionOpportunityState(state).opportunities;
   let found = false;

@@ -45,6 +45,8 @@ export type CommandRejectionCode =
   | "ActionOpportunityNotFound"
   | "ActionSourceNoLongerValid"
   | "PhilosopherAbilityChoiceNotImplemented"
+  | "InvalidPhilosopherAbilityChoice"
+  | "UnsupportedPhilosopherAbilityChoice"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 

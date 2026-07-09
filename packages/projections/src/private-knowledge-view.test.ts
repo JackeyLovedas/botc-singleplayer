@@ -622,12 +622,34 @@ describe("private knowledge projections", () => {
           sourceCharacterStateRevision: baseState.currentCharacterState.revision,
           visibility: {
             canDefer: true,
-            supportedDecisionKinds: ["DEFER"],
-            futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+            supportedDecisionKinds: ["DEFER", "CHOOSE_GOOD_CHARACTER"],
+            futureUnsupportedDecisionKinds: []
           }
         }]
-      }
-    };
+      },
+    philosopherAbilityChoices: {
+      choices: [{
+        eventType: "PhilosopherAbilityChosen",
+        chosenRole: "snake_charmer"
+      }]
+    } as never,
+    philosopherGrantedAbilities: {
+      abilities: [{
+        grantedAbility: "snake_charmer"
+      }]
+    } as never,
+    abilityImpairments: {
+      impairments: [{
+        impairment: "PHILOSOPHER_CHOSEN_DUPLICATE"
+      }]
+    } as never,
+    firstNightTaskInsertions: {
+      insertions: [{
+        eventType: "FirstNightTaskInserted",
+        insertedTask: "SNAKE_CHARMER_ACTION"
+      }]
+    } as never
+  };
     const viewer = state.roster?.entries[0];
     if (viewer === undefined) {
       throw new Error("Expected viewer");
@@ -657,6 +679,12 @@ describe("private knowledge projections", () => {
       expect(serialized).not.toContain("futureUnsupportedDecisionKinds");
       expect(serialized).not.toContain("DEFER");
       expect(serialized).not.toContain("CHOOSE_GOOD_CHARACTER");
+      expect(serialized).not.toContain("chosenRole");
+      expect(serialized).not.toContain("grantedAbility");
+      expect(serialized).not.toContain("impairment");
+      expect(serialized).not.toContain("insertedTask");
+      expect(serialized).not.toContain("PhilosopherAbilityChosen");
+      expect(serialized).not.toContain("FirstNightTaskInserted");
       expect(serialized).not.toContain("pendingRoleTasks");
       expect(serialized).not.toContain("PHILOSOPHER_ACTION");
       expect(serialized).not.toContain("MINION_INFO");

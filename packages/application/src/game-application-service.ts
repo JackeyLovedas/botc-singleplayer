@@ -17,6 +17,11 @@ import {
   compareStableId,
   cloneFirstNightTaskCatalogSnapshot,
   createPhilosopherDeferredScheduledTaskSettlement,
+  createAbilityImpairmentAppliedPayload,
+  createFirstNightTaskInsertedPayload,
+  createPhilosopherAbilityChosenPayload,
+  createPhilosopherAbilityChosenScheduledTaskSettlement,
+  createPhilosopherAbilityGrantedPayload,
   createPhilosopherFirstNightActionOpportunity,
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
@@ -31,6 +36,7 @@ import {
   SUPPORTED_SCRIPT_ID,
   SUPPORTED_SCRIPT_NAME,
   validateFirstNightTaskCatalogSnapshot,
+  validatePhilosopherGoodCharacterChoice,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
 import type {
@@ -41,6 +47,8 @@ import type {
   DomainEventEnvelope,
   EventId,
   FirstNightActionOpportunityCreatedPayload,
+  AbilityImpairmentAppliedPayload,
+  FirstNightTaskInsertedPayload,
   GeneratedCharacterAssignment,
   GeneratedSetup,
   GameState,
@@ -63,6 +71,8 @@ import type {
   MinionInformationDeliveredPayload,
   MinionInformationEntry,
   PhaseTransitionedPayload,
+  PhilosopherAbilityChosenPayload,
+  PhilosopherAbilityGrantedPayload,
   PlayerRosterCreatedPayload,
   ScheduledTaskSettledPayload,
   SetupGeneratedPayload,
@@ -1005,10 +1015,25 @@ export class GameApplicationService {
           };
         }
 
-        if (command.payload.decision.kind === "CHOOSE_GOOD_CHARACTER") {
+        const decision = command.payload.decision as unknown;
+        if (!isPlainRecord(decision) || typeof decision.kind !== "string") {
           return {
-            code: "PhilosopherAbilityChoiceNotImplemented",
-            message: "Philosopher ability choice is not implemented in Slice 2B6"
+            code: "InvalidPhilosopherAbilityChoice",
+            message: "SubmitPhilosopherAction decision must be a non-null plain object with a supported kind"
+          };
+        }
+
+        if (decision.kind !== "DEFER" && decision.kind !== "CHOOSE_GOOD_CHARACTER") {
+          return {
+            code: "UnsupportedPhilosopherAbilityChoice",
+            message: "SubmitPhilosopherAction decision kind is not supported in this slice"
+          };
+        }
+
+        if (decision.kind === "DEFER" && !hasExactEnumerableKeys(decision, ["kind"])) {
+          return {
+            code: "InvalidPhilosopherAbilityChoice",
+            message: "DEFER decision must not include extra fields"
           };
         }
 
@@ -1068,6 +1093,20 @@ export class GameApplicationService {
             code: "ActionSourceNoLongerValid",
             message: "SubmitPhilosopherAction source is no longer the same current Philosopher state"
           };
+        }
+
+        if (decision.kind === "CHOOSE_GOOD_CHARACTER") {
+          if (state.setup === undefined) {
+            return { code: "SetupNotGenerated", message: "SubmitPhilosopherAction ability choice requires setup role catalog" };
+          }
+
+          const choiceValidation = validatePhilosopherGoodCharacterChoice(decision, state.setup);
+          if (!choiceValidation.valid) {
+            return {
+              code: choiceValidation.code,
+              message: choiceValidation.reason
+            };
+          }
         }
 
         return undefined;
@@ -1911,13 +1950,6 @@ export class GameApplicationService {
           );
         }
 
-        if (command.payload.decision.kind !== "DEFER") {
-          throw new DomainError(
-            "InvalidDomainBatchSemantics",
-            "SubmitPhilosopherAction event creation only supports DEFER in Slice 2B6"
-          );
-        }
-
         const opportunity = findFirstNightActionOpportunityById(
           state.firstNightActionOpportunities,
           command.payload.opportunityId
@@ -1927,6 +1959,94 @@ export class GameApplicationService {
             "InvalidDomainBatchSemantics",
             "SubmitPhilosopherAction event creation requires an open action opportunity"
           );
+        }
+
+        if (command.payload.decision.kind === "CHOOSE_GOOD_CHARACTER") {
+          if (state.setup === undefined) {
+            throw new DomainError(
+              "InvalidPhilosopherAbilityChosenPayload",
+              "SubmitPhilosopherAction ability choice event creation requires setup role catalog"
+            );
+          }
+
+          const choiceValidation = validatePhilosopherGoodCharacterChoice(command.payload.decision, state.setup);
+          if (!choiceValidation.valid) {
+            throw new DomainError("InvalidPhilosopherAbilityChosenPayload", choiceValidation.reason);
+          }
+
+          const choicePayload = createPhilosopherAbilityChosenPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            opportunityId: opportunity.opportunityId,
+            taskId: opportunity.taskId,
+            chosenRole: choiceValidation.chosenRole,
+            setup: state.setup,
+            firstNightActionOpportunities: state.firstNightActionOpportunities
+          });
+
+          const philosopherAbilityChosenEvent: DomainEventEnvelope<"PhilosopherAbilityChosen"> = {
+            ...common(firstEventSequence),
+            eventType: "PhilosopherAbilityChosen" as const,
+            payload: choicePayload satisfies PhilosopherAbilityChosenPayload
+          };
+
+          const grantPayload = createPhilosopherAbilityGrantedPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            choice: choicePayload
+          });
+
+          const philosopherAbilityGrantedEvent: DomainEventEnvelope<"PhilosopherAbilityGranted"> = {
+            ...common(firstEventSequence + 1),
+            eventType: "PhilosopherAbilityGranted" as const,
+            payload: grantPayload satisfies PhilosopherAbilityGrantedPayload
+          };
+
+          const optionalEvents: AnyDomainEventEnvelope[] = [];
+          const impairmentPayload = createAbilityImpairmentAppliedPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            choice: choicePayload,
+            currentCharacterState: state.currentCharacterState
+          });
+          if (impairmentPayload !== undefined) {
+            optionalEvents.push({
+              ...common(firstEventSequence + 2 + optionalEvents.length),
+              eventType: "AbilityImpairmentApplied" as const,
+              payload: impairmentPayload satisfies AbilityImpairmentAppliedPayload
+            });
+          }
+
+          const insertionPayload = createFirstNightTaskInsertedPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            choice: choicePayload,
+            firstNightTaskPlan: state.firstNightTaskPlan
+          });
+          if (insertionPayload !== undefined) {
+            optionalEvents.push({
+              ...common(firstEventSequence + 2 + optionalEvents.length),
+              eventType: "FirstNightTaskInserted" as const,
+              payload: insertionPayload satisfies FirstNightTaskInsertedPayload
+            });
+          }
+
+          const settlement = createPhilosopherAbilityChosenScheduledTaskSettlement({
+            taskId: opportunity.taskId,
+            characterStateRevision: opportunity.sourceCharacterStateRevision
+          });
+
+          const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+            ...common(firstEventSequence + 2 + optionalEvents.length),
+            eventType: "ScheduledTaskSettled" as const,
+            payload: {
+              rulesBaselineVersion: RULES_BASELINE_VERSION,
+              ...settlement
+            } satisfies ScheduledTaskSettledPayload
+          };
+
+          return [
+            philosopherAbilityChosenEvent,
+            philosopherAbilityGrantedEvent,
+            ...optionalEvents,
+            scheduledTaskSettledEvent
+          ];
         }
 
         const philosopherActionDeferredEvent: DomainEventEnvelope<"PhilosopherActionDeferred"> = {

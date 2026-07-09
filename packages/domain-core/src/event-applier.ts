@@ -43,6 +43,18 @@ import {
   validateMinionInformationDeliveredAtSettlement
 } from "./first-night-team-information.js";
 import {
+  appendAbilityImpairment,
+  appendFirstNightTaskInsertion,
+  appendPhilosopherAbilityChoice,
+  appendPhilosopherGrantedAbility,
+  applyFirstNightTaskInsertionToPlan,
+  hasPhilosopherAbilityGrantForSettlement,
+  validateAbilityImpairmentAppliedPayload,
+  validateFirstNightTaskInsertedPayload,
+  validatePhilosopherAbilityChosenPayload,
+  validatePhilosopherAbilityGrantedPayload
+} from "./philosopher-ability.js";
+import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   isPlainRecord,
   validateFirstNightInitializedPayloadShape,
@@ -696,6 +708,85 @@ const validatePhilosopherActionDeferredPayloadForState = (
   }
 };
 
+const validatePhilosopherAbilityChosenPayloadForState = (
+  state: GameState,
+  payload: DomainEventEnvelope<"PhilosopherAbilityChosen">["payload"]
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidPhilosopherAbilityChosenPayload",
+      "PhilosopherAbilityChosen requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined || state.setup === undefined) {
+    throw new DomainError(
+      "InvalidPhilosopherAbilityChosenPayload",
+      "PhilosopherAbilityChosen requires setup, first-night task plan, and current character state"
+    );
+  }
+
+  const validation = validatePhilosopherAbilityChosenPayload(payload, {
+    taskId: payload.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    setup: state.setup
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidPhilosopherAbilityChosenPayload", validation.reason);
+  }
+};
+
+const validatePhilosopherAbilityGrantedPayloadForState = (
+  state: GameState,
+  payload: DomainEventEnvelope<"PhilosopherAbilityGranted">["payload"]
+): void => {
+  const validation = validatePhilosopherAbilityGrantedPayload(payload, {
+    choices: state.philosopherAbilityChoices,
+    grants: state.philosopherGrantedAbilities
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidPhilosopherAbilityGrantedPayload", validation.reason);
+  }
+};
+
+const validateAbilityImpairmentAppliedPayloadForState = (
+  state: GameState,
+  payload: DomainEventEnvelope<"AbilityImpairmentApplied">["payload"]
+): void => {
+  if (state.currentCharacterState === undefined) {
+    throw new DomainError("InvalidAbilityImpairmentAppliedPayload", "AbilityImpairmentApplied requires current character state");
+  }
+
+  const validation = validateAbilityImpairmentAppliedPayload(payload, {
+    currentCharacterState: state.currentCharacterState,
+    grants: state.philosopherGrantedAbilities
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidAbilityImpairmentAppliedPayload", validation.reason);
+  }
+};
+
+const validateFirstNightTaskInsertedPayloadForState = (
+  state: GameState,
+  payload: DomainEventEnvelope<"FirstNightTaskInserted">["payload"]
+): void => {
+  if (state.firstNightTaskPlan === undefined) {
+    throw new DomainError("InvalidFirstNightTaskInsertedPayload", "FirstNightTaskInserted requires first-night task plan");
+  }
+
+  const validation = validateFirstNightTaskInsertedPayload(payload, {
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    grants: state.philosopherGrantedAbilities,
+    insertions: state.firstNightTaskInsertions
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidFirstNightTaskInsertedPayload", validation.reason);
+  }
+};
+
 const validateScheduledTaskSettledPayloadForState = (
   state: GameState,
   payload: ScheduledTaskSettledPayload
@@ -754,13 +845,27 @@ const validateScheduledTaskSettledPayloadForState = (
   }
 
   if (payload.taskType === "PHILOSOPHER_ACTION") {
-    if (
-      payload.outcomeType !== "PHILOSOPHER_DEFERRED" ||
-      !hasClosedPhilosopherOpportunityForSettlement(state.firstNightActionOpportunities, payload)
-    ) {
-      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a closed Philosopher action opportunity");
+    if (payload.outcomeType === "PHILOSOPHER_DEFERRED") {
+      if (!hasClosedPhilosopherOpportunityForSettlement(state.firstNightActionOpportunities, payload)) {
+        throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a closed Philosopher action opportunity");
+      }
+      return;
     }
-    return;
+
+    if (payload.outcomeType === "PHILOSOPHER_ABILITY_CHOSEN") {
+      if (
+        !hasPhilosopherAbilityGrantForSettlement(
+          state.philosopherGrantedAbilities,
+          payload,
+          state.firstNightActionOpportunities
+        )
+      ) {
+        throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a granted Philosopher ability choice");
+      }
+      return;
+    }
+
+    throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled uses an unsupported Philosopher outcome");
   }
 
   throw new DomainError(
@@ -791,6 +896,14 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidFirstNightActionOpportunityCreatedPayload";
     case "PhilosopherActionDeferred":
       return "InvalidPhilosopherActionDeferredPayload";
+    case "PhilosopherAbilityChosen":
+      return "InvalidPhilosopherAbilityChosenPayload";
+    case "PhilosopherAbilityGranted":
+      return "InvalidPhilosopherAbilityGrantedPayload";
+    case "AbilityImpairmentApplied":
+      return "InvalidAbilityImpairmentAppliedPayload";
+    case "FirstNightTaskInserted":
+      return "InvalidFirstNightTaskInsertedPayload";
     case "MinionInformationDelivered":
       return "InvalidMinionInformationDeliveredPayload";
     case "DemonInformationDelivered":
@@ -1084,6 +1197,102 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload)
+      };
+    }
+
+    case "PhilosopherAbilityChosen": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "PhilosopherAbilityChosen requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidPhilosopherAbilityChosenPayload",
+          "PhilosopherAbilityChosen payload rules baseline must match game state"
+        );
+      }
+
+      validatePhilosopherAbilityChosenPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
+        philosopherAbilityChoices: appendPhilosopherAbilityChoice(state.philosopherAbilityChoices, event.payload)
+      };
+    }
+
+    case "PhilosopherAbilityGranted": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "PhilosopherAbilityGranted requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidPhilosopherAbilityGrantedPayload",
+          "PhilosopherAbilityGranted payload rules baseline must match game state"
+        );
+      }
+
+      validatePhilosopherAbilityGrantedPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        philosopherGrantedAbilities: appendPhilosopherGrantedAbility(state.philosopherGrantedAbilities, event.payload)
+      };
+    }
+
+    case "AbilityImpairmentApplied": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "AbilityImpairmentApplied requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidAbilityImpairmentAppliedPayload",
+          "AbilityImpairmentApplied payload rules baseline must match game state"
+        );
+      }
+
+      validateAbilityImpairmentAppliedPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        abilityImpairments: appendAbilityImpairment(state.abilityImpairments, event.payload)
+      };
+    }
+
+    case "FirstNightTaskInserted": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "FirstNightTaskInserted requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidFirstNightTaskInsertedPayload",
+          "FirstNightTaskInserted payload rules baseline must match game state"
+        );
+      }
+
+      validateFirstNightTaskInsertedPayloadForState(state, event.payload);
+      if (state.firstNightTaskPlan === undefined) {
+        throw new DomainError("InvalidFirstNightTaskInsertedPayload", "FirstNightTaskInserted requires first-night task plan");
+      }
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightTaskPlan: {
+          ...applyFirstNightTaskInsertionToPlan(state.firstNightTaskPlan, event.payload),
+          rulesBaselineVersion: state.firstNightTaskPlan.rulesBaselineVersion
+        },
+        firstNightTaskInsertions: appendFirstNightTaskInsertion(state.firstNightTaskInsertions, event.payload)
       };
     }
 

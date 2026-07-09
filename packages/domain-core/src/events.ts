@@ -9,6 +9,12 @@ import type {
   PhilosopherActionDeferredPayload
 } from "./first-night-action-opportunity.js";
 import type {
+  AbilityImpairmentAppliedPayload,
+  FirstNightTaskInsertedPayload,
+  PhilosopherAbilityChosenPayload,
+  PhilosopherAbilityGrantedPayload
+} from "./philosopher-ability.js";
+import type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
 } from "./first-night-team-information.js";
@@ -21,6 +27,12 @@ export type {
   FirstNightActionOpportunityCreatedPayload,
   PhilosopherActionDeferredPayload
 } from "./first-night-action-opportunity.js";
+export type {
+  AbilityImpairmentAppliedPayload,
+  FirstNightTaskInsertedPayload,
+  PhilosopherAbilityChosenPayload,
+  PhilosopherAbilityGrantedPayload
+} from "./philosopher-ability.js";
 export type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
@@ -119,6 +131,10 @@ export type DomainEventPayloadByType = {
   readonly FirstNightTaskPlanCreated: FirstNightTaskPlanCreatedPayload;
   readonly FirstNightActionOpportunityCreated: FirstNightActionOpportunityCreatedPayload;
   readonly PhilosopherActionDeferred: PhilosopherActionDeferredPayload;
+  readonly PhilosopherAbilityChosen: PhilosopherAbilityChosenPayload;
+  readonly PhilosopherAbilityGranted: PhilosopherAbilityGrantedPayload;
+  readonly AbilityImpairmentApplied: AbilityImpairmentAppliedPayload;
+  readonly FirstNightTaskInserted: FirstNightTaskInsertedPayload;
   readonly MinionInformationDelivered: MinionInformationDeliveredPayload;
   readonly DemonInformationDelivered: DemonInformationDeliveredPayload;
   readonly ScheduledTaskSettled: ScheduledTaskSettledPayload;

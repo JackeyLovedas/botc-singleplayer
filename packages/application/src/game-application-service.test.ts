@@ -204,6 +204,23 @@ const reachOpenPhilosopherActionOpportunity = async (service: GameApplicationSer
   await service.execute(openFirstNightRoleActionOpportunityCommand());
 };
 
+const choosePhilosopherRoleCommand = (
+  chosenRoleId: string,
+  overrides: Parameters<typeof submitPhilosopherActionCommand>[0] = {}
+) => submitPhilosopherActionCommand({
+  commandId: commandId(`choose-${chosenRoleId}`),
+  payload: {
+    commandType: "SubmitPhilosopherAction",
+    taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
+    opportunityId: actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"),
+    decision: {
+      kind: "CHOOSE_GOOD_CHARACTER",
+      roleId: roleId(chosenRoleId)
+    }
+  },
+  ...overrides
+});
+
 const noPhilosopherExactRoleIds = [
   "clockmaker",
   "dreamer",
@@ -2525,8 +2542,8 @@ describe("GameApplicationService", () => {
         sourceCharacterStateRevision: 1,
         visibility: {
           canDefer: true,
-          supportedDecisionKinds: ["DEFER"],
-          futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+          supportedDecisionKinds: ["DEFER", "CHOOSE_GOOD_CHARACTER"],
+          futureUnsupportedDecisionKinds: []
         }
       }
     });
@@ -2706,12 +2723,12 @@ describe("GameApplicationService", () => {
     expect(await mismatchStore.loadDomainEvents(ids.game)).toHaveLength(12);
   });
 
-  it("rejects Philosopher ability choice as not implemented and keeps the same commandId retryable after DEFER failures", async () => {
+  it("accepts Philosopher ability choice and rejects missing opportunities before role action settlement", async () => {
     const { service, commandStore } = makeService();
     await reachOpenPhilosopherActionOpportunity(service);
 
     const choose = submitPhilosopherActionCommand({
-      commandId: commandId("choose-good-character-not-implemented"),
+      commandId: commandId("choose-dreamer-good-character"),
       payload: {
         commandType: "SubmitPhilosopherAction",
         taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
@@ -2722,14 +2739,21 @@ describe("GameApplicationService", () => {
         }
       }
     });
-    await expect(service.execute(choose)).resolves.toMatchObject({
-      status: "rejected",
-      code: "PhilosopherAbilityChoiceNotImplemented",
-      currentGameVersion: 8
-    });
-    expect((await commandStore.findCommandReceipt(choose.gameId, choose.commandId))?.result.status).toBe("rejected");
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
+    const chooseResult = await service.execute(choose);
+    expectAcceptedResult(chooseResult);
+    expect(chooseResult.events.map((event) => event.eventType)).toStrictEqual([
+      "PhilosopherAbilityChosen",
+      "PhilosopherAbilityGranted",
+      "AbilityImpairmentApplied",
+      "FirstNightTaskInserted",
+      "ScheduledTaskSettled"
+    ]);
+    expect((await commandStore.findCommandReceipt(choose.gameId, choose.commandId))?.result.status).toBe("accepted");
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(17);
 
+    const otherStore = new MemoryCommandCommitStore();
+    const { service: otherService } = makeService(otherStore);
+    await reachOpenPhilosopherActionOpportunity(otherService);
     const wrongOpportunity = submitPhilosopherActionCommand({
       commandId: commandId("missing-opportunity-defer"),
       payload: {
@@ -2741,13 +2765,258 @@ describe("GameApplicationService", () => {
         }
       }
     });
-    await expect(service.execute(wrongOpportunity)).resolves.toMatchObject({
+    await expect(otherService.execute(wrongOpportunity)).resolves.toMatchObject({
       status: "rejected",
       code: "ActionOpportunityNotFound",
       currentGameVersion: 8
     });
-    expect((await commandStore.findCommandReceipt(wrongOpportunity.gameId, wrongOpportunity.commandId))?.result.status).toBe("rejected");
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
+    expect((await otherStore.findCommandReceipt(wrongOpportunity.gameId, wrongOpportunity.commandId))?.result.status).toBe("rejected");
+    expect(await otherStore.loadDomainEvents(ids.game)).toHaveLength(12);
+  });
+
+  it("rejects invalid Philosopher ability choices with saved receipts", async () => {
+    const cases = [
+      {
+        name: "unknown",
+        command: choosePhilosopherRoleCommand("not_a_role", { commandId: commandId("choose-unknown-role") }),
+        code: "InvalidPhilosopherAbilityChoice"
+      },
+      {
+        name: "demon",
+        command: choosePhilosopherRoleCommand("fang_gu", { commandId: commandId("choose-demon-role") }),
+        code: "InvalidPhilosopherAbilityChoice"
+      },
+      {
+        name: "minion",
+        command: choosePhilosopherRoleCommand("evil_twin", { commandId: commandId("choose-minion-role") }),
+        code: "InvalidPhilosopherAbilityChoice"
+      },
+      {
+        name: "extra-field",
+        command: submitPhilosopherActionCommand({
+          commandId: commandId("choose-extra-field"),
+          payload: {
+            commandType: "SubmitPhilosopherAction",
+            taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
+            opportunityId: actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"),
+            decision: {
+              kind: "CHOOSE_GOOD_CHARACTER",
+              roleId: roleId("artist"),
+              hidden: true
+            } as never
+          }
+        }),
+        code: "InvalidPhilosopherAbilityChoice"
+      },
+      {
+        name: "unsupported-kind",
+        command: submitPhilosopherActionCommand({
+          commandId: commandId("choose-unsupported-kind"),
+          payload: {
+            commandType: "SubmitPhilosopherAction",
+            taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
+            opportunityId: actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"),
+            decision: {
+              kind: "CHOOSE_PLAYER",
+              playerId: playerId("player-1")
+            } as never
+          }
+        }),
+        code: "UnsupportedPhilosopherAbilityChoice"
+      }
+    ] as const;
+
+    for (const testCase of cases) {
+      const store = new MemoryCommandCommitStore();
+      const { service } = makeService(store);
+      await reachOpenPhilosopherActionOpportunity(service);
+
+      await expect(service.execute(testCase.command)).resolves.toMatchObject({
+        status: "rejected",
+        code: testCase.code,
+        currentGameVersion: 8
+      });
+      expect((await store.findCommandReceipt(testCase.command.gameId, testCase.command.commandId))?.result.status, testCase.name).toBe("rejected");
+      expect(await store.loadDomainEvents(ids.game), testCase.name).toHaveLength(12);
+    }
+  });
+
+  it("grants a legal non-inserting good ability without changing role or assignment", async () => {
+    const { service, commandStore } = makeService();
+    await reachOpenPhilosopherActionOpportunity(service);
+
+    const result = await service.execute(choosePhilosopherRoleCommand("klutz", { commandId: commandId("choose-klutz-no-insert") }));
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(result);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "PhilosopherAbilityChosen",
+      "PhilosopherAbilityGranted",
+      "ScheduledTaskSettled"
+    ]);
+    expect(state?.philosopherGrantedAbilities?.abilities).toHaveLength(1);
+    expect(state?.philosopherGrantedAbilities?.abilities[0]).toMatchObject({
+      grantId: "philosopher-grant-v1:seat-10:from-klutz",
+      chosenRoleId: "klutz",
+      grantedAtTaskId: "first-night-v1:PHILOSOPHER_ACTION:seat-10",
+      grantedAtOpportunityId: "first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"
+    });
+    expect(state?.abilityImpairments?.impairments).toBeUndefined();
+    expect(state?.firstNightTaskInsertions?.insertions).toBeUndefined();
+    expect(state?.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("CLOSED");
+    expect(state?.firstNightTaskProgress?.settlements[0]).toMatchObject({
+      taskType: "PHILOSOPHER_ACTION",
+      outcomeType: "PHILOSOPHER_ABILITY_CHOSEN"
+    });
+    expect(state?.currentCharacterState?.entries.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
+    expect(state?.assignment?.assignments.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
+
+    const minionResult = await service.execute(settleFirstNightSystemTaskCommand({
+      commandId: commandId("settle-minion-after-klutz-choice"),
+      expectedGameVersion: 9
+    }));
+    expectAcceptedResult(minionResult);
+  });
+
+  it("records drunkenness for an in-play good role and inserts gained first-night tasks before MINION_INFO", async () => {
+    const { service, commandStore } = makeService();
+    await reachOpenPhilosopherActionOpportunity(service);
+
+    const result = await service.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-charmer-insert") }));
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(result);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "PhilosopherAbilityChosen",
+      "PhilosopherAbilityGranted",
+      "AbilityImpairmentApplied",
+      "FirstNightTaskInserted",
+      "ScheduledTaskSettled"
+    ]);
+    expect(state?.abilityImpairments?.impairments[0]).toMatchObject({
+      kind: "DRUNK",
+      sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+      sourcePlayerId: state?.firstNightActionOpportunities?.opportunities[0]?.sourcePlayerId,
+      chosenRoleId: "snake_charmer",
+      sourceCharacterStateRevision: 1
+    });
+    expect(state?.firstNightTaskInsertions?.insertions[0]).toMatchObject({
+      taskId: "first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer",
+      taskType: "SNAKE_CHARMER_ACTION",
+      taskClass: "ROLE_ACTION",
+      orderKey: {
+        baseOrder: 100,
+        insertionOrder: 1
+      },
+      status: "PENDING",
+      settlementPolicy: "REEVALUATE_SOURCE_AT_SETTLEMENT",
+      insertionReason: "PHILOSOPHER_GAINED_ABILITY",
+      insertedByOpportunityId: "first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"
+    });
+    expect(state?.firstNightTaskPlan?.tasks.slice(0, 3).map((task) => task.taskType)).toStrictEqual([
+      "PHILOSOPHER_ACTION",
+      "SNAKE_CHARMER_ACTION",
+      "MINION_INFO"
+    ]);
+    expect(state?.firstNightTaskPlan?.taskCatalogSnapshot.definitions).toHaveLength(testFirstNightTaskCatalog.definitions.length);
+    expect(state?.firstNightTaskProgress?.settlements).toHaveLength(1);
+
+    const minionResult = await service.execute(settleFirstNightSystemTaskCommand({
+      commandId: commandId("blocked-minion-after-inserted-snake"),
+      expectedGameVersion: 9
+    }));
+    expect(minionResult).toMatchObject({
+      status: "rejected",
+      code: "NextTaskRequiresRoleExecution",
+      currentGameVersion: 9
+    });
+  });
+
+  it("inserts each supported Philosopher gained first-night task deterministically", async () => {
+    const cases = [
+      ["clockmaker", "CLOCKMAKER_INFORMATION"],
+      ["dreamer", "DREAMER_ACTION"],
+      ["snake_charmer", "SNAKE_CHARMER_ACTION"],
+      ["seamstress", "SEAMSTRESS_ACTION"],
+      ["mathematician", "MATHEMATICIAN_INFORMATION"]
+    ] as const;
+
+    for (const [chosenRole, taskType] of cases) {
+      const store = new MemoryCommandCommitStore();
+      const { service } = makeService(store);
+      await reachOpenPhilosopherActionOpportunity(service);
+
+      const result = await service.execute(choosePhilosopherRoleCommand(chosenRole, {
+        commandId: commandId(`choose-${chosenRole}-insert-task`)
+      }));
+      const state = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+
+      expectAcceptedResult(result);
+      expect(state?.firstNightTaskInsertions?.insertions[0]).toMatchObject({
+        taskId: `first-night-v1:PHILOSOPHER_GAINED:${taskType}:seat-10:from-${chosenRole}`,
+        taskType
+      });
+    }
+  });
+
+  it("allows source player, Storyteller, and System to choose a good character but rejects non-source actors", async () => {
+    const sourceStore = new MemoryCommandCommitStore();
+    const { service: sourceService } = makeService(sourceStore);
+    await reachOpenPhilosopherActionOpportunity(sourceService);
+    const sourceState = rebuildOptionalGameState(await sourceStore.loadDomainEvents(ids.game));
+    const sourcePlayerId = sourceState?.firstNightActionOpportunities?.opportunities[0]?.sourcePlayerId;
+    if (sourcePlayerId === undefined) {
+      throw new Error("Expected Philosopher source player");
+    }
+
+    await expect(sourceService.execute(choosePhilosopherRoleCommand("artist", {
+      actor: { kind: "ai", playerId: sourcePlayerId },
+      commandId: commandId("source-ai-choose-artist")
+    }))).resolves.toMatchObject({ status: "accepted", gameVersion: 9 });
+
+    const storytellerStore = new MemoryCommandCommitStore();
+    const { service: storytellerService } = makeService(storytellerStore);
+    await reachOpenPhilosopherActionOpportunity(storytellerService);
+    await expect(storytellerService.execute(choosePhilosopherRoleCommand("artist", {
+      actor: storytellerActor,
+      commandId: commandId("storyteller-choose-artist")
+    }))).resolves.toMatchObject({ status: "accepted", gameVersion: 9 });
+
+    const humanSeatStore = new MemoryCommandCommitStore();
+    const { service: humanSeatService } = makeService(humanSeatStore);
+    await humanSeatService.execute(createGameCommand());
+    await humanSeatService.execute(selectScriptCommand());
+    await humanSeatService.execute(generateSetupCommand());
+    await humanSeatService.execute(createPlayerRosterCommand({
+      payload: {
+        commandType: "CreatePlayerRoster",
+        humanPlayerId: humanActor.playerId,
+        humanDisplayName: "Human",
+        humanSeatNumber: 10
+      }
+    }));
+    await humanSeatService.execute(assignCharactersCommand());
+    await humanSeatService.execute(initializeFirstNightCommand());
+    await humanSeatService.execute(planFirstNightTasksCommand());
+    await humanSeatService.execute(openFirstNightRoleActionOpportunityCommand());
+    await expect(humanSeatService.execute(choosePhilosopherRoleCommand("artist", {
+      actor: { kind: "human", playerId: humanActor.playerId },
+      commandId: commandId("source-human-choose-artist")
+    }))).resolves.toMatchObject({ status: "accepted", gameVersion: 9 });
+
+    const mismatchStore = new MemoryCommandCommitStore();
+    const { service: mismatchService } = makeService(mismatchStore);
+    await reachOpenPhilosopherActionOpportunity(mismatchService);
+    await expect(mismatchService.execute(choosePhilosopherRoleCommand("artist", {
+      actor: humanActor,
+      commandId: commandId("wrong-human-choose-artist")
+    }))).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActorPlayerMismatch",
+      currentGameVersion: 8
+    });
   });
 
   it("keeps Philosopher DEFER idempotent and rejects later opportunity reuse with saved receipts", async () => {
