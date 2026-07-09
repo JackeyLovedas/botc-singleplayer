@@ -137,7 +137,42 @@ SubmitPhilosopherAction(DEFER)
 
 `FirstNightActionOpportunityCreated` is a single-event batch. `PhilosopherActionDeferred` is valid only when immediately followed by its matching `ScheduledTaskSettled` event. The DEFER path closes the opportunity and settles the current wake. It does not consume the Philosopher once-per-game ability, grant another ability, make the original role drunk, insert dynamic tasks, or execute any other role ability.
 
-`CHOOSE_GOOD_CHARACTER` is represented only as a future unsupported decision kind and as a deterministic command rejection in this slice.
+Slice 2B7 adds settlement for Philosopher ability choice:
+
+```text
+SubmitPhilosopherAction(CHOOSE_GOOD_CHARACTER)
+-> validate chosen role exists in the setup role catalog and is GOOD
+-> create PhilosopherAbilityChosen
+-> create PhilosopherAbilityGranted
+-> if the chosen role is currently in play, create AbilityImpairmentApplied(kind = DRUNK)
+-> if the chosen role has a mapped first-night task, create FirstNightTaskInserted
+-> create ScheduledTaskSettled(outcomeType = PHILOSOPHER_ABILITY_CHOSEN) in the same batch
+-> append FirstNightTaskProgress from replay
+```
+
+Valid ability-choice batches are:
+
+```text
+PhilosopherAbilityChosen
+PhilosopherAbilityGranted
+[AbilityImpairmentApplied]
+[FirstNightTaskInserted]
+ScheduledTaskSettled
+```
+
+The impairment event is required exactly when the chosen role is currently in play. The insertion event is required exactly when the chosen role maps to a gained first-night task.
+
+Mapped gained first-night tasks:
+
+```text
+clockmaker      -> CLOCKMAKER_INFORMATION
+dreamer         -> DREAMER_ACTION
+snake_charmer   -> SNAKE_CHARMER_ACTION
+seamstress      -> SEAMSTRESS_ACTION
+mathematician   -> MATHEMATICIAN_INFORMATION
+```
+
+Inserted tasks use `orderKey = { baseOrder: 100, insertionOrder: 1 }`, so they are ordered after the Philosopher wake and before base `MINION_INFO`. Inserted tasks remain pending in Slice 2B7. This slice records the granted ability and duplicate-role impairment marker, but it does not apply drunkenness effects, execute the gained ability, perform Snake Charmer exchange, or mutate `assignment` or `currentCharacterState`.
 
 ### Settlement And Snapshot Revision Binding
 
@@ -164,7 +199,7 @@ That means:
 - each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
 - projections must preserve each delivered fact independently.
 
-The model still does not create role ability results, role ability effects, dynamic task insertion, or AI decisions. The only visible role-action schema currently supported is the narrow Philosopher first-night DEFER opportunity.
+The model still does not execute inserted role tasks, create role ability effects, apply drunkenness, perform role exchanges, or make AI decisions. The visible role-action schema currently supported is the narrow Philosopher first-night DEFER and GOOD-character choice opportunity.
 
 ## ActionOpportunity Flow
 

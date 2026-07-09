@@ -178,6 +178,40 @@ Acceptance:
 - `CHOOSE_GOOD_CHARACTER` is rejected as not implemented.
 - No ability gain, no drunkenness, no dynamic task insertion, and no other role ability behavior is implemented.
 
+## Slice 2B7: Philosopher Ability Choice And Dynamic Task Insertion Foundation
+
+Scope:
+
+- Execute only after Slice 2B6 is accepted and merged.
+- Accept `SubmitPhilosopherAction({ kind: "CHOOSE_GOOD_CHARACTER", roleId })` for legal GOOD role catalog entries.
+- Record Philosopher ability choice and granted ability facts without mutating `assignment` or `currentCharacterState`.
+- Record a `DRUNK` impairment marker when the chosen GOOD role is currently in play.
+- Insert one pending gained first-night task for `clockmaker`, `dreamer`, `snake_charmer`, `seamstress`, or `mathematician`.
+- Settle the original `PHILOSOPHER_ACTION` task with `PHILOSOPHER_ABILITY_CHOSEN`.
+- Keep inserted tasks pending and unexecuted.
+- Keep player and AI private knowledge projections free of chosen role internals, granted ability facts, impairment markers, and inserted task facts.
+- Do not implement gained ability settlement, Snake Charmer exchange, drunkenness effects, AI decisions, UI, Electron, SQLite, or first-night phase completion.
+
+Implementation update:
+
+- `PhilosopherAbilityChosen -> PhilosopherAbilityGranted -> [AbilityImpairmentApplied] -> [FirstNightTaskInserted] -> ScheduledTaskSettled` is the accepted batch shape.
+- Optional impairment is required exactly when the chosen role is currently in play.
+- Optional insertion is required exactly when the chosen role maps to a first-night gained task.
+- Inserted task ids use `first-night-v1:PHILOSOPHER_GAINED:<TASK_TYPE>:seat-<NN>:from-<chosenRoleId>`.
+- Inserted tasks use `orderKey = { baseOrder: 100, insertionOrder: 1 }`, which places them after the Philosopher wake and before base `MINION_INFO`.
+
+Acceptance:
+
+- Legal GOOD choices are accepted; Demon, Minion, unknown, malformed, and unsupported choices are rejected.
+- Choosing an in-play GOOD role records the duplicate-role impairment marker.
+- Choosing an out-of-play GOOD role does not record an impairment marker.
+- Choosing `snake_charmer` inserts `SNAKE_CHARMER_ACTION` before `MINION_INFO`.
+- Inserted tasks are not executed in this slice.
+- `assignment` and `currentCharacterState` remain unchanged.
+- Golden base task count remains six and golden base order is unchanged.
+- Replay rejects naked, reversed, mixed, incomplete, and payload-mismatched ability choice batches.
+- Player and AI projections do not expose ability choice, grant, impairment, insertion, or task internals.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:
