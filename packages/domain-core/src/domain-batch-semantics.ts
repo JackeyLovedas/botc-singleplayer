@@ -182,6 +182,30 @@ const validateFirstNightTaskPlanCreatedBatch = (
   }
 };
 
+const validateFirstNightActionOpportunityCreatedBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "First-night role action opportunity batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    reject("First-night role action opportunity batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  if (events.length !== 1) {
+    reject("OpenFirstNightRoleActionOpportunity batch must contain exactly one FirstNightActionOpportunityCreated event");
+  }
+};
+
 const validateIntegratedFirstNightSystemInformationBatch = (
   currentState: GameState | undefined,
   informationDelivered: DomainEventEnvelope<"MinionInformationDelivered"> | DomainEventEnvelope<"DemonInformationDelivered">,
@@ -233,6 +257,41 @@ const validateIntegratedFirstNightSystemInformationBatch = (
   }
 };
 
+const validateIntegratedPhilosopherActionDeferredBatch = (
+  currentState: GameState | undefined,
+  philosopherActionDeferred: DomainEventEnvelope<"PhilosopherActionDeferred">,
+  scheduledTaskSettled: DomainEventEnvelope<"ScheduledTaskSettled">
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Philosopher action settlement batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    reject("Philosopher action settlement batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  assertSharedBatchMetadata(philosopherActionDeferred, scheduledTaskSettled);
+
+  if (
+    scheduledTaskSettled.payload.taskId !== philosopherActionDeferred.payload.taskId ||
+    scheduledTaskSettled.payload.taskType !== philosopherActionDeferred.payload.taskType ||
+    scheduledTaskSettled.payload.characterStateRevision !== philosopherActionDeferred.payload.sourceCharacterStateRevision
+  ) {
+    reject("ScheduledTaskSettled must match the preceding PhilosopherActionDeferred task identity and source revision");
+  }
+
+  if (scheduledTaskSettled.payload.outcomeType !== "PHILOSOPHER_DEFERRED") {
+    reject("PHILOSOPHER_ACTION settlement must use PHILOSOPHER_DEFERRED outcome");
+  }
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -271,6 +330,24 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "FirstNightTaskPlanCreated") {
     validateFirstNightTaskPlanCreatedBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (first.eventType === "FirstNightActionOpportunityCreated") {
+    validateFirstNightActionOpportunityCreatedBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (
+    first.eventType === "PhilosopherActionDeferred" &&
+    second !== undefined &&
+    second.eventType === "ScheduledTaskSettled"
+  ) {
+    if (batchEvents.length !== 2 || third !== undefined) {
+      reject("Philosopher action settlement batches must contain exactly two events");
+    }
+
+    validateIntegratedPhilosopherActionDeferredBatch(currentState, first, second);
     return;
   }
 

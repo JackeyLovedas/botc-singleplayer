@@ -6,6 +6,7 @@ import {
   SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
+  actionOpportunityId,
   batchId,
   causationId,
   commandId,
@@ -31,6 +32,10 @@ import type {
   GameId,
   InitializeFirstNightCommand,
   InitializeFirstNightCommandPayload,
+  OpenFirstNightRoleActionOpportunityCommand,
+  OpenFirstNightRoleActionOpportunityCommandPayload,
+  SubmitPhilosopherActionCommand,
+  SubmitPhilosopherActionCommandPayload,
   PlanFirstNightTasksCommand,
   PlanFirstNightTasksCommandPayload,
   SettleFirstNightSystemTaskCommand,
@@ -209,6 +214,46 @@ export const settleFirstNightSystemTaskCommand = (
   issuedAt: "2026-07-07T00:00:07.000Z",
   correlationId: correlationId("correlation-8"),
   payload: settleFirstNightSystemTaskPayload,
+  ...overrides
+});
+
+export const openFirstNightRoleActionOpportunityPayload = {
+  commandType: "OpenFirstNightRoleActionOpportunity",
+  taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10")
+} as const satisfies OpenFirstNightRoleActionOpportunityCommandPayload;
+
+export const openFirstNightRoleActionOpportunityCommand = (
+  overrides: Partial<OpenFirstNightRoleActionOpportunityCommand> = {}
+): OpenFirstNightRoleActionOpportunityCommand => ({
+  commandId: commandId("command-8-role-open"),
+  gameId: ids.game,
+  expectedGameVersion: 7,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:07.000Z",
+  correlationId: correlationId("correlation-8-role-open"),
+  payload: openFirstNightRoleActionOpportunityPayload,
+  ...overrides
+});
+
+export const submitPhilosopherActionPayload = {
+  commandType: "SubmitPhilosopherAction",
+  taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
+  opportunityId: actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"),
+  decision: {
+    kind: "DEFER"
+  }
+} as const satisfies SubmitPhilosopherActionCommandPayload;
+
+export const submitPhilosopherActionCommand = (
+  overrides: Partial<SubmitPhilosopherActionCommand> = {}
+): SubmitPhilosopherActionCommand => ({
+  commandId: commandId("command-9-philosopher-defer"),
+  gameId: ids.game,
+  expectedGameVersion: 8,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:08.000Z",
+  correlationId: correlationId("correlation-9-philosopher-defer"),
+  payload: submitPhilosopherActionPayload,
   ...overrides
 });
 

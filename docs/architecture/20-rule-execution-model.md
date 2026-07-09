@@ -121,6 +121,24 @@ SettleFirstNightSystemTask
 
 `ScheduledTaskSettled` is a progress fact, not a replacement for the original task plan. It records task id, task type, night number, settlement version, outcome type, and current character state revision. It must be paired with the matching information delivery event in the same batch.
 
+Slice 2B6 adds settlement only for Philosopher DEFER:
+
+```text
+OpenFirstNightRoleActionOpportunity
+-> confirm PHILOSOPHER_ACTION is the next unsettled role action task
+-> create deterministic FirstNightActionOpportunityCreated
+
+SubmitPhilosopherAction(DEFER)
+-> validate opportunity, actor, source role snapshot, and character-state revision
+-> create PhilosopherActionDeferred
+-> create ScheduledTaskSettled(outcomeType = PHILOSOPHER_DEFERRED) in the same batch
+-> append FirstNightTaskProgress from replay
+```
+
+`FirstNightActionOpportunityCreated` is a single-event batch. `PhilosopherActionDeferred` is valid only when immediately followed by its matching `ScheduledTaskSettled` event. The DEFER path closes the opportunity and settles the current wake. It does not consume the Philosopher once-per-game ability, grant another ability, make the original role drunk, insert dynamic tasks, or execute any other role ability.
+
+`CHOOSE_GOOD_CHARACTER` is represented only as a future unsupported decision kind and as a deterministic command rejection in this slice.
+
 ### Settlement And Snapshot Revision Binding
 
 System team information settlement requires three revision facts to agree:
@@ -146,7 +164,7 @@ That means:
 - each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
 - projections must preserve each delivered fact independently.
 
-The model still does not create active role tasks, visible options, task inputs, role task results, role ability effects, dynamic task insertion, or AI decisions.
+The model still does not create role ability results, role ability effects, dynamic task insertion, or AI decisions. The only visible role-action schema currently supported is the narrow Philosopher first-night DEFER opportunity.
 
 ## ActionOpportunity Flow
 

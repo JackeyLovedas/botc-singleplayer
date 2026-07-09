@@ -16,10 +16,17 @@ import {
   createFixedPlayerRoster,
   compareStableId,
   cloneFirstNightTaskCatalogSnapshot,
+  createPhilosopherDeferredScheduledTaskSettlement,
+  createPhilosopherFirstNightActionOpportunity,
+  findFirstNightActionOpportunityById,
+  findFirstNightActionOpportunityForTask,
   getNextUnsettledFirstNightTask,
   isFirstNightTaskSettled,
+  isSupportedFirstNightRoleActionTaskType,
+  tryCreatePhilosopherFirstNightActionOpportunity,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
+  sameRoleSetupSnapshot,
   SUPPORTED_SCRIPT_EDITION,
   SUPPORTED_SCRIPT_ID,
   SUPPORTED_SCRIPT_NAME,
@@ -33,6 +40,7 @@ import type {
   AnyDomainEventEnvelope,
   DomainEventEnvelope,
   EventId,
+  FirstNightActionOpportunityCreatedPayload,
   GeneratedCharacterAssignment,
   GeneratedSetup,
   GameState,
@@ -40,6 +48,7 @@ import type {
   DemonInformationDeliveredPayload,
   DemonInformationEntry,
   FirstNightInitializedPayload,
+  PhilosopherActionDeferredPayload,
   FirstNightTaskCatalogSnapshot,
   FirstNightTaskPlan,
   FirstNightTaskPlanCreatedPayload,
@@ -861,6 +870,208 @@ export class GameApplicationService {
 
         return undefined;
       }
+
+      case "OpenFirstNightRoleActionOpportunity": {
+        if (command.actor.kind !== "system" && command.actor.kind !== "storyteller") {
+          return {
+            code: "ActorNotAllowed",
+            message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}`
+          };
+        }
+
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "OpenFirstNightRoleActionOpportunity requires an existing game" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return {
+            code: "CommandNotAllowedInPhase",
+            message: `OpenFirstNightRoleActionOpportunity cannot execute during ${state.phase}`
+          };
+        }
+
+        if (state.firstNight === undefined) {
+          return { code: "FirstNightNotInitialized", message: "OpenFirstNightRoleActionOpportunity requires first night initialization" };
+        }
+
+        if (state.firstNightTaskPlan === undefined) {
+          return { code: "FirstNightTaskPlanNotCreated", message: "OpenFirstNightRoleActionOpportunity requires a first-night task plan" };
+        }
+
+        if (state.currentCharacterState === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "OpenFirstNightRoleActionOpportunity requires current character state" };
+        }
+
+        const requestedTaskId = command.payload.taskId;
+        const targetTask = state.firstNightTaskPlan.tasks.find((task) => task.taskId === requestedTaskId);
+        if (targetTask === undefined) {
+          return { code: "ScheduledTaskNotFound", message: `Scheduled task ${requestedTaskId} does not exist in the first-night task plan` };
+        }
+
+        const existingOpportunity = findFirstNightActionOpportunityForTask(state.firstNightActionOpportunities, targetTask.taskId);
+        if (existingOpportunity?.opportunityStatus === "OPEN") {
+          return {
+            code: "ActionOpportunityAlreadyOpen",
+            message: `Action opportunity for scheduled task ${targetTask.taskId} is already open`
+          };
+        }
+
+        if (existingOpportunity?.opportunityStatus === "CLOSED") {
+          return {
+            code: "ActionOpportunityAlreadyClosed",
+            message: `Action opportunity for scheduled task ${targetTask.taskId} is already closed`
+          };
+        }
+
+        if (isFirstNightTaskSettled(state.firstNightTaskProgress, requestedTaskId)) {
+          return { code: "ScheduledTaskAlreadySettled", message: `Scheduled task ${requestedTaskId} is already settled` };
+        }
+
+        const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+        if (nextTask === undefined) {
+          return { code: "ScheduledTaskAlreadySettled", message: "All first-night tasks are already settled" };
+        }
+
+        if (nextTask.taskId !== targetTask.taskId) {
+          return {
+            code: "ScheduledTaskNotNext",
+            message: `Scheduled task ${targetTask.taskId} is not the next unsettled first-night task`
+          };
+        }
+
+        if (!isSupportedFirstNightRoleActionTaskType(targetTask.taskType)) {
+          return {
+            code: "UnsupportedRoleActionOpportunity",
+            message: `OpenFirstNightRoleActionOpportunity cannot open ${targetTask.taskType}`
+          };
+        }
+
+        const sourceValidation = tryCreatePhilosopherFirstNightActionOpportunity({
+          taskId: requestedTaskId,
+          firstNightTaskPlan: state.firstNightTaskPlan,
+          firstNightTaskProgress: state.firstNightTaskProgress,
+          currentCharacterState: state.currentCharacterState,
+          firstNightActionOpportunities: state.firstNightActionOpportunities
+        });
+        if (!sourceValidation.valid) {
+          return {
+            code: "ActionSourceNoLongerValid",
+            message: sourceValidation.reason
+          };
+        }
+
+        return undefined;
+      }
+
+      case "SubmitPhilosopherAction": {
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "SubmitPhilosopherAction requires an existing game" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `SubmitPhilosopherAction cannot execute during ${state.phase}` };
+        }
+
+        if (state.firstNight === undefined) {
+          return { code: "FirstNightNotInitialized", message: "SubmitPhilosopherAction requires first night initialization" };
+        }
+
+        if (state.firstNightTaskPlan === undefined) {
+          return { code: "FirstNightTaskPlanNotCreated", message: "SubmitPhilosopherAction requires a first-night task plan" };
+        }
+
+        if (state.currentCharacterState === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "SubmitPhilosopherAction requires current character state" };
+        }
+
+        const requestedTaskId = command.payload.taskId;
+        const targetTask = state.firstNightTaskPlan.tasks.find((task) => task.taskId === requestedTaskId);
+        if (targetTask === undefined) {
+          return { code: "ScheduledTaskNotFound", message: `Scheduled task ${requestedTaskId} does not exist in the first-night task plan` };
+        }
+
+        const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, command.payload.opportunityId);
+        if (opportunity === undefined) {
+          return {
+            code: "ActionOpportunityNotFound",
+            message: `Action opportunity ${command.payload.opportunityId} does not exist`
+          };
+        }
+
+        if ((command.actor.kind === "human" || command.actor.kind === "ai") && command.actor.playerId !== opportunity.sourcePlayerId) {
+          return {
+            code: "ActorPlayerMismatch",
+            message: "SubmitPhilosopherAction actor must match the action opportunity source player"
+          };
+        }
+
+        if (command.payload.decision.kind === "CHOOSE_GOOD_CHARACTER") {
+          return {
+            code: "PhilosopherAbilityChoiceNotImplemented",
+            message: "Philosopher ability choice is not implemented in Slice 2B6"
+          };
+        }
+
+        if (opportunity.opportunityStatus === "CLOSED") {
+          return {
+            code: "ActionOpportunityAlreadyClosed",
+            message: `Action opportunity ${command.payload.opportunityId} is already closed`
+          };
+        }
+
+        if (opportunity.taskId !== requestedTaskId) {
+          return {
+            code: "ScheduledTaskNotNext",
+            message: "SubmitPhilosopherAction taskId must match the referenced action opportunity"
+          };
+        }
+
+        if (isFirstNightTaskSettled(state.firstNightTaskProgress, requestedTaskId)) {
+          return { code: "ScheduledTaskAlreadySettled", message: `Scheduled task ${requestedTaskId} is already settled` };
+        }
+
+        const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+        if (nextTask === undefined) {
+          return { code: "ScheduledTaskAlreadySettled", message: "All first-night tasks are already settled" };
+        }
+
+        if (nextTask.taskId !== targetTask.taskId) {
+          return {
+            code: "ScheduledTaskNotNext",
+            message: `Scheduled task ${targetTask.taskId} is not the next unsettled first-night task`
+          };
+        }
+
+        if (!isSupportedFirstNightRoleActionTaskType(targetTask.taskType)) {
+          return {
+            code: "UnsupportedRoleActionOpportunity",
+            message: `SubmitPhilosopherAction cannot settle ${targetTask.taskType}`
+          };
+        }
+
+        const currentSourceEntry = state.currentCharacterState.entries.find((entry) =>
+          entry.playerId === opportunity.sourcePlayerId &&
+          entry.seatNumber === opportunity.sourceSeatNumber
+        );
+
+        if (
+          opportunity.sourceCharacterStateRevision !== state.currentCharacterState.revision ||
+          targetTask.source.kind !== "ROLE" ||
+          targetTask.source.playerId !== opportunity.sourcePlayerId ||
+          targetTask.source.seatNumber !== opportunity.sourceSeatNumber ||
+          targetTask.source.role.roleId !== "philosopher" ||
+          currentSourceEntry === undefined ||
+          currentSourceEntry.role.roleId !== "philosopher" ||
+          !sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole)
+        ) {
+          return {
+            code: "ActionSourceNoLongerValid",
+            message: "SubmitPhilosopherAction source is no longer the same current Philosopher state"
+          };
+        }
+
+        return undefined;
+      }
     }
 
     return assertNever(command.payload);
@@ -925,12 +1136,22 @@ export class GameApplicationService {
       }
 
       if (error instanceof DomainError) {
-        if (command.payload.commandType === "PlanFirstNightTasks" || command.payload.commandType === "SettleFirstNightSystemTask") {
+        if (
+          command.payload.commandType === "PlanFirstNightTasks" ||
+          command.payload.commandType === "SettleFirstNightSystemTask" ||
+          command.payload.commandType === "OpenFirstNightRoleActionOpportunity" ||
+          command.payload.commandType === "SubmitPhilosopherAction"
+        ) {
+          const failureStage = command.payload.commandType === "PlanFirstNightTasks"
+            ? "first-night-task-planning"
+            : command.payload.commandType === "SettleFirstNightSystemTask"
+              ? "first-night-system-information"
+              : "first-night-role-action";
           return failed(
             command.gameId,
             "DependencyExecutionFailed",
             error.message,
-            command.payload.commandType === "PlanFirstNightTasks" ? "first-night-task-planning" : "first-night-system-information",
+            failureStage,
             currentGameVersion
           );
         }
@@ -1646,6 +1867,102 @@ export class GameApplicationService {
         return [firstNightTaskPlanCreatedEvent];
       }
 
+      case "OpenFirstNightRoleActionOpportunity": {
+        if (
+          state === undefined ||
+          state.firstNightTaskPlan === undefined ||
+          state.currentCharacterState === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "OpenFirstNightRoleActionOpportunity event creation requires task plan and current character state"
+          );
+        }
+
+        const opportunity = createPhilosopherFirstNightActionOpportunity({
+          taskId: command.payload.taskId,
+          firstNightTaskPlan: state.firstNightTaskPlan,
+          firstNightTaskProgress: state.firstNightTaskProgress,
+          currentCharacterState: state.currentCharacterState,
+          firstNightActionOpportunities: state.firstNightActionOpportunities
+        });
+
+        const firstNightActionOpportunityCreatedEvent: DomainEventEnvelope<"FirstNightActionOpportunityCreated"> = {
+          ...common(firstEventSequence),
+          eventType: "FirstNightActionOpportunityCreated" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            ...opportunity
+          } satisfies FirstNightActionOpportunityCreatedPayload
+        };
+
+        return [firstNightActionOpportunityCreatedEvent];
+      }
+
+      case "SubmitPhilosopherAction": {
+        if (
+          state === undefined ||
+          state.firstNightTaskPlan === undefined ||
+          state.currentCharacterState === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SubmitPhilosopherAction event creation requires task plan and current character state"
+          );
+        }
+
+        if (command.payload.decision.kind !== "DEFER") {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SubmitPhilosopherAction event creation only supports DEFER in Slice 2B6"
+          );
+        }
+
+        const opportunity = findFirstNightActionOpportunityById(
+          state.firstNightActionOpportunities,
+          command.payload.opportunityId
+        );
+        if (opportunity === undefined || opportunity.opportunityStatus !== "OPEN") {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SubmitPhilosopherAction event creation requires an open action opportunity"
+          );
+        }
+
+        const philosopherActionDeferredEvent: DomainEventEnvelope<"PhilosopherActionDeferred"> = {
+          ...common(firstEventSequence),
+          eventType: "PhilosopherActionDeferred" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            nightNumber: 1,
+            taskId: opportunity.taskId,
+            taskType: opportunity.taskType,
+            opportunityId: opportunity.opportunityId,
+            decisionKind: "DEFER",
+            sourcePlayerId: opportunity.sourcePlayerId,
+            sourceSeatNumber: opportunity.sourceSeatNumber,
+            sourceRole: opportunity.sourceRole,
+            sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
+          } satisfies PhilosopherActionDeferredPayload
+        };
+
+        const settlement = createPhilosopherDeferredScheduledTaskSettlement({
+          taskId: opportunity.taskId,
+          characterStateRevision: opportunity.sourceCharacterStateRevision
+        });
+
+        const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "ScheduledTaskSettled" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            ...settlement
+          } satisfies ScheduledTaskSettledPayload
+        };
+
+        return [philosopherActionDeferredEvent, scheduledTaskSettledEvent];
+      }
+
       case "SettleFirstNightSystemTask": {
         if (
           state === undefined ||
@@ -1761,6 +2078,19 @@ export class GameApplicationService {
           "DependencyExecutionFailed",
           error.message,
           "first-night-system-information",
+          batch.expectedGameVersion
+        );
+      }
+
+      if (
+        command.payload.commandType === "OpenFirstNightRoleActionOpportunity" ||
+        command.payload.commandType === "SubmitPhilosopherAction"
+      ) {
+        return failed(
+          batch.gameId,
+          "DependencyExecutionFailed",
+          error.message,
+          "first-night-role-action",
           batch.expectedGameVersion
         );
       }

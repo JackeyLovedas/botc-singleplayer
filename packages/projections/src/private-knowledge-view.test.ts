@@ -10,6 +10,7 @@ import {
   SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROSTER_VERSION,
+  actionOpportunityId,
   batchId,
   causationId,
   commandId,
@@ -600,7 +601,33 @@ describe("private knowledge projections", () => {
   });
 
   it("does not expose first-night task plans through player or AI private knowledge views", () => {
-    const state = stateWithTaskPlan();
+    const baseState = stateWithTaskPlan();
+    const philosopherTask = baseState.firstNightTaskPlan?.tasks.find((task) => task.taskType === "PHILOSOPHER_ACTION");
+    if (philosopherTask === undefined || philosopherTask.source.kind !== "ROLE" || baseState.currentCharacterState === undefined) {
+      throw new Error("Expected Philosopher task source");
+    }
+    const state: GameState = {
+      ...baseState,
+      firstNightActionOpportunities: {
+        opportunities: [{
+          nightNumber: 1,
+          opportunityId: actionOpportunityId(`first-night-v1:PHILOSOPHER_ACTION:seat-${String(philosopherTask.source.seatNumber).padStart(2, "0")}:opportunity-01`),
+          opportunityKind: "PHILOSOPHER_FIRST_NIGHT_ACTION",
+          opportunityStatus: "OPEN",
+          taskId: philosopherTask.taskId,
+          taskType: "PHILOSOPHER_ACTION",
+          sourcePlayerId: philosopherTask.source.playerId,
+          sourceSeatNumber: philosopherTask.source.seatNumber,
+          sourceRole: philosopherTask.source.role,
+          sourceCharacterStateRevision: baseState.currentCharacterState.revision,
+          visibility: {
+            canDefer: true,
+            supportedDecisionKinds: ["DEFER"],
+            futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+          }
+        }]
+      }
+    };
     const viewer = state.roster?.entries[0];
     if (viewer === undefined) {
       throw new Error("Expected viewer");
@@ -618,8 +645,18 @@ describe("private knowledge projections", () => {
     for (const serialized of [playerSerialized, aiSerialized]) {
       expect(serialized).not.toContain("taskPlan");
       expect(serialized).not.toContain("tasks");
+      expect(serialized).not.toContain("taskId");
       expect(serialized).not.toContain("taskType");
+      expect(serialized).not.toContain("opportunityId");
+      expect(serialized).not.toContain("actionOpportunity");
+      expect(serialized).not.toContain("openOpportunities");
+      expect(serialized).not.toContain("availableActions");
       expect(serialized).not.toContain("sourcePlayerId");
+      expect(serialized).not.toContain("canDefer");
+      expect(serialized).not.toContain("supportedDecisionKinds");
+      expect(serialized).not.toContain("futureUnsupportedDecisionKinds");
+      expect(serialized).not.toContain("DEFER");
+      expect(serialized).not.toContain("CHOOSE_GOOD_CHARACTER");
       expect(serialized).not.toContain("pendingRoleTasks");
       expect(serialized).not.toContain("PHILOSOPHER_ACTION");
       expect(serialized).not.toContain("MINION_INFO");

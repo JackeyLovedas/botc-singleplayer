@@ -9,6 +9,7 @@ export type CausationId = Brand<string, "CausationId">;
 export type PlayerId = Brand<string, "PlayerId">;
 export type RoleId = Brand<string, "RoleId">;
 export type ScheduledTaskId = Brand<string, "ScheduledTaskId">;
+export type ActionOpportunityId = Brand<string, "ActionOpportunityId">;
 
 const asNonEmpty = <TBrand extends string>(value: string, label: TBrand): Brand<string, TBrand> => {
   if (value.trim().length === 0) {
@@ -27,5 +28,6 @@ export const causationId = (value: string): CausationId => asNonEmpty(value, "Ca
 export const playerId = (value: string): PlayerId => asNonEmpty(value, "PlayerId");
 export const roleId = (value: string): RoleId => asNonEmpty(value, "RoleId");
 export const scheduledTaskId = (value: string): ScheduledTaskId => asNonEmpty(value, "ScheduledTaskId");
+export const actionOpportunityId = (value: string): ActionOpportunityId => asNonEmpty(value, "ActionOpportunityId");
 
 export const causationIdFromCommandId = (value: CommandId): CausationId => causationId(value);

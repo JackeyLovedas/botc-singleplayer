@@ -39,6 +39,12 @@ export type CommandRejectionCode =
   | "ScheduledTaskNotNext"
   | "UnsupportedSystemTaskSettlement"
   | "NextTaskRequiresRoleExecution"
+  | "UnsupportedRoleActionOpportunity"
+  | "ActionOpportunityAlreadyOpen"
+  | "ActionOpportunityAlreadyClosed"
+  | "ActionOpportunityNotFound"
+  | "ActionSourceNoLongerValid"
+  | "PhilosopherAbilityChoiceNotImplemented"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 
@@ -144,6 +150,7 @@ export type CommandExecutionFailureStage =
   | "initial-knowledge-generation"
   | "first-night-task-planning"
   | "first-night-system-information"
+  | "first-night-role-action"
   | "event-metadata"
   | "prospective-validation"
   | "accepted-commit"

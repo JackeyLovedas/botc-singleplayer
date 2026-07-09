@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   RULES_BASELINE_VERSION,
   DomainError,
+  actionOpportunityId,
   batchId,
   cloneFirstNightTaskCatalogSnapshot,
   commandId,
@@ -48,11 +49,13 @@ import {
   humanActor,
   ids,
   initializeFirstNightCommand,
+  openFirstNightRoleActionOpportunityCommand,
   otherGameId,
   planFirstNightTasksCommand,
   scriptSelectedEvent,
   selectScriptCommand,
   settleFirstNightSystemTaskCommand,
+  submitPhilosopherActionCommand,
   storytellerActor,
   testAssignmentGenerator,
   testFirstNightTaskCatalog,
@@ -194,6 +197,11 @@ const reachFirstNightKnowledge = async (service: GameApplicationService): Promis
 const reachFirstNightTaskPlan = async (service: GameApplicationService): Promise<void> => {
   await reachFirstNightKnowledge(service);
   await service.execute(planFirstNightTasksCommand());
+};
+
+const reachOpenPhilosopherActionOpportunity = async (service: GameApplicationService): Promise<void> => {
+  await reachFirstNightTaskPlan(service);
+  await service.execute(openFirstNightRoleActionOpportunityCommand());
 };
 
 const noPhilosopherExactRoleIds = [
@@ -2487,6 +2495,428 @@ describe("GameApplicationService", () => {
     expect(state?.firstNightTaskProgress).toBeUndefined();
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeDefined();
     expect(events).toHaveLength(11);
+  });
+
+  it("opens a deterministic Philosopher first-night action opportunity without settling the task", async () => {
+    const { service, commandStore } = makeService();
+    await reachFirstNightTaskPlan(service);
+
+    const result = await service.execute(openFirstNightRoleActionOpportunityCommand());
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(result);
+    expect(result).toMatchObject({ status: "accepted", gameVersion: 8, idempotent: false });
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]).toMatchObject({
+      eventSequence: 12,
+      gameVersion: 8,
+      eventType: "FirstNightActionOpportunityCreated",
+      payload: {
+        opportunityId: "first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01",
+        opportunityKind: "PHILOSOPHER_FIRST_NIGHT_ACTION",
+        opportunityStatus: "OPEN",
+        taskId: "first-night-v1:PHILOSOPHER_ACTION:seat-10",
+        taskType: "PHILOSOPHER_ACTION",
+        sourceSeatNumber: 10,
+        sourceRole: {
+          roleId: "philosopher"
+        },
+        sourceCharacterStateRevision: 1,
+        visibility: {
+          canDefer: true,
+          supportedDecisionKinds: ["DEFER"],
+          futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+        }
+      }
+    });
+    expect(state?.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("OPEN");
+    expect(state?.firstNightTaskProgress).toBeUndefined();
+    expect(state?.minionInformation).toBeUndefined();
+    expect(events).toHaveLength(12);
+  });
+
+  it("allows Storyteller to open the Philosopher opportunity and rejects human or AI open attempts with receipts", async () => {
+    const storytellerStore = new MemoryCommandCommitStore();
+    const { service: storytellerService } = makeService(storytellerStore);
+    await reachFirstNightTaskPlan(storytellerService);
+    await expect(storytellerService.execute(openFirstNightRoleActionOpportunityCommand({
+      actor: storytellerActor
+    }))).resolves.toMatchObject({ status: "accepted", gameVersion: 8 });
+
+    const actorStore = new MemoryCommandCommitStore();
+    const { service: actorService } = makeService(actorStore);
+    await reachFirstNightTaskPlan(actorService);
+    const humanCommand = openFirstNightRoleActionOpportunityCommand({ commandId: commandId("human-open-role-action"), actor: humanActor });
+    const aiCommand = openFirstNightRoleActionOpportunityCommand({ commandId: commandId("ai-open-role-action"), actor: aiActor });
+
+    await expect(actorService.execute(humanCommand)).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    await expect(actorService.execute(aiCommand)).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    expect((await actorStore.findCommandReceipt(humanCommand.gameId, humanCommand.commandId))?.result.status).toBe("rejected");
+    expect((await actorStore.findCommandReceipt(aiCommand.gameId, aiCommand.commandId))?.result.status).toBe("rejected");
+    expect(await actorStore.loadDomainEvents(ids.game)).toHaveLength(11);
+  });
+
+  it("rejects duplicate, wrong-task, and unsupported role action opportunity opening with saved receipts", async () => {
+    const { service, commandStore } = makeService();
+    await reachFirstNightTaskPlan(service);
+    await service.execute(openFirstNightRoleActionOpportunityCommand());
+
+    const duplicate = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("duplicate-open-philosopher-action"),
+      expectedGameVersion: 8
+    });
+    await expect(service.execute(duplicate)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActionOpportunityAlreadyOpen",
+      currentGameVersion: 8
+    });
+    expect((await commandStore.findCommandReceipt(duplicate.gameId, duplicate.commandId))?.result.status).toBe("rejected");
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
+
+    const wrongOrderStore = new MemoryCommandCommitStore();
+    const { service: wrongOrderService } = makeService(wrongOrderStore);
+    await reachFirstNightTaskPlan(wrongOrderService);
+    const wrongOrder = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-minion-before-philosopher"),
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: scheduledTaskId("first-night-v1:MINION_INFO:system")
+      }
+    });
+    await expect(wrongOrderService.execute(wrongOrder)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ScheduledTaskNotNext",
+      currentGameVersion: 7
+    });
+
+    const unsupportedStore = new MemoryCommandCommitStore();
+    const { service: unsupportedService } = makeService(unsupportedStore);
+    await reachNoPhilosopherFirstNightTaskPlan(unsupportedService);
+    const unsupported = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-system-info-as-role-action"),
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: scheduledTaskId("first-night-v1:MINION_INFO:system")
+      }
+    });
+    await expect(unsupportedService.execute(unsupported)).resolves.toMatchObject({
+      status: "rejected",
+      code: "UnsupportedRoleActionOpportunity",
+      currentGameVersion: 7
+    });
+    expect((await unsupportedStore.findCommandReceipt(unsupported.gameId, unsupported.commandId))?.result.status).toBe("rejected");
+  });
+
+  it("defers Philosopher action atomically and closes the opportunity without consuming the ability", async () => {
+    const { service, commandStore } = makeService();
+    await reachOpenPhilosopherActionOpportunity(service);
+
+    const result = await service.execute(submitPhilosopherActionCommand());
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(9);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "PhilosopherActionDeferred",
+      "ScheduledTaskSettled"
+    ]);
+    expect(result.events[0]).toMatchObject({
+      eventSequence: 13,
+      gameVersion: 9,
+      eventType: "PhilosopherActionDeferred",
+      payload: {
+        taskId: "first-night-v1:PHILOSOPHER_ACTION:seat-10",
+        taskType: "PHILOSOPHER_ACTION",
+        opportunityId: "first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01",
+        decisionKind: "DEFER",
+        sourceSeatNumber: 10,
+        sourceCharacterStateRevision: 1
+      }
+    });
+    expect(result.events[1]).toMatchObject({
+      eventSequence: 14,
+      gameVersion: 9,
+      eventType: "ScheduledTaskSettled",
+      payload: {
+        taskId: "first-night-v1:PHILOSOPHER_ACTION:seat-10",
+        taskType: "PHILOSOPHER_ACTION",
+        outcomeType: "PHILOSOPHER_DEFERRED",
+        characterStateRevision: 1
+      }
+    });
+    expect(state?.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("CLOSED");
+    expect(state?.firstNightTaskProgress?.settlements[0]).toMatchObject({
+      taskType: "PHILOSOPHER_ACTION",
+      outcomeType: "PHILOSOPHER_DEFERRED"
+    });
+    expect(state?.currentCharacterState?.revision).toBe(1);
+    expect(state?.minionInformation).toBeUndefined();
+    expect(state?.demonInformation).toBeUndefined();
+    expect(events).toHaveLength(14);
+  });
+
+  it("allows the source player, Storyteller, and System to submit DEFER but rejects non-source players", async () => {
+    const sourceStore = new MemoryCommandCommitStore();
+    const { service: sourceService } = makeService(sourceStore);
+    await reachOpenPhilosopherActionOpportunity(sourceService);
+    const sourceState = rebuildOptionalGameState(await sourceStore.loadDomainEvents(ids.game));
+    const sourcePlayerId = sourceState?.firstNightActionOpportunities?.opportunities[0]?.sourcePlayerId;
+    if (sourcePlayerId === undefined) {
+      throw new Error("Expected open Philosopher action opportunity");
+    }
+    await expect(sourceService.execute(submitPhilosopherActionCommand({
+      actor: { kind: "ai", playerId: sourcePlayerId },
+      commandId: commandId("source-ai-defer")
+    }))).resolves.toMatchObject({ status: "accepted", gameVersion: 9 });
+
+    const storytellerStore = new MemoryCommandCommitStore();
+    const { service: storytellerService } = makeService(storytellerStore);
+    await reachOpenPhilosopherActionOpportunity(storytellerService);
+    await expect(storytellerService.execute(submitPhilosopherActionCommand({
+      actor: storytellerActor,
+      commandId: commandId("storyteller-defer")
+    }))).resolves.toMatchObject({ status: "accepted", gameVersion: 9 });
+
+    const mismatchStore = new MemoryCommandCommitStore();
+    const { service: mismatchService } = makeService(mismatchStore);
+    await reachOpenPhilosopherActionOpportunity(mismatchService);
+    const humanCommand = submitPhilosopherActionCommand({
+      actor: humanActor,
+      commandId: commandId("wrong-human-defer")
+    });
+    const aiCommand = submitPhilosopherActionCommand({
+      actor: aiActor,
+      commandId: commandId("wrong-ai-defer")
+    });
+
+    await expect(mismatchService.execute(humanCommand)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActorPlayerMismatch",
+      currentGameVersion: 8
+    });
+    await expect(mismatchService.execute(aiCommand)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActorPlayerMismatch",
+      currentGameVersion: 8
+    });
+    expect((await mismatchStore.findCommandReceipt(humanCommand.gameId, humanCommand.commandId))?.result.status).toBe("rejected");
+    expect((await mismatchStore.findCommandReceipt(aiCommand.gameId, aiCommand.commandId))?.result.status).toBe("rejected");
+    expect(await mismatchStore.loadDomainEvents(ids.game)).toHaveLength(12);
+  });
+
+  it("rejects Philosopher ability choice as not implemented and keeps the same commandId retryable after DEFER failures", async () => {
+    const { service, commandStore } = makeService();
+    await reachOpenPhilosopherActionOpportunity(service);
+
+    const choose = submitPhilosopherActionCommand({
+      commandId: commandId("choose-good-character-not-implemented"),
+      payload: {
+        commandType: "SubmitPhilosopherAction",
+        taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
+        opportunityId: actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"),
+        decision: {
+          kind: "CHOOSE_GOOD_CHARACTER",
+          roleId: roleId("dreamer")
+        }
+      }
+    });
+    await expect(service.execute(choose)).resolves.toMatchObject({
+      status: "rejected",
+      code: "PhilosopherAbilityChoiceNotImplemented",
+      currentGameVersion: 8
+    });
+    expect((await commandStore.findCommandReceipt(choose.gameId, choose.commandId))?.result.status).toBe("rejected");
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
+
+    const wrongOpportunity = submitPhilosopherActionCommand({
+      commandId: commandId("missing-opportunity-defer"),
+      payload: {
+        commandType: "SubmitPhilosopherAction",
+        taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
+        opportunityId: actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-06:opportunity-01"),
+        decision: {
+          kind: "DEFER"
+        }
+      }
+    });
+    await expect(service.execute(wrongOpportunity)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActionOpportunityNotFound",
+      currentGameVersion: 8
+    });
+    expect((await commandStore.findCommandReceipt(wrongOpportunity.gameId, wrongOpportunity.commandId))?.result.status).toBe("rejected");
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
+  });
+
+  it("keeps Philosopher DEFER idempotent and rejects later opportunity reuse with saved receipts", async () => {
+    const { service, commandStore } = makeService();
+    await reachOpenPhilosopherActionOpportunity(service);
+    const command = submitPhilosopherActionCommand({ commandId: commandId("idempotent-philosopher-defer") });
+
+    const first = await service.execute(command);
+    const second = await service.execute(command);
+    expectAcceptedResult(first);
+    expectAcceptedResult(second);
+    expect(second).toMatchObject({ status: "accepted", idempotent: true, gameVersion: 9 });
+    expect(second.events).toStrictEqual(first.events);
+
+    const submitAgain = submitPhilosopherActionCommand({
+      commandId: commandId("closed-opportunity-submit"),
+      expectedGameVersion: 9
+    });
+    await expect(service.execute(submitAgain)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActionOpportunityAlreadyClosed",
+      currentGameVersion: 9
+    });
+
+    const openAgain = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("closed-opportunity-open"),
+      expectedGameVersion: 9
+    });
+    await expect(service.execute(openAgain)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActionOpportunityAlreadyClosed",
+      currentGameVersion: 9
+    });
+    expect((await commandStore.findCommandReceipt(submitAgain.gameId, submitAgain.commandId))?.result.status).toBe("rejected");
+    expect((await commandStore.findCommandReceipt(openAgain.gameId, openAgain.commandId))?.result.status).toBe("rejected");
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(14);
+  });
+
+  it("keeps role action metadata generation failures classified independently without receipts", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const idGenerator = new FaultInjectingIdGenerator();
+    const clock = new FixedClock();
+    const { service } = makeService(commandStore, testSetupGenerator, idGenerator, clock);
+    const command = openFirstNightRoleActionOpportunityCommand({ commandId: commandId("role-action-metadata-failure") });
+
+    await reachFirstNightTaskPlan(service);
+    idGenerator.failNextBatchId = true;
+    const failedResult = await service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 7,
+      retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(11);
+  });
+
+  it("does not persist receipts or events when role action opportunity construction throws a DomainError", async () => {
+    const { service, commandStore } = makeService();
+    await reachFirstNightTaskPlan(service);
+    let taskIdReads = 0;
+    const command = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("mutating-open-role-action-task"),
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        get taskId() {
+          taskIdReads += 1;
+          return taskIdReads === 1
+            ? scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10")
+            : scheduledTaskId("first-night-v1:MINION_INFO:system");
+        }
+      } as never
+    });
+
+    const failedResult = await service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "DependencyExecutionFailed",
+      failureStage: "first-night-role-action",
+      currentGameVersion: 7,
+      retryable: true
+    });
+    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(11);
+  });
+
+  it("does not persist receipts or events when Philosopher DEFER construction throws a DomainError", async () => {
+    const { service, commandStore } = makeService();
+    await reachOpenPhilosopherActionOpportunity(service);
+    let opportunityIdReads = 0;
+    const command = submitPhilosopherActionCommand({
+      commandId: commandId("mutating-philosopher-opportunity"),
+      payload: {
+        commandType: "SubmitPhilosopherAction",
+        taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
+        get opportunityId() {
+          opportunityIdReads += 1;
+          return opportunityIdReads === 1
+            ? actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01")
+            : actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-06:opportunity-01");
+        },
+        decision: {
+          kind: "DEFER"
+        }
+      } as never
+    });
+
+    const failedResult = await service.execute(command);
+
+    expectFailedResult(failedResult);
+    expect(failedResult).toMatchObject({
+      code: "DependencyExecutionFailed",
+      failureStage: "first-night-role-action",
+      currentGameVersion: 8,
+      retryable: true
+    });
+    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
+  });
+
+  it("settles MINION_INFO and DEMON_INFO after Philosopher DEFER on the golden plan", async () => {
+    const { service, commandStore } = makeService();
+    await reachOpenPhilosopherActionOpportunity(service);
+    await service.execute(submitPhilosopherActionCommand());
+
+    const minionResult = await service.execute(settleFirstNightSystemTaskCommand({
+      commandId: commandId("settle-minion-after-philosopher-defer"),
+      expectedGameVersion: 9
+    }));
+    const demonResult = await service.execute(settleFirstNightSystemTaskCommand({
+      commandId: commandId("settle-demon-after-philosopher-defer"),
+      expectedGameVersion: 10,
+      payload: {
+        commandType: "SettleFirstNightSystemTask",
+        taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
+      }
+    }));
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+
+    expectAcceptedResult(minionResult);
+    expectAcceptedResult(demonResult);
+    expect(state?.firstNightTaskProgress?.settlements.map((settlement) => settlement.taskType)).toStrictEqual([
+      "PHILOSOPHER_ACTION",
+      "MINION_INFO",
+      "DEMON_INFO"
+    ]);
+    expect(state?.firstNightTaskProgress?.settlements.map((settlement) => settlement.outcomeType)).toStrictEqual([
+      "PHILOSOPHER_DEFERRED",
+      "MINION_INFORMATION_DELIVERED",
+      "DEMON_INFORMATION_DELIVERED"
+    ]);
+    expect(state?.minionInformation?.entries).toHaveLength(4);
+    expect(state?.demonInformation?.entries).toHaveLength(2);
+    expect(state?.firstNightTaskPlan?.tasks.slice(0, 6).map((task) => task.taskType)).toStrictEqual([
+      "PHILOSOPHER_ACTION",
+      "MINION_INFO",
+      "DEMON_INFO",
+      "SNAKE_CHARMER_ACTION",
+      "WITCH_ACTION",
+      "CERENOVUS_ACTION"
+    ]);
+    expect(events).toHaveLength(18);
   });
 
   it("settles MINION_INFO before DEMON_INFO on a no-Philosopher first-night plan", async () => {
