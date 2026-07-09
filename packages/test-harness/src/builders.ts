@@ -36,6 +36,8 @@ import type {
   OpenFirstNightRoleActionOpportunityCommandPayload,
   SubmitPhilosopherActionCommand,
   SubmitPhilosopherActionCommandPayload,
+  SubmitSnakeCharmerActionCommand,
+  SubmitSnakeCharmerActionCommandPayload,
   PlanFirstNightTasksCommand,
   PlanFirstNightTasksCommandPayload,
   SettleFirstNightSystemTaskCommand,
@@ -254,6 +256,29 @@ export const submitPhilosopherActionCommand = (
   issuedAt: "2026-07-07T00:00:08.000Z",
   correlationId: correlationId("correlation-9-philosopher-defer"),
   payload: submitPhilosopherActionPayload,
+  ...overrides
+});
+
+export const submitSnakeCharmerActionPayload = {
+  commandType: "SubmitSnakeCharmerAction",
+  taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer"),
+  opportunityId: actionOpportunityId("first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer:opportunity-01"),
+  decision: {
+    kind: "CHOOSE_PLAYER",
+    targetPlayerId: playerId("player-ai-1")
+  }
+} as const satisfies SubmitSnakeCharmerActionCommandPayload;
+
+export const submitSnakeCharmerActionCommand = (
+  overrides: Partial<SubmitSnakeCharmerActionCommand> = {}
+): SubmitSnakeCharmerActionCommand => ({
+  commandId: commandId("command-10-snake-charmer-target"),
+  gameId: ids.game,
+  expectedGameVersion: 10,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:09.000Z",
+  correlationId: correlationId("correlation-10-snake-charmer-target"),
+  payload: submitSnakeCharmerActionPayload,
   ...overrides
 });
 

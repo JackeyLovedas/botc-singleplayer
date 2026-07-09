@@ -22,13 +22,16 @@ import {
   createPhilosopherAbilityChosenPayload,
   createPhilosopherAbilityChosenScheduledTaskSettlement,
   createPhilosopherAbilityGrantedPayload,
-  createPhilosopherFirstNightActionOpportunity,
+  createFirstNightRoleActionOpportunity,
+  createSnakeCharmerNoSwapResolvedPayload,
+  createSnakeCharmerNoSwapScheduledTaskSettlement,
+  createSnakeCharmerTargetChosenPayload,
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
   getNextUnsettledFirstNightTask,
   isFirstNightTaskSettled,
-  isSupportedFirstNightRoleActionTaskType,
-  tryCreatePhilosopherFirstNightActionOpportunity,
+  isSupportedFirstNightRoleActionTask,
+  tryCreateFirstNightRoleActionOpportunity,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
   sameRoleSetupSnapshot,
@@ -37,6 +40,7 @@ import {
   SUPPORTED_SCRIPT_NAME,
   validateFirstNightTaskCatalogSnapshot,
   validatePhilosopherGoodCharacterChoice,
+  validateSnakeCharmerActionDecision,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
 import type {
@@ -75,6 +79,8 @@ import type {
   PhilosopherAbilityGrantedPayload,
   PlayerRosterCreatedPayload,
   ScheduledTaskSettledPayload,
+  SnakeCharmerNoSwapResolvedPayload,
+  SnakeCharmerTargetChosenPayload,
   SetupGeneratedPayload,
   SetupGenerationConstraints,
   SetupGenerationFailure,
@@ -949,14 +955,14 @@ export class GameApplicationService {
           };
         }
 
-        if (!isSupportedFirstNightRoleActionTaskType(targetTask.taskType)) {
+        if (!isSupportedFirstNightRoleActionTask(targetTask)) {
           return {
             code: "UnsupportedRoleActionOpportunity",
             message: `OpenFirstNightRoleActionOpportunity cannot open ${targetTask.taskType}`
           };
         }
 
-        const sourceValidation = tryCreatePhilosopherFirstNightActionOpportunity({
+        const sourceValidation = tryCreateFirstNightRoleActionOpportunity({
           taskId: requestedTaskId,
           firstNightTaskPlan: state.firstNightTaskPlan,
           firstNightTaskProgress: state.firstNightTaskProgress,
@@ -1067,7 +1073,7 @@ export class GameApplicationService {
           };
         }
 
-        if (!isSupportedFirstNightRoleActionTaskType(targetTask.taskType)) {
+        if (targetTask.taskType !== "PHILOSOPHER_ACTION" || opportunity.opportunityKind !== "PHILOSOPHER_FIRST_NIGHT_ACTION") {
           return {
             code: "UnsupportedRoleActionOpportunity",
             message: `SubmitPhilosopherAction cannot settle ${targetTask.taskType}`
@@ -1107,6 +1113,155 @@ export class GameApplicationService {
               message: choiceValidation.reason
             };
           }
+        }
+
+        return undefined;
+      }
+
+      case "SubmitSnakeCharmerAction": {
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "SubmitSnakeCharmerAction requires an existing game" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `SubmitSnakeCharmerAction cannot execute during ${state.phase}` };
+        }
+
+        if (state.firstNight === undefined) {
+          return { code: "FirstNightNotInitialized", message: "SubmitSnakeCharmerAction requires first night initialization" };
+        }
+
+        if (state.firstNightTaskPlan === undefined) {
+          return { code: "FirstNightTaskPlanNotCreated", message: "SubmitSnakeCharmerAction requires a first-night task plan" };
+        }
+
+        if (state.currentCharacterState === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "SubmitSnakeCharmerAction requires current character state" };
+        }
+
+        if (state.roster === undefined) {
+          return { code: "PlayerRosterNotCreated", message: "SubmitSnakeCharmerAction requires player roster" };
+        }
+
+        const requestedTaskId = command.payload.taskId;
+        const targetTask = state.firstNightTaskPlan.tasks.find((task) => task.taskId === requestedTaskId);
+        if (targetTask === undefined) {
+          return { code: "ScheduledTaskNotFound", message: `Scheduled task ${requestedTaskId} does not exist in the first-night task plan` };
+        }
+
+        const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, command.payload.opportunityId);
+        if (opportunity === undefined) {
+          return {
+            code: "ActionOpportunityNotFound",
+            message: `Action opportunity ${command.payload.opportunityId} does not exist`
+          };
+        }
+
+        if (opportunity.opportunityStatus === "CLOSED") {
+          return {
+            code: "ActionOpportunityAlreadyClosed",
+            message: `Action opportunity ${command.payload.opportunityId} is already closed`
+          };
+        }
+
+        if (
+          opportunity.opportunityKind !== "SNAKE_CHARMER_FIRST_NIGHT_ACTION" ||
+          opportunity.taskType !== "SNAKE_CHARMER_ACTION"
+        ) {
+          return {
+            code: "UnsupportedRoleActionOpportunity",
+            message: "SubmitSnakeCharmerAction requires a Snake Charmer action opportunity"
+          };
+        }
+
+        if (command.actor.kind === "human" || command.actor.kind === "ai") {
+          if (command.actor.playerId !== opportunity.sourcePlayerId) {
+            return {
+              code: "ActorPlayerMismatch",
+              message: "SubmitSnakeCharmerAction actor must match the action opportunity source player"
+            };
+          }
+        }
+
+        const decisionValidation = validateSnakeCharmerActionDecision(command.payload.decision);
+        if (!decisionValidation.valid) {
+          return {
+            code: "InvalidSnakeCharmerTarget",
+            message: decisionValidation.reason
+          };
+        }
+
+        if (opportunity.taskId !== requestedTaskId) {
+          return {
+            code: "ScheduledTaskNotNext",
+            message: "SubmitSnakeCharmerAction taskId must match the referenced action opportunity"
+          };
+        }
+
+        if (isFirstNightTaskSettled(state.firstNightTaskProgress, requestedTaskId)) {
+          return { code: "ScheduledTaskAlreadySettled", message: `Scheduled task ${requestedTaskId} is already settled` };
+        }
+
+        const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+        if (nextTask === undefined) {
+          return { code: "ScheduledTaskAlreadySettled", message: "All first-night tasks are already settled" };
+        }
+
+        if (nextTask.taskId !== targetTask.taskId) {
+          return {
+            code: "ScheduledTaskNotNext",
+            message: `Scheduled task ${targetTask.taskId} is not the next unsettled first-night task`
+          };
+        }
+
+        if (
+          targetTask.taskType !== "SNAKE_CHARMER_ACTION" ||
+          targetTask.source.kind !== "PHILOSOPHER_GAINED_ABILITY" ||
+          targetTask.source.chosenRole.roleId !== "snake_charmer" ||
+          targetTask.source.sourceRole.roleId !== "philosopher" ||
+          targetTask.source.sourceCharacterStateRevision !== opportunity.sourceCharacterStateRevision
+        ) {
+          return {
+            code: "UnsupportedRoleActionOpportunity",
+            message: "SubmitSnakeCharmerAction requires a Philosopher gained Snake Charmer task"
+          };
+        }
+
+        const currentSourceEntry = state.currentCharacterState.entries.find((entry) =>
+          entry.playerId === opportunity.sourcePlayerId &&
+          entry.seatNumber === opportunity.sourceSeatNumber
+        );
+        if (
+          currentSourceEntry === undefined ||
+          currentSourceEntry.role.roleId !== "philosopher" ||
+          !sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) ||
+          state.currentCharacterState.revision !== opportunity.sourceCharacterStateRevision
+        ) {
+          return {
+            code: "ActionSourceNoLongerValid",
+            message: "SubmitSnakeCharmerAction source is no longer the same current Philosopher state"
+          };
+        }
+
+        const snakeCharmerTargetPlayerId = command.payload.decision.targetPlayerId;
+        const targetRosterEntry = state.roster.entries.find((entry) => entry.playerId === snakeCharmerTargetPlayerId);
+        const targetStateEntry = state.currentCharacterState.entries.find((entry) => entry.playerId === snakeCharmerTargetPlayerId);
+        if (
+          targetRosterEntry === undefined ||
+          targetStateEntry === undefined ||
+          targetRosterEntry.seatNumber !== targetStateEntry.seatNumber
+        ) {
+          return {
+            code: "InvalidSnakeCharmerTarget",
+            message: "SubmitSnakeCharmerAction targetPlayerId must exist in roster and current character state"
+          };
+        }
+
+        if (targetStateEntry.role.characterType === "DEMON") {
+          return {
+            code: "SnakeCharmerDemonHitNotImplemented",
+            message: "Snake Charmer Demon hit swap is not implemented in this slice"
+          };
         }
 
         return undefined;
@@ -1179,7 +1334,8 @@ export class GameApplicationService {
           command.payload.commandType === "PlanFirstNightTasks" ||
           command.payload.commandType === "SettleFirstNightSystemTask" ||
           command.payload.commandType === "OpenFirstNightRoleActionOpportunity" ||
-          command.payload.commandType === "SubmitPhilosopherAction"
+          command.payload.commandType === "SubmitPhilosopherAction" ||
+          command.payload.commandType === "SubmitSnakeCharmerAction"
         ) {
           const failureStage = command.payload.commandType === "PlanFirstNightTasks"
             ? "first-night-task-planning"
@@ -1918,7 +2074,7 @@ export class GameApplicationService {
           );
         }
 
-        const opportunity = createPhilosopherFirstNightActionOpportunity({
+        const opportunity = createFirstNightRoleActionOpportunity({
           taskId: command.payload.taskId,
           firstNightTaskPlan: state.firstNightTaskPlan,
           firstNightTaskProgress: state.firstNightTaskProgress,
@@ -1958,6 +2114,12 @@ export class GameApplicationService {
           throw new DomainError(
             "InvalidDomainBatchSemantics",
             "SubmitPhilosopherAction event creation requires an open action opportunity"
+          );
+        }
+        if (opportunity.opportunityKind !== "PHILOSOPHER_FIRST_NIGHT_ACTION" || opportunity.taskType !== "PHILOSOPHER_ACTION") {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SubmitPhilosopherAction event creation requires a Philosopher action opportunity"
           );
         }
 
@@ -2083,6 +2245,78 @@ export class GameApplicationService {
         return [philosopherActionDeferredEvent, scheduledTaskSettledEvent];
       }
 
+      case "SubmitSnakeCharmerAction": {
+        if (
+          state === undefined ||
+          state.firstNightTaskPlan === undefined ||
+          state.currentCharacterState === undefined ||
+          state.roster === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SubmitSnakeCharmerAction event creation requires task plan, current character state, and roster"
+          );
+        }
+
+        const opportunity = findFirstNightActionOpportunityById(
+          state.firstNightActionOpportunities,
+          command.payload.opportunityId
+        );
+        if (
+          opportunity === undefined ||
+          opportunity.opportunityStatus !== "OPEN" ||
+          opportunity.opportunityKind !== "SNAKE_CHARMER_FIRST_NIGHT_ACTION" ||
+          opportunity.taskType !== "SNAKE_CHARMER_ACTION"
+        ) {
+          throw new DomainError(
+            "InvalidSnakeCharmerTargetChosenPayload",
+            "SubmitSnakeCharmerAction event creation requires an open Snake Charmer action opportunity"
+          );
+        }
+
+        const targetChoicePayload = createSnakeCharmerTargetChosenPayload({
+          rulesBaselineVersion: RULES_BASELINE_VERSION,
+          taskId: command.payload.taskId,
+          opportunityId: command.payload.opportunityId,
+          targetPlayerId: command.payload.decision.targetPlayerId,
+          firstNightActionOpportunities: state.firstNightActionOpportunities,
+          roster: state.roster.entries
+        });
+
+        const snakeCharmerTargetChosenEvent: DomainEventEnvelope<"SnakeCharmerTargetChosen"> = {
+          ...common(firstEventSequence),
+          eventType: "SnakeCharmerTargetChosen" as const,
+          payload: targetChoicePayload satisfies SnakeCharmerTargetChosenPayload
+        };
+
+        const noSwapPayload = createSnakeCharmerNoSwapResolvedPayload({
+          rulesBaselineVersion: RULES_BASELINE_VERSION,
+          targetChoice: targetChoicePayload
+        });
+
+        const snakeCharmerNoSwapResolvedEvent: DomainEventEnvelope<"SnakeCharmerNoSwapResolved"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "SnakeCharmerNoSwapResolved" as const,
+          payload: noSwapPayload satisfies SnakeCharmerNoSwapResolvedPayload
+        };
+
+        const settlement = createSnakeCharmerNoSwapScheduledTaskSettlement({
+          taskId: opportunity.taskId,
+          characterStateRevision: opportunity.sourceCharacterStateRevision
+        });
+
+        const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+          ...common(firstEventSequence + 2),
+          eventType: "ScheduledTaskSettled" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            ...settlement
+          } satisfies ScheduledTaskSettledPayload
+        };
+
+        return [snakeCharmerTargetChosenEvent, snakeCharmerNoSwapResolvedEvent, scheduledTaskSettledEvent];
+      }
+
       case "SettleFirstNightSystemTask": {
         if (
           state === undefined ||
@@ -2204,7 +2438,8 @@ export class GameApplicationService {
 
       if (
         command.payload.commandType === "OpenFirstNightRoleActionOpportunity" ||
-        command.payload.commandType === "SubmitPhilosopherAction"
+        command.payload.commandType === "SubmitPhilosopherAction" ||
+        command.payload.commandType === "SubmitSnakeCharmerAction"
       ) {
         return failed(
           batch.gameId,

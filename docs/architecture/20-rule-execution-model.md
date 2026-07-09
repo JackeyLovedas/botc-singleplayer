@@ -174,6 +174,42 @@ mathematician   -> MATHEMATICIAN_INFORMATION
 
 Inserted tasks use `orderKey = { baseOrder: 100, insertionOrder: 1 }`, so they are ordered after the Philosopher wake and before base `MINION_INFO`. Inserted tasks remain pending in Slice 2B7. This slice records the granted ability and duplicate-role impairment marker, but it does not apply drunkenness effects, execute the gained ability, perform Snake Charmer exchange, or mutate `assignment` or `currentCharacterState`.
 
+Slice 2B8 adds the first settlement path for a Philosopher-gained Snake Charmer task:
+
+```text
+OpenFirstNightRoleActionOpportunity
+-> confirm the next unsettled task is a PHILOSOPHER_GAINED_ABILITY SNAKE_CHARMER_ACTION
+-> create deterministic FirstNightActionOpportunityCreated(opportunityKind = SNAKE_CHARMER_FIRST_NIGHT_ACTION)
+
+SubmitSnakeCharmerAction(CHOOSE_PLAYER)
+-> validate source actor, open opportunity, task id, current next task, and target player
+-> if the target is the current Demon, reject as SnakeCharmerDemonHitNotImplemented
+-> if the target is not the current Demon, create SnakeCharmerTargetChosen
+-> create SnakeCharmerNoSwapResolved
+-> create ScheduledTaskSettled(outcomeType = SNAKE_CHARMER_NON_DEMON_NO_SWAP) in the same batch
+-> append FirstNightTaskProgress from replay
+```
+
+The Snake Charmer visible action schema is intentionally safe:
+
+```text
+canChooseTarget = true
+supportedDecisionKinds = [CHOOSE_PLAYER]
+targetSchema = ANY_LIVING_PLAYER
+```
+
+It does not expose target role, target alignment, whether the target is a Demon, whether a swap will occur, the full assignment, or the current character state.
+
+Valid non-Demon no-swap batches are:
+
+```text
+SnakeCharmerTargetChosen
+SnakeCharmerNoSwapResolved
+ScheduledTaskSettled
+```
+
+The no-swap branch closes the opportunity, settles only the inserted Snake Charmer task, leaves `assignment` and `currentCharacterState` unchanged, and allows the next base task to become `MINION_INFO`. Demon-hit swap, old-Demon poison, drunk/poison effectiveness, and AI target selection remain unimplemented.
+
 ### Settlement And Snapshot Revision Binding
 
 System team information settlement requires three revision facts to agree:
@@ -199,7 +235,7 @@ That means:
 - each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
 - projections must preserve each delivered fact independently.
 
-The model still does not execute inserted role tasks, create role ability effects, apply drunkenness, perform role exchanges, or make AI decisions. The visible role-action schema currently supported is the narrow Philosopher first-night DEFER and GOOD-character choice opportunity.
+The model still does not execute broad inserted role tasks, create role ability effects, apply drunkenness or poisoning, perform role exchanges, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, plus the Philosopher-gained Snake Charmer target-selection opportunity for the non-Demon no-swap branch.
 
 ## ActionOpportunity Flow
 

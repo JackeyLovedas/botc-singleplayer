@@ -22,9 +22,14 @@ import {
   compareStableId,
   createAbilityImpairmentAppliedPayload,
   createFirstNightTaskInsertedPayload,
+  createFirstNightRoleActionOpportunity,
   createPhilosopherAbilityChosenPayload,
   createPhilosopherAbilityChosenScheduledTaskSettlement,
   createPhilosopherAbilityGrantedPayload,
+  createSnakeCharmerNoSwapResolvedPayload,
+  createSnakeCharmerNoSwapScheduledTaskSettlement,
+  createSnakeCharmerTargetChosenPayload,
+  getNextUnsettledFirstNightTask,
   cloneCurrentCharacterStateSet,
   eventId,
   expectedDemonInformationEntries,
@@ -35,7 +40,11 @@ import {
   resolveCurrentEvilTeam,
   roleId,
   scheduledTaskId,
+  scheduledTaskFromFirstNightTaskInsertedPayload,
   rebuildGameState,
+  validateFirstNightTaskPlanCreatedPayload,
+  validateFirstNightTaskPlanRuntimeState,
+  validateFirstNightTaskProgress,
   validateInitialCurrentCharacterStateSet,
   validateDomainEventStream
 } from "@botc/domain-core";
@@ -662,6 +671,130 @@ const philosopherAbilityChoiceBatchEvents = (input: {
 
   events.push(philosopherAbilityEventEnvelope("ScheduledTaskSettled", settlement, 13 + events.length));
   return events;
+};
+
+const gainedSnakeCharmerTaskStream = (): readonly AnyDomainEventEnvelope[] => [
+  ...firstNightTaskPlanEventStream(),
+  philosopherActionOpportunityCreatedEvent(),
+  ...philosopherAbilityChoiceBatchEvents({
+    chosenRole: roleSnapshotById("snake_charmer"),
+    includeImpairment: true,
+    includeInsertion: true
+  })
+];
+
+const snakeCharmerActionOpportunityCreatedEvent = (
+  overrides: Partial<DomainEventEnvelope<"FirstNightActionOpportunityCreated">> = {}
+): DomainEventEnvelope<"FirstNightActionOpportunityCreated"> => {
+  const state = rebuildGameState(gainedSnakeCharmerTaskStream());
+  const task = state.firstNightTaskPlan?.tasks.find((candidate) =>
+    candidate.taskId === scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer")
+  );
+  if (task === undefined || state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined) {
+    throw new Error("Expected gained Snake Charmer task state");
+  }
+
+  const opportunity = createFirstNightRoleActionOpportunity({
+    taskId: task.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+
+  return {
+    category: "domain",
+    eventId: eventId("event-18"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 18,
+    batchId: batchId("batch-10"),
+    gameVersion: 10,
+    eventType: "FirstNightActionOpportunityCreated",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-10"),
+    createdAt: "2026-07-07T00:00:09.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      ...opportunity
+    },
+    ...overrides
+  };
+};
+
+const openSnakeCharmerStream = (): readonly AnyDomainEventEnvelope[] => [
+  ...gainedSnakeCharmerTaskStream(),
+  snakeCharmerActionOpportunityCreatedEvent()
+];
+
+const snakeCharmerBatchEnvelope = <EventType extends AnyDomainEventEnvelope["eventType"]>(
+  eventType: EventType,
+  payload: DomainEventEnvelope<EventType>["payload"],
+  offset: number
+): DomainEventEnvelope<EventType> => ({
+  category: "domain",
+  eventId: eventId(`event-${19 + offset}`),
+  gameId: gameCreatedEvent().gameId,
+  eventSequence: 19 + offset,
+  batchId: batchId("batch-11"),
+  gameVersion: 11,
+  eventType,
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-11"),
+  createdAt: "2026-07-07T00:00:10.000Z",
+  correlationId: gameCreatedEvent().correlationId,
+  causationId: gameCreatedEvent().causationId,
+  payload
+});
+
+const snakeCharmerNoSwapBatchEvents = (input: {
+  readonly targetKind?: "non-demon" | "demon";
+} = {}): readonly [
+  DomainEventEnvelope<"SnakeCharmerTargetChosen">,
+  DomainEventEnvelope<"SnakeCharmerNoSwapResolved">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = rebuildGameState(openSnakeCharmerStream());
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+  );
+  const target = state.currentCharacterState?.entries.find((entry) =>
+    input.targetKind === "demon"
+      ? entry.role.characterType === "DEMON"
+      : entry.role.characterType !== "DEMON"
+  );
+  if (opportunity === undefined || target === undefined || state.roster === undefined) {
+    throw new Error("Expected open Snake Charmer opportunity and target");
+  }
+
+  const targetChosen = createSnakeCharmerTargetChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId: opportunity.taskId,
+    opportunityId: opportunity.opportunityId,
+    targetPlayerId: target.playerId,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    roster: state.roster.entries
+  });
+  const noSwap = createSnakeCharmerNoSwapResolvedPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    targetChoice: targetChosen
+  });
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createSnakeCharmerNoSwapScheduledTaskSettlement({
+      taskId: opportunity.taskId,
+      characterStateRevision: opportunity.sourceCharacterStateRevision
+    })
+  };
+
+  return [
+    snakeCharmerBatchEnvelope("SnakeCharmerTargetChosen", targetChosen, 0),
+    snakeCharmerBatchEnvelope("SnakeCharmerNoSwapResolved", noSwap, 1),
+    snakeCharmerBatchEnvelope("ScheduledTaskSettled", settlement, 2)
+  ];
 };
 
 const expectInitialKnowledgePayloadRejected = (payload: unknown): DomainError =>
@@ -2880,6 +3013,240 @@ describe("domain event rebuild", () => {
     expect(state.currentCharacterState?.entries.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
     expect(state.assignment?.assignments.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
     expect(state.lastEventSequence).toBe(17);
+  });
+
+  it("validates runtime first-night task plans with only real inserted tasks", () => {
+    const state = rebuildGameState([
+      ...firstNightTaskPlanEventStream(),
+      philosopherActionOpportunityCreatedEvent(),
+      ...philosopherAbilityChoiceBatchEvents({
+        chosenRole: roleSnapshotById("snake_charmer"),
+        includeImpairment: true,
+        includeInsertion: true
+      })
+    ]);
+    if (
+      state.setup === undefined ||
+      state.roster === undefined ||
+      state.assignment === undefined ||
+      state.firstNight === undefined ||
+      state.initialPrivateKnowledge === undefined ||
+      state.firstNightTaskPlan === undefined ||
+      state.firstNightTaskInsertions?.insertions[0] === undefined
+    ) {
+      throw new Error("Expected runtime first-night task plan facts");
+    }
+
+    const sourceFacts = {
+      setup: state.setup,
+      roster: state.roster.entries,
+      assignment: state.assignment.assignments,
+      firstNight: state.firstNight,
+      initialPrivateKnowledge: state.initialPrivateKnowledge
+    };
+    const insertedTask = scheduledTaskFromFirstNightTaskInsertedPayload(state.firstNightTaskInsertions.insertions[0]);
+
+    expect(validateFirstNightTaskPlanCreatedPayload(state.firstNightTaskPlan, sourceFacts)).toMatchObject({
+      valid: false
+    });
+    expect(validateFirstNightTaskPlanRuntimeState(state.firstNightTaskPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toStrictEqual({ valid: true });
+
+    const forgedPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: state.firstNightTaskPlan.tasks
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(forgedPlan, {
+      sourceFacts,
+      insertedTasks: []
+    })).toMatchObject({ valid: false });
+
+    const wrongOrderPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: [
+        ...state.firstNightTaskPlan.tasks.filter((task) => task.taskId !== insertedTask.taskId),
+        insertedTask
+      ]
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(wrongOrderPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toMatchObject({ valid: false });
+
+    const wrongIdPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: state.firstNightTaskPlan.tasks.map((task) =>
+        task.taskId === insertedTask.taskId
+          ? {
+            ...task,
+            taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-dreamer")
+          }
+          : task
+      )
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(wrongIdPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toMatchObject({ valid: false });
+
+    const extraSourceFieldPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: state.firstNightTaskPlan.tasks.map((task) =>
+        task.taskId === insertedTask.taskId
+          ? {
+            ...task,
+            source: {
+              ...task.source,
+              targetRoleId: "fang_gu"
+            }
+          }
+          : task
+      )
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(extraSourceFieldPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toMatchObject({ valid: false });
+
+    const multipleInsertionPlan = {
+      ...state.firstNightTaskPlan,
+      tasks: [
+        ...state.firstNightTaskPlan.tasks,
+        {
+          ...insertedTask,
+          taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-10:from-snake_charmer")
+        }
+      ]
+    };
+    expect(validateFirstNightTaskPlanRuntimeState(multipleInsertionPlan, {
+      sourceFacts,
+      insertedTasks: [insertedTask]
+    })).toMatchObject({ valid: false });
+
+    expect(getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress)?.taskType).toBe("SNAKE_CHARMER_ACTION");
+    expect(validateFirstNightTaskProgress(state.firstNightTaskPlan, state.firstNightTaskProgress)).toStrictEqual({ valid: true });
+  });
+
+  it("rebuilds Philosopher gained Snake Charmer non-Demon no-swap settlement", () => {
+    const before = rebuildGameState(openSnakeCharmerStream());
+    const state = rebuildGameState([
+      ...openSnakeCharmerStream(),
+      ...snakeCharmerNoSwapBatchEvents()
+    ]);
+
+    expect(state.snakeCharmerTargetChoices?.choices[0]).toMatchObject({
+      taskId: "first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer",
+      taskType: "SNAKE_CHARMER_ACTION",
+      decisionKind: "CHOOSE_PLAYER",
+      sourceSeatNumber: 10,
+      sourceCharacterStateRevision: 1
+    });
+    expect(state.snakeCharmerNoSwapResolutions?.resolutions[0]).toMatchObject({
+      taskType: "SNAKE_CHARMER_ACTION",
+      outcomeType: "NON_DEMON_TARGET_NO_SWAP",
+      sourceCharacterStateRevision: 1
+    });
+    expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
+      opportunity.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightTaskProgress?.settlements.map((settlement) => settlement.outcomeType)).toStrictEqual([
+      "PHILOSOPHER_ABILITY_CHOSEN",
+      "SNAKE_CHARMER_NON_DEMON_NO_SWAP"
+    ]);
+    expect(state.firstNightTaskPlan?.tasks[state.firstNightTaskProgress?.settlements.length ?? -1]?.taskType).toBe("MINION_INFO");
+    expect(state.currentCharacterState).toStrictEqual(before.currentCharacterState);
+    expect(state.assignment).toStrictEqual(before.assignment);
+    expect(state.lastEventSequence).toBe(21);
+    expect(state.gameVersion).toBe(11);
+  });
+
+  it("rejects malformed Snake Charmer no-swap replay batches", () => {
+    const baseStream = openSnakeCharmerStream();
+    const [targetChosen, noSwap, settlement] = snakeCharmerNoSwapBatchEvents();
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...noSwap,
+          eventId: eventId("event-19"),
+          eventSequence: 19
+        },
+        {
+          ...targetChosen,
+          eventId: eventId("event-20"),
+          eventSequence: 20
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen,
+        {
+          ...noSwap,
+          payload: {
+            ...noSwap.payload,
+            targetPlayerId: playerId("different-target")
+          }
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen,
+        noSwap,
+        {
+          ...settlement,
+          payload: {
+            ...settlement.payload,
+            outcomeType: "PHILOSOPHER_DEFERRED"
+          } as never
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen,
+        {
+          ...noSwap,
+          payload: {
+            ...noSwap.payload,
+            targetRoleId: "fang_gu"
+          } as never
+        },
+        settlement
+      ]),
+      "InvalidSnakeCharmerNoSwapResolvedPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...snakeCharmerNoSwapBatchEvents({ targetKind: "demon" })
+      ]),
+      "InvalidSnakeCharmerNoSwapResolvedPayload"
+    );
   });
 
   it("rejects naked, reversed, incomplete, and mixed Philosopher ability choice batches", () => {

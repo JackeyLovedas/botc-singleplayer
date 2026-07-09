@@ -21,3 +21,4 @@ export * from "./player-roster.js";
 export * from "./prospective-events.js";
 export * from "./rebuild.js";
 export * from "./setup-types.js";
+export * from "./snake-charmer.js";

@@ -1,5 +1,6 @@
 import type { ActionOpportunityId, CommandId, CorrelationId, GameId, PlayerId, ScheduledTaskId } from "./ids.js";
 import type { PhilosopherActionDecision } from "./first-night-action-opportunity.js";
+import type { SnakeCharmerActionDecision } from "./snake-charmer.js";
 import type { SetupGenerationConstraints } from "./setup-types.js";
 
 export type HumanActor = {
@@ -91,6 +92,13 @@ export type SubmitPhilosopherActionCommandPayload = {
   readonly decision: PhilosopherActionDecision;
 };
 
+export type SubmitSnakeCharmerActionCommandPayload = {
+  readonly commandType: "SubmitSnakeCharmerAction";
+  readonly taskId: ScheduledTaskId;
+  readonly opportunityId: ActionOpportunityId;
+  readonly decision: SnakeCharmerActionDecision;
+};
+
 export type SupportedCommandPayload =
   | CreateGameCommandPayload
   | SelectScriptCommandPayload
@@ -101,7 +109,8 @@ export type SupportedCommandPayload =
   | PlanFirstNightTasksCommandPayload
   | SettleFirstNightSystemTaskCommandPayload
   | OpenFirstNightRoleActionOpportunityCommandPayload
-  | SubmitPhilosopherActionCommandPayload;
+  | SubmitPhilosopherActionCommandPayload
+  | SubmitSnakeCharmerActionCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
@@ -112,6 +121,7 @@ export type PlanFirstNightTasksCommand = CommandEnvelope<PlanFirstNightTasksComm
 export type SettleFirstNightSystemTaskCommand = CommandEnvelope<SettleFirstNightSystemTaskCommandPayload>;
 export type OpenFirstNightRoleActionOpportunityCommand = CommandEnvelope<OpenFirstNightRoleActionOpportunityCommandPayload>;
 export type SubmitPhilosopherActionCommand = CommandEnvelope<SubmitPhilosopherActionCommandPayload>;
+export type SubmitSnakeCharmerActionCommand = CommandEnvelope<SubmitSnakeCharmerActionCommandPayload>;
 export type SupportedCommandEnvelope =
   | CreateGameCommand
   | SelectScriptCommand
@@ -122,4 +132,5 @@ export type SupportedCommandEnvelope =
   | PlanFirstNightTasksCommand
   | SettleFirstNightSystemTaskCommand
   | OpenFirstNightRoleActionOpportunityCommand
-  | SubmitPhilosopherActionCommand;
+  | SubmitPhilosopherActionCommand
+  | SubmitSnakeCharmerActionCommand;

@@ -1084,31 +1084,35 @@ export const appendFirstNightTaskInsertion = (
   insertions: [...cloneFirstNightTaskInsertion(state).insertions, cloneInsertion(payload)]
 });
 
+export const scheduledTaskFromFirstNightTaskInsertedPayload = (
+  payload: FirstNightTaskInsertedPayload
+): ScheduledTask => ({
+  taskId: payload.taskId,
+  taskType: payload.taskType,
+  taskClass: payload.taskClass,
+  orderKey: {
+    baseOrder: payload.orderKey.baseOrder,
+    insertionOrder: payload.orderKey.insertionOrder
+  },
+  source: {
+    kind: payload.source.kind,
+    playerId: payload.source.playerId,
+    seatNumber: payload.source.seatNumber,
+    sourceRole: cloneRoleSetupSnapshot(payload.source.sourceRole),
+    chosenRole: cloneRoleSetupSnapshot(payload.source.chosenRole),
+    opportunityId: payload.source.opportunityId,
+    sourceCharacterStateRevision: payload.source.sourceCharacterStateRevision
+  },
+  status: payload.status,
+  settlementPolicy: payload.settlementPolicy
+});
+
 export const applyFirstNightTaskInsertionToPlan = (
   plan: FirstNightTaskPlan,
   payload: FirstNightTaskInsertedPayload
 ): FirstNightTaskPlan => {
   const clonedPlan = cloneFirstNightTaskPlan(plan);
-  const insertedTask: ScheduledTask = {
-    taskId: payload.taskId,
-    taskType: payload.taskType,
-    taskClass: payload.taskClass,
-    orderKey: {
-      baseOrder: payload.orderKey.baseOrder,
-      insertionOrder: payload.orderKey.insertionOrder
-    },
-    source: {
-      kind: payload.source.kind,
-      playerId: payload.source.playerId,
-      seatNumber: payload.source.seatNumber,
-      sourceRole: cloneRoleSetupSnapshot(payload.source.sourceRole),
-      chosenRole: cloneRoleSetupSnapshot(payload.source.chosenRole),
-      opportunityId: payload.source.opportunityId,
-      sourceCharacterStateRevision: payload.source.sourceCharacterStateRevision
-    },
-    status: payload.status,
-    settlementPolicy: payload.settlementPolicy
-  };
+  const insertedTask = scheduledTaskFromFirstNightTaskInsertedPayload(payload);
 
   if (clonedPlan.tasks.some((task) => task.taskId === insertedTask.taskId)) {
     throw new DomainError("InvalidFirstNightTaskInsertedPayload", "FirstNightTaskInserted cannot duplicate a scheduled task id");

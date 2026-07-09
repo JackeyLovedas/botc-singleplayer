@@ -212,6 +212,61 @@ Acceptance:
 - Replay rejects naked, reversed, mixed, incomplete, and payload-mismatched ability choice batches.
 - Player and AI projections do not expose ability choice, grant, impairment, insertion, or task internals.
 
+## Slice 2B8: Philosopher-Gained Snake Charmer Non-Demon Settlement
+
+Scope:
+
+- Execute only after Slice 2B7 is accepted and merged.
+- Validate runtime first-night task plans that contain real `FirstNightTaskInserted` tasks.
+- Open a deterministic `SNAKE_CHARMER_FIRST_NIGHT_ACTION` opportunity only for a Philosopher-gained `SNAKE_CHARMER_ACTION` task.
+- Add `SubmitSnakeCharmerAction` for the supported decision `{ kind: "CHOOSE_PLAYER", targetPlayerId }`.
+- Settle only the non-Demon target path as a no-swap result.
+- Record `SnakeCharmerTargetChosen`, `SnakeCharmerNoSwapResolved`, and `ScheduledTaskSettled.outcomeType = SNAKE_CHARMER_NON_DEMON_NO_SWAP` in one atomic batch.
+- Close the Snake Charmer action opportunity and advance first-night task progress so base `MINION_INFO` becomes the next task.
+- Keep `assignment` and `currentCharacterState` unchanged.
+- Keep player and AI private knowledge projections free of target choices, opportunity internals, inserted task facts, and Snake Charmer settlement internals.
+- Do not implement Demon-hit swap, old-Demon poison, drunkenness or poisoning effectiveness, AI decision, UI, Electron, SQLite, or first-night phase completion.
+
+Implementation update:
+
+- `PhilosopherAbilityChoiceNotImplemented` is removed from command rejection codes because Philosopher GOOD-role choice is now implemented.
+- Runtime task-plan validation accepts only real inserted tasks derived from `FirstNightTaskInserted`.
+- The Snake Charmer opportunity id is deterministic:
+
+```text
+first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-<NN>:from-snake_charmer:opportunity-01
+```
+
+- The safe visible schema exposes only target selection shape:
+
+```text
+canChooseTarget = true
+supportedDecisionKinds = [CHOOSE_PLAYER]
+targetSchema = ANY_LIVING_PLAYER
+```
+
+- Valid non-Demon no-swap batches contain exactly:
+
+```text
+SnakeCharmerTargetChosen
+SnakeCharmerNoSwapResolved
+ScheduledTaskSettled
+```
+
+Acceptance:
+
+- Golden base task count remains six and golden base order is unchanged.
+- Choosing `snake_charmer` as Philosopher still inserts `SNAKE_CHARMER_ACTION` before `MINION_INFO`.
+- The inserted Snake Charmer task can be opened as an action opportunity.
+- Non-source Human or AI actors cannot submit the Snake Charmer action.
+- Source Human, source AI, Storyteller, and System actors can submit the supported action.
+- Unknown targets, malformed decisions, wrong task ids, missing opportunities, closed opportunities, and unsupported role-action tasks are rejected deterministically.
+- Choosing a non-Demon target records target choice, no-swap resolution, and task settlement without leaking target role facts.
+- Choosing a current Demon target is rejected as `SnakeCharmerDemonHitNotImplemented` and writes no domain events.
+- After non-Demon no-swap settlement, `MINION_INFO` and then `DEMON_INFO` can settle in order.
+- Replay rejects naked, reversed, mixed, incomplete, overlong, metadata-mismatched, payload-mismatched, Demon-target no-swap, and hidden-role-leaking Snake Charmer batches.
+- Player and AI projections do not expose Snake Charmer target choices or no-swap internals.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:
