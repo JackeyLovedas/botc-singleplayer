@@ -23,7 +23,7 @@ import {
 } from "./initial-private-knowledge.js";
 import type { AbilityImpairmentId, ActionOpportunityId, PlayerId, ScheduledTaskId } from "./ids.js";
 import { abilityImpairmentId } from "./ids.js";
-import type { SnakeCharmerPoisonedAbilityImpairmentAppliedPayload } from "./philosopher-ability.js";
+import type { AbilityImpairmentSet, SnakeCharmerPoisonedAbilityImpairmentAppliedPayload } from "./philosopher-ability.js";
 import type { PlayerRoster, SeatNumber } from "./player-roster.js";
 import type { RoleSetupSnapshot } from "./setup-types.js";
 import { sameRoleSetupSnapshot } from "./setup-types.js";
@@ -34,6 +34,7 @@ export type SnakeCharmerActionDecision = {
 };
 
 export type SnakeCharmerNoSwapOutcomeType = "NON_DEMON_TARGET_NO_SWAP";
+export type SnakeCharmerIneffectiveReason = "SOURCE_DRUNK" | "SOURCE_POISONED";
 
 export type SnakeCharmerTargetChosenPayload = {
   readonly rulesBaselineVersion: string;
@@ -96,6 +97,17 @@ export type SnakeCharmerNoSwapResolutionSet = {
 export type SnakeCharmerDemonSwapSet = {
   readonly swaps: readonly SnakeCharmerDemonSwapAppliedPayload[];
 };
+
+export type SnakeCharmerEffectivenessResult =
+  | {
+      readonly effective: true;
+    }
+  | {
+      readonly effective: false;
+      readonly reason: SnakeCharmerIneffectiveReason;
+      readonly impairmentId: AbilityImpairmentId;
+      readonly impairmentKind: "DRUNK" | "POISONED";
+    };
 
 type ValidationResult =
   | { readonly valid: true }
@@ -502,6 +514,39 @@ export const createSnakeCharmerDemonHitScheduledTaskSettlement = (input: {
   outcomeType: "SNAKE_CHARMER_DEMON_HIT_SWAP",
   characterStateRevision: input.characterStateRevision
 });
+
+export const evaluateSnakeCharmerEffectiveness = (input: {
+  readonly sourcePlayerId: PlayerId;
+  readonly abilityImpairments: AbilityImpairmentSet | undefined;
+}): SnakeCharmerEffectivenessResult => {
+  const impairment = [...(input.abilityImpairments?.impairments ?? [])]
+    .filter((candidate) =>
+      candidate.affectedPlayerId === input.sourcePlayerId &&
+      (candidate.kind === "DRUNK" || candidate.kind === "POISONED")
+    )
+    .sort((left, right) => {
+      if (left.impairmentId < right.impairmentId) {
+        return -1;
+      }
+
+      if (left.impairmentId > right.impairmentId) {
+        return 1;
+      }
+
+      return 0;
+    })[0];
+
+  if (impairment === undefined) {
+    return { effective: true };
+  }
+
+  return {
+    effective: false,
+    reason: impairment.kind === "DRUNK" ? "SOURCE_DRUNK" : "SOURCE_POISONED",
+    impairmentId: impairment.impairmentId,
+    impairmentKind: impairment.kind
+  };
+};
 
 export const validateSnakeCharmerTargetChosenPayload = (
   payload: unknown,
