@@ -40,7 +40,7 @@ jobs:
         run: pnpm test:coverage
 
   deterministic-windows:
-    name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer
+    name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch
     runs-on: windows-latest
 
     steps:
@@ -77,5 +77,5 @@ jobs:
       - name: First-night task plan tests
         run: pnpm --filter @botc/task-engine test
 
-      - name: First-night system information, role action, philosopher choice, and snake-charmer tests
+      - name: First-night system information, role action, philosopher choice, snake-charmer, evil-twin, and witch tests
         run: pnpm --filter @botc/application test

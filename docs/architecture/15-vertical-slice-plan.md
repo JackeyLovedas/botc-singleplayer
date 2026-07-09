@@ -389,6 +389,69 @@ Acceptance:
 - Replay rejects naked, reversed, incomplete, wrong-outcome, wrong-revision, mismatched-pair, and malformed-knowledge batches.
 - Player and AI views expose only `evilTwinCounterpart` to the two twin players.
 
+## Slice 2B12: Witch Action Target Selection And Deferred Death Marker
+
+Scope:
+
+- Execute only after Slice 2B11 is accepted and merged.
+- Open base in-play `witch` first-night `WITCH_ACTION` tasks as safe `ActionOpportunity` facts.
+- Accept `SubmitWitchAction({ kind: "CHOOSE_PLAYER", targetPlayerId })` from the source player, Storyteller, or System.
+- Record `WitchTargetChosen` for both effective and ineffective paths without target role, target alignment, death prediction, or effectiveness leakage.
+- Evaluate source DRUNK or POISONED impairment at settlement time.
+- If effective, record `WitchDeathPendingMarked` with `trigger = TARGET_NOMINATES_TOMORROW`.
+- If impaired, record `WitchIneffectiveResolved` and do not create a pending death marker.
+- Settle the scheduled task with `WITCH_DEATH_PENDING_MARKED` or `WITCH_INEFFECTIVE`.
+- Keep `assignment`, `currentCharacterState`, and the original task plan unchanged.
+- Keep player and AI private projections free of Witch action, target, pending death, impairment, task, and opportunity internals.
+- Do not implement daytime nomination, actual death, three-alive Witch ability loss, AI target choice, UI, Electron, SQLite, or first-night completion.
+
+Implementation update:
+
+- `packages/domain-core/src/witch.ts` owns Witch target choice, pending death, ineffective resolution, effectiveness, and replay helpers.
+- The Witch opportunity id is deterministic:
+
+```text
+first-night-v1:WITCH_ACTION:seat-<NN>:opportunity-01
+```
+
+- The safe visible schema exposes only target selection shape:
+
+```text
+canChooseTarget = true
+supportedDecisionKinds = [CHOOSE_PLAYER]
+targetSchema = ANY_PLAYER
+```
+
+- Effective Witch batches contain exactly:
+
+```text
+WitchTargetChosen
+WitchDeathPendingMarked
+ScheduledTaskSettled
+```
+
+- Ineffective Witch batches contain exactly:
+
+```text
+WitchTargetChosen
+WitchIneffectiveResolved
+ScheduledTaskSettled
+```
+
+Acceptance:
+
+- Base Witch can open an action opportunity when it is the next task.
+- Any roster player can be chosen as target, including self, because death/living restrictions are not modeled yet.
+- Source Human and AI actors must match the opportunity source player; Storyteller and System can submit.
+- Source `DRUNK` or `POISONED` prevents pending death marker creation.
+- Ineffective settlement still records `WitchTargetChosen`.
+- Effective settlement records exactly one pending death marker.
+- After Witch settlement, `DREAMER_ACTION` becomes the next task in the current supported no-Philosopher path.
+- `SettleFirstNightSystemTask` cannot skip Dreamer and `OpenFirstNightRoleActionOpportunity(DREAMER_ACTION)` remains unsupported until a later slice.
+- Golden base task count remains six and golden base order is unchanged.
+- Replay rejects naked, reversed, mixed, mismatched, wrong-outcome, wrong-impairment, and hidden-field Witch batches.
+- Player and AI projections do not expose Witch action or deferred death internals.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:
