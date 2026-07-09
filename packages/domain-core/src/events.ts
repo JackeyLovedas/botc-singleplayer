@@ -21,6 +21,11 @@ import type {
   SnakeCharmerTargetChosenPayload
 } from "./snake-charmer.js";
 import type {
+  WitchDeathPendingPayload,
+  WitchIneffectiveResolvedPayload,
+  WitchTargetChosenPayload
+} from "./witch.js";
+import type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
 } from "./first-night-team-information.js";
@@ -49,6 +54,11 @@ export type {
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload
 } from "./snake-charmer.js";
+export type {
+  WitchDeathPendingPayload,
+  WitchIneffectiveResolvedPayload,
+  WitchTargetChosenPayload
+} from "./witch.js";
 export type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
@@ -159,6 +169,9 @@ export type DomainEventPayloadByType = {
   readonly SnakeCharmerDemonSwapApplied: SnakeCharmerDemonSwapAppliedPayload;
   readonly SnakeCharmerNoSwapResolved: SnakeCharmerNoSwapResolvedPayload;
   readonly SnakeCharmerIneffectiveResolved: SnakeCharmerIneffectiveResolvedPayload;
+  readonly WitchTargetChosen: WitchTargetChosenPayload;
+  readonly WitchDeathPendingMarked: WitchDeathPendingPayload;
+  readonly WitchIneffectiveResolved: WitchIneffectiveResolvedPayload;
   readonly EvilTwinPairEstablished: EvilTwinPairEstablishedPayload;
   readonly EvilTwinInformationDelivered: EvilTwinInformationDeliveredPayload;
   readonly MinionInformationDelivered: MinionInformationDeliveredPayload;

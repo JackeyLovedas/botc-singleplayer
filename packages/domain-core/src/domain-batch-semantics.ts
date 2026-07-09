@@ -9,8 +9,11 @@ import { isIntegratedTransitionReason } from "./phase-transition-policy.js";
 import { firstNightTaskTypeForPhilosopherChoice } from "./philosopher-ability.js";
 import { evaluateSnakeCharmerEffectiveness } from "./snake-charmer.js";
 import type { SnakeCharmerEffectivenessResult } from "./snake-charmer.js";
+import { evaluateWitchEffectiveness } from "./witch.js";
+import type { WitchEffectivenessResult } from "./witch.js";
 
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
+type IneffectiveWitchEffectiveness = Extract<WitchEffectivenessResult, { readonly effective: false }>;
 
 const reject = (message: string): never => {
   throw new DomainError("InvalidDomainBatchSemantics", message);
@@ -755,6 +758,163 @@ const validateIntegratedSnakeCharmerDemonHitBatch = (
   }
 };
 
+const assertWitchSourceEffective = (
+  currentState: GameState,
+  targetChosen: DomainEventEnvelope<"WitchTargetChosen">
+): void => {
+  const effectiveness = evaluateWitchEffectiveness({
+    sourcePlayerId: targetChosen.payload.sourcePlayerId,
+    abilityImpairments: currentState.abilityImpairments
+  });
+
+  if (!effectiveness.effective) {
+    reject("Witch pending death marker requires an effective source");
+  }
+};
+
+const validateIntegratedWitchDeathPendingBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Witch pending death batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    reject("Witch pending death batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  if (events.length !== 3) {
+    reject("Witch pending death batch must contain exactly three events");
+  }
+
+  assertSharedBatchMetadataForAll(events);
+
+  const [first, second, third] = events;
+  if (
+    first === undefined ||
+    second === undefined ||
+    third === undefined ||
+    first.eventType !== "WitchTargetChosen" ||
+    second.eventType !== "WitchDeathPendingMarked" ||
+    third.eventType !== "ScheduledTaskSettled"
+  ) {
+    reject("Witch pending death batch must be TargetChosen, DeathPendingMarked, ScheduledTaskSettled");
+  }
+
+  const targetChosen = first as DomainEventEnvelope<"WitchTargetChosen">;
+  const pending = second as DomainEventEnvelope<"WitchDeathPendingMarked">;
+  const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
+  assertWitchSourceEffective(state, targetChosen);
+
+  if (
+    pending.payload.taskId !== targetChosen.payload.taskId ||
+    pending.payload.taskType !== targetChosen.payload.taskType ||
+    pending.payload.opportunityId !== targetChosen.payload.opportunityId ||
+    pending.payload.sourcePlayerId !== targetChosen.payload.sourcePlayerId ||
+    pending.payload.sourceSeatNumber !== targetChosen.payload.sourceSeatNumber ||
+    pending.payload.sourceCharacterStateRevision !== targetChosen.payload.sourceCharacterStateRevision ||
+    pending.payload.targetPlayerId !== targetChosen.payload.targetPlayerId ||
+    pending.payload.targetSeatNumber !== targetChosen.payload.targetSeatNumber ||
+    pending.payload.trigger !== "TARGET_NOMINATES_TOMORROW" ||
+    pending.payload.markerVersion !== "witch-death-pending-v1"
+  ) {
+    reject("WitchDeathPendingMarked must match the preceding target choice");
+  }
+
+  if (
+    settlement.payload.taskId !== pending.payload.taskId ||
+    settlement.payload.taskType !== pending.payload.taskType ||
+    settlement.payload.characterStateRevision !== pending.payload.sourceCharacterStateRevision ||
+    settlement.payload.outcomeType !== "WITCH_DEATH_PENDING_MARKED"
+  ) {
+    reject("ScheduledTaskSettled must match the Witch pending death marker");
+  }
+};
+
+const validateIntegratedWitchIneffectiveBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Witch ineffective batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    reject("Witch ineffective batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  if (events.length !== 3) {
+    reject("Witch ineffective batch must contain exactly three events");
+  }
+
+  assertSharedBatchMetadataForAll(events);
+
+  const [first, second, third] = events;
+  if (
+    first === undefined ||
+    second === undefined ||
+    third === undefined ||
+    first.eventType !== "WitchTargetChosen" ||
+    second.eventType !== "WitchIneffectiveResolved" ||
+    third.eventType !== "ScheduledTaskSettled"
+  ) {
+    reject("Witch ineffective batch must be TargetChosen, IneffectiveResolved, ScheduledTaskSettled");
+  }
+
+  const targetChosen = first as DomainEventEnvelope<"WitchTargetChosen">;
+  const ineffective = second as DomainEventEnvelope<"WitchIneffectiveResolved">;
+  const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
+  const effectiveness = evaluateWitchEffectiveness({
+    sourcePlayerId: targetChosen.payload.sourcePlayerId,
+    abilityImpairments: state.abilityImpairments
+  });
+  if (effectiveness.effective === true) {
+    reject("Witch ineffective batch requires an impaired source");
+  }
+  const ineffectiveResult = effectiveness as IneffectiveWitchEffectiveness;
+
+  if (
+    ineffective.payload.taskId !== targetChosen.payload.taskId ||
+    ineffective.payload.taskType !== targetChosen.payload.taskType ||
+    ineffective.payload.opportunityId !== targetChosen.payload.opportunityId ||
+    ineffective.payload.sourcePlayerId !== targetChosen.payload.sourcePlayerId ||
+    ineffective.payload.sourceSeatNumber !== targetChosen.payload.sourceSeatNumber ||
+    ineffective.payload.sourceCharacterStateRevision !== targetChosen.payload.sourceCharacterStateRevision ||
+    ineffective.payload.targetPlayerId !== targetChosen.payload.targetPlayerId ||
+    ineffective.payload.targetSeatNumber !== targetChosen.payload.targetSeatNumber ||
+    ineffective.payload.outcomeType !== "SOURCE_IMPAIRED_NO_EFFECT" ||
+    ineffective.payload.reason !== ineffectiveResult.reason ||
+    ineffective.payload.sourceImpairmentId !== ineffectiveResult.impairmentId ||
+    ineffective.payload.sourceImpairmentKind !== ineffectiveResult.impairmentKind
+  ) {
+    reject("WitchIneffectiveResolved must match the preceding target choice and active source impairment");
+  }
+
+  if (
+    settlement.payload.taskId !== ineffective.payload.taskId ||
+    settlement.payload.taskType !== ineffective.payload.taskType ||
+    settlement.payload.characterStateRevision !== ineffective.payload.sourceCharacterStateRevision ||
+    settlement.payload.outcomeType !== "WITCH_INEFFECTIVE"
+  ) {
+    reject("ScheduledTaskSettled must match the Witch ineffective resolution");
+  }
+};
+
 const validateIntegratedEvilTwinSetupBatch = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -888,6 +1048,21 @@ export const validateDomainBatchSemantics = (
     }
 
     reject("Snake Charmer batch must continue with NoSwapResolved, DemonSwapApplied, or IneffectiveResolved");
+    return;
+  }
+
+  if (first.eventType === "WitchTargetChosen") {
+    if (second?.eventType === "WitchDeathPendingMarked") {
+      validateIntegratedWitchDeathPendingBatch(currentState, batchEvents);
+      return;
+    }
+
+    if (second?.eventType === "WitchIneffectiveResolved") {
+      validateIntegratedWitchIneffectiveBatch(currentState, batchEvents);
+      return;
+    }
+
+    reject("Witch batch must continue with DeathPendingMarked or IneffectiveResolved");
     return;
   }
 
