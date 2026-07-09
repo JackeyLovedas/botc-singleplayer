@@ -2523,13 +2523,16 @@ describe("GameApplicationService", () => {
     expect(state?.nightNumber).toBe(1);
     expect(state?.dayNumber).toBe(0);
     expect(state?.minionInformation?.entries).toHaveLength(4);
+    expect(state?.minionInformation?.resolvedEvilTeam.characterStateRevision).toBe(1);
+    expect(state?.minionInformation?.characterStateRevision).toBe(state?.minionInformation?.resolvedEvilTeam.characterStateRevision);
     expect(state?.demonInformation).toBeUndefined();
     expect(state?.firstNightTaskProgress?.settlements).toHaveLength(1);
     expect(state?.firstNightTaskProgress?.settlements[0]).toMatchObject({
       taskId: "first-night-v1:MINION_INFO:system",
       taskType: "MINION_INFO",
       outcomeType: "MINION_INFORMATION_DELIVERED",
-      settlementVersion: "scheduled-task-settlement-v1"
+      settlementVersion: "scheduled-task-settlement-v1",
+      characterStateRevision: state?.minionInformation?.resolvedEvilTeam.characterStateRevision
     });
     expect(commandStore.getGameVersion(ids.game)).toBe(8);
     expect(events).toHaveLength(13);
@@ -2560,6 +2563,8 @@ describe("GameApplicationService", () => {
     ]);
     expect(state?.phase).toBe("FIRST_NIGHT");
     expect(state?.demonInformation?.entries).toHaveLength(2);
+    expect(state?.demonInformation?.resolvedEvilTeam.characterStateRevision).toBe(1);
+    expect(state?.demonInformation?.characterStateRevision).toBe(state?.demonInformation?.resolvedEvilTeam.characterStateRevision);
     expect(state?.demonInformation?.entries.find((entry) => entry.kind === "DEMON_BLUFFS")).toMatchObject({
       kind: "DEMON_BLUFFS"
     });
@@ -2568,7 +2573,8 @@ describe("GameApplicationService", () => {
     expect(state?.firstNightTaskProgress?.settlements[1]).toMatchObject({
       taskId: "first-night-v1:DEMON_INFO:system",
       taskType: "DEMON_INFO",
-      outcomeType: "DEMON_INFORMATION_DELIVERED"
+      outcomeType: "DEMON_INFORMATION_DELIVERED",
+      characterStateRevision: state?.demonInformation?.resolvedEvilTeam.characterStateRevision
     });
     expect(events).toHaveLength(15);
   });
@@ -2777,6 +2783,57 @@ describe("GameApplicationService", () => {
     };
 
     await expectRetryableFirstNightSystemInformationFailureWithoutWrites(malformedResolver, commandIdValue, message);
+  });
+
+  it.each([
+    [
+      "missing delivered evil team snapshot",
+      "malformed-system-info-missing-team-snapshot",
+      (resolution: Record<string, unknown>) => {
+        const withoutSnapshot = { ...resolution };
+        delete withoutSnapshot.resolvedEvilTeam;
+        return withoutSnapshot;
+      }
+    ],
+    [
+      "undefined delivered evil team snapshot",
+      "malformed-system-info-undefined-team-snapshot",
+      (resolution: Record<string, unknown>) => ({
+        ...resolution,
+        resolvedEvilTeam: undefined
+      })
+    ],
+    [
+      "revision-mismatched delivered evil team snapshot",
+      "malformed-system-info-mismatched-team-snapshot-revision",
+      (resolution: Record<string, unknown>) => ({
+        ...resolution,
+        resolvedEvilTeam: {
+          ...(resolution.resolvedEvilTeam as Record<string, unknown>),
+          characterStateRevision: 2
+        }
+      })
+    ]
+  ] as const)("keeps system information resolver success with %s retryable without receipts or events", async (_name, commandIdValue, mutateResolution) => {
+    const malformedResolver: FirstNightSystemInformationResolverPort = {
+      resolve: (input) => {
+        const result = testFirstNightSystemInformationResolver.resolve(input);
+        if (result.status === "failure") {
+          return result;
+        }
+
+        return {
+          status: "success",
+          resolution: mutateResolution(result.resolution)
+        } as unknown as FirstNightSystemInformationResolutionResult;
+      }
+    };
+
+    await expectRetryableFirstNightSystemInformationFailureWithoutWrites(
+      malformedResolver,
+      commandIdValue,
+      "resolution must have supported runtime shape"
+    );
   });
 
   it("keeps sparse system information entries retryable at runtime validation without receipts or events", async () => {

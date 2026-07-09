@@ -27,11 +27,13 @@ import {
 import type {
   AnyDomainEventEnvelope,
   CharactersAssignedPayload,
+  CurrentCharacterStateSet,
   DomainEventEnvelope,
   FirstNightInitializedPayload,
   FirstNightTaskPlanCreatedPayload,
   GameState,
   InitialPrivateKnowledgeEstablishedPayload,
+  KnownPlayerReference,
   SetupGeneratedPayload
 } from "@botc/domain-core";
 import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
@@ -268,6 +270,7 @@ const minionInformationDeliveredEvent = (): DomainEventEnvelope<"MinionInformati
       knowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
       knowledgeStage: MINION_INFORMATION_KNOWLEDGE_STAGE,
       characterStateRevision: team.team.characterStateRevision,
+      resolvedEvilTeam: team.team,
       rosterVersion: state.roster.rosterVersion,
       roleCatalogSignature: state.setup.roleCatalogSignature,
       entries: expectedMinionInformationEntries(team.team.demon, team.team.minions)
@@ -339,6 +342,7 @@ const demonInformationDeliveredEvent = (): DomainEventEnvelope<"DemonInformation
       knowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
       knowledgeStage: DEMON_INFORMATION_KNOWLEDGE_STAGE,
       characterStateRevision: team.team.characterStateRevision,
+      resolvedEvilTeam: team.team,
       rosterVersion: state.roster.rosterVersion,
       roleCatalogSignature: state.setup.roleCatalogSignature,
       entries: expectedDemonInformationEntries(team.team.demon, team.team.minions, state.setup.demonBluffs)
@@ -385,12 +389,119 @@ const stateWithDemonInformation = (): GameState => rebuildGameState([
   demonTaskSettledEvent()
 ]);
 
+const requireCurrentEvilTeam = (state: GameState) => {
+  if (state.currentCharacterState === undefined || state.roster === undefined) {
+    throw new Error("Expected current character state and roster");
+  }
+
+  const result = resolveCurrentEvilTeam({
+    currentCharacterState: state.currentCharacterState,
+    roster: state.roster.entries
+  });
+  if (result.status === "failure") {
+    throw new Error(result.message);
+  }
+
+  return result.team;
+};
+
+const stateWithRevisedCurrentEvilTeam = (state: GameState): GameState => {
+  if (state.currentCharacterState === undefined) {
+    throw new Error("Expected current character state");
+  }
+
+  const entries = state.currentCharacterState.entries;
+  const oldDemon = entries.find((entry) => entry.role.characterType === "DEMON");
+  const oldMinions = entries.filter((entry) => entry.role.characterType === "MINION");
+  const goodTargets = entries.filter((entry) => entry.role.characterType !== "DEMON" && entry.role.characterType !== "MINION").slice(0, 3);
+  if (oldDemon === undefined || oldMinions.length !== 2 || goodTargets.length !== 3) {
+    throw new Error("Expected one demon, two minions, and three good targets");
+  }
+
+  const oldMinionOne = oldMinions[0];
+  const oldMinionTwo = oldMinions[1];
+  const newDemonTarget = goodTargets[0];
+  const newMinionTargetOne = goodTargets[1];
+  const newMinionTargetTwo = goodTargets[2];
+  if (
+    oldMinionOne === undefined ||
+    oldMinionTwo === undefined ||
+    newDemonTarget === undefined ||
+    newMinionTargetOne === undefined ||
+    newMinionTargetTwo === undefined
+  ) {
+    throw new Error("Expected revision targets");
+  }
+
+  const replacementRoles = new Map([
+    [newDemonTarget.playerId, oldDemon.role],
+    [newMinionTargetOne.playerId, oldMinionOne.role],
+    [newMinionTargetTwo.playerId, oldMinionTwo.role],
+    [oldDemon.playerId, newDemonTarget.role],
+    [oldMinionOne.playerId, newMinionTargetOne.role],
+    [oldMinionTwo.playerId, newMinionTargetTwo.role]
+  ]);
+
+  const currentCharacterState: CurrentCharacterStateSet = {
+    revision: state.currentCharacterState.revision + 1,
+    entries: entries.map((entry) => {
+      const role = replacementRoles.get(entry.playerId) ?? entry.role;
+      return {
+        ...entry,
+        role,
+        currentAlignment: role.defaultAlignment
+      };
+    })
+  };
+
+  const revisedState = {
+    ...state,
+    currentCharacterState
+  };
+  const oldTeam = requireCurrentEvilTeam(state);
+  const newTeam = requireCurrentEvilTeam(revisedState);
+  expect(newTeam.characterStateRevision).toBe(oldTeam.characterStateRevision + 1);
+  expect(newTeam.demon.playerId).not.toBe(oldTeam.demon.playerId);
+
+  return revisedState;
+};
+
+const expectNoTeamKnowledge = (view: ReturnType<typeof buildPlayerPrivateKnowledgeView>): void => {
+  expect("knownDemon" in view).toBe(false);
+  expect(view.knownMinions).toStrictEqual([]);
+  expect(view.demonBluffs).toStrictEqual([]);
+  expect(view.teamKnowledgeModelVersion).toBeUndefined();
+  expect(view.deliveredKnowledgeStages).toStrictEqual([INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE]);
+};
+
+const expectMinionKnowledgeFromSnapshot = (
+  state: GameState,
+  minion: KnownPlayerReference
+): void => {
+  const snapshot = state.minionInformation?.resolvedEvilTeam;
+  if (snapshot === undefined) {
+    throw new Error("Expected minion information snapshot");
+  }
+
+  const view = buildPlayerPrivateKnowledgeView(state, minion.playerId);
+  expect(view.knownDemon).toStrictEqual(snapshot.demon);
+  expect(view.knownMinions).toStrictEqual(snapshot.minions.filter((candidate) => candidate.playerId !== minion.playerId));
+  expect(view.demonBluffs).toStrictEqual([]);
+  expect(view.teamKnowledgeModelVersion).toBe(SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION);
+  expect(view.deliveredKnowledgeStages).toStrictEqual([
+    INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+    MINION_INFORMATION_KNOWLEDGE_STAGE
+  ]);
+};
+
 const viewKeys = [
+  "deliveredKnowledgeStages",
   "demonBluffs",
-  "knowledgeModelVersion",
   "knownDemon",
   "knownMinions",
   "ownCharacter",
+  "ownCharacterKnowledgeModelVersion",
+  "teamKnowledgeModelVersion",
   "viewerDisplayName",
   "viewerPlayerId",
   "viewerSeatNumber"
@@ -418,11 +529,16 @@ describe("private knowledge projections", () => {
 
     const view = buildPlayerPrivateKnowledgeView(state, good.playerId);
 
-    expect(Object.keys(view).sort()).toStrictEqual(viewKeys.filter((key) => key !== "knownDemon").sort());
+    expect(Object.keys(view).sort()).toStrictEqual(
+      viewKeys.filter((key) => key !== "knownDemon" && key !== "teamKnowledgeModelVersion").sort()
+    );
     expect(view.ownCharacter).toStrictEqual(good.role);
     expect(view.knownMinions).toStrictEqual([]);
     expect(view.demonBluffs).toStrictEqual([]);
     expect("knownDemon" in view).toBe(false);
+    expect(view.ownCharacterKnowledgeModelVersion).toBe(SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION);
+    expect(view.teamKnowledgeModelVersion).toBeUndefined();
+    expect(view.deliveredKnowledgeStages).toStrictEqual([INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE]);
     expect(JSON.stringify(view)).not.toContain("assignments");
   });
 
@@ -440,6 +556,8 @@ describe("private knowledge projections", () => {
     expect("knownDemon" in view).toBe(false);
     expect(view.knownMinions).toStrictEqual([]);
     expect(view.demonBluffs).toStrictEqual([]);
+    expect(view.teamKnowledgeModelVersion).toBeUndefined();
+    expect(view.deliveredKnowledgeStages).toStrictEqual([INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE]);
     for (const otherMinion of minions.filter((candidate) => candidate.playerId !== minion.playerId)) {
       expect(JSON.stringify(view)).not.toContain(otherMinion.playerId);
       expect(JSON.stringify(view)).not.toContain(otherMinion.role.roleId);
@@ -460,6 +578,8 @@ describe("private knowledge projections", () => {
     expect("knownDemon" in view).toBe(false);
     expect(view.knownMinions).toStrictEqual([]);
     expect(view.demonBluffs).toStrictEqual([]);
+    expect(view.teamKnowledgeModelVersion).toBeUndefined();
+    expect(view.deliveredKnowledgeStages).toStrictEqual([INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE]);
     for (const minion of minions) {
       expect(JSON.stringify(view)).not.toContain(minion.playerId);
       expect(JSON.stringify(view)).not.toContain(minion.role.roleId);
@@ -491,7 +611,9 @@ describe("private knowledge projections", () => {
     const playerSerialized = JSON.stringify(playerView);
     const aiSerialized = JSON.stringify(aiView);
 
-    expect(Object.keys(playerView).sort()).toStrictEqual(viewKeys.filter((key) => key !== "knownDemon").sort());
+    expect(Object.keys(playerView).sort()).toStrictEqual(
+      viewKeys.filter((key) => key !== "knownDemon" && key !== "teamKnowledgeModelVersion").sort()
+    );
     expect(Object.keys(aiView).sort()).toStrictEqual(Object.keys(playerView).sort());
     for (const serialized of [playerSerialized, aiSerialized]) {
       expect(serialized).not.toContain("taskPlan");
@@ -534,6 +656,11 @@ describe("private knowledge projections", () => {
       expect(view.knownDemon).toStrictEqual(team.team.demon);
       expect(view.knownMinions).toStrictEqual(team.team.minions.filter((candidate) => candidate.playerId !== minion.playerId));
       expect(view.demonBluffs).toStrictEqual([]);
+      expect(view.teamKnowledgeModelVersion).toBe(SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION);
+      expect(view.deliveredKnowledgeStages).toStrictEqual([
+        INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+        MINION_INFORMATION_KNOWLEDGE_STAGE
+      ]);
       expect(JSON.stringify(view)).not.toContain(demonState.role.roleId);
       for (const otherMinion of state.currentCharacterState.entries.filter((entry) =>
         team.team.minions.some((candidate) => candidate.playerId === entry.playerId) && entry.playerId !== minion.playerId
@@ -544,14 +671,10 @@ describe("private knowledge projections", () => {
     }
 
     const demonView = buildPlayerPrivateKnowledgeView(state, demonState.playerId);
-    expect("knownDemon" in demonView).toBe(false);
-    expect(demonView.knownMinions).toStrictEqual([]);
-    expect(demonView.demonBluffs).toStrictEqual([]);
+    expectNoTeamKnowledge(demonView);
 
     const goodView = buildPlayerPrivateKnowledgeView(state, goodState.playerId);
-    expect("knownDemon" in goodView).toBe(false);
-    expect(goodView.knownMinions).toStrictEqual([]);
-    expect(goodView.demonBluffs).toStrictEqual([]);
+    expectNoTeamKnowledge(goodView);
   });
 
   it("projects settled DEMON_INFO only to the demon without leaking minion roles", () => {
@@ -576,6 +699,11 @@ describe("private knowledge projections", () => {
     expect("knownDemon" in demonView).toBe(false);
     expect(demonView.knownMinions).toStrictEqual(team.team.minions);
     expect(demonView.demonBluffs).toStrictEqual([...state.setup.demonBluffs].sort((left, right) => left.roleId < right.roleId ? -1 : 1));
+    expect(demonView.teamKnowledgeModelVersion).toBe(SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION);
+    expect(demonView.deliveredKnowledgeStages).toStrictEqual([
+      INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+      DEMON_INFORMATION_KNOWLEDGE_STAGE
+    ]);
     for (const minion of state.currentCharacterState.entries.filter((entry) =>
       team.team.minions.some((candidate) => candidate.playerId === entry.playerId)
     )) {
@@ -587,7 +715,112 @@ describe("private knowledge projections", () => {
       expect(minionView.knownDemon).toStrictEqual(team.team.demon);
       expect(minionView.knownMinions).toStrictEqual(team.team.minions.filter((candidate) => candidate.playerId !== minion.playerId));
       expect(minionView.demonBluffs).toStrictEqual([]);
+      expect(minionView.deliveredKnowledgeStages).toStrictEqual([
+        INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+        MINION_INFORMATION_KNOWLEDGE_STAGE
+      ]);
     }
+  });
+
+  it("preserves delivered MINION_INFO from its settlement snapshot after current evil team revision changes", () => {
+    const state = stateWithRevisedCurrentEvilTeam(stateWithMinionInformation());
+    const oldSnapshot = state.minionInformation?.resolvedEvilTeam;
+    const newTeam = requireCurrentEvilTeam(state);
+    if (oldSnapshot === undefined) {
+      throw new Error("Expected delivered minion information snapshot");
+    }
+
+    expect(oldSnapshot.characterStateRevision).toBe(1);
+    expect(newTeam.characterStateRevision).toBe(2);
+    expect(newTeam.demon.playerId).not.toBe(oldSnapshot.demon.playerId);
+
+    for (const oldMinion of oldSnapshot.minions) {
+      expectMinionKnowledgeFromSnapshot(state, oldMinion);
+    }
+
+    for (const newMinion of newTeam.minions) {
+      const view = buildPlayerPrivateKnowledgeView(state, newMinion.playerId);
+      expectNoTeamKnowledge(view);
+    }
+  });
+
+  it("preserves delivered DEMON_INFO from its settlement snapshot after current evil team revision changes", () => {
+    const state = stateWithRevisedCurrentEvilTeam(stateWithDemonInformation());
+    const oldSnapshot = state.demonInformation?.resolvedEvilTeam;
+    const newTeam = requireCurrentEvilTeam(state);
+    if (oldSnapshot === undefined || state.setup === undefined) {
+      throw new Error("Expected delivered demon information snapshot and setup");
+    }
+
+    expect(oldSnapshot.characterStateRevision).toBe(1);
+    expect(newTeam.characterStateRevision).toBe(2);
+    expect(newTeam.demon.playerId).not.toBe(oldSnapshot.demon.playerId);
+
+    const oldDemonView = buildPlayerPrivateKnowledgeView(state, oldSnapshot.demon.playerId);
+    expect(oldDemonView.knownMinions).toStrictEqual(oldSnapshot.minions);
+    expect(oldDemonView.demonBluffs).toStrictEqual([...state.setup.demonBluffs].sort((left, right) => left.roleId < right.roleId ? -1 : 1));
+    expect(oldDemonView.teamKnowledgeModelVersion).toBe(SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION);
+    expect(oldDemonView.deliveredKnowledgeStages).toStrictEqual([
+      INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+      DEMON_INFORMATION_KNOWLEDGE_STAGE
+    ]);
+
+    const newDemonView = buildPlayerPrivateKnowledgeView(state, newTeam.demon.playerId);
+    expectNoTeamKnowledge(newDemonView);
+  });
+
+  it("allows MINION_INFO and DEMON_INFO to keep different settlement revisions", () => {
+    const minionState = stateWithMinionInformation();
+    const revisionTwoState = stateWithRevisedCurrentEvilTeam(minionState);
+    const revisionTwoTeam = requireCurrentEvilTeam(revisionTwoState);
+    if (revisionTwoState.setup === undefined || revisionTwoState.firstNightTaskProgress === undefined) {
+      throw new Error("Expected setup and task progress");
+    }
+
+    const state = {
+      ...revisionTwoState,
+      demonInformation: {
+        rulesBaselineVersion: RULES_BASELINE_VERSION,
+        nightNumber: 1 as const,
+        taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system"),
+        taskType: "DEMON_INFO" as const,
+        knowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
+        knowledgeStage: DEMON_INFORMATION_KNOWLEDGE_STAGE,
+        characterStateRevision: revisionTwoTeam.characterStateRevision,
+        resolvedEvilTeam: revisionTwoTeam,
+        rosterVersion: SUPPORTED_ROSTER_VERSION,
+        roleCatalogSignature: revisionTwoState.setup.roleCatalogSignature,
+        entries: expectedDemonInformationEntries(revisionTwoTeam.demon, revisionTwoTeam.minions, revisionTwoState.setup.demonBluffs)
+      },
+      firstNightTaskProgress: {
+        settlements: [
+          ...revisionTwoState.firstNightTaskProgress.settlements,
+          {
+            nightNumber: 1 as const,
+            taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system"),
+            taskType: "DEMON_INFO" as const,
+            settlementVersion: "scheduled-task-settlement-v1" as const,
+            outcomeType: "DEMON_INFORMATION_DELIVERED" as const,
+            characterStateRevision: revisionTwoTeam.characterStateRevision
+          }
+        ]
+      }
+    } satisfies GameState;
+
+    expect(state.minionInformation?.resolvedEvilTeam.characterStateRevision).toBe(1);
+    expect(state.demonInformation.resolvedEvilTeam.characterStateRevision).toBe(2);
+    const oldMinion = state.minionInformation?.resolvedEvilTeam.minions[0];
+    if (oldMinion === undefined) {
+      throw new Error("Expected old minion");
+    }
+
+    expectMinionKnowledgeFromSnapshot(state, oldMinion);
+    const newDemonView = buildPlayerPrivateKnowledgeView(state, revisionTwoTeam.demon.playerId);
+    expect(newDemonView.knownMinions).toStrictEqual(revisionTwoTeam.minions);
+    expect(newDemonView.deliveredKnowledgeStages).toStrictEqual([
+      INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+      DEMON_INFORMATION_KNOWLEDGE_STAGE
+    ]);
   });
 
   it("refuses team information projection when the delivered event has not been settled", () => {

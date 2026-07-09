@@ -8,7 +8,8 @@ import type {
   FirstNightTaskProgress,
   FirstNightSystemTaskType,
   FirstNightTaskPlan,
-  FirstNightTaskType
+  FirstNightTaskType,
+  ScheduledTaskSettlement
 } from "./first-night-task-plan.js";
 import {
   getNextUnsettledFirstNightTask
@@ -23,11 +24,13 @@ import type {
 import {
   cloneInitialKnowledgeEntry,
   cloneKnownPlayerReference,
+  hasExactKnownPlayerReferenceShape,
   hasExactEnumerableKeys,
   isPlainRecord,
   parsePrivateKnowledgeEntryShape
 } from "./initial-private-knowledge.js";
 import type { PlayerRoster } from "./player-roster.js";
+import { validatePlayerRoster } from "./player-roster.js";
 import type { GeneratedSetup, RoleSetupSnapshot } from "./setup-types.js";
 import { compareStableId, sameRoleSetupSnapshot } from "./setup-types.js";
 
@@ -44,10 +47,17 @@ export type MinionInformationEntry = DemonIdentityKnowledge | MinionIdentitiesKn
 export type DemonInformationEntry = MinionIdentitiesKnowledge | DemonBluffsKnowledge;
 export type FirstNightSystemInformationEntry = MinionInformationEntry | DemonInformationEntry;
 
+export type DeliveredEvilTeamSnapshot = {
+  readonly characterStateRevision: number;
+  readonly demon: KnownPlayerReference;
+  readonly minions: readonly KnownPlayerReference[];
+};
+
 export type FirstNightSystemInformationResolution = {
   readonly taskId: ScheduledTaskId;
   readonly taskType: FirstNightSystemTaskType;
   readonly characterStateRevision: number;
+  readonly resolvedEvilTeam: DeliveredEvilTeamSnapshot;
   readonly knowledgeModelVersion: FirstNightTeamKnowledgeModelVersion;
   readonly knowledgeStage: FirstNightTeamKnowledgeStage;
   readonly entries: readonly FirstNightSystemInformationEntry[];
@@ -93,6 +103,7 @@ export type MinionInformationDeliveredPayload = {
   readonly knowledgeModelVersion: FirstNightTeamKnowledgeModelVersion;
   readonly knowledgeStage: typeof MINION_INFORMATION_KNOWLEDGE_STAGE;
   readonly characterStateRevision: number;
+  readonly resolvedEvilTeam: DeliveredEvilTeamSnapshot;
   readonly rosterVersion: string;
   readonly roleCatalogSignature: string;
   readonly entries: readonly MinionInformationEntry[];
@@ -106,6 +117,7 @@ export type DemonInformationDeliveredPayload = {
   readonly knowledgeModelVersion: FirstNightTeamKnowledgeModelVersion;
   readonly knowledgeStage: typeof DEMON_INFORMATION_KNOWLEDGE_STAGE;
   readonly characterStateRevision: number;
+  readonly resolvedEvilTeam: DeliveredEvilTeamSnapshot;
   readonly rosterVersion: string;
   readonly roleCatalogSignature: string;
   readonly entries: readonly DemonInformationEntry[];
@@ -121,12 +133,14 @@ const TEAM_INFORMATION_PAYLOAD_KEYS = [
   "knowledgeModelVersion",
   "knowledgeStage",
   "nightNumber",
+  "resolvedEvilTeam",
   "roleCatalogSignature",
   "rosterVersion",
   "rulesBaselineVersion",
   "taskId",
   "taskType"
 ] as const;
+const DELIVERED_EVIL_TEAM_SNAPSHOT_KEYS = ["characterStateRevision", "demon", "minions"] as const;
 
 const fail = (reason: string): TeamInformationValidationResult => ({ valid: false, reason });
 
@@ -143,6 +157,9 @@ const isDenseArray = (value: readonly unknown[]): boolean => {
 const sameKnownPlayerReference = (left: KnownPlayerReference, right: KnownPlayerReference): boolean =>
   left.playerId === right.playerId && left.seatNumber === right.seatNumber;
 
+const rosterContainsReference = (roster: PlayerRoster, reference: KnownPlayerReference): boolean =>
+  roster.some((entry) => entry.playerId === reference.playerId && entry.seatNumber === reference.seatNumber);
+
 const knownPlayerReferencesEqual = (
   left: readonly KnownPlayerReference[],
   right: readonly KnownPlayerReference[]
@@ -152,6 +169,14 @@ const knownPlayerReferencesEqual = (
     const other = right[index];
     return other !== undefined && sameKnownPlayerReference(reference, other);
   });
+
+const deliveredEvilTeamSnapshotsEqual = (
+  left: DeliveredEvilTeamSnapshot,
+  right: DeliveredEvilTeamSnapshot
+): boolean =>
+  left.characterStateRevision === right.characterStateRevision &&
+  sameKnownPlayerReference(left.demon, right.demon) &&
+  knownPlayerReferencesEqual(left.minions, right.minions);
 
 const roleSnapshotsEqual = (
   left: readonly RoleSetupSnapshot[],
@@ -190,6 +215,101 @@ const entriesEqual = (
   });
 };
 
+export const cloneDeliveredEvilTeamSnapshot = (
+  snapshot: DeliveredEvilTeamSnapshot
+): DeliveredEvilTeamSnapshot => ({
+  characterStateRevision: snapshot.characterStateRevision,
+  demon: cloneKnownPlayerReference(snapshot.demon),
+  minions: snapshot.minions.map(cloneKnownPlayerReference)
+});
+
+export const validateDeliveredEvilTeamSnapshotShape = (
+  value: unknown,
+  roster: PlayerRoster
+): TeamInformationValidationResult => {
+  const rosterValidation = validatePlayerRoster(roster);
+  if (!rosterValidation.valid) {
+    return fail(rosterValidation.reason);
+  }
+
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, DELIVERED_EVIL_TEAM_SNAPSHOT_KEYS)) {
+    return fail("DeliveredEvilTeamSnapshot must have exact runtime shape");
+  }
+
+  if (
+    typeof value.characterStateRevision !== "number" ||
+    !Number.isInteger(value.characterStateRevision) ||
+    value.characterStateRevision <= 0 ||
+    !hasExactKnownPlayerReferenceShape(value.demon) ||
+    !Array.isArray(value.minions) ||
+    !isDenseArray(value.minions) ||
+    value.minions.length !== 2 ||
+    value.minions.some((minion) => !hasExactKnownPlayerReferenceShape(minion))
+  ) {
+    return fail("DeliveredEvilTeamSnapshot fields must use supported exact values");
+  }
+
+  const snapshot = value as DeliveredEvilTeamSnapshot;
+  const ordered = snapshot.minions.every((minion, index) =>
+    index === 0 || (snapshot.minions[index - 1]?.seatNumber ?? 0) < minion.seatNumber
+  );
+  if (!ordered) {
+    return fail("DeliveredEvilTeamSnapshot minions must be sorted by ascending seatNumber");
+  }
+
+  const references = [snapshot.demon, ...snapshot.minions];
+  const playerIds = new Set(references.map((reference) => reference.playerId));
+  const seatNumbers = new Set(references.map((reference) => reference.seatNumber));
+  if (playerIds.size !== references.length || seatNumbers.size !== references.length) {
+    return fail("DeliveredEvilTeamSnapshot playerId and seatNumber values must be unique");
+  }
+
+  if (snapshot.minions.some((minion) => sameKnownPlayerReference(minion, snapshot.demon))) {
+    return fail("DeliveredEvilTeamSnapshot demon must not appear in minions");
+  }
+
+  if (references.some((reference) => !rosterContainsReference(roster, reference))) {
+    return fail("DeliveredEvilTeamSnapshot references must exist in roster");
+  }
+
+  return { valid: true };
+};
+
+export const validateDeliveredEvilTeamSnapshotAgainstCurrentState = (input: {
+  readonly snapshot: unknown;
+  readonly currentCharacterState: CurrentCharacterStateSet;
+  readonly roster: PlayerRoster;
+  readonly setup: GeneratedSetup;
+}): TeamInformationValidationResult => {
+  const shapeValidation = validateDeliveredEvilTeamSnapshotShape(input.snapshot, input.roster);
+  if (!shapeValidation.valid) {
+    return shapeValidation;
+  }
+
+  const currentValidation = validateCurrentCharacterStateSet({
+    currentCharacterState: input.currentCharacterState,
+    roster: input.roster,
+    setup: input.setup
+  });
+  if (!currentValidation.valid) {
+    return currentValidation;
+  }
+
+  const resolved = resolveCurrentEvilTeam({
+    currentCharacterState: input.currentCharacterState,
+    roster: input.roster
+  });
+  if (resolved.status === "failure") {
+    return fail(resolved.message);
+  }
+
+  if (!deliveredEvilTeamSnapshotsEqual(input.snapshot as DeliveredEvilTeamSnapshot, resolved.team)) {
+    return fail("DeliveredEvilTeamSnapshot must match current evil team exactly at settlement");
+  }
+
+  return { valid: true };
+};
+
 const parseTeamInformationEntries = (
   entries: unknown,
   allowedKinds: readonly FirstNightSystemInformationEntry["kind"][]
@@ -225,6 +345,7 @@ export const cloneFirstNightSystemInformationResolution = (
   taskId: resolution.taskId,
   taskType: resolution.taskType,
   characterStateRevision: resolution.characterStateRevision,
+  resolvedEvilTeam: cloneDeliveredEvilTeamSnapshot(resolution.resolvedEvilTeam),
   knowledgeModelVersion: resolution.knowledgeModelVersion,
   knowledgeStage: resolution.knowledgeStage,
   entries: resolution.entries.map((entry) => cloneInitialKnowledgeEntry(entry) as FirstNightSystemInformationEntry)
@@ -305,15 +426,13 @@ const validateDemonBluffsForSetup = (setup: GeneratedSetup): TeamInformationVali
   return { valid: true };
 };
 
-const validateCommonTeamInformationPayload = (input: {
+const validateCommonTeamInformationPayloadShape = (input: {
   readonly payload: unknown;
   readonly expectedTaskType: FirstNightSystemTaskType;
   readonly expectedKnowledgeStage: FirstNightTeamKnowledgeStage;
-  readonly currentCharacterState: CurrentCharacterStateSet;
   readonly roster: PlayerRoster;
   readonly rosterVersion: string;
   readonly setup: GeneratedSetup;
-  readonly firstNightTaskPlan: FirstNightTaskPlan;
 }): { readonly valid: true; readonly payload: Record<string, unknown> } | { readonly valid: false; readonly reason: string } => {
   if (!isPlainRecord(input.payload) || !hasExactEnumerableKeys(input.payload, TEAM_INFORMATION_PAYLOAD_KEYS)) {
     return { valid: false, reason: "team information payload must have exact runtime shape" };
@@ -337,25 +456,20 @@ const validateCommonTeamInformationPayload = (input: {
   }
 
   if (
-    input.payload.characterStateRevision !== input.currentCharacterState.revision ||
     input.payload.rosterVersion !== input.rosterVersion ||
     input.payload.roleCatalogSignature !== input.setup.roleCatalogSignature
   ) {
-    return { valid: false, reason: "team information payload metadata must match current source facts" };
+    return { valid: false, reason: "team information payload metadata must match source facts" };
   }
 
-  const currentValidation = validateCurrentCharacterStateSet({
-    currentCharacterState: input.currentCharacterState,
-    roster: input.roster,
-    setup: input.setup
-  });
-  if (!currentValidation.valid) {
-    return { valid: false, reason: currentValidation.reason };
+  const snapshotValidation = validateDeliveredEvilTeamSnapshotShape(input.payload.resolvedEvilTeam, input.roster);
+  if (!snapshotValidation.valid) {
+    return snapshotValidation;
   }
 
-  const nextTask = getNextUnsettledFirstNightTask(input.firstNightTaskPlan, undefined);
-  if (nextTask === undefined) {
-    return { valid: false, reason: "team information requires an unsettled first-night task" };
+  const snapshot = input.payload.resolvedEvilTeam as DeliveredEvilTeamSnapshot;
+  if (input.payload.characterStateRevision !== snapshot.characterStateRevision) {
+    return { valid: false, reason: "team information characterStateRevision must match resolvedEvilTeam revision" };
   }
 
   return { valid: true, payload: input.payload };
@@ -383,7 +497,52 @@ const validateExpectedTask = (input: {
   return { valid: true };
 };
 
-export const validateMinionInformationDeliveredPayload = (
+const validatePlannedTask = (input: {
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: FirstNightTaskType;
+  readonly firstNightTaskPlan: FirstNightTaskPlan;
+}): TeamInformationValidationResult => {
+  const plannedTask = input.firstNightTaskPlan.tasks.find((task) => task.taskId === input.taskId);
+  if (plannedTask === undefined) {
+    return fail("team information taskId must exist in first-night task plan");
+  }
+
+  if (plannedTask.taskType !== input.taskType) {
+    return fail("team information taskType must match first-night task plan");
+  }
+
+  if (plannedTask.source.kind !== "SYSTEM") {
+    return fail("team information task must be a system task");
+  }
+
+  return { valid: true };
+};
+
+const validateMatchingSettlement = (input: {
+  readonly settlement: ScheduledTaskSettlement | undefined;
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: FirstNightTaskType;
+  readonly characterStateRevision: number;
+  readonly expectedOutcomeType: "MINION_INFORMATION_DELIVERED" | "DEMON_INFORMATION_DELIVERED";
+}): TeamInformationValidationResult => {
+  const settlement = input.settlement;
+  if (settlement === undefined) {
+    return fail("team information requires matching ScheduledTaskSettled");
+  }
+
+  if (
+    settlement.taskId !== input.taskId ||
+    settlement.taskType !== input.taskType ||
+    settlement.characterStateRevision !== input.characterStateRevision ||
+    settlement.outcomeType !== input.expectedOutcomeType
+  ) {
+    return fail("ScheduledTaskSettled must match delivered team information");
+  }
+
+  return { valid: true };
+};
+
+export const validateMinionInformationDeliveredAtSettlement = (
   payload: unknown,
   sourceFacts: {
     readonly currentCharacterState: CurrentCharacterStateSet;
@@ -394,7 +553,7 @@ export const validateMinionInformationDeliveredPayload = (
     readonly firstNightTaskProgress: FirstNightTaskProgress | undefined;
   }
 ): TeamInformationValidationResult => {
-  const common = validateCommonTeamInformationPayload({
+  const common = validateCommonTeamInformationPayloadShape({
     ...sourceFacts,
     payload,
     expectedTaskType: "MINION_INFO",
@@ -409,6 +568,16 @@ export const validateMinionInformationDeliveredPayload = (
     return parsedEntries;
   }
 
+  const snapshotValidation = validateDeliveredEvilTeamSnapshotAgainstCurrentState({
+    snapshot: common.payload.resolvedEvilTeam,
+    currentCharacterState: sourceFacts.currentCharacterState,
+    roster: sourceFacts.roster,
+    setup: sourceFacts.setup
+  });
+  if (!snapshotValidation.valid) {
+    return snapshotValidation;
+  }
+
   const taskValidation = validateExpectedTask({
     taskId: common.payload.taskId as ScheduledTaskId,
     taskType: "MINION_INFO",
@@ -419,23 +588,17 @@ export const validateMinionInformationDeliveredPayload = (
     return taskValidation;
   }
 
-  const team = resolveCurrentEvilTeam({
-    currentCharacterState: sourceFacts.currentCharacterState,
-    roster: sourceFacts.roster
-  });
-  if (team.status === "failure") {
-    return fail(team.message);
-  }
+  const snapshot = common.payload.resolvedEvilTeam as DeliveredEvilTeamSnapshot;
+  const expected = expectedMinionInformationEntries(snapshot.demon, snapshot.minions);
 
-  const expected = expectedMinionInformationEntries(team.team.demon, team.team.minions);
   if (!entriesEqual(parsedEntries.entries, expected)) {
-    return fail("MinionInformationDelivered entries must match current evil team exactly");
+    return fail("MinionInformationDelivered entries must match resolvedEvilTeam exactly");
   }
 
   return { valid: true };
 };
 
-export const validateDemonInformationDeliveredPayload = (
+export const validateDemonInformationDeliveredAtSettlement = (
   payload: unknown,
   sourceFacts: {
     readonly currentCharacterState: CurrentCharacterStateSet;
@@ -446,7 +609,7 @@ export const validateDemonInformationDeliveredPayload = (
     readonly firstNightTaskProgress: FirstNightTaskProgress | undefined;
   }
 ): TeamInformationValidationResult => {
-  const common = validateCommonTeamInformationPayload({
+  const common = validateCommonTeamInformationPayloadShape({
     ...sourceFacts,
     payload,
     expectedTaskType: "DEMON_INFO",
@@ -459,6 +622,16 @@ export const validateDemonInformationDeliveredPayload = (
   const parsedEntries = parseTeamInformationEntries(common.payload.entries, ["MINION_IDENTITIES", "DEMON_BLUFFS"]);
   if (!parsedEntries.valid) {
     return parsedEntries;
+  }
+
+  const snapshotValidation = validateDeliveredEvilTeamSnapshotAgainstCurrentState({
+    snapshot: common.payload.resolvedEvilTeam,
+    currentCharacterState: sourceFacts.currentCharacterState,
+    roster: sourceFacts.roster,
+    setup: sourceFacts.setup
+  });
+  if (!snapshotValidation.valid) {
+    return snapshotValidation;
   }
 
   const taskValidation = validateExpectedTask({
@@ -476,18 +649,128 @@ export const validateDemonInformationDeliveredPayload = (
     return bluffValidation;
   }
 
-  const team = resolveCurrentEvilTeam({
-    currentCharacterState: sourceFacts.currentCharacterState,
-    roster: sourceFacts.roster
-  });
-  if (team.status === "failure") {
-    return fail(team.message);
-  }
+  const snapshot = common.payload.resolvedEvilTeam as DeliveredEvilTeamSnapshot;
+  const expected = expectedDemonInformationEntries(snapshot.demon, snapshot.minions, sourceFacts.setup.demonBluffs);
 
-  const expected = expectedDemonInformationEntries(team.team.demon, team.team.minions, sourceFacts.setup.demonBluffs);
   if (!entriesEqual(parsedEntries.entries, expected)) {
-    return fail("DemonInformationDelivered entries must match current evil team and setup bluffs exactly");
+    return fail("DemonInformationDelivered entries must match resolvedEvilTeam and setup bluffs exactly");
   }
 
   return { valid: true };
 };
+
+export const validateStoredMinionInformationDelivered = (
+  payload: unknown,
+  sourceFacts: {
+    readonly roster: PlayerRoster;
+    readonly rosterVersion: string;
+    readonly setup: GeneratedSetup;
+    readonly firstNightTaskPlan: FirstNightTaskPlan;
+    readonly settlement: ScheduledTaskSettlement | undefined;
+  }
+): TeamInformationValidationResult => {
+  const common = validateCommonTeamInformationPayloadShape({
+    ...sourceFacts,
+    payload,
+    expectedTaskType: "MINION_INFO",
+    expectedKnowledgeStage: MINION_INFORMATION_KNOWLEDGE_STAGE
+  });
+  if (!common.valid) {
+    return common;
+  }
+
+  const parsedEntries = parseTeamInformationEntries(common.payload.entries, ["DEMON_IDENTITY", "MINION_IDENTITIES"]);
+  if (!parsedEntries.valid) {
+    return parsedEntries;
+  }
+
+  const taskValidation = validatePlannedTask({
+    taskId: common.payload.taskId as ScheduledTaskId,
+    taskType: "MINION_INFO",
+    firstNightTaskPlan: sourceFacts.firstNightTaskPlan
+  });
+  if (!taskValidation.valid) {
+    return taskValidation;
+  }
+
+  const snapshot = common.payload.resolvedEvilTeam as DeliveredEvilTeamSnapshot;
+  const settlementValidation = validateMatchingSettlement({
+    settlement: sourceFacts.settlement,
+    taskId: common.payload.taskId as ScheduledTaskId,
+    taskType: "MINION_INFO",
+    characterStateRevision: snapshot.characterStateRevision,
+    expectedOutcomeType: "MINION_INFORMATION_DELIVERED"
+  });
+  if (!settlementValidation.valid) {
+    return settlementValidation;
+  }
+
+  const expected = expectedMinionInformationEntries(snapshot.demon, snapshot.minions);
+  if (!entriesEqual(parsedEntries.entries, expected)) {
+    return fail("Stored MinionInformationDelivered entries must match resolvedEvilTeam exactly");
+  }
+
+  return { valid: true };
+};
+
+export const validateStoredDemonInformationDelivered = (
+  payload: unknown,
+  sourceFacts: {
+    readonly roster: PlayerRoster;
+    readonly rosterVersion: string;
+    readonly setup: GeneratedSetup;
+    readonly firstNightTaskPlan: FirstNightTaskPlan;
+    readonly settlement: ScheduledTaskSettlement | undefined;
+  }
+): TeamInformationValidationResult => {
+  const common = validateCommonTeamInformationPayloadShape({
+    ...sourceFacts,
+    payload,
+    expectedTaskType: "DEMON_INFO",
+    expectedKnowledgeStage: DEMON_INFORMATION_KNOWLEDGE_STAGE
+  });
+  if (!common.valid) {
+    return common;
+  }
+
+  const parsedEntries = parseTeamInformationEntries(common.payload.entries, ["MINION_IDENTITIES", "DEMON_BLUFFS"]);
+  if (!parsedEntries.valid) {
+    return parsedEntries;
+  }
+
+  const taskValidation = validatePlannedTask({
+    taskId: common.payload.taskId as ScheduledTaskId,
+    taskType: "DEMON_INFO",
+    firstNightTaskPlan: sourceFacts.firstNightTaskPlan
+  });
+  if (!taskValidation.valid) {
+    return taskValidation;
+  }
+
+  const bluffValidation = validateDemonBluffsForSetup(sourceFacts.setup);
+  if (!bluffValidation.valid) {
+    return bluffValidation;
+  }
+
+  const snapshot = common.payload.resolvedEvilTeam as DeliveredEvilTeamSnapshot;
+  const settlementValidation = validateMatchingSettlement({
+    settlement: sourceFacts.settlement,
+    taskId: common.payload.taskId as ScheduledTaskId,
+    taskType: "DEMON_INFO",
+    characterStateRevision: snapshot.characterStateRevision,
+    expectedOutcomeType: "DEMON_INFORMATION_DELIVERED"
+  });
+  if (!settlementValidation.valid) {
+    return settlementValidation;
+  }
+
+  const expected = expectedDemonInformationEntries(snapshot.demon, snapshot.minions, sourceFacts.setup.demonBluffs);
+  if (!entriesEqual(parsedEntries.entries, expected)) {
+    return fail("Stored DemonInformationDelivered entries must match resolvedEvilTeam and setup bluffs exactly");
+  }
+
+  return { valid: true };
+};
+
+export const validateMinionInformationDeliveredPayload = validateMinionInformationDeliveredAtSettlement;
+export const validateDemonInformationDeliveredPayload = validateDemonInformationDeliveredAtSettlement;

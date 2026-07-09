@@ -12,6 +12,7 @@ import {
   applyDomainEventBatch,
   assertNever,
   causationIdFromCommandId,
+  cloneDeliveredEvilTeamSnapshot,
   createFixedPlayerRoster,
   compareStableId,
   cloneFirstNightTaskCatalogSnapshot,
@@ -147,6 +148,12 @@ const isDenseArray = (value: readonly unknown[]): boolean => {
   return true;
 };
 
+const hasExactEnumerableKeys = (value: Record<string, unknown>, keys: readonly string[]): boolean => {
+  const actualKeys = Object.keys(value).sort();
+  const expectedKeys = [...keys].sort();
+  return actualKeys.length === expectedKeys.length && actualKeys.every((key, index) => key === expectedKeys[index]);
+};
+
 const isFirstNightTaskPlanningFailureCode = (value: unknown): value is FirstNightTaskPlanningFailure["failureCode"] =>
   value === "InvalidTaskCatalog" || value === "InvalidFirstNightState" || value === "InvalidTaskPlan";
 
@@ -252,8 +259,65 @@ const invalidSystemInformationResult = (message: string): FirstNightSystemInform
   message
 });
 
+const KNOWN_PLAYER_REFERENCE_KEYS = ["playerId", "seatNumber"] as const;
+const DELIVERED_EVIL_TEAM_SNAPSHOT_KEYS = ["characterStateRevision", "demon", "minions"] as const;
+const FIRST_NIGHT_SYSTEM_INFORMATION_RESOLUTION_KEYS = [
+  "characterStateRevision",
+  "entries",
+  "knowledgeModelVersion",
+  "knowledgeStage",
+  "resolvedEvilTeam",
+  "taskId",
+  "taskType"
+] as const;
+
+const hasExactKnownPlayerReferenceShape = (value: unknown): boolean =>
+  isPlainRecord(value) &&
+  hasExactEnumerableKeys(value, KNOWN_PLAYER_REFERENCE_KEYS) &&
+  typeof value.playerId === "string" &&
+  value.playerId.trim().length > 0 &&
+  typeof value.seatNumber === "number" &&
+  Number.isInteger(value.seatNumber) &&
+  value.seatNumber >= 1 &&
+  value.seatNumber <= 12;
+
+const sameKnownPlayerReference = (left: Record<string, unknown>, right: Record<string, unknown>): boolean =>
+  left.playerId === right.playerId && left.seatNumber === right.seatNumber;
+
+const hasExactDeliveredEvilTeamSnapshotShape = (value: unknown, characterStateRevision: number): boolean => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, DELIVERED_EVIL_TEAM_SNAPSHOT_KEYS)) {
+    return false;
+  }
+
+  if (
+    value.characterStateRevision !== characterStateRevision ||
+    !hasExactKnownPlayerReferenceShape(value.demon) ||
+    !Array.isArray(value.minions) ||
+    !isDenseArray(value.minions) ||
+    value.minions.length !== 2 ||
+    value.minions.some((minion) => !hasExactKnownPlayerReferenceShape(minion))
+  ) {
+    return false;
+  }
+
+  const demon = value.demon as Record<string, unknown>;
+  const minions = value.minions as readonly Record<string, unknown>[];
+  if (!minions.every((minion, index) => index === 0 || (minions[index - 1]?.seatNumber as number) < (minion.seatNumber as number))) {
+    return false;
+  }
+
+  const references = [demon, ...minions];
+  const playerIds = new Set(references.map((reference) => reference.playerId));
+  const seatNumbers = new Set(references.map((reference) => reference.seatNumber));
+  if (playerIds.size !== references.length || seatNumbers.size !== references.length) {
+    return false;
+  }
+
+  return minions.every((minion) => !sameKnownPlayerReference(minion, demon));
+};
+
 const validateFirstNightSystemInformationResolutionRuntimeShape = (value: unknown): boolean => {
-  if (!isPlainRecord(value)) {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, FIRST_NIGHT_SYSTEM_INFORMATION_RESOLUTION_KEYS)) {
     return false;
   }
 
@@ -264,6 +328,7 @@ const validateFirstNightSystemInformationResolutionRuntimeShape = (value: unknow
     typeof value.characterStateRevision !== "number" ||
     !Number.isInteger(value.characterStateRevision) ||
     value.characterStateRevision <= 0 ||
+    !hasExactDeliveredEvilTeamSnapshotShape(value.resolvedEvilTeam, value.characterStateRevision) ||
     value.knowledgeModelVersion !== SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION ||
     !Array.isArray(value.entries) ||
     !isDenseArray(value.entries) ||
@@ -1625,6 +1690,7 @@ export class GameApplicationService {
               knowledgeModelVersion: firstNightSystemInformation.knowledgeModelVersion,
               knowledgeStage: MINION_INFORMATION_KNOWLEDGE_STAGE,
               characterStateRevision: firstNightSystemInformation.characterStateRevision,
+              resolvedEvilTeam: cloneDeliveredEvilTeamSnapshot(firstNightSystemInformation.resolvedEvilTeam),
               rosterVersion: state.roster.rosterVersion,
               roleCatalogSignature: state.setup.roleCatalogSignature,
               entries: firstNightSystemInformation.entries as readonly MinionInformationEntry[]
@@ -1645,6 +1711,7 @@ export class GameApplicationService {
             knowledgeModelVersion: firstNightSystemInformation.knowledgeModelVersion,
             knowledgeStage: DEMON_INFORMATION_KNOWLEDGE_STAGE,
             characterStateRevision: firstNightSystemInformation.characterStateRevision,
+            resolvedEvilTeam: cloneDeliveredEvilTeamSnapshot(firstNightSystemInformation.resolvedEvilTeam),
             rosterVersion: state.roster.rosterVersion,
             roleCatalogSignature: state.setup.roleCatalogSignature,
             entries: firstNightSystemInformation.entries as readonly DemonInformationEntry[]

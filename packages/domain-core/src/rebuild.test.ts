@@ -294,6 +294,7 @@ const minionInformationDeliveredEvent = (
       knowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
       knowledgeStage: MINION_INFORMATION_KNOWLEDGE_STAGE,
       characterStateRevision: team.team.characterStateRevision,
+      resolvedEvilTeam: team.team,
       rosterVersion: state.roster.rosterVersion,
       roleCatalogSignature: state.setup.roleCatalogSignature,
       entries: expectedMinionInformationEntries(team.team.demon, team.team.minions)
@@ -371,6 +372,7 @@ const demonInformationDeliveredEvent = (
       knowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
       knowledgeStage: DEMON_INFORMATION_KNOWLEDGE_STAGE,
       characterStateRevision: team.team.characterStateRevision,
+      resolvedEvilTeam: team.team,
       rosterVersion: state.roster.rosterVersion,
       roleCatalogSignature: state.setup.roleCatalogSignature,
       entries: expectedDemonInformationEntries(team.team.demon, team.team.minions, state.setup.demonBluffs)
@@ -2545,6 +2547,94 @@ describe("domain event rebuild", () => {
       ]),
       "InvalidDomainBatchSemantics"
     );
+  });
+
+  it("rejects team information events whose delivered evil team snapshot is missing or revision-mismatched", () => {
+    const payloadWithoutSnapshot = { ...minionInformationDeliveredEvent().payload } as Record<string, unknown>;
+    delete payloadWithoutSnapshot.resolvedEvilTeam;
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent({
+          payload: payloadWithoutSnapshot as never
+        }),
+        minionTaskSettledEvent()
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent({
+          payload: {
+            ...minionInformationDeliveredEvent().payload,
+            resolvedEvilTeam: {
+              ...minionInformationDeliveredEvent().payload.resolvedEvilTeam,
+              characterStateRevision: 2
+            }
+          }
+        }),
+        minionTaskSettledEvent()
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...noPhilosopherTaskPlanEventStream(),
+        minionInformationDeliveredEvent(),
+        minionTaskSettledEvent({
+          payload: {
+            ...minionTaskSettledEvent().payload,
+            characterStateRevision: 2
+          }
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects delivered evil team snapshots with unknown, duplicate, or unsorted player references", () => {
+    const basePayload = minionInformationDeliveredEvent().payload;
+    const [firstMinion, secondMinion] = basePayload.resolvedEvilTeam.minions;
+    if (firstMinion === undefined || secondMinion === undefined) {
+      throw new Error("Expected two minions");
+    }
+
+    const invalidSnapshots = [
+      {
+        ...basePayload.resolvedEvilTeam,
+        demon: {
+          playerId: playerId("missing-player"),
+          seatNumber: basePayload.resolvedEvilTeam.demon.seatNumber
+        }
+      },
+      {
+        ...basePayload.resolvedEvilTeam,
+        minions: [firstMinion, firstMinion]
+      },
+      {
+        ...basePayload.resolvedEvilTeam,
+        minions: [secondMinion, firstMinion]
+      }
+    ];
+
+    for (const resolvedEvilTeam of invalidSnapshots) {
+      expectDomainCode(
+        () => rebuildGameState([
+          ...noPhilosopherTaskPlanEventStream(),
+          minionInformationDeliveredEvent({
+            payload: {
+              ...basePayload,
+              resolvedEvilTeam
+            }
+          }),
+          minionTaskSettledEvent()
+        ]),
+        "InvalidMinionInformationDeliveredPayload"
+      );
+    }
   });
 
   it("rejects sparse, noncanonical, and duplicate system information settlement facts", () => {

@@ -204,12 +204,18 @@ const validateIntegratedFirstNightSystemInformationBatch = (
 
   assertSharedBatchMetadata(informationDelivered, scheduledTaskSettled);
 
+  const deliveredSnapshotRevision = informationDelivered.payload.resolvedEvilTeam?.characterStateRevision;
+  if (typeof deliveredSnapshotRevision !== "number") {
+    reject("Team information event must include a delivered evil team snapshot revision");
+  }
+
   if (
     scheduledTaskSettled.payload.taskId !== informationDelivered.payload.taskId ||
     scheduledTaskSettled.payload.taskType !== informationDelivered.payload.taskType ||
-    scheduledTaskSettled.payload.characterStateRevision !== informationDelivered.payload.characterStateRevision
+    scheduledTaskSettled.payload.characterStateRevision !== informationDelivered.payload.characterStateRevision ||
+    scheduledTaskSettled.payload.characterStateRevision !== deliveredSnapshotRevision
   ) {
-    reject("ScheduledTaskSettled must match the preceding team information event task identity and character state revision");
+    reject("ScheduledTaskSettled must match the preceding team information event task identity and delivered evil team revision");
   }
 
   if (

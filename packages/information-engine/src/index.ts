@@ -4,6 +4,7 @@ import {
   MINION_INFORMATION_KNOWLEDGE_STAGE,
   SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
+  cloneDeliveredEvilTeamSnapshot,
   cloneInitialOwnCharacterKnowledgeEntry,
   cloneFirstNightSystemInformationResolution,
   cloneRoleSetupSnapshot,
@@ -213,14 +214,16 @@ export class FirstNightSystemInformationResolver {
       return systemInformationFailure("InvalidEvilTeam", team.message, team.conflictingPlayerIds);
     }
 
+    const resolvedEvilTeam = cloneDeliveredEvilTeamSnapshot(team.team);
     const entries = input.taskType === "MINION_INFO"
-      ? expectedMinionInformationEntries(team.team.demon, team.team.minions)
-      : expectedDemonInformationEntries(team.team.demon, team.team.minions, input.setup.demonBluffs);
+      ? expectedMinionInformationEntries(resolvedEvilTeam.demon, resolvedEvilTeam.minions)
+      : expectedDemonInformationEntries(resolvedEvilTeam.demon, resolvedEvilTeam.minions, input.setup.demonBluffs);
 
     const resolution = {
       taskId: input.taskId,
       taskType: input.taskType,
-      characterStateRevision: team.team.characterStateRevision,
+      characterStateRevision: resolvedEvilTeam.characterStateRevision,
+      resolvedEvilTeam,
       knowledgeModelVersion: SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
       knowledgeStage: input.taskType === "MINION_INFO"
         ? MINION_INFORMATION_KNOWLEDGE_STAGE

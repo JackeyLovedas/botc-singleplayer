@@ -31,8 +31,8 @@ import {
   validateScheduledTaskSettledPayloadShape,
 } from "./first-night-task-plan.js";
 import {
-  validateDemonInformationDeliveredPayload,
-  validateMinionInformationDeliveredPayload
+  validateDemonInformationDeliveredAtSettlement,
+  validateMinionInformationDeliveredAtSettlement
 } from "./first-night-team-information.js";
 import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
@@ -580,7 +580,7 @@ const validateMinionInformationDeliveredPayloadForState = (
     throw new DomainError("DuplicateMinionInformationDelivered", "MinionInformationDelivered cannot be applied twice");
   }
 
-  const validation = validateMinionInformationDeliveredPayload(payload, {
+  const validation = validateMinionInformationDeliveredAtSettlement(payload, {
     currentCharacterState: state.currentCharacterState,
     roster: state.roster.entries,
     rosterVersion: state.roster.rosterVersion,
@@ -615,7 +615,7 @@ const validateDemonInformationDeliveredPayloadForState = (
     throw new DomainError("DuplicateDemonInformationDelivered", "DemonInformationDelivered cannot be applied twice");
   }
 
-  const validation = validateDemonInformationDeliveredPayload(payload, {
+  const validation = validateDemonInformationDeliveredAtSettlement(payload, {
     currentCharacterState: state.currentCharacterState,
     roster: state.roster.entries,
     rosterVersion: state.roster.rosterVersion,
@@ -663,6 +663,7 @@ const validateScheduledTaskSettledPayloadForState = (
       state.minionInformation.taskId !== payload.taskId ||
       state.minionInformation.taskType !== payload.taskType ||
       state.minionInformation.characterStateRevision !== payload.characterStateRevision ||
+      state.minionInformation.resolvedEvilTeam.characterStateRevision !== payload.characterStateRevision ||
       payload.outcomeType !== "MINION_INFORMATION_DELIVERED"
     ) {
       throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match the delivered minion information");
@@ -676,6 +677,7 @@ const validateScheduledTaskSettledPayloadForState = (
       state.demonInformation.taskId !== payload.taskId ||
       state.demonInformation.taskType !== payload.taskType ||
       state.demonInformation.characterStateRevision !== payload.characterStateRevision ||
+      state.demonInformation.resolvedEvilTeam.characterStateRevision !== payload.characterStateRevision ||
       payload.outcomeType !== "DEMON_INFORMATION_DELIVERED"
     ) {
       throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match the delivered demon information");

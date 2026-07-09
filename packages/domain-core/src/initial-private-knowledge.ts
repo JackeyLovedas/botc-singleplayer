@@ -29,6 +29,10 @@ export const INITIAL_KNOWLEDGE_KINDS = [
 export type SupportedFirstNightInitializationVersion = typeof SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION;
 export type SupportedInitialKnowledgeModelVersion = typeof SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION;
 export type InitialOwnCharacterKnowledgeStage = typeof INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE;
+export type PlayerPrivateKnowledgeStage =
+  | typeof INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE
+  | "MINION_INFORMATION"
+  | "DEMON_INFORMATION";
 
 export type FirstNightSession = {
   readonly initializationVersion: SupportedFirstNightInitializationVersion;
@@ -94,7 +98,9 @@ export type PlayerPrivateKnowledgeView = {
   readonly knownDemon?: KnownPlayerReference;
   readonly knownMinions: readonly KnownPlayerReference[];
   readonly demonBluffs: readonly RoleSetupSnapshot[];
-  readonly knowledgeModelVersion: string;
+  readonly ownCharacterKnowledgeModelVersion: SupportedInitialKnowledgeModelVersion;
+  readonly teamKnowledgeModelVersion?: string;
+  readonly deliveredKnowledgeStages: readonly PlayerPrivateKnowledgeStage[];
 };
 
 export type InitialPrivateKnowledgeGenerationFailureCode =
@@ -229,6 +235,22 @@ const INITIAL_PRIVATE_KNOWLEDGE_PAYLOAD_KEYS = [
   "roleCatalogSignature",
   "entries"
 ] as const;
+const PLAYER_PRIVATE_KNOWLEDGE_VIEW_BASE_KEYS = [
+  "deliveredKnowledgeStages",
+  "demonBluffs",
+  "knownMinions",
+  "ownCharacter",
+  "ownCharacterKnowledgeModelVersion",
+  "viewerDisplayName",
+  "viewerPlayerId",
+  "viewerSeatNumber"
+] as const;
+const PLAYER_PRIVATE_KNOWLEDGE_STAGE_ORDER = [
+  INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
+  "MINION_INFORMATION",
+  "DEMON_INFORMATION"
+] as const;
+const SUPPORTED_PRIVATE_VIEW_TEAM_KNOWLEDGE_MODEL_VERSION = "first-night-team-knowledge-v1" as const;
 
 export const hasExactRoleSetupSnapshotShape = (value: unknown): value is RoleSetupSnapshot => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ROLE_SETUP_SNAPSHOT_KEYS)) {
@@ -328,6 +350,144 @@ export const cloneInitialPrivateKnowledge = (knowledge: InitialPrivateKnowledge)
 });
 
 const fail = (reason: string): InitialPrivateKnowledgeValidationResult => ({ valid: false, reason });
+
+const knownPlayerReferencesAreSortedAndUnique = (references: readonly KnownPlayerReference[]): boolean => {
+  const playerIds = new Set<PlayerId>();
+  const seatNumbers = new Set<SeatNumber>();
+  for (const [index, reference] of references.entries()) {
+    if (index > 0 && (references[index - 1]?.seatNumber ?? 0) >= reference.seatNumber) {
+      return false;
+    }
+
+    if (playerIds.has(reference.playerId) || seatNumbers.has(reference.seatNumber)) {
+      return false;
+    }
+
+    playerIds.add(reference.playerId);
+    seatNumbers.add(reference.seatNumber);
+  }
+
+  return true;
+};
+
+const validatePrivateKnowledgeViewStages = (
+  stages: unknown,
+  hasTeamKnowledgeModelVersion: boolean
+): InitialPrivateKnowledgeValidationResult => {
+  if (!Array.isArray(stages) || !isDenseArray(stages)) {
+    return fail("PlayerPrivateKnowledgeView deliveredKnowledgeStages must be a dense array");
+  }
+
+  const stageValues = stages as readonly unknown[];
+  if (
+    stageValues.length === 0 ||
+    stageValues.some((stage) => !PLAYER_PRIVATE_KNOWLEDGE_STAGE_ORDER.includes(stage as PlayerPrivateKnowledgeStage))
+  ) {
+    return fail("PlayerPrivateKnowledgeView deliveredKnowledgeStages contains unsupported values");
+  }
+
+  if (stageValues[0] !== INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE) {
+    return fail("PlayerPrivateKnowledgeView deliveredKnowledgeStages must start with OWN_CHARACTER_BOOTSTRAP");
+  }
+
+  const uniqueStages = new Set(stageValues);
+  if (uniqueStages.size !== stageValues.length) {
+    return fail("PlayerPrivateKnowledgeView deliveredKnowledgeStages must not contain duplicates");
+  }
+
+  for (const [index, stage] of stageValues.entries()) {
+    const previous = stageValues[index - 1];
+    if (
+      previous !== undefined &&
+      PLAYER_PRIVATE_KNOWLEDGE_STAGE_ORDER.indexOf(previous as PlayerPrivateKnowledgeStage) >=
+        PLAYER_PRIVATE_KNOWLEDGE_STAGE_ORDER.indexOf(stage as PlayerPrivateKnowledgeStage)
+    ) {
+      return fail("PlayerPrivateKnowledgeView deliveredKnowledgeStages must use canonical order");
+    }
+  }
+
+  const hasTeamStages = stageValues.some((stage) => stage === "MINION_INFORMATION" || stage === "DEMON_INFORMATION");
+  if (hasTeamKnowledgeModelVersion !== hasTeamStages) {
+    return fail("PlayerPrivateKnowledgeView teamKnowledgeModelVersion must be present exactly when team stages are delivered");
+  }
+
+  return { valid: true };
+};
+
+export const validatePlayerPrivateKnowledgeViewShape = (
+  value: unknown
+): InitialPrivateKnowledgeValidationResult => {
+  if (!isPlainRecord(value)) {
+    return fail("PlayerPrivateKnowledgeView must be a non-null plain object");
+  }
+
+  const optionalKeys = [
+    ...(Object.hasOwn(value, "knownDemon") ? ["knownDemon"] : []),
+    ...(Object.hasOwn(value, "teamKnowledgeModelVersion") ? ["teamKnowledgeModelVersion"] : [])
+  ];
+  if (!hasExactEnumerableKeys(value, [...PLAYER_PRIVATE_KNOWLEDGE_VIEW_BASE_KEYS, ...optionalKeys])) {
+    return fail("PlayerPrivateKnowledgeView must have exact runtime shape");
+  }
+
+  if (
+    typeof value.viewerPlayerId !== "string" ||
+    value.viewerPlayerId.trim().length === 0 ||
+    typeof value.viewerSeatNumber !== "number" ||
+    !Number.isInteger(value.viewerSeatNumber) ||
+    value.viewerSeatNumber < 1 ||
+    value.viewerSeatNumber > 12 ||
+    typeof value.viewerDisplayName !== "string" ||
+    value.viewerDisplayName.trim().length === 0 ||
+    !hasExactRoleSetupSnapshotShape(value.ownCharacter) ||
+    value.ownCharacterKnowledgeModelVersion !== SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION
+  ) {
+    return fail("PlayerPrivateKnowledgeView primitive fields must use supported values");
+  }
+
+  if (Object.hasOwn(value, "knownDemon") && !hasExactKnownPlayerReferenceShape(value.knownDemon)) {
+    return fail("PlayerPrivateKnowledgeView knownDemon must have exact runtime shape");
+  }
+
+  if (
+    !Array.isArray(value.knownMinions) ||
+    !isDenseArray(value.knownMinions) ||
+    value.knownMinions.length > 2 ||
+    value.knownMinions.some((minion) => !hasExactKnownPlayerReferenceShape(minion)) ||
+    !knownPlayerReferencesAreSortedAndUnique(value.knownMinions as readonly KnownPlayerReference[])
+  ) {
+    return fail("PlayerPrivateKnowledgeView knownMinions must be dense, sorted, and unique known player references");
+  }
+
+  if (
+    Object.hasOwn(value, "knownDemon") &&
+    (value.knownMinions as readonly KnownPlayerReference[]).some((minion) =>
+      minion.playerId === (value.knownDemon as KnownPlayerReference).playerId ||
+      minion.seatNumber === (value.knownDemon as KnownPlayerReference).seatNumber
+    )
+  ) {
+    return fail("PlayerPrivateKnowledgeView knownDemon must not appear in knownMinions");
+  }
+
+  if (
+    !Array.isArray(value.demonBluffs) ||
+    !isDenseArray(value.demonBluffs) ||
+    value.demonBluffs.length > 3 ||
+    value.demonBluffs.some((role) => !hasExactRoleSetupSnapshotShape(role)) ||
+    !roleListIsAsciiSorted(value.demonBluffs as readonly RoleSetupSnapshot[])
+  ) {
+    return fail("PlayerPrivateKnowledgeView demonBluffs must be dense, sorted, and exact role snapshots");
+  }
+
+  const hasTeamKnowledgeModelVersion = Object.hasOwn(value, "teamKnowledgeModelVersion");
+  if (
+    hasTeamKnowledgeModelVersion &&
+    value.teamKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_TEAM_KNOWLEDGE_MODEL_VERSION
+  ) {
+    return fail("PlayerPrivateKnowledgeView teamKnowledgeModelVersion must be supported");
+  }
+
+  return validatePrivateKnowledgeViewStages(value.deliveredKnowledgeStages, hasTeamKnowledgeModelVersion);
+};
 
 type InitialKnowledgeEntryShapeValidationResult =
   | { readonly valid: true; readonly entries: readonly InitialKnowledgeEntry[] }
