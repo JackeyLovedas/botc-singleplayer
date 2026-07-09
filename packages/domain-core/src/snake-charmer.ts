@@ -271,14 +271,34 @@ const validateSnakeCharmerTaskSource = (
   }
 
   const source = targetTask.source;
+  if (targetTask.taskType !== "SNAKE_CHARMER_ACTION") {
+    return fail("Snake Charmer action requires a Snake Charmer action task");
+  }
+
+  if (source.kind === "ROLE") {
+    const currentSource = input.currentCharacterState.entries.find((entry) =>
+      entry.playerId === source.playerId &&
+      entry.seatNumber === source.seatNumber
+    );
+    if (
+      source.role.roleId !== SNAKE_CHARMER_ROLE_ID ||
+      currentSource === undefined ||
+      currentSource.role.roleId !== SNAKE_CHARMER_ROLE_ID ||
+      !sameRoleSetupSnapshot(currentSource.role, source.role)
+    ) {
+      return fail("Snake Charmer action source is no longer the same current Snake Charmer state");
+    }
+
+    return { valid: true };
+  }
+
   if (
-    targetTask.taskType !== "SNAKE_CHARMER_ACTION" ||
     source.kind !== "PHILOSOPHER_GAINED_ABILITY" ||
     source.sourceRole.roleId !== PHILOSOPHER_ROLE_ID ||
     source.chosenRole.roleId !== SNAKE_CHARMER_ROLE_ID ||
     source.sourceCharacterStateRevision !== input.currentCharacterState.revision
   ) {
-    return fail("Snake Charmer action requires a Philosopher gained snake_charmer task source");
+    return fail("Snake Charmer action requires a base Snake Charmer or Philosopher gained snake_charmer task source");
   }
 
   const currentSource = input.currentCharacterState.entries.find((entry) =>

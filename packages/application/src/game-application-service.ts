@@ -1218,16 +1218,10 @@ export class GameApplicationService {
           };
         }
 
-        if (
-          targetTask.taskType !== "SNAKE_CHARMER_ACTION" ||
-          targetTask.source.kind !== "PHILOSOPHER_GAINED_ABILITY" ||
-          targetTask.source.chosenRole.roleId !== "snake_charmer" ||
-          targetTask.source.sourceRole.roleId !== "philosopher" ||
-          targetTask.source.sourceCharacterStateRevision !== opportunity.sourceCharacterStateRevision
-        ) {
+        if (targetTask.taskType !== "SNAKE_CHARMER_ACTION") {
           return {
             code: "UnsupportedRoleActionOpportunity",
-            message: "SubmitSnakeCharmerAction requires a Philosopher gained Snake Charmer task"
+            message: "SubmitSnakeCharmerAction requires a Snake Charmer action task"
           };
         }
 
@@ -1235,15 +1229,33 @@ export class GameApplicationService {
           entry.playerId === opportunity.sourcePlayerId &&
           entry.seatNumber === opportunity.sourceSeatNumber
         );
-        if (
-          currentSourceEntry === undefined ||
-          currentSourceEntry.role.roleId !== "philosopher" ||
-          !sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) ||
-          state.currentCharacterState.revision !== opportunity.sourceCharacterStateRevision
-        ) {
+        const baseSnakeCharmerSourceValid =
+          targetTask.source.kind === "ROLE" &&
+          targetTask.source.role.roleId === "snake_charmer" &&
+          targetTask.source.playerId === opportunity.sourcePlayerId &&
+          targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+          currentSourceEntry !== undefined &&
+          currentSourceEntry.role.roleId === "snake_charmer" &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.role) &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
+          state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
+        const philosopherGainedSnakeCharmerSourceValid =
+          targetTask.source.kind === "PHILOSOPHER_GAINED_ABILITY" &&
+          targetTask.source.chosenRole.roleId === "snake_charmer" &&
+          targetTask.source.sourceRole.roleId === "philosopher" &&
+          targetTask.source.playerId === opportunity.sourcePlayerId &&
+          targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+          targetTask.source.sourceCharacterStateRevision === opportunity.sourceCharacterStateRevision &&
+          currentSourceEntry !== undefined &&
+          currentSourceEntry.role.roleId === "philosopher" &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.sourceRole) &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
+          state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
+
+        if (!baseSnakeCharmerSourceValid && !philosopherGainedSnakeCharmerSourceValid) {
           return {
             code: "ActionSourceNoLongerValid",
-            message: "SubmitSnakeCharmerAction source is no longer the same current Philosopher state"
+            message: "SubmitSnakeCharmerAction source is no longer the same current Snake Charmer-capable state"
           };
         }
 
