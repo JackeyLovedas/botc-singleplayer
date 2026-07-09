@@ -267,6 +267,65 @@ Acceptance:
 - Replay rejects naked, reversed, mixed, incomplete, overlong, metadata-mismatched, payload-mismatched, Demon-target no-swap, and hidden-role-leaking Snake Charmer batches.
 - Player and AI projections do not expose Snake Charmer target choices or no-swap internals.
 
+## Slice 2B9: Snake Charmer Demon-Hit Swap And Poison Marker
+
+Scope:
+
+- Execute only after Slice 2B8 is accepted and merged.
+- Replace the active `SnakeCharmerDemonHitNotImplemented` path for Philosopher-gained Snake Charmer actions.
+- Record `SnakeCharmerTargetChosen`, `SnakeCharmerDemonSwapApplied`, `AbilityImpairmentApplied`, and `ScheduledTaskSettled` in one atomic demon-hit batch.
+- Swap current role and current alignment between the Snake Charmer source and the chosen Demon.
+- Increment `CurrentCharacterState.revision` and validate the resulting runtime state without rewriting initial assignment facts.
+- Record the old Demon as `AbilityImpairmentApplied(kind = POISONED, sourceKind = SNAKE_CHARMER_DEMON_HIT)`.
+- Keep `assignment`, `setup`, `firstNightTaskPlan.taskCatalogSnapshot`, and initial private knowledge unchanged.
+- Preserve the non-Demon no-swap path from Slice 2B8.
+- Ensure later `MINION_INFO` and `DEMON_INFO` resolve the current evil team from the post-swap revision.
+- Keep player and AI projections free of swap, poison, target, task, and opportunity internals.
+- Do not implement poisoned or drunk effectiveness evaluation, base Snake Charmer action, AI decision, UI, Electron, SQLite, or first-night phase completion.
+
+Implementation update:
+
+- `SnakeCharmerDemonSwapApplied` records exact current-state snapshots:
+
+```text
+sourceBefore
+targetBefore
+sourceAfter
+targetAfter
+swapReason = SNAKE_CHARMER_DEMON_HIT
+```
+
+- Valid demon-hit batches contain exactly:
+
+```text
+SnakeCharmerTargetChosen
+SnakeCharmerDemonSwapApplied
+AbilityImpairmentApplied
+ScheduledTaskSettled
+```
+
+- `ScheduledTaskSettled` records:
+
+```text
+taskType = SNAKE_CHARMER_ACTION
+outcomeType = SNAKE_CHARMER_DEMON_HIT_SWAP
+characterStateRevision = nextCharacterStateRevision
+```
+
+Acceptance:
+
+- Choosing a current Demon target succeeds and produces the four-event demon-hit batch.
+- `sourceAfter` receives the Demon role and alignment.
+- `targetAfter` receives the source player's previous role and alignment.
+- `currentCharacterState.revision` increments by one.
+- The old Demon receives a `POISONED` impairment marker bound to the post-swap revision.
+- The old `SnakeCharmerDemonHitNotImplemented` rejection is removed or no longer reachable.
+- `MINION_INFO` after the swap tells minions the new Demon identity.
+- `DEMON_INFO` after the swap is delivered to the new Demon, not to the old Demon.
+- Golden base task count remains six and golden base order is unchanged.
+- Replay rejects naked, incomplete, reversed, non-Demon swap, Demon-target no-swap, mismatched swap, mismatched poison, mismatched settlement, mixed-event, and extra-field demon-hit batches.
+- Player and AI projections do not expose the swap or poison marker before team information is delivered.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:

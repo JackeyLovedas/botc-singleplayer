@@ -761,6 +761,8 @@ describe("GameApplicationService", () => {
     });
     // @ts-expect-error Obsolete philosopher not-implemented code must not be a command rejection.
     rejected(ids.game, "PhilosopherAbilityChoiceNotImplemented", "Obsolete rejection", 8, false);
+    // @ts-expect-error Obsolete Snake Charmer demon-hit not-implemented code must not be a command rejection.
+    rejected(ids.game, "SnakeCharmerDemonHitNotImplemented", "Obsolete rejection", 10, false);
     // @ts-expect-error Retryable runtime failures must not be persisted as command receipts.
     const failedReceiptResult: CommandReceiptResult = retryableFailure;
     // @ts-expect-error EventStoreAppendFailed must not be persisted as a command receipt.
@@ -3219,18 +3221,19 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(demonResult);
   });
 
-  it("rejects Snake Charmer Demon targets as not implemented without events", async () => {
+  it("settles Snake Charmer Demon targets by swapping current character state and poisoning the old Demon", async () => {
     const { service, commandStore } = makeService();
     await reachOpenPhilosopherGainedSnakeCharmerOpportunity(service);
     const beforeEvents = await commandStore.loadDomainEvents(ids.game);
     const beforeState = rebuildOptionalGameState(beforeEvents);
+    const sourceBefore = beforeState?.currentCharacterState?.entries.find((entry) => entry.role.roleId === "philosopher");
     const demon = beforeState?.currentCharacterState?.entries.find((entry) => entry.role.characterType === "DEMON");
-    if (demon === undefined) {
-      throw new Error("Expected Demon target");
+    if (sourceBefore === undefined || demon === undefined) {
+      throw new Error("Expected Philosopher source and Demon target");
     }
 
-    const command = submitSnakeCharmerActionCommand({
-      commandId: commandId("snake-charmer-demon-hit-not-implemented"),
+    const result = await service.execute(submitSnakeCharmerActionCommand({
+      commandId: commandId("snake-charmer-demon-hit-swap"),
       expectedGameVersion: 10,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
@@ -3241,24 +3244,168 @@ describe("GameApplicationService", () => {
           targetPlayerId: demon.playerId
         }
       }
-    });
-    const result = await service.execute(command);
+    }));
     const afterEvents = await commandStore.loadDomainEvents(ids.game);
     const afterState = rebuildOptionalGameState(afterEvents);
 
-    expect(result).toMatchObject({
-      status: "rejected",
-      code: "SnakeCharmerDemonHitNotImplemented",
-      currentGameVersion: 10
+    expectAcceptedResult(result);
+    expect(result).toMatchObject({ status: "accepted", gameVersion: 11, idempotent: false });
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "SnakeCharmerTargetChosen",
+      "SnakeCharmerDemonSwapApplied",
+      "AbilityImpairmentApplied",
+      "ScheduledTaskSettled"
+    ]);
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([19, 20, 21, 22]);
+    expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([11]));
+    const targetChosenEvent = result.events[0];
+    const swapEvent = result.events[1];
+    const poisonEvent = result.events[2];
+    const settlementEvent = result.events[3];
+    if (
+      targetChosenEvent?.eventType !== "SnakeCharmerTargetChosen" ||
+      swapEvent?.eventType !== "SnakeCharmerDemonSwapApplied" ||
+      poisonEvent?.eventType !== "AbilityImpairmentApplied" ||
+      settlementEvent?.eventType !== "ScheduledTaskSettled"
+    ) {
+      throw new Error("Expected Snake Charmer Demon-hit event sequence");
+    }
+
+    expect(targetChosenEvent.payload).toMatchObject({
+      taskId: philosopherGainedSnakeCharmerTaskId,
+      taskType: "SNAKE_CHARMER_ACTION",
+      opportunityId: philosopherGainedSnakeCharmerOpportunityId,
+      decisionKind: "CHOOSE_PLAYER",
+      sourcePlayerId: sourceBefore.playerId,
+      sourceSeatNumber: sourceBefore.seatNumber,
+      sourceRole: { roleId: "philosopher" },
+      sourceCharacterStateRevision: 1,
+      targetPlayerId: demon.playerId,
+      targetSeatNumber: demon.seatNumber
     });
-    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeDefined();
-    expect(afterEvents).toHaveLength(beforeEvents.length);
+    expect(targetChosenEvent.payload).not.toHaveProperty("targetRole");
+    expect(targetChosenEvent.payload).not.toHaveProperty("targetRoleId");
+    expect(targetChosenEvent.payload).not.toHaveProperty("targetCharacterType");
+    expect(targetChosenEvent.payload).not.toHaveProperty("targetAlignment");
+    expect(targetChosenEvent.payload).not.toHaveProperty("isDemon");
+    expect(targetChosenEvent.payload).not.toHaveProperty("willSwap");
+
+    expect(swapEvent.payload).toMatchObject({
+      taskId: philosopherGainedSnakeCharmerTaskId,
+      taskType: "SNAKE_CHARMER_ACTION",
+      opportunityId: philosopherGainedSnakeCharmerOpportunityId,
+      sourcePlayerId: sourceBefore.playerId,
+      sourceSeatNumber: sourceBefore.seatNumber,
+      targetPlayerId: demon.playerId,
+      targetSeatNumber: demon.seatNumber,
+      previousCharacterStateRevision: 1,
+      nextCharacterStateRevision: 2,
+      swapReason: "SNAKE_CHARMER_DEMON_HIT",
+      sourceBefore,
+      targetBefore: demon,
+      sourceAfter: {
+        playerId: sourceBefore.playerId,
+        seatNumber: sourceBefore.seatNumber,
+        role: demon.role,
+        currentAlignment: demon.currentAlignment
+      },
+      targetAfter: {
+        playerId: demon.playerId,
+        seatNumber: demon.seatNumber,
+        role: sourceBefore.role,
+        currentAlignment: sourceBefore.currentAlignment
+      }
+    });
+    expect(poisonEvent.payload).toMatchObject({
+      kind: "POISONED",
+      sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+      sourcePlayerId: sourceBefore.playerId,
+      affectedPlayerId: demon.playerId,
+      affectedSeatNumber: demon.seatNumber,
+      affectedRole: sourceBefore.role,
+      sourceCharacterStateRevision: 2
+    });
+    expect(poisonEvent.payload).not.toHaveProperty("chosenRoleId");
+    expect(settlementEvent.payload).toMatchObject({
+      taskType: "SNAKE_CHARMER_ACTION",
+      outcomeType: "SNAKE_CHARMER_DEMON_HIT_SWAP",
+      characterStateRevision: 2
+    });
+    expect(afterEvents).toHaveLength(beforeEvents.length + 4);
     expect(afterState?.firstNightActionOpportunities?.opportunities.find((opportunity) =>
       opportunity.opportunityId === philosopherGainedSnakeCharmerOpportunityId
-    )?.opportunityStatus).toBe("OPEN");
-    expect(afterState?.firstNightTaskProgress?.settlements).toStrictEqual(beforeState?.firstNightTaskProgress?.settlements);
-    expect(afterState?.currentCharacterState).toStrictEqual(beforeState?.currentCharacterState);
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(afterState?.firstNightTaskProgress?.settlements.map((settlement) => settlement.outcomeType)).toStrictEqual([
+      "PHILOSOPHER_ABILITY_CHOSEN",
+      "SNAKE_CHARMER_DEMON_HIT_SWAP"
+    ]);
+    expect(afterState?.currentCharacterState?.revision).toBe(2);
+    expect(afterState?.currentCharacterState?.entries.find((entry) => entry.playerId === sourceBefore.playerId)).toMatchObject({
+      playerId: sourceBefore.playerId,
+      seatNumber: sourceBefore.seatNumber,
+      role: demon.role,
+      currentAlignment: demon.currentAlignment
+    });
+    expect(afterState?.currentCharacterState?.entries.find((entry) => entry.playerId === demon.playerId)).toMatchObject({
+      playerId: demon.playerId,
+      seatNumber: demon.seatNumber,
+      role: sourceBefore.role,
+      currentAlignment: sourceBefore.currentAlignment
+    });
     expect(afterState?.assignment).toStrictEqual(beforeState?.assignment);
+    expect(afterState?.setup).toStrictEqual(beforeState?.setup);
+    expect(afterState?.firstNightTaskPlan).toStrictEqual(beforeState?.firstNightTaskPlan);
+    expect(afterState?.abilityImpairments?.impairments).toContainEqual(expect.objectContaining({
+      affectedPlayerId: demon.playerId,
+      affectedRole: sourceBefore.role,
+      affectedSeatNumber: demon.seatNumber,
+      impairmentId: poisonEvent.payload.impairmentId,
+      kind: "POISONED",
+      sourceCharacterStateRevision: 2,
+      sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+      sourcePlayerId: sourceBefore.playerId
+    }));
+
+    const minionResult = await service.execute(settleFirstNightSystemTaskCommand({
+      commandId: commandId("settle-minion-after-snake-demon-hit"),
+      expectedGameVersion: 11
+    }));
+    expectAcceptedResult(minionResult);
+    const minionInfoEvent = minionResult.events[0];
+    if (minionInfoEvent?.eventType !== "MinionInformationDelivered") {
+      throw new Error("Expected MINION_INFO delivery after Snake Charmer swap");
+    }
+    expect(minionInfoEvent.payload.resolvedEvilTeam.characterStateRevision).toBe(2);
+    expect(minionInfoEvent.payload.resolvedEvilTeam.demon).toStrictEqual({
+      playerId: sourceBefore.playerId,
+      seatNumber: sourceBefore.seatNumber
+    });
+    expect(minionInfoEvent.payload.entries.filter((entry) => entry.kind === "DEMON_IDENTITY").map((entry) => entry.demon)).toStrictEqual([
+      { playerId: sourceBefore.playerId, seatNumber: sourceBefore.seatNumber },
+      { playerId: sourceBefore.playerId, seatNumber: sourceBefore.seatNumber }
+    ]);
+
+    const demonResult = await service.execute(settleFirstNightSystemTaskCommand({
+      commandId: commandId("settle-demon-after-snake-demon-hit"),
+      expectedGameVersion: 12,
+      payload: {
+        commandType: "SettleFirstNightSystemTask",
+        taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
+      }
+    }));
+    expectAcceptedResult(demonResult);
+    const demonInfoEvent = demonResult.events[0];
+    if (demonInfoEvent?.eventType !== "DemonInformationDelivered") {
+      throw new Error("Expected DEMON_INFO delivery after Snake Charmer swap");
+    }
+    expect(demonInfoEvent.payload.resolvedEvilTeam.characterStateRevision).toBe(2);
+    expect(demonInfoEvent.payload.resolvedEvilTeam.demon).toStrictEqual({
+      playerId: sourceBefore.playerId,
+      seatNumber: sourceBefore.seatNumber
+    });
+    expect(demonInfoEvent.payload.entries).toHaveLength(2);
+    expect(demonInfoEvent.payload.entries.every((entry) => entry.recipientPlayerId === sourceBefore.playerId)).toBe(true);
+    expect(demonInfoEvent.payload.entries.some((entry) => entry.recipientPlayerId === demon.playerId)).toBe(false);
   });
 
   it("enforces Snake Charmer submit actor and payload boundaries", async () => {

@@ -183,7 +183,6 @@ OpenFirstNightRoleActionOpportunity
 
 SubmitSnakeCharmerAction(CHOOSE_PLAYER)
 -> validate source actor, open opportunity, task id, current next task, and target player
--> if the target is the current Demon, reject as SnakeCharmerDemonHitNotImplemented
 -> if the target is not the current Demon, create SnakeCharmerTargetChosen
 -> create SnakeCharmerNoSwapResolved
 -> create ScheduledTaskSettled(outcomeType = SNAKE_CHARMER_NON_DEMON_NO_SWAP) in the same batch
@@ -208,7 +207,40 @@ SnakeCharmerNoSwapResolved
 ScheduledTaskSettled
 ```
 
-The no-swap branch closes the opportunity, settles only the inserted Snake Charmer task, leaves `assignment` and `currentCharacterState` unchanged, and allows the next base task to become `MINION_INFO`. Demon-hit swap, old-Demon poison, drunk/poison effectiveness, and AI target selection remain unimplemented.
+The no-swap branch closes the opportunity, settles only the inserted Snake Charmer task, leaves `assignment` and `currentCharacterState` unchanged, and allows the next base task to become `MINION_INFO`.
+
+Slice 2B9 adds the Demon-hit branch for the same Philosopher-gained Snake Charmer task:
+
+```text
+SubmitSnakeCharmerAction(CHOOSE_PLAYER)
+-> validate source actor, open opportunity, task id, current next task, and target player
+-> if the target is the current Demon, create SnakeCharmerTargetChosen
+-> create SnakeCharmerDemonSwapApplied
+-> create AbilityImpairmentApplied(kind = POISONED, sourceKind = SNAKE_CHARMER_DEMON_HIT)
+-> create ScheduledTaskSettled(outcomeType = SNAKE_CHARMER_DEMON_HIT_SWAP) in the same batch
+-> append FirstNightTaskProgress from replay
+```
+
+Valid Demon-hit batches are:
+
+```text
+SnakeCharmerTargetChosen
+SnakeCharmerDemonSwapApplied
+AbilityImpairmentApplied
+ScheduledTaskSettled
+```
+
+`SnakeCharmerDemonSwapApplied` mutates only `CurrentCharacterStateSet`:
+
+```text
+sourceAfter.role = targetBefore.role
+sourceAfter.currentAlignment = targetBefore.currentAlignment
+targetAfter.role = sourceBefore.role
+targetAfter.currentAlignment = sourceBefore.currentAlignment
+nextCharacterStateRevision = previousCharacterStateRevision + 1
+```
+
+`assignment`, `setup`, the original task catalog snapshot, and initial private knowledge remain historical facts. The old Demon poison marker is recorded as a fact, but poisoned or drunk effectiveness evaluation, base Snake Charmer action support, and AI target selection remain unimplemented.
 
 ### Settlement And Snapshot Revision Binding
 
@@ -235,7 +267,7 @@ That means:
 - each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
 - projections must preserve each delivered fact independently.
 
-The model still does not execute broad inserted role tasks, create role ability effects, apply drunkenness or poisoning, perform role exchanges, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, plus the Philosopher-gained Snake Charmer target-selection opportunity for the non-Demon no-swap branch.
+The model still does not execute broad inserted role tasks, create general role ability effects, apply drunkenness or poisoning effectiveness, support base Snake Charmer actions, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, plus the Philosopher-gained Snake Charmer target-selection opportunity for non-Demon no-swap and Demon-hit swap branches.
 
 ## ActionOpportunity Flow
 
