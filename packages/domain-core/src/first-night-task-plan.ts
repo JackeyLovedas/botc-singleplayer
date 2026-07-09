@@ -1,7 +1,7 @@
 import type { CharacterAssignmentSet } from "./character-assignment.js";
 import { cloneRoleSetupSnapshot } from "./character-assignment.js";
 import { assertNever } from "./errors.js";
-import type { PlayerId, RoleId, ScheduledTaskId } from "./ids.js";
+import type { ActionOpportunityId, PlayerId, RoleId, ScheduledTaskId } from "./ids.js";
 import { scheduledTaskId } from "./ids.js";
 import {
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
@@ -68,7 +68,17 @@ export type SystemTaskSource = {
   readonly systemTaskType: FirstNightSystemTaskType;
 };
 
-export type ScheduledTaskSource = RoleTaskSource | SystemTaskSource;
+export type PhilosopherGainedAbilityTaskSource = {
+  readonly kind: "PHILOSOPHER_GAINED_ABILITY";
+  readonly playerId: PlayerId;
+  readonly seatNumber: SeatNumber;
+  readonly sourceRole: RoleSetupSnapshot;
+  readonly chosenRole: RoleSetupSnapshot;
+  readonly opportunityId: ActionOpportunityId;
+  readonly sourceCharacterStateRevision: number;
+};
+
+export type ScheduledTaskSource = RoleTaskSource | SystemTaskSource | PhilosopherGainedAbilityTaskSource;
 
 export type ScheduledTask = {
   readonly taskId: ScheduledTaskId;
@@ -85,7 +95,8 @@ export const SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION = "scheduled-task-settl
 export type ScheduledTaskSettlementOutcomeType =
   | "MINION_INFORMATION_DELIVERED"
   | "DEMON_INFORMATION_DELIVERED"
-  | "PHILOSOPHER_DEFERRED";
+  | "PHILOSOPHER_DEFERRED"
+  | "PHILOSOPHER_ABILITY_CHOSEN";
 
 export type ScheduledTaskSettlement = {
   readonly taskId: ScheduledTaskId;
@@ -281,6 +292,15 @@ const SCHEDULED_TASK_KEYS = ["taskId", "taskType", "taskClass", "orderKey", "sou
 const TASK_ORDER_KEY_KEYS = ["baseOrder", "insertionOrder"] as const;
 const ROLE_TASK_SOURCE_KEYS = ["kind", "playerId", "seatNumber", "role"] as const;
 const SYSTEM_TASK_SOURCE_KEYS = ["kind", "systemTaskType"] as const;
+const PHILOSOPHER_GAINED_ABILITY_TASK_SOURCE_KEYS = [
+  "chosenRole",
+  "kind",
+  "opportunityId",
+  "playerId",
+  "seatNumber",
+  "sourceCharacterStateRevision",
+  "sourceRole"
+] as const;
 const SCHEDULED_TASK_SETTLEMENT_KEYS = [
   "characterStateRevision",
   "nightNumber",
@@ -327,7 +347,8 @@ const isSettlementPolicy = (value: unknown): value is ScheduledTaskSettlementPol
 export const isScheduledTaskSettlementOutcomeType = (value: unknown): value is ScheduledTaskSettlementOutcomeType =>
   value === "MINION_INFORMATION_DELIVERED" ||
   value === "DEMON_INFORMATION_DELIVERED" ||
-  value === "PHILOSOPHER_DEFERRED";
+  value === "PHILOSOPHER_DEFERRED" ||
+  value === "PHILOSOPHER_ABILITY_CHOSEN";
 
 export const compareFirstNightTaskOrder = (left: ScheduledTask, right: ScheduledTask): number => {
   const base = left.orderKey.baseOrder - right.orderKey.baseOrder;
@@ -627,7 +648,29 @@ const parseScheduledTaskSource = (value: unknown): ScheduledTaskSource | Validat
     return value as unknown as RoleTaskSource;
   }
 
-  return fail("scheduled task source kind must be ROLE or SYSTEM");
+  if (value.kind === "PHILOSOPHER_GAINED_ABILITY") {
+    if (
+      !hasExactEnumerableKeys(value, PHILOSOPHER_GAINED_ABILITY_TASK_SOURCE_KEYS) ||
+      typeof value.playerId !== "string" ||
+      value.playerId.trim().length === 0 ||
+      typeof value.seatNumber !== "number" ||
+      !Number.isInteger(value.seatNumber) ||
+      value.seatNumber < 1 ||
+      value.seatNumber > 12 ||
+      !hasExactRoleSetupSnapshotShape(value.sourceRole) ||
+      !hasExactRoleSetupSnapshotShape(value.chosenRole) ||
+      typeof value.opportunityId !== "string" ||
+      value.opportunityId.trim().length === 0 ||
+      typeof value.sourceCharacterStateRevision !== "number" ||
+      !Number.isInteger(value.sourceCharacterStateRevision) ||
+      value.sourceCharacterStateRevision <= 0
+    ) {
+      return fail("philosopher gained ability scheduled task source must have exact runtime shape");
+    }
+    return value as unknown as PhilosopherGainedAbilityTaskSource;
+  }
+
+  return fail("scheduled task source kind must be ROLE, SYSTEM, or PHILOSOPHER_GAINED_ABILITY");
 };
 
 export const parseScheduledTaskShape = (value: unknown): ScheduledTask | ValidationFailure => {
@@ -976,6 +1019,10 @@ export const validateScheduledTasksAgainstSourceFacts = (
       continue;
     }
 
+    if (task.source.kind === "PHILOSOPHER_GAINED_ABILITY") {
+      return fail("base first-night task plan cannot contain inserted philosopher gained ability tasks");
+    }
+
     if (definition.sourceKind !== "ROLE" || task.settlementPolicy !== "REEVALUATE_SOURCE_AT_SETTLEMENT") {
       return fail("role scheduled task must match role catalog definition");
     }
@@ -1122,6 +1169,17 @@ export const cloneScheduledTaskSource = (source: ScheduledTaskSource): Scheduled
       return {
         kind: source.kind,
         systemTaskType: source.systemTaskType
+      };
+
+    case "PHILOSOPHER_GAINED_ABILITY":
+      return {
+        kind: source.kind,
+        playerId: source.playerId,
+        seatNumber: source.seatNumber,
+        sourceRole: cloneRoleSetupSnapshot(source.sourceRole),
+        chosenRole: cloneRoleSetupSnapshot(source.chosenRole),
+        opportunityId: source.opportunityId,
+        sourceCharacterStateRevision: source.sourceCharacterStateRevision
       };
 
     default:

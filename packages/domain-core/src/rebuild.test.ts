@@ -20,10 +20,16 @@ import {
   compareRoleSetupSnapshot,
   commandId,
   compareStableId,
+  createAbilityImpairmentAppliedPayload,
+  createFirstNightTaskInsertedPayload,
+  createPhilosopherAbilityChosenPayload,
+  createPhilosopherAbilityChosenScheduledTaskSettlement,
+  createPhilosopherAbilityGrantedPayload,
   cloneCurrentCharacterStateSet,
   eventId,
   expectedDemonInformationEntries,
   expectedMinionInformationEntries,
+  firstNightTaskTypeForPhilosopherChoice,
   applyDomainEventBatch,
   playerId,
   resolveCurrentEvilTeam,
@@ -453,8 +459,8 @@ const philosopherActionOpportunityCreatedEvent = (
       sourceCharacterStateRevision: state.currentCharacterState.revision,
       visibility: {
         canDefer: true,
-        supportedDecisionKinds: ["DEFER"],
-        futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+        supportedDecisionKinds: ["DEFER", "CHOOSE_GOOD_CHARACTER"],
+        futureUnsupportedDecisionKinds: []
       }
     },
     ...overrides
@@ -524,6 +530,138 @@ const philosopherTaskSettledEvent = (
     },
     ...overrides
   };
+};
+
+const defaultPhilosopherAbilityBatchState = () => rebuildGameState([
+  ...firstNightTaskPlanEventStream(),
+  philosopherActionOpportunityCreatedEvent()
+]);
+
+const roleSnapshotById = (roleIdValue: string): RoleSetupSnapshot => {
+  const role = setupGeneratedEvent().payload.roleCatalogSnapshot.roles.find((candidate) => candidate.roleId === roleIdValue);
+  if (role === undefined) {
+    throw new Error(`Expected ${roleIdValue} in role catalog`);
+  }
+
+  return role;
+};
+
+const absentNonInsertingGoodRole = (): RoleSetupSnapshot => {
+  const setup = setupGeneratedEvent().payload;
+  const actualRoleIds = new Set(setup.actualRoles.map((role) => role.roleId));
+  const role = setup.roleCatalogSnapshot.roles.find((candidate) =>
+    candidate.defaultAlignment === "GOOD" &&
+    candidate.characterType !== "MINION" &&
+    candidate.characterType !== "DEMON" &&
+    !actualRoleIds.has(candidate.roleId) &&
+    firstNightTaskTypeForPhilosopherChoice(candidate.roleId) === undefined
+  );
+
+  if (role === undefined) {
+    throw new Error("Expected an absent non-inserting good role in the Sects & Violets catalog");
+  }
+
+  return role;
+};
+
+const philosopherAbilityEventEnvelope = <EventType extends AnyDomainEventEnvelope["eventType"]>(
+  eventType: EventType,
+  payload: DomainEventEnvelope<EventType>["payload"],
+  sequence: number
+): DomainEventEnvelope<EventType> => ({
+  category: "domain",
+  eventId: eventId(`event-${sequence}`),
+  gameId: gameCreatedEvent().gameId,
+  eventSequence: sequence,
+  batchId: batchId("batch-9"),
+  gameVersion: 9,
+  eventType,
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-9"),
+  createdAt: "2026-07-07T00:00:08.000Z",
+  correlationId: gameCreatedEvent().correlationId,
+  causationId: gameCreatedEvent().causationId,
+  payload
+});
+
+const philosopherAbilityChoiceBatchEvents = (input: {
+  readonly chosenRole?: RoleSetupSnapshot;
+  readonly includeImpairment?: boolean;
+  readonly includeInsertion?: boolean;
+} = {}): readonly AnyDomainEventEnvelope[] => {
+  const state = defaultPhilosopherAbilityBatchState();
+  const opportunity = state.firstNightActionOpportunities?.opportunities[0];
+  if (
+    opportunity === undefined ||
+    state.setup === undefined ||
+    state.currentCharacterState === undefined ||
+    state.firstNightTaskPlan === undefined
+  ) {
+    throw new Error("Expected Philosopher opportunity, setup, current state, and task plan");
+  }
+
+  const chosenRole = input.chosenRole ?? absentNonInsertingGoodRole();
+  const choice = createPhilosopherAbilityChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    opportunityId: opportunity.opportunityId,
+    taskId: opportunity.taskId,
+    chosenRole,
+    setup: state.setup,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+  const grant = createPhilosopherAbilityGrantedPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    choice
+  });
+  const impairment = input.includeImpairment === true
+    ? createAbilityImpairmentAppliedPayload({
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      choice,
+      currentCharacterState: state.currentCharacterState
+    })
+    : undefined;
+  const insertion = input.includeInsertion === true
+    ? createFirstNightTaskInsertedPayload({
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      choice,
+      firstNightTaskPlan: state.firstNightTaskPlan
+    })
+    : undefined;
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createPhilosopherAbilityChosenScheduledTaskSettlement({
+    taskId: choice.taskId,
+    characterStateRevision: choice.sourceCharacterStateRevision
+    })
+  };
+
+  const payloads: readonly [
+    DomainEventEnvelope<"PhilosopherAbilityChosen">,
+    DomainEventEnvelope<"PhilosopherAbilityGranted">,
+    ...AnyDomainEventEnvelope[]
+  ] = [
+    philosopherAbilityEventEnvelope("PhilosopherAbilityChosen", choice, 13),
+    philosopherAbilityEventEnvelope("PhilosopherAbilityGranted", grant, 14)
+  ];
+  const events = [...payloads];
+
+  if (input.includeImpairment === true) {
+    if (impairment === undefined) {
+      throw new Error("Expected Philosopher duplicate impairment payload");
+    }
+    events.push(philosopherAbilityEventEnvelope("AbilityImpairmentApplied", impairment, 13 + events.length));
+  }
+
+  if (input.includeInsertion === true) {
+    if (insertion === undefined) {
+      throw new Error("Expected Philosopher gained first-night task insertion payload");
+    }
+    events.push(philosopherAbilityEventEnvelope("FirstNightTaskInserted", insertion, 13 + events.length));
+  }
+
+  events.push(philosopherAbilityEventEnvelope("ScheduledTaskSettled", settlement, 13 + events.length));
+  return events;
 };
 
 const expectInitialKnowledgePayloadRejected = (payload: unknown): DomainError =>
@@ -2640,8 +2778,8 @@ describe("domain event rebuild", () => {
       sourceCharacterStateRevision: 1,
       visibility: {
         canDefer: true,
-        supportedDecisionKinds: ["DEFER"],
-        futureUnsupportedDecisionKinds: ["CHOOSE_GOOD_CHARACTER"]
+        supportedDecisionKinds: ["DEFER", "CHOOSE_GOOD_CHARACTER"],
+        futureUnsupportedDecisionKinds: []
       }
     });
     expect(state.firstNightTaskProgress?.settlements).toBeUndefined();
@@ -2668,6 +2806,196 @@ describe("domain event rebuild", () => {
     ]);
     expect(state.gameVersion).toBe(9);
     expect(state.lastEventSequence).toBe(14);
+  });
+
+  it("rebuilds Philosopher ability choice grant without impairment or insertion for an absent GOOD role", () => {
+    const chosenRole = absentNonInsertingGoodRole();
+    const state = rebuildGameState([
+      ...firstNightTaskPlanEventStream(),
+      philosopherActionOpportunityCreatedEvent(),
+      ...philosopherAbilityChoiceBatchEvents({ chosenRole })
+    ]);
+
+    expect(state.philosopherAbilityChoices?.choices[0]).toMatchObject({
+      taskId: "first-night-v1:PHILOSOPHER_ACTION:seat-10",
+      decisionKind: "CHOOSE_GOOD_CHARACTER",
+      sourceSeatNumber: 10,
+      chosenRoleId: chosenRole.roleId
+    });
+    expect(state.philosopherGrantedAbilities?.abilities[0]).toMatchObject({
+      grantId: `philosopher-grant-v1:seat-10:from-${chosenRole.roleId}`,
+      chosenRoleId: chosenRole.roleId,
+      grantedAtTaskId: "first-night-v1:PHILOSOPHER_ACTION:seat-10"
+    });
+    expect(state.abilityImpairments?.impairments).toBeUndefined();
+    expect(state.firstNightTaskInsertions?.insertions).toBeUndefined();
+    expect(state.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightTaskProgress?.settlements).toStrictEqual([
+      {
+        taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
+        taskType: "PHILOSOPHER_ACTION",
+        nightNumber: 1,
+        settlementVersion: "scheduled-task-settlement-v1",
+        outcomeType: "PHILOSOPHER_ABILITY_CHOSEN",
+        characterStateRevision: 1
+      }
+    ]);
+    expect(state.currentCharacterState?.entries.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
+    expect(state.assignment?.assignments.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
+    expect(state.gameVersion).toBe(9);
+    expect(state.lastEventSequence).toBe(15);
+  });
+
+  it("rebuilds Philosopher duplicate impairment and gained first-night task insertion", () => {
+    const state = rebuildGameState([
+      ...firstNightTaskPlanEventStream(),
+      philosopherActionOpportunityCreatedEvent(),
+      ...philosopherAbilityChoiceBatchEvents({
+        chosenRole: roleSnapshotById("snake_charmer"),
+        includeImpairment: true,
+        includeInsertion: true
+      })
+    ]);
+
+    expect(state.abilityImpairments?.impairments[0]).toMatchObject({
+      kind: "DRUNK",
+      sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+      chosenRoleId: "snake_charmer",
+      sourceCharacterStateRevision: 1
+    });
+    expect(state.firstNightTaskInsertions?.insertions[0]).toMatchObject({
+      taskId: "first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer",
+      taskType: "SNAKE_CHARMER_ACTION",
+      taskClass: "ROLE_ACTION",
+      status: "PENDING",
+      insertionReason: "PHILOSOPHER_GAINED_ABILITY",
+      insertedByOpportunityId: "first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"
+    });
+    expect(state.firstNightTaskPlan?.tasks.slice(0, 3).map((task) => task.taskType)).toStrictEqual([
+      "PHILOSOPHER_ACTION",
+      "SNAKE_CHARMER_ACTION",
+      "MINION_INFO"
+    ]);
+    expect(state.firstNightTaskProgress?.settlements[0]?.outcomeType).toBe("PHILOSOPHER_ABILITY_CHOSEN");
+    expect(state.currentCharacterState?.entries.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
+    expect(state.assignment?.assignments.find((entry) => entry.seatNumber === 10)?.role.roleId).toBe("philosopher");
+    expect(state.lastEventSequence).toBe(17);
+  });
+
+  it("rejects naked, reversed, incomplete, and mixed Philosopher ability choice batches", () => {
+    const baseStream = [
+      ...firstNightTaskPlanEventStream(),
+      philosopherActionOpportunityCreatedEvent()
+    ];
+    const absentChoiceBatch = philosopherAbilityChoiceBatchEvents({ chosenRole: absentNonInsertingGoodRole() });
+    const snakeChoiceBatch = philosopherAbilityChoiceBatchEvents({
+      chosenRole: roleSnapshotById("snake_charmer"),
+      includeImpairment: true,
+      includeInsertion: true
+    });
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        absentChoiceBatch[0] as AnyDomainEventEnvelope
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...(absentChoiceBatch[1] as AnyDomainEventEnvelope),
+          eventId: eventId("event-13"),
+          eventSequence: 13
+        },
+        {
+          ...(absentChoiceBatch[0] as AnyDomainEventEnvelope),
+          eventId: eventId("event-14"),
+          eventSequence: 14
+        },
+        absentChoiceBatch[2] as AnyDomainEventEnvelope
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...philosopherAbilityChoiceBatchEvents({
+          chosenRole: roleSnapshotById("snake_charmer"),
+          includeInsertion: true
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        ...philosopherAbilityChoiceBatchEvents({
+          chosenRole: roleSnapshotById("snake_charmer"),
+          includeImpairment: true
+        })
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        absentChoiceBatch[0] as AnyDomainEventEnvelope,
+        absentChoiceBatch[1] as AnyDomainEventEnvelope,
+        minionInformationDeliveredEvent({
+          batchId: batchId("batch-9"),
+          commandId: commandId("command-9"),
+          eventId: eventId("event-15"),
+          eventSequence: 15,
+          gameVersion: 9
+        }),
+        {
+          ...(absentChoiceBatch[2] as AnyDomainEventEnvelope),
+          eventId: eventId("event-16"),
+          eventSequence: 16
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        absentChoiceBatch[0] as AnyDomainEventEnvelope,
+        absentChoiceBatch[1] as AnyDomainEventEnvelope,
+        {
+          ...(absentChoiceBatch[2] as DomainEventEnvelope<"ScheduledTaskSettled">),
+          payload: {
+            ...(absentChoiceBatch[2] as DomainEventEnvelope<"ScheduledTaskSettled">).payload,
+            outcomeType: "PHILOSOPHER_DEFERRED"
+          }
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        snakeChoiceBatch[0] as AnyDomainEventEnvelope,
+        snakeChoiceBatch[1] as AnyDomainEventEnvelope,
+        snakeChoiceBatch[2] as AnyDomainEventEnvelope,
+        {
+          ...(snakeChoiceBatch[3] as DomainEventEnvelope<"FirstNightTaskInserted">),
+          payload: {
+            ...(snakeChoiceBatch[3] as DomainEventEnvelope<"FirstNightTaskInserted">).payload,
+            taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-10:from-snake_charmer")
+          }
+        },
+        snakeChoiceBatch[4] as AnyDomainEventEnvelope
+      ]),
+      "InvalidFirstNightTaskInsertedPayload"
+    );
   });
 
   it("rejects naked, reversed, mismatched, and overlong Philosopher settlement batches", () => {

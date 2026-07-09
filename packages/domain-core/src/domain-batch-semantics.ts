@@ -2,6 +2,7 @@ import { DomainError } from "./errors.js";
 import type { AnyDomainEventEnvelope, DomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
 import { isIntegratedTransitionReason } from "./phase-transition-policy.js";
+import { firstNightTaskTypeForPhilosopherChoice } from "./philosopher-ability.js";
 
 const reject = (message: string): never => {
   throw new DomainError("InvalidDomainBatchSemantics", message);
@@ -19,6 +20,28 @@ const assertSharedBatchMetadata = (
     second.eventSequence !== first.eventSequence + 1
   ) {
     reject("Integrated batch events must share batch metadata and have consecutive eventSequence values");
+  }
+};
+
+const assertSharedBatchMetadataForAll = (
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  const [base, ...rest] = events;
+  if (base === undefined) {
+    reject("Integrated batch must contain at least one event");
+  }
+
+  const first = base as AnyDomainEventEnvelope;
+  for (const [index, event] of rest.entries()) {
+    if (
+      first.batchId !== event.batchId ||
+      first.commandId !== event.commandId ||
+      first.gameVersion !== event.gameVersion ||
+      first.rulesBaselineVersion !== event.rulesBaselineVersion ||
+      event.eventSequence !== first.eventSequence + index + 1
+    ) {
+      reject("Integrated batch events must share batch metadata and have consecutive eventSequence values");
+    }
   }
 };
 
@@ -292,6 +315,146 @@ const validateIntegratedPhilosopherActionDeferredBatch = (
   }
 };
 
+const sameRoleSnapshot = (
+  left: DomainEventEnvelope<"PhilosopherAbilityChosen">["payload"]["chosenRole"],
+  right: DomainEventEnvelope<"PhilosopherAbilityChosen">["payload"]["chosenRole"]
+): boolean =>
+  left.roleId === right.roleId &&
+  left.characterType === right.characterType &&
+  left.defaultAlignment === right.defaultAlignment &&
+  left.edition === right.edition &&
+  left.setupModifier.outsiderDelta === right.setupModifier.outsiderDelta &&
+  left.setupModifier.townsfolkDelta === right.setupModifier.townsfolkDelta;
+
+const validateIntegratedPhilosopherAbilityChoiceBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Philosopher ability choice batch requires an existing current state");
+  }
+
+  const state = currentState;
+  const currentCharacterState = state.currentCharacterState;
+  if (currentCharacterState === undefined) {
+    throw new DomainError(
+      "InvalidDomainBatchSemantics",
+      "Philosopher ability choice batch requires FIRST_NIGHT night 1 with task plan and current character state"
+    );
+  }
+
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined
+  ) {
+    reject("Philosopher ability choice batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  if (events.length < 3 || events.length > 5) {
+    reject("Philosopher ability choice batches must contain three to five events");
+  }
+
+  assertSharedBatchMetadataForAll(events);
+
+  const [first, second] = events;
+  const last = events[events.length - 1];
+  if (
+    first === undefined ||
+    second === undefined ||
+    last === undefined ||
+    first.eventType !== "PhilosopherAbilityChosen" ||
+    second.eventType !== "PhilosopherAbilityGranted" ||
+    last.eventType !== "ScheduledTaskSettled"
+  ) {
+    reject("Philosopher ability choice batch must start with choice and grant and end with settlement");
+  }
+
+  const choiceEvent = first as DomainEventEnvelope<"PhilosopherAbilityChosen">;
+  const grantEvent = second as DomainEventEnvelope<"PhilosopherAbilityGranted">;
+  const settlementEvent = last as DomainEventEnvelope<"ScheduledTaskSettled">;
+
+  const middle = events.slice(2, -1);
+  let seenImpairment = false;
+  let seenInsertion = false;
+  for (const event of middle) {
+    if (event.eventType === "AbilityImpairmentApplied" && !seenImpairment && !seenInsertion) {
+      seenImpairment = true;
+      continue;
+    }
+
+    if (event.eventType === "FirstNightTaskInserted" && !seenInsertion) {
+      seenInsertion = true;
+      continue;
+    }
+
+    reject("Philosopher ability choice batch optional events must be impairment followed by insertion");
+  }
+
+  const choice = choiceEvent.payload;
+  const grant = grantEvent.payload;
+  const settlement = settlementEvent.payload;
+  const chosenRoleCurrentlyInPlay = currentCharacterState.entries.some((entry) => entry.role.roleId === choice.chosenRoleId);
+  const chosenRoleRequiresInsertion = firstNightTaskTypeForPhilosopherChoice(choice.chosenRoleId) !== undefined;
+
+  if (chosenRoleCurrentlyInPlay !== seenImpairment) {
+    reject("Philosopher ability choice batch must include impairment exactly when the chosen role is currently in play");
+  }
+
+  if (chosenRoleRequiresInsertion !== seenInsertion) {
+    reject("Philosopher ability choice batch must include a gained task insertion exactly when the chosen role has a mapped first-night task");
+  }
+
+  if (
+    grant.taskId !== choice.taskId ||
+    grant.grantedAtTaskId !== choice.taskId ||
+    grant.opportunityId !== choice.opportunityId ||
+    grant.grantedAtOpportunityId !== choice.opportunityId ||
+    grant.sourcePlayerId !== choice.sourcePlayerId ||
+    grant.sourceSeatNumber !== choice.sourceSeatNumber ||
+    !sameRoleSnapshot(grant.sourceRole, choice.sourceRole) ||
+    grant.sourceCharacterStateRevision !== choice.sourceCharacterStateRevision ||
+    grant.chosenRoleId !== choice.chosenRoleId ||
+    !sameRoleSnapshot(grant.chosenRole, choice.chosenRole) ||
+    grant.chosenRoleCatalogSignature !== choice.roleCatalogSignature
+  ) {
+    reject("PhilosopherAbilityGranted must match the preceding PhilosopherAbilityChosen event");
+  }
+
+  for (const event of middle) {
+    if (event.eventType === "AbilityImpairmentApplied") {
+      if (
+        event.payload.sourcePlayerId !== choice.sourcePlayerId ||
+        event.payload.chosenRoleId !== choice.chosenRoleId ||
+        event.payload.sourceCharacterStateRevision !== choice.sourceCharacterStateRevision
+      ) {
+        reject("AbilityImpairmentApplied must match the Philosopher ability choice source and chosen role");
+      }
+    }
+
+    if (event.eventType === "FirstNightTaskInserted") {
+      if (
+        event.payload.insertedByPlayerId !== choice.sourcePlayerId ||
+        event.payload.insertedByOpportunityId !== choice.opportunityId ||
+        event.payload.sourceCharacterStateRevision !== choice.sourceCharacterStateRevision ||
+        !sameRoleSnapshot(event.payload.chosenRole, choice.chosenRole)
+      ) {
+        reject("FirstNightTaskInserted must match the Philosopher ability choice source and chosen role");
+      }
+    }
+  }
+
+  if (
+    settlement.taskId !== choice.taskId ||
+    settlement.taskType !== choice.taskType ||
+    settlement.characterStateRevision !== choice.sourceCharacterStateRevision ||
+    settlement.outcomeType !== "PHILOSOPHER_ABILITY_CHOSEN"
+  ) {
+    reject("ScheduledTaskSettled must close the Philosopher action as PHILOSOPHER_ABILITY_CHOSEN");
+  }
+};
+
 export const validateDomainBatchSemantics = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -335,6 +498,11 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "FirstNightActionOpportunityCreated") {
     validateFirstNightActionOpportunityCreatedBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (first.eventType === "PhilosopherAbilityChosen") {
+    validateIntegratedPhilosopherAbilityChoiceBatch(currentState, batchEvents);
     return;
   }
 
