@@ -28,6 +28,9 @@ import {
   createPhilosopherAbilityGrantedPayload,
   createSnakeCharmerDemonHitScheduledTaskSettlement,
   createSnakeCharmerDemonSwapAppliedPayload,
+  createEvilTwinInformationDeliveredPayload,
+  createEvilTwinPairEstablishedPayload,
+  createEvilTwinPairEstablishedScheduledTaskSettlement,
   createSnakeCharmerIneffectiveResolvedPayload,
   createSnakeCharmerIneffectiveScheduledTaskSettlement,
   createSnakeCharmerNoSwapResolvedPayload,
@@ -879,6 +882,114 @@ const snakeCharmerNoSwapBatchEvents = (input: {
     snakeCharmerBatchEnvelope("SnakeCharmerTargetChosen", targetChosen, 0),
     snakeCharmerBatchEnvelope("SnakeCharmerNoSwapResolved", noSwap, 1),
     snakeCharmerBatchEnvelope("ScheduledTaskSettled", settlement, 2)
+  ];
+};
+
+const baseSnakeCharmerNoSwapBatchEvents = (): readonly [
+  DomainEventEnvelope<"SnakeCharmerTargetChosen">,
+  DomainEventEnvelope<"SnakeCharmerNoSwapResolved">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = rebuildGameState(openBaseSnakeCharmerStream());
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION" &&
+    candidate.taskType === "SNAKE_CHARMER_ACTION"
+  );
+  const target = state.currentCharacterState?.entries.find((entry) =>
+    entry.role.characterType !== "DEMON" &&
+    entry.playerId !== opportunity?.sourcePlayerId
+  );
+  if (opportunity === undefined || target === undefined || state.roster === undefined) {
+    throw new Error("Expected open base Snake Charmer opportunity, non-Demon target, and roster");
+  }
+
+  const targetChosen = createSnakeCharmerTargetChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId: opportunity.taskId,
+    opportunityId: opportunity.opportunityId,
+    targetPlayerId: target.playerId,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    roster: state.roster.entries
+  });
+  const noSwap = createSnakeCharmerNoSwapResolvedPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    targetChoice: targetChosen
+  });
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createSnakeCharmerNoSwapScheduledTaskSettlement({
+      taskId: opportunity.taskId,
+      characterStateRevision: opportunity.sourceCharacterStateRevision
+    })
+  };
+
+  return [
+    baseSnakeCharmerBatchEnvelope("SnakeCharmerTargetChosen", targetChosen, 0),
+    baseSnakeCharmerBatchEnvelope("SnakeCharmerNoSwapResolved", noSwap, 1),
+    baseSnakeCharmerBatchEnvelope("ScheduledTaskSettled", settlement, 2)
+  ];
+};
+
+const evilTwinReadyStream = (): readonly AnyDomainEventEnvelope[] => [
+  ...openBaseSnakeCharmerStream(),
+  ...baseSnakeCharmerNoSwapBatchEvents()
+];
+
+const evilTwinBatchEnvelope = <EventType extends AnyDomainEventEnvelope["eventType"]>(
+  eventType: EventType,
+  payload: DomainEventEnvelope<EventType>["payload"],
+  offset: number
+): DomainEventEnvelope<EventType> => ({
+  category: "domain",
+  eventId: eventId(`event-${20 + offset}`),
+  gameId: gameCreatedEvent().gameId,
+  eventSequence: 20 + offset,
+  batchId: batchId("batch-12"),
+  gameVersion: 12,
+  eventType,
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-12"),
+  createdAt: "2026-07-07T00:00:11.000Z",
+  correlationId: gameCreatedEvent().correlationId,
+  causationId: gameCreatedEvent().causationId,
+  payload
+});
+
+const evilTwinSetupBatchEvents = (): readonly [
+  DomainEventEnvelope<"EvilTwinPairEstablished">,
+  DomainEventEnvelope<"EvilTwinInformationDelivered">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = rebuildGameState(evilTwinReadyStream());
+  const task = getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress);
+  if (task === undefined || task.taskType !== "EVIL_TWIN_SETUP" || state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined) {
+    throw new Error("Expected next Evil Twin setup task");
+  }
+
+  const pair = createEvilTwinPairEstablishedPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId: task.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState
+  });
+  const information = createEvilTwinInformationDeliveredPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    pair
+  });
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createEvilTwinPairEstablishedScheduledTaskSettlement({
+      taskId: pair.taskId,
+      characterStateRevision: pair.characterStateRevision
+    })
+  };
+
+  return [
+    evilTwinBatchEnvelope("EvilTwinPairEstablished", pair, 0),
+    evilTwinBatchEnvelope("EvilTwinInformationDelivered", information, 1),
+    evilTwinBatchEnvelope("ScheduledTaskSettled", settlement, 2)
   ];
 };
 
@@ -3383,6 +3494,212 @@ describe("domain event rebuild", () => {
     expect(state.assignment).toStrictEqual(before.assignment);
     expect(state.lastEventSequence).toBe(21);
     expect(state.gameVersion).toBe(11);
+  });
+
+  it("rebuilds Evil Twin setup pair, mutual knowledge, and scheduled settlement", () => {
+    const before = rebuildGameState(evilTwinReadyStream());
+    const [pair, information, settlement] = evilTwinSetupBatchEvents();
+    const state = rebuildGameState([
+      ...evilTwinReadyStream(),
+      pair,
+      information,
+      settlement
+    ]);
+    const { rulesBaselineVersion: _rulesBaselineVersion, ...storedPair } = pair.payload;
+    void _rulesBaselineVersion;
+
+    expect(state.evilTwinPairs?.pairs).toStrictEqual([storedPair]);
+    expect(state.evilTwinInformation).toStrictEqual(information.payload);
+    expect(information.payload.entries).toStrictEqual([
+      {
+        recipientPlayerId: pair.payload.evilTwinPlayer.playerId,
+        kind: "EVIL_TWIN_PAIR",
+        counterpart: pair.payload.goodTwinPlayer
+      },
+      {
+        recipientPlayerId: pair.payload.goodTwinPlayer.playerId,
+        kind: "EVIL_TWIN_PAIR",
+        counterpart: pair.payload.evilTwinPlayer
+      }
+    ]);
+    expect(state.firstNightTaskProgress?.settlements.at(-1)).toStrictEqual({
+      taskId: pair.payload.taskId,
+      taskType: "EVIL_TWIN_SETUP",
+      nightNumber: 1,
+      settlementVersion: "scheduled-task-settlement-v1",
+      outcomeType: "EVIL_TWIN_PAIR_ESTABLISHED",
+      characterStateRevision: pair.payload.characterStateRevision
+    });
+    expect(getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress)?.taskType).toBe("WITCH_ACTION");
+    expect(state.currentCharacterState).toStrictEqual(before.currentCharacterState);
+    expect(state.assignment).toStrictEqual(before.assignment);
+    expect(state.setup).toStrictEqual(before.setup);
+    expect(state.firstNightTaskPlan).toStrictEqual(before.firstNightTaskPlan);
+    expect(state.lastEventSequence).toBe(22);
+    expect(state.gameVersion).toBe(12);
+  });
+
+  it("rejects malformed Evil Twin setup replay batches", () => {
+    const baseStream = evilTwinReadyStream();
+    const [pair, information, settlement] = evilTwinSetupBatchEvents();
+    const [evilTwinEntry, goodTwinEntry] = information.payload.entries;
+    if (evilTwinEntry === undefined || goodTwinEntry === undefined) {
+      throw new Error("Expected Evil Twin information entries");
+    }
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        pair
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...information,
+          eventId: eventId("event-20-reversed-info"),
+          eventSequence: 20
+        },
+        {
+          ...pair,
+          eventId: eventId("event-21-reversed-pair"),
+          eventSequence: 21
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        pair,
+        {
+          ...information,
+          payload: {
+            ...information.payload,
+            pairId: "evil-twin-pair-v1:wrong"
+          }
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        pair,
+        {
+          ...information,
+          payload: {
+            ...information.payload,
+            entries: [evilTwinEntry]
+          }
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        pair,
+        {
+          ...information,
+          payload: {
+            ...information.payload,
+            entries: [
+              evilTwinEntry,
+              {
+                ...goodTwinEntry,
+                counterpart: pair.payload.goodTwinPlayer
+              }
+            ]
+          }
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        pair,
+        information,
+        {
+          ...settlement,
+          payload: {
+            ...settlement.payload,
+            outcomeType: "DEMON_INFORMATION_DELIVERED"
+          } as never
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        pair,
+        information,
+        {
+          ...settlement,
+          payload: {
+            ...settlement.payload,
+            characterStateRevision: pair.payload.characterStateRevision + 1
+          }
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects Evil Twin setup when current source or legal GOOD candidates no longer match the event", () => {
+    const before = rebuildGameState(evilTwinReadyStream());
+    const [pair, information, settlement] = evilTwinSetupBatchEvents();
+    if (before.currentCharacterState === undefined) {
+      throw new Error("Expected current character state");
+    }
+
+    const sourceChangedState = {
+      ...before,
+      currentCharacterState: {
+        ...before.currentCharacterState,
+        entries: before.currentCharacterState.entries.map((entry) =>
+          entry.playerId === pair.payload.evilTwinPlayer.playerId
+            ? {
+              ...entry,
+              role: roleSnapshotById("witch")
+            }
+            : entry
+        )
+      }
+    };
+    expectDomainCode(
+      () => applyDomainEventBatch(sourceChangedState, [pair, information, settlement]),
+      "InvalidEvilTwinPairEstablishedPayload"
+    );
+
+    const noGoodState = {
+      ...before,
+      currentCharacterState: {
+        ...before.currentCharacterState,
+        entries: before.currentCharacterState.entries.map((entry) => ({
+          ...entry,
+          currentAlignment: "EVIL" as const
+        }))
+      }
+    };
+    expectDomainCode(
+      () => applyDomainEventBatch(noGoodState, [pair, information, settlement]),
+      "InvalidEvilTwinPairEstablishedPayload"
+    );
   });
 
   it("rejects malformed Snake Charmer no-swap replay batches", () => {

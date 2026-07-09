@@ -8,6 +8,7 @@ export * from "./event-applier.js";
 export * from "./event-batch.js";
 export * from "./event-stream-validator.js";
 export * from "./events.js";
+export * from "./evil-twin.js";
 export * from "./first-night-action-opportunity.js";
 export * from "./first-night-task-plan.js";
 export * from "./first-night-team-information.js";
