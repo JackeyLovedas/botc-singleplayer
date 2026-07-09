@@ -25,10 +25,13 @@ import {
   createFirstNightRoleActionOpportunity,
   createSnakeCharmerDemonHitScheduledTaskSettlement,
   createSnakeCharmerDemonSwapAppliedPayload,
+  createSnakeCharmerIneffectiveResolvedPayload,
+  createSnakeCharmerIneffectiveScheduledTaskSettlement,
   createSnakeCharmerNoSwapResolvedPayload,
   createSnakeCharmerNoSwapScheduledTaskSettlement,
   createSnakeCharmerPoisonedImpairmentPayload,
   createSnakeCharmerTargetChosenPayload,
+  evaluateSnakeCharmerEffectiveness,
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
   getNextUnsettledFirstNightTask,
@@ -83,6 +86,7 @@ import type {
   PlayerRosterCreatedPayload,
   ScheduledTaskSettledPayload,
   SnakeCharmerDemonSwapAppliedPayload,
+  SnakeCharmerIneffectiveResolvedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload,
   SetupGeneratedPayload,
@@ -2297,6 +2301,41 @@ export class GameApplicationService {
           eventType: "SnakeCharmerTargetChosen" as const,
           payload: targetChoicePayload satisfies SnakeCharmerTargetChosenPayload
         };
+
+        const effectiveness = evaluateSnakeCharmerEffectiveness({
+          sourcePlayerId: targetChoicePayload.sourcePlayerId,
+          abilityImpairments: state.abilityImpairments
+        });
+        if (!effectiveness.effective) {
+          const ineffectivePayload = createSnakeCharmerIneffectiveResolvedPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            targetChoice: targetChoicePayload,
+            effectiveness
+          });
+          const snakeCharmerIneffectiveResolvedEvent: DomainEventEnvelope<"SnakeCharmerIneffectiveResolved"> = {
+            ...common(firstEventSequence + 1),
+            eventType: "SnakeCharmerIneffectiveResolved" as const,
+            payload: ineffectivePayload satisfies SnakeCharmerIneffectiveResolvedPayload
+          };
+          const settlement = createSnakeCharmerIneffectiveScheduledTaskSettlement({
+            taskId: opportunity.taskId,
+            characterStateRevision: opportunity.sourceCharacterStateRevision
+          });
+          const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+            ...common(firstEventSequence + 2),
+            eventType: "ScheduledTaskSettled" as const,
+            payload: {
+              rulesBaselineVersion: RULES_BASELINE_VERSION,
+              ...settlement
+            } satisfies ScheduledTaskSettledPayload
+          };
+
+          return [
+            snakeCharmerTargetChosenEvent,
+            snakeCharmerIneffectiveResolvedEvent,
+            scheduledTaskSettledEvent
+          ];
+        }
 
         const targetStateEntry = state.currentCharacterState.entries.find((entry) =>
           entry.playerId === targetChoicePayload.targetPlayerId &&

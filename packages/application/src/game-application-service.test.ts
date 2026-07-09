@@ -321,6 +321,80 @@ const reachOpenBaseSnakeCharmerOpportunity = async (
   return { baseTask, opportunity, state };
 };
 
+const reachOpenDrunkBaseSnakeCharmerOpportunity = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore
+) => {
+  await reachOpenPhilosopherGainedSnakeCharmerOpportunity(service);
+  const insertedState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const insertedTarget = insertedState?.currentCharacterState?.entries.find((entry) =>
+    entry.role.characterType !== "DEMON" &&
+    entry.playerId !== insertedState.firstNightActionOpportunities?.opportunities.find((opportunity) =>
+      opportunity.opportunityId === philosopherGainedSnakeCharmerOpportunityId
+    )?.sourcePlayerId
+  );
+  if (insertedTarget === undefined) {
+    throw new Error("Expected inserted Snake Charmer non-Demon target");
+  }
+
+  await service.execute(submitSnakeCharmerActionCommand({
+    commandId: commandId("settle-inserted-snake-before-drunk-base"),
+    expectedGameVersion: 10,
+    payload: {
+      commandType: "SubmitSnakeCharmerAction",
+      taskId: philosopherGainedSnakeCharmerTaskId,
+      opportunityId: philosopherGainedSnakeCharmerOpportunityId,
+      decision: {
+        kind: "CHOOSE_PLAYER",
+        targetPlayerId: insertedTarget.playerId
+      }
+    }
+  }));
+  await service.execute(settleFirstNightSystemTaskCommand({
+    commandId: commandId("settle-minion-before-drunk-base-snake"),
+    expectedGameVersion: 11
+  }));
+  await service.execute(settleFirstNightSystemTaskCommand({
+    commandId: commandId("settle-demon-before-drunk-base-snake"),
+    expectedGameVersion: 12,
+    payload: {
+      commandType: "SettleFirstNightSystemTask",
+      taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
+    }
+  }));
+
+  const beforeOpenState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const baseTask = beforeOpenState?.firstNightTaskPlan?.tasks.find((task) =>
+    task.taskType === "SNAKE_CHARMER_ACTION" &&
+    task.source.kind === "ROLE" &&
+    task.source.role.roleId === "snake_charmer"
+  );
+  if (baseTask === undefined) {
+    throw new Error("Expected base Snake Charmer task");
+  }
+
+  const openResult = await service.execute(openFirstNightRoleActionOpportunityCommand({
+    commandId: commandId("open-drunk-base-snake-action"),
+    expectedGameVersion: 13,
+    payload: {
+      commandType: "OpenFirstNightRoleActionOpportunity",
+      taskId: baseTask.taskId
+    }
+  }));
+  expectAcceptedResult(openResult);
+
+  const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const opportunity = state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.taskId === baseTask.taskId &&
+    candidate.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+  );
+  if (state === undefined || opportunity === undefined) {
+    throw new Error("Expected open drunk base Snake Charmer opportunity");
+  }
+
+  return { baseTask, opportunity, state };
+};
+
 class FakeLengthCommandStore extends MemoryCommandCommitStore {
   public override async loadDomainEvents(gameIdValue: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
     const events = await super.loadDomainEvents(gameIdValue);
@@ -3287,6 +3361,76 @@ describe("GameApplicationService", () => {
     });
     expect(afterState?.assignment).toStrictEqual(beforeState.assignment);
     expect(afterState?.currentCharacterState?.revision).toBe(2);
+  });
+
+  it("settles impaired base Snake Charmer choices as ineffective without swapping or adding poison", async () => {
+    const commandStore = new MemoryCommandCommitStore();
+    const { service } = makeService(commandStore);
+    const { baseTask, opportunity, state: beforeState } = await reachOpenDrunkBaseSnakeCharmerOpportunity(service, commandStore);
+    const demon = beforeState.currentCharacterState?.entries.find((entry) => entry.role.characterType === "DEMON");
+    const impairment = beforeState.abilityImpairments?.impairments.find((candidate) =>
+      candidate.affectedPlayerId === opportunity.sourcePlayerId &&
+      candidate.kind === "DRUNK"
+    );
+    if (demon === undefined || impairment === undefined) {
+      throw new Error("Expected Demon target and drunk base Snake Charmer source");
+    }
+
+    const result = await service.execute(submitSnakeCharmerActionCommand({
+      commandId: commandId("drunk-base-snake-demon-ineffective"),
+      expectedGameVersion: 14,
+      payload: {
+        commandType: "SubmitSnakeCharmerAction",
+        taskId: baseTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: {
+          kind: "CHOOSE_PLAYER",
+          targetPlayerId: demon.playerId
+        }
+      }
+    }));
+    const afterEvents = await commandStore.loadDomainEvents(ids.game);
+    const afterState = rebuildOptionalGameState(afterEvents);
+
+    expectAcceptedResult(result);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "SnakeCharmerTargetChosen",
+      "SnakeCharmerIneffectiveResolved",
+      "ScheduledTaskSettled"
+    ]);
+    expect(result.events.map((event) => event.eventType)).not.toContain("SnakeCharmerDemonSwapApplied");
+    expect(result.events.map((event) => event.eventType)).not.toContain("AbilityImpairmentApplied");
+    expect(result.events[0]?.payload).toMatchObject({
+      taskId: baseTask.taskId,
+      sourcePlayerId: opportunity.sourcePlayerId,
+      sourceRole: { roleId: "snake_charmer" },
+      targetPlayerId: demon.playerId,
+      targetSeatNumber: demon.seatNumber
+    });
+    expect(result.events[1]?.payload).toMatchObject({
+      taskId: baseTask.taskId,
+      opportunityId: opportunity.opportunityId,
+      sourcePlayerId: opportunity.sourcePlayerId,
+      targetPlayerId: demon.playerId,
+      outcomeType: "SOURCE_IMPAIRED_NO_EFFECT",
+      reason: "SOURCE_DRUNK",
+      sourceImpairmentId: impairment.impairmentId,
+      sourceImpairmentKind: "DRUNK"
+    });
+    expect(result.events[2]?.payload).toMatchObject({
+      taskId: baseTask.taskId,
+      outcomeType: "SNAKE_CHARMER_INEFFECTIVE",
+      characterStateRevision: 1
+    });
+    expect(afterState?.currentCharacterState).toStrictEqual(beforeState.currentCharacterState);
+    expect(afterState?.assignment).toStrictEqual(beforeState.assignment);
+    expect(afterState?.abilityImpairments?.impairments).toHaveLength(beforeState.abilityImpairments?.impairments.length ?? 0);
+    expect(afterState?.snakeCharmerDemonSwaps?.swaps ?? []).toHaveLength(0);
+    expect(afterState?.snakeCharmerIneffectiveResolutions?.resolutions.at(-1)).toMatchObject({
+      reason: "SOURCE_DRUNK",
+      sourceImpairmentId: impairment.impairmentId
+    });
+    expect(afterState?.firstNightTaskProgress?.settlements.map((settlement) => settlement.outcomeType)).toContain("SNAKE_CHARMER_INEFFECTIVE");
   });
 
   it("settles Philosopher gained Snake Charmer non-Demon targets without leaking target role facts", async () => {
