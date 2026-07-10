@@ -1,28 +1,29 @@
 # Current Task
 
-## Slice 2B15 Design v2 Revised; Renewed Independent Review Pending
+## Slice 2B15 Design Review Round 2 Requires Fixes; Architect v3 Underway
 
 - There is no open slice pull request.
-- The active branch is `main`; independent design review round 1 inspected exact HEAD `a31562b5d0751128b94b82289c2d21e954ea5ad7` and returned `RULE_DESIGN_FIX_REQUIRED`.
+- The active branch is `main`; independent design review round 2 inspected exact `main@5059b49b2e7da4c6550ae513cf660f84abcb98f3` with a clean worktree.
 - Fresh 2B15 evidence remains `RULE_READY` with `SKELETON` coverage at `docs/rules/evidence/2B15.md`.
-- The reviewer's complete round-1 report remains unchanged at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md`.
-- The architect's complete v2 replacement is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design.md` and claims to resolve all six round-1 findings.
-- V2 keeps one first-night pipeline shared by base Seamstress and the currently reachable Philosopher-granted Seamstress source.
-- It defines a public pre-assignment capability boundary, hidden-state non-oracle behavior, truth-favoring delivery, represented Vortox false-information handling, and a fresh-evidence gate before any No Dashii continuous-poison derivation.
-- It defines exact Legacy V1 and new V2 opportunity/defer contracts across validation, clone, equality, application, and replay.
-- It derives stable ability instance and use entitlement identity from role or grant tenure rather than scheduled tasks, with creation revision `N`, settlement revision `M`, and continuous source-tenure validation.
-- It corrects R01–R13 and 39-scenario coverage claims and defines an exact extensible private historical projection that validates the full choice/spend/delivery/settlement chain.
-- The exact success path remains one atomic four-event batch; V1/V2 `DEFER` remains an exact non-spending two-event batch.
-- V2 non-goals remain other-night recurrence, death/revival, Travellers, registration, Barista execution, No Dashii neighbour/poison derivation, general lifecycle work, UI, AI policy, Electron, persistence, and network work.
-- Proposed v2 status: `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW`.
-- No `RULE_DESIGN_PASS` exists for v2. No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or coverage-matrix change is authorized.
+- The complete v2 design remains unchanged at `docs/implementation/phase-3-slice-2b15-design.md`.
+- The round-1 review remains unchanged at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md`.
+- The reviewer's complete round-2 report is materialized at `docs/implementation/phase-3-slice-2b15-design-review-round-2.md`.
+- Round-2 verdict: `RULE_DESIGN_FIX_REQUIRED`.
+- Mandatory sources were available and consistent; this is not `HUMAN_BLOCKED`. Impaired once-per-game use is spent, impairment may still receive true information, and effective Vortox requires false information even when Seamstress is impaired.
+- Remaining blocker 1: replace internally impossible `NOT_PROVEN` candidate legality with an exact complete/partial legality-knowledge union, and ensure only impairment of the current Vortox tenure disables the Vortox constraint; Seamstress-source impairment does not.
+- Remaining blocker 2: make `RoleTenureId` exactly implementable with deterministic initial/transition grammar, parser/equality, retained starting-fact identity, replay continuity over `[N,M]`, a bounded test-22 reducer fact, and collision-free Philosopher grant/tenure identity without introducing a general lifecycle subsystem.
+- Remaining blocker 3: move evidence scenario 7 from full to partial coverage because later-night opportunity creation remains absent.
+- The reviewer found the remaining V1/V2 discrimination, public capability, non-oracle behavior, truth-favoring delivery, No Dashii restraint, N/M ownership, atomic chain, and source-only multi-entry projection design sound.
+- The read-only architect is preparing one bounded v3 correction addressing exactly these three blockers.
+- No `RULE_DESIGN_PASS` exists. No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or coverage-matrix change is authorized.
 
 ## Gate
 
-- Completed for 2B15: fresh evidence -> `RULE_READY` -> v1 proposed design -> independent round-1 `RULE_DESIGN_FIX_REQUIRED` -> bounded architect v2 replacement -> verbatim materialization.
-- Next required step: one renewed independent source/evidence, repository-contract, and rule-design review of the complete v2 design on its exact committed HEAD.
-- The reviewer must verify that every round-1 blocker is actually closed, including V1 compatibility, non-oracle behavior, tenure identity, N/M continuity, conservative claims, and stored-fact private projection.
-- Implementation remains blocked until the renewed reviewer returns `RULE_DESIGN_PASS` and the controller confirms the gate.
-- Any further `RULE_DESIGN_FIX_REQUIRED` requires another bounded design revision and renewed review; source conflict or unavailable mandatory evidence maps to `HUMAN_BLOCKED`.
-- Do not create a feature branch or pull request, and do not edit production code, tests, architecture, or the coverage matrix during this renewed design-review gate.
+- Completed for 2B15: fresh evidence -> initial design -> round-1 `RULE_DESIGN_FIX_REQUIRED` -> v2 -> round-2 `RULE_DESIGN_FIX_REQUIRED`.
+- Current action: one bounded architect v3 correction for legality knowledge/Vortox qualification, exact tenure identity/continuity, and scenario-7 coverage.
+- After v3 is materialized, another independent source/evidence, repository-contract, and rule-design review is required on its exact committed HEAD.
+- Implementation remains frozen until an independent reviewer returns `RULE_DESIGN_PASS` and the controller confirms the gate.
+- V3 must stop rather than introduce an out-of-scope general character lifecycle subsystem.
+- Further source conflict or unavailable mandatory evidence maps to `HUMAN_BLOCKED`.
+- Do not create a feature branch or pull request, and do not edit production code, tests, architecture, or the coverage matrix during design repair.
 - Preserve one writer and one open slice pull request at a time.

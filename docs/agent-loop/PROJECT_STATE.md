@@ -38,22 +38,24 @@
 - V2 proposes one first-night pipeline for base and currently reachable Philosopher-granted Seamstress sources, with a public pre-assignment capability boundary, hidden-state non-oracle behavior, truth-favoring delivery, represented Vortox handling, exact V1/V2 compatibility, tenure-based ability identity, N/M continuity, conservative claims, and extensible private historical projection.
 - Independent design review round 1 inspected exact HEAD `a31562b5d0751128b94b82289c2d21e954ea5ad7`; its complete report is materialized at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md` with verdict `RULE_DESIGN_FIX_REQUIRED`.
 - The six blocker classes were exact Legacy V1/V2 discrimination, a non-leaking modifier capability boundary, tenure-based ability identity, explicit N/M continuity, corrected evidence/scenario claims, and exact extensible stored-fact private projection validation.
-- V2 claims to close all six findings and retains the exact atomic four-event choice order plus exact non-spending V1/V2 two-event deferral paths, but renewed independent review has not yet confirmed those corrections.
-- Proposed v2 status is `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW`.
+- Independent design review round 2 inspected exact `main@5059b49b2e7da4c6550ae513cf660f84abcb98f3`; its complete report is materialized at `docs/implementation/phase-3-slice-2b15-design-review-round-2.md` with a second `RULE_DESIGN_FIX_REQUIRED`.
+- Three blockers remain: exact complete/partial candidate-legality knowledge with Vortox impairment qualification; implementable role-tenure identity/parser/replay continuity plus collision-free Philosopher identity without a general lifecycle subsystem; and scenario 7 moved from full to partial coverage.
+- The reviewer found the remaining V1/V2 discrimination, public capability, non-oracle behavior, truth-favoring delivery, No Dashii restraint, N/M ownership, atomic chain, and source-only multi-entry projection design sound.
+- The read-only architect is preparing one bounded v3 correction for the three remaining blockers.
 - Research verdict is `RULE_READY`; rule coverage remains `SKELETON`; external-source conflicts are empty; no snapshot was used.
 - The report preserves `2B15-R01` through `2B15-R13`, all mandatory source revisions and hashes, 39 required regression tests, and the stale `SV-SEAMSTRESS-DRUNK-DOES-NOT-SPEND` repository contradiction.
 - Authoritative evidence says a legal impaired two-target use is spent; the stale handoff test is a non-authoritative repository defect, not an external-source conflict.
-- No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or matrix change is authorized or exists; v2 has no `RULE_DESIGN_PASS`.
+- No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or matrix change is authorized or exists; round 2 did not issue `RULE_DESIGN_PASS`.
 
 ## Mandatory Rule Gate
 - Canonical instructions: `docs/agent-loop/AUTOPILOT_PROMPT.md`.
 - Configured roles: read-only `rule-researcher`, read-only `architect`, read-only `reviewer`, and sole-writer `implementer`; the concurrency cap remains three, so gated roles run sequentially where needed.
 - Slice 2B14 completed the required rule-evidence, rule-design, independent review, implementation, CI, code/rule review, and merge gates.
-- Slice 2B15 completed fresh live-source research, materialized evidence, the `RULE_READY` gate, one initial architect design, independent design review round 1, and one complete v2 architect revision materialized verbatim.
-- Round 1 returned `RULE_DESIGN_FIX_REQUIRED`; v2 now claims to address every recorded blocker. The current required step is renewed independent source/evidence, repository-contract, and rule-design review on the exact committed v2 HEAD.
+- Slice 2B15 completed fresh live-source research, materialized evidence, the `RULE_READY` gate, an initial design, independent review round 1, complete v2 revision, and independent review round 2.
+- Rounds 1 and 2 both returned `RULE_DESIGN_FIX_REQUIRED`; the current required step is one bounded v3 architect correction for the three round-2 blockers, followed by another independent source/evidence, repository-contract, and rule-design review.
 - Required future order remains: bounded design -> independent `RULE_DESIGN_PASS` -> controller confirmation -> implementation -> focused/full gates -> ready PR -> CI -> independent code/rule review.
 - `RULE_CONFLICT` and `RULE_SOURCE_UNAVAILABLE` map to `HUMAN_BLOCKED`.
-- Only an independently returned `RULE_DESIGN_PASS` on the exact committed v2 HEAD plus controller confirmation may authorize implementation. This design-revision update authorizes no production, test, architecture, matrix, branch, PR, or tag work for 2B15.
+- Only an independently returned `RULE_DESIGN_PASS` on the exact committed corrected-design HEAD plus controller confirmation may authorize implementation. This round-2 review-record update authorizes no production, test, architecture, matrix, branch, PR, or tag work for 2B15.
 
 ## Loop Limits
 - One open slice PR and one writer at a time.
