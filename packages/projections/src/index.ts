@@ -13,11 +13,13 @@ import {
   cloneRoleSetupSnapshot,
   cloneKnownPlayerReference,
   findEvilTwinCounterpartForViewer,
+  isPlainRecord,
   validateFirstNightInitializedPayloadShape,
   validateInitialOwnCharacterKnowledgePayload,
   validatePlayerPrivateKnowledgeViewShape,
   validateStoredMinionInformationDelivered,
   validateStoredDemonInformationDelivered,
+  validateStoredDreamerInformationDelivered,
   validateStoredEvilTwinInformationDelivered,
   validateStoredEvilTwinPairEstablished
 } from "@botc/domain-core";
@@ -29,7 +31,8 @@ import type {
   PlayerId,
   PlayerPrivateKnowledgeStage,
   PlayerPrivateKnowledgeView,
-  RoleSetupSnapshot
+  RoleSetupSnapshot,
+  ScheduledTaskSettlement
 } from "@botc/domain-core";
 
 type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishedPayload & {
@@ -192,28 +195,90 @@ const requireDeliveredEvilTwinInformationIsSettled = (state: GameState): void =>
   }
 };
 
+const storedDreamerDeliveries = (state: GameState): readonly unknown[] => {
+  const information: unknown = state.dreamerInformation;
+  if (information === undefined) {
+    return [];
+  }
+  if (!isPlainRecord(information) || !Array.isArray(information.deliveries)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Stored Dreamer information set must contain a deliveries array");
+  }
+
+  return information.deliveries;
+};
+
+const storedFirstNightSettlements = (state: GameState): readonly unknown[] => {
+  const progress: unknown = state.firstNightTaskProgress;
+  if (progress === undefined) {
+    return [];
+  }
+  if (!isPlainRecord(progress) || !Array.isArray(progress.settlements)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Stored first-night task progress must contain a settlements array");
+  }
+
+  return progress.settlements;
+};
+
+const matchingStoredDreamerSettlement = (
+  settlements: readonly unknown[],
+  delivery: unknown
+): ScheduledTaskSettlement | undefined => {
+  if (
+    !isPlainRecord(delivery) ||
+    typeof delivery.taskId !== "string" ||
+    typeof delivery.taskType !== "string"
+  ) {
+    return undefined;
+  }
+
+  const matchingSettlements = settlements.filter((settlement) =>
+    isPlainRecord(settlement) &&
+    settlement.taskId === delivery.taskId &&
+    settlement.taskType === delivery.taskType
+  );
+  return matchingSettlements.length === 1
+    ? matchingSettlements[0] as ScheduledTaskSettlement
+    : undefined;
+};
+
 const requireDeliveredDreamerInformationIsSettled = (state: GameState): void => {
   if (state.dreamerInformation === undefined && state.firstNightTaskProgress === undefined) {
     return;
   }
 
-  if (state.firstNightTaskPlan === undefined) {
-    throw new DomainError("PrivateKnowledgeUnavailable", "Dreamer information projection requires task plan facts");
+  if (state.setup === undefined || state.roster === undefined || state.firstNightTaskPlan === undefined) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Dreamer information projection requires setup, roster, and task plan facts");
   }
 
-  for (const delivery of state.dreamerInformation?.deliveries ?? []) {
-    const settlement = findSettlement(state, delivery.taskId, delivery.taskType);
-    if (
-      settlement === undefined ||
-      settlement.outcomeType !== "DREAMER_INFORMATION_DELIVERED" ||
-      settlement.characterStateRevision !== delivery.sourceCharacterStateRevision
-    ) {
-      throw new DomainError("PrivateKnowledgeUnavailable", "Dreamer information projection requires matching ScheduledTaskSettled");
+  const deliveries = storedDreamerDeliveries(state);
+  const settlements = storedFirstNightSettlements(state);
+  for (const delivery of deliveries) {
+    const settlement = matchingStoredDreamerSettlement(settlements, delivery);
+    const validation = validateStoredDreamerInformationDelivered(delivery, {
+      rulesBaselineVersion: state.rulesBaselineVersion,
+      setup: state.setup,
+      roster: state.roster.entries,
+      firstNightTaskPlan: state.firstNightTaskPlan,
+      choices: state.dreamerTargetChoices,
+      settlement
+    });
+    if (!validation.valid) {
+      throw new DomainError("PrivateKnowledgeUnavailable", validation.reason);
     }
   }
 
-  for (const settlement of state.firstNightTaskProgress?.settlements ?? []) {
-    if (settlement.taskType === "DREAMER_ACTION" && state.dreamerInformation === undefined) {
+  for (const settlement of settlements) {
+    if (!isPlainRecord(settlement)) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Stored ScheduledTaskSettled fact must be a plain object");
+    }
+    if (
+      settlement.taskType === "DREAMER_ACTION" &&
+      deliveries.some((delivery) =>
+        isPlainRecord(delivery) &&
+        delivery.taskId === settlement.taskId &&
+        delivery.sourceCharacterStateRevision === settlement.characterStateRevision
+      ) !== true
+    ) {
       throw new DomainError("PrivateKnowledgeUnavailable", "DREAMER_ACTION settlement exists without delivered Dreamer information");
     }
   }

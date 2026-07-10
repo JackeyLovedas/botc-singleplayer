@@ -116,6 +116,10 @@ type ValidationResult =
   | { readonly valid: true }
   | { readonly valid: false; readonly reason: string };
 
+type DreamerInformationPayloadShapeResult =
+  | { readonly valid: true; readonly payload: DreamerInformationDeliveredPayload }
+  | { readonly valid: false; readonly reason: string };
+
 type DreamerActionInput = {
   readonly taskId: ScheduledTaskId;
   readonly firstNightTaskPlan: Pick<FirstNightTaskPlan, "tasks">;
@@ -166,8 +170,17 @@ const DREAMER_INFORMATION_DELIVERED_PAYLOAD_KEYS = [
   "taskId",
   "taskType"
 ] as const;
+const DREAMER_SETTLEMENT_KEYS = [
+  "characterStateRevision",
+  "nightNumber",
+  "outcomeType",
+  "settlementVersion",
+  "taskId",
+  "taskType"
+] as const;
 
 const fail = (reason: string): ValidationResult => ({ valid: false, reason });
+const shapeFail = (reason: string): DreamerInformationPayloadShapeResult => ({ valid: false, reason });
 
 const cloneTargetChoice = (choice: DreamerTargetChosenPayload): DreamerTargetChosenPayload => ({
   rulesBaselineVersion: choice.rulesBaselineVersion,
@@ -378,6 +391,62 @@ const hasExactReliabilityShape = (value: unknown): value is DreamerInformationRe
     ((value.reason === "SOURCE_DRUNK" && value.sourceImpairmentKind === "DRUNK") ||
       (value.reason === "SOURCE_POISONED" && value.sourceImpairmentKind === "POISONED"))
   );
+};
+
+const validateDreamerInformationPayloadShape = (
+  payload: unknown,
+  setup: Pick<GeneratedSetup, "roleCatalogSnapshot">
+): DreamerInformationPayloadShapeResult => {
+  if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, DREAMER_INFORMATION_DELIVERED_PAYLOAD_KEYS)) {
+    return shapeFail("DreamerInformationDelivered payload must have exact runtime shape");
+  }
+
+  if (
+    typeof payload.rulesBaselineVersion !== "string" ||
+    payload.rulesBaselineVersion.trim().length === 0 ||
+    payload.nightNumber !== 1 ||
+    typeof payload.taskId !== "string" ||
+    payload.taskId.trim().length === 0 ||
+    payload.taskType !== "DREAMER_ACTION" ||
+    typeof payload.opportunityId !== "string" ||
+    payload.opportunityId.trim().length === 0 ||
+    payload.knowledgeModelVersion !== SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION ||
+    payload.knowledgeStage !== DREAMER_INFORMATION_STAGE ||
+    typeof payload.sourcePlayerId !== "string" ||
+    payload.sourcePlayerId.trim().length === 0 ||
+    typeof payload.sourceSeatNumber !== "number" ||
+    !Number.isInteger(payload.sourceSeatNumber) ||
+    payload.sourceSeatNumber < 1 ||
+    payload.sourceSeatNumber > 12 ||
+    typeof payload.sourceCharacterStateRevision !== "number" ||
+    !Number.isInteger(payload.sourceCharacterStateRevision) ||
+    payload.sourceCharacterStateRevision <= 0 ||
+    typeof payload.targetPlayerId !== "string" ||
+    payload.targetPlayerId.trim().length === 0 ||
+    typeof payload.targetSeatNumber !== "number" ||
+    !Number.isInteger(payload.targetSeatNumber) ||
+    payload.targetSeatNumber < 1 ||
+    payload.targetSeatNumber > 12 ||
+    !hasExactReliabilityShape(payload.informationReliability) ||
+    !hasExactRoleSetupSnapshotShape(payload.goodRole) ||
+    !hasExactRoleSetupSnapshotShape(payload.evilRole) ||
+    payload.falseRolePolicyVersion !== DREAMER_FALSE_ROLE_POLICY_VERSION
+  ) {
+    return shapeFail("DreamerInformationDelivered fields must use supported primitive values");
+  }
+
+  if (payload.goodRole.defaultAlignment !== "GOOD" || payload.evilRole.defaultAlignment !== "EVIL") {
+    return shapeFail("DreamerInformationDelivered must include one GOOD role and one EVIL role");
+  }
+
+  if (roleFromCatalog(setup, payload.goodRole) === undefined || roleFromCatalog(setup, payload.evilRole) === undefined) {
+    return shapeFail("DreamerInformationDelivered roles must exist in the role catalog");
+  }
+
+  return {
+    valid: true,
+    payload: payload as unknown as DreamerInformationDeliveredPayload
+  };
 };
 
 const sameReliability = (left: DreamerInformationReliability, right: DreamerInformationReliability): boolean => {
@@ -677,64 +746,20 @@ export const validateDreamerInformationDeliveredPayload = (
     readonly firstNightActionOpportunities: FirstNightActionOpportunityState | undefined;
   }
 ): ValidationResult => {
-  if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, DREAMER_INFORMATION_DELIVERED_PAYLOAD_KEYS)) {
-    return fail("DreamerInformationDelivered payload must have exact runtime shape");
+  const shapeValidation = validateDreamerInformationPayloadShape(payload, input.setup);
+  if (!shapeValidation.valid) {
+    return shapeValidation;
   }
+  const delivery = shapeValidation.payload;
 
-  if (
-    typeof payload.rulesBaselineVersion !== "string" ||
-    payload.nightNumber !== 1 ||
-    typeof payload.taskId !== "string" ||
-    payload.taskId.trim().length === 0 ||
-    payload.taskType !== "DREAMER_ACTION" ||
-    typeof payload.opportunityId !== "string" ||
-    payload.opportunityId.trim().length === 0 ||
-    payload.knowledgeModelVersion !== SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION ||
-    payload.knowledgeStage !== DREAMER_INFORMATION_STAGE ||
-    typeof payload.sourcePlayerId !== "string" ||
-    payload.sourcePlayerId.trim().length === 0 ||
-    typeof payload.sourceSeatNumber !== "number" ||
-    !Number.isInteger(payload.sourceSeatNumber) ||
-    payload.sourceSeatNumber < 1 ||
-    payload.sourceSeatNumber > 12 ||
-    typeof payload.sourceCharacterStateRevision !== "number" ||
-    !Number.isInteger(payload.sourceCharacterStateRevision) ||
-    payload.sourceCharacterStateRevision <= 0 ||
-    typeof payload.targetPlayerId !== "string" ||
-    payload.targetPlayerId.trim().length === 0 ||
-    typeof payload.targetSeatNumber !== "number" ||
-    !Number.isInteger(payload.targetSeatNumber) ||
-    payload.targetSeatNumber < 1 ||
-    payload.targetSeatNumber > 12 ||
-    !hasExactReliabilityShape(payload.informationReliability) ||
-    !hasExactRoleSetupSnapshotShape(payload.goodRole) ||
-    !hasExactRoleSetupSnapshotShape(payload.evilRole) ||
-    payload.falseRolePolicyVersion !== DREAMER_FALSE_ROLE_POLICY_VERSION
-  ) {
-    return fail("DreamerInformationDelivered fields must use supported primitive values");
-  }
-
-  if (
-    payload.goodRole.defaultAlignment !== "GOOD" ||
-    payload.evilRole.defaultAlignment !== "EVIL"
-  ) {
-    return fail("DreamerInformationDelivered must include one GOOD role and one EVIL role");
-  }
-
-  const catalogGoodRole = roleFromCatalog(input.setup, payload.goodRole);
-  const catalogEvilRole = roleFromCatalog(input.setup, payload.evilRole);
-  if (catalogGoodRole === undefined || catalogEvilRole === undefined) {
-    return fail("DreamerInformationDelivered roles must exist in the role catalog");
-  }
-
-  if (input.deliveries?.deliveries.some((delivery) => delivery.opportunityId === payload.opportunityId) === true) {
+  if (input.deliveries?.deliveries.some((candidate) => candidate.opportunityId === delivery.opportunityId) === true) {
     return fail("DreamerInformationDelivered cannot deliver the same opportunity twice");
   }
 
   const choice = findDreamerTargetChoice(input.choices, {
-    taskId: payload.taskId as ScheduledTaskId,
-    opportunityId: payload.opportunityId as ActionOpportunityId,
-    targetPlayerId: payload.targetPlayerId as PlayerId
+    taskId: delivery.taskId,
+    opportunityId: delivery.opportunityId,
+    targetPlayerId: delivery.targetPlayerId
   });
   if (choice === undefined) {
     return fail("DreamerInformationDelivered must follow a matching DreamerTargetChosen event");
@@ -751,8 +776,8 @@ export const validateDreamerInformationDeliveredPayload = (
   }
 
   const targetReference = {
-    playerId: payload.targetPlayerId as PlayerId,
-    seatNumber: payload.targetSeatNumber as SeatNumber
+    playerId: delivery.targetPlayerId,
+    seatNumber: delivery.targetSeatNumber
   };
   if (!hasExactKnownPlayerReferenceShape(targetReference) || !sameKnownPlayerReference(targetReference, {
     playerId: choice.targetPlayerId,
@@ -766,15 +791,107 @@ export const validateDreamerInformationDeliveredPayload = (
     abilityImpairments: input.abilityImpairments
   });
   const expected = createDreamerInformationDeliveredPayload({
-    rulesBaselineVersion: payload.rulesBaselineVersion,
+    rulesBaselineVersion: delivery.rulesBaselineVersion,
     targetChoice: choice,
     setup: input.setup,
     currentCharacterState: input.currentCharacterState,
     effectiveness
   });
 
-  if (!sameDreamerInformationDelivery(payload as unknown as DreamerInformationDeliveredPayload, expected)) {
+  if (!sameDreamerInformationDelivery(delivery, expected)) {
     return fail("DreamerInformationDelivered must match the target choice, current role facts, source effectiveness, and deterministic false-role policy");
+  }
+
+  return { valid: true };
+};
+
+export const validateStoredDreamerInformationDelivered = (
+  payload: unknown,
+  sourceFacts: {
+    readonly rulesBaselineVersion: string;
+    readonly setup: Pick<GeneratedSetup, "roleCatalogSnapshot">;
+    readonly roster: PlayerRoster;
+    readonly firstNightTaskPlan: Pick<FirstNightTaskPlan, "tasks">;
+    readonly choices: DreamerTargetChoiceSet | undefined;
+    readonly settlement: ScheduledTaskSettlement | undefined;
+  }
+): ValidationResult => {
+  const shapeValidation = validateDreamerInformationPayloadShape(payload, sourceFacts.setup);
+  if (!shapeValidation.valid) {
+    return fail(`Stored ${shapeValidation.reason}`);
+  }
+  const delivery = shapeValidation.payload;
+
+  if (delivery.rulesBaselineVersion !== sourceFacts.rulesBaselineVersion) {
+    return fail("Stored DreamerInformationDelivered rules baseline must match the game");
+  }
+
+  const matchingTasks = sourceFacts.firstNightTaskPlan.tasks.filter((candidate) => candidate.taskId === delivery.taskId);
+  const task = matchingTasks[0];
+  if (
+    matchingTasks.length !== 1 ||
+    task === undefined ||
+    task.taskType !== "DREAMER_ACTION" ||
+    task.taskClass !== "ROLE_ACTION" ||
+    task.source.kind !== "ROLE" ||
+    task.source.role.roleId !== DREAMER_ROLE_ID ||
+    task.source.playerId !== delivery.sourcePlayerId ||
+    task.source.seatNumber !== delivery.sourceSeatNumber ||
+    roleFromCatalog(sourceFacts.setup, task.source.role) === undefined
+  ) {
+    return fail("Stored DreamerInformationDelivered must match a planned base Dreamer action task");
+  }
+
+  const source = sourceFacts.roster.find((entry) => entry.playerId === delivery.sourcePlayerId);
+  const target = sourceFacts.roster.find((entry) => entry.playerId === delivery.targetPlayerId);
+  if (
+    source === undefined ||
+    source.seatNumber !== delivery.sourceSeatNumber ||
+    target === undefined ||
+    target.seatNumber !== delivery.targetSeatNumber ||
+    source.playerId === target.playerId
+  ) {
+    return fail("Stored DreamerInformationDelivered source and target must match the historical roster");
+  }
+
+  const matchingChoices = sourceFacts.choices?.choices.filter((choice) =>
+    choice.taskId === delivery.taskId &&
+    choice.opportunityId === delivery.opportunityId
+  ) ?? [];
+  const choice = matchingChoices[0];
+  if (
+    matchingChoices.length !== 1 ||
+    choice === undefined ||
+    !isPlainRecord(choice) ||
+    !hasExactEnumerableKeys(choice, DREAMER_TARGET_CHOSEN_PAYLOAD_KEYS) ||
+    choice.rulesBaselineVersion !== delivery.rulesBaselineVersion ||
+    choice.nightNumber !== delivery.nightNumber ||
+    choice.taskType !== delivery.taskType ||
+    choice.decisionKind !== "CHOOSE_PLAYER" ||
+    choice.sourcePlayerId !== delivery.sourcePlayerId ||
+    choice.sourceSeatNumber !== delivery.sourceSeatNumber ||
+    choice.sourceCharacterStateRevision !== delivery.sourceCharacterStateRevision ||
+    choice.targetPlayerId !== delivery.targetPlayerId ||
+    choice.targetSeatNumber !== delivery.targetSeatNumber ||
+    !hasExactRoleSetupSnapshotShape(choice.sourceRole) ||
+    !sameRoleSetupSnapshot(choice.sourceRole, task.source.role)
+  ) {
+    return fail("Stored DreamerInformationDelivered must match one exact historical DreamerTargetChosen fact");
+  }
+
+  const settlement = sourceFacts.settlement;
+  if (
+    settlement === undefined ||
+    !isPlainRecord(settlement) ||
+    !hasExactEnumerableKeys(settlement, DREAMER_SETTLEMENT_KEYS) ||
+    settlement.taskId !== delivery.taskId ||
+    settlement.taskType !== "DREAMER_ACTION" ||
+    settlement.nightNumber !== 1 ||
+    settlement.settlementVersion !== SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION ||
+    settlement.outcomeType !== "DREAMER_INFORMATION_DELIVERED" ||
+    settlement.characterStateRevision !== delivery.sourceCharacterStateRevision
+  ) {
+    return fail("Stored DreamerInformationDelivered requires one matching ScheduledTaskSettled fact");
   }
 
   return { valid: true };

@@ -127,6 +127,10 @@ Storyteller free false-role choice requires recorded legal candidates and a reco
 
 `buildPlayerPrivateKnowledgeView` and `buildAiPrivateKnowledgeView` expose Dreamer information only to the Dreamer source player after the matching delivery and settlement exist.
 
+Before either projection reads a stored delivery, `validateStoredDreamerInformationDelivered` now verifies the exact outer and nested runtime shapes, supported model/stage/policy versions, reliability discriminated union, GOOD/EVIL role-catalog bindings, historical `DreamerTargetChosen`, planned `DREAMER_ACTION`, and the exact matching `ScheduledTaskSettled` task, outcome, and revision. Malformed delivery or settlement records fail closed as `PrivateKnowledgeUnavailable`, including null and non-object stored values.
+
+This stored-fact validation intentionally does not read latest `currentCharacterState` or latest `abilityImpairments`. Delivered information remains historical knowledge after later role or impairment changes.
+
 The visible Dreamer private view contains only:
 
 ```text
@@ -200,16 +204,19 @@ Local tests cover:
 - Stable impairment ordering without locale sorting.
 - Static regression check that Dreamer code does not use `localeCompare` or `Intl.Collator`.
 - Replay and batch rejection cases for malformed Dreamer batches.
-- Player and AI private projection non-leakage.
+- Stored-delivery rejection for unsupported versions, invalid reliability unions, role alignment/catalog mismatches, duplicate or mismatched task/choice/settlement facts, forbidden hidden fields, and nested extra fields.
+- Player and AI private projection non-leakage and fail-closed parity for malformed stored facts.
+- Historical Dreamer projection stability after later current-character-state and impairment changes.
+- Windows-scoped `@botc/application` test command execution across all three application test files.
 - Witch, Evil Twin, Snake Charmer, Philosopher, team knowledge, and existing projection regression paths.
 
-Final local validation before PR creation:
+Final local validation after the stored-fact repair:
 
 ```text
 pnpm typecheck: passed
 pnpm lint: passed
-pnpm test: passed, 545 tests
-pnpm test:coverage: passed, 545 tests
+pnpm test: passed, 613 tests
+pnpm test:coverage: passed, 613 tests
 ```
 
 ## Non-Goals
@@ -224,7 +231,7 @@ pnpm test:coverage: passed, 545 tests
 
 ## Blockers
 
-None known for Slice 2B13 implementation review.
+The stored Dreamer projection-validation blocker and the no-op Windows application test command were repaired. Merge remains gated on independent reviewer `PASS`, current PR CI, reviewed HEAD equality, and a clean worktree.
 
 ## Next Step
 

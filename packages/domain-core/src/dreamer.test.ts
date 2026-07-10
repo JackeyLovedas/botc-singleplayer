@@ -5,13 +5,20 @@ import {
   DREAMER_INFORMATION_STAGE,
   SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
   createDreamerInformationDeliveredPayload,
-  evaluateDreamerEffectiveness
+  evaluateDreamerEffectiveness,
+  validateStoredDreamerInformationDelivered
+} from "./dreamer.js";
+import type {
+  DreamerEffectivenessResult,
+  DreamerInformationDeliveredPayload
 } from "./dreamer.js";
 import { DomainError } from "./errors.js";
 import type { CurrentCharacterStateSet } from "./current-character-state.js";
+import type { FirstNightTaskPlan } from "./first-night-task-plan.js";
 import { abilityImpairmentId, actionOpportunityId, playerId, roleId, scheduledTaskId } from "./ids.js";
 import type { AbilityImpairmentSet } from "./philosopher-ability.js";
 import { seatNumber } from "./player-roster.js";
+import type { PlayerRoster } from "./player-roster.js";
 import type { GeneratedSetup, RoleSetupSnapshot } from "./setup-types.js";
 
 const role = (
@@ -77,6 +84,80 @@ const targetChoice = {
   targetPlayerId: playerId("target-player"),
   targetSeatNumber: seatNumber(2)
 } as const;
+
+const storedSetup = setup([dreamerRole, flowergirlRole, snakeCharmerRole, witchRole, fangGuRole]);
+const storedRoster: PlayerRoster = [
+  {
+    playerId: targetChoice.sourcePlayerId,
+    seatNumber: targetChoice.sourceSeatNumber,
+    playerKind: "HUMAN",
+    displayName: "Dreamer"
+  },
+  {
+    playerId: targetChoice.targetPlayerId,
+    seatNumber: targetChoice.targetSeatNumber,
+    playerKind: "AI",
+    displayName: "Target"
+  }
+];
+const storedDreamerTask: FirstNightTaskPlan["tasks"][number] = {
+  taskId: targetChoice.taskId,
+  taskType: "DREAMER_ACTION",
+  taskClass: "ROLE_ACTION",
+  orderKey: {
+    baseOrder: 900,
+    insertionOrder: 0
+  },
+  source: {
+    kind: "ROLE",
+    playerId: targetChoice.sourcePlayerId,
+    seatNumber: targetChoice.sourceSeatNumber,
+    role: dreamerRole
+  },
+  status: "PENDING",
+  settlementPolicy: "REEVALUATE_SOURCE_AT_SETTLEMENT"
+};
+
+type StoredDreamerSourceFacts = Parameters<typeof validateStoredDreamerInformationDelivered>[1];
+
+const storedDelivery = (
+  targetRole: RoleSetupSnapshot = flowergirlRole,
+  effectiveness: DreamerEffectivenessResult = { effective: true }
+): DreamerInformationDeliveredPayload => createDreamerInformationDeliveredPayload({
+  rulesBaselineVersion: "Phase One v2.1",
+  targetChoice,
+  setup: storedSetup,
+  currentCharacterState: currentState(targetRole),
+  effectiveness
+});
+
+const storedSourceFacts = (): StoredDreamerSourceFacts => ({
+  rulesBaselineVersion: "Phase One v2.1",
+  setup: storedSetup,
+  roster: storedRoster,
+  firstNightTaskPlan: {
+    tasks: [storedDreamerTask]
+  },
+  choices: {
+    choices: [targetChoice]
+  },
+  settlement: {
+    taskId: targetChoice.taskId,
+    taskType: "DREAMER_ACTION",
+    nightNumber: 1,
+    settlementVersion: "scheduled-task-settlement-v1",
+    outcomeType: "DREAMER_INFORMATION_DELIVERED",
+    characterStateRevision: targetChoice.sourceCharacterStateRevision
+  }
+});
+
+const expectStoredDeliveryRejected = (
+  payload: unknown,
+  sourceFacts: StoredDreamerSourceFacts = storedSourceFacts()
+): void => {
+  const result = validateStoredDreamerInformationDelivered(payload, sourceFacts);
+  expect(result.valid).toBe(false);
+};
 
 describe("Dreamer information model", () => {
   it("selects the lowest impairmentId using stable string order", () => {
@@ -199,5 +280,176 @@ describe("Dreamer information model", () => {
       currentCharacterState: currentState(flowergirlRole),
       effectiveness: { effective: true }
     })).toThrowError(DomainError);
+  });
+
+  it.each([
+    ["effective GOOD target", flowergirlRole, { effective: true }],
+    ["effective EVIL target", witchRole, { effective: true }],
+    [
+      "source-impaired target",
+      witchRole,
+      {
+        effective: false,
+        reason: "SOURCE_POISONED",
+        impairmentId: abilityImpairmentId("ability-impairment-v1:stored-poisoned"),
+        impairmentKind: "POISONED"
+      }
+    ]
+  ] as const)("validates a stored %s delivery from historical facts", (_name, targetRole, effectiveness) => {
+    expect(validateStoredDreamerInformationDelivered(
+      storedDelivery(targetRole, effectiveness),
+      storedSourceFacts()
+    )).toStrictEqual({ valid: true });
+  });
+
+  it.each([
+    ["null", null],
+    ["array", []],
+    ["Date instance", new Date("2026-07-10T00:00:00.000Z")],
+    ["class instance", new (class StoredDelivery {})()]
+  ])("rejects a stored Dreamer delivery that is a non-plain %s", (_name, payload) => {
+    expectStoredDeliveryRejected(payload);
+  });
+
+  it.each([
+    "correctRoleId",
+    "targetTrueRole",
+    "targetAlignment",
+    "storytellerNotes"
+  ])("rejects stored Dreamer delivery hidden field %s", (field) => {
+    const payload = storedDelivery();
+    expectStoredDeliveryRejected({
+      ...payload,
+      [field]: "hidden"
+    });
+  });
+
+  const payloadTamperingCases: readonly [
+    string,
+    (payload: DreamerInformationDeliveredPayload) => unknown
+  ][] = [
+    ["unsupported knowledge model", (payload) => ({ ...payload, knowledgeModelVersion: "dreamer-information-model-v2" })],
+    ["unsupported knowledge stage", (payload) => ({ ...payload, knowledgeStage: "DREAMER_TRUTH" })],
+    ["unsupported false-role policy", (payload) => ({ ...payload, falseRolePolicyVersion: "dreamer-false-role-policy-v2" })],
+    ["extra reliability field", (payload) => ({
+      ...payload,
+      informationReliability: { ...payload.informationReliability, storytellerNotes: "hidden" }
+    })],
+    ["invalid reliability discriminant", (payload) => ({
+      ...payload,
+      informationReliability: { kind: "UNRELIABLE" }
+    })],
+    ["mismatched impaired reliability union", (payload) => ({
+      ...payload,
+      informationReliability: {
+        kind: "SOURCE_IMPAIRED",
+        reason: "SOURCE_DRUNK",
+        sourceImpairmentId: abilityImpairmentId("ability-impairment-v1:mismatch"),
+        sourceImpairmentKind: "POISONED"
+      }
+    })],
+    ["extra GOOD role field", (payload) => ({
+      ...payload,
+      goodRole: { ...payload.goodRole, correctRoleId: payload.goodRole.roleId }
+    })],
+    ["extra EVIL role field", (payload) => ({
+      ...payload,
+      evilRole: { ...payload.evilRole, storytellerNotes: "hidden" }
+    })],
+    ["GOOD role with EVIL alignment", (payload) => ({ ...payload, goodRole: payload.evilRole })],
+    ["EVIL role with GOOD alignment", (payload) => ({ ...payload, evilRole: payload.goodRole })],
+    ["GOOD role catalog mismatch", (payload) => ({
+      ...payload,
+      goodRole: { ...payload.goodRole, edition: "tampered-edition" }
+    })],
+    ["EVIL role catalog mismatch", (payload) => ({
+      ...payload,
+      evilRole: { ...payload.evilRole, edition: "tampered-edition" }
+    })]
+  ];
+
+  it.each(payloadTamperingCases)("rejects stored Dreamer payload tampering: %s", (_name, tamper) => {
+    expectStoredDeliveryRejected(tamper(storedDelivery()));
+  });
+
+  const sourceFactTamperingCases: readonly [
+    string,
+    (sourceFacts: StoredDreamerSourceFacts) => StoredDreamerSourceFacts
+  ][] = [
+    ["rules baseline mismatch", (sourceFacts) => ({ ...sourceFacts, rulesBaselineVersion: "Phase One v2.0" })],
+    ["missing planned task", (sourceFacts) => ({
+      ...sourceFacts,
+      firstNightTaskPlan: { tasks: [] }
+    })],
+    ["duplicate planned task", (sourceFacts) => ({
+      ...sourceFacts,
+      firstNightTaskPlan: { tasks: [storedDreamerTask, storedDreamerTask] }
+    })],
+    ["wrong planned task type", (sourceFacts) => ({
+      ...sourceFacts,
+      firstNightTaskPlan: {
+        tasks: [{ ...storedDreamerTask, taskType: "WITCH_ACTION" }]
+      }
+    } as unknown as StoredDreamerSourceFacts)],
+    ["wrong planned task source", (sourceFacts) => ({
+      ...sourceFacts,
+      firstNightTaskPlan: {
+        tasks: [{
+          ...storedDreamerTask,
+          source: {
+            ...storedDreamerTask.source,
+            playerId: playerId("different-source")
+          }
+        }]
+      }
+    })],
+    ["missing roster target", (sourceFacts) => ({
+      ...sourceFacts,
+      roster: sourceFacts.roster.filter((entry) => entry.playerId !== targetChoice.targetPlayerId)
+    })],
+    ["missing target choice", (sourceFacts) => ({ ...sourceFacts, choices: undefined })],
+    ["duplicate target choice", (sourceFacts) => ({
+      ...sourceFacts,
+      choices: { choices: [targetChoice, targetChoice] }
+    })],
+    ["target choice extra field", (sourceFacts) => ({
+      ...sourceFacts,
+      choices: {
+        choices: [{ ...targetChoice, targetTrueRole: flowergirlRole }]
+      }
+    } as unknown as StoredDreamerSourceFacts)],
+    ["missing settlement", (sourceFacts) => ({ ...sourceFacts, settlement: undefined })],
+    ["settlement extra field", (sourceFacts) => ({
+      ...sourceFacts,
+      settlement: { ...sourceFacts.settlement, storytellerNotes: "hidden" }
+    } as unknown as StoredDreamerSourceFacts)],
+    ["wrong settlement task id", (sourceFacts) => ({
+      ...sourceFacts,
+      settlement: { ...sourceFacts.settlement!, taskId: scheduledTaskId("wrong-task") }
+    })],
+    ["wrong settlement task type", (sourceFacts) => ({
+      ...sourceFacts,
+      settlement: { ...sourceFacts.settlement!, taskType: "WITCH_ACTION" }
+    } as unknown as StoredDreamerSourceFacts)],
+    ["wrong settlement outcome", (sourceFacts) => ({
+      ...sourceFacts,
+      settlement: { ...sourceFacts.settlement!, outcomeType: "WITCH_INEFFECTIVE" }
+    })],
+    ["wrong settlement revision", (sourceFacts) => ({
+      ...sourceFacts,
+      settlement: { ...sourceFacts.settlement!, characterStateRevision: 2 }
+    })],
+    ["wrong settlement version", (sourceFacts) => ({
+      ...sourceFacts,
+      settlement: { ...sourceFacts.settlement!, settlementVersion: "scheduled-task-settlement-v2" }
+    } as unknown as StoredDreamerSourceFacts)],
+    ["wrong settlement night", (sourceFacts) => ({
+      ...sourceFacts,
+      settlement: { ...sourceFacts.settlement!, nightNumber: 2 }
+    } as unknown as StoredDreamerSourceFacts)]
+  ];
+
+  it.each(sourceFactTamperingCases)("rejects stored Dreamer source-fact tampering: %s", (_name, tamper) => {
+    expectStoredDeliveryRejected(storedDelivery(), tamper(storedSourceFacts()));
   });
 });

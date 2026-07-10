@@ -37,6 +37,7 @@ import type {
   CharactersAssignedPayload,
   CurrentCharacterStateSet,
   DomainEventEnvelope,
+  DreamerInformationDeliveredPayload,
   FirstNightInitializedPayload,
   FirstNightTaskPlanCreatedPayload,
   GameState,
@@ -473,6 +474,7 @@ const stateWithDreamerInformation = (): GameState => {
     .sort((left, right) => left.roleId < right.roleId ? -1 : left.roleId > right.roleId ? 1 : 0)[0];
   if (
     dreamerTask === undefined ||
+    dreamerTask.source.kind !== "ROLE" ||
     source === undefined ||
     target === undefined ||
     evilRole === undefined ||
@@ -504,9 +506,26 @@ const stateWithDreamerInformation = (): GameState => {
     evilRole,
     falseRolePolicyVersion: "dreamer-false-role-policy-v1" as const
   };
+  const targetChoice = {
+    rulesBaselineVersion: delivery.rulesBaselineVersion,
+    nightNumber: delivery.nightNumber,
+    taskId: delivery.taskId,
+    taskType: delivery.taskType,
+    opportunityId: delivery.opportunityId,
+    decisionKind: "CHOOSE_PLAYER" as const,
+    sourcePlayerId: delivery.sourcePlayerId,
+    sourceSeatNumber: delivery.sourceSeatNumber,
+    sourceRole: dreamerTask.source.role,
+    sourceCharacterStateRevision: delivery.sourceCharacterStateRevision,
+    targetPlayerId: delivery.targetPlayerId,
+    targetSeatNumber: delivery.targetSeatNumber
+  };
 
   return {
     ...state,
+    dreamerTargetChoices: {
+      choices: [targetChoice]
+    },
     dreamerInformation: {
       deliveries: [delivery]
     },
@@ -655,6 +674,215 @@ const expectPrivateKnowledgeUnavailable = (action: () => void): void => {
   expect(caught).toBeInstanceOf(DomainError);
   expect((caught as DomainError).code).toBe("PrivateKnowledgeUnavailable");
 };
+
+const requireDreamerDelivery = (state: GameState): DreamerInformationDeliveredPayload => {
+  const delivery = state.dreamerInformation?.deliveries[0];
+  if (delivery === undefined) {
+    throw new Error("Expected stored Dreamer delivery");
+  }
+
+  return delivery;
+};
+
+const tamperDreamerDelivery = (
+  state: GameState,
+  tamper: (delivery: DreamerInformationDeliveredPayload) => unknown
+): GameState => ({
+  ...state,
+  dreamerInformation: {
+    deliveries: [tamper(requireDreamerDelivery(state))]
+  }
+} as unknown as GameState);
+
+const dreamerProjectionTamperingCases: readonly [
+  string,
+  (state: GameState) => GameState
+][] = [
+  ["null delivery", (state) => tamperDreamerDelivery(state, () => null)],
+  ["non-object delivery", (state) => tamperDreamerDelivery(state, () => "hidden")],
+  ["correctRoleId", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    correctRoleId: delivery.goodRole.roleId
+  }))],
+  ["targetTrueRole", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    targetTrueRole: delivery.goodRole
+  }))],
+  ["targetAlignment", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    targetAlignment: "GOOD"
+  }))],
+  ["storytellerNotes", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    storytellerNotes: "hidden"
+  }))],
+  ["nested GOOD-role extra field", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    goodRole: { ...delivery.goodRole, correctRoleId: delivery.goodRole.roleId }
+  }))],
+  ["nested reliability extra field", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    informationReliability: { ...delivery.informationReliability, storytellerNotes: "hidden" }
+  }))],
+  ["rules baseline version", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    rulesBaselineVersion: "Phase One v2.0"
+  }))],
+  ["knowledge model version", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    knowledgeModelVersion: "dreamer-information-model-v2"
+  }))],
+  ["knowledge stage", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    knowledgeStage: "DREAMER_TRUTH"
+  }))],
+  ["false-role policy version", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    falseRolePolicyVersion: "dreamer-false-role-policy-v2"
+  }))],
+  ["GOOD role alignment", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    goodRole: delivery.evilRole
+  }))],
+  ["EVIL role alignment", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    evilRole: delivery.goodRole
+  }))],
+  ["role catalog snapshot binding", (state) => tamperDreamerDelivery(state, (delivery) => ({
+    ...delivery,
+    goodRole: { ...delivery.goodRole, edition: "tampered-edition" }
+  }))],
+  ["missing target choice", (state) => ({
+    ...state,
+    dreamerTargetChoices: undefined
+  } as unknown as GameState)],
+  ["mismatched target choice", (state) => ({
+    ...state,
+    dreamerTargetChoices: {
+      choices: (state.dreamerTargetChoices?.choices ?? []).map((choice) => ({
+        ...choice,
+        targetPlayerId: playerId("mismatched-target")
+      }))
+    }
+  })],
+  ["target-choice extra field", (state) => ({
+    ...state,
+    dreamerTargetChoices: {
+      choices: (state.dreamerTargetChoices?.choices ?? []).map((choice) => ({
+        ...choice,
+        targetTrueRole: requireDreamerDelivery(state).goodRole
+      }))
+    }
+  })],
+  ["missing planned task", (state) => {
+    if (state.firstNightTaskPlan === undefined) {
+      throw new Error("Expected first-night task plan");
+    }
+    return {
+      ...state,
+      firstNightTaskPlan: {
+        ...state.firstNightTaskPlan,
+        tasks: state.firstNightTaskPlan.tasks.filter((task) => task.taskType !== "DREAMER_ACTION")
+      }
+    };
+  }],
+  ["mismatched planned task source", (state) => {
+    if (state.firstNightTaskPlan === undefined) {
+      throw new Error("Expected first-night task plan");
+    }
+    return {
+      ...state,
+      firstNightTaskPlan: {
+        ...state.firstNightTaskPlan,
+        tasks: state.firstNightTaskPlan.tasks.map((task) =>
+          task.taskType === "DREAMER_ACTION" && task.source.kind === "ROLE"
+            ? {
+                ...task,
+                source: { ...task.source, playerId: playerId("mismatched-source") }
+              }
+            : task
+        )
+      }
+    };
+  }],
+  ["missing settlement", (state) => {
+    const delivery = requireDreamerDelivery(state);
+    return {
+      ...state,
+      firstNightTaskProgress: {
+        settlements: (state.firstNightTaskProgress?.settlements ?? []).filter((settlement) =>
+          settlement.taskId !== delivery.taskId
+        )
+      }
+    };
+  }],
+  ["duplicate settlement", (state) => {
+    const delivery = requireDreamerDelivery(state);
+    const settlements = state.firstNightTaskProgress?.settlements ?? [];
+    const settlement = settlements.find((candidate) => candidate.taskId === delivery.taskId);
+    if (settlement === undefined) {
+      throw new Error("Expected Dreamer settlement");
+    }
+    return {
+      ...state,
+      firstNightTaskProgress: {
+        settlements: [...settlements, settlement]
+      }
+    };
+  }],
+  ["wrong settlement outcome", (state) => {
+    const delivery = requireDreamerDelivery(state);
+    return {
+      ...state,
+      firstNightTaskProgress: {
+        settlements: (state.firstNightTaskProgress?.settlements ?? []).map((settlement) =>
+          settlement.taskId === delivery.taskId
+            ? { ...settlement, outcomeType: "WITCH_INEFFECTIVE" as const }
+            : settlement
+        )
+      }
+    };
+  }],
+  ["wrong settlement task", (state) => {
+    const delivery = requireDreamerDelivery(state);
+    return {
+      ...state,
+      firstNightTaskProgress: {
+        settlements: (state.firstNightTaskProgress?.settlements ?? []).map((settlement) =>
+          settlement.taskId === delivery.taskId
+            ? { ...settlement, taskId: scheduledTaskId("mismatched-dreamer-task") }
+            : settlement
+        )
+      }
+    };
+  }],
+  ["wrong settlement revision", (state) => {
+    const delivery = requireDreamerDelivery(state);
+    return {
+      ...state,
+      firstNightTaskProgress: {
+        settlements: (state.firstNightTaskProgress?.settlements ?? []).map((settlement) =>
+          settlement.taskId === delivery.taskId
+            ? { ...settlement, characterStateRevision: delivery.sourceCharacterStateRevision + 1 }
+            : settlement
+        )
+      }
+    };
+  }],
+  ["settlement extra field", (state) => {
+    const delivery = requireDreamerDelivery(state);
+    return {
+      ...state,
+      firstNightTaskProgress: {
+        settlements: (state.firstNightTaskProgress?.settlements ?? []).map((settlement) =>
+          settlement.taskId === delivery.taskId
+            ? { ...settlement, storytellerNotes: "hidden" }
+            : settlement
+        )
+      }
+    };
+  }]
+];
 
 describe("private knowledge projections", () => {
   it("gives good players only their own character and no evil-team private facts", () => {
@@ -1140,6 +1368,109 @@ describe("private knowledge projections", () => {
     expect(JSON.stringify(aiView)).not.toContain("sourceImpairmentId");
     expect(JSON.stringify(aiView)).not.toContain(delivery.targetPlayerId);
   });
+
+  it("projects validated Dreamer information identically to the source player and source AI", () => {
+    const state = stateWithDreamerInformation();
+    const delivery = requireDreamerDelivery(state);
+
+    const playerView = buildPlayerPrivateKnowledgeView(state, delivery.sourcePlayerId);
+    const aiView = buildAiPrivateKnowledgeView(state, delivery.sourcePlayerId);
+
+    expect(aiView).toStrictEqual(playerView);
+    expect(aiView.dreamerInformation).toStrictEqual({
+      target: {
+        playerId: delivery.targetPlayerId,
+        seatNumber: delivery.targetSeatNumber
+      },
+      goodRole: delivery.goodRole,
+      evilRole: delivery.evilRole
+    });
+  });
+
+  it("preserves historical Dreamer delivery after later character and impairment changes", () => {
+    const state = stateWithDreamerInformation();
+    const delivery = requireDreamerDelivery(state);
+    const currentCharacterState = state.currentCharacterState;
+    const setup = state.setup;
+    const replacementSourceRole = setup?.roleCatalogSnapshot.roles.find((role) =>
+      role.defaultAlignment === "GOOD" && role.roleId !== "dreamer"
+    );
+    const replacementTargetRole = setup?.roleCatalogSnapshot.roles.find((role) => role.defaultAlignment === "EVIL");
+    if (
+      currentCharacterState === undefined ||
+      replacementSourceRole === undefined ||
+      replacementTargetRole === undefined
+    ) {
+      throw new Error("Expected later Dreamer projection source facts");
+    }
+
+    const laterRevision = currentCharacterState.revision + 1;
+    const laterState = {
+      ...state,
+      currentCharacterState: {
+        revision: laterRevision,
+        entries: currentCharacterState.entries.map((entry) => {
+          if (entry.playerId === delivery.sourcePlayerId) {
+            return {
+              ...entry,
+              role: replacementSourceRole,
+              currentAlignment: replacementSourceRole.defaultAlignment
+            };
+          }
+          if (entry.playerId === delivery.targetPlayerId) {
+            return {
+              ...entry,
+              role: replacementTargetRole,
+              currentAlignment: replacementTargetRole.defaultAlignment
+            };
+          }
+          return entry;
+        })
+      },
+      abilityImpairments: {
+        impairments: [{
+          impairmentId: abilityImpairmentId("ability-impairment-v1:later-drunk"),
+          kind: "DRUNK" as const,
+          sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE" as const,
+          sourcePlayerId: delivery.targetPlayerId,
+          affectedPlayerId: delivery.sourcePlayerId,
+          affectedSeatNumber: delivery.sourceSeatNumber,
+          affectedRole: replacementSourceRole,
+          chosenRoleId: replacementSourceRole.roleId,
+          sourceCharacterStateRevision: laterRevision
+        }]
+      }
+    } satisfies GameState;
+
+    const playerView = buildPlayerPrivateKnowledgeView(laterState, delivery.sourcePlayerId);
+    const aiView = buildAiPrivateKnowledgeView(laterState, delivery.sourcePlayerId);
+
+    expect(playerView.dreamerInformation).toStrictEqual({
+      target: {
+        playerId: delivery.targetPlayerId,
+        seatNumber: delivery.targetSeatNumber
+      },
+      goodRole: delivery.goodRole,
+      evilRole: delivery.evilRole
+    });
+    expect(aiView).toStrictEqual(playerView);
+  });
+
+  it.each(dreamerProjectionTamperingCases)(
+    "fails closed for player and AI Dreamer projection tampering: %s",
+    (_name, tamper) => {
+      const state = stateWithDreamerInformation();
+      const delivery = requireDreamerDelivery(state);
+      const tamperedState = tamper(state);
+
+      expectPrivateKnowledgeUnavailable(() =>
+        buildPlayerPrivateKnowledgeView(tamperedState, delivery.sourcePlayerId)
+      );
+      expectPrivateKnowledgeUnavailable(() =>
+        buildAiPrivateKnowledgeView(tamperedState, delivery.sourcePlayerId)
+      );
+    }
+  );
 
   it("refuses Evil Twin projection when the delivered event has not been settled", () => {
     const state = stateWithEvilTwinInformation();
