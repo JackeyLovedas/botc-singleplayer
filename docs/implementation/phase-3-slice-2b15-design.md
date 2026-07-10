@@ -1,12 +1,12 @@
-# Phase 3 Slice 2B15 Proposed Design v2: Seamstress First-Night Choice, Stable Ability Tenure, and Truth-Favoring Private Information
+# Phase 3 Slice 2B15 Proposed Design v3: Seamstress First-Night Choice, Stable Ability Tenure, and Truth-Favoring Private Information
 
-Supersedes `docs/implementation/phase-3-slice-2b15-design.md` as reviewed at `a31562b5d0751128b94b82289c2d21e954ea5ad7`.
+Amends the verified v2 design committed at `5059b49b2e7da4c6550ae513cf660f84abcb98f3` after its second independent design review.
 
 Rule evidence: `docs/rules/evidence/2B15.md`, current verdict `RULE_READY`.
 
-Prior design-review verdict: `RULE_DESIGN_FIX_REQUIRED`.
+Prior v2 design-review verdict: `RULE_DESIGN_FIX_REQUIRED`.
 
-This replacement resolves all six review findings. The architect made no file changes.
+This v3 amendment preserves all previously accepted v2 content and resolves the remaining candidate-legality, role-tenure identity, Philosopher collision, and scenario-7 traceability findings. The architect made no file changes.
 
 ## 1. Bounded scope and architecture decision
 
@@ -244,9 +244,49 @@ Invalid input writes no domain events, spends nothing, and leaves an open opport
 
 A scheduled task is one wake-up and must never identify a once-per-game ability.
 
-Maintain a rebuildable Seamstress ability-state projection derived from canonical assignment, Philosopher grant, spend, and character/ability lifecycle facts:
+Maintain a rebuildable, slice-local role-tenure and Seamstress ability-state projection derived from `CharactersAssigned`, the existing `SnakeCharmerDemonSwapApplied` role-changing event, Philosopher grant, and Seamstress spend facts. This slice does not introduce a general character-change command or canonical event.
 
 ```ts
+type SeamstressRelevantRoleId = "philosopher" | "seamstress" | "vortox";
+
+type RoleTenureStartFact =
+  | {
+      readonly kind: "CHARACTERS_ASSIGNED";
+      readonly sourceEventId: EventId;
+      readonly sourceEventSequence: number;
+      readonly characterStateRevision: 1;
+    }
+  | {
+      readonly kind: "ROLE_TENURE_TRANSITION";
+      readonly transitionFactId: RoleTenureTransitionFactId;
+      readonly sourceEventId: EventId;
+      readonly sourceEventSequence: number;
+      readonly previousCharacterStateRevision: number;
+      readonly nextCharacterStateRevision: number;
+    };
+
+type RoleTenureRecord = {
+  readonly roleTenureId: RoleTenureId;
+  readonly playerId: PlayerId;
+  readonly seatNumber: SeatNumber;
+  readonly roleId: SeamstressRelevantRoleId;
+  readonly acquiredCharacterStateRevision: number;
+  readonly endedCharacterStateRevision?: number; // first revision where inactive
+  readonly startedBy: RoleTenureStartFact;
+};
+
+type RoleTenureTransitionFact = {
+  readonly transitionFactId: RoleTenureTransitionFactId;
+  readonly sourceEventId: EventId;
+  readonly sourceEventSequence: number;
+  readonly playerId: PlayerId;
+  readonly seatNumber: SeatNumber;
+  readonly previousCharacterStateRevision: number;
+  readonly nextCharacterStateRevision: number;
+  readonly beforeRole: RoleSetupSnapshot;
+  readonly afterRole: RoleSetupSnapshot;
+};
+
 type SeamstressAbilityInstance = {
   readonly abilityInstanceId: AbilityInstanceId;
   readonly abilityRoleId: "seamstress";
@@ -266,29 +306,74 @@ type SeamstressAbilityUseEntitlement = {
 };
 ```
 
-Role tenure is derived from the canonical fact that started it, not from the current snapshot alone:
+`RoleTenureId` is a branded canonical string with this complete grammar:
 
-- Initial role tenure starts from the `CharactersAssigned` event and character-state revision `1`.
-- A future character transition that enters Seamstress starts a new tenure from that transition event and its next revision.
-- Leaving Seamstress ends the old tenure at the first revision where it is absent.
-- Alignment-only changes do not end role tenure.
-- A Philosopher grant binds to the Philosopher’s current role tenure plus its stable `grantId`.
-- Leaving and later returning to Philosopher cannot revive the old grant instance unless a future sourced lifecycle explicitly says so.
+```text
+^role-tenure-v1:seat-(0[1-9]|1[0-2]):role-(philosopher|seamstress|vortox):acquired-revision-([1-9][0-9]*)$
+```
+
+The only formatter input is:
+
+```ts
+type FormatRoleTenureIdInput = {
+  readonly seatNumber: SeatNumber;
+  readonly roleId: SeamstressRelevantRoleId;
+  readonly acquiredCharacterStateRevision: number;
+};
+```
+
+`formatRoleTenureId` requires seat `1..12`, one of the three exact role literals, and a positive integer revision. It emits a two-digit seat and a base-10 revision with no sign, whitespace, or leading zero. Initial tenure always uses revision `1`; reacquisition uses the exact `nextCharacterStateRevision` at which the role becomes current.
+
+`parseRoleTenureId` returns exactly:
+
+```ts
+type ParseRoleTenureIdResult =
+  | {
+      readonly valid: true;
+      readonly seatNumber: SeatNumber;
+      readonly roleId: SeamstressRelevantRoleId;
+      readonly acquiredCharacterStateRevision: number;
+    }
+  | { readonly valid: false; readonly reason: string };
+```
+
+Parsing must match the whole string, reject noncanonical decimal representations, and require `formatRoleTenureId(parsed) === original`. `sameRoleTenureId(left, right)` first requires both IDs to parse and round-trip, then compares all three parsed fields; because the grammar is canonical, this is also strict branded-string equality. Payload validation must compare parsed fields to the referenced tenure record, not merely check a prefix.
+
+Projection bootstrap and continuity are exact:
+
+1. When the `CharactersAssigned` envelope is applied, create one open `RoleTenureRecord` for each assigned `philosopher`, `seamstress`, or `vortox`, using seat, exact assigned role, and revision `1`. Retain the envelope `eventId` and `eventSequence` in `startedBy`; the projection therefore preserves the starting fact identity even though the existing assignment payload does not.
+2. `RoleTenureTransitionFactId` has grammar `^role-tenure-transition-v1:event-sequence-([1-9][0-9]*):seat-(0[1-9]|1[0-2]):next-revision-([1-9][0-9]*)$`. Its parser must round-trip and its parsed sequence, seat, and next revision must equal the fact fields.
+3. The sole production transition adapter in this slice consumes an exact `SnakeCharmerDemonSwapApplied` envelope. For each `sourceBefore/sourceAfter` and `targetBefore/targetAfter` pair whose role ID changed, it emits one internal `RoleTenureTransitionFact`; facts are ordered by numeric seat. `sourceEventId` and `sourceEventSequence` come from the envelope, previous/next revisions come from the payload, and `transitionFactId` is formatted from event sequence, seat, and next revision.
+4. A transition fact is valid only when `nextCharacterStateRevision === previousCharacterStateRevision + 1`, before/after snapshots are exact catalog roles, the player and seat match the corresponding before/after entries, and the role IDs differ.
+5. The reducer closes an open relevant `beforeRole` tenure at `nextCharacterStateRevision` and opens an `afterRole` tenure, when relevant, with `acquiredCharacterStateRevision = nextCharacterStateRevision`. It rejects a missing/duplicate active before tenure, duplicate new ID, revision gap, or out-of-order fact.
+6. Alignment-only state changes emit no role-tenure transition and do not close tenure. A state revision caused by another player also leaves the source tenure open.
+7. Any future production role-changing event needs a separately reviewed adapter; this design does not authorize a generic role-change event or command.
+
+A tenure is active at revision `R` exactly when `acquiredCharacterStateRevision <= R` and `endedCharacterStateRevision` is absent or `R < endedCharacterStateRevision`. Continuous activity over `[N, M]` requires the same exact `RoleTenureId`, acquisition at or before `N`, and no end revision `<= M`. Current player, seat, and role at `M` must also match the record. Leaving at revision `K` and reacquiring the same role later closes the old record and creates a new ID because the acquisition revision differs.
+
+Acceptance test 22 is a pure reducer test. It constructs two exact internal `RoleTenureTransitionFact` values using synthetic event IDs/sequences: Seamstress to a different exact catalog role at `N + 1`, then that role back to Seamstress at `N + 2`. It does not append either fact as a domain event and does not add a production character-change flow. The test proves the original ID is ended, the reacquired ID contains revision `N + 2`, and an opportunity referencing the original ID is stale.
 
 Deterministic identity:
 
 ```text
 base role abilityInstanceId
-  = seamstress-ability-instance-v1:<roleTenureId>
+  = seamstress-ability-instance-v1:ROLE_TENURE:seat-<NN>:role-seamstress:acquired-revision-<R>
 
 Philosopher-granted abilityInstanceId
-  = seamstress-ability-instance-v1:<grantId>
+  = seamstress-ability-instance-v1:PHILOSOPHER_GRANT:seat-<NN>:role-philosopher:acquired-revision-<R>:grant-from-seamstress
 
 base entitlement
   = seamstress-use-entitlement-v1:<abilityInstanceId>:BASE_ONCE_PER_GAME
 ```
 
-Formatters/parsers must use canonical fact IDs and fixed ASCII segments, never arbitrary locale formatting, time, randomness, or scheduled-task IDs.
+The base instance formatter accepts only a parsed `RoleTenureId` whose role is `seamstress`; its `<NN>` and `<R>` are copied from that ID. The Philosopher instance formatter requires both:
+
+- a parsed current source `RoleTenureId` whose role is `philosopher`; and
+- the exact existing grant ID `philosopher-grant-v1:seat-<NN>:from-seamstress`, plus a matching `PhilosopherGrantedAbility` whose `sourcePlayerId`, `sourceSeatNumber`, `sourceRole.roleId`, `chosenRoleId`, and `grantId` match the tenure holder, seat, `philosopher`, `seamstress`, and supplied grant.
+
+The Philosopher formatter requires the tenure seat and grant seat to be equal, then encodes the tenure acquisition revision and all current grant-ID discriminating fields. Its parser reconstructs both canonical inputs and round-trips them. Consequently, two grants with the current seat-plus-role `grantId` text but different Philosopher tenures produce different ability-instance IDs. `sameAbilityInstanceId` parses, round-trips, checks the source-kind branch, and compares every encoded field.
+
+Formatters/parsers use only these canonical typed inputs and fixed ASCII segments, never arbitrary locale formatting, time, randomness, or scheduled-task IDs.
 
 At opportunity creation revision `N`, the instance and entitlement must be active and unspent. At settlement revision `M`, validation requires the same `sourceRoleTenureId` and `abilityInstanceId` to have remained continuously active over `[N, M]`. Merely finding the same player, seat, and role again at `M` is insufficient. If the source left and reacquired the role or grant, the old opportunity is stale and the new tenure has a different instance ID.
 
@@ -433,7 +518,7 @@ type SeamstressSourceEffectiveness =
     };
 ```
 
-Represented impairments must affect the same player/seat and current source tenure at `M`; stale impairment from an earlier tenure cannot affect a reacquired instance. Evidence is sorted by stable ASCII impairment ID. `NOT_PROVEN` is not synonymous with effective.
+Represented impairments used for Seamstress effectiveness must affect the same Seamstress-source player, seat, and source tenure at `M`; stale impairment from an earlier tenure cannot affect a reacquired instance. Evidence is sorted by stable ASCII impairment ID. `NOT_PROVEN` is not synonymous with effective.
 
 Vortox is a separate truth constraint:
 
@@ -449,7 +534,7 @@ type SeamstressDeliveryConstraint =
     };
 ```
 
-The Vortox branch is allowed only when the current represented state at `M` has an ability-active Vortox tenure under the currently modeled facts. A represented active impairment disables that constraint. Death and other unmodeled Vortox-disablement scenarios are not claimed.
+The Vortox branch is allowed only when the current represented state at `M` has an ability-active Vortox tenure under the currently modeled facts. A represented impairment disables that Vortox constraint only when its affected player ID, affected seat, affected role snapshot (`roleId === "vortox"`), and applied revision all match the current Vortox player and exact Vortox `RoleTenureId`; the applied revision must lie within that tenure and be no later than `M`. An impairment of the Seamstress source, another player, or an earlier Vortox tenure never disables the current Vortox constraint. Death and other unmodeled Vortox-disablement scenarios are not claimed.
 
 Candidate truth and delivery remain distinct:
 
@@ -460,19 +545,34 @@ type SeamstressAnswerCandidate = {
   readonly truthValue: "TRUE" | "FALSE";
 };
 
+type SeamstressCandidateLegalityKnowledge =
+  | {
+      readonly kind: "COMPLETE";
+      readonly legalCandidateIds:
+        | readonly [CandidateId]
+        | readonly [CandidateId, CandidateId];
+    }
+  | {
+      readonly kind: "PARTIAL";
+      readonly knownLegalCandidateIds: readonly [CandidateId];
+      readonly unresolvedCandidateIds: readonly [CandidateId];
+    };
+
 type SeamstressAnswerCandidateSet = {
   readonly candidateModelVersion: "seamstress-answer-candidates-v1";
   readonly candidates: readonly [SeamstressAnswerCandidate, SeamstressAnswerCandidate];
-  readonly legalCandidateIds: readonly CandidateId[];
+  readonly legalityKnowledge: SeamstressCandidateLegalityKnowledge;
   readonly selectedCandidateId: CandidateId;
 };
 ```
 
-Candidate order is fixed as `YES`, then `NO`. IDs derive from the opportunity ID and answer literal. Exactly one candidate is true relative to the comparison snapshot.
+Candidate order is fixed as `YES`, then `NO`. IDs derive from the opportunity ID and answer literal. Exactly one candidate is true relative to the comparison snapshot. Legality-knowledge variants have disjoint exact key sets.
 
-- With `VORTOX_FALSE_REQUIRED`, only the false candidate is legal and selected.
-- Otherwise, both candidates are rule-permitted when `KNOWN_INEFFECTIVE`, but the truth-favoring policy selects the true candidate.
-- With `NOT_PROVEN`, the true candidate is selected because it is legal whether the source is effective or impaired. The event must not assert that the false candidate was or was not also legal under an unmodeled effect.
+- With `VORTOX_FALSE_REQUIRED`, legality is `COMPLETE`, `legalCandidateIds` contains exactly the false candidate, and the false candidate is selected. This applies even when the Seamstress source is represented as impaired.
+- Without a Vortox constraint and with `KNOWN_INEFFECTIVE`, legality is `COMPLETE`, `legalCandidateIds` contains both candidate IDs in candidate-tuple order, and the true candidate is selected.
+- Without a Vortox constraint and with `NOT_PROVEN`, legality is `PARTIAL`, `knownLegalCandidateIds` contains exactly the true candidate, `unresolvedCandidateIds` contains exactly the false candidate, and the true candidate is selected.
+
+For `COMPLETE`, all listed IDs must be unique candidates; every candidate omitted from `legalCandidateIds` is known illegal. For `PARTIAL`, known-legal and unresolved tuples must be disjoint and together cover both candidates. The selected ID must be legal under `COMPLETE` or known legal under `PARTIAL`; an unresolved candidate can never be selected by this policy.
 
 Reliability and simulation reason are orthogonal:
 
@@ -504,7 +604,7 @@ The exact delivered payload includes:
 
 ## 9. Runtime, prospective, batch, and replay validation
 
-Runtime validation must enforce exact enumerable keys, dense arrays, exact literals, exact tuples, branded-ID parsers, numeric seats, positive revisions, and version-specific discriminated unions. No excess hidden fields are accepted.
+Runtime validation must enforce exact enumerable keys, dense arrays, exact literals, exact tuples, the complete canonical `RoleTenureId`, transition-fact, ability-instance, and other branded-ID parsers, numeric seats, positive revisions, and version-specific discriminated unions. No excess hidden fields are accepted.
 
 Prospective validation of the four-event batch requires:
 
@@ -520,7 +620,7 @@ Prospective validation of the four-event batch requires:
 - represented impairments match stored active facts for that tenure;
 - effectiveness is never serialized as `EFFECTIVE` in this model;
 - Vortox constraint matches represented canonical facts at `M`;
-- candidate truth, legal set, selected candidate, reliability, simulation reason, and delivered answer agree;
+- candidate truth, exact `COMPLETE`/`PARTIAL` legality knowledge, selected candidate, reliability, simulation reason, and delivered answer agree;
 - settlement outcome is `SEAMSTRESS_INFORMATION_DELIVERED` at `M`.
 
 Replay must reject:
@@ -534,7 +634,7 @@ Replay must reject:
 - delivery without exactly one matching choice and spend;
 - reordered, incomplete, overlong, mixed-batch, or cross-opportunity chains;
 - target tuple/order changes across events;
-- mismatched `N`, `M`, source tenure, task, source, candidate, or answer;
+- mismatched `N`, `M`, parsed source tenure, tenure start/transition facts, task, source, candidate legality knowledge, or answer;
 - settlement without delivery or delivery without settlement;
 - an old opportunity settling after its source tenure ended, even if the same player later reacquired Seamstress;
 - later replay-time state being used to recompute a stored delivery.
@@ -607,7 +707,7 @@ All task, opportunity, source, tenure, instance, entitlement, target, `N`, and `
 Only the source receives targets and `deliveredAnswer`. Public state and all other player views receive neither. Player and AI private views must hide:
 
 - target alignments;
-- `ruleCorrectAnswer` and candidate truth values;
+- `ruleCorrectAnswer`, candidate truth values, and candidate legality knowledge;
 - represented impairment IDs/kinds;
 - `KNOWN_INEFFECTIVE` versus `NOT_PROVEN`;
 - Vortox identity or constraint metadata;
@@ -641,23 +741,23 @@ Targets and atomicity:
 
 Ability identity and revisions:
 
-15. `AbilityInstanceId` is stable across scheduled tasks and contains no scheduled-task identity.
-16. Base and Philosopher-granted Seamstress instances and spends are independent.
+15. Exact RoleTenure, transition-fact, base-instance, and Philosopher-instance formatter/parser round trips reject noncanonical seats, roles, revisions, leading zeros, mismatched grant seats/fields, and hybrid source-kind IDs; no instance contains scheduled-task identity.
+16. Base and Philosopher-granted Seamstress instances and spends are independent; identical current seat-plus-role grant text under two different Philosopher tenures produces distinct instance IDs.
 17. A valid represented-impaired use spends the base entitlement exactly once.
 18. Duplicate spend or a second ordinary opportunity for the spent entitlement rejects.
 19. V1 and V2 `DEFER` emit their exact two-event batches and leave the entitlement unspent.
 20. Target alignment facts at `M` drive comparison while opportunity facts remain bound to `N`.
-21. A pure tenure/revision test permits `M > N` when target state changed and the source instance remained continuous.
-22. A source leaving and reacquiring Seamstress receives a new instance; the old opportunity rejects even if player/seat/role snapshots again look equal.
+21. A pure tenure/revision test permits `M > N` when target state changed and the exact source tenure record remained continuously active.
+22. The precisely defined pure transition-fact reducer test closes the original Seamstress tenure at `N + 1`, creates a new tenure at reacquisition revision `N + 2`, and rejects the old opportunity even though player/seat/role snapshots again look equal; no production role-change event is added.
 
 Information behavior:
 
 23. Equal native current alignments store rule-correct `YES`; mixed stores `NO`.
-24. Represented Philosopher-duplicate impairment records `KNOWN_INEFFECTIVE`, still spends, and truth-favoring delivery selects the correct candidate.
-25. Without represented impairment, effectiveness is `NOT_PROVEN`; truth-favoring delivery selects the correct candidate.
-26. Effective represented Vortox selects and delivers the false candidate for both correct `YES` and correct `NO`.
-27. Vortox still selects false when the source has a represented impairment.
-28. Comparison, effectiveness, constraint, candidate truth, reliability, simulation reason, and delivered answer remain separately validated.
+24. Represented Philosopher-duplicate impairment records `KNOWN_INEFFECTIVE`, still spends, produces `COMPLETE` legality with both candidates legal, and selects the true candidate.
+25. Without represented impairment, effectiveness is `NOT_PROVEN`, legality is `PARTIAL` with true known legal and false unresolved, and the true candidate is selected.
+26. Effective represented Vortox produces `COMPLETE` false-only legality and selects the false candidate for both correct `YES` and correct `NO`.
+27. Vortox still produces `COMPLETE` false-only legality when the Seamstress source is represented as impaired. A represented impairment disables Vortox only when it matches the current Vortox player and exact Vortox tenure; wrong-player and stale-tenure impairments do not.
+28. Comparison, effectiveness, Vortox constraint, candidate truth, legality knowledge, reliability, simulation reason, and delivered answer remain separately validated.
 
 Projection and replay:
 
@@ -674,19 +774,19 @@ No acceptance test may assert No Dashii adjacency, registration, death/revival, 
 
 Expected mapping of the 39 evidence scenarios:
 
-- Fully covered in the current modeled subset: 1–7, 11–14, 19, 21–22, 27, 29–30, 35, 38.
-- Partially covered: 8 (fixed roster has no life state), 15 (N/M resolver contract without a general alignment-change command), 20 (spend state without other-night scheduling), 23 (stored character/alignment history only), 28 (truth-favoring poison-safe behavior without continuous-poison derivation), 34 (first-night Philosopher-granted use only), 36 (identity is alignment-independent but no general alignment-change flow).
+- Fully covered in the current modeled subset: 1–6, 11–14, 19, 21–22, 27, 29–30, 35, 38.
+- Partially covered: 7 (`DEFER` non-spend and unspent-entitlement behavior only; later-night recurrence is absent), 8 (fixed roster has no life state), 15 (N/M resolver contract without a general alignment-change command), 20 (spend state without other-night scheduling), 23 (stored character/alignment history only), 28 (truth-favoring poison-safe behavior without continuous-poison derivation), 34 (first-night Philosopher-granted use only), 36 (identity is alignment-independent but no general alignment-change flow).
 - Unsupported: 9–10, 16–18, 24–26, 31–33, 37.
 - Scenario 39 is a rule-review prohibition, not implementation coverage. The executable positive assertion is scenario 27: a represented drunk legal use is spent.
 
-The PR must not describe scenarios 15, 23, 28, 34, 36, or 39 as fully implemented.
+The PR must not describe scenarios 7, 15, 23, 28, 34, 36, or 39 as fully implemented.
 
 ## 14. Implementation surface, coverage matrix, and slice limit
 
 Expected implementation surface:
 
 - `packages/domain-core/src/seamstress.ts` and focused tests.
-- Branded role-tenure, ability-instance, entitlement, and candidate IDs in the existing ID module.
+- Branded role-tenure, transition-fact, ability-instance, entitlement, and candidate IDs; the slice-local tenure reducer; bootstrap from `CharactersAssigned`; and the sole production adapter from existing `SnakeCharmerDemonSwapApplied`.
 - Public capability event/state and exact event unions.
 - V1/V2 first-night opportunity types, parsers, validators, clone, equality, creation, close, and replay.
 - Philosopher-granted Seamstress opportunity/source support.
@@ -696,7 +796,7 @@ Expected implementation surface:
 - Test-harness builders.
 - `docs/rules/ROLE_COVERAGE_MATRIX.md`, implementation status, and `docs/agent-loop/AUTOPILOT_LOG.md`.
 
-Do not add a No Dashii continuous-rule implementation in these files.
+Do not add a No Dashii continuous-rule implementation or a general role-change production command/event in these files.
 
 Coverage-matrix delta after passing all gates:
 
@@ -718,10 +818,10 @@ Before implementation, the independent reviewer must inspect:
 - official States, Glossary, Abilities, Vortox, Philosopher, and nightsheet evidence;
 - `docs/rules/evidence/2B15.md`;
 - the role coverage matrix;
-- this complete v2 design;
+- this complete v3 design;
 - current V1 opportunity/defer code and the Philosopher grant/impairment/task insertion code.
 
-This v2 deliberately makes no No Dashii rule claim, so the current slice does not require new No Dashii research. Any attempt to implement adjacency or continuous poison changes that fact and must return to rule research before review can pass.
+This v3 deliberately makes no No Dashii rule claim, so the current slice does not require new No Dashii research. Any attempt to implement adjacency or continuous poison changes that fact and must return to rule research before review can pass.
 
 Only `RULE_DESIGN_PASS` authorizes implementation. `RULE_DESIGN_FIX_REQUIRED` requires another design revision; a new rule conflict or unavailable mandatory source maps to `HUMAN_BLOCKED`.
 
@@ -749,12 +849,12 @@ Primary risks:
 - making command success reveal drunk, poison, No Dashii, or Vortox state;
 - calling absence of stored impairment `EFFECTIVE`;
 - deriving ability identity from a scheduled task;
-- accepting an old opportunity after source leave/reacquire;
+- accepting an old opportunity after source leave/reacquire or allowing a Philosopher grant collision across source tenures;
 - binding target comparison to `N` or settlement to a different revision than `M`;
 - spending before target validation or partially appending the batch;
 - exposing Vortox, impairment, alignments, correct answer, or internal IDs in private/player/AI views;
 - replacing one historical delivery instead of preserving an array;
-- overstating R02, R05, scenario 15, scenario 23, or scenario 39.
+- overstating R02, R05, scenario 7, scenario 15, scenario 23, or scenario 39.
 
 Stop immediately if:
 
@@ -762,6 +862,7 @@ Stop immediately if:
 - registration, life, Traveller, Barista, or other-night behavior becomes necessary to make a test pass;
 - V1 replay cannot remain byte-for-shape exact;
 - source-tenure continuity cannot distinguish leave/reacquire;
+- implementation would require a new general-purpose role-change event rather than the exact internal reducer and existing-event adapter defined here;
 - any legal command’s success, error, receipt shape, or event count depends on hidden modifier state;
 - canonical facts would need to claim `EFFECTIVE` without proof;
 - an unsafe event-history rewrite is proposed;
