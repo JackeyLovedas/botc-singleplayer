@@ -1,16 +1,19 @@
 # Current Task
 
-## Next Slice Rule Research Pending
+## Slice 2B14 Seamstress Rule Evidence Ready
 
 - There is no open slice pull request.
 - Slice 2B13 is accepted on `main` and tagged `phase-3-slice-2b13-dreamer-action-information-skeleton`.
-- Candidate label `2B14` may be used for the next bounded proposal, but its scope is intentionally unset.
-- No external rule research has been performed for the candidate next slice yet.
-- The controller must first launch the read-only `rule-researcher` for fresh source verification.
+- The read-only rule-researcher completed fresh live-source research for candidate Slice `2B14`, involving Seamstress only.
+- The sole writer materialized the sourced report at `docs/rules/evidence/2B14.md`.
+- Research verdict: `RULE_READY`.
+- Rule coverage remains `SKELETON`; no role implementation status was advanced.
+- One bounded architect design is now pending.
 
 ## Gate
 
-- Required order: rule research -> materialized `docs/rules/evidence/<slice-id>.md` -> `RULE_READY` -> architect design -> independent `RULE_DESIGN_PASS` -> implementation.
+- Completed for 2B14: rule research -> materialized evidence -> `RULE_READY`.
+- Remaining order: architect design -> independent source/evidence review -> `RULE_DESIGN_PASS` -> implementation.
 - `RULE_CONFLICT` or `RULE_SOURCE_UNAVAILABLE` immediately maps to `HUMAN_BLOCKED`.
-- Do not let the architect design, create a feature branch, edit production code or tests, open a pull request, or begin Slice 2B14 implementation while any gate is missing.
+- Do not create a feature branch, edit production code or tests, open a pull request, or begin Slice 2B14 implementation before `RULE_DESIGN_PASS`.
 - Preserve one writer and one open slice pull request at a time.

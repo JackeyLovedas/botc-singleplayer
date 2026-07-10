@@ -5,6 +5,6 @@
   "reviewedHead": "a7adf6316140275afbf32681e6f141cb528c3546",
   "repairRound": 0,
   "completedSlices": ["2B13"],
-  "lastAction": "Persisted the mandatory rule-truth governance on main; next-slice design is blocked pending read-only rule research, materialized rule evidence, RULE_READY, architect design, and RULE_DESIGN_PASS.",
+  "lastAction": "Materialized live-source Seamstress rule evidence for candidate Slice 2B14 at docs/rules/evidence/2B14.md with researcher verdict RULE_READY and coverage SKELETON; bounded architect design is now pending.",
   "lastError": null
 }
