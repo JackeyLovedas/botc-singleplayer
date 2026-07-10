@@ -27,20 +27,23 @@
 
 ## Current Delivery
 
-- Candidate slice: 2B16, Cerenovus rule-evidence and design gate.
-- Branch: clean `main`; no feature branch or open slice PR.
+- Candidate slice: 2B16, Cerenovus rule-design gate.
+- Branch: `main`; no feature branch or open slice PR.
 - Governance base and research boundary: `7d8694f21d0f6d6ea6226b385bd893dd42754188`.
+- Evidence commit base: `00c3c01e35b2a117db28a72e007e6c7079bb9990`.
 - Fresh evidence: `docs/rules/evidence/2B16.md`, SHA-256 `6306ec6c008c72c276ccbf1fcddc0b14dd299ae5ded015c1bb55b6693aff2ef9`.
-- Status: `RULE_READY`; all required sources were available, `snapshotUsed=false`, `unresolvedConflicts=[]`, and coverage is `PARTIAL`.
-- Next authorized stage: one bounded read-only architect. No implementation branch, production change, test change, or PR is authorized.
+- Proposed design: `docs/implementation/phase-3-slice-2b16-design.md`, SHA-256 `82cf080b1eceffbf6ec5efaf6bf38c2e5164413620f7e1185e3d616f2c56adaf`.
+- Status: `READY_FOR_RULE_DESIGN_REVIEW`; no independent `RULE_DESIGN_PASS` exists yet, and coverage remains `PARTIAL`.
+- Next authorized stage: one bounded independent read-only rule-design review. No implementation branch, production change, test change, coverage-matrix change, or PR is authorized.
 - This controlled round has `maxSlices=1`, `maxRepairRounds=2`, no heartbeat, and no 2B17 work.
 
 ## Rule And Design Gate
 
 - Slice 2B16 evidence is fresh, complete, and ends in `RULE_READY`.
-- The impaired-source hard gate is explicit: choice and private notification are simulated, while real madness requirement, marker, and execution authority are absent.
-- The stale `SV-CERENOVUS-POISONED-NO-MADNESS` no-notification clause is non-authoritative and must be replaced by the sourced split.
-- No Slice 2B16 architecture or design review exists yet. A materialized bounded design and complete independent `RULE_DESIGN_PASS` are required before implementation.
+- The proposed design is materialized and ends in `READY_FOR_RULE_DESIGN_REVIEW`.
+- Its bounded four-event contract keeps effective/impaired accepted disclosures and target notifications branch-invariant while storing represented resolution truth canonically.
+- Effective requirement data is historical creation context only; madness judgment, enforcement, execution, death, recurrence, gained abilities, and general lifecycle processing remain out of scope.
+- A complete independent `RULE_DESIGN_PASS` on the exact committed design is required before implementation.
 
 ## Implemented 2B15 Boundary
 
@@ -78,8 +81,8 @@
 
 ## Next Gate
 
-- Launch one bounded read-only architect for Slice 2B16 only.
-- Do not create a feature branch, edit production code or tests, or open a PR before the design is materialized and independently receives `RULE_DESIGN_PASS`.
+- Launch one bounded independent read-only rule-design reviewer for Slice 2B16 only.
+- Do not create a feature branch, edit production code or tests, change the coverage matrix, or open a PR before the exact design independently receives `RULE_DESIGN_PASS` and controller authorization.
 - Do not begin Slice 2B17 in this controlled round.
 
 ## Loop Limits
