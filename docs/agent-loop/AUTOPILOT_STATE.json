@@ -1,10 +1,10 @@
 {
-  "status": "COMPLETED",
+  "status": "RUNNING",
   "currentPR": null,
   "currentBranch": "main",
-  "reviewedHead": "6020dd9849ca164880975b9c5c39f5639f6a68c9",
-  "repairRound": 2,
+  "reviewedHead": null,
+  "repairRound": 0,
   "completedSlices": ["2B13", "2B14", "2B15"],
-  "lastAction": "PR #17 at exact reviewed HEAD 6020dd9849ca164880975b9c5c39f5639f6a68c9 received controller-collected PASS, CODE_REVIEW_PASS, and RULE_REVIEW_PASS and all four required CI checks succeeded; it merged as ee77565e1935701084b51ae7d4dd8764023d2352, the remote feature branch was deleted, and accepted tag phase-3-slice-2b15-seamstress-first-night-choice-information was pushed to that merge. This governed run completed its maximum three slices (2B13, 2B14, 2B15) and is paused; do not start or design another slice.",
+  "lastAction": "Governance hardening is running on main before candidate 2B16. The audit-chain change must be merged/pushed and CI for that exact governance commit must pass before any 2B16 rule research, design, feature branch, production, or test work; no 2B17 work is authorized in this maxSlices=1 round.",
   "lastError": null
 }

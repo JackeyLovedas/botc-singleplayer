@@ -21,15 +21,73 @@
 
 ## Full Gates
 - Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm test:coverage`.
-- Merge only when the independent reviewer passes, required CI is green, reviewed HEAD equals PR HEAD, and the worktree is clean.
+- Merge only when the frozen final feature HEAD has green required CI, the complete independent final-review report passes, both required GitHub audit comments have been re-read and verified, reviewed HEAD equals PR HEAD, no blocker remains, and the worktree is clean.
 
 ## Agent Workflow
 - Controller coordinates; `rule-researcher`, `architect`, and `reviewer` are read-only; `implementer` is the sole writer.
+- The controller must not author, rewrite, summarize into, synthesize, or infer `PASS`, `CODE_REVIEW_PASS`, or `RULE_REVIEW_PASS`; only the complete output of the independent read-only reviewer can supply final-review verdicts.
 - `.codex/config.toml` remains capped at `max_threads = 3` and `max_depth = 1`; the four configured roles run sequentially whenever the mandatory gates require it.
 - Keep one bounded slice, one writing agent, one feature branch, and one open slice PR at a time.
 - Do not merge a new PR or begin the next slice before review and gates pass.
 - Stop the affected feature on unresolved rule conflict, unsafe history rewrite, permissions failure, or repeated identical failure.
 - Follow `docs/agent-loop/REVIEW_PROTOCOL.md`; record progress in `docs/agent-loop/AUTOPILOT_LOG.md`.
+
+## Final Review Audit Chain
+
+### Complete Independent Output
+- A final review is valid only when one independent read-only reviewer returns one complete, untruncated report containing every field below:
+  - `reviewedPR`;
+  - `reviewedHead`;
+  - `reviewTimestamp`;
+  - `reviewScope`;
+  - `productionFilesReviewed`;
+  - `testFilesReviewed`;
+  - `ruleEvidenceReviewed`;
+  - `findings`;
+  - `codeVerdict`;
+  - `ruleVerdict`;
+  - `remainingBlockers`.
+- `codeVerdict` is exactly `CODE_REVIEW_PASS`, `CODE_REVIEW_FIX_REQUIRED`, or `HUMAN_BLOCKED`.
+- `ruleVerdict` is exactly `RULE_REVIEW_PASS`, `RULE_REVIEW_FIX_REQUIRED`, or `HUMAN_BLOCKED`.
+- Missing fields, omitted file lists, truncated output, an unknown verdict, or an unavailable report never passes. A merge-pass condition requires both pass verdicts and an empty `remainingBlockers`; the controller must not manufacture a separate `PASS` conclusion.
+
+### Freeze Before Review
+1. Finalize all production code, tests, documentation, generated artifacts, and the complete PR body.
+2. Push the final feature HEAD, wait for all CI associated with that exact HEAD to complete, and require every merge-gating check to succeed.
+3. Freeze the feature branch, then give that exact PR and HEAD to the independent read-only reviewer.
+4. Do not commit after a passing review. Any commit after either pass verdict invalidates the report and both audit comments and requires fresh CI plus a new complete independent review on the new HEAD.
+
+### GitHub Audit Comments
+- After receiving the complete reviewer output, publish it verbatim to the PR twice. The controller may prepend only the required marker; it must not edit, reflow, summarize, or truncate the report below it.
+- The code-review comment marker is exactly:
+
+```text
+<!-- BOTC_FINAL_CODE_REVIEW
+reviewedHead=<exact SHA>
+-->
+```
+
+- The rule-review comment marker is exactly:
+
+```text
+<!-- BOTC_FINAL_RULE_REVIEW
+reviewedHead=<exact SHA>
+-->
+```
+
+- Re-read both comments from GitHub before merge. Verify both exist, each contains the complete report, each marker and report `reviewedHead` equal the current PR HEAD, `codeVerdict` is `CODE_REVIEW_PASS`, `ruleVerdict` is `RULE_REVIEW_PASS`, and `remainingBlockers` is empty.
+- GitHub automatic review, check summaries, approvals, or generated text are supplemental and cannot replace either independent-review comment.
+
+### Post-Merge Review Archive
+- After merge, re-read the two original comments from GitHub and archive them only in the post-merge docs-only closeout commit as:
+  - `docs/reviews/pr-<PR>-code-review-final.md`;
+  - `docs/reviews/pr-<PR>-rule-review-final.md`.
+- Each archive records PR number, frozen feature HEAD, merge SHA, original comment URL, original comment timestamp, and SHA-256 of the exact original UTF-8 comment body. Preserve the original body verbatim in a clearly delimited section; do not normalize, repair, summarize, or reconstruct it from local memory.
+
+### CI Provenance
+- Record `productHeadCI`, `mergeCommitCI`, and `closeoutCommitCI` separately, each with its exact commit SHA, run URL or identifier, status, and scope.
+- `productHeadCI` is the required product gate for the frozen feature HEAD. `mergeCommitCI` is evidence only for the exact merge commit. `closeoutCommitCI` is evidence only for the exact post-merge closeout commit.
+- Never inherit CI status across commits or claim that a closeout commit has full product CI unless an independent CI record exists for that exact closeout commit.
 
 ## Mandatory Rule-Truth Order
 1. The read-only `rule-researcher` checks `docs/rules/USER_OVERRIDES.md`, the user-specified Chinese Wiki, the official BOTC Wiki, and the official nightsheet for the proposed slice.

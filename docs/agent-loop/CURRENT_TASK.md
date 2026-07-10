@@ -1,29 +1,24 @@
 # Current Task
 
-## No Active Slice — Three-Slice Autopilot Limit Reached
+## Governance Hardening Before Candidate 2B16
 
-- There is no active slice pull request or feature branch; the working branch is `main`.
-- PR #17 (`https://github.com/JackeyLovedas/botc-singleplayer/pull/17`) was reviewed at exact HEAD `6020dd9849ca164880975b9c5c39f5639f6a68c9`.
-- The controller-collected independent reviewer result was `PASS`, `CODE_REVIEW_PASS`, and `RULE_REVIEW_PASS` on that exact HEAD.
-- All four required PR #17 CI checks succeeded before merge.
-- PR #17 merged as `ee77565e1935701084b51ae7d4dd8764023d2352`.
-- Accepted tag `phase-3-slice-2b15-seamstress-first-night-choice-information` points to that merge commit and is present locally and remotely.
-- The remote feature branch `phase-3/seamstress-first-night-choice-information` was deleted.
-- Slice 2B15 is accepted with conservative overall Seamstress coverage `PARTIAL`, never `COMPLETE`.
-- This governed run completed its maximum three slices: 2B13, 2B14, and 2B15.
+- Active work is limited to the review audit-chain governance files on clean `main` from `4fe2639ee1ff70f2e6d2aee6cea457757945a2a0`.
+- There is no active slice PR or feature branch, and no slice implementation is authorized by this task.
+- The governance change defines complete independent reviewer output, frozen-head ordering, two verbatim GitHub audit comments, post-merge comment archives, and commit-specific CI provenance.
+- `maxSlices = 1` for this controlled round.
+- `maxRepairRounds = 2` for the one permitted slice PR in this round.
+- Heartbeat is disabled. Do not create or schedule a heartbeat, recurring monitor, or background continuation.
 
-## Final Gate Record
+## Required Governance Gate
 
-- Focused repair suites: 2 files / 187 tests passed.
-- Windows-compatible application package command: 3 files / 173 tests passed.
-- `pnpm typecheck` and `pnpm lint` passed.
-- `pnpm test`: 21 files / 717 tests passed.
-- `pnpm test:coverage`: 21 files / 717 tests passed.
-- Coverage: 85.04% statements/lines, 78.12% branches, 97.58% functions.
-- `git diff --check`, strict control JSON validation, deterministic primitive scan, exact reviewed-head equality, required CI, merge, tag, and remote-branch deletion checks passed.
+1. Modify only the five authorized governance/control files.
+2. Commit and push the governance hardening to `main`.
+3. CI for that exact governance commit must complete successfully before any candidate 2B16 rule research, evidence work, design, feature branch, production change, or test change begins.
+4. A passing earlier product, merge, or closeout commit does not satisfy CI for the new governance commit.
 
-## Pause Condition
+## Prohibited Work
 
-- Controller status is `COMPLETED`, the established stopped state for this 3/3 run.
-- Do not research, design, branch, implement, review, or open a pull request for another slice.
-- A future slice requires a new explicit user goal or controller authorization; no next-slice scope is implied by this closeout.
+- Do not start 2B16 rule research, design, implementation, branch creation, or PR creation during this governance-hardening task.
+- Do not infer the 2B16 scope before the exact governance commit is green.
+- Do not start, research, design, or implement 2B17 in this round under any condition.
+- Do not touch production code, tests, rule evidence, or coverage statuses beyond the single authorized wording correction in `docs/rules/ROLE_COVERAGE_MATRIX.md`.
