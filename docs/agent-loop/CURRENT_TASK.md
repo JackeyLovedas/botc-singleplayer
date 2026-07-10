@@ -1,24 +1,31 @@
 # Current Task
 
-## Governance Hardening Before Candidate 2B16
+## Slice 2B16 RULE_READY — Awaiting Architect
 
-- Active work is limited to the review audit-chain governance files on clean `main` from `4fe2639ee1ff70f2e6d2aee6cea457757945a2a0`.
-- There is no active slice PR or feature branch, and no slice implementation is authorized by this task.
-- The governance change defines complete independent reviewer output, frozen-head ordering, two verbatim GitHub audit comments, post-merge comment archives, and commit-specific CI provenance.
-- `maxSlices = 1` for this controlled round.
-- `maxRepairRounds = 2` for the one permitted slice PR in this round.
-- Heartbeat is disabled. Do not create or schedule a heartbeat, recurring monitor, or background continuation.
+- Candidate role: `Cerenovus / 洗脑师`.
+- Complete fresh rule evidence: `docs/rules/evidence/2B16.md`.
+- Evidence SHA-256: `6306ec6c008c72c276ccbf1fcddc0b14dd299ae5ded015c1bb55b6693aff2ef9`.
+- Rule-research verdict: `RULE_READY`.
+- `unresolvedConflicts = []`, `snapshotUsed = false`, and `coverageStatus = PARTIAL`.
+- All required Chinese, official, repository-override, and nightsheet sources were available with exact revisions and hashes recorded.
+- There is no active feature branch, PR, architecture, reviewed design, production change, or test change for Slice 2B16.
 
-## Required Governance Gate
+## Confirmed Rule Boundary
 
-1. Modify only the five authorized governance/control files.
-2. Commit and push the governance hardening to `main`.
-3. CI for that exact governance commit must complete successfully before any candidate 2B16 rule research, evidence work, design, feature branch, production change, or test change begins.
-4. A passing earlier product, merge, or closeout commit does not satisfy CI for the new governance commit.
+- An impaired Cerenovus still makes and records a legal-looking choice and the selected target receives the ordinary private notification, but no real madness requirement, effective marker, or execution authority exists.
+- The stale `SV-CERENOVUS-POISONED-NO-MADNESS` no-notification clause must be replaced by the reviewed simulated-notification split.
+- The logical duration is next day through the following night, ending at dawn; physical marker transfer must not shorten it.
+- Ordinary selected characters are on-script Townsfolk or Outsiders, in or out of play. Self and dead targets are legal. Traveller players are legal targets but cannot receive the execution penalty, and Traveller characters are not ordinary selected good characters. The Goblin jinx remains out of scope.
 
-## Prohibited Work
+## Next Gate
 
-- Do not start 2B16 rule research, design, implementation, branch creation, or PR creation during this governance-hardening task.
-- Do not infer the 2B16 scope before the exact governance commit is green.
-- Do not start, research, design, or implement 2B17 in this round under any condition.
-- Do not touch production code, tests, rule evidence, or coverage statuses beyond the single authorized wording correction in `docs/rules/ROLE_COVERAGE_MATRIX.md`.
+1. Launch at most one bounded read-only architect using only the materialized evidence and current repository boundary.
+2. Materialize the proposed design without creating a feature branch or editing production code or tests.
+3. Require a complete independent `RULE_DESIGN_PASS` before any implementation authorization.
+
+## Round Limits
+
+- `maxSlices = 1`; this round may cover only Slice 2B16.
+- `maxRepairRounds = 2` for a future Slice 2B16 PR.
+- Heartbeat remains disabled.
+- Do not start, research, design, or implement 2B17 in this round.

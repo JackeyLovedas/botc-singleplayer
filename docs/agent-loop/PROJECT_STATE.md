@@ -27,23 +27,20 @@
 
 ## Current Delivery
 
-- No active slice or pull request.
-- Branch: clean `main`, synchronized from merge commit `ee77565e1935701084b51ae7d4dd8764023d2352`.
-- Accepted PR: #17 (`https://github.com/JackeyLovedas/botc-singleplayer/pull/17`).
-- Exact reviewed PR HEAD: `6020dd9849ca164880975b9c5c39f5639f6a68c9`.
-- Controller-collected independent review: `PASS`, `CODE_REVIEW_PASS`, and `RULE_REVIEW_PASS` on that exact HEAD.
-- Latest accepted slice merge: `ee77565e1935701084b51ae7d4dd8764023d2352` (PR #17).
-- Accepted tag: `phase-3-slice-2b15-seamstress-first-night-choice-information`, pointing to the merge commit locally and remotely.
-- The remote feature branch `phase-3/seamstress-first-night-choice-information` is deleted.
-- Status: `COMPLETED`; this governed run accepted slices 2B13, 2B14, and 2B15 and reached its maximum 3/3 slice limit.
+- Candidate slice: 2B16, Cerenovus rule-evidence and design gate.
+- Branch: clean `main`; no feature branch or open slice PR.
+- Governance base and research boundary: `7d8694f21d0f6d6ea6226b385bd893dd42754188`.
+- Fresh evidence: `docs/rules/evidence/2B16.md`, SHA-256 `6306ec6c008c72c276ccbf1fcddc0b14dd299ae5ded015c1bb55b6693aff2ef9`.
+- Status: `RULE_READY`; all required sources were available, `snapshotUsed=false`, `unresolvedConflicts=[]`, and coverage is `PARTIAL`.
+- Next authorized stage: one bounded read-only architect. No implementation branch, production change, test change, or PR is authorized.
+- This controlled round has `maxSlices=1`, `maxRepairRounds=2`, no heartbeat, and no 2B17 work.
 
 ## Rule And Design Gate
 
-- Fresh live-source evidence: `docs/rules/evidence/2B15.md`, verdict `RULE_READY`, no unresolved external-source conflict.
-- Reviewed design v3: `docs/implementation/phase-3-slice-2b15-design.md`, SHA-256 `a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52`.
-- Corrected v3.1 erratum: `docs/implementation/phase-3-slice-2b15-design-erratum-v3.1.md`, SHA-256 `9d421f44a538e4599c03bccd7f631da18866aa6e709d28735e724af79d130528`.
-- Renewed independent review: `docs/implementation/phase-3-slice-2b15-design-erratum-v3.1-review.md`, SHA-256 `93f81070e6f0a77e7f38c64c0232c6d0f847a3abfb78183ec792cd4f12d3fc3c`, verdict `RULE_DESIGN_PASS`, blockers none.
-- The stale `SV-SEAMSTRESS-DRUNK-DOES-NOT-SPEND` handoff expectation remains non-authoritative. The implemented represented-impaired legal use spends, as required by reviewed evidence.
+- Slice 2B16 evidence is fresh, complete, and ends in `RULE_READY`.
+- The impaired-source hard gate is explicit: choice and private notification are simulated, while real madness requirement, marker, and execution authority are absent.
+- The stale `SV-CERENOVUS-POISONED-NO-MADNESS` no-notification clause is non-authoritative and must be replaced by the sourced split.
+- No Slice 2B16 architecture or design review exists yet. A materialized bounded design and complete independent `RULE_DESIGN_PASS` are required before implementation.
 
 ## Implemented 2B15 Boundary
 
@@ -79,15 +76,15 @@
 - Coverage: 85.04% statements/lines, 78.12% branches, 97.58% functions.
 - Repair validation reproduced the A-for-B time-varying Proxy equality and idempotent-receipt failures, then verified all stored fingerprint Proxies are rejected before traps or reflection; all targeted and full gates passed afterward.
 
-## Paused State
+## Next Gate
 
-- Slice 2B15 is accepted; Seamstress remains conservatively `PARTIAL`, never `COMPLETE`.
-- The governed run is complete at 3/3 slices and must not automatically select, research, design, or implement another slice.
-- Any future continuation requires a new explicit user goal or controller authorization and fresh stage gates.
+- Launch one bounded read-only architect for Slice 2B16 only.
+- Do not create a feature branch, edit production code or tests, or open a PR before the design is materialized and independently receives `RULE_DESIGN_PASS`.
+- Do not begin Slice 2B17 in this controlled round.
 
 ## Loop Limits
 
-- The completed run preserved one open slice PR and one writer at a time.
-- At most three reviewer repair rounds per PR.
-- The run stopped after its third accepted slice, as required.
+- Keep one open slice PR and one writer at a time.
+- This round permits one slice and at most two reviewer repair rounds for its future PR.
+- Heartbeat is disabled, and Slice 2B17 is prohibited in this round.
 - Stop on substantive rule uncertainty, unsafe accepted-history rewrite, permission/credential failure, unresolved merge conflict, repeated identical CI failure, or required test weakening.
