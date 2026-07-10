@@ -6204,6 +6204,63 @@ describe("GameApplicationService", () => {
     expect(JSON.stringify(expectedConflict)).not.toContain("details");
   });
 
+  it("rejects a stored fingerprint Proxy that swaps command A to incoming command B on the equality read", async () => {
+    const commandStore = new ReceiptOverrideCommandStore();
+    const { service } = makeService(commandStore);
+    const commandA = createGameCommand();
+    const commandB = {
+      ...commandA,
+      issuedAt: "2026-07-07T00:00:00.001Z"
+    } satisfies typeof commandA;
+    const first = await service.execute(commandA);
+    expectAcceptedResult(first);
+    const originalReceipt = await commandStore.findCommandReceipt(commandA.gameId, commandA.commandId);
+    if (originalReceipt?.commandFingerprint === undefined) throw new Error("Expected a fingerprinted receipt");
+    const storedFingerprint = originalReceipt.commandFingerprint;
+    const incomingCapture = captureSupportedCommand(commandB);
+    if (!incomingCapture.valid) throw new Error("Expected incoming command capture");
+    let canonicalReadsSinceValidationStarted = 0;
+    const swapOnFinalReadProxy = new Proxy({ ...storedFingerprint }, {
+      get: (target, property, receiver) => {
+        if (property === "schemaVersion") canonicalReadsSinceValidationStarted = 0;
+        if (property === "canonicalCommandJson") {
+          canonicalReadsSinceValidationStarted += 1;
+          return canonicalReadsSinceValidationStarted <= 4
+            ? storedFingerprint.canonicalCommandJson
+            : incomingCapture.captured.fingerprint.canonicalCommandJson;
+        }
+        return Reflect.get(target, property, receiver) as unknown;
+      }
+    });
+    commandStore.receiptOverride = {
+      ...originalReceipt,
+      commandFingerprint: swapOnFinalReadProxy
+    };
+
+    const expectedConflict = {
+      status: "rejected",
+      gameId: commandA.gameId,
+      code: "CommandIdempotencyConflict",
+      message: "commandId is already associated with a different command",
+      currentGameVersion: 1,
+      idempotent: false
+    } as const;
+    const execution = service.execute(commandB);
+    await expect(execution).resolves.toStrictEqual(expectedConflict);
+    expect(await execution).not.toStrictEqual({ ...first, idempotent: true });
+
+    commandStore.receiptOverride = undefined;
+    expect(canonicalReadsSinceValidationStarted).toBe(0);
+    expect(await commandStore.loadDomainEvents(commandA.gameId)).toHaveLength(1);
+    expect(await commandStore.findCommandReceipt(commandA.gameId, commandA.commandId)).toStrictEqual(originalReceipt);
+    expect(commandStore.getReceiptCount()).toBe(1);
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+    expect(JSON.stringify(expectedConflict)).not.toContain("canonicalCommandJson");
+    expect(JSON.stringify(expectedConflict)).not.toContain("digestHex");
+    expect(JSON.stringify(expectedConflict)).not.toContain("details");
+  });
+
   it("defers Seamstress atomically without selecting players, producing information, or spending the ability", async () => {
     const { service, commandStore } = makeService();
     const { seamstressTask, opportunity, state: beforeSubmit } = await reachOpenSeamstressActionOpportunity(service, commandStore);

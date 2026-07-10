@@ -148,27 +148,10 @@ describe("supported command structural fingerprints", () => {
     expect(commandFingerprintsRepresentSameCommand(other, incoming)).toBe(false);
   });
 
-  it("treats revoked and hostile stored fingerprint proxies as false without throwing", () => {
+  it("rejects every stored fingerprint Proxy before revoked, reflection, property, or late traps can run", () => {
     const incoming = requireCapture({ a: 1 }).fingerprint;
     const revocable = Proxy.revocable(incoming, {});
     revocable.revoke();
-    const hostileValues: readonly unknown[] = [
-      revocable.proxy,
-      new Proxy({}, { getPrototypeOf: () => { throw new Error("hostile prototype reflection"); } }),
-      new Proxy({}, { ownKeys: () => { throw new Error("hostile own-key reflection"); } }),
-      new Proxy({ ...incoming }, {
-        getOwnPropertyDescriptor: () => { throw new Error("hostile descriptor reflection"); }
-      }),
-      new Proxy({ ...incoming }, { get: () => { throw new Error("hostile property access"); } })
-    ];
-
-    for (const hostile of hostileValues) {
-      expect(() => validateCommandFingerprint(hostile)).not.toThrow();
-      expect(validateCommandFingerprint(hostile)).toBe(false);
-      expect(() => commandFingerprintsRepresentSameCommand(hostile, incoming)).not.toThrow();
-      expect(commandFingerprintsRepresentSameCommand(hostile, incoming)).toBe(false);
-    }
-
     let canonicalReadsSinceValidationStarted = 0;
     const lateThrowingProxy = new Proxy({ ...incoming }, {
       get: (target, property, receiver) => {
@@ -179,9 +162,49 @@ describe("supported command structural fingerprints", () => {
         return Reflect.get(target, property, receiver) as unknown;
       }
     });
-    expect(validateCommandFingerprint(lateThrowingProxy)).toBe(true);
-    expect(() => commandFingerprintsRepresentSameCommand(lateThrowingProxy, incoming)).not.toThrow();
-    expect(commandFingerprintsRepresentSameCommand(lateThrowingProxy, incoming)).toBe(false);
+    const proxyValues: readonly unknown[] = [
+      new Proxy({ ...incoming }, {}),
+      revocable.proxy,
+      new Proxy({}, { getPrototypeOf: () => { throw new Error("hostile prototype reflection"); } }),
+      new Proxy({}, { ownKeys: () => { throw new Error("hostile own-key reflection"); } }),
+      new Proxy({ ...incoming }, {
+        getOwnPropertyDescriptor: () => { throw new Error("hostile descriptor reflection"); }
+      }),
+      new Proxy({ ...incoming }, { get: () => { throw new Error("hostile property access"); } }),
+      lateThrowingProxy
+    ];
+
+    for (const proxy of proxyValues) {
+      expect(() => validateCommandFingerprint(proxy)).not.toThrow();
+      expect(validateCommandFingerprint(proxy)).toBe(false);
+      expect(() => commandFingerprintsRepresentSameCommand(proxy, incoming)).not.toThrow();
+      expect(commandFingerprintsRepresentSameCommand(proxy, incoming)).toBe(false);
+    }
+    expect(canonicalReadsSinceValidationStarted).toBe(0);
+  });
+
+  it("rejects a nonthrowing Proxy that swaps canonical A for canonical B on the final equality read", () => {
+    const fingerprintA = requireCapture({ a: 1 }).fingerprint;
+    const fingerprintB = requireCapture({ a: 2 }).fingerprint;
+    let canonicalReadsSinceValidationStarted = 0;
+    const swapOnFinalReadProxy = new Proxy({ ...fingerprintA }, {
+      get: (target, property, receiver) => {
+        if (property === "schemaVersion") canonicalReadsSinceValidationStarted = 0;
+        if (property === "canonicalCommandJson") {
+          canonicalReadsSinceValidationStarted += 1;
+          return canonicalReadsSinceValidationStarted <= 4
+            ? fingerprintA.canonicalCommandJson
+            : fingerprintB.canonicalCommandJson;
+        }
+        return Reflect.get(target, property, receiver) as unknown;
+      }
+    });
+
+    expect(fingerprintA.canonicalCommandJson).not.toBe(fingerprintB.canonicalCommandJson);
+    expect(() => commandFingerprintsRepresentSameCommand(swapOnFinalReadProxy, fingerprintB)).not.toThrow();
+    expect(commandFingerprintsRepresentSameCommand(swapOnFinalReadProxy, fingerprintB)).toBe(false);
+    expect(validateCommandFingerprint(swapOnFinalReadProxy)).toBe(false);
+    expect(canonicalReadsSinceValidationStarted).toBe(0);
   });
 
   it("constructs a validated fingerprint from the complete canonical string without truncation", () => {

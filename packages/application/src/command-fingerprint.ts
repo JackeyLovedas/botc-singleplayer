@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { Buffer } from "node:buffer";
+import { types as utilTypes } from "node:util";
 import type { SupportedCommandEnvelope } from "@botc/domain-core";
 
 export const COMMAND_FINGERPRINT_SCHEMA_VERSION =
@@ -180,7 +181,7 @@ export const captureSupportedCommand = (command: SupportedCommandEnvelope): Capt
 
 export const validateCommandFingerprint = (value: unknown): value is CommandFingerprint => {
   try {
-    if (value === null || typeof value !== "object" || Array.isArray(value) || !isPlainObject(value) ||
+    if (value === null || typeof value !== "object" || utilTypes.isProxy(value) || Array.isArray(value) || !isPlainObject(value) ||
         !hasExactOwnEnumerableDataKeys(value, FINGERPRINT_KEYS)) return false;
     const candidate = value as Record<string, unknown>;
     if (candidate.schemaVersion !== COMMAND_FINGERPRINT_SCHEMA_VERSION ||

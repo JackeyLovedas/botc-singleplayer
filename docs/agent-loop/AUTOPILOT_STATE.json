@@ -1,10 +1,10 @@
 {
-  "status": "WAITING_CI",
+  "status": "RUNNING",
   "currentPR": 17,
   "currentBranch": "phase-3/seamstress-first-night-choice-information",
-  "reviewedHead": null,
-  "repairRound": 1,
+  "reviewedHead": "cb9e0de21162d42d874a0b0495eac0ddc6d429e4",
+  "repairRound": 2,
   "completedSlices": ["2B13", "2B14"],
-  "lastAction": "Published repair round 1 as 95c1dfddc20a94806a63a6a9e7440338099e106d on the same PR #17 branch after all targeted and full gates passed. Waiting for fresh CI and independent CODE_REVIEW_PASS plus RULE_REVIEW_PASS on the exact final PR HEAD; do not merge.",
+  "lastAction": "Independent review of PR #17 at cb9e0de21162d42d874a0b0495eac0ddc6d429e4 returned FIX_REQUIRED for one remaining P1: a nonthrowing time-varying stored fingerprint Proxy can pass validation with canonical A and compare using canonical B. Repair round 2 is running on the same branch; no CODE_REVIEW_PASS or RULE_REVIEW_PASS exists and merge remains unauthorized.",
   "lastError": null
 }
