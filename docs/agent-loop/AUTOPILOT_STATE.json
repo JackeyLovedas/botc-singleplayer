@@ -5,6 +5,6 @@
   "reviewedHead": "833967f44e73294903df47545982a9de86bb33ad",
   "repairRound": 0,
   "completedSlices": ["2B13", "2B14"],
-  "lastAction": "Materialized the complete fresh live-source Slice 2B15 Seamstress report verbatim at docs/rules/evidence/2B15.md with claims R01-R13, 39 required regressions, SKELETON coverage, RULE_READY verdict, unchanged source revisions/hashes, and the stale impaired-use repository-test contradiction preserved. Rule research is complete; no design or implementation is authorized, and the next required step is one bounded architect design followed by independent RULE_DESIGN_PASS review.",
+  "lastAction": "Materialized the read-only architect's complete Slice 2B15 design verbatim at docs/implementation/phase-3-slice-2b15-design.md against baseline 12a3edc04215f1d16fcad87f44438ec862f3c39b. The bounded scope is the base modifier-free first-night choice, explicit spend, settlement-time alignment comparison, atomic delivery, and source-only historical private information path, with exact V1/V2 compatibility and unsupported modifier contexts failing closed. Proposed status is READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW; no implementation is authorized, and the next required step is an independent source/evidence and rule-design review that returns RULE_DESIGN_PASS.",
   "lastError": null
 }
