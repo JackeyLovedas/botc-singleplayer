@@ -1,89 +1,47 @@
-# Project Agent Instructions
+# Agent Instructions
 
-## Project Start
+## Authority
+- Current phase: **Phase 3 — controlled vertical slices**.
+- Treat the checked-out repository and GitHub as current truth; use `docs/agent-loop/CURRENT_TASK.md` for the active slice.
+- Before planning or coding, read the handoff files in the order listed by `project-handoff/00-README-FIRST.md`, then the relevant `project-handoff/rules/`, `project-handoff/tests/`, architecture, and latest implementation status.
+- Rules baseline: Phase One v2.1. Do not rewrite rules for implementation convenience.
+- A `PARTIAL` role requires relevant tests before its implementation expands.
 
-Before planning or coding, read these handoff files in order:
+## Package Manager
+- Use **pnpm 11.7.0** with Node **24.15.0**.
+- Install with `pnpm install --frozen-lockfile`.
 
-1. `project-handoff/00-README-FIRST.md`
-2. `project-handoff/PROJECT_HANDOFF.md`
-3. `project-handoff/PRODUCT_SCOPE.md`
-4. `project-handoff/RULES_BASELINE.md`
-5. `project-handoff/ARCHITECTURE_INPUT.md`
-6. `project-handoff/IMPLEMENTATION_GUARDRAILS.md`
-7. `project-handoff/OPEN_RISKS.md`
-8. `project-handoff/DEVELOPMENT_ROADMAP.md`
-9. `project-handoff/DOMAIN_GLOSSARY.md`
-10. `project-handoff/TEST_COVERAGE_SUMMARY.md`
+## File-Scoped Commands
+| Task | Command |
+|---|---|
+| Test | `pnpm exec vitest run --workspace vitest.workspace.ts path/to/file.test.ts` |
+| Lint | `pnpm exec eslint path/to/file.ts --max-warnings 0` |
+| Typecheck | No reliable file-scoped command; use `pnpm typecheck` |
 
-Then check:
+## Full Gates
+- Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm test:coverage`.
+- Merge only when the independent reviewer passes, required CI is green, reviewed HEAD equals PR HEAD, and the worktree is clean.
 
-- `project-handoff/rules/`
-- `project-handoff/tests/`
-- `docs/architecture/`
+## Agent Workflow
+- Controller coordinates; `architect` and `reviewer` are read-only; `implementer` is the sole writer.
+- Keep one bounded slice, one writing agent, one feature branch, and one open slice PR at a time.
+- Do not merge a new PR or begin the next slice before review and gates pass.
+- Stop the affected feature on unresolved rule conflict, unsafe history rewrite, permissions failure, or repeated identical failure.
+- Follow `docs/agent-loop/REVIEW_PROTOCOL.md`; record progress in `docs/agent-loop/AUTOPILOT_LOG.md`.
 
-## Current Phase
+## Key Conventions
+- TypeScript modular monolith; the domain core has no UI or Electron dependency.
+- Domain events are canonical truth; snapshots are rebuildable caches, and audit/infrastructure events do not rebuild game state.
+- Human, AI, System, and Storyteller commands use one serial command queue and one logical writer per game.
+- AI never receives canonical state; LLM output is a candidate command, never an authoritative event.
+- Player views, AI memory, public state, Storyteller state, and replay truth stay separate.
+- Delivered knowledge is a historical fact: validate stored facts before projection and never recompute them from newer character state.
+- Evaluate ability effectiveness at settlement; keep truth, reliability, registration, constraints, and simulation reason separate.
+- Use exact runtime payload validation, replay validation, atomic batch semantics, and prospective validation for every new event flow.
+- Canonical IDs and ordering must not use `Date.now`, `Math.random`, random UUIDs, `localeCompare`, `Intl.Collator`, or environment locale.
+- Distinguish `ScheduledTask`, `ActionOpportunity`, `EventSubscription`, and `ContinuousRule`.
+- Record random candidate sets/seeds and Storyteller legal candidates/final choices.
+- Never hide failures, weaken tests, or expand scope silently.
 
-Current phase: Phase 2.1 - implementation-ready architecture finalization.
-
-Phase 2.1 may add or refine architecture documents only. It must not start Phase 3 coding.
-
-Locked decisions:
-
-- Language: TypeScript.
-- Architecture: modular monolith.
-- Desktop container: Electron later, not during early domain implementation.
-- Local persistence: SQLite.
-- Rule core: independent domain package with no UI or Electron dependency.
-- AI input: only legal player projections.
-- AI output: candidate commands only.
-- Rules baseline: Phase One v2.1.
-
-## Rules
-
-- Do not restart rule research unless a documented contradiction is found.
-- Do not rewrite the rule baseline to fit implementation convenience.
-- For any rule conflict, check `RULES_BASELINE.md` first, then the referenced rule file and tests.
-- For any role implementation, check the role specification and related tests first.
-- `PARTIAL` roles require additional tests before implementation.
-- Plan before implementation.
-- Complete one verifiable milestone at a time.
-- Do not generate the entire game in one pass.
-- Do not create rough AI-style UI.
-- Do not replace missing design with placeholder text.
-- Do not modify rules to suit code.
-- Do not hide failures.
-- Every meaningful change must include tests or a documented validation method.
-- When a rule is undefined, stop that feature and record the open question.
-- Do not expand scope silently.
-
-## Phase 2.1 Constraints
-
-- Do not initialize a formal project framework.
-- Do not create code package directories such as `apps/` or `packages/` before Phase 3 is explicitly approved.
-- Do not write business code.
-- Do not create UI.
-- Do not implement role abilities.
-- Do not implement AI players.
-- Do not generate a demo.
-- Do not move `PARTIAL` roles to `VERIFIED_CORE`.
-- Do not change rules to match technical design.
-- Do not proceed to Phase 3 until `docs/architecture/24-phase-2-final-status.md` has no implementation-level architecture blocker and the user explicitly continues.
-
-## Architecture Guardrails
-
-- AI must never receive `canonicalGameState`.
-- LLM output must become a candidate command, not an authoritative event.
-- Random behavior must record seed and candidate set.
-- Storyteller decisions must record legal candidates and final choice.
-- Player view, AI memory, public state and replay truth must stay separate.
-- Each game has one logical writer.
-- Human commands, AI commands, system tasks, and Storyteller choices enter the same serial command queue.
-- Domain events are the authoritative source for game state.
-- Snapshots are rebuildable caches, not independent truth.
-- Audit events and infrastructure events must not rebuild canonical state.
-- Task execution must distinguish `ScheduledTask`, `ActionOpportunity`, `EventSubscription`, and `ContinuousRule`.
-- Player and AI visible options must not leak hidden role, alignment, or truth information.
-- Ability effectiveness must be evaluated at settlement time, not stored as a permanent task fact.
-- Information evaluation must keep semantic truth, reliability, truth constraint, registration, and simulation reason separate.
-- Effects must support multiple sources and dependency-aware recalculation.
-- Player knowledge must be derived from knowledge and information events, not maintained as a manually editable truth object.
+## Commit Attribution
+- AI commits MUST include `Co-Authored-By: Codex GPT-5 <noreply@openai.com>`.

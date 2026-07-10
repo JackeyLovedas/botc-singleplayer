@@ -4,18 +4,22 @@ import {
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   MINION_INFORMATION_KNOWLEDGE_STAGE,
   DEMON_INFORMATION_KNOWLEDGE_STAGE,
+  DREAMER_INFORMATION_STAGE,
   EVIL_TWIN_SETUP_KNOWLEDGE_STAGE,
+  SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
   SUPPORTED_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   cloneRoleSetupSnapshot,
   cloneKnownPlayerReference,
   findEvilTwinCounterpartForViewer,
+  isPlainRecord,
   validateFirstNightInitializedPayloadShape,
   validateInitialOwnCharacterKnowledgePayload,
   validatePlayerPrivateKnowledgeViewShape,
   validateStoredMinionInformationDelivered,
   validateStoredDemonInformationDelivered,
+  validateStoredDreamerInformationDelivered,
   validateStoredEvilTwinInformationDelivered,
   validateStoredEvilTwinPairEstablished
 } from "@botc/domain-core";
@@ -27,7 +31,8 @@ import type {
   PlayerId,
   PlayerPrivateKnowledgeStage,
   PlayerPrivateKnowledgeView,
-  RoleSetupSnapshot
+  RoleSetupSnapshot,
+  ScheduledTaskSettlement
 } from "@botc/domain-core";
 
 type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishedPayload & {
@@ -190,6 +195,95 @@ const requireDeliveredEvilTwinInformationIsSettled = (state: GameState): void =>
   }
 };
 
+const storedDreamerDeliveries = (state: GameState): readonly unknown[] => {
+  const information: unknown = state.dreamerInformation;
+  if (information === undefined) {
+    return [];
+  }
+  if (!isPlainRecord(information) || !Array.isArray(information.deliveries)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Stored Dreamer information set must contain a deliveries array");
+  }
+
+  return information.deliveries;
+};
+
+const storedFirstNightSettlements = (state: GameState): readonly unknown[] => {
+  const progress: unknown = state.firstNightTaskProgress;
+  if (progress === undefined) {
+    return [];
+  }
+  if (!isPlainRecord(progress) || !Array.isArray(progress.settlements)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Stored first-night task progress must contain a settlements array");
+  }
+
+  return progress.settlements;
+};
+
+const matchingStoredDreamerSettlement = (
+  settlements: readonly unknown[],
+  delivery: unknown
+): ScheduledTaskSettlement | undefined => {
+  if (
+    !isPlainRecord(delivery) ||
+    typeof delivery.taskId !== "string" ||
+    typeof delivery.taskType !== "string"
+  ) {
+    return undefined;
+  }
+
+  const matchingSettlements = settlements.filter((settlement) =>
+    isPlainRecord(settlement) &&
+    settlement.taskId === delivery.taskId &&
+    settlement.taskType === delivery.taskType
+  );
+  return matchingSettlements.length === 1
+    ? matchingSettlements[0] as ScheduledTaskSettlement
+    : undefined;
+};
+
+const requireDeliveredDreamerInformationIsSettled = (state: GameState): void => {
+  if (state.dreamerInformation === undefined && state.firstNightTaskProgress === undefined) {
+    return;
+  }
+
+  if (state.setup === undefined || state.roster === undefined || state.firstNightTaskPlan === undefined) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Dreamer information projection requires setup, roster, and task plan facts");
+  }
+
+  const deliveries = storedDreamerDeliveries(state);
+  const settlements = storedFirstNightSettlements(state);
+  for (const delivery of deliveries) {
+    const settlement = matchingStoredDreamerSettlement(settlements, delivery);
+    const validation = validateStoredDreamerInformationDelivered(delivery, {
+      rulesBaselineVersion: state.rulesBaselineVersion,
+      setup: state.setup,
+      roster: state.roster.entries,
+      firstNightTaskPlan: state.firstNightTaskPlan,
+      choices: state.dreamerTargetChoices,
+      settlement
+    });
+    if (!validation.valid) {
+      throw new DomainError("PrivateKnowledgeUnavailable", validation.reason);
+    }
+  }
+
+  for (const settlement of settlements) {
+    if (!isPlainRecord(settlement)) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Stored ScheduledTaskSettled fact must be a plain object");
+    }
+    if (
+      settlement.taskType === "DREAMER_ACTION" &&
+      deliveries.some((delivery) =>
+        isPlainRecord(delivery) &&
+        delivery.taskId === settlement.taskId &&
+        delivery.sourceCharacterStateRevision === settlement.characterStateRevision
+      ) !== true
+    ) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "DREAMER_ACTION settlement exists without delivered Dreamer information");
+    }
+  }
+};
+
 const deliveredStagesForViewer = (
   state: GameState,
   viewerPlayerId: PlayerId
@@ -205,6 +299,10 @@ const deliveredStagesForViewer = (
 
   if (state.evilTwinInformation?.entries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
     stages.push(EVIL_TWIN_SETUP_KNOWLEDGE_STAGE);
+  }
+
+  if (state.dreamerInformation?.deliveries.some((delivery) => delivery.sourcePlayerId === viewerPlayerId) === true) {
+    stages.push(DREAMER_INFORMATION_STAGE);
   }
 
   return stages;
@@ -228,6 +326,7 @@ export const buildPlayerPrivateKnowledgeView = (
 
   const deliveredTeamEntries = requireDeliveredTeamInformationIsSettled(state).filter((entry) => entry.recipientPlayerId === viewerPlayerId);
   requireDeliveredEvilTwinInformationIsSettled(state);
+  requireDeliveredDreamerInformationIsSettled(state);
   const knownDemon = deliveredTeamEntries.find((entry) => entry.kind === "DEMON_IDENTITY");
   const knownMinions = deliveredTeamEntries
     .filter((entry) => entry.kind === "MINION_IDENTITIES")
@@ -236,6 +335,7 @@ export const buildPlayerPrivateKnowledgeView = (
     .filter((entry) => entry.kind === "DEMON_BLUFFS")
     .flatMap((entry) => entry.kind === "DEMON_BLUFFS" ? entry.roles.map(cloneRoleSetupSnapshot) : []);
   const evilTwinCounterpart = findEvilTwinCounterpartForViewer(state.evilTwinInformation, viewerPlayerId);
+  const dreamerDelivery = state.dreamerInformation?.deliveries.find((delivery) => delivery.sourcePlayerId === viewerPlayerId);
 
   const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId);
   const hasTeamKnowledge = deliveredKnowledgeStages.some((stage) =>
@@ -255,6 +355,19 @@ export const buildPlayerPrivateKnowledgeView = (
       : {
           evilTwinCounterpart: cloneKnownPlayerReference(evilTwinCounterpart),
           evilTwinKnowledgeModelVersion: SUPPORTED_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION
+        }),
+    ...(dreamerDelivery === undefined
+      ? {}
+      : {
+          dreamerInformation: {
+            target: cloneKnownPlayerReference({
+              playerId: dreamerDelivery.targetPlayerId,
+              seatNumber: dreamerDelivery.targetSeatNumber
+            }),
+            goodRole: cloneRoleSetupSnapshot(dreamerDelivery.goodRole),
+            evilRole: cloneRoleSetupSnapshot(dreamerDelivery.evilRole)
+          },
+          dreamerKnowledgeModelVersion: SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION
         }),
     ownCharacterKnowledgeModelVersion: privateKnowledge.knowledgeModelVersion,
     ...(hasTeamKnowledge

@@ -452,6 +452,61 @@ Acceptance:
 - Replay rejects naked, reversed, mixed, mismatched, wrong-outcome, wrong-impairment, and hidden-field Witch batches.
 - Player and AI projections do not expose Witch action or deferred death internals.
 
+## Slice 2B13: Dreamer Action Opportunity And Information Skeleton
+
+Scope:
+
+- Execute only after Slice 2B12 is accepted and merged.
+- Open base in-play `dreamer` first-night `DREAMER_ACTION` tasks as safe `ActionOpportunity` facts.
+- Accept `SubmitDreamerAction({ kind: "CHOOSE_PLAYER", targetPlayerId })` from the source player, Storyteller, or System.
+- Record `DreamerTargetChosen` without target role, target alignment, correct-answer, false-role, impairment, or effectiveness leakage.
+- Record `DreamerInformationDelivered` with one GOOD role and one EVIL role.
+- For effective information, require one delivered role to be the target's current role.
+- For source-impaired information, still deliver one GOOD role and one EVIL role, but mark the canonical event as unreliable due to source impairment.
+- Settle the scheduled task with `DREAMER_INFORMATION_DELIVERED`.
+- Keep `assignment`, `currentCharacterState`, and the original task plan unchanged.
+- Project Dreamer information only to the Dreamer source player, without reliability, impairment, false-role policy, or correct-role metadata.
+- Do not implement Vortox, Storyteller free false-role choice, AI target choice, UI, Electron, SQLite, Seamstress resolution, or first-night completion.
+
+Implementation update:
+
+- `packages/domain-core/src/dreamer.ts` owns Dreamer target choice, information delivery, false-role policy, effectiveness, validation, and replay helpers.
+- The Dreamer opportunity id is deterministic:
+
+```text
+first-night-v1:DREAMER_ACTION:seat-<NN>:opportunity-01
+```
+
+- The safe visible schema exposes only target selection shape:
+
+```text
+canChooseTarget = true
+supportedDecisionKinds = [CHOOSE_PLAYER]
+targetSchema = OTHER_NON_TRAVELLER_PLAYER
+```
+
+- Valid Dreamer batches contain exactly:
+
+```text
+DreamerTargetChosen
+DreamerInformationDelivered
+ScheduledTaskSettled
+```
+
+Acceptance:
+
+- Base Dreamer can open an action opportunity when it is the next task.
+- The target must be a roster and current-character-state player other than the Dreamer source.
+- Source Human and AI actors must match the opportunity source player; Storyteller and System can submit.
+- Effective GOOD targets place the target's current role in `goodRole`.
+- Effective EVIL targets place the target's current role in `evilRole`.
+- Source `DRUNK` or `POISONED` still delivers Dreamer information and marks the canonical reliability as `SOURCE_IMPAIRED`.
+- Private projections hide reliability, source impairment, false-role policy, current character state, assignment, and correctness metadata.
+- After Dreamer settlement, `SEAMSTRESS_ACTION` becomes the next task in the supported no-Philosopher path.
+- `SettleFirstNightSystemTask` cannot skip Seamstress and `OpenFirstNightRoleActionOpportunity(SEAMSTRESS_ACTION)` remains unsupported until a later slice.
+- Golden base task count remains six and golden base order is unchanged.
+- Replay rejects naked, reversed, mixed, mismatched, wrong-reliability, wrong-role, and hidden-field Dreamer batches.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:

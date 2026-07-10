@@ -42,6 +42,10 @@ import {
   createWitchIneffectiveResolvedPayload,
   createWitchIneffectiveScheduledTaskSettlement,
   createWitchTargetChosenPayload,
+  createDreamerInformationDeliveredPayload,
+  createDreamerInformationDeliveredScheduledTaskSettlement,
+  createDreamerTargetChosenPayload,
+  evaluateDreamerEffectiveness,
   evaluateSnakeCharmerEffectiveness,
   evaluateWitchEffectiveness,
   getNextUnsettledFirstNightTask,
@@ -165,7 +169,7 @@ const noPhilosopherExactRoleIds = [
   "mathematician",
   "flowergirl",
   "town_crier",
-  "oracle",
+  "seamstress",
   "mutant",
   "sweetheart",
   "barber",
@@ -1201,6 +1205,134 @@ const witchIneffectiveBatchEvents = (kind: "DRUNK" | "POISONED" = "POISONED"): r
     witchBatchEnvelope("WitchTargetChosen", targetChosen, 0),
     witchBatchEnvelope("WitchIneffectiveResolved", ineffective, 1),
     witchBatchEnvelope("ScheduledTaskSettled", settlement, 2)
+  ];
+};
+
+const dreamerReadyStream = (): readonly AnyDomainEventEnvelope[] => [
+  ...openWitchActionStream(),
+  ...witchDeathPendingBatchEvents()
+];
+
+const dreamerActionOpportunityCreatedEvent = (
+  overrides: Partial<DomainEventEnvelope<"FirstNightActionOpportunityCreated">> = {}
+): DomainEventEnvelope<"FirstNightActionOpportunityCreated"> => {
+  const state = rebuildGameState(dreamerReadyStream());
+  const task = getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress);
+  if (task === undefined || task.taskType !== "DREAMER_ACTION" || state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined) {
+    throw new Error("Expected next Dreamer action task");
+  }
+
+  const opportunity = createFirstNightRoleActionOpportunity({
+    taskId: task.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+
+  return {
+    category: "domain",
+    eventId: eventId("event-27"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 27,
+    batchId: batchId("batch-15"),
+    gameVersion: 15,
+    eventType: "FirstNightActionOpportunityCreated",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-15"),
+    createdAt: "2026-07-07T00:00:14.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      ...opportunity
+    },
+    ...overrides
+  };
+};
+
+const openDreamerActionStream = (): readonly AnyDomainEventEnvelope[] => [
+  ...dreamerReadyStream(),
+  dreamerActionOpportunityCreatedEvent()
+];
+
+const dreamerBatchEnvelope = <EventType extends AnyDomainEventEnvelope["eventType"]>(
+  eventType: EventType,
+  payload: DomainEventEnvelope<EventType>["payload"],
+  offset: number
+): DomainEventEnvelope<EventType> => ({
+  category: "domain",
+  eventId: eventId(`event-${28 + offset}`),
+  gameId: gameCreatedEvent().gameId,
+  eventSequence: 28 + offset,
+  batchId: batchId("batch-16"),
+  gameVersion: 16,
+  eventType,
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-16"),
+  createdAt: "2026-07-07T00:00:15.000Z",
+  correlationId: gameCreatedEvent().correlationId,
+  causationId: gameCreatedEvent().causationId,
+  payload
+});
+
+const dreamerInformationBatchEvents = (targetAlignment: "GOOD" | "EVIL" = "GOOD"): readonly [
+  DomainEventEnvelope<"DreamerTargetChosen">,
+  DomainEventEnvelope<"DreamerInformationDelivered">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = rebuildGameState(openDreamerActionStream());
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION"
+  );
+  const target = state.currentCharacterState?.entries.find((entry) =>
+    entry.playerId !== opportunity?.sourcePlayerId &&
+    entry.role.defaultAlignment === targetAlignment
+  );
+  if (
+    opportunity === undefined ||
+    target === undefined ||
+    state.roster === undefined ||
+    state.currentCharacterState === undefined ||
+    state.setup === undefined
+  ) {
+    throw new Error("Expected open Dreamer opportunity and target");
+  }
+
+  const targetChosen = createDreamerTargetChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId: opportunity.taskId,
+    opportunityId: opportunity.opportunityId,
+    targetPlayerId: target.playerId,
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    roster: state.roster.entries,
+    currentCharacterState: state.currentCharacterState
+  });
+  const effectiveness = evaluateDreamerEffectiveness({
+    sourcePlayerId: targetChosen.sourcePlayerId,
+    abilityImpairments: state.abilityImpairments
+  });
+  const information = createDreamerInformationDeliveredPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    targetChoice: targetChosen,
+    setup: state.setup,
+    currentCharacterState: state.currentCharacterState,
+    effectiveness
+  });
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createDreamerInformationDeliveredScheduledTaskSettlement({
+      taskId: opportunity.taskId,
+      characterStateRevision: opportunity.sourceCharacterStateRevision
+    })
+  };
+
+  return [
+    dreamerBatchEnvelope("DreamerTargetChosen", targetChosen, 0),
+    dreamerBatchEnvelope("DreamerInformationDelivered", information, 1),
+    dreamerBatchEnvelope("ScheduledTaskSettled", settlement, 2)
   ];
 };
 
@@ -4122,6 +4254,149 @@ describe("domain event rebuild", () => {
       "InvalidDomainBatchSemantics"
     );
   });
+
+  it("rebuilds effective Dreamer target choice and delivered information without hidden state mutation", () => {
+    const before = rebuildGameState(openDreamerActionStream());
+    const [targetChosen, information, settlement] = dreamerInformationBatchEvents("GOOD");
+    const state = rebuildGameState([
+      ...openDreamerActionStream(),
+      targetChosen,
+      information,
+      settlement
+    ]);
+
+    expect(state.dreamerTargetChoices?.choices).toStrictEqual([targetChosen.payload]);
+    expect(state.dreamerInformation?.deliveries).toStrictEqual([information.payload]);
+    expect(information.payload).toMatchObject({
+      taskId: targetChosen.payload.taskId,
+      taskType: "DREAMER_ACTION",
+      opportunityId: targetChosen.payload.opportunityId,
+      targetPlayerId: targetChosen.payload.targetPlayerId,
+      targetSeatNumber: targetChosen.payload.targetSeatNumber,
+      knowledgeModelVersion: "dreamer-information-model-v1",
+      knowledgeStage: "DREAMER_INFORMATION",
+      informationReliability: { kind: "EFFECTIVE" },
+      falseRolePolicyVersion: "dreamer-false-role-policy-v1"
+    });
+    expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
+      opportunity.opportunityId === targetChosen.payload.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightTaskProgress?.settlements.at(-1)).toStrictEqual({
+      taskId: targetChosen.payload.taskId,
+      taskType: "DREAMER_ACTION",
+      nightNumber: 1,
+      settlementVersion: "scheduled-task-settlement-v1",
+      outcomeType: "DREAMER_INFORMATION_DELIVERED",
+      characterStateRevision: targetChosen.payload.sourceCharacterStateRevision
+    });
+    expect(getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress)?.taskType).toBe("SEAMSTRESS_ACTION");
+    expect(state.currentCharacterState).toStrictEqual(before.currentCharacterState);
+    expect(state.assignment).toStrictEqual(before.assignment);
+    expect(state.firstNightTaskPlan).toStrictEqual(before.firstNightTaskPlan);
+    expect(JSON.stringify(targetChosen.payload)).not.toContain("targetRole");
+    expect(JSON.stringify(information.payload)).not.toContain("correctRole");
+    expect(state.lastEventSequence).toBe(30);
+    expect(state.gameVersion).toBe(16);
+  }, 15_000);
+
+  it("rebuilds Dreamer information for an EVIL target with the target role in the EVIL slot", () => {
+    const [targetChosen, information, settlement] = dreamerInformationBatchEvents("EVIL");
+    const state = rebuildGameState([
+      ...openDreamerActionStream(),
+      targetChosen,
+      information,
+      settlement
+    ]);
+    const targetEntry = state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId === targetChosen.payload.targetPlayerId
+    );
+    if (targetEntry === undefined) {
+      throw new Error("Expected Dreamer target current state");
+    }
+
+    expect(targetEntry.role.defaultAlignment).toBe("EVIL");
+    expect(information.payload.evilRole).toStrictEqual(targetEntry.role);
+    expect(information.payload.goodRole.defaultAlignment).toBe("GOOD");
+  }, 15_000);
+
+  it("rejects malformed Dreamer replay batches", () => {
+    const baseStream = openDreamerActionStream();
+    const [targetChosen, information, settlement] = dreamerInformationBatchEvents();
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...information,
+          eventId: eventId("event-28-reversed-dreamer-info"),
+          eventSequence: 28
+        },
+        {
+          ...targetChosen,
+          eventId: eventId("event-29-reversed-dreamer-target"),
+          eventSequence: 29
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen,
+        {
+          ...information,
+          payload: {
+            ...information.payload,
+            targetPlayerId: playerId("different-dreamer-target")
+          }
+        },
+        settlement
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        targetChosen,
+        information,
+        {
+          ...settlement,
+          payload: {
+            ...settlement.payload,
+            outcomeType: "WITCH_DEATH_PENDING_MARKED"
+          } as never
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...targetChosen,
+          payload: {
+            ...targetChosen.payload,
+            targetRoleId: "fang_gu"
+          } as never
+        },
+        information,
+        settlement
+      ]),
+      "InvalidDreamerTargetChosenPayload"
+    );
+  }, 15_000);
 
   it("rejects malformed Snake Charmer no-swap replay batches", () => {
     const baseStream = openSnakeCharmerStream();

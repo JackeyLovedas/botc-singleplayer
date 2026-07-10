@@ -40,6 +40,8 @@ import type {
   SubmitSnakeCharmerActionCommandPayload,
   SubmitWitchActionCommand,
   SubmitWitchActionCommandPayload,
+  SubmitDreamerActionCommand,
+  SubmitDreamerActionCommandPayload,
   PlanFirstNightTasksCommand,
   PlanFirstNightTasksCommandPayload,
   SettleFirstNightSystemTaskCommand,
@@ -324,6 +326,29 @@ export const submitWitchActionCommand = (
   issuedAt: "2026-07-07T00:00:12.000Z",
   correlationId: correlationId("correlation-12-witch-target"),
   payload: submitWitchActionPayload,
+  ...overrides
+});
+
+export const submitDreamerActionPayload = {
+  commandType: "SubmitDreamerAction",
+  taskId: scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),
+  opportunityId: actionOpportunityId("first-night-v1:DREAMER_ACTION:seat-01:opportunity-01"),
+  decision: {
+    kind: "CHOOSE_PLAYER",
+    targetPlayerId: playerId("player-ai-1")
+  }
+} as const satisfies SubmitDreamerActionCommandPayload;
+
+export const submitDreamerActionCommand = (
+  overrides: Partial<SubmitDreamerActionCommand> = {}
+): SubmitDreamerActionCommand => ({
+  commandId: commandId("command-14-dreamer-target"),
+  gameId: ids.game,
+  expectedGameVersion: 15,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:14.000Z",
+  correlationId: correlationId("correlation-14-dreamer-target"),
+  payload: submitDreamerActionPayload,
   ...overrides
 });
 

@@ -338,6 +338,43 @@ ScheduledTaskSettled
 
 Player and AI private projections must not expose `WitchTargetChosen`, `WitchDeathPendingMarked`, `WitchIneffectiveResolved`, `targetPlayerId`, `pendingDeathId`, `trigger`, `sourceImpairmentId`, `SOURCE_DRUNK`, `SOURCE_POISONED`, task id, or opportunity id.
 
+Slice 2B13 adds settlement for the base Dreamer first-night action task:
+
+```text
+OpenFirstNightRoleActionOpportunity
+-> confirm the next unsettled task is base ROLE DREAMER_ACTION
+-> create deterministic FirstNightActionOpportunityCreated(opportunityKind = DREAMER_FIRST_NIGHT_ACTION)
+
+SubmitDreamerAction(CHOOSE_PLAYER)
+-> validate actor, open opportunity, task id, current next task, source snapshot, roster target, current-state target, and non-self target
+-> record DreamerTargetChosen
+-> evaluate source DRUNK or POISONED impairment at settlement time
+-> create DreamerInformationDelivered with one GOOD role and one EVIL role
+-> create ScheduledTaskSettled(outcomeType = DREAMER_INFORMATION_DELIVERED)
+```
+
+The Dreamer visible action schema is intentionally safe:
+
+```text
+canChooseTarget = true
+supportedDecisionKinds = [CHOOSE_PLAYER]
+targetSchema = OTHER_NON_TRAVELLER_PLAYER
+```
+
+It does not expose target role, target alignment, correct-answer position, false-role candidates, source impairment, Vortox status, assignment, or current character state.
+
+Valid Dreamer batches are:
+
+```text
+DreamerTargetChosen
+DreamerInformationDelivered
+ScheduledTaskSettled
+```
+
+Effective Dreamer information includes the target's current role in the matching GOOD or EVIL slot and fills the other slot through `dreamer-false-role-policy-v1`. Source-impaired Dreamer information is still delivered, but `DreamerInformationDelivered.informationReliability.kind` is `SOURCE_IMPAIRED`. Both branches keep `assignment`, `currentCharacterState`, and the original task plan unchanged.
+
+Player and AI private projections may expose only the delivered target reference plus `goodRole` and `evilRole` to the Dreamer source player. They must not expose `informationReliability`, `sourceImpairmentId`, `SOURCE_DRUNK`, `SOURCE_POISONED`, `falseRolePolicyVersion`, correct-role markers, target true role, target alignment, task id, or opportunity id.
+
 ### Settlement And Snapshot Revision Binding
 
 System team information settlement requires three revision facts to agree:
@@ -363,7 +400,7 @@ That means:
 - each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
 - projections must preserve each delivered fact independently.
 
-The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, implement Witch nomination-triggered death, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, Snake Charmer target-selection opportunities for base and Philosopher-gained sources, and the base Witch target-selection opportunity.
+The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, implement Witch nomination-triggered death, implement Vortox false information, implement Storyteller free false-role choice, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, Snake Charmer target-selection opportunities for base and Philosopher-gained sources, the base Witch target-selection opportunity, and the base Dreamer target-selection opportunity.
 
 ## ActionOpportunity Flow
 

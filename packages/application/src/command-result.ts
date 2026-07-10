@@ -50,6 +50,7 @@ export type CommandRejectionCode =
   | "UnsupportedPhilosopherAbilityChoice"
   | "InvalidSnakeCharmerTarget"
   | "InvalidWitchTarget"
+  | "InvalidDreamerTarget"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 

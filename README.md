@@ -52,3 +52,11 @@ Windows 本地《血染钟楼》单机游戏项目。
 - `docs/implementation/phase-3-slice-2b10-status.md`
 - `docs/implementation/phase-3-slice-2b11-status.md`
 - `docs/implementation/phase-3-slice-2b12-status.md`
+
+## Current Delivery Update
+
+- Phase Three Slice 2B12: Witch Action Target Selection and Deferred Death Marker has been merged and tagged as `phase-3-slice-2b12-witch-action-target-marker`.
+- Phase Three Slice 2B13: Dreamer Action Opportunity and Information Skeleton is implemented for review on `phase-3/dreamer-action-information-skeleton`.
+- Slice 2B13 adds base `DREAMER_ACTION` opportunities, `SubmitDreamerAction`, `DreamerTargetChosen`, `DreamerInformationDelivered`, `DREAMER_INFORMATION_DELIVERED`, and Dreamer private knowledge projection boundaries.
+- Slice 2B13 does not implement Vortox, Storyteller free false-role choice, AI target choice, Seamstress settlement, UI, Electron, SQLite, or persistence adapters.
+- See `docs/implementation/phase-3-slice-2b13-status.md` for the implementation status and review notes.

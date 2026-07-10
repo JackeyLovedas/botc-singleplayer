@@ -11,6 +11,11 @@ import { evaluateSnakeCharmerEffectiveness } from "./snake-charmer.js";
 import type { SnakeCharmerEffectivenessResult } from "./snake-charmer.js";
 import { evaluateWitchEffectiveness } from "./witch.js";
 import type { WitchEffectivenessResult } from "./witch.js";
+import {
+  createDreamerInformationDeliveredPayload,
+  evaluateDreamerEffectiveness,
+  sameDreamerInformationDelivery
+} from "./dreamer.js";
 
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
 type IneffectiveWitchEffectiveness = Extract<WitchEffectivenessResult, { readonly effective: false }>;
@@ -915,6 +920,78 @@ const validateIntegratedWitchIneffectiveBatch = (
   }
 };
 
+const validateIntegratedDreamerInformationBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Dreamer information batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined ||
+    state.setup === undefined
+  ) {
+    reject("Dreamer information batch requires FIRST_NIGHT night 1 with setup, task plan, and current character state");
+  }
+  const setup = state.setup;
+  const currentCharacterState = state.currentCharacterState;
+  if (setup === undefined || currentCharacterState === undefined) {
+    reject("Dreamer information batch requires setup and current character state");
+  }
+
+  if (events.length !== 3) {
+    reject("Dreamer information batch must contain exactly three events");
+  }
+
+  assertSharedBatchMetadataForAll(events);
+
+  const [first, second, third] = events;
+  if (
+    first === undefined ||
+    second === undefined ||
+    third === undefined ||
+    first.eventType !== "DreamerTargetChosen" ||
+    second.eventType !== "DreamerInformationDelivered" ||
+    third.eventType !== "ScheduledTaskSettled"
+  ) {
+    reject("Dreamer information batch must be TargetChosen, InformationDelivered, ScheduledTaskSettled");
+  }
+
+  const targetChosen = first as DomainEventEnvelope<"DreamerTargetChosen">;
+  const information = second as DomainEventEnvelope<"DreamerInformationDelivered">;
+  const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
+  const effectiveness = evaluateDreamerEffectiveness({
+    sourcePlayerId: targetChosen.payload.sourcePlayerId,
+    abilityImpairments: state.abilityImpairments
+  });
+  const expectedInformation = createDreamerInformationDeliveredPayload({
+    rulesBaselineVersion: information.payload.rulesBaselineVersion,
+    targetChoice: targetChosen.payload,
+    setup: setup!,
+    currentCharacterState: currentCharacterState!,
+    effectiveness
+  });
+
+  if (!sameDreamerInformationDelivery(information.payload, expectedInformation)) {
+    reject("DreamerInformationDelivered must match the preceding target choice and deterministic information model");
+  }
+
+  if (
+    settlement.payload.taskId !== information.payload.taskId ||
+    settlement.payload.taskType !== information.payload.taskType ||
+    settlement.payload.characterStateRevision !== information.payload.sourceCharacterStateRevision ||
+    settlement.payload.outcomeType !== "DREAMER_INFORMATION_DELIVERED"
+  ) {
+    reject("ScheduledTaskSettled must match delivered Dreamer information");
+  }
+};
+
 const validateIntegratedEvilTwinSetupBatch = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -1063,6 +1140,16 @@ export const validateDomainBatchSemantics = (
     }
 
     reject("Witch batch must continue with DeathPendingMarked or IneffectiveResolved");
+    return;
+  }
+
+  if (first.eventType === "DreamerTargetChosen") {
+    if (second?.eventType === "DreamerInformationDelivered") {
+      validateIntegratedDreamerInformationBatch(currentState, batchEvents);
+      return;
+    }
+
+    reject("Dreamer batch must continue with InformationDelivered");
     return;
   }
 
