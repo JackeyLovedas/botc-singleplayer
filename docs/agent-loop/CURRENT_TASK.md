@@ -1,30 +1,28 @@
 # Current Task
 
-## Slice 2B15 Design Review Round 1 Requires Fixes; Architect Revision Underway
+## Slice 2B15 Design v2 Revised; Renewed Independent Review Pending
 
 - There is no open slice pull request.
-- The active branch is `main`; independent design review round 1 inspected exact HEAD `a31562b5d0751128b94b82289c2d21e954ea5ad7`.
+- The active branch is `main`; independent design review round 1 inspected exact HEAD `a31562b5d0751128b94b82289c2d21e954ea5ad7` and returned `RULE_DESIGN_FIX_REQUIRED`.
 - Fresh 2B15 evidence remains `RULE_READY` with `SKELETON` coverage at `docs/rules/evidence/2B15.md`.
-- The current proposed design remains at `docs/implementation/phase-3-slice-2b15-design.md`; it is not approved for implementation.
-- The reviewer's complete round-1 report is materialized at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md`.
-- Review verdict: `RULE_DESIGN_FIX_REQUIRED`.
-- Required source material was available and showed no substantive conflict; R01–R13 and the first-/other-night ordering were independently confirmed.
-- Blocker 1: replace the incorrect Legacy V1 example with an explicit exact V1/V2 discriminated contract covering validation, clone, equality, application, and replay.
-- Blocker 2: remove secret-dependent modifier rejection as an observable oracle; select a safe public capability boundary or fully simulate all reachable hidden modifiers, and do not claim unrepresentable registration fail-closed behavior.
-- Blocker 3: derive stable once-per-game `AbilityInstanceId` from role/ability tenure rather than `scheduledTaskId`, preserving future-night, reacquisition, revival, and Barista semantics.
-- Blocker 4: define creation revision `N`, settlement revision `M`, field bindings, settlement snapshot consistency, and source ability-tenure continuity across the opportunity.
-- Blocker 5: correct overclaims in the R01–R13 and 39-scenario mapping, especially R02, R05, scenarios 15 and 23, and acceptance test 18.
-- Blocker 6: define an exact, extensible private projection contract that validates the complete choice/spend/delivery/settlement stored-fact chain and exposes only source-visible targets plus delivered answer.
-- The four-event atomic order is acceptable only after ability identity, dual-revision, and stored-fact projection validation are corrected.
-- The read-only architect is preparing one bounded revision addressing all six blocker classes.
-- No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or coverage-matrix change is authorized.
+- The reviewer's complete round-1 report remains unchanged at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md`.
+- The architect's complete v2 replacement is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design.md` and claims to resolve all six round-1 findings.
+- V2 keeps one first-night pipeline shared by base Seamstress and the currently reachable Philosopher-granted Seamstress source.
+- It defines a public pre-assignment capability boundary, hidden-state non-oracle behavior, truth-favoring delivery, represented Vortox false-information handling, and a fresh-evidence gate before any No Dashii continuous-poison derivation.
+- It defines exact Legacy V1 and new V2 opportunity/defer contracts across validation, clone, equality, application, and replay.
+- It derives stable ability instance and use entitlement identity from role or grant tenure rather than scheduled tasks, with creation revision `N`, settlement revision `M`, and continuous source-tenure validation.
+- It corrects R01–R13 and 39-scenario coverage claims and defines an exact extensible private historical projection that validates the full choice/spend/delivery/settlement chain.
+- The exact success path remains one atomic four-event batch; V1/V2 `DEFER` remains an exact non-spending two-event batch.
+- V2 non-goals remain other-night recurrence, death/revival, Travellers, registration, Barista execution, No Dashii neighbour/poison derivation, general lifecycle work, UI, AI policy, Electron, persistence, and network work.
+- Proposed v2 status: `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW`.
+- No `RULE_DESIGN_PASS` exists for v2. No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or coverage-matrix change is authorized.
 
 ## Gate
 
-- Completed for 2B15: fresh evidence -> `RULE_READY` -> proposed design -> independent review round 1 -> `RULE_DESIGN_FIX_REQUIRED`.
-- Current action: one bounded architect revision traced to every round-1 blocker without expanding into implementation.
-- After the revised design is materialized, a new independent source/evidence and rule-design review is required.
-- Implementation remains blocked until the reviewer returns `RULE_DESIGN_PASS` on the revised exact HEAD and the controller confirms the gate.
-- Any unresolved source conflict, unavailable mandatory source, unsafe hidden-state oracle, or need to guess unsupported rules maps to `HUMAN_BLOCKED`.
-- Do not create a feature branch or pull request, and do not edit production code, tests, architecture, or the coverage matrix during design repair.
+- Completed for 2B15: fresh evidence -> `RULE_READY` -> v1 proposed design -> independent round-1 `RULE_DESIGN_FIX_REQUIRED` -> bounded architect v2 replacement -> verbatim materialization.
+- Next required step: one renewed independent source/evidence, repository-contract, and rule-design review of the complete v2 design on its exact committed HEAD.
+- The reviewer must verify that every round-1 blocker is actually closed, including V1 compatibility, non-oracle behavior, tenure identity, N/M continuity, conservative claims, and stored-fact private projection.
+- Implementation remains blocked until the renewed reviewer returns `RULE_DESIGN_PASS` and the controller confirms the gate.
+- Any further `RULE_DESIGN_FIX_REQUIRED` requires another bounded design revision and renewed review; source conflict or unavailable mandatory evidence maps to `HUMAN_BLOCKED`.
+- Do not create a feature branch or pull request, and do not edit production code, tests, architecture, or the coverage matrix during this renewed design-review gate.
 - Preserve one writer and one open slice pull request at a time.
