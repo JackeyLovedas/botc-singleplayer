@@ -39,6 +39,7 @@ import {
   createDreamerInformationDeliveredPayload,
   createDreamerInformationDeliveredScheduledTaskSettlement,
   createDreamerTargetChosenPayload,
+  createSeamstressDeferredScheduledTaskSettlement,
   createEvilTwinInformationDeliveredPayload,
   createEvilTwinPairEstablishedPayload,
   createEvilTwinPairEstablishedScheduledTaskSettlement,
@@ -62,6 +63,7 @@ import {
   validateSnakeCharmerActionDecision,
   validateWitchActionDecision,
   validateDreamerActionDecision,
+  validateSeamstressActionDecision,
   tryCreateEvilTwinPair,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
@@ -85,6 +87,7 @@ import type {
   DemonInformationEntry,
   FirstNightInitializedPayload,
   PhilosopherActionDeferredPayload,
+  SeamstressActionDeferredPayload,
   FirstNightTaskCatalogSnapshot,
   FirstNightTaskPlan,
   FirstNightTaskPlanCreatedPayload,
@@ -1650,6 +1653,137 @@ export class GameApplicationService {
 
         return undefined;
       }
+
+      case "SubmitSeamstressAction": {
+        if (state === undefined) {
+          return { code: "GameNotCreated", message: "SubmitSeamstressAction requires an existing game" };
+        }
+
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `SubmitSeamstressAction cannot execute during ${state.phase}` };
+        }
+
+        if (state.firstNight === undefined) {
+          return { code: "FirstNightNotInitialized", message: "SubmitSeamstressAction requires first night initialization" };
+        }
+
+        if (state.firstNightTaskPlan === undefined) {
+          return { code: "FirstNightTaskPlanNotCreated", message: "SubmitSeamstressAction requires a first-night task plan" };
+        }
+
+        if (state.currentCharacterState === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "SubmitSeamstressAction requires current character state" };
+        }
+
+        if (!isPlainRecord(command.payload) || !hasExactEnumerableKeys(command.payload, ["commandType", "decision", "opportunityId", "taskId"])) {
+          return {
+            code: "InvalidSeamstressActionDecision",
+            message: "SubmitSeamstressAction payload must have exact runtime shape without hidden fields"
+          };
+        }
+
+        const requestedTaskId = command.payload.taskId;
+        const targetTask = state.firstNightTaskPlan.tasks.find((task) => task.taskId === requestedTaskId);
+        if (targetTask === undefined) {
+          return { code: "ScheduledTaskNotFound", message: `Scheduled task ${requestedTaskId} does not exist in the first-night task plan` };
+        }
+
+        const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, command.payload.opportunityId);
+        if (opportunity === undefined) {
+          return {
+            code: "ActionOpportunityNotFound",
+            message: `Action opportunity ${command.payload.opportunityId} does not exist`
+          };
+        }
+
+        if (opportunity.opportunityStatus === "CLOSED") {
+          return {
+            code: "ActionOpportunityAlreadyClosed",
+            message: `Action opportunity ${command.payload.opportunityId} is already closed`
+          };
+        }
+
+        if (
+          opportunity.opportunityKind !== "SEAMSTRESS_FIRST_NIGHT_ACTION" ||
+          opportunity.taskType !== "SEAMSTRESS_ACTION"
+        ) {
+          return {
+            code: "UnsupportedRoleActionOpportunity",
+            message: "SubmitSeamstressAction requires a Seamstress action opportunity"
+          };
+        }
+
+        if (command.actor.kind === "human" || command.actor.kind === "ai") {
+          if (command.actor.playerId !== opportunity.sourcePlayerId) {
+            return {
+              code: "ActorPlayerMismatch",
+              message: "SubmitSeamstressAction actor must match the action opportunity source player"
+            };
+          }
+        }
+
+        const decisionValidation = validateSeamstressActionDecision(command.payload.decision);
+        if (!decisionValidation.valid) {
+          return {
+            code: decisionValidation.code,
+            message: decisionValidation.reason
+          };
+        }
+
+        if (opportunity.taskId !== requestedTaskId) {
+          return {
+            code: "ScheduledTaskNotNext",
+            message: "SubmitSeamstressAction taskId must match the referenced action opportunity"
+          };
+        }
+
+        if (isFirstNightTaskSettled(state.firstNightTaskProgress, requestedTaskId)) {
+          return { code: "ScheduledTaskAlreadySettled", message: `Scheduled task ${requestedTaskId} is already settled` };
+        }
+
+        const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+        if (nextTask === undefined) {
+          return { code: "ScheduledTaskAlreadySettled", message: "All first-night tasks are already settled" };
+        }
+
+        if (nextTask.taskId !== targetTask.taskId) {
+          return {
+            code: "ScheduledTaskNotNext",
+            message: `Scheduled task ${targetTask.taskId} is not the next unsettled first-night task`
+          };
+        }
+
+        if (targetTask.taskType !== "SEAMSTRESS_ACTION") {
+          return {
+            code: "UnsupportedRoleActionOpportunity",
+            message: "SubmitSeamstressAction requires a Seamstress action task"
+          };
+        }
+
+        const currentSourceEntry = state.currentCharacterState.entries.find((entry) =>
+          entry.playerId === opportunity.sourcePlayerId &&
+          entry.seatNumber === opportunity.sourceSeatNumber
+        );
+        const seamstressSourceValid =
+          targetTask.source.kind === "ROLE" &&
+          targetTask.source.role.roleId === "seamstress" &&
+          targetTask.source.playerId === opportunity.sourcePlayerId &&
+          targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+          currentSourceEntry !== undefined &&
+          currentSourceEntry.role.roleId === "seamstress" &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.role) &&
+          sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
+          state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
+
+        if (!seamstressSourceValid) {
+          return {
+            code: "ActionSourceNoLongerValid",
+            message: "SubmitSeamstressAction source is no longer the same current base Seamstress state"
+          };
+        }
+
+        return undefined;
+      }
     }
 
     return assertNever(command.payload);
@@ -1722,7 +1856,8 @@ export class GameApplicationService {
           command.payload.commandType === "SubmitPhilosopherAction" ||
           command.payload.commandType === "SubmitSnakeCharmerAction" ||
           command.payload.commandType === "SubmitWitchAction" ||
-          command.payload.commandType === "SubmitDreamerAction"
+          command.payload.commandType === "SubmitDreamerAction" ||
+          command.payload.commandType === "SubmitSeamstressAction"
         ) {
           const failureStage = command.payload.commandType === "PlanFirstNightTasks"
             ? "first-night-task-planning"
@@ -2982,6 +3117,67 @@ export class GameApplicationService {
         ];
       }
 
+      case "SubmitSeamstressAction": {
+        if (
+          state === undefined ||
+          state.firstNightTaskPlan === undefined ||
+          state.currentCharacterState === undefined
+        ) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "SubmitSeamstressAction event creation requires task plan and current character state"
+          );
+        }
+
+        const opportunity = findFirstNightActionOpportunityById(
+          state.firstNightActionOpportunities,
+          command.payload.opportunityId
+        );
+        if (
+          opportunity === undefined ||
+          opportunity.opportunityStatus !== "OPEN" ||
+          opportunity.opportunityKind !== "SEAMSTRESS_FIRST_NIGHT_ACTION" ||
+          opportunity.taskType !== "SEAMSTRESS_ACTION"
+        ) {
+          throw new DomainError(
+            "InvalidSeamstressActionDeferredPayload",
+            "SubmitSeamstressAction event creation requires an open Seamstress action opportunity"
+          );
+        }
+
+        const seamstressActionDeferredEvent: DomainEventEnvelope<"SeamstressActionDeferred"> = {
+          ...common(firstEventSequence),
+          eventType: "SeamstressActionDeferred" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            nightNumber: 1,
+            taskId: opportunity.taskId,
+            taskType: opportunity.taskType,
+            opportunityId: opportunity.opportunityId,
+            decisionKind: "DEFER",
+            sourcePlayerId: opportunity.sourcePlayerId,
+            sourceSeatNumber: opportunity.sourceSeatNumber,
+            sourceRole: opportunity.sourceRole,
+            sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
+          } satisfies SeamstressActionDeferredPayload
+        };
+
+        const settlement = createSeamstressDeferredScheduledTaskSettlement({
+          taskId: opportunity.taskId,
+          characterStateRevision: opportunity.sourceCharacterStateRevision
+        });
+        const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "ScheduledTaskSettled" as const,
+          payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION,
+            ...settlement
+          } satisfies ScheduledTaskSettledPayload
+        };
+
+        return [seamstressActionDeferredEvent, scheduledTaskSettledEvent];
+      }
+
       case "SettleEvilTwinSetup": {
         if (
           state === undefined ||
@@ -3170,7 +3366,8 @@ export class GameApplicationService {
         command.payload.commandType === "SubmitPhilosopherAction" ||
         command.payload.commandType === "SubmitSnakeCharmerAction" ||
         command.payload.commandType === "SubmitWitchAction" ||
-        command.payload.commandType === "SubmitDreamerAction"
+        command.payload.commandType === "SubmitDreamerAction" ||
+        command.payload.commandType === "SubmitSeamstressAction"
       ) {
         return failed(
           batch.gameId,

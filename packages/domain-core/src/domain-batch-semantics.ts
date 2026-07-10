@@ -331,6 +331,41 @@ const validateIntegratedPhilosopherActionDeferredBatch = (
   }
 };
 
+const validateIntegratedSeamstressActionDeferredBatch = (
+  currentState: GameState | undefined,
+  seamstressActionDeferred: DomainEventEnvelope<"SeamstressActionDeferred">,
+  scheduledTaskSettled: DomainEventEnvelope<"ScheduledTaskSettled">
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Seamstress action settlement batch requires an existing current state");
+  }
+
+  const state = currentState;
+  if (
+    state.phase !== "FIRST_NIGHT" ||
+    state.nightNumber !== 1 ||
+    state.dayNumber !== 0 ||
+    state.firstNightTaskPlan === undefined ||
+    state.currentCharacterState === undefined
+  ) {
+    reject("Seamstress action settlement batch requires FIRST_NIGHT night 1 with task plan and current character state");
+  }
+
+  assertSharedBatchMetadata(seamstressActionDeferred, scheduledTaskSettled);
+
+  if (
+    scheduledTaskSettled.payload.taskId !== seamstressActionDeferred.payload.taskId ||
+    scheduledTaskSettled.payload.taskType !== seamstressActionDeferred.payload.taskType ||
+    scheduledTaskSettled.payload.characterStateRevision !== seamstressActionDeferred.payload.sourceCharacterStateRevision
+  ) {
+    reject("ScheduledTaskSettled must match the preceding SeamstressActionDeferred task identity and source revision");
+  }
+
+  if (scheduledTaskSettled.payload.outcomeType !== "SEAMSTRESS_DEFERRED") {
+    reject("SEAMSTRESS_ACTION settlement must use SEAMSTRESS_DEFERRED outcome");
+  }
+};
+
 const sameRoleSnapshot = (
   left: DomainEventEnvelope<"PhilosopherAbilityChosen">["payload"]["chosenRole"],
   right: DomainEventEnvelope<"PhilosopherAbilityChosen">["payload"]["chosenRole"]
@@ -1168,6 +1203,19 @@ export const validateDomainBatchSemantics = (
     }
 
     validateIntegratedPhilosopherActionDeferredBatch(currentState, first, second);
+    return;
+  }
+
+  if (
+    first.eventType === "SeamstressActionDeferred" &&
+    second !== undefined &&
+    second.eventType === "ScheduledTaskSettled"
+  ) {
+    if (batchEvents.length !== 2 || third !== undefined) {
+      reject("Seamstress action settlement batches must contain exactly two events");
+    }
+
+    validateIntegratedSeamstressActionDeferredBatch(currentState, first, second);
     return;
   }
 

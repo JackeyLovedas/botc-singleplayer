@@ -375,6 +375,38 @@ Effective Dreamer information includes the target's current role in the matching
 
 Player and AI private projections may expose only the delivered target reference plus `goodRole` and `evilRole` to the Dreamer source player. They must not expose `informationReliability`, `sourceImpairmentId`, `SOURCE_DRUNK`, `SOURCE_POISONED`, `falseRolePolicyVersion`, correct-role markers, target true role, target alignment, task id, or opportunity id.
 
+Slice 2B14 adds only a first-night deferral settlement for the base Seamstress task:
+
+```text
+OpenFirstNightRoleActionOpportunity
+-> confirm the next unsettled task is base ROLE SEAMSTRESS_ACTION
+-> create deterministic FirstNightActionOpportunityCreated(opportunityKind = SEAMSTRESS_FIRST_NIGHT_ACTION)
+
+SubmitSeamstressAction(DEFER)
+-> validate actor, exact decision shape, open opportunity, current next task, and current base Seamstress source snapshot
+-> record SeamstressActionDeferred
+-> create ScheduledTaskSettled(outcomeType = SEAMSTRESS_DEFERRED)
+```
+
+The visible schema is limited to:
+
+```text
+canDefer = true
+supportedDecisionKinds = [DEFER]
+futureUnsupportedDecisionKinds = [CHOOSE_TWO_PLAYERS]
+```
+
+The only valid deferral batch is exactly:
+
+```text
+SeamstressActionDeferred
+ScheduledTaskSettled
+```
+
+The events share task identity and source character-state revision; the settlement outcome must be `SEAMSTRESS_DEFERRED`. Deferral closes and settles only the current first-night wake. It does not consume the once-per-game ability, create a later-night task, select targets, calculate an answer, evaluate impairment, or create information, reliability, registration, or ability-spent state. `PHILOSOPHER_GAINED_ABILITY` Seamstress execution remains unsupported.
+
+Player and AI private projections remain structurally unchanged. They must not expose the Seamstress task or opportunity, `DEFER`, the source snapshot or revision, the future `CHOOSE_TWO_PLAYERS` decision, or any impairment, truth, reliability, registration, or consumption detail.
+
 ### Settlement And Snapshot Revision Binding
 
 System team information settlement requires three revision facts to agree:
@@ -400,7 +432,7 @@ That means:
 - each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
 - projections must preserve each delivered fact independently.
 
-The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, implement Witch nomination-triggered death, implement Vortox false information, implement Storyteller free false-role choice, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, Snake Charmer target-selection opportunities for base and Philosopher-gained sources, the base Witch target-selection opportunity, and the base Dreamer target-selection opportunity.
+The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, implement Witch nomination-triggered death, implement Vortox false information, implement Storyteller free false-role choice, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, Snake Charmer target-selection opportunities for base and Philosopher-gained sources, the base Witch target-selection opportunity, the base Dreamer target-selection opportunity, and the base Seamstress first-night DEFER-only opportunity.
 
 ## ActionOpportunity Flow
 

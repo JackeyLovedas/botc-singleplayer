@@ -216,6 +216,22 @@ describe("Sects & Violets first-night task catalog", () => {
     );
   });
 
+  it("keeps Dreamer immediately before Seamstress without adding unsupported Steward execution", () => {
+    const dreamerIndex = definitions.findIndex((definition) => definition.taskType === "DREAMER_ACTION");
+    const seamstressIndex = definitions.findIndex((definition) => definition.taskType === "SEAMSTRESS_ACTION");
+    const dreamer = definitions[dreamerIndex];
+    const seamstress = definitions[seamstressIndex];
+
+    expect(dreamerIndex).toBeGreaterThanOrEqual(0);
+    expect(seamstressIndex).toBe(dreamerIndex + 1);
+    expect(dreamer?.baseOrder).toBe(900);
+    expect(seamstress?.baseOrder).toBe(1000);
+    expect(definitions.map((definition) => definition.taskType as string)).not.toContain("STEWARD_INFORMATION");
+    expect(SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG.taskCatalogSignature).toBe(
+      "canonical-first-night-task-catalog-v1:20514c1a"
+    );
+  });
+
   it("changes the task catalog signature when order, class, or settlement policy changes", () => {
     const swappedOrder = definitions.map((definition) => {
       if (definition.taskType === "MINION_INFO") {

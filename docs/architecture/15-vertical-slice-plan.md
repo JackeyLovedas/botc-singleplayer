@@ -507,6 +507,55 @@ Acceptance:
 - Golden base task count remains six and golden base order is unchanged.
 - Replay rejects naked, reversed, mixed, mismatched, wrong-reliability, wrong-role, and hidden-field Dreamer batches.
 
+## Slice 2B14: Seamstress First-Night DEFER Skeleton
+
+Scope:
+
+- Execute only after Slice 2B13 is accepted and merged.
+- Open only base in-play `seamstress` first-night `SEAMSTRESS_ACTION` tasks as safe `ActionOpportunity` facts.
+- Accept only `SubmitSeamstressAction({ kind: "DEFER" })` from the matching source player, Storyteller, or System.
+- Record `SeamstressActionDeferred` and settle the current wake with `SEAMSTRESS_DEFERRED` in one exact two-event batch.
+- Close the opportunity without selecting players, producing same-alignment information, or creating ability-use or ability-spent state.
+- Keep `assignment`, `setup`, `currentCharacterState`, the original task plan, impairment facts, and private knowledge unchanged.
+- Keep player and AI private projections structurally unchanged.
+- Do not implement `CHOOSE_TWO_PLAYERS`, target legality, information truth or reliability, registration, impairment, Vortox, Barista, other-night recurrence, Philosopher-gained execution, AI choice, UI, Electron, persistence, or first-night completion.
+
+Implementation update:
+
+- The deterministic opportunity id is:
+
+```text
+first-night-v1:SEAMSTRESS_ACTION:seat-<NN>:opportunity-01
+```
+
+- The safe visible schema exposes only the supported deferral and names the future unsupported choice:
+
+```text
+canDefer = true
+supportedDecisionKinds = [DEFER]
+futureUnsupportedDecisionKinds = [CHOOSE_TWO_PLAYERS]
+```
+
+- Valid Seamstress deferral batches contain exactly:
+
+```text
+SeamstressActionDeferred
+ScheduledTaskSettled(outcomeType = SEAMSTRESS_DEFERRED)
+```
+
+Acceptance:
+
+- Base Seamstress can open an action opportunity only when it is the next unsettled task; Philosopher-gained Seamstress execution remains rejected.
+- Source Human and AI actors must match the opportunity source player; Storyteller and System can submit.
+- Exact `DEFER` closes the opportunity and settles the task without creating information or ability-spent state.
+- `CHOOSE_TWO_PLAYERS` rejects as unsupported; malformed, extra, hidden, mismatched, and unauthorized inputs reject deterministically without domain events.
+- Replay and prospective validation reject naked, reversed, overlong, mixed, duplicate, malformed, and cross-field-mismatched batches.
+- Player and AI projections do not expose Seamstress action, source, decision, task, opportunity, impairment, truth, reliability, or registration internals.
+- Catalog definitions and signature remain unchanged at `canonical-first-night-task-catalog-v1:20514c1a`; the supported subset proves only that Dreamer precedes Seamstress.
+- Steward and the full official-order evidence regression remain unsupported.
+- This slice covers only the first-night deferral/non-consumption half of evidence test 3 and the unsupported-input boundary portion of evidence test 5.
+- Overall Seamstress coverage remains `SKELETON`; only its base first-night opportunity and `DEFER` dimension is partial.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:

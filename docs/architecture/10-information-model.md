@@ -110,7 +110,7 @@ Examples:
 - Dreamer still receives one good and one evil character.
 - Artist still receives a yes/no answer.
 - Savant may receive two statements that are not guaranteed to be one true and one false.
-- Seamstress may receive yes/no without spending the real ability if drunk.
+- A drunk or poisoned Seamstress who completes a legal two-player use still expends the once-per-game ability; deferring without selecting players does not expend it.
 
 ## Vortox
 

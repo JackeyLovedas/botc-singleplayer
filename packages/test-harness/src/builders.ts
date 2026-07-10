@@ -42,6 +42,8 @@ import type {
   SubmitWitchActionCommandPayload,
   SubmitDreamerActionCommand,
   SubmitDreamerActionCommandPayload,
+  SubmitSeamstressActionCommand,
+  SubmitSeamstressActionCommandPayload,
   PlanFirstNightTasksCommand,
   PlanFirstNightTasksCommandPayload,
   SettleFirstNightSystemTaskCommand,
@@ -349,6 +351,28 @@ export const submitDreamerActionCommand = (
   issuedAt: "2026-07-07T00:00:14.000Z",
   correlationId: correlationId("correlation-14-dreamer-target"),
   payload: submitDreamerActionPayload,
+  ...overrides
+});
+
+export const submitSeamstressActionPayload = {
+  commandType: "SubmitSeamstressAction",
+  taskId: scheduledTaskId("first-night-v1:SEAMSTRESS_ACTION:seat-01"),
+  opportunityId: actionOpportunityId("first-night-v1:SEAMSTRESS_ACTION:seat-01:opportunity-01"),
+  decision: {
+    kind: "DEFER"
+  }
+} as const satisfies SubmitSeamstressActionCommandPayload;
+
+export const submitSeamstressActionCommand = (
+  overrides: Partial<SubmitSeamstressActionCommand> = {}
+): SubmitSeamstressActionCommand => ({
+  commandId: commandId("command-15-seamstress-defer"),
+  gameId: ids.game,
+  expectedGameVersion: 17,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:00:15.000Z",
+  correlationId: correlationId("correlation-15-seamstress-defer"),
+  payload: submitSeamstressActionPayload,
   ...overrides
 });
 

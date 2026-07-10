@@ -45,6 +45,7 @@ import {
   createDreamerInformationDeliveredPayload,
   createDreamerInformationDeliveredScheduledTaskSettlement,
   createDreamerTargetChosenPayload,
+  createSeamstressDeferredScheduledTaskSettlement,
   evaluateDreamerEffectiveness,
   evaluateSnakeCharmerEffectiveness,
   evaluateWitchEffectiveness,
@@ -76,6 +77,7 @@ import type {
   DomainEventEnvelope,
   FirstNightInitializedPayload,
   FirstNightTaskPlanCreatedPayload,
+  GameState,
   InitialPrivateKnowledgeEstablishedPayload,
   RoleCatalogSnapshot,
   RoleId,
@@ -1278,12 +1280,15 @@ const dreamerBatchEnvelope = <EventType extends AnyDomainEventEnvelope["eventTyp
   payload
 });
 
-const dreamerInformationBatchEvents = (targetAlignment: "GOOD" | "EVIL" = "GOOD"): readonly [
+const dreamerInformationBatchEvents = (
+  targetAlignment: "GOOD" | "EVIL" = "GOOD",
+  sourceState?: GameState
+): readonly [
   DomainEventEnvelope<"DreamerTargetChosen">,
   DomainEventEnvelope<"DreamerInformationDelivered">,
   DomainEventEnvelope<"ScheduledTaskSettled">
 ] => {
-  const state = rebuildGameState(openDreamerActionStream());
+  const state = sourceState ?? rebuildGameState(openDreamerActionStream());
   const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
     candidate.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION"
   );
@@ -1333,6 +1338,123 @@ const dreamerInformationBatchEvents = (targetAlignment: "GOOD" | "EVIL" = "GOOD"
     dreamerBatchEnvelope("DreamerTargetChosen", targetChosen, 0),
     dreamerBatchEnvelope("DreamerInformationDelivered", information, 1),
     dreamerBatchEnvelope("ScheduledTaskSettled", settlement, 2)
+  ];
+};
+
+const seamstressReadyStream = (): readonly AnyDomainEventEnvelope[] => {
+  const dreamerStream = openDreamerActionStream();
+  const dreamerState = rebuildGameState(dreamerStream);
+  return [
+    ...dreamerStream,
+    ...dreamerInformationBatchEvents("GOOD", dreamerState)
+  ];
+};
+
+const seamstressActionOpportunityCreatedEvent = (
+  overrides: Partial<DomainEventEnvelope<"FirstNightActionOpportunityCreated">> = {},
+  sourceState?: GameState
+): DomainEventEnvelope<"FirstNightActionOpportunityCreated"> => {
+  const state = sourceState ?? rebuildGameState(seamstressReadyStream());
+  const task = getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress);
+  if (task === undefined || task.taskType !== "SEAMSTRESS_ACTION" || state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined) {
+    throw new Error("Expected next Seamstress action task");
+  }
+
+  const opportunity = createFirstNightRoleActionOpportunity({
+    taskId: task.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+
+  return {
+    category: "domain",
+    eventId: eventId("event-31"),
+    gameId: gameCreatedEvent().gameId,
+    eventSequence: 31,
+    batchId: batchId("batch-17"),
+    gameVersion: 17,
+    eventType: "FirstNightActionOpportunityCreated",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-17"),
+    createdAt: "2026-07-07T00:00:16.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId,
+    payload: {
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      ...opportunity
+    },
+    ...overrides
+  };
+};
+
+const openSeamstressActionStream = (): readonly AnyDomainEventEnvelope[] => {
+  const readyStream = seamstressReadyStream();
+  const readyState = rebuildGameState(readyStream);
+  return [
+    ...readyStream,
+    seamstressActionOpportunityCreatedEvent({}, readyState)
+  ];
+};
+
+const seamstressBatchEnvelope = <EventType extends AnyDomainEventEnvelope["eventType"]>(
+  eventType: EventType,
+  payload: DomainEventEnvelope<EventType>["payload"],
+  offset: number
+): DomainEventEnvelope<EventType> => ({
+  category: "domain",
+  eventId: eventId(`event-${32 + offset}`),
+  gameId: gameCreatedEvent().gameId,
+  eventSequence: 32 + offset,
+  batchId: batchId("batch-18"),
+  gameVersion: 18,
+  eventType,
+  eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+  rulesBaselineVersion: RULES_BASELINE_VERSION,
+  commandId: commandId("command-18"),
+  createdAt: "2026-07-07T00:00:17.000Z",
+  correlationId: gameCreatedEvent().correlationId,
+  causationId: gameCreatedEvent().causationId,
+  payload
+});
+
+const seamstressDeferredBatchEvents = (sourceState?: GameState): readonly [
+  DomainEventEnvelope<"SeamstressActionDeferred">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = sourceState ?? rebuildGameState(openSeamstressActionStream());
+  const opportunity = state.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION"
+  );
+  if (opportunity === undefined) {
+    throw new Error("Expected open Seamstress opportunity");
+  }
+
+  const deferred = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    nightNumber: 1 as const,
+    taskId: opportunity.taskId,
+    taskType: "SEAMSTRESS_ACTION" as const,
+    opportunityId: opportunity.opportunityId,
+    decisionKind: "DEFER" as const,
+    sourcePlayerId: opportunity.sourcePlayerId,
+    sourceSeatNumber: opportunity.sourceSeatNumber,
+    sourceRole: opportunity.sourceRole,
+    sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
+  };
+  const settlement = {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    ...createSeamstressDeferredScheduledTaskSettlement({
+      taskId: opportunity.taskId,
+      characterStateRevision: opportunity.sourceCharacterStateRevision
+    })
+  };
+
+  return [
+    seamstressBatchEnvelope("SeamstressActionDeferred", deferred, 0),
+    seamstressBatchEnvelope("ScheduledTaskSettled", settlement, 1)
   ];
 };
 
@@ -4395,6 +4517,241 @@ describe("domain event rebuild", () => {
         settlement
       ]),
       "InvalidDreamerTargetChosenPayload"
+    );
+  }, 15_000);
+
+  it("rejects malformed Seamstress opportunity ids and visibility schemas", () => {
+    const readyStream = seamstressReadyStream();
+    const readyState = rebuildGameState(readyStream);
+    const opportunityCreated = seamstressActionOpportunityCreatedEvent({}, readyState);
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...readyStream,
+        {
+          ...opportunityCreated,
+          payload: {
+            ...opportunityCreated.payload,
+            opportunityId: actionOpportunityId("first-night-v1:SEAMSTRESS_ACTION:seat-99:opportunity-01")
+          }
+        }
+      ]),
+      "InvalidFirstNightActionOpportunityCreatedPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...readyStream,
+        {
+          ...opportunityCreated,
+          payload: {
+            ...opportunityCreated.payload,
+            visibility: {
+              canDefer: true,
+              supportedDecisionKinds: ["DEFER"],
+              futureUnsupportedDecisionKinds: []
+            }
+          } as never
+        }
+      ]),
+      "InvalidFirstNightActionOpportunityCreatedPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...readyStream,
+        {
+          ...opportunityCreated,
+          payload: {
+            ...opportunityCreated.payload,
+            visibility: {
+              ...opportunityCreated.payload.visibility,
+              answer: true
+            }
+          } as never
+        }
+      ]),
+      "InvalidFirstNightActionOpportunityCreatedPayload"
+    );
+  }, 15_000);
+
+  it("rebuilds exact Seamstress DEFER settlement without choice, information, spend, or unrelated state mutation", () => {
+    const baseStream = openSeamstressActionStream();
+    const before = rebuildGameState(baseStream);
+    const [deferred, settlement] = seamstressDeferredBatchEvents(before);
+    const state = rebuildGameState([
+      ...baseStream,
+      deferred,
+      settlement
+    ]);
+
+    expect(deferred.payload).toStrictEqual({
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      nightNumber: 1,
+      taskId: deferred.payload.taskId,
+      taskType: "SEAMSTRESS_ACTION",
+      opportunityId: deferred.payload.opportunityId,
+      decisionKind: "DEFER",
+      sourcePlayerId: deferred.payload.sourcePlayerId,
+      sourceSeatNumber: deferred.payload.sourceSeatNumber,
+      sourceRole: deferred.payload.sourceRole,
+      sourceCharacterStateRevision: deferred.payload.sourceCharacterStateRevision
+    });
+    expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
+      opportunity.opportunityId === deferred.payload.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightTaskProgress?.settlements.at(-1)).toStrictEqual({
+      taskId: deferred.payload.taskId,
+      taskType: "SEAMSTRESS_ACTION",
+      nightNumber: 1,
+      settlementVersion: "scheduled-task-settlement-v1",
+      outcomeType: "SEAMSTRESS_DEFERRED",
+      characterStateRevision: deferred.payload.sourceCharacterStateRevision
+    });
+    expect(getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress)?.taskType)
+      .toBe("MATHEMATICIAN_INFORMATION");
+    expect(state.currentCharacterState).toStrictEqual(before.currentCharacterState);
+    expect(state.assignment).toStrictEqual(before.assignment);
+    expect(state.setup).toStrictEqual(before.setup);
+    expect(state.firstNightTaskPlan).toStrictEqual(before.firstNightTaskPlan);
+    expect(state.abilityImpairments).toStrictEqual(before.abilityImpairments);
+    expect(state.initialPrivateKnowledge).toStrictEqual(before.initialPrivateKnowledge);
+    expect(state.dreamerInformation).toStrictEqual(before.dreamerInformation);
+    expect(state.lastEventSequence).toBe(33);
+    expect(state.gameVersion).toBe(18);
+
+    const serialized = JSON.stringify([deferred.payload, settlement.payload]);
+    expect(serialized).not.toContain("selectedPlayer");
+    expect(serialized).not.toContain("sameAlignment");
+    expect(serialized).not.toContain("answer");
+    expect(serialized).not.toContain("abilitySpent");
+    expect(serialized).not.toContain("informationReliability");
+  }, 15_000);
+
+  it("rejects malformed, incomplete, reordered, overlong, and mixed Seamstress replay batches", () => {
+    const baseStream = openSeamstressActionStream();
+    const baseState = rebuildGameState(baseStream);
+    const [deferred, settlement] = seamstressDeferredBatchEvents(baseState);
+
+    expectDomainCode(
+      () => rebuildGameState([...baseStream, deferred]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...settlement,
+          eventId: eventId("event-32-reversed-seamstress-settlement"),
+          eventSequence: 32
+        },
+        {
+          ...deferred,
+          eventId: eventId("event-33-reversed-seamstress-deferred"),
+          eventSequence: 33
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        deferred,
+        settlement,
+        {
+          ...phaseTransitionedEvent(),
+          eventId: eventId("event-34-overlong-seamstress"),
+          eventSequence: 34,
+          batchId: deferred.batchId,
+          commandId: deferred.commandId,
+          gameVersion: deferred.gameVersion
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        deferred,
+        {
+          ...settlement,
+          payload: {
+            ...settlement.payload,
+            taskId: scheduledTaskId("first-night-v1:SEAMSTRESS_ACTION:seat-99")
+          }
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        deferred,
+        {
+          ...settlement,
+          payload: {
+            ...settlement.payload,
+            outcomeType: "DREAMER_INFORMATION_DELIVERED"
+          } as never
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...deferred,
+          payload: {
+            ...deferred.payload,
+            sourceCharacterStateRevision: deferred.payload.sourceCharacterStateRevision + 1
+          }
+        },
+        {
+          ...settlement,
+          payload: {
+            ...settlement.payload,
+            characterStateRevision: settlement.payload.characterStateRevision + 1
+          }
+        }
+      ]),
+      "InvalidSeamstressActionDeferredPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        {
+          ...deferred,
+          payload: {
+            ...deferred.payload,
+            answer: true
+          } as never
+        },
+        settlement
+      ]),
+      "InvalidSeamstressActionDeferredPayload"
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...baseStream,
+        deferred,
+        {
+          ...phaseTransitionedEvent(),
+          eventId: settlement.eventId,
+          eventSequence: settlement.eventSequence,
+          batchId: deferred.batchId,
+          commandId: deferred.commandId,
+          gameVersion: deferred.gameVersion
+        }
+      ]),
+      "InvalidDomainBatchSemantics"
     );
   }, 15_000);
 

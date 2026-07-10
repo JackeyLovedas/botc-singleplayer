@@ -27,7 +27,9 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Phase Three Slice 2B9：Snake Charmer Demon-Hit Swap and Poison Marker 已合并
 - Phase Three Slice 2B10：Base Snake Charmer Action and Effectiveness Gate 已合并
 - Phase Three Slice 2B11：Evil Twin Setup and Pair Knowledge 已合并
-- Phase Three Slice 2B12：Witch Action Target Selection and Deferred Death Marker 评审中
+- Phase Three Slice 2B12：Witch Action Target Selection and Deferred Death Marker 已合并
+- Phase Three Slice 2B13：Dreamer Action Opportunity and Information Skeleton 已合并
+- Phase Three Slice 2B14：Seamstress First-Night DEFER Skeleton 评审中
 
 当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口、固定种子可复现的 12 人《梦殒春宵》真实配板基础、固定 12 人座位名单、可复现角色分配基础、首夜初始化事实、初始自身角色私有知识生成、玩家/AI 私有知识安全投影、首夜 `ScheduledTask` 计划骨架，`MINION_INFO`/`DEMON_INFO` 有序系统信息结算，Philosopher 首夜能力选择、能力授予事实、重复在场角色醉酒标记、获得能力首夜任务动态插入基础，Philosopher 获得的 Snake Charmer 行动机会、非恶魔目标无交换结算、恶魔命中后的当前角色/阵营交换和旧恶魔中毒标记，基础 Snake Charmer 行动与有效性求值，Evil Twin 配对与双子私有知识，以及 Witch 首夜目标选择、待死亡标记和无效结算。它不包含 Witch 实际死亡、提名触发结算、3 alive 失去能力、AI 决策、完整昼夜可玩流程、UI、Electron 或 SQLite 正式适配器。
 
@@ -52,11 +54,14 @@ Windows 本地《血染钟楼》单机游戏项目。
 - `docs/implementation/phase-3-slice-2b10-status.md`
 - `docs/implementation/phase-3-slice-2b11-status.md`
 - `docs/implementation/phase-3-slice-2b12-status.md`
+- `docs/implementation/phase-3-slice-2b13-status.md`
+- `docs/implementation/phase-3-slice-2b14-status.md`
 
 ## Current Delivery Update
 
-- Phase Three Slice 2B12: Witch Action Target Selection and Deferred Death Marker has been merged and tagged as `phase-3-slice-2b12-witch-action-target-marker`.
-- Phase Three Slice 2B13: Dreamer Action Opportunity and Information Skeleton is implemented for review on `phase-3/dreamer-action-information-skeleton`.
-- Slice 2B13 adds base `DREAMER_ACTION` opportunities, `SubmitDreamerAction`, `DreamerTargetChosen`, `DreamerInformationDelivered`, `DREAMER_INFORMATION_DELIVERED`, and Dreamer private knowledge projection boundaries.
-- Slice 2B13 does not implement Vortox, Storyteller free false-role choice, AI target choice, Seamstress settlement, UI, Electron, SQLite, or persistence adapters.
-- See `docs/implementation/phase-3-slice-2b13-status.md` for the implementation status and review notes.
+- Phase Three Slice 2B13: Dreamer Action Opportunity and Information Skeleton has been accepted and tagged as `phase-3-slice-2b13-dreamer-action-information-skeleton`.
+- Phase Three Slice 2B14: Seamstress First-Night DEFER Skeleton is implemented for review on `phase-3/seamstress-first-night-defer-skeleton`.
+- Slice 2B14 adds base `SEAMSTRESS_ACTION` opportunities, exact `SubmitSeamstressAction({ kind: "DEFER" })`, `SeamstressActionDeferred`, and `SEAMSTRESS_DEFERRED` settlement with replay and projection non-leakage guards.
+- Slice 2B14 does not implement two-player selection, same-alignment information, ability consumption, other-night recurrence, impairment, Vortox, registration, Philosopher-gained execution, AI decisions, UI, Electron, SQLite, or persistence adapters.
+- Seamstress remains overall `SKELETON`; only the base first-night opportunity and `DEFER` dimension is partial.
+- See `docs/implementation/phase-3-slice-2b14-status.md` for rule traceability, the stale impaired-use correction, bounded evidence-test coverage, implementation status, and review notes.

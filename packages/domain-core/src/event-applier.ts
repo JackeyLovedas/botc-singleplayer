@@ -37,9 +37,12 @@ import { evaluatePhaseTransition } from "./phase-transition-policy.js";
 import {
   appendFirstNightActionOpportunity,
   closeFirstNightActionOpportunity,
+  closeSeamstressFirstNightActionOpportunity,
   hasClosedPhilosopherOpportunityForSettlement,
+  hasClosedSeamstressOpportunityForSettlement,
   validateFirstNightActionOpportunityCreatedPayload,
-  validatePhilosopherActionDeferredPayload
+  validatePhilosopherActionDeferredPayload,
+  validateSeamstressActionDeferredPayload
 } from "./first-night-action-opportunity.js";
 import {
   SUPPORTED_ASSIGNMENT_ALGORITHM_VERSION,
@@ -876,6 +879,36 @@ const validatePhilosopherActionDeferredPayloadForState = (
   }
 };
 
+const validateSeamstressActionDeferredPayloadForState = (
+  state: GameState,
+  payload: DomainEventEnvelope<"SeamstressActionDeferred">["payload"]
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+    throw new DomainError(
+      "InvalidSeamstressActionDeferredPayload",
+      "SeamstressActionDeferred requires FIRST_NIGHT night 1 before day 1"
+    );
+  }
+
+  if (state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined) {
+    throw new DomainError(
+      "InvalidSeamstressActionDeferredPayload",
+      "SeamstressActionDeferred requires first-night task plan and current character state"
+    );
+  }
+
+  const validation = validateSeamstressActionDeferredPayload(payload, {
+    taskId: payload.taskId,
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    firstNightTaskProgress: state.firstNightTaskProgress,
+    currentCharacterState: state.currentCharacterState,
+    firstNightActionOpportunities: state.firstNightActionOpportunities
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidSeamstressActionDeferredPayload", validation.reason);
+  }
+};
+
 const validatePhilosopherAbilityChosenPayloadForState = (
   state: GameState,
   payload: DomainEventEnvelope<"PhilosopherAbilityChosen">["payload"]
@@ -1393,9 +1426,19 @@ const validateScheduledTaskSettledPayloadForState = (
     return;
   }
 
+  if (payload.taskType === "SEAMSTRESS_ACTION") {
+    if (
+      payload.outcomeType !== "SEAMSTRESS_DEFERRED" ||
+      !hasClosedSeamstressOpportunityForSettlement(state.firstNightActionOpportunities, payload)
+    ) {
+      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a closed Seamstress action opportunity");
+    }
+    return;
+  }
+
   throw new DomainError(
     "InvalidScheduledTaskSettledPayload",
-    "ScheduledTaskSettled only supports PHILOSOPHER_ACTION, SNAKE_CHARMER_ACTION, EVIL_TWIN_SETUP, WITCH_ACTION, DREAMER_ACTION, MINION_INFO, and DEMON_INFO in this slice"
+    "ScheduledTaskSettled only supports PHILOSOPHER_ACTION, SNAKE_CHARMER_ACTION, EVIL_TWIN_SETUP, WITCH_ACTION, DREAMER_ACTION, SEAMSTRESS_ACTION, MINION_INFO, and DEMON_INFO in this slice"
   );
 };
 
@@ -1421,6 +1464,8 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidFirstNightActionOpportunityCreatedPayload";
     case "PhilosopherActionDeferred":
       return "InvalidPhilosopherActionDeferredPayload";
+    case "SeamstressActionDeferred":
+      return "InvalidSeamstressActionDeferredPayload";
     case "PhilosopherAbilityChosen":
       return "InvalidPhilosopherAbilityChosenPayload";
     case "PhilosopherAbilityGranted":
@@ -1744,6 +1789,31 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload)
+      };
+    }
+
+    case "SeamstressActionDeferred": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "SeamstressActionDeferred requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidSeamstressActionDeferredPayload",
+          "SeamstressActionDeferred payload rules baseline must match game state"
+        );
+      }
+
+      validateSeamstressActionDeferredPayloadForState(state, event.payload);
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightActionOpportunities: closeSeamstressFirstNightActionOpportunity(
+          state.firstNightActionOpportunities,
+          event.payload
+        )
       };
     }
 

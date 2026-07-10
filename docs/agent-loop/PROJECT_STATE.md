@@ -23,7 +23,7 @@
 
 ## Current Delivery
 - Open slice PR: none.
-- Branch: `main`.
+- Branch: `phase-3/seamstress-first-night-defer-skeleton`.
 - Latest accepted slice merge: `a911ae0964dec444ef5bac59bf4d05f991353ccf` (PR #15).
 - Last reviewed slice HEAD: `a7adf6316140275afbf32681e6f141cb528c3546`.
 - Accepted tag: `phase-3-slice-2b13-dreamer-action-information-skeleton`.
@@ -33,14 +33,15 @@
 - The bounded DEFER-only architect design is materialized at `docs/implementation/phase-3-slice-2b14-design.md` with proposed status `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW`.
 - The independent read-only source/evidence and rule-design review is materialized at `docs/implementation/phase-3-slice-2b14-design-review.md` with verdict `RULE_DESIGN_PASS` and blockers none.
 - Implementation is authorized only for the exact materialized DEFER-only design at commit `c23038b28e103fcfb353c63558dc14627fa74cd5`, design blob `ac0ef3076d6b8801d1f8d597ecb81dcb9e0ca663`; no scope change is authorized.
-- No feature branch or pull request exists and implementation has not started. Controller confirmation of this gate commit and its CI is required before branch creation.
+- Controller confirmation is complete for gate commit `b9a60fe48368938416178c9362a37494681ae493`; design-gate CI run `29071921796` passed.
+- The sole feature branch `phase-3/seamstress-first-night-defer-skeleton` contains the exact reviewed DEFER-only implementation. Focused checks, the real application command, typecheck, lint, 626 tests, and coverage with 626 tests passed locally. No pull request exists yet.
 
 ## Mandatory Rule Gate
 - Canonical instructions: `docs/agent-loop/AUTOPILOT_PROMPT.md`.
 - Configured roles: read-only `rule-researcher`, read-only `architect`, read-only `reviewer`, and sole-writer `implementer`; the concurrency cap remains three, so gated roles run sequentially where needed.
 - The 2B14 research, design-materialization, and independent design-review gates are satisfied by `docs/rules/evidence/2B14.md`, `RULE_READY`, `docs/implementation/phase-3-slice-2b14-design.md`, and `docs/implementation/phase-3-slice-2b14-design-review.md` with `RULE_DESIGN_PASS`.
 - The read-only reviewer independently verified main/evidence/design revisions and blobs, live source revisions and hashes, claims `2B14-C1` through `2B14-C3`, exact contracts, atomic replay behavior, projection boundaries, affected files/tests, conservative `SKELETON` coverage, and the stale impaired-use repository defect.
-- Do not create the implementation branch until the controller confirms this gate commit and its CI. Implementation must remain inside the exact reviewed design.
+- Implementation must remain inside the exact reviewed design. The ready pull request is allowed only after focused checks and all full local gates pass.
 - `RULE_CONFLICT` and `RULE_SOURCE_UNAVAILABLE` map to `HUMAN_BLOCKED`.
 - Final PR merge requires both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS` plus the existing code and CI gates.
 - No snapshot was used for 2B14 evidence; the listed sources were retrieved live on 2026-07-10 with revisions, timestamps, and hashes recorded for independent review.
