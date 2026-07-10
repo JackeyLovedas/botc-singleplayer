@@ -3,6 +3,7 @@
 ## Authority
 - Current phase: **Phase 3 — controlled vertical slices**.
 - Treat the checked-out repository and GitHub as current truth; use `docs/agent-loop/CURRENT_TASK.md` for the active slice.
+- Treat `docs/agent-loop/AUTOPILOT_PROMPT.md` as the canonical Autopilot prompt and rule-gate authority.
 - Before planning or coding, read the handoff files in the order listed by `project-handoff/00-README-FIRST.md`, then the relevant `project-handoff/rules/`, `project-handoff/tests/`, architecture, and latest implementation status.
 - Rules baseline: Phase One v2.1. Do not rewrite rules for implementation convenience.
 - A `PARTIAL` role requires relevant tests before its implementation expands.
@@ -23,11 +24,26 @@
 - Merge only when the independent reviewer passes, required CI is green, reviewed HEAD equals PR HEAD, and the worktree is clean.
 
 ## Agent Workflow
-- Controller coordinates; `architect` and `reviewer` are read-only; `implementer` is the sole writer.
+- Controller coordinates; `rule-researcher`, `architect`, and `reviewer` are read-only; `implementer` is the sole writer.
+- `.codex/config.toml` remains capped at `max_threads = 3` and `max_depth = 1`; the four configured roles run sequentially whenever the mandatory gates require it.
 - Keep one bounded slice, one writing agent, one feature branch, and one open slice PR at a time.
 - Do not merge a new PR or begin the next slice before review and gates pass.
 - Stop the affected feature on unresolved rule conflict, unsafe history rewrite, permissions failure, or repeated identical failure.
 - Follow `docs/agent-loop/REVIEW_PROTOCOL.md`; record progress in `docs/agent-loop/AUTOPILOT_LOG.md`.
+
+## Mandatory Rule-Truth Order
+1. The read-only `rule-researcher` checks `docs/rules/USER_OVERRIDES.md`, the user-specified Chinese Wiki, the official BOTC Wiki, and the official nightsheet for the proposed slice.
+2. The sole writer materializes the sourced report as `docs/rules/evidence/<slice-id>.md`, including source revision/date or an approved snapshot path and hash.
+3. The rule-researcher returns exactly one rule verdict: `RULE_READY`, `RULE_CONFLICT`, or `RULE_SOURCE_UNAVAILABLE`.
+4. Only `RULE_READY` authorizes the read-only architect to design one bounded slice.
+5. The reviewer independently reads the sources or approved snapshots, evidence, official nightsheet, and role coverage matrix. It must return `RULE_DESIGN_PASS` before implementation starts.
+6. Only then may the implementer create a branch and implement the reviewed design.
+
+- Design-review verdicts are exactly `RULE_DESIGN_PASS`, `RULE_DESIGN_FIX_REQUIRED`, or `HUMAN_BLOCKED`.
+- `RULE_CONFLICT` and `RULE_SOURCE_UNAVAILABLE` map to `HUMAN_BLOCKED`; never guess an interpretation or continue from model memory.
+- User-approved overrides take priority. Code, tests, README files, and model memory cannot override external rule truth.
+- Every final PR review requires both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`; either missing verdict blocks merge.
+- Every merged slice updates `docs/rules/ROLE_COVERAGE_MATRIX.md`. No incomplete role may be marked `COMPLETE`.
 
 ## Key Conventions
 - TypeScript modular monolith; the domain core has no UI or Electron dependency.

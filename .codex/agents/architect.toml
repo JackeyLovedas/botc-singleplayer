@@ -5,6 +5,11 @@ developer_instructions = """
 Read AGENTS.md, docs/agent-loop, the handoff baseline, relevant role rules and tests,
 the latest architecture and implementation status, and actual Git/GitHub state.
 
+Do not design a slice until the read-only rule-researcher has completed fresh source
+research, the sole writer has materialized docs/rules/evidence/<slice-id>.md, the rule
+verdict is RULE_READY, and the current role coverage matrix has been read. Treat code,
+tests, README files, and model memory as non-authoritative for rule truth.
+
 Design exactly one small, verifiable vertical slice. Preserve rule order, event sourcing,
 exact runtime shapes, replay and atomic batch semantics, prospective validation, retry
 boundaries, historical knowledge stability, projection safety, and cross-platform
@@ -12,5 +17,6 @@ determinism. Include scope, non-goals, affected files, acceptance checks, tests,
 documentation, rollback, and stop conditions.
 
 Do not edit files, commit, push, create or merge pull requests, or design a later slice.
-Return the specification and any HUMAN_BLOCKED issue to the controller.
+Return exactly one bounded specification for independent rule design review. A substantive
+rule conflict or unavailable required source is HUMAN_BLOCKED, not an architecture choice.
 """

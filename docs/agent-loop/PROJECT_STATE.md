@@ -24,11 +24,20 @@
 ## Current Delivery
 - Open slice PR: none.
 - Branch: `main`.
-- Main HEAD: `a911ae0964dec444ef5bac59bf4d05f991353ccf` (PR #15 merge commit).
+- Latest accepted slice merge: `a911ae0964dec444ef5bac59bf4d05f991353ccf` (PR #15).
 - Last reviewed slice HEAD: `a7adf6316140275afbf32681e6f141cb528c3546`.
 - Accepted tag: `phase-3-slice-2b13-dreamer-action-information-skeleton`.
 - Slice 2B13 passed independent review and all required Ubuntu/Windows CI checks; its remote feature branch was deleted after merge.
-- Next slice design is pending. Candidate label `2B14` is not authorized for implementation until a bounded architect design receives independent reviewer approval.
+- Next slice rule research and design are pending. Candidate label `2B14` has no authorized scope.
+
+## Mandatory Rule Gate
+- Canonical instructions: `docs/agent-loop/AUTOPILOT_PROMPT.md`.
+- Configured roles: read-only `rule-researcher`, read-only `architect`, read-only `reviewer`, and sole-writer `implementer`; the concurrency cap remains three, so gated roles run sequentially where needed.
+- No architect design may start until fresh external source research is materialized under `docs/rules/evidence/` and the researcher returns `RULE_READY`.
+- No implementation may start until the reviewer independently returns `RULE_DESIGN_PASS`.
+- `RULE_CONFLICT` and `RULE_SOURCE_UNAVAILABLE` map to `HUMAN_BLOCKED`.
+- Final PR merge requires both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS` plus the existing code and CI gates.
+- No external next-slice rule research has been performed by this governance update.
 
 ## Loop Limits
 - One open slice PR and one writer at a time.
