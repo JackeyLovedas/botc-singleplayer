@@ -18,6 +18,9 @@ import type {
   SnakeCharmerTargetChosenPayload,
   DreamerInformationDeliveredPayload,
   DreamerTargetChosenPayload,
+  SeamstressAbilitySpentPayload,
+  SeamstressInformationDeliveredPayload,
+  SeamstressTargetsChosenPayload,
   WitchDeathPendingPayload,
   WitchIneffectiveResolvedPayload,
   WitchTargetChosenPayload,
@@ -32,18 +35,22 @@ import {
   validateEvilTwinPairEstablishedPayloadAtSettlement
 } from "./evil-twin.js";
 import type { GameState } from "./game-state.js";
+import { actionOpportunityId } from "./ids.js";
 import type { RoleId } from "./ids.js";
 import { evaluatePhaseTransition } from "./phase-transition-policy.js";
 import {
   appendFirstNightActionOpportunity,
   closeFirstNightActionOpportunity,
+  closeSeamstressInformationOpportunity,
   closeSeamstressFirstNightActionOpportunity,
+  findFirstNightActionOpportunityById,
   hasClosedPhilosopherOpportunityForSettlement,
   hasClosedSeamstressOpportunityForSettlement,
   validateFirstNightActionOpportunityCreatedPayload,
   validatePhilosopherActionDeferredPayload,
   validateSeamstressActionDeferredPayload
 } from "./first-night-action-opportunity.js";
+import { isSeamstressActionOpportunityV2 } from "./first-night-action-opportunity.js";
 import {
   SUPPORTED_ASSIGNMENT_ALGORITHM_VERSION,
   SUPPORTED_ASSIGNMENT_RANDOM_STREAM,
@@ -111,6 +118,27 @@ import {
   validateDreamerInformationDeliveredPayload,
   validateDreamerTargetChosenPayload
 } from "./dreamer.js";
+import {
+  appendPhilosopherGrantedSeamstressAbility,
+  appendSeamstressAbilitySpend,
+  appendSeamstressInformationDelivery,
+  appendSeamstressTargetChoice,
+  applyRoleTenureTransitionFact,
+  bootstrapRoleTenuresFromCharactersAssigned,
+  bootstrapSeamstressAbilityState,
+  canonicalizeSeamstressTargets,
+  hasSeamstressInformationForSettlement,
+  isRoleTenureContinuousAcross,
+  reconcileSeamstressAbilityStateWithRoleTenures,
+  roleTenureTransitionFactsFromSnakeCharmerDemonSwap,
+  spendSeamstressAbilityEntitlement,
+  validateSeamstressAbilitySpentPayloadShape,
+  validateSeamstressChoiceSpendChain,
+  validateSeamstressInformationAgainstCanonicalState,
+  validateSeamstressInformationDeliveredPayloadShape,
+  validateSeamstressResolutionCapabilityDeclaredPayload,
+  validateSeamstressTargetsChosenPayloadShape
+} from "./seamstress.js";
 import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   isPlainRecord,
@@ -842,7 +870,11 @@ const validateFirstNightActionOpportunityCreatedPayloadForState = (
     firstNightTaskPlan: state.firstNightTaskPlan,
     firstNightTaskProgress: state.firstNightTaskProgress,
     currentCharacterState: state.currentCharacterState,
-    firstNightActionOpportunities: state.firstNightActionOpportunities
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    seamstressResolutionCapability: state.seamstressResolutionCapability,
+    seamstressRoleTenureState: state.seamstressRoleTenureState,
+    seamstressAbilityState: state.seamstressAbilityState,
+    philosopherGrantedAbilities: state.philosopherGrantedAbilities
   });
   if (!validation.valid) {
     throw new DomainError("InvalidFirstNightActionOpportunityCreatedPayload", validation.reason);
@@ -872,7 +904,11 @@ const validatePhilosopherActionDeferredPayloadForState = (
     firstNightTaskPlan: state.firstNightTaskPlan,
     firstNightTaskProgress: state.firstNightTaskProgress,
     currentCharacterState: state.currentCharacterState,
-    firstNightActionOpportunities: state.firstNightActionOpportunities
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    seamstressResolutionCapability: state.seamstressResolutionCapability,
+    seamstressRoleTenureState: state.seamstressRoleTenureState,
+    seamstressAbilityState: state.seamstressAbilityState,
+    philosopherGrantedAbilities: state.philosopherGrantedAbilities
   });
   if (!validation.valid) {
     throw new DomainError("InvalidPhilosopherActionDeferredPayload", validation.reason);
@@ -902,7 +938,11 @@ const validateSeamstressActionDeferredPayloadForState = (
     firstNightTaskPlan: state.firstNightTaskPlan,
     firstNightTaskProgress: state.firstNightTaskProgress,
     currentCharacterState: state.currentCharacterState,
-    firstNightActionOpportunities: state.firstNightActionOpportunities
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    seamstressResolutionCapability: state.seamstressResolutionCapability,
+    seamstressRoleTenureState: state.seamstressRoleTenureState,
+    seamstressAbilityState: state.seamstressAbilityState,
+    philosopherGrantedAbilities: state.philosopherGrantedAbilities
   });
   if (!validation.valid) {
     throw new DomainError("InvalidSeamstressActionDeferredPayload", validation.reason);
@@ -1275,6 +1315,94 @@ const validateDreamerInformationDeliveredPayloadForState = (
   }
 };
 
+const validateSeamstressTargetsChosenPayloadForState = (
+  state: GameState,
+  payload: SeamstressTargetsChosenPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 ||
+      state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined ||
+      state.seamstressResolutionCapability === undefined) {
+    throw new DomainError("InvalidSeamstressTargetsChosenPayload", "SeamstressTargetsChosen requires the declared first-night capability and runtime state");
+  }
+  const shape = validateSeamstressTargetsChosenPayloadShape(payload);
+  if (!shape.valid) throw new DomainError("InvalidSeamstressTargetsChosenPayload", shape.reason);
+  const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, actionOpportunityId(payload.opportunityId));
+  if (opportunity === undefined || !isSeamstressActionOpportunityV2(opportunity) || opportunity.opportunityStatus !== "OPEN" ||
+      opportunity.taskId !== payload.taskId || opportunity.sourcePlayerId !== payload.sourcePlayerId ||
+      opportunity.sourceSeatNumber !== payload.sourceSeatNumber || !sameRoleSetupSnapshot(opportunity.sourceRole, payload.sourceRole) ||
+      opportunity.sourceCharacterStateRevision !== payload.opportunityCharacterStateRevision ||
+      opportunity.sourceRoleTenureId !== payload.sourceRoleTenureId || opportunity.abilityInstanceId !== payload.abilityInstanceId ||
+      opportunity.abilityUseEntitlementId !== payload.abilityUseEntitlementId ||
+      payload.settlementCharacterStateRevision !== state.currentCharacterState.revision) {
+    throw new DomainError("InvalidSeamstressTargetsChosenPayload", "SeamstressTargetsChosen must match one open V2 opportunity and N/M chain");
+  }
+  const canonicalTargets = canonicalizeSeamstressTargets({
+    sourcePlayerId: payload.sourcePlayerId,
+    targetPlayerIds: payload.targetPlayerIds,
+    currentCharacterState: state.currentCharacterState
+  });
+  if (!canonicalTargets.valid || canonicalTargets.targetPlayerIds[0] !== payload.targetPlayerIds[0] ||
+      canonicalTargets.targetPlayerIds[1] !== payload.targetPlayerIds[1] ||
+      canonicalTargets.targetSeatNumbers[0] !== payload.targetSeatNumbers[0] ||
+      canonicalTargets.targetSeatNumbers[1] !== payload.targetSeatNumbers[1]) {
+    throw new DomainError("InvalidSeamstressTargetsChosenPayload", canonicalTargets.valid ? "Seamstress targets must use canonical seat order" : canonicalTargets.reason);
+  }
+  const tenure = state.seamstressRoleTenureState?.records.find((record) => record.roleTenureId === payload.sourceRoleTenureId);
+  const instance = state.seamstressAbilityState?.instances.find((entry) => entry.abilityInstanceId === payload.abilityInstanceId);
+  const entitlement = state.seamstressAbilityState?.entitlements.find((entry) => entry.abilityUseEntitlementId === payload.abilityUseEntitlementId);
+  if (tenure === undefined || instance === undefined || entitlement?.status !== "UNSPENT" ||
+      !isRoleTenureContinuousAcross(tenure, payload.opportunityCharacterStateRevision, payload.settlementCharacterStateRevision) ||
+      (state.seamstressTargetChoices?.choices.some((choice) => choice.opportunityId === payload.opportunityId) ?? false)) {
+    throw new DomainError("InvalidSeamstressTargetsChosenPayload", "SeamstressTargetsChosen requires one continuous active source and unspent entitlement");
+  }
+};
+
+const validateSeamstressAbilitySpentPayloadForState = (
+  state: GameState,
+  payload: SeamstressAbilitySpentPayload
+): void => {
+  const shape = validateSeamstressAbilitySpentPayloadShape(payload);
+  if (!shape.valid) throw new DomainError("InvalidSeamstressAbilitySpentPayload", shape.reason);
+  const choices = state.seamstressTargetChoices?.choices.filter((choice) => choice.opportunityId === payload.opportunityId) ?? [];
+  if (choices.length !== 1 || choices[0] === undefined) {
+    throw new DomainError("InvalidSeamstressAbilitySpentPayload", "SeamstressAbilitySpent requires exactly one matching choice");
+  }
+  const chain = validateSeamstressChoiceSpendChain({ choice: choices[0], spend: payload });
+  if (!chain.valid) throw new DomainError("InvalidSeamstressAbilitySpentPayload", chain.reason);
+  const entitlement = state.seamstressAbilityState?.entitlements.find((entry) => entry.abilityUseEntitlementId === payload.abilityUseEntitlementId);
+  if (entitlement === undefined || entitlement.abilityInstanceId !== payload.abilityInstanceId || entitlement.status !== "UNSPENT" ||
+      (state.seamstressAbilitySpends?.spends.some((spend) => spend.abilityUseEntitlementId === payload.abilityUseEntitlementId) ?? false)) {
+    throw new DomainError("InvalidSeamstressAbilitySpentPayload", "SeamstressAbilitySpent requires one unspent matching entitlement");
+  }
+};
+
+const validateSeamstressInformationDeliveredPayloadForState = (
+  state: GameState,
+  payload: SeamstressInformationDeliveredPayload
+): void => {
+  const shape = validateSeamstressInformationDeliveredPayloadShape(payload);
+  if (!shape.valid) throw new DomainError("InvalidSeamstressInformationDeliveredPayload", shape.reason);
+  if (state.currentCharacterState === undefined || state.seamstressRoleTenureState === undefined ||
+      payload.settlementCharacterStateRevision !== state.currentCharacterState.revision) {
+    throw new DomainError("InvalidSeamstressInformationDeliveredPayload", "Seamstress information requires settlement-time character and tenure state");
+  }
+  const choices = state.seamstressTargetChoices?.choices.filter((choice) => choice.opportunityId === payload.opportunityId) ?? [];
+  const spends = state.seamstressAbilitySpends?.spends.filter((spend) => spend.opportunityId === payload.opportunityId) ?? [];
+  if (choices.length !== 1 || spends.length !== 1 || choices[0] === undefined || spends[0] === undefined ||
+      (state.seamstressInformation?.deliveries.some((delivery) => delivery.opportunityId === payload.opportunityId) ?? false)) {
+    throw new DomainError("InvalidSeamstressInformationDeliveredPayload", "Seamstress information requires one unique choice/spend chain");
+  }
+  const validation = validateSeamstressInformationAgainstCanonicalState({
+    choice: choices[0],
+    spend: spends[0],
+    delivery: payload,
+    currentCharacterState: state.currentCharacterState,
+    roleTenures: state.seamstressRoleTenureState,
+    abilityImpairments: state.abilityImpairments
+  });
+  if (!validation.valid) throw new DomainError("InvalidSeamstressInformationDeliveredPayload", validation.reason);
+};
+
 const validateScheduledTaskSettledPayloadForState = (
   state: GameState,
   payload: ScheduledTaskSettledPayload
@@ -1427,13 +1555,15 @@ const validateScheduledTaskSettledPayloadForState = (
   }
 
   if (payload.taskType === "SEAMSTRESS_ACTION") {
-    if (
-      payload.outcomeType !== "SEAMSTRESS_DEFERRED" ||
-      !hasClosedSeamstressOpportunityForSettlement(state.firstNightActionOpportunities, payload)
-    ) {
-      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a closed Seamstress action opportunity");
+    if (payload.outcomeType === "SEAMSTRESS_DEFERRED" &&
+        hasClosedSeamstressOpportunityForSettlement(state.firstNightActionOpportunities, payload)) {
+      return;
     }
-    return;
+    if (payload.outcomeType === "SEAMSTRESS_INFORMATION_DELIVERED" &&
+        hasSeamstressInformationForSettlement(state.seamstressInformation, payload)) {
+      return;
+    }
+    throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match a Seamstress defer or delivered-information chain");
   }
 
   throw new DomainError(
@@ -1448,6 +1578,8 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidGameCreatedPayload";
     case "ScriptSelected":
       return "InvalidScriptSelectedPayload";
+    case "SeamstressResolutionCapabilityDeclared":
+      return "InvalidSeamstressResolutionCapabilityDeclaredPayload";
     case "SetupGenerated":
       return "InvalidSetupGeneratedPayload";
     case "PlayerRosterCreated":
@@ -1466,6 +1598,12 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidPhilosopherActionDeferredPayload";
     case "SeamstressActionDeferred":
       return "InvalidSeamstressActionDeferredPayload";
+    case "SeamstressTargetsChosen":
+      return "InvalidSeamstressTargetsChosenPayload";
+    case "SeamstressAbilitySpent":
+      return "InvalidSeamstressAbilitySpentPayload";
+    case "SeamstressInformationDelivered":
+      return "InvalidSeamstressInformationDeliveredPayload";
     case "PhilosopherAbilityChosen":
       return "InvalidPhilosopherAbilityChosenPayload";
     case "PhilosopherAbilityGranted":
@@ -1616,6 +1754,26 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
       };
     }
 
+    case "SeamstressResolutionCapabilityDeclared": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "Seamstress capability requires an existing game");
+      const validation = validateSeamstressResolutionCapabilityDeclaredPayload(event.payload);
+      if (!validation.valid) throw new DomainError("InvalidSeamstressResolutionCapabilityDeclaredPayload", validation.reason);
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion || state.phase !== "SCRIPT_SELECTION" ||
+          state.selectedScript === undefined || state.selectedScript.scriptId !== SUPPORTED_SCRIPT_ID ||
+          event.payload.scriptId !== state.selectedScript.scriptId) {
+        throw new DomainError("InvalidSeamstressResolutionCapabilityDeclaredPayload", "Seamstress capability must exactly match the selected supported script");
+      }
+      if (state.seamstressResolutionCapability !== undefined) {
+        throw new DomainError("DuplicateSeamstressResolutionCapabilityDeclared", "Seamstress capability cannot be declared twice");
+      }
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        seamstressResolutionCapability: event.payload
+      };
+    }
+
     case "SetupGenerated": {
       if (state === undefined) {
         throw new DomainError("MissingGameCreated", "SetupGenerated requires an existing game");
@@ -1672,16 +1830,25 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         );
       }
 
+      const currentCharacterState = deriveInitialCurrentCharacterStateSet({
+        roster: state.roster.entries,
+        assignment: event.payload.assignments,
+        setup: state.setup
+      });
+      const seamstressRoleTenureState = bootstrapRoleTenuresFromCharactersAssigned({
+        assignments: event.payload.assignments,
+        sourceEventId: event.eventId,
+        sourceEventSequence: event.eventSequence
+      });
+
       return {
         ...state,
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         assignment: event.payload,
-        currentCharacterState: deriveInitialCurrentCharacterStateSet({
-          roster: state.roster.entries,
-          assignment: event.payload.assignments,
-          setup: state.setup
-        })
+        currentCharacterState,
+        seamstressRoleTenureState,
+        seamstressAbilityState: bootstrapSeamstressAbilityState(seamstressRoleTenureState)
       };
     }
 
@@ -1817,6 +1984,50 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
       };
     }
 
+    case "SeamstressTargetsChosen": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "SeamstressTargetsChosen requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidSeamstressTargetsChosenPayload", "SeamstressTargetsChosen rules baseline must match state");
+      }
+      validateSeamstressTargetsChosenPayloadForState(state, event.payload);
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        seamstressTargetChoices: appendSeamstressTargetChoice(state.seamstressTargetChoices, event.payload)
+      };
+    }
+
+    case "SeamstressAbilitySpent": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "SeamstressAbilitySpent requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidSeamstressAbilitySpentPayload", "SeamstressAbilitySpent rules baseline must match state");
+      }
+      validateSeamstressAbilitySpentPayloadForState(state, event.payload);
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        seamstressAbilityState: spendSeamstressAbilityEntitlement(state.seamstressAbilityState, event.payload),
+        seamstressAbilitySpends: appendSeamstressAbilitySpend(state.seamstressAbilitySpends, event.payload)
+      };
+    }
+
+    case "SeamstressInformationDelivered": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "SeamstressInformationDelivered requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidSeamstressInformationDeliveredPayload", "SeamstressInformationDelivered rules baseline must match state");
+      }
+      validateSeamstressInformationDeliveredPayloadForState(state, event.payload);
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        seamstressInformation: appendSeamstressInformationDelivery(state.seamstressInformation, event.payload),
+        firstNightActionOpportunities: closeSeamstressInformationOpportunity(state.firstNightActionOpportunities, event.payload)
+      };
+    }
+
     case "PhilosopherAbilityChosen": {
       if (state === undefined) {
         throw new DomainError("MissingGameCreated", "PhilosopherAbilityChosen requires an existing game");
@@ -1854,11 +2065,19 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
 
       validatePhilosopherAbilityGrantedPayloadForState(state, event.payload);
 
+      const philosopherGrantedAbilities = appendPhilosopherGrantedAbility(state.philosopherGrantedAbilities, event.payload);
+      const seamstressAbilityState = appendPhilosopherGrantedSeamstressAbility({
+        state: state.seamstressAbilityState,
+        roleTenures: state.seamstressRoleTenureState ?? { records: [], processedTransitionFactIds: [] },
+        grant: event.payload
+      });
+
       return {
         ...state,
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
-        philosopherGrantedAbilities: appendPhilosopherGrantedAbility(state.philosopherGrantedAbilities, event.payload)
+        philosopherGrantedAbilities,
+        seamstressAbilityState
       };
     }
 
@@ -1972,12 +2191,30 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
       if (!currentStateValidation.valid) {
         throw new DomainError("InvalidSnakeCharmerDemonSwapAppliedPayload", currentStateValidation.reason);
       }
+      const transitionFacts = roleTenureTransitionFactsFromSnakeCharmerDemonSwap({
+        eventId: event.eventId,
+        eventSequence: event.eventSequence,
+        payload: event.payload
+      });
+      if (state.seamstressRoleTenureState === undefined) {
+        throw new DomainError("InvalidSnakeCharmerDemonSwapAppliedPayload", "Snake Charmer role transition requires initialized role tenures");
+      }
+      let seamstressRoleTenureState = state.seamstressRoleTenureState;
+      for (const fact of transitionFacts) {
+        seamstressRoleTenureState = applyRoleTenureTransitionFact(seamstressRoleTenureState, fact);
+      }
+      const seamstressAbilityState = reconcileSeamstressAbilityStateWithRoleTenures(
+        state.seamstressAbilityState,
+        seamstressRoleTenureState
+      );
 
       return {
         ...state,
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         currentCharacterState: nextCurrentCharacterState,
+        seamstressRoleTenureState,
+        seamstressAbilityState,
         firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
         snakeCharmerDemonSwaps: appendSnakeCharmerDemonSwap(state.snakeCharmerDemonSwaps, event.payload)
       };

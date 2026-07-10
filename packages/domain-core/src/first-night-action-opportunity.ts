@@ -14,7 +14,16 @@ import type {
   ScheduledTaskSettlement
 } from "./first-night-task-plan.js";
 import { actionOpportunityId } from "./ids.js";
-import type { ActionOpportunityId, PlayerId, RoleId, ScheduledTaskId } from "./ids.js";
+import type {
+  AbilityInstanceId,
+  AbilityUseEntitlementId,
+  ActionOpportunityId,
+  GrantedAbilityId,
+  PlayerId,
+  RoleId,
+  RoleTenureId,
+  ScheduledTaskId
+} from "./ids.js";
 import {
   hasExactEnumerableKeys,
   hasExactRoleSetupSnapshotShape,
@@ -23,6 +32,21 @@ import {
 import type { SeatNumber } from "./player-roster.js";
 import type { RoleSetupSnapshot } from "./setup-types.js";
 import { sameRoleSetupSnapshot } from "./setup-types.js";
+import type { GrantedAbilitySet } from "./philosopher-ability.js";
+import type {
+  RoleTenureState,
+  SeamstressAbilitySourceDescriptor,
+  SeamstressAbilityState,
+  SeamstressResolutionCapabilityDeclaredPayload
+} from "./seamstress.js";
+import {
+  findActiveSeamstressAbilityForSource,
+  isRoleTenureContinuousAcross,
+  parseRoleTenureId,
+  parseSeamstressAbilityInstanceId,
+  parseSeamstressAbilityUseEntitlementId,
+  SEAMSTRESS_RESOLUTION_CAPABILITY_VERSION
+} from "./seamstress.js";
 
 export type ActionOpportunityStatus = "OPEN" | "CLOSED";
 export type ActionOpportunityKind =
@@ -35,7 +59,7 @@ export type PhilosopherActionDecisionKind = "DEFER" | "CHOOSE_GOOD_CHARACTER";
 export type SnakeCharmerActionDecisionKind = "CHOOSE_PLAYER";
 export type WitchActionDecisionKind = "CHOOSE_PLAYER";
 export type DreamerActionDecisionKind = "CHOOSE_PLAYER";
-export type SeamstressActionDecisionKind = "DEFER";
+export type SeamstressActionDecisionKind = "DEFER" | "CHOOSE_TWO_PLAYERS";
 
 export type PhilosopherActionDecision =
   | {
@@ -46,9 +70,9 @@ export type PhilosopherActionDecision =
       readonly roleId: RoleId;
     };
 
-export type SeamstressActionDecision = {
-  readonly kind: "DEFER";
-};
+export type SeamstressActionDecision =
+  | { readonly kind: "DEFER" }
+  | { readonly kind: "CHOOSE_TWO_PLAYERS"; readonly targetPlayerIds: readonly [PlayerId, PlayerId] };
 
 export type PhilosopherActionOpportunityVisibility = {
   readonly canDefer: true;
@@ -74,11 +98,25 @@ export type DreamerActionOpportunityVisibility = {
   readonly targetSchema: "OTHER_NON_TRAVELLER_PLAYER";
 };
 
-export type SeamstressActionOpportunityVisibility = {
+export type SeamstressActionOpportunityVisibilityV1 = {
   readonly canDefer: true;
   readonly supportedDecisionKinds: readonly ["DEFER"];
   readonly futureUnsupportedDecisionKinds: readonly ["CHOOSE_TWO_PLAYERS"];
 };
+
+export type SeamstressActionOpportunityVisibilityV2 = {
+  readonly visibilitySchemaVersion: "seamstress-first-night-action-v2";
+  readonly resolutionCapabilityVersion: typeof SEAMSTRESS_RESOLUTION_CAPABILITY_VERSION;
+  readonly canDefer: true;
+  readonly canChooseTargets: true;
+  readonly supportedDecisionKinds: readonly ["DEFER", "CHOOSE_TWO_PLAYERS"];
+  readonly futureUnsupportedDecisionKinds: readonly [];
+  readonly targetSchema: "EXACTLY_TWO_DISTINCT_OTHER_MODELED_PLAYERS";
+};
+
+export type SeamstressActionOpportunityVisibility =
+  | SeamstressActionOpportunityVisibilityV1
+  | SeamstressActionOpportunityVisibilityV2;
 
 export type ActionOpportunityVisibility =
   | PhilosopherActionOpportunityVisibility
@@ -164,13 +202,26 @@ export type DreamerActionOpportunity = DreamerActionOpportunitySource & {
   readonly visibility: DreamerActionOpportunityVisibility;
 };
 
-export type SeamstressActionOpportunity = SeamstressActionOpportunitySource & {
+export type SeamstressActionOpportunityCommon = SeamstressActionOpportunitySource & {
   readonly nightNumber: 1;
   readonly opportunityId: ActionOpportunityId;
   readonly opportunityKind: "SEAMSTRESS_FIRST_NIGHT_ACTION";
   readonly opportunityStatus: ActionOpportunityStatus;
-  readonly visibility: SeamstressActionOpportunityVisibility;
 };
+
+export type SeamstressActionOpportunityV1 = SeamstressActionOpportunityCommon & {
+  readonly visibility: SeamstressActionOpportunityVisibilityV1;
+};
+
+export type SeamstressActionOpportunityV2 = SeamstressActionOpportunityCommon & {
+  readonly sourceRoleTenureId: RoleTenureId;
+  readonly abilitySource: SeamstressAbilitySourceDescriptor;
+  readonly abilityInstanceId: AbilityInstanceId;
+  readonly abilityUseEntitlementId: AbilityUseEntitlementId;
+  readonly visibility: SeamstressActionOpportunityVisibilityV2;
+};
+
+export type SeamstressActionOpportunity = SeamstressActionOpportunityV1 | SeamstressActionOpportunityV2;
 
 export type FirstNightActionOpportunity =
   | PhilosopherActionOpportunity
@@ -194,12 +245,32 @@ export type PhilosopherActionDeferredPayload = PhilosopherActionOpportunitySourc
   readonly decisionKind: "DEFER";
 };
 
-export type SeamstressActionDeferredPayload = SeamstressActionOpportunitySource & {
+export type SeamstressActionDeferredPayloadV1 = SeamstressActionOpportunitySource & {
   readonly rulesBaselineVersion: string;
   readonly nightNumber: 1;
   readonly opportunityId: ActionOpportunityId;
   readonly decisionKind: "DEFER";
 };
+
+export type SeamstressActionDeferredPayloadV2 = {
+  readonly rulesBaselineVersion: string;
+  readonly deferSchemaVersion: "seamstress-action-deferred-v2";
+  readonly nightNumber: 1;
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: "SEAMSTRESS_ACTION";
+  readonly opportunityId: ActionOpportunityId;
+  readonly decisionKind: "DEFER";
+  readonly abilityInstanceId: AbilityInstanceId;
+  readonly abilityUseEntitlementId: AbilityUseEntitlementId;
+  readonly sourceRoleTenureId: RoleTenureId;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly sourceRole: RoleSetupSnapshot;
+  readonly opportunityCharacterStateRevision: number;
+  readonly settlementCharacterStateRevision: number;
+};
+
+export type SeamstressActionDeferredPayload = SeamstressActionDeferredPayloadV1 | SeamstressActionDeferredPayloadV2;
 
 type ValidationResult =
   | { readonly valid: true }
@@ -209,7 +280,7 @@ export type SeamstressActionDecisionValidationResult =
   | { readonly valid: true }
   | {
       readonly valid: false;
-      readonly code: "InvalidSeamstressActionDecision" | "UnsupportedSeamstressActionDecision";
+      readonly code: "InvalidSeamstressActionDecision" | "InvalidSeamstressTarget" | "UnsupportedSeamstressActionDecision";
       readonly reason: string;
     };
 
@@ -219,6 +290,10 @@ type OpportunityValidationInput = {
   readonly firstNightTaskProgress: FirstNightTaskProgress | undefined;
   readonly currentCharacterState: CurrentCharacterStateSet;
   readonly firstNightActionOpportunities: FirstNightActionOpportunityState | undefined;
+  readonly seamstressResolutionCapability?: SeamstressResolutionCapabilityDeclaredPayload | undefined;
+  readonly seamstressRoleTenureState?: RoleTenureState | undefined;
+  readonly seamstressAbilityState?: SeamstressAbilityState | undefined;
+  readonly philosopherGrantedAbilities?: GrantedAbilitySet | undefined;
 };
 
 type CreateOpportunityResult =
@@ -260,10 +335,19 @@ const DREAMER_ACTION_OPPORTUNITY_VISIBILITY_KEYS = [
   "supportedDecisionKinds",
   "targetSchema"
 ] as const;
-const SEAMSTRESS_ACTION_OPPORTUNITY_VISIBILITY_KEYS = [
+const SEAMSTRESS_ACTION_OPPORTUNITY_VISIBILITY_V1_KEYS = [
   "canDefer",
   "futureUnsupportedDecisionKinds",
   "supportedDecisionKinds"
+] as const;
+const SEAMSTRESS_ACTION_OPPORTUNITY_VISIBILITY_V2_KEYS = [
+  "canChooseTargets",
+  "canDefer",
+  "futureUnsupportedDecisionKinds",
+  "resolutionCapabilityVersion",
+  "supportedDecisionKinds",
+  "targetSchema",
+  "visibilitySchemaVersion"
 ] as const;
 const FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS = [
   "nightNumber",
@@ -292,6 +376,33 @@ const FIRST_NIGHT_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS = [
   "taskType",
   "visibility"
 ] as const;
+const SEAMSTRESS_ACTION_OPPORTUNITY_V2_KEYS = [
+  ...FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS,
+  "abilityInstanceId",
+  "abilitySource",
+  "abilityUseEntitlementId",
+  "sourceRoleTenureId"
+] as const;
+const SEAMSTRESS_ACTION_OPPORTUNITY_CREATED_PAYLOAD_V2_KEYS = [
+  ...FIRST_NIGHT_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS,
+  "abilityInstanceId",
+  "abilitySource",
+  "abilityUseEntitlementId",
+  "sourceRoleTenureId"
+] as const;
+const SEAMSTRESS_ROLE_TENURE_ABILITY_SOURCE_KEYS = [
+  "abilityRoleId",
+  "acquiredCharacterStateRevision",
+  "kind",
+  "roleTenureId"
+] as const;
+const SEAMSTRESS_PHILOSOPHER_GRANT_ABILITY_SOURCE_KEYS = [
+  "abilityRoleId",
+  "acquiredCharacterStateRevision",
+  "grantId",
+  "kind",
+  "sourceRoleTenureId"
+] as const;
 const PHILOSOPHER_ACTION_DEFERRED_PAYLOAD_KEYS = [
   "decisionKind",
   "nightNumber",
@@ -304,7 +415,7 @@ const PHILOSOPHER_ACTION_DEFERRED_PAYLOAD_KEYS = [
   "taskId",
   "taskType"
 ] as const;
-const SEAMSTRESS_ACTION_DEFERRED_PAYLOAD_KEYS = [
+const SEAMSTRESS_ACTION_DEFERRED_PAYLOAD_V1_KEYS = [
   "decisionKind",
   "nightNumber",
   "opportunityId",
@@ -316,6 +427,23 @@ const SEAMSTRESS_ACTION_DEFERRED_PAYLOAD_KEYS = [
   "taskId",
   "taskType"
 ] as const;
+const SEAMSTRESS_ACTION_DEFERRED_PAYLOAD_V2_KEYS = [
+  "abilityInstanceId",
+  "abilityUseEntitlementId",
+  "decisionKind",
+  "deferSchemaVersion",
+  "nightNumber",
+  "opportunityCharacterStateRevision",
+  "opportunityId",
+  "rulesBaselineVersion",
+  "settlementCharacterStateRevision",
+  "sourcePlayerId",
+  "sourceRole",
+  "sourceRoleTenureId",
+  "sourceSeatNumber",
+  "taskId",
+  "taskType"
+] as const;
 
 const PHILOSOPHER_ROLE_ID = "philosopher" as RoleId;
 const SNAKE_CHARMER_ROLE_ID = "snake_charmer" as RoleId;
@@ -323,7 +451,7 @@ const WITCH_ROLE_ID = "witch" as RoleId;
 const DREAMER_ROLE_ID = "dreamer" as RoleId;
 const SEAMSTRESS_ROLE_ID = "seamstress" as RoleId;
 const FIRST_NIGHT_ACTION_OPPORTUNITY_ID_PATTERN =
-  /^first-night-v1:(?:(PHILOSOPHER_ACTION|SNAKE_CHARMER_ACTION|WITCH_ACTION|DREAMER_ACTION|SEAMSTRESS_ACTION):seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(SNAKE_CHARMER_ACTION):seat-(0[1-9]|1[0-2]):from-snake_charmer:opportunity-(0[1-9][0-9]*))$/;
+  /^first-night-v1:(?:(PHILOSOPHER_ACTION|SNAKE_CHARMER_ACTION|WITCH_ACTION|DREAMER_ACTION|SEAMSTRESS_ACTION):seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(SNAKE_CHARMER_ACTION|SEAMSTRESS_ACTION):seat-(0[1-9]|1[0-2]):from-(snake_charmer|seamstress):opportunity-(0[1-9][0-9]*))$/;
 
 const fail = (reason: string): ValidationResult => ({ valid: false, reason });
 
@@ -351,10 +479,20 @@ const createDreamerActionOpportunityVisibility = (): DreamerActionOpportunityVis
   targetSchema: "OTHER_NON_TRAVELLER_PLAYER"
 });
 
-const createSeamstressActionOpportunityVisibility = (): SeamstressActionOpportunityVisibility => ({
+const createSeamstressActionOpportunityVisibilityV1 = (): SeamstressActionOpportunityVisibilityV1 => ({
   canDefer: true,
   supportedDecisionKinds: ["DEFER"],
   futureUnsupportedDecisionKinds: ["CHOOSE_TWO_PLAYERS"]
+});
+
+const createSeamstressActionOpportunityVisibilityV2 = (): SeamstressActionOpportunityVisibilityV2 => ({
+  visibilitySchemaVersion: "seamstress-first-night-action-v2",
+  resolutionCapabilityVersion: SEAMSTRESS_RESOLUTION_CAPABILITY_VERSION,
+  canDefer: true,
+  canChooseTargets: true,
+  supportedDecisionKinds: ["DEFER", "CHOOSE_TWO_PLAYERS"],
+  futureUnsupportedDecisionKinds: [],
+  targetSchema: "EXACTLY_TWO_DISTINCT_OTHER_MODELED_PLAYERS"
 });
 
 const isDenseArray = (value: readonly unknown[]): boolean => {
@@ -410,9 +548,9 @@ const hasExactDreamerActionOpportunityVisibilityShape = (value: unknown): value 
   value.supportedDecisionKinds[0] === "CHOOSE_PLAYER" &&
   value.targetSchema === "OTHER_NON_TRAVELLER_PLAYER";
 
-const hasExactSeamstressActionOpportunityVisibilityShape = (value: unknown): value is SeamstressActionOpportunityVisibility =>
+const hasExactSeamstressActionOpportunityVisibilityV1Shape = (value: unknown): value is SeamstressActionOpportunityVisibilityV1 =>
   isPlainRecord(value) &&
-  hasExactEnumerableKeys(value, SEAMSTRESS_ACTION_OPPORTUNITY_VISIBILITY_KEYS) &&
+  hasExactEnumerableKeys(value, SEAMSTRESS_ACTION_OPPORTUNITY_VISIBILITY_V1_KEYS) &&
   value.canDefer === true &&
   Array.isArray(value.supportedDecisionKinds) &&
   isDenseArray(value.supportedDecisionKinds) &&
@@ -423,8 +561,51 @@ const hasExactSeamstressActionOpportunityVisibilityShape = (value: unknown): val
   value.futureUnsupportedDecisionKinds.length === 1 &&
   value.futureUnsupportedDecisionKinds[0] === "CHOOSE_TWO_PLAYERS";
 
+const hasExactSeamstressActionOpportunityVisibilityV2Shape = (value: unknown): value is SeamstressActionOpportunityVisibilityV2 =>
+  isPlainRecord(value) &&
+  hasExactEnumerableKeys(value, SEAMSTRESS_ACTION_OPPORTUNITY_VISIBILITY_V2_KEYS) &&
+  value.visibilitySchemaVersion === "seamstress-first-night-action-v2" &&
+  value.resolutionCapabilityVersion === SEAMSTRESS_RESOLUTION_CAPABILITY_VERSION &&
+  value.canDefer === true &&
+  value.canChooseTargets === true &&
+  Array.isArray(value.supportedDecisionKinds) &&
+  isDenseArray(value.supportedDecisionKinds) &&
+  value.supportedDecisionKinds.length === 2 &&
+  value.supportedDecisionKinds[0] === "DEFER" &&
+  value.supportedDecisionKinds[1] === "CHOOSE_TWO_PLAYERS" &&
+  Array.isArray(value.futureUnsupportedDecisionKinds) &&
+  isDenseArray(value.futureUnsupportedDecisionKinds) &&
+  value.futureUnsupportedDecisionKinds.length === 0 &&
+  value.targetSchema === "EXACTLY_TWO_DISTINCT_OTHER_MODELED_PLAYERS";
+
+const hasExactSeamstressAbilitySourceShape = (value: unknown): value is SeamstressAbilitySourceDescriptor => {
+  if (!isPlainRecord(value)) return false;
+  if (value.kind === "ROLE_TENURE") {
+    return hasExactEnumerableKeys(value, SEAMSTRESS_ROLE_TENURE_ABILITY_SOURCE_KEYS) &&
+      value.abilityRoleId === "seamstress" && parseRoleTenureId(value.roleTenureId).valid &&
+      typeof value.acquiredCharacterStateRevision === "number" && Number.isInteger(value.acquiredCharacterStateRevision) &&
+      value.acquiredCharacterStateRevision > 0;
+  }
+  return value.kind === "PHILOSOPHER_GRANT" &&
+    hasExactEnumerableKeys(value, SEAMSTRESS_PHILOSOPHER_GRANT_ABILITY_SOURCE_KEYS) &&
+    value.abilityRoleId === "seamstress" && typeof value.grantId === "string" && value.grantId.trim().length > 0 &&
+    parseRoleTenureId(value.sourceRoleTenureId).valid && typeof value.acquiredCharacterStateRevision === "number" &&
+    Number.isInteger(value.acquiredCharacterStateRevision) && value.acquiredCharacterStateRevision > 0;
+};
+
+export const isSeamstressActionOpportunityV2 = (
+  value: SeamstressActionOpportunity | FirstNightActionOpportunity
+): value is SeamstressActionOpportunityV2 =>
+  value.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION" &&
+  Object.hasOwn(value.visibility, "visibilitySchemaVersion");
+
 const hasExactFirstNightActionOpportunityShape = (value: unknown): value is FirstNightActionOpportunity => {
-  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS)) {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+  const seamstressV2 = value.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION" && isPlainRecord(value.visibility) &&
+    Object.hasOwn(value.visibility, "visibilitySchemaVersion");
+  if (!hasExactEnumerableKeys(value, seamstressV2 ? SEAMSTRESS_ACTION_OPPORTUNITY_V2_KEYS : FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS)) {
     return false;
   }
 
@@ -487,19 +668,62 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
   }
 
   if (value.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION") {
-    return (
-      value.taskType === "SEAMSTRESS_ACTION" &&
-      parsedId.taskType === "SEAMSTRESS_ACTION" &&
-      hasExactSeamstressActionOpportunityVisibilityShape(value.visibility)
-    );
+    if (value.taskType !== "SEAMSTRESS_ACTION" || parsedId.taskType !== "SEAMSTRESS_ACTION") return false;
+    if (!seamstressV2) return hasExactSeamstressActionOpportunityVisibilityV1Shape(value.visibility);
+    if (!hasExactSeamstressActionOpportunityVisibilityV2Shape(value.visibility) ||
+        !hasExactSeamstressAbilitySourceShape(value.abilitySource) ||
+        !parseRoleTenureId(value.sourceRoleTenureId).valid ||
+        !parseSeamstressAbilityInstanceId(value.abilityInstanceId).valid ||
+        !parseSeamstressAbilityUseEntitlementId(value.abilityUseEntitlementId).valid) return false;
+    const sourceTenure = parseRoleTenureId(value.sourceRoleTenureId);
+    const instance = parseSeamstressAbilityInstanceId(value.abilityInstanceId);
+    const entitlement = parseSeamstressAbilityUseEntitlementId(value.abilityUseEntitlementId);
+    const sourceRole = value.sourceRole as RoleSetupSnapshot;
+    const sourceCharacterStateRevision = value.sourceCharacterStateRevision as number;
+    if (!sourceTenure.valid || !instance.valid || !entitlement.valid ||
+        sourceTenure.seatNumber !== value.sourceSeatNumber || sourceTenure.roleId !== sourceRole.roleId ||
+        sourceTenure.acquiredCharacterStateRevision > sourceCharacterStateRevision ||
+        instance.sourceRoleTenureId !== value.sourceRoleTenureId ||
+        entitlement.abilityInstanceId !== value.abilityInstanceId) return false;
+    return value.abilitySource.kind === "ROLE_TENURE"
+      ? instance.sourceKind === "ROLE_TENURE" && sourceTenure.roleId === "seamstress" &&
+        value.abilitySource.roleTenureId === value.sourceRoleTenureId &&
+        value.abilitySource.acquiredCharacterStateRevision === instance.acquiredCharacterStateRevision
+      : instance.sourceKind === "PHILOSOPHER_GRANT" && sourceTenure.roleId === "philosopher" &&
+        value.abilitySource.sourceRoleTenureId === value.sourceRoleTenureId &&
+        value.abilitySource.grantId === instance.grantId &&
+        value.abilitySource.acquiredCharacterStateRevision === instance.acquiredCharacterStateRevision;
   }
 
   return false;
 };
 
+export const validateSeamstressActionOpportunityV2Shape = (
+  value: unknown
+): ValidationResult => {
+  if (!hasExactFirstNightActionOpportunityShape(value) ||
+      value.opportunityKind !== "SEAMSTRESS_FIRST_NIGHT_ACTION" ||
+      !isSeamstressActionOpportunityV2(value)) {
+    return fail("Stored Seamstress opportunity must have the exact V2 runtime shape");
+  }
+  return { valid: true };
+};
+
 const cloneVisibility = (visibility: ActionOpportunityVisibility): ActionOpportunityVisibility => {
+  if (Object.hasOwn(visibility, "visibilitySchemaVersion")) {
+    const seamstress = visibility as SeamstressActionOpportunityVisibilityV2;
+    return {
+      visibilitySchemaVersion: seamstress.visibilitySchemaVersion,
+      resolutionCapabilityVersion: seamstress.resolutionCapabilityVersion,
+      canDefer: seamstress.canDefer,
+      canChooseTargets: seamstress.canChooseTargets,
+      supportedDecisionKinds: ["DEFER", "CHOOSE_TWO_PLAYERS"],
+      futureUnsupportedDecisionKinds: [],
+      targetSchema: seamstress.targetSchema
+    };
+  }
   if ("canDefer" in visibility) {
-    if (visibility.supportedDecisionKinds.length === 1) {
+    if (visibility.futureUnsupportedDecisionKinds[0] === "CHOOSE_TWO_PLAYERS") {
       return {
         canDefer: visibility.canDefer,
         supportedDecisionKinds: ["DEFER"],
@@ -522,6 +746,18 @@ const cloneVisibility = (visibility: ActionOpportunityVisibility): ActionOpportu
 };
 
 const sameVisibility = (left: ActionOpportunityVisibility, right: ActionOpportunityVisibility): boolean => {
+  const leftV2 = Object.hasOwn(left, "visibilitySchemaVersion");
+  const rightV2 = Object.hasOwn(right, "visibilitySchemaVersion");
+  if (leftV2 || rightV2) {
+    if (!leftV2 || !rightV2) return false;
+    const a = left as SeamstressActionOpportunityVisibilityV2;
+    const b = right as SeamstressActionOpportunityVisibilityV2;
+    return a.visibilitySchemaVersion === b.visibilitySchemaVersion &&
+      a.resolutionCapabilityVersion === b.resolutionCapabilityVersion && a.canDefer === b.canDefer &&
+      a.canChooseTargets === b.canChooseTargets && a.targetSchema === b.targetSchema &&
+      a.supportedDecisionKinds.every((value, index) => value === b.supportedDecisionKinds[index]) &&
+      a.futureUnsupportedDecisionKinds.length === b.futureUnsupportedDecisionKinds.length;
+  }
   if ("canDefer" in left || "canDefer" in right) {
     return "canDefer" in left &&
       "canDefer" in right &&
@@ -606,6 +842,26 @@ const cloneFirstNightActionOpportunity = (
     };
   }
 
+  if (isSeamstressActionOpportunityV2(opportunity)) {
+    return {
+      nightNumber: opportunity.nightNumber,
+      opportunityId: opportunity.opportunityId,
+      opportunityKind: opportunity.opportunityKind,
+      opportunityStatus: opportunity.opportunityStatus,
+      taskId: opportunity.taskId,
+      taskType: opportunity.taskType,
+      sourcePlayerId: opportunity.sourcePlayerId,
+      sourceSeatNumber: opportunity.sourceSeatNumber,
+      sourceRole: cloneRoleSetupSnapshot(opportunity.sourceRole),
+      sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision,
+      sourceRoleTenureId: opportunity.sourceRoleTenureId,
+      abilitySource: { ...opportunity.abilitySource },
+      abilityInstanceId: opportunity.abilityInstanceId,
+      abilityUseEntitlementId: opportunity.abilityUseEntitlementId,
+      visibility: cloneVisibility(opportunity.visibility) as SeamstressActionOpportunityVisibilityV2
+    };
+  }
+
   return {
     nightNumber: opportunity.nightNumber,
     opportunityId: opportunity.opportunityId,
@@ -617,17 +873,40 @@ const cloneFirstNightActionOpportunity = (
     sourceSeatNumber: opportunity.sourceSeatNumber,
     sourceRole: cloneRoleSetupSnapshot(opportunity.sourceRole),
     sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision,
-    visibility: cloneVisibility(opportunity.visibility) as SeamstressActionOpportunityVisibility
+    visibility: cloneVisibility(opportunity.visibility) as SeamstressActionOpportunityVisibilityV1
   };
 };
 
-const sameOpportunityCore = (
+export const sameOpportunityCore = (
   left: FirstNightActionOpportunity,
   right: FirstNightActionOpportunity
-): boolean =>
-  left.nightNumber === right.nightNumber &&
+): boolean => {
+  if (left.opportunityKind !== right.opportunityKind) return false;
+  if (left.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION" && right.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION") {
+    const leftV2 = isSeamstressActionOpportunityV2(left);
+    const rightV2 = isSeamstressActionOpportunityV2(right);
+    if (leftV2 !== rightV2) return false;
+    if (leftV2 && rightV2) {
+      if (left.sourceRoleTenureId !== right.sourceRoleTenureId ||
+          left.abilityInstanceId !== right.abilityInstanceId ||
+          left.abilityUseEntitlementId !== right.abilityUseEntitlementId ||
+          left.abilitySource.kind !== right.abilitySource.kind ||
+          left.abilitySource.abilityRoleId !== right.abilitySource.abilityRoleId ||
+          left.abilitySource.acquiredCharacterStateRevision !== right.abilitySource.acquiredCharacterStateRevision) {
+        return false;
+      }
+      if (left.abilitySource.kind === "ROLE_TENURE") {
+        if (right.abilitySource.kind !== "ROLE_TENURE" ||
+            left.abilitySource.roleTenureId !== right.abilitySource.roleTenureId) return false;
+      } else if (right.abilitySource.kind !== "PHILOSOPHER_GRANT" ||
+          left.abilitySource.grantId !== right.abilitySource.grantId ||
+          left.abilitySource.sourceRoleTenureId !== right.abilitySource.sourceRoleTenureId) {
+        return false;
+      }
+    }
+  }
+  return left.nightNumber === right.nightNumber &&
   left.opportunityId === right.opportunityId &&
-  left.opportunityKind === right.opportunityKind &&
   left.opportunityStatus === right.opportunityStatus &&
   left.taskId === right.taskId &&
   left.taskType === right.taskType &&
@@ -636,6 +915,7 @@ const sameOpportunityCore = (
   sameRoleSetupSnapshot(left.sourceRole, right.sourceRole) &&
   left.sourceCharacterStateRevision === right.sourceCharacterStateRevision &&
   sameVisibility(left.visibility, right.visibility);
+};
 
 const currentPhilosopherEntryForTask = (
   task: ScheduledTask,
@@ -825,6 +1105,22 @@ const currentSeamstressEntryForTask = (
   return currentEntry;
 };
 
+const currentPhilosopherGainedSeamstressEntryForTask = (
+  task: ScheduledTask,
+  currentCharacterState: CurrentCharacterStateSet
+) => {
+  const source = task.source;
+  if (task.taskType !== "SEAMSTRESS_ACTION" || task.taskClass !== "ROLE_ACTION" ||
+      source.kind !== "PHILOSOPHER_GAINED_ABILITY" || source.sourceRole.roleId !== PHILOSOPHER_ROLE_ID ||
+      source.chosenRole.roleId !== SEAMSTRESS_ROLE_ID) return undefined;
+  const currentEntry = currentCharacterState.entries.find((entry) =>
+    entry.playerId === source.playerId && entry.seatNumber === source.seatNumber
+  );
+  if (currentEntry === undefined || currentEntry.role.roleId !== PHILOSOPHER_ROLE_ID ||
+      !sameRoleSetupSnapshot(currentEntry.role, source.sourceRole)) return undefined;
+  return currentEntry;
+};
+
 export const formatFirstNightActionOpportunityId = (input: {
   readonly taskType: "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION" | "WITCH_ACTION" | "DREAMER_ACTION" | "SEAMSTRESS_ACTION";
   readonly seatNumber: SeatNumber;
@@ -862,6 +1158,20 @@ export const formatPhilosopherGainedSnakeCharmerActionOpportunityId = (input: {
   return actionOpportunityId(`first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-${seatSegment}:from-snake_charmer:opportunity-${opportunitySegment}`);
 };
 
+export const formatPhilosopherGainedSeamstressActionOpportunityId = (input: {
+  readonly seatNumber: SeatNumber;
+  readonly opportunityIndex?: number;
+}): ActionOpportunityId => {
+  const index = input.opportunityIndex ?? 1;
+  if (!Number.isInteger(input.seatNumber) || input.seatNumber < 1 || input.seatNumber > 12 ||
+      !Number.isInteger(index) || index < 1) {
+    throw new DomainError("InvalidFirstNightActionOpportunityCreatedPayload", "ActionOpportunityId requires a canonical seat and positive index");
+  }
+  const seatSegment = String(input.seatNumber).padStart(2, "0");
+  const opportunitySegment = String(index).padStart(2, "0");
+  return actionOpportunityId(`first-night-v1:PHILOSOPHER_GAINED:SEAMSTRESS_ACTION:seat-${seatSegment}:from-seamstress:opportunity-${opportunitySegment}`);
+};
+
 export const parseFirstNightActionOpportunityId = (
   value: ActionOpportunityId
 ): {
@@ -880,7 +1190,11 @@ export const parseFirstNightActionOpportunityId = (
 
   const taskType = (match[1] ?? match[4]) as "PHILOSOPHER_ACTION" | "SNAKE_CHARMER_ACTION" | "WITCH_ACTION" | "DREAMER_ACTION" | "SEAMSTRESS_ACTION";
   const seatNumber = Number(match[2] ?? match[5]);
-  const opportunityIndex = Number(match[3] ?? match[6]);
+  const opportunityIndex = Number(match[3] ?? match[7]);
+  if ((match[4] === "SNAKE_CHARMER_ACTION" && match[6] !== "snake_charmer") ||
+      (match[4] === "SEAMSTRESS_ACTION" && match[6] !== "seamstress")) {
+    return { valid: false, reason: "ActionOpportunityId gained-ability source must match its task type" };
+  }
   if (
     !Number.isInteger(seatNumber) ||
     seatNumber < 1 ||
@@ -1149,21 +1463,49 @@ export const tryCreateSeamstressFirstNightActionOpportunity = (
     return common;
   }
 
+  if (input.seamstressResolutionCapability?.capabilityVersion !== SEAMSTRESS_RESOLUTION_CAPABILITY_VERSION) {
+    return { valid: false, reason: "FirstNightActionOpportunityCreated V2 Seamstress source requires the public resolution capability" };
+  }
   const targetTask = common.targetTask;
-  const currentEntry = currentSeamstressEntryForTask(targetTask, input.currentCharacterState);
-  if (currentEntry === undefined) {
-    return { valid: false, reason: "FirstNightActionOpportunityCreated source is no longer a current base Seamstress" };
+  const baseEntry = currentSeamstressEntryForTask(targetTask, input.currentCharacterState);
+  const philosopherEntry = currentPhilosopherGainedSeamstressEntryForTask(targetTask, input.currentCharacterState);
+  const currentEntry = baseEntry ?? philosopherEntry;
+  if (currentEntry === undefined) return { valid: false, reason: "FirstNightActionOpportunityCreated source is not a current supported Seamstress ability holder" };
+  let grantIdValue: GrantedAbilityId | undefined;
+  if (targetTask.source.kind === "PHILOSOPHER_GAINED_ABILITY") {
+    const philosopherSource = targetTask.source;
+    const matchingGrants = input.philosopherGrantedAbilities?.abilities.filter((grant) =>
+      grant.sourcePlayerId === philosopherSource.playerId && grant.sourceSeatNumber === philosopherSource.seatNumber &&
+      grant.sourceCharacterStateRevision === philosopherSource.sourceCharacterStateRevision &&
+      grant.grantedAtOpportunityId === philosopherSource.opportunityId && grant.chosenRoleId === SEAMSTRESS_ROLE_ID &&
+      sameRoleSetupSnapshot(grant.sourceRole, philosopherSource.sourceRole) &&
+      sameRoleSetupSnapshot(grant.chosenRole, philosopherSource.chosenRole)
+    ) ?? [];
+    if (matchingGrants.length !== 1 || matchingGrants[0] === undefined) {
+      return { valid: false, reason: "FirstNightActionOpportunityCreated Philosopher Seamstress source requires one exact grant" };
+    }
+    grantIdValue = matchingGrants[0].grantId;
+  }
+  const active = findActiveSeamstressAbilityForSource({
+    roleTenures: input.seamstressRoleTenureState,
+    abilityState: input.seamstressAbilityState,
+    sourcePlayerId: currentEntry.playerId,
+    sourceSeatNumber: currentEntry.seatNumber,
+    sourceKind: baseEntry === undefined ? "PHILOSOPHER_GAINED_ABILITY" : "ROLE",
+    revision: input.currentCharacterState.revision,
+    ...(grantIdValue === undefined ? {} : { grantId: grantIdValue })
+  });
+  if (active === undefined || active.entitlement.status !== "UNSPENT") {
+    return { valid: false, reason: "FirstNightActionOpportunityCreated Seamstress instance must be active with an unspent entitlement" };
   }
 
   return {
     valid: true,
     opportunity: {
       nightNumber: 1,
-      opportunityId: formatFirstNightActionOpportunityId({
-        taskType: "SEAMSTRESS_ACTION",
-        seatNumber: currentEntry.seatNumber,
-        opportunityIndex: 1
-      }),
+      opportunityId: baseEntry === undefined
+        ? formatPhilosopherGainedSeamstressActionOpportunityId({ seatNumber: currentEntry.seatNumber, opportunityIndex: 1 })
+        : formatFirstNightActionOpportunityId({ taskType: "SEAMSTRESS_ACTION", seatNumber: currentEntry.seatNumber, opportunityIndex: 1 }),
       opportunityKind: "SEAMSTRESS_FIRST_NIGHT_ACTION",
       opportunityStatus: "OPEN",
       taskId: targetTask.taskId,
@@ -1172,9 +1514,48 @@ export const tryCreateSeamstressFirstNightActionOpportunity = (
       sourceSeatNumber: currentEntry.seatNumber,
       sourceRole: cloneRoleSetupSnapshot(currentEntry.role),
       sourceCharacterStateRevision: input.currentCharacterState.revision,
-      visibility: createSeamstressActionOpportunityVisibility()
+      sourceRoleTenureId: active.tenure.roleTenureId,
+      abilitySource: { ...active.instance.source },
+      abilityInstanceId: active.instance.abilityInstanceId,
+      abilityUseEntitlementId: active.entitlement.abilityUseEntitlementId,
+      visibility: createSeamstressActionOpportunityVisibilityV2()
     }
   };
+};
+
+export const tryCreateLegacySeamstressFirstNightActionOpportunity = (
+  input: OpportunityValidationInput
+): CreateSeamstressOpportunityResult => {
+  const common = validateCommonOpportunityTarget(input);
+  if (!common.valid) return common;
+  const currentEntry = currentSeamstressEntryForTask(common.targetTask, input.currentCharacterState);
+  if (currentEntry === undefined) return { valid: false, reason: "Legacy Seamstress opportunity requires the current base Seamstress" };
+  return {
+    valid: true,
+    opportunity: {
+      nightNumber: 1,
+      opportunityId: formatFirstNightActionOpportunityId({ taskType: "SEAMSTRESS_ACTION", seatNumber: currentEntry.seatNumber, opportunityIndex: 1 }),
+      opportunityKind: "SEAMSTRESS_FIRST_NIGHT_ACTION",
+      opportunityStatus: "OPEN",
+      taskId: common.targetTask.taskId,
+      taskType: "SEAMSTRESS_ACTION",
+      sourcePlayerId: currentEntry.playerId,
+      sourceSeatNumber: currentEntry.seatNumber,
+      sourceRole: cloneRoleSetupSnapshot(currentEntry.role),
+      sourceCharacterStateRevision: input.currentCharacterState.revision,
+      visibility: createSeamstressActionOpportunityVisibilityV1()
+    }
+  };
+};
+
+export const createLegacySeamstressFirstNightActionOpportunity = (
+  input: OpportunityValidationInput
+): SeamstressActionOpportunityV1 => {
+  const result = tryCreateLegacySeamstressFirstNightActionOpportunity(input);
+  if (!result.valid || isSeamstressActionOpportunityV2(result.opportunity)) {
+    throw new DomainError("InvalidFirstNightActionOpportunityCreatedPayload", result.valid ? "Legacy creator produced V2" : result.reason);
+  }
+  return result.opportunity;
 };
 
 export const tryCreateFirstNightRoleActionOpportunity = (
@@ -1219,7 +1600,14 @@ export const validateFirstNightActionOpportunityCreatedPayload = (
   payload: unknown,
   input: OpportunityValidationInput
 ): ValidationResult => {
-  if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, FIRST_NIGHT_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS)) {
+  if (!isPlainRecord(payload)) {
+    return fail("FirstNightActionOpportunityCreated payload must have exact runtime shape");
+  }
+  const seamstressV2 = payload.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION" && isPlainRecord(payload.visibility) &&
+    Object.hasOwn(payload.visibility, "visibilitySchemaVersion");
+  if (!hasExactEnumerableKeys(payload, seamstressV2
+    ? SEAMSTRESS_ACTION_OPPORTUNITY_CREATED_PAYLOAD_V2_KEYS
+    : FIRST_NIGHT_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS)) {
     return fail("FirstNightActionOpportunityCreated payload must have exact runtime shape");
   }
 
@@ -1227,7 +1615,7 @@ export const validateFirstNightActionOpportunityCreatedPayload = (
     return fail("FirstNightActionOpportunityCreated rulesBaselineVersion must be a string");
   }
 
-  if (!hasExactFirstNightActionOpportunityShape({
+  const opportunityCandidate = {
     nightNumber: payload.nightNumber,
     opportunityId: payload.opportunityId,
     opportunityKind: payload.opportunityKind,
@@ -1238,8 +1626,15 @@ export const validateFirstNightActionOpportunityCreatedPayload = (
     sourceSeatNumber: payload.sourceSeatNumber,
     taskId: payload.taskId,
     taskType: payload.taskType,
-    visibility: payload.visibility
-  })) {
+    visibility: payload.visibility,
+    ...(seamstressV2 ? {
+      sourceRoleTenureId: payload.sourceRoleTenureId,
+      abilitySource: payload.abilitySource,
+      abilityInstanceId: payload.abilityInstanceId,
+      abilityUseEntitlementId: payload.abilityUseEntitlementId
+    } : {})
+  };
+  if (!hasExactFirstNightActionOpportunityShape(opportunityCandidate)) {
     return fail("FirstNightActionOpportunityCreated fields must use supported primitive values");
   }
 
@@ -1247,7 +1642,9 @@ export const validateFirstNightActionOpportunityCreatedPayload = (
     return fail("FirstNightActionOpportunityCreated must create an OPEN opportunity");
   }
 
-  const expected = tryCreateFirstNightRoleActionOpportunity(input);
+  const expected = payload.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION" && !seamstressV2
+    ? tryCreateLegacySeamstressFirstNightActionOpportunity(input)
+    : tryCreateFirstNightRoleActionOpportunity(input);
   if (!expected.valid) {
     return expected;
   }
@@ -1271,11 +1668,12 @@ export const validateSeamstressActionDecision = (
   }
 
   if (decision.kind === "CHOOSE_TWO_PLAYERS") {
-    return {
-      valid: false,
-      code: "UnsupportedSeamstressActionDecision",
-      reason: "SubmitSeamstressAction CHOOSE_TWO_PLAYERS is not implemented in this slice"
-    };
+    if (!hasExactEnumerableKeys(decision, ["kind", "targetPlayerIds"]) || !Array.isArray(decision.targetPlayerIds) ||
+        !isDenseArray(decision.targetPlayerIds) || decision.targetPlayerIds.length !== 2 ||
+        decision.targetPlayerIds.some((id) => typeof id !== "string" || id.trim().length === 0)) {
+      return { valid: false, code: "InvalidSeamstressTarget", reason: "SubmitSeamstressAction requires exactly two dense player IDs" };
+    }
+    return { valid: true };
   }
 
   if (decision.kind !== "DEFER" || !hasExactEnumerableKeys(decision, ["kind"])) {
@@ -1286,6 +1684,18 @@ export const validateSeamstressActionDecision = (
     };
   }
 
+  return { valid: true };
+};
+
+export const validateSeamstressActionDecisionForOpportunity = (
+  decision: unknown,
+  opportunity: SeamstressActionOpportunity
+): SeamstressActionDecisionValidationResult => {
+  const shape = validateSeamstressActionDecision(decision);
+  if (!shape.valid) return shape;
+  if ((decision as SeamstressActionDecision).kind === "CHOOSE_TWO_PLAYERS" && !isSeamstressActionOpportunityV2(opportunity)) {
+    return { valid: false, code: "UnsupportedSeamstressActionDecision", reason: "Legacy V1 Seamstress opportunities are defer-only" };
+  }
   return { valid: true };
 };
 
@@ -1380,86 +1790,74 @@ export const validateSeamstressActionDeferredPayload = (
     readonly taskId: ScheduledTaskId;
   }
 ): ValidationResult => {
-  if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, SEAMSTRESS_ACTION_DEFERRED_PAYLOAD_KEYS)) {
+  if (!isPlainRecord(payload)) {
     return fail("SeamstressActionDeferred payload must have exact runtime shape");
   }
-
-  if (
-    typeof payload.rulesBaselineVersion !== "string" ||
-    payload.nightNumber !== 1 ||
-    typeof payload.taskId !== "string" ||
-    payload.taskId.trim().length === 0 ||
-    payload.taskType !== "SEAMSTRESS_ACTION" ||
-    typeof payload.opportunityId !== "string" ||
-    payload.opportunityId.trim().length === 0 ||
-    payload.decisionKind !== "DEFER" ||
-    typeof payload.sourcePlayerId !== "string" ||
-    payload.sourcePlayerId.trim().length === 0 ||
-    typeof payload.sourceSeatNumber !== "number" ||
-    !Number.isInteger(payload.sourceSeatNumber) ||
-    payload.sourceSeatNumber < 1 ||
-    payload.sourceSeatNumber > 12 ||
-    !hasExactRoleSetupSnapshotShape(payload.sourceRole) ||
-    typeof payload.sourceCharacterStateRevision !== "number" ||
-    !Number.isInteger(payload.sourceCharacterStateRevision) ||
-    payload.sourceCharacterStateRevision <= 0
-  ) {
+  const v2 = Object.hasOwn(payload, "deferSchemaVersion");
+  if (!hasExactEnumerableKeys(payload, v2 ? SEAMSTRESS_ACTION_DEFERRED_PAYLOAD_V2_KEYS : SEAMSTRESS_ACTION_DEFERRED_PAYLOAD_V1_KEYS)) {
+    return fail("SeamstressActionDeferred payload must have exact versioned runtime shape");
+  }
+  if (typeof payload.rulesBaselineVersion !== "string" || payload.nightNumber !== 1 ||
+      typeof payload.taskId !== "string" || payload.taskId.trim().length === 0 || payload.taskType !== "SEAMSTRESS_ACTION" ||
+      typeof payload.opportunityId !== "string" || payload.opportunityId.trim().length === 0 || payload.decisionKind !== "DEFER" ||
+      typeof payload.sourcePlayerId !== "string" || payload.sourcePlayerId.trim().length === 0 ||
+      typeof payload.sourceSeatNumber !== "number" || !Number.isInteger(payload.sourceSeatNumber) ||
+      payload.sourceSeatNumber < 1 || payload.sourceSeatNumber > 12 || !hasExactRoleSetupSnapshotShape(payload.sourceRole)) {
     return fail("SeamstressActionDeferred fields must use supported primitive values");
   }
-
   const parsedId = parseFirstNightActionOpportunityId(actionOpportunityId(payload.opportunityId));
-  if (!parsedId.valid) {
-    return parsedId;
-  }
-
+  if (!parsedId.valid) return parsedId;
   const opportunity = findFirstNightActionOpportunityById(
     input.firstNightActionOpportunities,
     actionOpportunityId(payload.opportunityId)
   );
-  if (
-    opportunity === undefined ||
-    opportunity.opportunityStatus !== "OPEN" ||
-    opportunity.opportunityKind !== "SEAMSTRESS_FIRST_NIGHT_ACTION"
-  ) {
+  if (opportunity === undefined || opportunity.opportunityStatus !== "OPEN" ||
+      opportunity.opportunityKind !== "SEAMSTRESS_FIRST_NIGHT_ACTION") {
     return fail("SeamstressActionDeferred must reference an OPEN Seamstress first-night action opportunity");
   }
-
-  if (
-    opportunity.taskId !== payload.taskId ||
-    opportunity.taskId !== input.taskId ||
-    opportunity.taskType !== payload.taskType ||
-    opportunity.sourcePlayerId !== payload.sourcePlayerId ||
-    opportunity.sourceSeatNumber !== payload.sourceSeatNumber ||
-    !sameRoleSetupSnapshot(opportunity.sourceRole, payload.sourceRole) ||
-    opportunity.sourceCharacterStateRevision !== payload.sourceCharacterStateRevision
-  ) {
+  if (opportunity.taskId !== payload.taskId || opportunity.taskId !== input.taskId || opportunity.taskType !== payload.taskType ||
+      opportunity.sourcePlayerId !== payload.sourcePlayerId || opportunity.sourceSeatNumber !== payload.sourceSeatNumber ||
+      !sameRoleSetupSnapshot(opportunity.sourceRole, payload.sourceRole)) {
     return fail("SeamstressActionDeferred must match the referenced first-night action opportunity");
   }
-
   const targetTask = input.firstNightTaskPlan.tasks.find((task) => task.taskId === input.taskId);
-  if (targetTask === undefined) {
-    return fail("SeamstressActionDeferred must reference a task in the first-night task plan");
-  }
-
-  if (isFirstNightTaskSettled(input.firstNightTaskProgress, input.taskId)) {
-    return fail("SeamstressActionDeferred cannot target a settled task");
-  }
-
+  if (targetTask === undefined) return fail("SeamstressActionDeferred must reference a task in the first-night task plan");
+  if (isFirstNightTaskSettled(input.firstNightTaskProgress, input.taskId)) return fail("SeamstressActionDeferred cannot target a settled task");
   const nextTask = getNextUnsettledFirstNightTask(input.firstNightTaskPlan, input.firstNightTaskProgress);
   if (nextTask === undefined || nextTask.taskId !== targetTask.taskId || nextTask.taskType !== "SEAMSTRESS_ACTION") {
     return fail("SeamstressActionDeferred must target the current next unsettled Seamstress task");
   }
-
-  const currentEntry = currentSeamstressEntryForTask(targetTask, input.currentCharacterState);
-  if (
-    currentEntry === undefined ||
-    currentEntry.playerId !== opportunity.sourcePlayerId ||
-    currentEntry.seatNumber !== opportunity.sourceSeatNumber ||
-    input.currentCharacterState.revision !== opportunity.sourceCharacterStateRevision
-  ) {
-    return fail("SeamstressActionDeferred source is no longer the same current base Seamstress state");
+  if (!v2) {
+    if (isSeamstressActionOpportunityV2(opportunity) || typeof payload.sourceCharacterStateRevision !== "number" ||
+        !Number.isInteger(payload.sourceCharacterStateRevision) || payload.sourceCharacterStateRevision <= 0 ||
+        payload.sourceCharacterStateRevision !== opportunity.sourceCharacterStateRevision ||
+        input.currentCharacterState.revision !== opportunity.sourceCharacterStateRevision) {
+      return fail("Legacy SeamstressActionDeferred must match V1 at creation revision");
+    }
+    const currentEntry = currentSeamstressEntryForTask(targetTask, input.currentCharacterState);
+    return currentEntry !== undefined && currentEntry.playerId === opportunity.sourcePlayerId && currentEntry.seatNumber === opportunity.sourceSeatNumber
+      ? { valid: true }
+      : fail("Legacy SeamstressActionDeferred source is no longer the same base Seamstress state");
   }
-
+  if (!isSeamstressActionOpportunityV2(opportunity) || payload.deferSchemaVersion !== "seamstress-action-deferred-v2" ||
+      typeof payload.opportunityCharacterStateRevision !== "number" || !Number.isInteger(payload.opportunityCharacterStateRevision) ||
+      typeof payload.settlementCharacterStateRevision !== "number" || !Number.isInteger(payload.settlementCharacterStateRevision) ||
+      payload.opportunityCharacterStateRevision !== opportunity.sourceCharacterStateRevision ||
+      payload.settlementCharacterStateRevision !== input.currentCharacterState.revision ||
+      payload.settlementCharacterStateRevision < payload.opportunityCharacterStateRevision ||
+      payload.sourceRoleTenureId !== opportunity.sourceRoleTenureId || payload.abilityInstanceId !== opportunity.abilityInstanceId ||
+      payload.abilityUseEntitlementId !== opportunity.abilityUseEntitlementId) {
+    return fail("V2 SeamstressActionDeferred must exactly match its opportunity and N/M revisions");
+  }
+  const tenure = input.seamstressRoleTenureState?.records.find((record) => record.roleTenureId === opportunity.sourceRoleTenureId);
+  const instance = input.seamstressAbilityState?.instances.find((entry) => entry.abilityInstanceId === opportunity.abilityInstanceId);
+  const entitlement = input.seamstressAbilityState?.entitlements.find((entry) => entry.abilityUseEntitlementId === opportunity.abilityUseEntitlementId);
+  const currentEntry = input.currentCharacterState.entries.find((entry) => entry.playerId === opportunity.sourcePlayerId && entry.seatNumber === opportunity.sourceSeatNumber);
+  if (tenure === undefined || instance === undefined || entitlement === undefined || entitlement.status !== "UNSPENT" ||
+      !isRoleTenureContinuousAcross(tenure, opportunity.sourceCharacterStateRevision, input.currentCharacterState.revision) ||
+      currentEntry === undefined || currentEntry.role.roleId !== tenure.roleId) {
+    return fail("V2 SeamstressActionDeferred source tenure and unspent entitlement must remain active across N/M");
+  }
   return { valid: true };
 };
 
@@ -1476,8 +1874,8 @@ export const appendFirstNightActionOpportunity = (
 const closeFirstNightActionOpportunityWithError = (
   state: FirstNightActionOpportunityState | undefined,
   payload: Pick<FirstNightActionOpportunity, "opportunityId">,
-  errorCode: "InvalidPhilosopherActionDeferredPayload" | "InvalidSeamstressActionDeferredPayload",
-  eventName: "PhilosopherActionDeferred" | "SeamstressActionDeferred"
+  errorCode: "InvalidPhilosopherActionDeferredPayload" | "InvalidSeamstressActionDeferredPayload" | "InvalidSeamstressInformationDeliveredPayload",
+  eventName: "PhilosopherActionDeferred" | "SeamstressActionDeferred" | "SeamstressInformationDelivered"
 ): FirstNightActionOpportunityState => {
   const opportunities = cloneFirstNightActionOpportunityState(state).opportunities;
   let found = false;
@@ -1524,6 +1922,17 @@ export const closeSeamstressFirstNightActionOpportunity = (
     "SeamstressActionDeferred"
   );
 
+export const closeSeamstressInformationOpportunity = (
+  state: FirstNightActionOpportunityState | undefined,
+  payload: { readonly opportunityId: ActionOpportunityId }
+): FirstNightActionOpportunityState =>
+  closeFirstNightActionOpportunityWithError(
+    state,
+    payload,
+    "InvalidSeamstressInformationDeliveredPayload",
+    "SeamstressInformationDelivered"
+  );
+
 export const createPhilosopherDeferredScheduledTaskSettlement = (input: {
   readonly taskId: ScheduledTaskId;
   readonly characterStateRevision: number;
@@ -1559,6 +1968,28 @@ export const createSeamstressDeferredScheduledTaskSettlement = (input: {
   characterStateRevision: input.characterStateRevision
 });
 
+export const createSeamstressActionDeferredPayloadV2 = (input: {
+  readonly rulesBaselineVersion: string;
+  readonly opportunity: SeamstressActionOpportunityV2;
+  readonly settlementCharacterStateRevision: number;
+}): SeamstressActionDeferredPayloadV2 => ({
+  rulesBaselineVersion: input.rulesBaselineVersion,
+  deferSchemaVersion: "seamstress-action-deferred-v2",
+  nightNumber: 1,
+  taskId: input.opportunity.taskId,
+  taskType: "SEAMSTRESS_ACTION",
+  opportunityId: input.opportunity.opportunityId,
+  decisionKind: "DEFER",
+  abilityInstanceId: input.opportunity.abilityInstanceId,
+  abilityUseEntitlementId: input.opportunity.abilityUseEntitlementId,
+  sourceRoleTenureId: input.opportunity.sourceRoleTenureId,
+  sourcePlayerId: input.opportunity.sourcePlayerId,
+  sourceSeatNumber: input.opportunity.sourceSeatNumber,
+  sourceRole: cloneRoleSetupSnapshot(input.opportunity.sourceRole),
+  opportunityCharacterStateRevision: input.opportunity.sourceCharacterStateRevision,
+  settlementCharacterStateRevision: input.settlementCharacterStateRevision
+});
+
 export const hasClosedSeamstressOpportunityForSettlement = (
   state: FirstNightActionOpportunityState | undefined,
   settlement: Pick<ScheduledTaskSettlement, "taskId" | "taskType" | "characterStateRevision">
@@ -1568,7 +1999,9 @@ export const hasClosedSeamstressOpportunityForSettlement = (
     opportunity.opportunityStatus === "CLOSED" &&
     opportunity.taskId === settlement.taskId &&
     opportunity.taskType === settlement.taskType &&
-    opportunity.sourceCharacterStateRevision === settlement.characterStateRevision
+    (isSeamstressActionOpportunityV2(opportunity)
+      ? settlement.characterStateRevision >= opportunity.sourceCharacterStateRevision
+      : opportunity.sourceCharacterStateRevision === settlement.characterStateRevision)
   ) ?? false;
 
 export const isSupportedFirstNightRoleActionTaskType = (
@@ -1609,4 +2042,10 @@ export const isSupportedFirstNightRoleActionTask = (
     task.taskType === "SEAMSTRESS_ACTION" &&
     task.source.kind === "ROLE" &&
     task.source.role.roleId === SEAMSTRESS_ROLE_ID
+  ) ||
+  (
+    task.taskType === "SEAMSTRESS_ACTION" &&
+    task.source.kind === "PHILOSOPHER_GAINED_ABILITY" &&
+    task.source.sourceRole.roleId === PHILOSOPHER_ROLE_ID &&
+    task.source.chosenRole.roleId === SEAMSTRESS_ROLE_ID
   );

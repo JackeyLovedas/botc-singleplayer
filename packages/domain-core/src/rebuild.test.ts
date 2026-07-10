@@ -23,6 +23,7 @@ import {
   createAbilityImpairmentAppliedPayload,
   createFirstNightTaskInsertedPayload,
   createFirstNightRoleActionOpportunity,
+  createLegacySeamstressFirstNightActionOpportunity,
   createPhilosopherAbilityChosenPayload,
   createPhilosopherAbilityChosenScheduledTaskSettlement,
   createPhilosopherAbilityGrantedPayload,
@@ -1360,7 +1361,7 @@ const seamstressActionOpportunityCreatedEvent = (
     throw new Error("Expected next Seamstress action task");
   }
 
-  const opportunity = createFirstNightRoleActionOpportunity({
+  const opportunity = createLegacySeamstressFirstNightActionOpportunity({
     taskId: task.taskId,
     firstNightTaskPlan: state.firstNightTaskPlan,
     firstNightTaskProgress: state.firstNightTaskProgress,
@@ -4595,7 +4596,9 @@ describe("domain event rebuild", () => {
       sourcePlayerId: deferred.payload.sourcePlayerId,
       sourceSeatNumber: deferred.payload.sourceSeatNumber,
       sourceRole: deferred.payload.sourceRole,
-      sourceCharacterStateRevision: deferred.payload.sourceCharacterStateRevision
+      sourceCharacterStateRevision: "sourceCharacterStateRevision" in deferred.payload
+        ? deferred.payload.sourceCharacterStateRevision
+        : deferred.payload.opportunityCharacterStateRevision
     });
     expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
       opportunity.opportunityId === deferred.payload.opportunityId
@@ -4606,7 +4609,9 @@ describe("domain event rebuild", () => {
       nightNumber: 1,
       settlementVersion: "scheduled-task-settlement-v1",
       outcomeType: "SEAMSTRESS_DEFERRED",
-      characterStateRevision: deferred.payload.sourceCharacterStateRevision
+      characterStateRevision: "sourceCharacterStateRevision" in deferred.payload
+        ? deferred.payload.sourceCharacterStateRevision
+        : deferred.payload.settlementCharacterStateRevision
     });
     expect(getNextUnsettledFirstNightTask(state.firstNightTaskPlan ?? { tasks: [] }, state.firstNightTaskProgress)?.taskType)
       .toBe("MATHEMATICIAN_INFORMATION");
@@ -4709,7 +4714,9 @@ describe("domain event rebuild", () => {
           ...deferred,
           payload: {
             ...deferred.payload,
-            sourceCharacterStateRevision: deferred.payload.sourceCharacterStateRevision + 1
+            sourceCharacterStateRevision: ("sourceCharacterStateRevision" in deferred.payload
+              ? deferred.payload.sourceCharacterStateRevision
+              : deferred.payload.opportunityCharacterStateRevision) + 1
           }
         },
         {

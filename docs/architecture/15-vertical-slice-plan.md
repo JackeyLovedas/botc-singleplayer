@@ -556,6 +556,83 @@ Acceptance:
 - This slice covers only the first-night deferral/non-consumption half of evidence test 3 and the unsupported-input boundary portion of evidence test 5.
 - Overall Seamstress coverage remains `SKELETON`; only its base first-night opportunity and `DEFER` dimension is partial.
 
+## Slice 2B15: Seamstress First-Night Choice And Private Information
+
+Scope:
+
+- Execute only after Slice 2B14 is accepted and merged and after fresh 2B15 evidence plus independent v3/v3.1 `RULE_DESIGN_PASS`.
+- Declare a public Seamstress V2 resolution capability during supported script selection without inspecting hidden setup or assignment.
+- Preserve exact V1 replay and defer-only behavior for legacy streams without the capability.
+- Create V2 opportunities for base and Philosopher-granted first-night Seamstress task sources through one stable tenure/instance/entitlement model.
+- Accept exactly two distinct non-self modeled players, canonicalize them by numeric seat, spend the referenced once-per-game entitlement, deliver private same-alignment information, and settle in one atomic batch.
+- Evaluate target alignments, represented impairment facts, and the represented active Vortox constraint at settlement revision `M`, while preserving opportunity revision `N` and continuous source-tenure identity across `[N, M]`.
+- Project validated historical targets and delivered answer only to the source player and source AI.
+- Return only event type/count summaries for accepted Seamstress commands while keeping full canonical event envelopes in the event store.
+- Enforce exact structural command identity for idempotency without exposing canonical command strings or digests.
+
+Implementation update:
+
+- New supported script selection batches contain exactly:
+
+```text
+ScriptSelected
+SeamstressResolutionCapabilityDeclared
+PhaseTransitioned
+```
+
+- Legacy two-event script-selection batches remain replayable. Only streams with the exact public capability can create a V2 Seamstress opportunity.
+- V2 opportunity visibility is exactly:
+
+```text
+visibilitySchemaVersion = seamstress-first-night-action-v2
+resolutionCapabilityVersion = seamstress-snv-first-night-resolution-v1
+canDefer = true
+canChooseTargets = true
+supportedDecisionKinds = [DEFER, CHOOSE_TWO_PLAYERS]
+futureUnsupportedDecisionKinds = []
+targetSchema = EXACTLY_TWO_DISTINCT_OTHER_MODELED_PLAYERS
+```
+
+- Base and Philosopher-granted sources use distinct deterministic opportunity IDs and ability-instance source branches. Ability-instance IDs contain tenure/grant identity, never scheduled-task identity.
+- A legal choice batch contains exactly:
+
+```text
+SeamstressTargetsChosen
+SeamstressAbilitySpent
+SeamstressInformationDelivered
+ScheduledTaskSettled(outcomeType = SEAMSTRESS_INFORMATION_DELIVERED)
+```
+
+- V1 and V2 `DEFER` retain the exact two-event `SeamstressActionDeferred` plus `ScheduledTaskSettled(SEAMSTRESS_DEFERRED)` shape and do not spend.
+- Represented `DRUNK` or `POISONED` evidence makes effectiveness `KNOWN_INEFFECTIVE`, but a legal use still spends. With no represented impairment, effectiveness is `NOT_PROVEN`, never `EFFECTIVE`.
+- An active represented Vortox tenure selects the false-only legal candidate even when the source is impaired. Without that constraint, the truth-favoring policy selects the true candidate.
+- No Dashii presence does not derive poison or change acceptance/event shape; continuous poison remains unresolved.
+- Source private history is an ordered array of `{ targets, deliveredAnswer }`. Stored opportunity, choice, spend, delivery, and settlement facts must correlate exactly before projection.
+- Accepted Seamstress results use `accepted-event-summary-v1` and expose only ordered event types/count. Other command accepted results remain unchanged.
+- New accepted and rejected receipts store `supported-command-structural-fingerprint-v1`. Exact canonical command strings decide equality; SHA-256 only checks integrity. Missing, malformed, or different fingerprints fail closed as `CommandIdempotencyConflict` and are not overwritten.
+
+Acceptance:
+
+- V1/V2 opportunity and defer schemas reject missing, extra, hybrid, or wrong-version fields.
+- Base and Philosopher-granted V2 choices share the same target, spend, information, replay, and projection pipeline while retaining independent entitlements.
+- Target count, density, identity, non-self rule, existence, roster correlation, and numeric-seat canonical order are validated before event creation.
+- Duplicate spend and stale leave/reacquire opportunities reject; exact source continuity permits `M > N` only while the same tenure remains active.
+- Choice, spend, delivery, and settlement share one exact task/opportunity/source/tenure/instance/entitlement/target/revision chain.
+- Equal native alignments store rule-correct `YES`; mixed native alignments store rule-correct `NO`; Vortox forces the delivered false candidate under the represented model.
+- Accepted summaries have the same eight-key shape and four ordered event types across unmodified, represented-impaired, No-Dashii-containing, and Vortox assignments, with no modifier or payload leakage.
+- Same command ID plus the same captured structure returns the original receipt idempotently. A different structure conflicts without events, receipt overwrite, or fingerprint disclosure.
+- Replay rejects malformed, incomplete, reordered, overlong, mixed, duplicate-spend, cross-linked, revision-mismatched, and tenure-mismatched chains.
+- Multiple validated deliveries project in canonical history order; later current-role or alignment changes do not recompute stored information.
+- Player/AI views and accepted summaries exclude correct answer, target alignments, truth, impairment, effectiveness, Vortox, reliability, candidate, task, opportunity, tenure, instance, and entitlement internals.
+- Overall Seamstress coverage advances only to `PARTIAL`.
+
+Non-goals:
+
+- No other-night scheduling or recurrence.
+- No life, death, revival, or Traveller model.
+- No Spy/Recluse registration, Barista execution, No Dashii neighbor/poison derivation, or general role/effect lifecycle.
+- No Storyteller free answer policy, AI target choice, UI, Electron, SQLite, network, production persistence adapter, or global accepted-result migration.
+
 ## Slice 2C: Integrated Basic Phase Flow
 
 Scope:

@@ -24,6 +24,13 @@ import type {
   DreamerTargetChoiceSet
 } from "./dreamer.js";
 import type {
+  RoleTenureState,
+  SeamstressAbilitySpendSet,
+  SeamstressAbilityState,
+  SeamstressInformationSet,
+  SeamstressTargetChoiceSet
+} from "./seamstress.js";
+import type {
   EvilTwinInformationDeliveredPayload,
   EvilTwinPairSet
 } from "./evil-twin.js";
@@ -37,6 +44,7 @@ import type {
   PlayerCounts,
   PlayerRosterCreatedPayload,
   ScriptSelectedPayload,
+  SeamstressResolutionCapabilityDeclaredPayload,
   SetupGeneratedPayload
 } from "./events.js";
 import type { GamePhase } from "./game-phase.js";
@@ -53,10 +61,13 @@ export type GameState = {
   readonly rulesBaselineVersion: string;
   readonly playerCounts: PlayerCounts;
   readonly selectedScript?: ScriptSelectedPayload;
+  readonly seamstressResolutionCapability?: SeamstressResolutionCapabilityDeclaredPayload;
   readonly setup?: SetupGeneratedPayload;
   readonly roster?: PlayerRosterCreatedPayload;
   readonly assignment?: CharactersAssignedPayload;
   readonly currentCharacterState?: CurrentCharacterStateSet;
+  readonly seamstressRoleTenureState?: RoleTenureState;
+  readonly seamstressAbilityState?: SeamstressAbilityState;
   readonly firstNight?: FirstNightInitializedPayload;
   readonly initialPrivateKnowledge?: InitialPrivateKnowledgeEstablishedPayload;
   readonly firstNightTaskPlan?: FirstNightTaskPlanCreatedPayload;
@@ -74,6 +85,9 @@ export type GameState = {
   readonly witchIneffectiveResolutions?: WitchIneffectiveResolutionSet;
   readonly dreamerTargetChoices?: DreamerTargetChoiceSet;
   readonly dreamerInformation?: DreamerInformationSet;
+  readonly seamstressTargetChoices?: SeamstressTargetChoiceSet;
+  readonly seamstressAbilitySpends?: SeamstressAbilitySpendSet;
+  readonly seamstressInformation?: SeamstressInformationSet;
   readonly evilTwinPairs?: EvilTwinPairSet;
   readonly evilTwinInformation?: EvilTwinInformationDeliveredPayload;
   readonly minionInformation?: MinionInformationDeliveredPayload;

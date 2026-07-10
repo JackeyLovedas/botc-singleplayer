@@ -31,6 +31,12 @@ import type {
   DreamerTargetChosenPayload
 } from "./dreamer.js";
 import type {
+  SeamstressAbilitySpentPayload,
+  SeamstressInformationDeliveredPayload,
+  SeamstressResolutionCapabilityDeclaredPayload,
+  SeamstressTargetsChosenPayload
+} from "./seamstress.js";
+import type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
 } from "./first-night-team-information.js";
@@ -69,6 +75,12 @@ export type {
   DreamerInformationDeliveredPayload,
   DreamerTargetChosenPayload
 } from "./dreamer.js";
+export type {
+  SeamstressAbilitySpentPayload,
+  SeamstressInformationDeliveredPayload,
+  SeamstressResolutionCapabilityDeclaredPayload,
+  SeamstressTargetsChosenPayload
+} from "./seamstress.js";
 export type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
@@ -162,6 +174,7 @@ export type FirstNightTaskPlanCreatedPayload = FirstNightTaskPlan & {
 export type DomainEventPayloadByType = {
   readonly GameCreated: GameCreatedPayload;
   readonly ScriptSelected: ScriptSelectedPayload;
+  readonly SeamstressResolutionCapabilityDeclared: SeamstressResolutionCapabilityDeclaredPayload;
   readonly SetupGenerated: SetupGeneratedPayload;
   readonly PlayerRosterCreated: PlayerRosterCreatedPayload;
   readonly CharactersAssigned: CharactersAssignedPayload;
@@ -172,6 +185,9 @@ export type DomainEventPayloadByType = {
   readonly FirstNightActionOpportunityCreated: FirstNightActionOpportunityCreatedPayload;
   readonly PhilosopherActionDeferred: PhilosopherActionDeferredPayload;
   readonly SeamstressActionDeferred: SeamstressActionDeferredPayload;
+  readonly SeamstressTargetsChosen: SeamstressTargetsChosenPayload;
+  readonly SeamstressAbilitySpent: SeamstressAbilitySpentPayload;
+  readonly SeamstressInformationDelivered: SeamstressInformationDeliveredPayload;
   readonly PhilosopherAbilityChosen: PhilosopherAbilityChosenPayload;
   readonly PhilosopherAbilityGranted: PhilosopherAbilityGrantedPayload;
   readonly AbilityImpairmentApplied: AbilityImpairmentAppliedPayload;

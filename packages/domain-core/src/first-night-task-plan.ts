@@ -104,6 +104,7 @@ export type ScheduledTaskSettlementOutcomeType =
   | "WITCH_DEATH_PENDING_MARKED"
   | "WITCH_INEFFECTIVE"
   | "DREAMER_INFORMATION_DELIVERED"
+  | "SEAMSTRESS_INFORMATION_DELIVERED"
   | "SEAMSTRESS_DEFERRED";
 
 export type ScheduledTaskSettlement = {
@@ -365,7 +366,8 @@ export const isScheduledTaskSettlementOutcomeType = (value: unknown): value is S
   value === "WITCH_DEATH_PENDING_MARKED" ||
   value === "WITCH_INEFFECTIVE" ||
   value === "DREAMER_INFORMATION_DELIVERED" ||
-  value === "SEAMSTRESS_DEFERRED";
+  value === "SEAMSTRESS_DEFERRED" ||
+  value === "SEAMSTRESS_INFORMATION_DELIVERED";
 
 export const compareFirstNightTaskOrder = (left: ScheduledTask, right: ScheduledTask): number => {
   const base = left.orderKey.baseOrder - right.orderKey.baseOrder;
@@ -754,6 +756,13 @@ const parseScheduledTaskSettlementShape = (value: unknown): ScheduledTaskSettlem
     outcomeType: value.outcomeType,
     characterStateRevision: value.characterStateRevision
   };
+};
+
+export const validateScheduledTaskSettlementShape = (
+  value: unknown
+): FirstNightTaskPlanValidationResult => {
+  const parsed = parseScheduledTaskSettlementShape(value);
+  return "valid" in parsed ? parsed : { valid: true };
 };
 
 export const validateScheduledTaskSettledPayloadShape = (value: unknown): FirstNightTaskPlanValidationResult => {

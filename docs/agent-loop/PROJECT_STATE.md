@@ -1,12 +1,14 @@
 # Project State
 
 ## Product
-- Repository: `JackeyLovedas/botc-singleplayer`
+
+- Repository: `JackeyLovedas/botc-singleplayer`.
 - Target: offline single-player Sects & Violets, 12 players (1 human + 11 AI), automated Storyteller.
 - Phase: Phase 3 controlled vertical slices.
 - Rules baseline: Phase One v2.1.
 
 ## Accepted Slices
+
 - 2B1 deterministic S&V setup.
 - 2B2 roster and character assignment.
 - 2B3 first-night own-character knowledge.
@@ -23,50 +25,66 @@
 - 2B14 Seamstress base first-night opportunity and DEFER settlement skeleton.
 
 ## Current Delivery
-- Open slice PR: none.
-- Branch: `main`.
-- Latest accepted slice merge: `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b` (PR #16).
-- Last reviewed slice HEAD: `833967f44e73294903df47545982a9de86bb33ad`.
-- Accepted tag: `phase-3-slice-2b14-seamstress-first-night-defer-skeleton`.
-- PR #16 received independent `PASS`, `CODE_REVIEW_PASS`, and `RULE_REVIEW_PASS` at the exact reviewed HEAD.
-- All four required PR #16 CI checks succeeded before merge.
-- PR #16 was merged as `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b`; the remote feature branch was deleted and `main` was pulled.
-- The accepted 2B14 tag was pushed and points to the merge commit.
-- Slice 2B14 remains the exact reviewed DEFER-only scope. It does not broaden Seamstress beyond the accepted `SKELETON` coverage and partial base first-night DEFER dimension.
-- Candidate Slice 2B15 fresh Seamstress rule evidence is materialized verbatim at `docs/rules/evidence/2B15.md` from live sources retrieved on 2026-07-10.
-- The architect's exact v3 amendment is applied to `docs/implementation/phase-3-slice-2b15-design.md`; every unlisted v2 line remains unchanged, and superseded versions remain available in Git history.
-- V3 retains the shared base/Philosopher first-night pipeline, public capability, hidden-state non-oracle behavior, truth-favoring delivery, exact V1/V2 compatibility, N/M continuity, atomic batches, and extensible private historical projection.
-- Independent design review round 1 inspected exact HEAD `a31562b5d0751128b94b82289c2d21e954ea5ad7`; its complete report is materialized at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md` with verdict `RULE_DESIGN_FIX_REQUIRED`.
-- The six blocker classes were exact Legacy V1/V2 discrimination, a non-leaking modifier capability boundary, tenure-based ability identity, explicit N/M continuity, corrected evidence/scenario claims, and exact extensible stored-fact private projection validation.
-- Independent design review round 2 inspected exact `main@5059b49b2e7da4c6550ae513cf660f84abcb98f3`; its complete report is materialized at `docs/implementation/phase-3-slice-2b15-design-review-round-2.md` with a second `RULE_DESIGN_FIX_REQUIRED`.
-- Independent design review round 3 inspected exact `main@bf6c0ecbb8ad8ddba244d69ccb53ec4b26b557ea` and v3 SHA-256 `a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52`; its complete final report is materialized at `docs/implementation/phase-3-slice-2b15-design-review.md`.
-- Final verdict is `RULE_DESIGN_PASS`; all six round-1 blockers and all three round-2 blockers are independently confirmed closed.
-- A post-PASS architecture audit found three implementation-contract hazards outside BOTC rule interpretation: the v3 capability used a noncanonical script literal, accepted Seamstress results would disclose canonical evaluation payloads, and receipt lookup could not distinguish a reused command ID with a different structural command.
-- The architect's latest corrected complete-replacement v3.1 erratum is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design-erratum-v3.1.md` with SHA-256 `9d421f44a538e4599c03bccd7f631da18866aa6e709d28735e724af79d130528`.
-- The erratum changes only exact capability identity, type/count-only accepted Seamstress results, and descriptor-captured structural receipt idempotency. Original v3 rule semantics, canonical event payloads/order, settlement behavior, modifier behavior, exclusions, and `PARTIAL` ceiling remain unchanged.
-- The exact in-progress `ids.ts` and untracked `seamstress.ts` remain preserved in `stash@{0}` (`5ea5d3e9d1491af04a2b695b13ce7f75d7b46624`); the renewed review gate has passed, but implementation remains frozen until explicit controller resume.
-- Renewed independent review inspected exact clean `main@70e11001c5fe1d4d2a5bbe2aee233e48ccd90fca`, original v3 SHA-256 `a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52`, and corrected v3.1 erratum SHA-256 `9d421f44a538e4599c03bccd7f631da18866aa6e709d28735e724af79d130528`.
-- The renewed review is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design-erratum-v3.1-review.md` with SHA-256 `93f81070e6f0a77e7f38c64c0232c6d0f847a3abfb78183ec792cd4f12d3fc3c`; verdict `RULE_DESIGN_PASS`, blockers none.
-- The reviewer confirmed exact repository literals, bounded payload-free accepted summaries, structural fingerprint equality, fail-closed receipt compatibility, and that only `MemoryCommandCommitStore` exists; no production adapter or migration blocker was found.
-- Reviewed implementation scope is limited to the first-night base and Philosopher-granted Seamstress pipeline, slice-local tenure reducer, existing-event adapter, atomic choice/spend/delivery/settlement chain, and historical private projection.
-- Other-night recurrence, life/revival, Travellers, registration, Barista, No Dashii poison derivation, and a general role-change subsystem remain unauthorized; coverage may advance only to `PARTIAL` after all later gates pass.
-- Research verdict is `RULE_READY`; rule coverage remains `SKELETON`; external-source conflicts are empty; no snapshot was used.
-- The report preserves `2B15-R01` through `2B15-R13`, all mandatory source revisions and hashes, 39 required regression tests, and the stale `SV-SEAMSTRESS-DRUNK-DOES-NOT-SPEND` repository contradiction.
-- Authoritative evidence says a legal impaired two-target use is spent; the stale handoff test is a non-authoritative repository defect, not an external-source conflict.
-- No 2B15 implementation is active, no pull request exists, and no production/test/architecture/matrix change is present on `main`. Preserved uncommitted implementation work remains isolated in the named stash while the erratum is reviewed.
 
-## Mandatory Rule Gate
-- Canonical instructions: `docs/agent-loop/AUTOPILOT_PROMPT.md`.
-- Configured roles: read-only `rule-researcher`, read-only `architect`, read-only `reviewer`, and sole-writer `implementer`; the concurrency cap remains three, so gated roles run sequentially where needed.
-- Slice 2B14 completed the required rule-evidence, rule-design, independent review, implementation, CI, code/rule review, and merge gates.
-- Slice 2B15 completed fresh live-source research, materialized evidence, the `RULE_READY` gate, an initial design, two fix-required review/revision rounds, exact v3 amendment, and independent final `RULE_DESIGN_PASS`.
-- The renewed independent review gate is complete. The current required step is controller verification of this review commit and explicit resume before restoring the isolated implementation stash or editing implementation surfaces.
-- Required future order remains: bounded design -> independent `RULE_DESIGN_PASS` -> controller confirmation -> implementation -> focused/full gates -> ready PR -> CI -> independent code/rule review.
-- `RULE_CONFLICT` and `RULE_SOURCE_UNAVAILABLE` map to `HUMAN_BLOCKED`.
-- The original v3 plus corrected v3.1 erratum now has renewed `RULE_DESIGN_PASS`; implementation remains paused until explicit controller resume. This review materialization authorizes no production, test, architecture, matrix, branch, PR, stash restoration, or tag work by itself.
+- Candidate slice: 2B15 Seamstress first-night choice, stable ability tenure, and truth-favoring private information.
+- Branch: `phase-3/seamstress-first-night-choice-information`.
+- Branch base: `5c8712f95e68cae68c4c8e5c194dd96aa05aa284`.
+- Open slice PR: none yet; local implementation is ready to publish.
+- Latest accepted slice merge: `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b` (PR #16).
+- Accepted tag: `phase-3-slice-2b14-seamstress-first-night-defer-skeleton`.
+- No 2B15 merge or tag is authorized.
+
+## Rule And Design Gate
+
+- Fresh live-source evidence: `docs/rules/evidence/2B15.md`, verdict `RULE_READY`, no unresolved external-source conflict.
+- Reviewed design v3: `docs/implementation/phase-3-slice-2b15-design.md`, SHA-256 `a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52`.
+- Corrected v3.1 erratum: `docs/implementation/phase-3-slice-2b15-design-erratum-v3.1.md`, SHA-256 `9d421f44a538e4599c03bccd7f631da18866aa6e709d28735e724af79d130528`.
+- Renewed independent review: `docs/implementation/phase-3-slice-2b15-design-erratum-v3.1-review.md`, SHA-256 `93f81070e6f0a77e7f38c64c0232c6d0f847a3abfb78183ec792cd4f12d3fc3c`, verdict `RULE_DESIGN_PASS`, blockers none.
+- The stale `SV-SEAMSTRESS-DRUNK-DOES-NOT-SPEND` handoff expectation remains non-authoritative. The implemented represented-impaired legal use spends, as required by reviewed evidence.
+
+## Implemented 2B15 Boundary
+
+- Public, hidden-state-independent Seamstress resolution capability for new supported-script streams; legacy streams remain V1 defer-only compatible.
+- Exact V1/V2 opportunity discrimination and deterministic base versus Philosopher-granted sources.
+- Slice-local role-tenure transition facts plus stable base/Philosopher ability instances and once-per-game entitlements.
+- One shared base/Philosopher first-night target-choice, spend, information, and settlement pipeline.
+- Atomic four-event choice chain and exact two-event V1/V2 defer chains.
+- Settlement-time native alignment comparison; represented impairment evidence remains distinct from unresolved continuous effects.
+- Represented active-tenure Vortox false-information constraint with separate candidate legality, reliability, and simulation reason.
+- Exact source-only historical player/AI projection with multiple-delivery history and fail-closed stored-chain validation.
+- Seamstress-only accepted event-type/count summaries; full canonical events remain in the event store.
+- Descriptor-captured structural fingerprints, exact canonical-string command equivalence, and fail-closed idempotency conflict behavior.
+- Only `MemoryCommandCommitStore` exists; there is no production adapter or schema migration in scope.
+
+## Coverage And Exclusions
+
+- Seamstress overall coverage: `PARTIAL`, never `COMPLETE`.
+- Partial: base first-night choice/spend/information, Philosopher-granted first-night execution, represented drunk/poison behavior, represented Vortox behavior, tenure continuity, and historical private projection.
+- Unsupported: other-night recurrence, life/death/revival, Travellers, Spy/Recluse registration, Barista, No Dashii adjacency/continuous-poison derivation, Storyteller free answer policy, and a general character/effect lifecycle.
+- No UI, Electron, SQLite, network, or production persistence work is included.
+
+## Verification
+
+- Focused affected suites: 5 files / 476 tests passed.
+- Windows-compatible application package command: 3 files / 171 tests passed.
+- `pnpm typecheck`: passed.
+- `pnpm lint`: passed.
+- `pnpm test`: 21 files / 709 tests passed.
+- `pnpm test:coverage`: 21 files / 709 tests passed.
+- Coverage: 85.04% statements/lines, 78.13% branches, 97.58% functions.
+- Final scope audit hardened exact stored V2 opportunity/source correlation and corrected the synthetic multiple-history fixture to a canonical second opportunity ID; all gates passed afterward.
+
+## Mandatory Next Gates
+
+1. Commit and push the bounded implementation with required attribution.
+2. Open one ready slice PR with rule-evidence traceability, conservative coverage, exclusions, and local gate evidence.
+3. Required CI must pass on the exact PR HEAD.
+4. Independent reviewer must return both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS` on that exact HEAD.
+5. Reviewed HEAD must equal PR HEAD and the worktree must be clean before merge.
+6. The implementer must not merge or start the next slice.
 
 ## Loop Limits
+
 - One open slice PR and one writer at a time.
 - At most three reviewer repair rounds per PR.
-- At most three completed slices in this goal run.
-- Stop on substantive rule uncertainty, unsafe accepted-history rewrite, permissions/credential failure, unresolved merge conflict, repeated identical CI failure, or required test weakening.
+- Stop on substantive rule uncertainty, unsafe accepted-history rewrite, permission/credential failure, unresolved merge conflict, repeated identical CI failure, or required test weakening.
