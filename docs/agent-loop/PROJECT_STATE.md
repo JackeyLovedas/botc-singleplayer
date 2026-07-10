@@ -19,15 +19,16 @@
 - 2B10 base Snake Charmer action and effectiveness gate.
 - 2B11 Evil Twin setup and pair knowledge.
 - 2B12 Witch target choice and deferred-death marker.
+- 2B13 Dreamer action and historical information delivery.
 
 ## Current Delivery
-- Open PR: `#15` — Slice 2B13 Dreamer action and information skeleton.
-- Branch: `phase-3/dreamer-action-information-skeleton`.
-- Last audited HEAD: `d7ba16fe7ba626e881055534475276ee1c9be484`.
-- PR state at audit: open, non-draft, mergeable; reported Ubuntu and Windows checks green.
-- Primary blocker: stored `DreamerInformationDelivered` is projected after settlement-only checks, without full stored-fact validation.
-- Gate integrity risk: `@botc/application` has no `test` script while Windows CI invokes `pnpm --filter @botc/application test`; verify and repair before treating that step as evidence.
-- Next slice: not authorized until PR #15 passes independent review and is merged.
+- Open slice PR: none.
+- Branch: `main`.
+- Main HEAD: `a911ae0964dec444ef5bac59bf4d05f991353ccf` (PR #15 merge commit).
+- Last reviewed slice HEAD: `a7adf6316140275afbf32681e6f141cb528c3546`.
+- Accepted tag: `phase-3-slice-2b13-dreamer-action-information-skeleton`.
+- Slice 2B13 passed independent review and all required Ubuntu/Windows CI checks; its remote feature branch was deleted after merge.
+- Next slice design is pending. Candidate label `2B14` is not authorized for implementation until a bounded architect design receives independent reviewer approval.
 
 ## Loop Limits
 - One open slice PR and one writer at a time.
