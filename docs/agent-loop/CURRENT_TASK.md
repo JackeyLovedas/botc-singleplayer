@@ -5,8 +5,8 @@
 - Ready pull request: #17 (`https://github.com/JackeyLovedas/botc-singleplayer/pull/17`).
 - Branch: `phase-3/seamstress-first-night-choice-information`.
 - Base: `main` at implementation start revision `5c8712f95e68cae68c4c8e5c194dd96aa05aa284`.
-- Repair implementation commit: `95c1dfddc20a94806a63a6a9e7440338099e106d`, with the required Codex co-author trailer.
-- Repair round 1 closes the two blockers from the independent review of `a65ca993e55216de8bac56f5a4d070d4ce78bae9`; the reviewed HEAD is reset to pending for the final PR HEAD.
+- Repair implementation commit: `4420eb371b69d712620d01664bc3a61ee41ea8e9`, with the required Codex co-author trailer.
+- Repair round 2 closes the remaining fingerprint Proxy TOCTOU from the independent review of `cb9e0de21162d42d874a0b0495eac0ddc6d429e4`; the reviewed HEAD is reset to pending for the final PR HEAD.
 - PR #17 is open, ready, and not a draft. Its body contains the exact mandatory `Rule Evidence`, `Rule Claims Implemented`, `Explicitly Unsupported Rules`, `Rule Source Revisions`, and `Rule-to-Test Traceability` sections.
 - Fresh evidence is `RULE_READY`; original v3 plus corrected v3.1 has renewed independent `RULE_DESIGN_PASS` with no blockers.
 - Seamstress coverage is conservatively `PARTIAL`, never `COMPLETE`.
@@ -14,13 +14,13 @@
 
 ## Local Gate Result
 
-- Focused repair suites: 3 files / 261 tests passed.
-- Windows-compatible application package command: 3 files / 172 tests passed.
+- Focused repair suites: 2 files / 187 tests passed.
+- Windows-compatible application package command: 3 files / 173 tests passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
-- `pnpm test`: 21 files / 715 tests passed.
-- `pnpm test:coverage`: 21 files / 715 tests passed.
-- Coverage: 85.06% statements/lines, 78.15% branches, 97.58% functions.
+- `pnpm test`: 21 files / 717 tests passed.
+- `pnpm test:coverage`: 21 files / 717 tests passed.
+- Coverage: 85.04% statements/lines, 78.12% branches, 97.58% functions.
 - `git diff --check`, strict control JSON validation, and deterministic primitive scan passed.
 
 ## Remaining Gate

@@ -33,9 +33,9 @@
 - Latest accepted slice merge: `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b` (PR #16).
 - Accepted tag: `phase-3-slice-2b14-seamstress-first-night-defer-skeleton`.
 - No 2B15 merge or tag is authorized.
-- Repair implementation commit: `95c1dfddc20a94806a63a6a9e7440338099e106d`, pushed with required attribution.
+- Repair implementation commit: `4420eb371b69d712620d01664bc3a61ee41ea8e9`, pushed with required attribution.
 - PR #17 is based on `main`, uses the sole feature branch, is not a draft, and contains every mandatory rule-consistency heading.
-- Status: `WAITING_CI`; repair round 1 closes the two blockers returned for reviewed HEAD `a65ca993e55216de8bac56f5a4d070d4ce78bae9`, and fresh CI plus independent code/rule review are pending for the final PR HEAD.
+- Status: `WAITING_CI`; repair round 2 closes the remaining fingerprint Proxy TOCTOU returned for reviewed HEAD `cb9e0de21162d42d874a0b0495eac0ddc6d429e4`, and fresh CI plus independent code/rule review are pending for the final PR HEAD.
 
 ## Rule And Design Gate
 
@@ -56,7 +56,7 @@
 - Represented active-tenure Vortox false-information constraint with separate candidate legality, reliability, and simulation reason.
 - Exact source-only historical player/AI projection with multiple-delivery history, fail-closed stored-chain validation, and global opportunity/task/entitlement chain uniqueness.
 - Seamstress-only accepted event-type/count summaries; full canonical events remain in the event store.
-- Descriptor-captured structural fingerprints, exact canonical-string command equivalence, total hostile-stored-value predicates, and fail-closed idempotency conflict behavior.
+- Descriptor-captured structural fingerprints, exact canonical-string command equivalence, pre-reflection rejection of every stored fingerprint Proxy, and fail-closed idempotency conflict behavior.
 - Only `MemoryCommandCommitStore` exists; there is no production adapter or schema migration in scope.
 
 ## Coverage And Exclusions
@@ -68,14 +68,14 @@
 
 ## Verification
 
-- Focused repair suites: 3 files / 261 tests passed.
-- Windows-compatible application package command: 3 files / 172 tests passed.
+- Focused repair suites: 2 files / 187 tests passed.
+- Windows-compatible application package command: 3 files / 173 tests passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
-- `pnpm test`: 21 files / 715 tests passed.
-- `pnpm test:coverage`: 21 files / 715 tests passed.
-- Coverage: 85.06% statements/lines, 78.15% branches, 97.58% functions.
-- Repair validation reproduced both reviewed failures, then verified global stored-delivery chain uniqueness and total hostile-proxy fingerprint handling; all targeted and full gates passed afterward.
+- `pnpm test`: 21 files / 717 tests passed.
+- `pnpm test:coverage`: 21 files / 717 tests passed.
+- Coverage: 85.04% statements/lines, 78.12% branches, 97.58% functions.
+- Repair validation reproduced the A-for-B time-varying Proxy equality and idempotent-receipt failures, then verified all stored fingerprint Proxies are rejected before traps or reflection; all targeted and full gates passed afterward.
 
 ## Mandatory Next Gates
 

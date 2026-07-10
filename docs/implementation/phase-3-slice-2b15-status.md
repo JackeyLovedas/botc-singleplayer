@@ -18,7 +18,7 @@ Rules baseline: Phase One v2.1. Fresh evidence is recorded in `docs/rules/eviden
 - Separated settlement truth, represented source impairment, unresolved continuous effects, Vortox constraint, candidate legality, reliability, simulation reason, and delivered answer.
 - Added source-only historical player and AI projection as an ordered delivery array. Projection validation uses stored chain facts, requires globally unique opportunity/task/entitlement chains, and does not recompute an answer from later character state.
 - Added type/count-only accepted summaries for every accepted Seamstress command while retaining full canonical event envelopes in the event batch/store.
-- Added descriptor-captured structural command fingerprints, exact canonical-command comparison, total validation/comparison predicates for hostile stored values, fail-closed legacy or malformed receipt handling, and `CommandIdempotencyConflict` without exposing canonical JSON or digests.
+- Added descriptor-captured structural command fingerprints, exact canonical-command comparison, pre-reflection rejection of every stored fingerprint Proxy, fail-closed legacy or malformed receipt handling, and `CommandIdempotencyConflict` without exposing canonical JSON or digests.
 
 ## Public Capability And Compatibility
 
@@ -91,7 +91,7 @@ Choice reports the four ordered public event types; V1/V2 defer reports the two 
 
 All new accepted and rejected receipts store a complete validated structural fingerprint. Equality uses the exact captured canonical command string; SHA-256 is an integrity check, not the equality decision. Reordered own data properties compare equal. Changes to actor, expected version, issued time, correlation, target order, decision, payload, or extra own fields conflict. Accessors, custom non-enumerable fields, symbols, sparse or extra-key arrays, cycles, non-plain objects, bigint, unsafe numbers, and negative zero fail before receipt I/O or event work.
 
-Legacy receipts and malformed, unknown-version, length-invalid, digest-invalid, revoked-proxy, or reflection/property-throwing fingerprints return `CommandIdempotencyConflict` and are never overwritten. An accepted retry returns only the stored result with `idempotent: true` and appends no event.
+Legacy receipts and malformed, unknown-version, length-invalid, or digest-invalid fingerprints return `CommandIdempotencyConflict` and are never overwritten. Every stored fingerprint Proxy, including transparent, revoked, reflection/property-throwing, late-throwing, and nonthrowing time-varying values, is rejected by Node proxy identity before proxy-sensitive reflection or property access. An accepted retry returns only the stored result with `idempotent: true` and appends no event.
 
 ## Atomicity And Replay
 
@@ -140,16 +140,16 @@ Final local verification on the repaired implementation tree:
 ```text
 pnpm typecheck: passed
 pnpm lint: passed
-focused repair suites: passed, 3 files / 261 tests
-pnpm --filter @botc/application test: passed, 3 files / 172 tests
-pnpm test: passed, 21 files / 715 tests
-pnpm test:coverage: passed, 21 files / 715 tests
-coverage: 85.06% statements, 78.15% branches, 97.58% functions, 85.06% lines
+focused repair suites: passed, 2 files / 187 tests
+pnpm --filter @botc/application test: passed, 3 files / 173 tests
+pnpm test: passed, 21 files / 717 tests
+pnpm test:coverage: passed, 21 files / 717 tests
+coverage: 85.04% statements, 78.12% branches, 97.58% functions, 85.04% lines
 git diff --check: passed
 deterministic primitive scan: no new prohibited production usages
 ```
 
-The final repair audit added player/AI fail-closed checks for exact duplicate and cross-reused opportunity/task/entitlement delivery chains, plus direct and service-level revoked/reflection/property proxy checks. The service returns the exact nonpersisted idempotency conflict without event or receipt writes, overwrite, or fingerprint/detail disclosure; all targeted and full gates passed afterward.
+Repair round 1 added player/AI fail-closed checks for exact duplicate and cross-reused opportunity/task/entitlement delivery chains. Repair round 2 added pure and service-level swap-on-final-read vectors and retained transparent, revoked, reflection/property-throwing, and late-throwing Proxy coverage. The service returns the exact nonpersisted idempotency conflict without event or receipt writes, overwrite, or fingerprint/detail disclosure; all targeted and full gates passed afterward.
 
 ## Non-Goals
 
