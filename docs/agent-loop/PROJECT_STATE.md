@@ -34,24 +34,26 @@
 - The accepted 2B14 tag was pushed and points to the merge commit.
 - Slice 2B14 remains the exact reviewed DEFER-only scope. It does not broaden Seamstress beyond the accepted `SKELETON` coverage and partial base first-night DEFER dimension.
 - Candidate Slice 2B15 fresh Seamstress rule evidence is materialized verbatim at `docs/rules/evidence/2B15.md` from live sources retrieved on 2026-07-10.
-- The read-only architect's complete proposed 2B15 design is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design.md` against baseline `12a3edc04215f1d16fcad87f44438ec862f3c39b`.
-- The bounded scope is the base, modifier-free first-night `CHOOSE_TWO_PLAYERS` path: canonical target choice, explicit spend, settlement-time alignment comparison, separate rule-correct and delivered answers, atomic settlement, and source-only historical private information.
-- Legacy V1 opportunity visibility remains exact and defer-only; V2 supports `DEFER` and `CHOOSE_TWO_PLAYERS`. Unsupported impairment, Vortox, registration, ability-source substitution, and other modified-source contexts fail closed without events or spend.
-- Proposed design status is `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW`; the design maps `R01` through `R13` and defines exact command, event, batch, state, validation, replay, projection, acceptance, coverage, PR, rollback, risk, and stop contracts.
+- The round-1 proposed 2B15 design is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design.md` against baseline `12a3edc04215f1d16fcad87f44438ec862f3c39b`; it is retained as the unapproved review subject.
+- Its intended scope was the base first-night `CHOOSE_TWO_PLAYERS` path, but its V1/V2 compatibility, hidden-modifier boundary, ability identity, revision continuity, claim mapping, and private projection contracts require revision before that scope can be approved.
+- Independent design review round 1 inspected exact HEAD `a31562b5d0751128b94b82289c2d21e954ea5ad7`; its complete report is materialized at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md` with verdict `RULE_DESIGN_FIX_REQUIRED`.
+- The six blocker classes are: exact Legacy V1/V2 discrimination across validation/clone/equality/application/replay; a non-leaking modifier capability boundary; tenure-based ability identity; explicit creation/settlement revision continuity; corrected evidence/scenario coverage claims; and exact extensible stored-fact private projection validation.
+- Required sources were available with no substantive conflict, and the four-event atomic order remains conditionally viable, but the current design is not approved.
+- The read-only architect is preparing one bounded design revision addressing all six blocker classes.
 - Research verdict is `RULE_READY`; rule coverage remains `SKELETON`; external-source conflicts are empty; no snapshot was used.
 - The report preserves `2B15-R01` through `2B15-R13`, all mandatory source revisions and hashes, 39 required regression tests, and the stale `SV-SEAMSTRESS-DRUNK-DOES-NOT-SPEND` repository contradiction.
 - Authoritative evidence says a legal impaired two-target use is spent; the stale handoff test is a non-authoritative repository defect, not an external-source conflict.
-- No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or matrix change is authorized or exists.
+- No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or matrix change is authorized or exists; `RULE_DESIGN_PASS` has not been issued.
 
 ## Mandatory Rule Gate
 - Canonical instructions: `docs/agent-loop/AUTOPILOT_PROMPT.md`.
 - Configured roles: read-only `rule-researcher`, read-only `architect`, read-only `reviewer`, and sole-writer `implementer`; the concurrency cap remains three, so gated roles run sequentially where needed.
 - Slice 2B14 completed the required rule-evidence, rule-design, independent review, implementation, CI, code/rule review, and merge gates.
-- Slice 2B15 completed fresh live-source research, materialized evidence, the `RULE_READY` gate, one bounded read-only architect design, and verbatim design materialization.
-- The next required step is one independent read-only source/evidence and rule-design review of `docs/implementation/phase-3-slice-2b15-design.md`.
+- Slice 2B15 completed fresh live-source research, materialized evidence, the `RULE_READY` gate, one bounded read-only architect design, verbatim design materialization, and independent design review round 1.
+- Round 1 returned `RULE_DESIGN_FIX_REQUIRED`; the current required step is one bounded architect revision addressing every recorded blocker, followed by renewed independent source/evidence and rule-design review.
 - Required future order remains: bounded design -> independent `RULE_DESIGN_PASS` -> controller confirmation -> implementation -> focused/full gates -> ready PR -> CI -> independent code/rule review.
 - `RULE_CONFLICT` and `RULE_SOURCE_UNAVAILABLE` map to `HUMAN_BLOCKED`.
-- Only an independently returned `RULE_DESIGN_PASS` plus controller confirmation may authorize the bounded design for implementation. This design-only update authorizes no production, test, architecture, matrix, branch, PR, or tag work for 2B15.
+- Only an independently returned `RULE_DESIGN_PASS` on the revised exact HEAD plus controller confirmation may authorize implementation. This review-record update authorizes no production, test, architecture, matrix, branch, PR, or tag work for 2B15.
 
 ## Loop Limits
 - One open slice PR and one writer at a time.

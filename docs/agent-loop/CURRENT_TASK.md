@@ -1,26 +1,30 @@
 # Current Task
 
-## Slice 2B15 Design Ready; Independent Rule Design Review Pending
+## Slice 2B15 Design Review Round 1 Requires Fixes; Architect Revision Underway
 
 - There is no open slice pull request.
-- The active branch is `main`; the design baseline is `12a3edc04215f1d16fcad87f44438ec862f3c39b`.
-- Slice 2B14 remains accepted at merge `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b` and tag `phase-3-slice-2b14-seamstress-first-night-defer-skeleton`.
-- Fresh 2B15 live-source research is materialized verbatim at `docs/rules/evidence/2B15.md`; its verdict is `RULE_READY`, and rule coverage remains `SKELETON`.
-- The read-only architect's complete proposed design is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design.md`.
-- The bounded scope is the base, modifier-free Seamstress first-night `CHOOSE_TWO_PLAYERS` path: canonical target choice, explicit once-per-game spend, settlement-time alignment comparison, separate rule-correct and delivered answers, atomic settlement, and source-only historical private information.
-- Existing `DEFER` behavior remains unchanged. Legacy V1 opportunity visibility remains exact and defer-only; new opportunities use V2 and may advertise `DEFER` plus `CHOOSE_TWO_PLAYERS`.
-- Unsupported impairment, Vortox, registration, ability-source substitution, and other modified-source contexts fail closed with `UnsupportedSeamstressModifiedResolution`, append no events, spend nothing, and leave the opportunity open.
-- The design maps evidence claims `R01` through `R13`, defines the exact four-event success batch, exact state/replay/prospective/projection contracts, 21 minimum acceptance tests, the future `PARTIAL` coverage delta, PR traceability, rollback, risks, and stop conditions.
-- Proposed design status: `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW`.
-- The stale non-authoritative scenario `SV-SEAMSTRESS-DRUNK-DOES-NOT-SPEND` remains prohibited because current sourced evidence says a legal impaired use is spent.
+- The active branch is `main`; independent design review round 1 inspected exact HEAD `a31562b5d0751128b94b82289c2d21e954ea5ad7`.
+- Fresh 2B15 evidence remains `RULE_READY` with `SKELETON` coverage at `docs/rules/evidence/2B15.md`.
+- The current proposed design remains at `docs/implementation/phase-3-slice-2b15-design.md`; it is not approved for implementation.
+- The reviewer's complete round-1 report is materialized at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md`.
+- Review verdict: `RULE_DESIGN_FIX_REQUIRED`.
+- Required source material was available and showed no substantive conflict; R01–R13 and the first-/other-night ordering were independently confirmed.
+- Blocker 1: replace the incorrect Legacy V1 example with an explicit exact V1/V2 discriminated contract covering validation, clone, equality, application, and replay.
+- Blocker 2: remove secret-dependent modifier rejection as an observable oracle; select a safe public capability boundary or fully simulate all reachable hidden modifiers, and do not claim unrepresentable registration fail-closed behavior.
+- Blocker 3: derive stable once-per-game `AbilityInstanceId` from role/ability tenure rather than `scheduledTaskId`, preserving future-night, reacquisition, revival, and Barista semantics.
+- Blocker 4: define creation revision `N`, settlement revision `M`, field bindings, settlement snapshot consistency, and source ability-tenure continuity across the opportunity.
+- Blocker 5: correct overclaims in the R01–R13 and 39-scenario mapping, especially R02, R05, scenarios 15 and 23, and acceptance test 18.
+- Blocker 6: define an exact, extensible private projection contract that validates the complete choice/spend/delivery/settlement stored-fact chain and exposes only source-visible targets plus delivered answer.
+- The four-event atomic order is acceptable only after ability identity, dual-revision, and stored-fact projection validation are corrected.
+- The read-only architect is preparing one bounded revision addressing all six blocker classes.
 - No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or coverage-matrix change is authorized.
 
 ## Gate
 
-- Completed for 2B15: fresh live-source rule research -> materialized evidence -> `RULE_READY` -> bounded architect design -> materialized proposed design.
-- Next required step: one independent read-only source/evidence and rule-design review of `docs/implementation/phase-3-slice-2b15-design.md`.
-- The reviewer must independently inspect the required sources, `docs/rules/evidence/2B15.md`, `docs/rules/ROLE_COVERAGE_MATRIX.md`, and the proposed design.
-- Implementation is authorized only after the reviewer returns `RULE_DESIGN_PASS` and the controller confirms the gate.
-- `RULE_DESIGN_FIX_REQUIRED` requires design correction and renewed review; `RULE_CONFLICT` or `RULE_SOURCE_UNAVAILABLE` maps to `HUMAN_BLOCKED`.
-- Do not create a feature branch or pull request, and do not edit production code, tests, architecture, or the coverage matrix during this design-review gate.
+- Completed for 2B15: fresh evidence -> `RULE_READY` -> proposed design -> independent review round 1 -> `RULE_DESIGN_FIX_REQUIRED`.
+- Current action: one bounded architect revision traced to every round-1 blocker without expanding into implementation.
+- After the revised design is materialized, a new independent source/evidence and rule-design review is required.
+- Implementation remains blocked until the reviewer returns `RULE_DESIGN_PASS` on the revised exact HEAD and the controller confirms the gate.
+- Any unresolved source conflict, unavailable mandatory source, unsafe hidden-state oracle, or need to guess unsupported rules maps to `HUMAN_BLOCKED`.
+- Do not create a feature branch or pull request, and do not edit production code, tests, architecture, or the coverage matrix during design repair.
 - Preserve one writer and one open slice pull request at a time.
