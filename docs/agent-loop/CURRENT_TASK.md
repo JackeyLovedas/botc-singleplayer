@@ -1,37 +1,29 @@
 # Current Task
 
-## Slice 2B15 Waiting For CI And Independent Review
+## No Active Slice — Three-Slice Autopilot Limit Reached
 
-- Ready pull request: #17 (`https://github.com/JackeyLovedas/botc-singleplayer/pull/17`).
-- Branch: `phase-3/seamstress-first-night-choice-information`.
-- Base: `main` at implementation start revision `5c8712f95e68cae68c4c8e5c194dd96aa05aa284`.
-- Repair implementation commit: `4420eb371b69d712620d01664bc3a61ee41ea8e9`, with the required Codex co-author trailer.
-- Repair round 2 closes the remaining fingerprint Proxy TOCTOU from the independent review of `cb9e0de21162d42d874a0b0495eac0ddc6d429e4`; the reviewed HEAD is reset to pending for the final PR HEAD.
-- PR #17 is open, ready, and not a draft. Its body contains the exact mandatory `Rule Evidence`, `Rule Claims Implemented`, `Explicitly Unsupported Rules`, `Rule Source Revisions`, and `Rule-to-Test Traceability` sections.
-- Fresh evidence is `RULE_READY`; original v3 plus corrected v3.1 has renewed independent `RULE_DESIGN_PASS` with no blockers.
-- Seamstress coverage is conservatively `PARTIAL`, never `COMPLETE`.
-- Other-night recurrence, life/revival, Travellers, registration, Barista, No Dashii poison derivation, and general role/effect lifecycle remain unsupported.
+- There is no active slice pull request or feature branch; the working branch is `main`.
+- PR #17 (`https://github.com/JackeyLovedas/botc-singleplayer/pull/17`) was reviewed at exact HEAD `6020dd9849ca164880975b9c5c39f5639f6a68c9`.
+- The controller-collected independent reviewer result was `PASS`, `CODE_REVIEW_PASS`, and `RULE_REVIEW_PASS` on that exact HEAD.
+- All four required PR #17 CI checks succeeded before merge.
+- PR #17 merged as `ee77565e1935701084b51ae7d4dd8764023d2352`.
+- Accepted tag `phase-3-slice-2b15-seamstress-first-night-choice-information` points to that merge commit and is present locally and remotely.
+- The remote feature branch `phase-3/seamstress-first-night-choice-information` was deleted.
+- Slice 2B15 is accepted with conservative overall Seamstress coverage `PARTIAL`, never `COMPLETE`.
+- This governed run completed its maximum three slices: 2B13, 2B14, and 2B15.
 
-## Local Gate Result
+## Final Gate Record
 
 - Focused repair suites: 2 files / 187 tests passed.
 - Windows-compatible application package command: 3 files / 173 tests passed.
-- `pnpm typecheck`: passed.
-- `pnpm lint`: passed.
+- `pnpm typecheck` and `pnpm lint` passed.
 - `pnpm test`: 21 files / 717 tests passed.
 - `pnpm test:coverage`: 21 files / 717 tests passed.
 - Coverage: 85.04% statements/lines, 78.12% branches, 97.58% functions.
-- `git diff --check`, strict control JSON validation, and deterministic primitive scan passed.
+- `git diff --check`, strict control JSON validation, deterministic primitive scan, exact reviewed-head equality, required CI, merge, tag, and remote-branch deletion checks passed.
 
-## Remaining Gate
+## Pause Condition
 
-1. Wait for the current PR #17 Ubuntu/Windows CI checks to finish; do not treat an earlier branch-push run as the final PR-head gate.
-2. The independent reviewer must inspect the complete final PR diff, production code, tests, architecture, evidence, and exact PR HEAD.
-3. Final review must return both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`; otherwise use `FIX_REQUIRED` or `HUMAN_BLOCKED`.
-4. Before merge, reviewed HEAD must equal PR HEAD, all required CI must be green, and the worktree must be clean.
-5. The implementer must not merge or start the next slice.
-
-## Stop Conditions
-
-- Stop on substantive rule uncertainty, unsafe accepted-history rewrite, permission failure, unresolved merge conflict, repeated identical CI failure, required test weakening, or a newly discovered production adapter that cannot atomically retain the complete fingerprint.
-- Keep one writing agent, one bounded slice, one feature branch, and one open slice PR.
+- Controller status is `COMPLETED`, the established stopped state for this 3/3 run.
+- Do not research, design, branch, implement, review, or open a pull request for another slice.
+- A future slice requires a new explicit user goal or controller authorization; no next-slice scope is implied by this closeout.

@@ -30,7 +30,7 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Phase Three Slice 2B12：Witch Action Target Selection and Deferred Death Marker 已合并
 - Phase Three Slice 2B13：Dreamer Action Opportunity and Information Skeleton 已合并
 - Phase Three Slice 2B14：Seamstress First-Night DEFER Skeleton 已合并
-- Phase Three Slice 2B15：Seamstress First-Night Choice and Private Information 评审中
+- Phase Three Slice 2B15：Seamstress First-Night Choice and Private Information 已合并
 
 当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口、固定种子可复现的 12 人《梦殒春宵》真实配板基础、固定 12 人座位名单、可复现角色分配基础、首夜初始化事实、初始自身角色私有知识生成、玩家/AI 私有知识安全投影、首夜 `ScheduledTask` 计划骨架，`MINION_INFO`/`DEMON_INFO` 有序系统信息结算，Philosopher 首夜能力选择、能力授予事实、重复在场角色醉酒标记、获得能力首夜任务动态插入基础，Philosopher 获得的 Snake Charmer 行动机会、非恶魔目标无交换结算、恶魔命中后的当前角色/阵营交换和旧恶魔中毒标记，基础 Snake Charmer 行动与有效性求值，Evil Twin 配对与双子私有知识，以及 Witch 首夜目标选择、待死亡标记和无效结算。它不包含 Witch 实际死亡、提名触发结算、3 alive 失去能力、AI 决策、完整昼夜可玩流程、UI、Electron 或 SQLite 正式适配器。
 
@@ -63,9 +63,10 @@ Windows 本地《血染钟楼》单机游戏项目。
 
 ## Current Delivery Update
 
-- Phase Three Slice 2B14 has been accepted and tagged as `phase-3-slice-2b14-seamstress-first-night-defer-skeleton`.
-- Slice 2B15 is implemented for review on `phase-3/seamstress-first-night-choice-information`.
+- Phase Three Slices 2B13, 2B14, and 2B15 are accepted; Slice 2B15 merged through PR #17 as `ee77565e1935701084b51ae7d4dd8764023d2352`.
+- Accepted Slice 2B15 tag: `phase-3-slice-2b15-seamstress-first-night-choice-information`.
 - Slice 2B15 adds the public V2 resolution capability, base and Philosopher-granted first-night two-player choice, stable tenure/instance/entitlement identity, legal spend, private historical information, represented impairment/Vortox behavior, and exact replay validation.
 - Accepted Seamstress results disclose only ordered event types/count; full canonical payloads remain in the event store. Structural command fingerprints now reject command-ID reuse with a different command without exposing fingerprint material.
 - Seamstress is overall `PARTIAL`, never `COMPLETE`. Other-night recurrence, life/revival, Travellers, registration, Barista, No Dashii poison derivation, AI choice, UI, Electron, SQLite, and production persistence remain unsupported.
+- This governed autopilot run completed its maximum three slices (2B13 through 2B15) and is paused with no active next slice.
 - See `docs/implementation/phase-3-slice-2b15-status.md` for the exact implemented boundary, rule traceability, exclusions, and verification evidence.

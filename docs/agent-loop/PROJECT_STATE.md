@@ -23,19 +23,19 @@
 - 2B12 Witch target choice and deferred-death marker.
 - 2B13 Dreamer action and historical information delivery.
 - 2B14 Seamstress base first-night opportunity and DEFER settlement skeleton.
+- 2B15 Seamstress first-night choice, stable ability tenure, and truth-favoring private information.
 
 ## Current Delivery
 
-- Candidate slice: 2B15 Seamstress first-night choice, stable ability tenure, and truth-favoring private information.
-- Branch: `phase-3/seamstress-first-night-choice-information`.
-- Branch base: `5c8712f95e68cae68c4c8e5c194dd96aa05aa284`.
-- Open slice PR: #17, ready (`https://github.com/JackeyLovedas/botc-singleplayer/pull/17`).
-- Latest accepted slice merge: `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b` (PR #16).
-- Accepted tag: `phase-3-slice-2b14-seamstress-first-night-defer-skeleton`.
-- No 2B15 merge or tag is authorized.
-- Repair implementation commit: `4420eb371b69d712620d01664bc3a61ee41ea8e9`, pushed with required attribution.
-- PR #17 is based on `main`, uses the sole feature branch, is not a draft, and contains every mandatory rule-consistency heading.
-- Status: `WAITING_CI`; repair round 2 closes the remaining fingerprint Proxy TOCTOU returned for reviewed HEAD `cb9e0de21162d42d874a0b0495eac0ddc6d429e4`, and fresh CI plus independent code/rule review are pending for the final PR HEAD.
+- No active slice or pull request.
+- Branch: clean `main`, synchronized from merge commit `ee77565e1935701084b51ae7d4dd8764023d2352`.
+- Accepted PR: #17 (`https://github.com/JackeyLovedas/botc-singleplayer/pull/17`).
+- Exact reviewed PR HEAD: `6020dd9849ca164880975b9c5c39f5639f6a68c9`.
+- Controller-collected independent review: `PASS`, `CODE_REVIEW_PASS`, and `RULE_REVIEW_PASS` on that exact HEAD.
+- Latest accepted slice merge: `ee77565e1935701084b51ae7d4dd8764023d2352` (PR #17).
+- Accepted tag: `phase-3-slice-2b15-seamstress-first-night-choice-information`, pointing to the merge commit locally and remotely.
+- The remote feature branch `phase-3/seamstress-first-night-choice-information` is deleted.
+- Status: `COMPLETED`; this governed run accepted slices 2B13, 2B14, and 2B15 and reached its maximum 3/3 slice limit.
 
 ## Rule And Design Gate
 
@@ -68,6 +68,8 @@
 
 ## Verification
 
+- The final controller-collected independent review returned `PASS`, `CODE_REVIEW_PASS`, and `RULE_REVIEW_PASS` for exact PR HEAD `6020dd9849ca164880975b9c5c39f5639f6a68c9`.
+- All four required PR #17 CI checks succeeded before merge.
 - Focused repair suites: 2 files / 187 tests passed.
 - Windows-compatible application package command: 3 files / 173 tests passed.
 - `pnpm typecheck`: passed.
@@ -77,15 +79,15 @@
 - Coverage: 85.04% statements/lines, 78.12% branches, 97.58% functions.
 - Repair validation reproduced the A-for-B time-varying Proxy equality and idempotent-receipt failures, then verified all stored fingerprint Proxies are rejected before traps or reflection; all targeted and full gates passed afterward.
 
-## Mandatory Next Gates
+## Paused State
 
-1. Required CI must pass on the exact final PR #17 HEAD.
-2. Independent reviewer must return both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS` on that exact HEAD.
-3. Reviewed HEAD must equal PR HEAD and the worktree must be clean before merge.
-4. The implementer must not merge or start the next slice.
+- Slice 2B15 is accepted; Seamstress remains conservatively `PARTIAL`, never `COMPLETE`.
+- The governed run is complete at 3/3 slices and must not automatically select, research, design, or implement another slice.
+- Any future continuation requires a new explicit user goal or controller authorization and fresh stage gates.
 
 ## Loop Limits
 
-- One open slice PR and one writer at a time.
+- The completed run preserved one open slice PR and one writer at a time.
 - At most three reviewer repair rounds per PR.
+- The run stopped after its third accepted slice, as required.
 - Stop on substantive rule uncertainty, unsafe accepted-history rewrite, permission/credential failure, unresolved merge conflict, repeated identical CI failure, or required test weakening.

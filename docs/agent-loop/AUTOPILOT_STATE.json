@@ -1,10 +1,10 @@
 {
-  "status": "WAITING_CI",
-  "currentPR": 17,
-  "currentBranch": "phase-3/seamstress-first-night-choice-information",
-  "reviewedHead": null,
+  "status": "COMPLETED",
+  "currentPR": null,
+  "currentBranch": "main",
+  "reviewedHead": "6020dd9849ca164880975b9c5c39f5639f6a68c9",
   "repairRound": 2,
-  "completedSlices": ["2B13", "2B14"],
-  "lastAction": "Published repair round 2 as 4420eb371b69d712620d01664bc3a61ee41ea8e9 on the same PR #17 branch after all targeted and full gates passed. Waiting for fresh CI and independent CODE_REVIEW_PASS plus RULE_REVIEW_PASS on the exact final PR HEAD; do not merge.",
+  "completedSlices": ["2B13", "2B14", "2B15"],
+  "lastAction": "PR #17 at exact reviewed HEAD 6020dd9849ca164880975b9c5c39f5639f6a68c9 received controller-collected PASS, CODE_REVIEW_PASS, and RULE_REVIEW_PASS and all four required CI checks succeeded; it merged as ee77565e1935701084b51ae7d4dd8764023d2352, the remote feature branch was deleted, and accepted tag phase-3-slice-2b15-seamstress-first-night-choice-information was pushed to that merge. This governed run completed its maximum three slices (2B13, 2B14, 2B15) and is paused; do not start or design another slice.",
   "lastError": null
 }

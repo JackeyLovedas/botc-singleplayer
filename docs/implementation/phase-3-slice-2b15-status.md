@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented for review on branch `phase-3/seamstress-first-night-choice-information` from main revision `5c8712f95e68cae68c4c8e5c194dd96aa05aa284`.
+Accepted on `main` through PR #17. The exact reviewed PR HEAD `6020dd9849ca164880975b9c5c39f5639f6a68c9` received controller-collected `PASS`, `CODE_REVIEW_PASS`, and `RULE_REVIEW_PASS`; all four required CI checks succeeded before merge. PR #17 merged as `ee77565e1935701084b51ae7d4dd8764023d2352`, accepted tag `phase-3-slice-2b15-seamstress-first-night-choice-information` points to that merge locally and remotely, and the remote feature branch was deleted.
 
 Rules baseline: Phase One v2.1. Fresh evidence is recorded in `docs/rules/evidence/2B15.md`. The reviewed design is `docs/implementation/phase-3-slice-2b15-design.md` at SHA-256 `a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52`; the corrected v3.1 erratum is at SHA-256 `9d421f44a538e4599c03bccd7f631da18866aa6e709d28735e724af79d130528`. Renewed independent design review returned `RULE_DESIGN_PASS` with no blockers.
 
@@ -162,6 +162,13 @@ Repair round 1 added player/AI fail-closed checks for exact duplicate and cross-
 - No Storyteller free answer policy, AI target policy, UI, Electron, SQLite, network, or persistence adapter.
 - No global conversion of non-Seamstress accepted results to summaries.
 
-## Merge Gate
+## Acceptance
 
-Merge remains gated on the ready PR, required CI, independent `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`, reviewed HEAD equality with PR HEAD, and a clean worktree. This branch must not merge itself.
+- Exact reviewed PR HEAD: `6020dd9849ca164880975b9c5c39f5639f6a68c9`.
+- Controller-collected independent result: `PASS`, `CODE_REVIEW_PASS`, and `RULE_REVIEW_PASS`.
+- Required CI: all four PR #17 checks succeeded.
+- Merge: `ee77565e1935701084b51ae7d4dd8764023d2352` on `main`.
+- Accepted tag: `phase-3-slice-2b15-seamstress-first-night-choice-information`, pointing to the merge commit locally and remotely.
+- Remote feature branch: deleted; no active slice PR remains.
+- Coverage remains the documented bounded `PARTIAL`, not `COMPLETE`.
+- This was slice 3/3 for the governed run; no next slice may be selected or designed by this closeout.
