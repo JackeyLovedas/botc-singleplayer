@@ -1,27 +1,20 @@
 # Current Task
 
-## Slice 2B15 RULE_DESIGN_PASS; Awaiting Controller Authorization
+## Slice 2B15 Corrected v3.1 Erratum Awaiting Independent Review
 
 - There is no open slice pull request.
-- The active branch is `main`; independent design review round 3 inspected exact `main@bf6c0ecbb8ad8ddba244d69ccb53ec4b26b557ea` with `HEAD`, `main`, and `origin/main` matching and a clean worktree.
-- Reviewed v3 SHA-256: `a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52`.
-- Fresh 2B15 evidence remains `RULE_READY` with `SKELETON` coverage at `docs/rules/evidence/2B15.md`.
-- The reviewed v3 design remains unchanged at `docs/implementation/phase-3-slice-2b15-design.md`.
-- The round-1 and round-2 `RULE_DESIGN_FIX_REQUIRED` reports remain unchanged at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md` and `docs/implementation/phase-3-slice-2b15-design-review-round-2.md`.
-- The reviewer's complete final report is materialized at `docs/implementation/phase-3-slice-2b15-design-review.md`.
-- Final design-review verdict: `RULE_DESIGN_PASS`.
-- Mandatory sources and pinned/live nightsheet were available and consistent; nightsheet SHA-256 is `99a2815bb31bcec3e107bf7f1c2fb305e301d317981d855704d3d954ec4c3f75`.
-- All six round-1 blockers and all three round-2 blockers are independently confirmed closed.
-- Authorized design scope is limited to the reviewed first-night base and Philosopher-granted Seamstress pipeline, slice-local tenure reducer, existing-event adapter, atomic choice/spend/delivery/settlement chain, and historical private projection.
-- The design does not authorize other-night recurrence, life/revival, Travellers, registration, Barista, No Dashii poison derivation, or a general role-change subsystem.
-- Coverage may advance only to `PARTIAL` after implementation and all later gates pass.
-- Implementation has not started. No feature branch, pull request, production change, test change, architecture change, or coverage-matrix change is authorized until the controller explicitly confirms this gate.
+- The active branch is `main`; implementation is paused.
+- The previously reviewed v3 remains at `docs/implementation/phase-3-slice-2b15-design.md` with final verdict `RULE_DESIGN_PASS` for exact reviewed `main@bf6c0ecbb8ad8ddba244d69ccb53ec4b26b557ea` and SHA-256 `a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52`.
+- A post-PASS architecture review found three design-contract hazards: the capability script literal did not match the repository constant, accepted Seamstress results exposed canonical payloads, and command-ID retries did not prove structural command identity.
+- The architect's latest corrected complete-replacement v3.1 erratum is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design-erratum-v3.1.md`; SHA-256 is `9d421f44a538e4599c03bccd7f631da18866aa6e709d28735e724af79d130528`.
+- The erratum changes only capability identity, Seamstress accepted-result disclosure, and shared receipt idempotency. All previously reviewed rule semantics, canonical event order/payloads, settlement behavior, modifier behavior, non-goals, and coverage limits remain unchanged.
+- The implementation work in `packages/domain-core/src/ids.ts` and untracked `packages/domain-core/src/seamstress.ts` is preserved without modification in `stash@{0}` (`5ea5d3e9d1491af04a2b695b13ce7f75d7b46624`) and must not be restored before renewed review passes and the controller resumes implementation.
+- No production code, tests, architecture, coverage matrix, feature branch, pull request, or tag is authorized by this documentation update.
 
 ## Gate
 
-- Completed for 2B15: fresh evidence -> initial design -> round-1 fixes -> v2 -> round-2 fixes -> v3 -> independent `RULE_DESIGN_PASS` on exact reviewed HEAD and hash.
-- Next required step: controller verification of this gate commit and any required main CI, followed by explicit authorization before creating the sole feature branch or editing implementation surfaces.
-- After controller authorization, implementation must remain exactly within the reviewed v3 scope and satisfy all acceptance, focused/full gate, PR, CI, and independent code/rule review requirements.
-- Any implementation need for excluded behavior, new rule uncertainty, or a general lifecycle subsystem stops the slice and returns to the appropriate evidence/design gate.
-- Do not create a feature branch or pull request, and do not edit production code, tests, architecture, or the coverage matrix before controller authorization.
+- Current gate: renewed independent rule-design and repository-contract review of the exact corrected v3.1 erratum.
+- Required verdict before implementation resumes: `RULE_DESIGN_PASS` covering the original v3 plus the corrected v3.1 erratum on exact reviewed HEAD and hashes.
+- `RULE_DESIGN_FIX_REQUIRED` returns to one bounded erratum revision; substantive rule conflict or unavailable mandatory evidence maps to `HUMAN_BLOCKED`.
+- Do not restore the implementation stash, switch back to the feature branch, edit implementation surfaces, or open a pull request before the renewed pass and explicit controller resume.
 - Preserve one writer and one open slice pull request at a time.

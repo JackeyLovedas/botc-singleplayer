@@ -5,6 +5,6 @@
   "reviewedHead": "833967f44e73294903df47545982a9de86bb33ad",
   "repairRound": 0,
   "completedSlices": ["2B13", "2B14"],
-  "lastAction": "Materialized the independent reviewer's complete final Slice 2B15 design review at docs/implementation/phase-3-slice-2b15-design-review.md. Verdict RULE_DESIGN_PASS covers exact main@bf6c0ecbb8ad8ddba244d69ccb53ec4b26b557ea and v3 SHA-256 a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52; all six round-1 and three round-2 blockers are closed. Implementation remains unstarted and awaits controller verification and explicit authorization; any future implementation is limited to the reviewed first-night base/Philosopher pipeline, slice-local tenure reducer, existing-event adapter, atomic chain, and historical private projection.",
+  "lastAction": "Materialized the architect's latest corrected complete-replacement Slice 2B15 v3.1 erratum at docs/implementation/phase-3-slice-2b15-design-erratum-v3.1.md with SHA-256 9d421f44a538e4599c03bccd7f631da18866aa6e709d28735e724af79d130528. It supersedes only the capability literal, Seamstress accepted-result disclosure, and shared receipt-idempotency paragraphs. Implementation is paused pending renewed independent RULE_DESIGN_PASS; the exact in-progress ids.ts and seamstress.ts are preserved in stash@{0} 5ea5d3e9d1491af04a2b695b13ce7f75d7b46624 and must not be restored before controller resume.",
   "lastError": null
 }
