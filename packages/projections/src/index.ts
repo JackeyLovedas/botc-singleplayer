@@ -304,10 +304,24 @@ const requireDeliveredSeamstressInformationIsSettled = (state: GameState): void 
   if (state.seamstressInformation === undefined && state.firstNightTaskProgress === undefined) return;
   const deliveries = storedSeamstressDeliveries(state);
   const settlements = storedFirstNightSettlements(state);
+  const seenOpportunityIds = new Set<string>();
+  const seenTaskIds = new Set<string>();
+  const seenAbilityUseEntitlementIds = new Set<string>();
   for (const delivery of deliveries) {
-    if (!isPlainRecord(delivery) || typeof delivery.opportunityId !== "string" || typeof delivery.taskId !== "string") {
+    if (!isPlainRecord(delivery) || typeof delivery.opportunityId !== "string" || typeof delivery.taskId !== "string" ||
+        typeof delivery.abilityUseEntitlementId !== "string") {
       throw new DomainError("PrivateKnowledgeUnavailable", "Stored Seamstress delivery must expose its historical chain keys");
     }
+    if (seenOpportunityIds.has(delivery.opportunityId) || seenTaskIds.has(delivery.taskId) ||
+        seenAbilityUseEntitlementIds.has(delivery.abilityUseEntitlementId)) {
+      throw new DomainError(
+        "PrivateKnowledgeUnavailable",
+        "Stored Seamstress deliveries must use unique opportunity, settlement, and ability-spend chains"
+      );
+    }
+    seenOpportunityIds.add(delivery.opportunityId);
+    seenTaskIds.add(delivery.taskId);
+    seenAbilityUseEntitlementIds.add(delivery.abilityUseEntitlementId);
     const validation = validateStoredSeamstressInformationDelivered({
       rulesBaselineVersion: state.rulesBaselineVersion,
       delivery,

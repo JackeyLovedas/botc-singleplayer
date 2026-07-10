@@ -6168,6 +6168,42 @@ describe("GameApplicationService", () => {
     expect(commandStore.rejectedCount).toBe(0);
   });
 
+  it("resolves an exact nonpersisted idempotency conflict for a revoked stored fingerprint proxy", async () => {
+    const commandStore = new ReceiptOverrideCommandStore();
+    const { service } = makeService(commandStore);
+    const command = createGameCommand();
+    const first = await service.execute(command);
+    expectAcceptedResult(first);
+    const originalReceipt = await commandStore.findCommandReceipt(command.gameId, command.commandId);
+    if (originalReceipt?.commandFingerprint === undefined) throw new Error("Expected a fingerprinted receipt");
+    const revocable = Proxy.revocable(originalReceipt.commandFingerprint, {});
+    revocable.revoke();
+    commandStore.receiptOverride = {
+      ...originalReceipt,
+      commandFingerprint: revocable.proxy
+    };
+
+    const expectedConflict = {
+      status: "rejected",
+      gameId: command.gameId,
+      code: "CommandIdempotencyConflict",
+      message: "commandId is already associated with a different command",
+      currentGameVersion: 1,
+      idempotent: false
+    } as const;
+    await expect(service.execute(command)).resolves.toStrictEqual(expectedConflict);
+
+    commandStore.receiptOverride = undefined;
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toStrictEqual(originalReceipt);
+    expect(commandStore.getReceiptCount()).toBe(1);
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+    expect(JSON.stringify(expectedConflict)).not.toContain("canonicalCommandJson");
+    expect(JSON.stringify(expectedConflict)).not.toContain("digestHex");
+    expect(JSON.stringify(expectedConflict)).not.toContain("details");
+  });
+
   it("defers Seamstress atomically without selecting players, producing information, or spending the ability", async () => {
     const { service, commandStore } = makeService();
     const { seamstressTask, opportunity, state: beforeSubmit } = await reachOpenSeamstressActionOpportunity(service, commandStore);

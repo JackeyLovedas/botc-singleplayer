@@ -148,6 +148,42 @@ describe("supported command structural fingerprints", () => {
     expect(commandFingerprintsRepresentSameCommand(other, incoming)).toBe(false);
   });
 
+  it("treats revoked and hostile stored fingerprint proxies as false without throwing", () => {
+    const incoming = requireCapture({ a: 1 }).fingerprint;
+    const revocable = Proxy.revocable(incoming, {});
+    revocable.revoke();
+    const hostileValues: readonly unknown[] = [
+      revocable.proxy,
+      new Proxy({}, { getPrototypeOf: () => { throw new Error("hostile prototype reflection"); } }),
+      new Proxy({}, { ownKeys: () => { throw new Error("hostile own-key reflection"); } }),
+      new Proxy({ ...incoming }, {
+        getOwnPropertyDescriptor: () => { throw new Error("hostile descriptor reflection"); }
+      }),
+      new Proxy({ ...incoming }, { get: () => { throw new Error("hostile property access"); } })
+    ];
+
+    for (const hostile of hostileValues) {
+      expect(() => validateCommandFingerprint(hostile)).not.toThrow();
+      expect(validateCommandFingerprint(hostile)).toBe(false);
+      expect(() => commandFingerprintsRepresentSameCommand(hostile, incoming)).not.toThrow();
+      expect(commandFingerprintsRepresentSameCommand(hostile, incoming)).toBe(false);
+    }
+
+    let canonicalReadsSinceValidationStarted = 0;
+    const lateThrowingProxy = new Proxy({ ...incoming }, {
+      get: (target, property, receiver) => {
+        if (property === "schemaVersion") canonicalReadsSinceValidationStarted = 0;
+        if (property === "canonicalCommandJson" && ++canonicalReadsSinceValidationStarted > 4) {
+          throw new Error("hostile post-validation property access");
+        }
+        return Reflect.get(target, property, receiver) as unknown;
+      }
+    });
+    expect(validateCommandFingerprint(lateThrowingProxy)).toBe(true);
+    expect(() => commandFingerprintsRepresentSameCommand(lateThrowingProxy, incoming)).not.toThrow();
+    expect(commandFingerprintsRepresentSameCommand(lateThrowingProxy, incoming)).toBe(false);
+  });
+
   it("constructs a validated fingerprint from the complete canonical string without truncation", () => {
     const canonical = "x".repeat(16_384);
     const fingerprint = createCommandFingerprintFromCanonicalJson(canonical);

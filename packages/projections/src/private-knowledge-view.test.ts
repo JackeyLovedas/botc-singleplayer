@@ -2145,6 +2145,43 @@ describe("private knowledge projections", () => {
     );
   });
 
+  it("fails player and AI projections closed for an exact duplicate Seamstress delivery chain", () => {
+    const state = stateWithSeamstressInformation();
+    const delivery = state.seamstressInformation?.deliveries[0];
+    if (delivery === undefined) throw new Error("Expected stored Seamstress delivery");
+    const tampered = {
+      ...state,
+      seamstressInformation: {
+        ...state.seamstressInformation,
+        deliveries: [delivery, delivery]
+      }
+    } as GameState;
+
+    expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tampered, delivery.sourcePlayerId));
+    expectPrivateKnowledgeUnavailable(() => buildAiPrivateKnowledgeView(tampered, delivery.sourcePlayerId));
+  });
+
+  it.each([
+    "opportunityId",
+    "taskId",
+    "abilityUseEntitlementId"
+  ] as const)("fails player and AI projections closed when distinct deliveries cross-reuse %s", (chainKey) => {
+    const state = stateWithTwoSeamstressDeliveries();
+    const first = state.seamstressInformation?.deliveries[0];
+    const second = state.seamstressInformation?.deliveries[1];
+    if (first === undefined || second === undefined) throw new Error("Expected two stored Seamstress deliveries");
+    const tampered = {
+      ...state,
+      seamstressInformation: {
+        ...state.seamstressInformation,
+        deliveries: [first, { ...second, [chainKey]: first[chainKey] }]
+      }
+    } as GameState;
+
+    expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tampered, first.sourcePlayerId));
+    expectPrivateKnowledgeUnavailable(() => buildAiPrivateKnowledgeView(tampered, first.sourcePlayerId));
+  });
+
   it("does not expose Seamstress targets, answer, or stage to any other player", () => {
     const state = stateWithSeamstressInformation();
     const delivery = state.seamstressInformation?.deliveries[0];

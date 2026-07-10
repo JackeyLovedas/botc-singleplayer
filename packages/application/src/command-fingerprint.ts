@@ -179,23 +179,33 @@ export const captureSupportedCommand = (command: SupportedCommandEnvelope): Capt
 };
 
 export const validateCommandFingerprint = (value: unknown): value is CommandFingerprint => {
-  if (value === null || typeof value !== "object" || Array.isArray(value) || !isPlainObject(value) ||
-      !hasExactOwnEnumerableDataKeys(value, FINGERPRINT_KEYS)) return false;
-  const candidate = value as Record<string, unknown>;
-  if (candidate.schemaVersion !== COMMAND_FINGERPRINT_SCHEMA_VERSION ||
-      candidate.canonicalizationAlgorithm !== COMMAND_CANONICALIZATION_ALGORITHM ||
-      candidate.digestAlgorithm !== COMMAND_FINGERPRINT_DIGEST_ALGORITHM ||
-      typeof candidate.canonicalCommandJson !== "string" || candidate.canonicalCommandJson.length === 0 ||
-      !Number.isSafeInteger(candidate.canonicalCommandJsonUtf8ByteLength) ||
-      (candidate.canonicalCommandJsonUtf8ByteLength as number) <= 0 ||
-      candidate.canonicalCommandJsonUtf8ByteLength !== Buffer.byteLength(candidate.canonicalCommandJson, "utf8") ||
-      typeof candidate.digestHex !== "string" ||
-      !/^[0-9a-f]{64}$/.test(candidate.digestHex) || candidate.digestHex.length !== COMMAND_FINGERPRINT_DIGEST_HEX_LENGTH) return false;
-  return candidate.digestHex === sha256Utf8(candidate.canonicalCommandJson);
+  try {
+    if (value === null || typeof value !== "object" || Array.isArray(value) || !isPlainObject(value) ||
+        !hasExactOwnEnumerableDataKeys(value, FINGERPRINT_KEYS)) return false;
+    const candidate = value as Record<string, unknown>;
+    if (candidate.schemaVersion !== COMMAND_FINGERPRINT_SCHEMA_VERSION ||
+        candidate.canonicalizationAlgorithm !== COMMAND_CANONICALIZATION_ALGORITHM ||
+        candidate.digestAlgorithm !== COMMAND_FINGERPRINT_DIGEST_ALGORITHM ||
+        typeof candidate.canonicalCommandJson !== "string" || candidate.canonicalCommandJson.length === 0 ||
+        !Number.isSafeInteger(candidate.canonicalCommandJsonUtf8ByteLength) ||
+        (candidate.canonicalCommandJsonUtf8ByteLength as number) <= 0 ||
+        candidate.canonicalCommandJsonUtf8ByteLength !== Buffer.byteLength(candidate.canonicalCommandJson, "utf8") ||
+        typeof candidate.digestHex !== "string" ||
+        !/^[0-9a-f]{64}$/.test(candidate.digestHex) || candidate.digestHex.length !== COMMAND_FINGERPRINT_DIGEST_HEX_LENGTH) return false;
+    return candidate.digestHex === sha256Utf8(candidate.canonicalCommandJson);
+  } catch {
+    return false;
+  }
 };
 
 export const commandFingerprintsRepresentSameCommand = (
   stored: unknown,
   incoming: CommandFingerprint
-): boolean => validateCommandFingerprint(stored) &&
-  stored.canonicalCommandJson === incoming.canonicalCommandJson;
+): boolean => {
+  try {
+    return validateCommandFingerprint(stored) &&
+      stored.canonicalCommandJson === incoming.canonicalCommandJson;
+  } catch {
+    return false;
+  }
+};
