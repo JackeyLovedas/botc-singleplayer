@@ -1,6 +1,6 @@
 # Current Task
 
-## Slice 2B16 Correction Round 1 Materialized — Awaiting Independent RULE_DESIGN Rereview
+## Slice 2B16 RULE_DESIGN_PASS — Awaiting Controller Implementation Authorization
 
 - Candidate role: `Cerenovus / 洗脑师`.
 - Complete fresh rule evidence: `docs/rules/evidence/2B16.md`.
@@ -10,8 +10,12 @@
 - Round-1 review verdict: `RULE_DESIGN_FIX_REQUIRED` for exact `main@ec9c546797070dfa5ab3d1d7838de16d14941358`.
 - Corrected proposed design: `docs/implementation/phase-3-slice-2b16-design.md`.
 - Corrected design SHA-256: `4f474b7ad914881a1b795432fe2d298678c1b799e1fe826b52a3fd81c030e33b`.
-- The corrected design ends `READY_FOR_RULE_DESIGN_REREVIEW`; this is not `RULE_DESIGN_PASS`.
-- There is no active feature branch, PR, reviewed design, production change, or test change for Slice 2B16.
+- Complete independent rereview: `docs/implementation/phase-3-slice-2b16-design-review-round-2.md`.
+- Rereview SHA-256: `27da37850a411d9cda371a189d4d7cf1b6dcaa010bd16e6dd055a9254ceb11ac`.
+- Reviewed exact HEAD: `4a6fbfb349f562d9292b6343f0bb4dd125e0a1e1`.
+- Rereview verdict: `RULE_DESIGN_PASS`; `remainingBlockers = []`.
+- Exact reviewed-head CI run `29104166882` succeeded.
+- There is no active feature branch, PR, production change, or test change for Slice 2B16; implementation has not started.
 
 ## Proposed Design Boundary
 
@@ -24,9 +28,9 @@
 
 ## Next Gate
 
-1. Launch at most one independent bounded read-only reviewer against the exact corrected committed evidence and design.
-2. Materialize the renewed review result without changing production code, tests, architecture, or the coverage matrix.
-3. Require a complete `RULE_DESIGN_PASS` and explicit controller authorization before creating a feature branch or beginning implementation.
+1. Controller verifies the exact gate commit, report hash, reviewed HEAD, artifact hashes, and reviewed-head CI.
+2. Controller explicitly authorizes the sole Slice 2B16 implementation branch and exact reviewed design scope.
+3. Only then may the implementer create the feature branch and begin the 41-item implementation plan. Implementation has not started.
 
 ## Round Limits
 
