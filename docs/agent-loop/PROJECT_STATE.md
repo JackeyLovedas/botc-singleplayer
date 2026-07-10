@@ -29,10 +29,13 @@
 - Candidate slice: 2B15 Seamstress first-night choice, stable ability tenure, and truth-favoring private information.
 - Branch: `phase-3/seamstress-first-night-choice-information`.
 - Branch base: `5c8712f95e68cae68c4c8e5c194dd96aa05aa284`.
-- Open slice PR: none yet; local implementation is ready to publish.
+- Open slice PR: #17, ready (`https://github.com/JackeyLovedas/botc-singleplayer/pull/17`).
 - Latest accepted slice merge: `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b` (PR #16).
 - Accepted tag: `phase-3-slice-2b14-seamstress-first-night-defer-skeleton`.
 - No 2B15 merge or tag is authorized.
+- Implementation commit: `a6b1e06c6e37009345d608940123d380d035a058`, pushed with required attribution.
+- PR #17 is based on `main`, uses the sole feature branch, is not a draft, and contains every mandatory rule-consistency heading.
+- Status: `WAITING_CI`; the current required PR checks are in progress and independent code/rule review has not started.
 
 ## Rule And Design Gate
 
@@ -76,12 +79,10 @@
 
 ## Mandatory Next Gates
 
-1. Commit and push the bounded implementation with required attribution.
-2. Open one ready slice PR with rule-evidence traceability, conservative coverage, exclusions, and local gate evidence.
-3. Required CI must pass on the exact PR HEAD.
-4. Independent reviewer must return both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS` on that exact HEAD.
-5. Reviewed HEAD must equal PR HEAD and the worktree must be clean before merge.
-6. The implementer must not merge or start the next slice.
+1. Required CI must pass on the exact final PR #17 HEAD.
+2. Independent reviewer must return both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS` on that exact HEAD.
+3. Reviewed HEAD must equal PR HEAD and the worktree must be clean before merge.
+4. The implementer must not merge or start the next slice.
 
 ## Loop Limits
 
