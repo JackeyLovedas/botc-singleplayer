@@ -33,17 +33,22 @@
 - PR #16 was merged as `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b`; the remote feature branch was deleted and `main` was pulled.
 - The accepted 2B14 tag was pushed and points to the merge commit.
 - Slice 2B14 remains the exact reviewed DEFER-only scope. It does not broaden Seamstress beyond the accepted `SKELETON` coverage and partial base first-night DEFER dimension.
-- The next candidate label is `2B15`; its role and scope are intentionally unset.
-- Fresh 2B15 rule research is pending. No evidence, design, implementation, feature branch, or pull request exists for 2B15.
+- Candidate Slice 2B15 fresh Seamstress rule evidence is materialized verbatim at `docs/rules/evidence/2B15.md` from live sources retrieved on 2026-07-10.
+- The evidence focus is the post-2B14 `CHOOSE_TWO_PLAYERS` path, but the architect has not selected or bounded an implementation scope.
+- Research verdict is `RULE_READY`; rule coverage remains `SKELETON`; external-source conflicts are empty; no snapshot was used.
+- The report preserves `2B15-R01` through `2B15-R13`, all mandatory source revisions and hashes, 39 required regression tests, and the stale `SV-SEAMSTRESS-DRUNK-DOES-NOT-SPEND` repository contradiction.
+- Authoritative evidence says a legal impaired two-target use is spent; the stale handoff test is a non-authoritative repository defect, not an external-source conflict.
+- No 2B15 design, implementation, feature branch, pull request, production change, or matrix change exists.
 
 ## Mandatory Rule Gate
 - Canonical instructions: `docs/agent-loop/AUTOPILOT_PROMPT.md`.
 - Configured roles: read-only `rule-researcher`, read-only `architect`, read-only `reviewer`, and sole-writer `implementer`; the concurrency cap remains three, so gated roles run sequentially where needed.
 - Slice 2B14 completed the required rule-evidence, rule-design, independent review, implementation, CI, code/rule review, and merge gates.
-- Candidate 2B15 is blocked pending fresh rule research; its scope must not be inferred from 2B14 or any earlier slice.
-- Required future order remains: fresh research -> materialized evidence -> `RULE_READY` -> bounded design -> independent `RULE_DESIGN_PASS` -> controller confirmation -> implementation -> focused/full gates -> ready PR -> CI -> independent code/rule review.
+- Slice 2B15 completed fresh live-source research, materialized evidence, and the `RULE_READY` gate.
+- The next required step is one bounded read-only architect design traced to `docs/rules/evidence/2B15.md`; implementation scope must not be inferred from the evidence report alone.
+- Required future order remains: bounded design -> independent `RULE_DESIGN_PASS` -> controller confirmation -> implementation -> focused/full gates -> ready PR -> CI -> independent code/rule review.
 - `RULE_CONFLICT` and `RULE_SOURCE_UNAVAILABLE` map to `HUMAN_BLOCKED`.
-- No production, architecture, evidence, design, matrix, branch, PR, or tag work for 2B15 is authorized by this governance update.
+- This evidence-only update authorizes no production, test, architecture, design, matrix, branch, PR, or tag work for 2B15.
 
 ## Loop Limits
 - One open slice PR and one writer at a time.
