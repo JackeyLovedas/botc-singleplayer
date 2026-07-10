@@ -1,27 +1,27 @@
 # Current Task
 
-## Slice 2B15 Design v3 Revised; Renewed Independent Review Pending
+## Slice 2B15 RULE_DESIGN_PASS; Awaiting Controller Authorization
 
 - There is no open slice pull request.
-- The active branch is `main`; independent design review round 2 inspected exact `main@5059b49b2e7da4c6550ae513cf660f84abcb98f3` and returned `RULE_DESIGN_FIX_REQUIRED`.
+- The active branch is `main`; independent design review round 3 inspected exact `main@bf6c0ecbb8ad8ddba244d69ccb53ec4b26b557ea` with `HEAD`, `main`, and `origin/main` matching and a clean worktree.
+- Reviewed v3 SHA-256: `a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52`.
 - Fresh 2B15 evidence remains `RULE_READY` with `SKELETON` coverage at `docs/rules/evidence/2B15.md`.
-- The round-1 and round-2 review reports remain unchanged at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md` and `docs/implementation/phase-3-slice-2b15-design-review-round-2.md`.
-- The architect's exact v3 patch is applied to `docs/implementation/phase-3-slice-2b15-design.md`; every unlisted v2 line remains unchanged.
-- V3 replaces candidate legality with exact disjoint `COMPLETE` and `PARTIAL` knowledge variants and qualifies Vortox disablement to impairment of the current Vortox player and exact Vortox tenure; Seamstress-source impairment never disables Vortox.
-- V3 defines exact `RoleTenureId` and transition-fact grammars, parsers, round-trip equality, starting-fact retention, `[N,M]` continuity, bootstrap from `CharactersAssigned`, and the sole production adapter from existing `SnakeCharmerDemonSwapApplied`.
-- V3 keeps test 22 as a pure internal reducer test and explicitly forbids a new general role-change production event or command.
-- V3 makes base and Philosopher-granted ability-instance formats tenure-aware and collision-free across Philosopher tenures.
-- V3 moves evidence scenario 7 from full to partial coverage and forbids claiming it fully implemented.
-- All previously accepted v2 V1/V2, public capability, non-oracle, truth-favoring, No Dashii restraint, N/M, atomic-chain, and source-only historical projection content remains intact.
-- Proposed v3 status: `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW`.
-- No `RULE_DESIGN_PASS` exists for v3. No 2B15 implementation, feature branch, pull request, production change, test change, architecture change, or coverage-matrix change is authorized.
+- The reviewed v3 design remains unchanged at `docs/implementation/phase-3-slice-2b15-design.md`.
+- The round-1 and round-2 `RULE_DESIGN_FIX_REQUIRED` reports remain unchanged at `docs/implementation/phase-3-slice-2b15-design-review-round-1.md` and `docs/implementation/phase-3-slice-2b15-design-review-round-2.md`.
+- The reviewer's complete final report is materialized at `docs/implementation/phase-3-slice-2b15-design-review.md`.
+- Final design-review verdict: `RULE_DESIGN_PASS`.
+- Mandatory sources and pinned/live nightsheet were available and consistent; nightsheet SHA-256 is `99a2815bb31bcec3e107bf7f1c2fb305e301d317981d855704d3d954ec4c3f75`.
+- All six round-1 blockers and all three round-2 blockers are independently confirmed closed.
+- Authorized design scope is limited to the reviewed first-night base and Philosopher-granted Seamstress pipeline, slice-local tenure reducer, existing-event adapter, atomic choice/spend/delivery/settlement chain, and historical private projection.
+- The design does not authorize other-night recurrence, life/revival, Travellers, registration, Barista, No Dashii poison derivation, or a general role-change subsystem.
+- Coverage may advance only to `PARTIAL` after implementation and all later gates pass.
+- Implementation has not started. No feature branch, pull request, production change, test change, architecture change, or coverage-matrix change is authorized until the controller explicitly confirms this gate.
 
 ## Gate
 
-- Completed for 2B15: fresh evidence -> initial design -> round-1 `RULE_DESIGN_FIX_REQUIRED` -> v2 -> round-2 `RULE_DESIGN_FIX_REQUIRED` -> exact architect v3 amendment.
-- Next required step: one renewed independent source/evidence, repository-contract, and rule-design review of v3 on its exact committed HEAD.
-- The reviewer must verify candidate-legality knowledge, Vortox-tenure impairment qualification, exact tenure/transition/instance identities and continuity, bounded reducer/adapter scope, and scenario-7 partial coverage.
-- Implementation remains frozen until an independent reviewer returns `RULE_DESIGN_PASS` and the controller confirms the gate.
-- Any further `RULE_DESIGN_FIX_REQUIRED` requires another bounded design revision; source conflict or unavailable mandatory evidence maps to `HUMAN_BLOCKED`.
-- Do not create a feature branch or pull request, and do not edit production code, tests, architecture, or the coverage matrix during this renewed design-review gate.
+- Completed for 2B15: fresh evidence -> initial design -> round-1 fixes -> v2 -> round-2 fixes -> v3 -> independent `RULE_DESIGN_PASS` on exact reviewed HEAD and hash.
+- Next required step: controller verification of this gate commit and any required main CI, followed by explicit authorization before creating the sole feature branch or editing implementation surfaces.
+- After controller authorization, implementation must remain exactly within the reviewed v3 scope and satisfy all acceptance, focused/full gate, PR, CI, and independent code/rule review requirements.
+- Any implementation need for excluded behavior, new rule uncertainty, or a general lifecycle subsystem stops the slice and returns to the appropriate evidence/design gate.
+- Do not create a feature branch or pull request, and do not edit production code, tests, architecture, or the coverage matrix before controller authorization.
 - Preserve one writer and one open slice pull request at a time.
