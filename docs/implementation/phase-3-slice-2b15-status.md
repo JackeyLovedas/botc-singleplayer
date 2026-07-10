@@ -16,9 +16,9 @@ Rules baseline: Phase One v2.1. Fresh evidence is recorded in `docs/rules/eviden
 - Added the atomic four-event chain `SeamstressTargetsChosen`, `SeamstressAbilitySpent`, `SeamstressInformationDelivered`, and `ScheduledTaskSettled(SEAMSTRESS_INFORMATION_DELIVERED)`.
 - Preserved legacy V1 `DEFER` and added V2 `DEFER`; both use two events and leave the entitlement unspent.
 - Separated settlement truth, represented source impairment, unresolved continuous effects, Vortox constraint, candidate legality, reliability, simulation reason, and delivered answer.
-- Added source-only historical player and AI projection as an ordered delivery array. Projection validation uses stored chain facts and does not recompute an answer from later character state.
+- Added source-only historical player and AI projection as an ordered delivery array. Projection validation uses stored chain facts, requires globally unique opportunity/task/entitlement chains, and does not recompute an answer from later character state.
 - Added type/count-only accepted summaries for every accepted Seamstress command while retaining full canonical event envelopes in the event batch/store.
-- Added descriptor-captured structural command fingerprints, exact canonical-command comparison, fail-closed legacy or malformed receipt handling, and `CommandIdempotencyConflict` without exposing canonical JSON or digests.
+- Added descriptor-captured structural command fingerprints, exact canonical-command comparison, total validation/comparison predicates for hostile stored values, fail-closed legacy or malformed receipt handling, and `CommandIdempotencyConflict` without exposing canonical JSON or digests.
 
 ## Public Capability And Compatibility
 
@@ -91,7 +91,7 @@ Choice reports the four ordered public event types; V1/V2 defer reports the two 
 
 All new accepted and rejected receipts store a complete validated structural fingerprint. Equality uses the exact captured canonical command string; SHA-256 is an integrity check, not the equality decision. Reordered own data properties compare equal. Changes to actor, expected version, issued time, correlation, target order, decision, payload, or extra own fields conflict. Accessors, custom non-enumerable fields, symbols, sparse or extra-key arrays, cycles, non-plain objects, bigint, unsafe numbers, and negative zero fail before receipt I/O or event work.
 
-Legacy receipts and malformed, unknown-version, length-invalid, or digest-invalid fingerprints return `CommandIdempotencyConflict` and are never overwritten. An accepted retry returns only the stored result with `idempotent: true` and appends no event.
+Legacy receipts and malformed, unknown-version, length-invalid, digest-invalid, revoked-proxy, or reflection/property-throwing fingerprints return `CommandIdempotencyConflict` and are never overwritten. An accepted retry returns only the stored result with `idempotent: true` and appends no event.
 
 ## Atomicity And Replay
 
@@ -114,7 +114,7 @@ seamstressKnowledgeModelVersion = seamstress-private-knowledge-v1
 deliveredKnowledgeStages += SEAMSTRESS_INFORMATION
 ```
 
-Every delivery requires one exact closed V2 opportunity, choice, spend, delivery, and matching settlement. Stored opportunity source/tenure/instance fields and the stored information chain are checked with exact runtime shapes. Multiple valid deliveries remain in canonical history order. Later current-role or alignment changes do not alter delivered history.
+Every delivery requires one exact closed V2 opportunity, choice, spend, delivery, and matching settlement. Stored opportunity source/tenure/instance fields and the stored information chain are checked with exact runtime shapes. Opportunity IDs, task/settlement IDs, and entitlement/spend IDs must also be unique across delivered histories. Multiple genuinely distinct deliveries remain in canonical history order. Later current-role or alignment changes do not alter delivered history.
 
 The projection excludes target alignments, correct answer, truth labels, candidate legality, represented impairment details, `KNOWN_INEFFECTIVE` versus `NOT_PROVEN`, Vortox identity/constraint, reliability, simulation reason, and all internal task/opportunity/tenure/instance/entitlement/candidate IDs.
 
@@ -135,21 +135,21 @@ Evidence scenarios 7, 15, 20, 23, 28, 34, and 36 remain only partially covered. 
 
 ## Verification
 
-Final local verification on the hardened implementation tree:
+Final local verification on the repaired implementation tree:
 
 ```text
 pnpm typecheck: passed
 pnpm lint: passed
-focused affected suites: passed, 5 files / 476 tests
-pnpm --filter @botc/application test: passed, 3 files / 171 tests
-pnpm test: passed, 21 files / 709 tests
-pnpm test:coverage: passed, 21 files / 709 tests
-coverage: 85.04% statements, 78.13% branches, 97.58% functions, 85.04% lines
+focused repair suites: passed, 3 files / 261 tests
+pnpm --filter @botc/application test: passed, 3 files / 172 tests
+pnpm test: passed, 21 files / 715 tests
+pnpm test:coverage: passed, 21 files / 715 tests
+coverage: 85.06% statements, 78.15% branches, 97.58% functions, 85.06% lines
 git diff --check: passed
 deterministic primitive scan: no new prohibited production usages
 ```
 
-The final scope audit added fail-closed projection checks for a cross-linked source seat, a hybrid ability source, a source-role/tenure mismatch, malformed historical collections, a canonical-rules-baseline mismatch, and malformed settlement shape. The synthetic multiple-history fixture was corrected to use a canonical second opportunity ID; all affected and full gates passed afterward.
+The final repair audit added player/AI fail-closed checks for exact duplicate and cross-reused opportunity/task/entitlement delivery chains, plus direct and service-level revoked/reflection/property proxy checks. The service returns the exact nonpersisted idempotency conflict without event or receipt writes, overwrite, or fingerprint/detail disclosure; all targeted and full gates passed afterward.
 
 ## Non-Goals
 
