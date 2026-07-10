@@ -31,18 +31,20 @@
 - Branch: `main`; no feature branch or open slice PR.
 - Governance base and research boundary: `7d8694f21d0f6d6ea6226b385bd893dd42754188`.
 - Evidence commit base: `00c3c01e35b2a117db28a72e007e6c7079bb9990`.
-- Fresh evidence: `docs/rules/evidence/2B16.md`, SHA-256 `6306ec6c008c72c276ccbf1fcddc0b14dd299ae5ded015c1bb55b6693aff2ef9`.
-- Proposed design: `docs/implementation/phase-3-slice-2b16-design.md`, SHA-256 `82cf080b1eceffbf6ec5efaf6bf38c2e5164413620f7e1185e3d616f2c56adaf`.
-- Status: `READY_FOR_RULE_DESIGN_REVIEW`; no independent `RULE_DESIGN_PASS` exists yet, and coverage remains `PARTIAL`.
-- Next authorized stage: one bounded independent read-only rule-design review. No implementation branch, production change, test change, coverage-matrix change, or PR is authorized.
+- Corrected evidence: `docs/rules/evidence/2B16.md`, SHA-256 `1ee54550a4e886e27e6f665c2275f21d4d04b5d67c68eab3f1bdd598cc0594ca`.
+- Round-1 review: `docs/implementation/phase-3-slice-2b16-design-review-round-1.md`, SHA-256 `4b48eaa3d49b54b0683a8c38ce5a5e27348b4947c1f349b49e77abbe84c37825`, verdict `RULE_DESIGN_FIX_REQUIRED` on `ec9c546797070dfa5ab3d1d7838de16d14941358`.
+- Corrected proposed design: `docs/implementation/phase-3-slice-2b16-design.md`, SHA-256 `4f474b7ad914881a1b795432fe2d298678c1b799e1fe826b52a3fd81c030e33b`.
+- Status: `READY_FOR_RULE_DESIGN_REREVIEW`; no independent `RULE_DESIGN_PASS` exists yet, and coverage remains `PARTIAL`.
+- Next authorized stage: one bounded independent read-only rule-design rereview on the exact corrected commit. No implementation branch, production change, test change, coverage-matrix change, or PR is authorized.
 - This controlled round has `maxSlices=1`, `maxRepairRounds=2`, no heartbeat, and no 2B17 work.
 
 ## Rule And Design Gate
 
 - Slice 2B16 evidence is fresh, complete, and ends in `RULE_READY`.
-- The proposed design is materialized and ends in `READY_FOR_RULE_DESIGN_REVIEW`.
+- The original proposed design received `RULE_DESIGN_FIX_REQUIRED`; its complete independent report is preserved verbatim in the round-1 audit file.
+- The corrected design ends in `READY_FOR_RULE_DESIGN_REREVIEW` and addresses command/task schemas, event provenance, stable source tenure/ability identity, closed impairment references, complete projection-chain validation, duration wording, real persisted stage literals, exact raw `pithag`, retryable failure contracts, 41 planned regressions, and all 23 evidence traces.
 - Its bounded four-event contract keeps effective/impaired accepted disclosures and target notifications branch-invariant while storing represented resolution truth canonically.
-- Effective requirement data is historical creation context only; madness judgment, enforcement, execution, death, recurrence, gained abilities, and general lifecycle processing remain out of scope.
+- Effective requirement data is stable source-bound historical creation context only; madness judgment, enforcement, execution, death, recurrence, gained abilities, and general lifecycle processing remain out of scope.
 - A complete independent `RULE_DESIGN_PASS` on the exact committed design is required before implementation.
 
 ## Implemented 2B15 Boundary
@@ -81,7 +83,7 @@
 
 ## Next Gate
 
-- Launch one bounded independent read-only rule-design reviewer for Slice 2B16 only.
+- Launch one bounded independent read-only rule-design rereviewer for the exact corrected Slice 2B16 commit only.
 - Do not create a feature branch, edit production code or tests, change the coverage matrix, or open a PR before the exact design independently receives `RULE_DESIGN_PASS` and controller authorization.
 - Do not begin Slice 2B17 in this controlled round.
 
