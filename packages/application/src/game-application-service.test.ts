@@ -59,6 +59,7 @@ import {
   submitPhilosopherActionCommand,
   submitSnakeCharmerActionCommand,
   submitDreamerActionCommand,
+  submitSeamstressActionCommand,
   submitWitchActionCommand,
   storytellerActor,
   testAssignmentGenerator,
@@ -491,6 +492,76 @@ const reachOpenDreamerActionOpportunity = async (
   }
 
   return { beforeDreamer, dreamerTask, opportunity, state };
+};
+
+const reachSeamstressActionTask = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore
+) => {
+  const { dreamerTask, opportunity, state } = await reachOpenDreamerActionOpportunity(service, commandStore);
+  const dreamerTarget = state.currentCharacterState?.entries.find((entry) =>
+    entry.playerId !== opportunity.sourcePlayerId
+  );
+  if (dreamerTarget === undefined) {
+    throw new Error("Expected Dreamer target before Seamstress");
+  }
+
+  const dreamerResult = await service.execute(submitDreamerActionCommand({
+    commandId: commandId("settle-dreamer-before-seamstress"),
+    expectedGameVersion: 15,
+    payload: {
+      commandType: "SubmitDreamerAction",
+      taskId: dreamerTask.taskId,
+      opportunityId: opportunity.opportunityId,
+      decision: {
+        kind: "CHOOSE_PLAYER",
+        targetPlayerId: dreamerTarget.playerId
+      }
+    }
+  }));
+  expectAcceptedResult(dreamerResult);
+
+  const beforeSeamstress = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const seamstressTask = beforeSeamstress?.firstNightTaskPlan?.tasks.find((task) =>
+    task.taskType === "SEAMSTRESS_ACTION"
+  );
+  if (beforeSeamstress === undefined || seamstressTask === undefined) {
+    throw new Error("Expected Seamstress action task");
+  }
+
+  expect(beforeSeamstress.firstNightTaskPlan && beforeSeamstress.firstNightTaskProgress
+    ? beforeSeamstress.firstNightTaskPlan.tasks[beforeSeamstress.firstNightTaskProgress.settlements.length]?.taskType
+    : undefined
+  ).toBe("SEAMSTRESS_ACTION");
+
+  return { beforeSeamstress, seamstressTask };
+};
+
+const reachOpenSeamstressActionOpportunity = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore
+) => {
+  const { beforeSeamstress, seamstressTask } = await reachSeamstressActionTask(service, commandStore);
+  const openResult = await service.execute(openFirstNightRoleActionOpportunityCommand({
+    commandId: commandId("open-seamstress-action"),
+    expectedGameVersion: 16,
+    payload: {
+      commandType: "OpenFirstNightRoleActionOpportunity",
+      taskId: seamstressTask.taskId
+    }
+  }));
+  expectAcceptedResult(openResult);
+
+  const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const opportunity = state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.taskId === seamstressTask.taskId &&
+    candidate.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION"
+  );
+  if (state === undefined || opportunity === undefined) {
+    throw new Error("Expected open Seamstress opportunity");
+  }
+
+  return { beforeSeamstress, seamstressTask, opportunity, state };
 };
 
 const reachOpenDrunkBaseSnakeCharmerOpportunity = async (
@@ -5560,6 +5631,427 @@ describe("GameApplicationService", () => {
     expect(failedResult.message).not.toContain("DomainValidationFailed");
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
     expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(27);
+  });
+
+  it("opens base Seamstress as the next safe deterministic first-night DEFER opportunity", async () => {
+    const { service, commandStore } = makeService();
+    const { seamstressTask } = await reachSeamstressActionTask(service, commandStore);
+
+    const result = await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-seamstress-safe-opportunity"),
+      expectedGameVersion: 16,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: seamstressTask.taskId
+      }
+    }));
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const opportunity = state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
+      candidate.taskId === seamstressTask.taskId
+    );
+
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(17);
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]).toMatchObject({
+      eventType: "FirstNightActionOpportunityCreated",
+      payload: {
+        opportunityId: actionOpportunityId(`first-night-v1:SEAMSTRESS_ACTION:seat-${String(seamstressTask.source.kind === "ROLE" ? seamstressTask.source.seatNumber : 0).padStart(2, "0")}:opportunity-01`),
+        opportunityKind: "SEAMSTRESS_FIRST_NIGHT_ACTION",
+        taskId: seamstressTask.taskId,
+        taskType: "SEAMSTRESS_ACTION",
+        opportunityStatus: "OPEN",
+        visibility: {
+          canDefer: true,
+          supportedDecisionKinds: ["DEFER"],
+          futureUnsupportedDecisionKinds: ["CHOOSE_TWO_PLAYERS"]
+        }
+      }
+    });
+    expect(opportunity).toMatchObject({
+      opportunityKind: "SEAMSTRESS_FIRST_NIGHT_ACTION",
+      taskId: seamstressTask.taskId,
+      taskType: "SEAMSTRESS_ACTION",
+      opportunityStatus: "OPEN",
+      visibility: {
+        canDefer: true,
+        supportedDecisionKinds: ["DEFER"],
+        futureUnsupportedDecisionKinds: ["CHOOSE_TWO_PLAYERS"]
+      }
+    });
+
+    const serialized = JSON.stringify(opportunity);
+    expect(serialized).not.toContain("selectedPlayer");
+    expect(serialized).not.toContain("sameAlignment");
+    expect(serialized).not.toContain("answer");
+    expect(serialized).not.toContain("abilitySpent");
+    expect(serialized).not.toContain("currentCharacterState");
+    expect(serialized).not.toContain("assignment");
+  });
+
+  it("rejects early, Human-opened, and Philosopher-gained Seamstress opportunities", async () => {
+    const { service, commandStore } = makeService();
+    const { seamstressTask } = await reachSeamstressActionTask(service, commandStore);
+
+    const humanOpen = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("human-open-seamstress"),
+      expectedGameVersion: 16,
+      actor: humanActor,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: seamstressTask.taskId
+      }
+    });
+    await expect(service.execute(humanOpen)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActorNotAllowed",
+      currentGameVersion: 16
+    });
+
+    const earlyStore = new MemoryCommandCommitStore();
+    const { service: earlyService } = makeService(earlyStore);
+    await reachDreamerActionTask(earlyService, earlyStore);
+    await expect(earlyService.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("early-open-seamstress-before-dreamer"),
+      expectedGameVersion: 14,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: seamstressTask.taskId
+      }
+    }))).resolves.toMatchObject({
+      status: "rejected",
+      code: "ScheduledTaskNotNext",
+      currentGameVersion: 14
+    });
+
+    const gainedStore = new MemoryCommandCommitStore();
+    const { service: gainedService } = makeService(gainedStore);
+    await reachOpenPhilosopherActionOpportunity(gainedService);
+    await gainedService.execute(choosePhilosopherRoleCommand("seamstress", {
+      commandId: commandId("choose-seamstress-before-unsupported-open")
+    }));
+    const gainedTaskId = scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:SEAMSTRESS_ACTION:seat-10:from-seamstress");
+    await expect(gainedService.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-gained-seamstress-unsupported"),
+      expectedGameVersion: 9,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: gainedTaskId
+      }
+    }))).resolves.toMatchObject({
+      status: "rejected",
+      code: "UnsupportedRoleActionOpportunity",
+      currentGameVersion: 9
+    });
+  });
+
+  it("defers Seamstress atomically without selecting players, producing information, or spending the ability", async () => {
+    const { service, commandStore } = makeService();
+    const { seamstressTask, opportunity, state: beforeSubmit } = await reachOpenSeamstressActionOpportunity(service, commandStore);
+    const command = submitSeamstressActionCommand({
+      commandId: commandId("submit-seamstress-defer"),
+      expectedGameVersion: 17,
+      actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+      payload: {
+        commandType: "SubmitSeamstressAction",
+        taskId: seamstressTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: { kind: "DEFER" }
+      }
+    });
+
+    const result = await service.execute(command);
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(18);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "SeamstressActionDeferred",
+      "ScheduledTaskSettled"
+    ]);
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([32, 33]);
+    expect(result.events[0]).toMatchObject({
+      payload: {
+        rulesBaselineVersion: RULES_BASELINE_VERSION,
+        nightNumber: 1,
+        taskId: seamstressTask.taskId,
+        taskType: "SEAMSTRESS_ACTION",
+        opportunityId: opportunity.opportunityId,
+        decisionKind: "DEFER",
+        sourcePlayerId: opportunity.sourcePlayerId,
+        sourceSeatNumber: opportunity.sourceSeatNumber,
+        sourceRole: opportunity.sourceRole,
+        sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
+      }
+    });
+    expect(result.events[1]).toMatchObject({
+      payload: {
+        taskId: seamstressTask.taskId,
+        taskType: "SEAMSTRESS_ACTION",
+        outcomeType: "SEAMSTRESS_DEFERRED",
+        characterStateRevision: opportunity.sourceCharacterStateRevision
+      }
+    });
+    expect(result.events[0]?.batchId).toBe(result.events[1]?.batchId);
+    expect(result.events[0]?.gameVersion).toBe(result.events[1]?.gameVersion);
+    expect(result.events[0]?.correlationId).toBe(result.events[1]?.correlationId);
+    expect(result.events[0]?.causationId).toBe(result.events[1]?.causationId);
+    expect(state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
+      candidate.opportunityId === opportunity.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(state?.firstNightTaskProgress?.settlements.at(-1)).toMatchObject({
+      taskId: seamstressTask.taskId,
+      taskType: "SEAMSTRESS_ACTION",
+      outcomeType: "SEAMSTRESS_DEFERRED",
+      characterStateRevision: opportunity.sourceCharacterStateRevision
+    });
+    expect(state?.firstNightTaskPlan && state.firstNightTaskProgress
+      ? state.firstNightTaskPlan.tasks[state.firstNightTaskProgress.settlements.length]?.taskType
+      : undefined
+    ).toBe("MATHEMATICIAN_INFORMATION");
+    expect(state?.currentCharacterState).toStrictEqual(beforeSubmit.currentCharacterState);
+    expect(state?.assignment).toStrictEqual(beforeSubmit.assignment);
+    expect(state?.setup).toStrictEqual(beforeSubmit.setup);
+    expect(state?.firstNightTaskPlan).toStrictEqual(beforeSubmit.firstNightTaskPlan);
+    expect(state?.abilityImpairments).toStrictEqual(beforeSubmit.abilityImpairments);
+    expect(state?.initialPrivateKnowledge).toStrictEqual(beforeSubmit.initialPrivateKnowledge);
+    expect(state?.dreamerInformation).toStrictEqual(beforeSubmit.dreamerInformation);
+    const serialized = JSON.stringify(result.events);
+    expect(serialized).not.toContain("selectedPlayer");
+    expect(serialized).not.toContain("sameAlignment");
+    expect(serialized).not.toContain("answer");
+    expect(serialized).not.toContain("abilitySpent");
+    expect(serialized).not.toContain("informationReliability");
+
+    const duplicate = await service.execute(command);
+    expect(duplicate).toStrictEqual({ ...result, idempotent: true });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(33);
+  });
+
+  it("accepts Seamstress DEFER from source Human, source AI, Storyteller, and System actors", async () => {
+    for (const [actorName, actorFactory] of [
+      ["human", (sourcePlayerId: ReturnType<typeof playerId>) => ({ kind: "human", playerId: sourcePlayerId } as const)],
+      ["ai", (sourcePlayerId: ReturnType<typeof playerId>) => ({ kind: "ai", playerId: sourcePlayerId } as const)],
+      ["storyteller", () => storytellerActor],
+      ["system", () => systemActor]
+    ] as const) {
+      const commandStore = new MemoryCommandCommitStore();
+      const { service } = makeService(commandStore);
+      const { seamstressTask, opportunity } = await reachOpenSeamstressActionOpportunity(service, commandStore);
+
+      await expect(service.execute(submitSeamstressActionCommand({
+        commandId: commandId(`${actorName}-seamstress-defer`),
+        expectedGameVersion: 17,
+        actor: actorFactory(opportunity.sourcePlayerId),
+        payload: {
+          commandType: "SubmitSeamstressAction",
+          taskId: seamstressTask.taskId,
+          opportunityId: opportunity.opportunityId,
+          decision: { kind: "DEFER" }
+        }
+      }))).resolves.toMatchObject({
+        status: "accepted",
+        gameVersion: 18,
+        events: [
+          { eventType: "SeamstressActionDeferred" },
+          { eventType: "ScheduledTaskSettled" }
+        ]
+      });
+    }
+  });
+
+  it("rejects malformed, future, mismatched, and non-source Seamstress submissions without domain events", async () => {
+    const { service, commandStore } = makeService();
+    const { seamstressTask, opportunity, state } = await reachOpenSeamstressActionOpportunity(service, commandStore);
+    const nonSource = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    const dreamerTask = state.firstNightTaskPlan?.tasks.find((task) => task.taskType === "DREAMER_ACTION");
+    if (nonSource === undefined || dreamerTask === undefined) {
+      throw new Error("Expected non-source player and Dreamer task");
+    }
+    const beforeEvents = await commandStore.loadDomainEvents(ids.game);
+
+    const cases = [
+      {
+        name: "non-source",
+        command: submitSeamstressActionCommand({
+          commandId: commandId("non-source-seamstress-defer"),
+          expectedGameVersion: 17,
+          actor: { kind: "ai", playerId: nonSource.playerId },
+          payload: {
+            commandType: "SubmitSeamstressAction",
+            taskId: seamstressTask.taskId,
+            opportunityId: opportunity.opportunityId,
+            decision: { kind: "DEFER" }
+          }
+        }),
+        code: "ActorPlayerMismatch"
+      },
+      {
+        name: "malformed decision",
+        command: submitSeamstressActionCommand({
+          commandId: commandId("malformed-seamstress-decision"),
+          expectedGameVersion: 17,
+          payload: {
+            commandType: "SubmitSeamstressAction",
+            taskId: seamstressTask.taskId,
+            opportunityId: opportunity.opportunityId,
+            decision: {} as never
+          }
+        }),
+        code: "InvalidSeamstressActionDecision"
+      },
+      {
+        name: "extra decision field",
+        command: submitSeamstressActionCommand({
+          commandId: commandId("extra-field-seamstress-decision"),
+          expectedGameVersion: 17,
+          payload: {
+            commandType: "SubmitSeamstressAction",
+            taskId: seamstressTask.taskId,
+            opportunityId: opportunity.opportunityId,
+            decision: { kind: "DEFER", sameAlignment: true } as never
+          }
+        }),
+        code: "InvalidSeamstressActionDecision"
+      },
+      {
+        name: "future choice",
+        command: submitSeamstressActionCommand({
+          commandId: commandId("unsupported-seamstress-choice"),
+          expectedGameVersion: 17,
+          payload: {
+            commandType: "SubmitSeamstressAction",
+            taskId: seamstressTask.taskId,
+            opportunityId: opportunity.opportunityId,
+            decision: {
+              kind: "CHOOSE_TWO_PLAYERS",
+              playerIds: [opportunity.sourcePlayerId, nonSource.playerId]
+            } as never
+          }
+        }),
+        code: "UnsupportedSeamstressActionDecision"
+      },
+      {
+        name: "hidden payload field",
+        command: submitSeamstressActionCommand({
+          commandId: commandId("hidden-payload-seamstress-decision"),
+          expectedGameVersion: 17,
+          payload: {
+            commandType: "SubmitSeamstressAction",
+            taskId: seamstressTask.taskId,
+            opportunityId: opportunity.opportunityId,
+            decision: { kind: "DEFER" },
+            selectedPlayerIds: [opportunity.sourcePlayerId, nonSource.playerId]
+          } as never
+        }),
+        code: "InvalidSeamstressActionDecision"
+      },
+      {
+        name: "wrong task",
+        command: submitSeamstressActionCommand({
+          commandId: commandId("wrong-task-seamstress-defer"),
+          expectedGameVersion: 17,
+          payload: {
+            commandType: "SubmitSeamstressAction",
+            taskId: dreamerTask.taskId,
+            opportunityId: opportunity.opportunityId,
+            decision: { kind: "DEFER" }
+          }
+        }),
+        code: "ScheduledTaskNotNext"
+      },
+      {
+        name: "wrong opportunity",
+        command: submitSeamstressActionCommand({
+          commandId: commandId("wrong-opportunity-seamstress-defer"),
+          expectedGameVersion: 17,
+          payload: {
+            commandType: "SubmitSeamstressAction",
+            taskId: seamstressTask.taskId,
+            opportunityId: actionOpportunityId("first-night-v1:SEAMSTRESS_ACTION:seat-99:opportunity-01"),
+            decision: { kind: "DEFER" }
+          }
+        }),
+        code: "ActionOpportunityNotFound"
+      }
+    ] as const;
+
+    for (const testCase of cases) {
+      await expect(service.execute(testCase.command), testCase.name).resolves.toMatchObject({
+        status: "rejected",
+        code: testCase.code,
+        currentGameVersion: 17
+      });
+      expect((await commandStore.findCommandReceipt(ids.game, testCase.command.commandId))?.result, testCase.name)
+        .toMatchObject({ status: "rejected", code: testCase.code });
+    }
+
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(beforeEvents);
+  });
+
+  it("keeps SubmitSeamstressAction metadata and construction failures retryable without receipts or events", async () => {
+    const metadataStore = new MemoryCommandCommitStore();
+    const idGenerator = new FaultInjectingIdGenerator();
+    const { service: metadataService } = makeService(metadataStore, testSetupGenerator, idGenerator);
+    const metadataReady = await reachOpenSeamstressActionOpportunity(metadataService, metadataStore);
+    const metadataCommand = submitSeamstressActionCommand({
+      commandId: commandId("seamstress-metadata-failure"),
+      expectedGameVersion: 17,
+      payload: {
+        commandType: "SubmitSeamstressAction",
+        taskId: metadataReady.seamstressTask.taskId,
+        opportunityId: metadataReady.opportunity.opportunityId,
+        decision: { kind: "DEFER" }
+      }
+    });
+    const metadataEvents = await metadataStore.loadDomainEvents(ids.game);
+
+    idGenerator.failNextBatchId = true;
+    const metadataFailure = await metadataService.execute(metadataCommand);
+
+    expectFailedResult(metadataFailure);
+    expect(metadataFailure).toMatchObject({
+      code: "MetadataGenerationFailed",
+      failureStage: "event-metadata",
+      currentGameVersion: 17,
+      retryable: true
+    });
+    expect(await metadataStore.findCommandReceipt(ids.game, metadataCommand.commandId)).toBeUndefined();
+    expect(await metadataStore.loadDomainEvents(ids.game)).toStrictEqual(metadataEvents);
+
+    const constructionStore = new MemoryCommandCommitStore();
+    const { service: constructionService } = makeService(constructionStore);
+    const constructionReady = await reachOpenSeamstressActionOpportunity(constructionService, constructionStore);
+    let opportunityIdReads = 0;
+    const constructionCommand = submitSeamstressActionCommand({
+      commandId: commandId("mutating-submit-seamstress-action"),
+      expectedGameVersion: 17,
+      payload: {
+        commandType: "SubmitSeamstressAction",
+        taskId: constructionReady.seamstressTask.taskId,
+        get opportunityId() {
+          opportunityIdReads += 1;
+          return opportunityIdReads === 1
+            ? constructionReady.opportunity.opportunityId
+            : actionOpportunityId("first-night-v1:SEAMSTRESS_ACTION:seat-99:opportunity-01");
+        },
+        decision: { kind: "DEFER" }
+      } as never
+    });
+    const constructionEvents = await constructionStore.loadDomainEvents(ids.game);
+
+    const constructionFailure = await constructionService.execute(constructionCommand);
+
+    expectFailedResult(constructionFailure);
+    expect(constructionFailure).toMatchObject({
+      code: "DependencyExecutionFailed",
+      failureStage: "first-night-role-action",
+      currentGameVersion: 17,
+      retryable: true
+    });
+    expect(constructionFailure.message).not.toContain("DomainValidationFailed");
+    expect(await constructionStore.findCommandReceipt(ids.game, constructionCommand.commandId)).toBeUndefined();
+    expect(await constructionStore.loadDomainEvents(ids.game)).toStrictEqual(constructionEvents);
   });
 
   it("keeps SubmitWitchAction metadata generation failures classified independently", async () => {

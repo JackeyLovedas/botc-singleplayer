@@ -1,5 +1,5 @@
 import type { ActionOpportunityId, CommandId, CorrelationId, GameId, PlayerId, ScheduledTaskId } from "./ids.js";
-import type { PhilosopherActionDecision } from "./first-night-action-opportunity.js";
+import type { PhilosopherActionDecision, SeamstressActionDecision } from "./first-night-action-opportunity.js";
 import type { SnakeCharmerActionDecision } from "./snake-charmer.js";
 import type { WitchActionDecision } from "./witch.js";
 import type { DreamerActionDecision } from "./dreamer.js";
@@ -120,6 +120,13 @@ export type SubmitDreamerActionCommandPayload = {
   readonly decision: DreamerActionDecision;
 };
 
+export type SubmitSeamstressActionCommandPayload = {
+  readonly commandType: "SubmitSeamstressAction";
+  readonly taskId: ScheduledTaskId;
+  readonly opportunityId: ActionOpportunityId;
+  readonly decision: SeamstressActionDecision;
+};
+
 export type SupportedCommandPayload =
   | CreateGameCommandPayload
   | SelectScriptCommandPayload
@@ -134,7 +141,8 @@ export type SupportedCommandPayload =
   | SubmitPhilosopherActionCommandPayload
   | SubmitSnakeCharmerActionCommandPayload
   | SubmitWitchActionCommandPayload
-  | SubmitDreamerActionCommandPayload;
+  | SubmitDreamerActionCommandPayload
+  | SubmitSeamstressActionCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
@@ -149,6 +157,7 @@ export type SubmitPhilosopherActionCommand = CommandEnvelope<SubmitPhilosopherAc
 export type SubmitSnakeCharmerActionCommand = CommandEnvelope<SubmitSnakeCharmerActionCommandPayload>;
 export type SubmitWitchActionCommand = CommandEnvelope<SubmitWitchActionCommandPayload>;
 export type SubmitDreamerActionCommand = CommandEnvelope<SubmitDreamerActionCommandPayload>;
+export type SubmitSeamstressActionCommand = CommandEnvelope<SubmitSeamstressActionCommandPayload>;
 export type SupportedCommandEnvelope =
   | CreateGameCommand
   | SelectScriptCommand
@@ -163,4 +172,5 @@ export type SupportedCommandEnvelope =
   | SubmitPhilosopherActionCommand
   | SubmitSnakeCharmerActionCommand
   | SubmitWitchActionCommand
-  | SubmitDreamerActionCommand;
+  | SubmitDreamerActionCommand
+  | SubmitSeamstressActionCommand;

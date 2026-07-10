@@ -1,20 +1,25 @@
 import { describe, expect, it } from "vitest";
 import {
   DomainError,
+  RULES_BASELINE_VERSION,
+  SUPPORTED_DOMAIN_EVENT_VERSION,
+  actionOpportunityId,
   applyDomainEvent,
   batchId,
   commandId,
   evaluatePhaseTransition,
   eventId,
   rebuildGameState,
+  scheduledTaskId,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
-import type { AnyDomainEventEnvelope, DomainErrorCode } from "@botc/domain-core";
+import type { AnyDomainEventEnvelope, DomainErrorCode, DomainEventEnvelope } from "@botc/domain-core";
 import {
   gameCreatedEvent,
   charactersAssignedEvent,
   charactersAssignedPhaseTransitionedEvent,
   firstNightInitializedEvent,
+  firstNightTaskPlanCreatedEvent,
   phaseTransitionedEvent,
   initialPrivateKnowledgeEstablishedEvent,
   playerRosterCreatedEvent,
@@ -46,6 +51,77 @@ const firstNightState = () => rebuildGameState([
   charactersAssignedEvent(),
   charactersAssignedPhaseTransitionedEvent()
 ]);
+const firstNightTaskPlanState = () => rebuildGameState([
+  ...characterAssignmentStateEvents(),
+  playerRosterCreatedEvent(),
+  charactersAssignedEvent(),
+  charactersAssignedPhaseTransitionedEvent(),
+  firstNightInitializedEvent(),
+  initialPrivateKnowledgeEstablishedEvent(),
+  firstNightTaskPlanCreatedEvent()
+]);
+
+const seamstressDeferredBatch = (): readonly [
+  DomainEventEnvelope<"SeamstressActionDeferred">,
+  DomainEventEnvelope<"ScheduledTaskSettled">
+] => {
+  const state = firstNightTaskPlanState();
+  const source = state.currentCharacterState?.entries[0];
+  if (source === undefined) {
+    throw new Error("Expected current character state source");
+  }
+
+  const taskId = scheduledTaskId(`first-night-v1:SEAMSTRESS_ACTION:seat-${String(source.seatNumber).padStart(2, "0")}`);
+  const opportunityId = actionOpportunityId(`${taskId}:opportunity-01`);
+  const shared = {
+    category: "domain" as const,
+    gameId: state.gameId,
+    batchId: batchId("batch-seamstress-defer"),
+    gameVersion: state.gameVersion + 1,
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION as 1,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: commandId("command-seamstress-defer"),
+    createdAt: "2026-07-10T00:00:00.000Z",
+    correlationId: gameCreatedEvent().correlationId,
+    causationId: gameCreatedEvent().causationId
+  };
+
+  return [
+    {
+      ...shared,
+      eventId: eventId("event-seamstress-deferred"),
+      eventSequence: state.lastEventSequence + 1,
+      eventType: "SeamstressActionDeferred",
+      payload: {
+        rulesBaselineVersion: RULES_BASELINE_VERSION,
+        nightNumber: 1,
+        taskId,
+        taskType: "SEAMSTRESS_ACTION",
+        opportunityId,
+        decisionKind: "DEFER",
+        sourcePlayerId: source.playerId,
+        sourceSeatNumber: source.seatNumber,
+        sourceRole: source.role,
+        sourceCharacterStateRevision: state.currentCharacterState?.revision ?? 1
+      }
+    },
+    {
+      ...shared,
+      eventId: eventId("event-seamstress-settled"),
+      eventSequence: state.lastEventSequence + 2,
+      eventType: "ScheduledTaskSettled",
+      payload: {
+        rulesBaselineVersion: RULES_BASELINE_VERSION,
+        taskId,
+        taskType: "SEAMSTRESS_ACTION",
+        nightNumber: 1,
+        settlementVersion: "scheduled-task-settlement-v1",
+        outcomeType: "SEAMSTRESS_DEFERRED",
+        characterStateRevision: state.currentCharacterState?.revision ?? 1
+      }
+    }
+  ];
+};
 
 const characterAssignmentStateEvents = (): readonly AnyDomainEventEnvelope[] => [
   gameCreatedEvent(),
@@ -363,6 +439,71 @@ describe("domain batch semantic validation", () => {
             gameVersion: firstNightInitializedEvent().gameVersion
           })
         ]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("accepts only the exact SeamstressActionDeferred plus matching settlement batch", () => {
+    const [deferred, settlement] = seamstressDeferredBatch();
+
+    expect(() => validateDomainBatchSemantics(firstNightTaskPlanState(), [deferred, settlement])).not.toThrow();
+  });
+
+  it("rejects incomplete, reordered, overlong, metadata-mismatched, and cross-field-mismatched Seamstress batches", () => {
+    const state = firstNightTaskPlanState();
+    const [deferred, settlement] = seamstressDeferredBatch();
+
+    expectDomainCode(
+      () => validateDomainBatchSemantics(state, [deferred]),
+      "InvalidDomainBatchSemantics"
+    );
+    expectDomainCode(
+      () => validateDomainBatchSemantics(state, [settlement, deferred]),
+      "InvalidDomainBatchSemantics"
+    );
+    expectDomainCode(
+      () => validateDomainBatchSemantics(state, [deferred, settlement, {
+        ...settlement,
+        eventId: eventId("event-third-seamstress"),
+        eventSequence: settlement.eventSequence + 1
+      }]),
+      "InvalidDomainBatchSemantics"
+    );
+    expectDomainCode(
+      () => validateDomainBatchSemantics(state, [deferred, {
+        ...settlement,
+        batchId: batchId("other-seamstress-batch")
+      }]),
+      "InvalidDomainBatchSemantics"
+    );
+    expectDomainCode(
+      () => validateDomainBatchSemantics(state, [deferred, {
+        ...settlement,
+        payload: {
+          ...settlement.payload,
+          taskId: scheduledTaskId("first-night-v1:SEAMSTRESS_ACTION:seat-99")
+        }
+      }]),
+      "InvalidDomainBatchSemantics"
+    );
+    expectDomainCode(
+      () => validateDomainBatchSemantics(state, [deferred, {
+        ...settlement,
+        payload: {
+          ...settlement.payload,
+          outcomeType: "DREAMER_INFORMATION_DELIVERED"
+        } as never
+      }]),
+      "InvalidDomainBatchSemantics"
+    );
+    expectDomainCode(
+      () => validateDomainBatchSemantics(state, [deferred, {
+        ...settlement,
+        payload: {
+          ...settlement.payload,
+          characterStateRevision: deferred.payload.sourceCharacterStateRevision + 1
+        }
+      }]),
       "InvalidDomainBatchSemantics"
     );
   });

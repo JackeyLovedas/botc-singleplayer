@@ -1161,6 +1161,89 @@ describe("private knowledge projections", () => {
     }
   });
 
+  it("keeps player and AI projections unchanged after opening and deferring Seamstress", () => {
+    const baseState = stateWithTaskPlan();
+    const seamstressRole = baseState.setup?.roleCatalogSnapshot.roles.find((role) => role.roleId === "seamstress");
+    const source = baseState.currentCharacterState?.entries.find((entry) => entry.role.roleId !== "seamstress");
+    const viewer = baseState.roster?.entries.find((entry) =>
+      entry.playerId !== source?.playerId &&
+      baseState.assignment?.assignments.find((assignment) => assignment.playerId === entry.playerId)?.role.roleId !== "seamstress"
+    );
+    if (seamstressRole === undefined || source === undefined || viewer === undefined || baseState.currentCharacterState === undefined) {
+      throw new Error("Expected projection-safe Seamstress source facts");
+    }
+
+    const taskId = scheduledTaskId(`first-night-v1:SEAMSTRESS_ACTION:seat-${String(source.seatNumber).padStart(2, "0")}`);
+    const opportunityId = actionOpportunityId(`${taskId}:opportunity-01`);
+    const opportunity = {
+      nightNumber: 1 as const,
+      opportunityId,
+      opportunityKind: "SEAMSTRESS_FIRST_NIGHT_ACTION" as const,
+      opportunityStatus: "OPEN" as const,
+      taskId,
+      taskType: "SEAMSTRESS_ACTION" as const,
+      sourcePlayerId: source.playerId,
+      sourceSeatNumber: source.seatNumber,
+      sourceRole: seamstressRole,
+      sourceCharacterStateRevision: baseState.currentCharacterState.revision,
+      visibility: {
+        canDefer: true as const,
+        supportedDecisionKinds: ["DEFER"] as const,
+        futureUnsupportedDecisionKinds: ["CHOOSE_TWO_PLAYERS"] as const
+      }
+    };
+    const openState: GameState = {
+      ...baseState,
+      firstNightActionOpportunities: {
+        opportunities: [opportunity]
+      }
+    };
+    const deferredState: GameState = {
+      ...openState,
+      firstNightActionOpportunities: {
+        opportunities: [{ ...opportunity, opportunityStatus: "CLOSED" }]
+      },
+      firstNightTaskProgress: {
+        settlements: [{
+          nightNumber: 1,
+          taskId,
+          taskType: "SEAMSTRESS_ACTION",
+          settlementVersion: "scheduled-task-settlement-v1",
+          outcomeType: "SEAMSTRESS_DEFERRED",
+          characterStateRevision: baseState.currentCharacterState.revision
+        }]
+      }
+    };
+
+    const baselinePlayerView = buildPlayerPrivateKnowledgeView(baseState, viewer.playerId);
+    const baselineAiView = buildAiPrivateKnowledgeView(baseState, viewer.playerId);
+
+    for (const [stage, state] of [["open", openState], ["deferred", deferredState]] as const) {
+      const playerView = buildPlayerPrivateKnowledgeView(state, viewer.playerId);
+      const aiView = buildAiPrivateKnowledgeView(state, viewer.playerId);
+
+      expect(playerView, stage).toStrictEqual(baselinePlayerView);
+      expect(aiView, stage).toStrictEqual(baselineAiView);
+      expect(aiView, stage).toStrictEqual(playerView);
+      for (const serialized of [JSON.stringify(playerView), JSON.stringify(aiView)]) {
+        expect(serialized, stage).not.toContain(taskId);
+        expect(serialized, stage).not.toContain(opportunityId);
+        expect(serialized, stage).not.toContain("SEAMSTRESS_ACTION");
+        expect(serialized, stage).not.toContain("SEAMSTRESS_FIRST_NIGHT_ACTION");
+        expect(serialized, stage).not.toContain("SeamstressActionDeferred");
+        expect(serialized, stage).not.toContain("SEAMSTRESS_DEFERRED");
+        expect(serialized, stage).not.toContain("DEFER");
+        expect(serialized, stage).not.toContain("CHOOSE_TWO_PLAYERS");
+        expect(serialized, stage).not.toContain(source.playerId);
+        expect(serialized, stage).not.toContain("sourceCharacterStateRevision");
+        expect(serialized, stage).not.toContain("sameAlignment");
+        expect(serialized, stage).not.toContain("informationReliability");
+        expect(serialized, stage).not.toContain("abilitySpent");
+        expect(serialized, stage).not.toContain("\"seamstress\"");
+      }
+    }
+  });
+
   it("projects settled MINION_INFO only to minions without leaking teammate roles", () => {
     const state = stateWithMinionInformation();
     if (state.currentCharacterState === undefined || state.roster === undefined) {

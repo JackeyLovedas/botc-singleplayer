@@ -51,6 +51,8 @@ export type CommandRejectionCode =
   | "InvalidSnakeCharmerTarget"
   | "InvalidWitchTarget"
   | "InvalidDreamerTarget"
+  | "InvalidSeamstressActionDecision"
+  | "UnsupportedSeamstressActionDecision"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 

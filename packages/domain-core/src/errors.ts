@@ -33,6 +33,7 @@ export type DomainErrorCode =
   | "DuplicateFirstNightTaskPlanCreated"
   | "InvalidFirstNightActionOpportunityCreatedPayload"
   | "InvalidPhilosopherActionDeferredPayload"
+  | "InvalidSeamstressActionDeferredPayload"
   | "InvalidPhilosopherAbilityChosenPayload"
   | "InvalidPhilosopherAbilityGrantedPayload"
   | "InvalidAbilityImpairmentAppliedPayload"

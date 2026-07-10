@@ -6,7 +6,8 @@ import type { FirstNightTaskPlan } from "./first-night-task-plan.js";
 import type { ScheduledTaskSettledPayload } from "./first-night-task-plan.js";
 import type {
   FirstNightActionOpportunityCreatedPayload,
-  PhilosopherActionDeferredPayload
+  PhilosopherActionDeferredPayload,
+  SeamstressActionDeferredPayload
 } from "./first-night-action-opportunity.js";
 import type {
   AbilityImpairmentAppliedPayload,
@@ -44,7 +45,8 @@ import type { GeneratedSetup, SupportedEdition } from "./setup-types.js";
 export type { ScheduledTaskSettledPayload } from "./first-night-task-plan.js";
 export type {
   FirstNightActionOpportunityCreatedPayload,
-  PhilosopherActionDeferredPayload
+  PhilosopherActionDeferredPayload,
+  SeamstressActionDeferredPayload
 } from "./first-night-action-opportunity.js";
 export type {
   AbilityImpairmentAppliedPayload,
@@ -169,6 +171,7 @@ export type DomainEventPayloadByType = {
   readonly FirstNightTaskPlanCreated: FirstNightTaskPlanCreatedPayload;
   readonly FirstNightActionOpportunityCreated: FirstNightActionOpportunityCreatedPayload;
   readonly PhilosopherActionDeferred: PhilosopherActionDeferredPayload;
+  readonly SeamstressActionDeferred: SeamstressActionDeferredPayload;
   readonly PhilosopherAbilityChosen: PhilosopherAbilityChosenPayload;
   readonly PhilosopherAbilityGranted: PhilosopherAbilityGrantedPayload;
   readonly AbilityImpairmentApplied: AbilityImpairmentAppliedPayload;
