@@ -22,7 +22,7 @@
 - 2B13 Dreamer action and historical information delivery.
 
 ## Current Delivery
-- Open slice PR: none.
+- Open slice PR: #16, ready (`https://github.com/JackeyLovedas/botc-singleplayer/pull/16`).
 - Branch: `phase-3/seamstress-first-night-defer-skeleton`.
 - Latest accepted slice merge: `a911ae0964dec444ef5bac59bf4d05f991353ccf` (PR #15).
 - Last reviewed slice HEAD: `a7adf6316140275afbf32681e6f141cb528c3546`.
@@ -34,7 +34,9 @@
 - The independent read-only source/evidence and rule-design review is materialized at `docs/implementation/phase-3-slice-2b14-design-review.md` with verdict `RULE_DESIGN_PASS` and blockers none.
 - Implementation is authorized only for the exact materialized DEFER-only design at commit `c23038b28e103fcfb353c63558dc14627fa74cd5`, design blob `ac0ef3076d6b8801d1f8d597ecb81dcb9e0ca663`; no scope change is authorized.
 - Controller confirmation is complete for gate commit `b9a60fe48368938416178c9362a37494681ae493`; design-gate CI run `29071921796` passed.
-- The sole feature branch `phase-3/seamstress-first-night-defer-skeleton` contains the exact reviewed DEFER-only implementation. Focused checks, the real application command, typecheck, lint, 626 tests, and coverage with 626 tests passed locally. No pull request exists yet.
+- The sole feature branch `phase-3/seamstress-first-night-defer-skeleton` contains the exact reviewed DEFER-only implementation. Focused checks, the real application command, typecheck, lint, 626 tests, and coverage with 626 tests passed locally.
+- Implementation commit `15f6291b43043c2479d614e41fa0dd77e11a0d9a` includes the required Codex co-author trailer.
+- PR #16 is open, ready, based on `main`, and has required CI checks in progress. Status is `WAITING_CI`; no merge is authorized before independent code/rule review and the remaining merge gates.
 
 ## Mandatory Rule Gate
 - Canonical instructions: `docs/agent-loop/AUTOPILOT_PROMPT.md`.
