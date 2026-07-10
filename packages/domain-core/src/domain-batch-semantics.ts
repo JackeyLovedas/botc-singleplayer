@@ -16,6 +16,15 @@ import {
   evaluateDreamerEffectiveness,
   sameDreamerInformationDelivery
 } from "./dreamer.js";
+import {
+  validateSeamstressAbilitySpentPayloadShape,
+  validateSeamstressChoiceSpendChain,
+  validateSeamstressInformationAgainstCanonicalState,
+  validateSeamstressInformationDeliveredPayloadShape,
+  validateSeamstressResolutionCapabilityDeclaredPayload,
+  validateSeamstressTargetsChosenPayloadShape
+} from "./seamstress.js";
+import { SUPPORTED_SCRIPT_ID } from "./setup-types.js";
 
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
 type IneffectiveWitchEffectiveness = Extract<WitchEffectivenessResult, { readonly effective: false }>;
@@ -76,8 +85,7 @@ const validateCreateGameBatch = (
 
 const validateIntegratedScriptSelectionBatch = (
   currentState: GameState | undefined,
-  scriptSelected: DomainEventEnvelope<"ScriptSelected">,
-  phaseTransitioned: DomainEventEnvelope<"PhaseTransitioned">
+  events: readonly AnyDomainEventEnvelope[]
 ): void => {
   if (currentState === undefined) {
     throw new DomainError("InvalidDomainBatchSemantics", "SelectScript batch requires an existing current state");
@@ -88,7 +96,22 @@ const validateIntegratedScriptSelectionBatch = (
     reject("SelectScript batch requires SCRIPT_SELECTION with no selected script");
   }
 
-  assertSharedBatchMetadata(scriptSelected, phaseTransitioned);
+  if (events.length !== 2 && events.length !== 3) reject("SelectScript batch must use the exact legacy two-event or capability three-event shape");
+  assertSharedBatchMetadataForAll(events);
+  const scriptSelected = events[0] as DomainEventEnvelope<"ScriptSelected">;
+  const capability = events.length === 3 ? events[1] as DomainEventEnvelope<"SeamstressResolutionCapabilityDeclared"> : undefined;
+  const phaseTransitioned = events[events.length - 1] as DomainEventEnvelope<"PhaseTransitioned">;
+  if (scriptSelected.eventType !== "ScriptSelected" || phaseTransitioned.eventType !== "PhaseTransitioned" ||
+      (events.length === 3 && capability?.eventType !== "SeamstressResolutionCapabilityDeclared")) {
+    reject("SelectScript batch event order is invalid");
+  }
+  if (capability !== undefined) {
+    const validation = validateSeamstressResolutionCapabilityDeclaredPayload(capability.payload);
+    if (!validation.valid || scriptSelected.payload.scriptId !== SUPPORTED_SCRIPT_ID || capability.payload.scriptId !== scriptSelected.payload.scriptId ||
+        capability.payload.rulesBaselineVersion !== scriptSelected.payload.rulesBaselineVersion) {
+      reject("SelectScript capability must exactly match the canonical selected script and rules baseline");
+    }
+  }
 
   if (
     phaseTransitioned.payload.fromPhase !== "SCRIPT_SELECTION" ||
@@ -353,10 +376,14 @@ const validateIntegratedSeamstressActionDeferredBatch = (
 
   assertSharedBatchMetadata(seamstressActionDeferred, scheduledTaskSettled);
 
+  const deferredCharacterStateRevision = "deferSchemaVersion" in seamstressActionDeferred.payload
+    ? seamstressActionDeferred.payload.settlementCharacterStateRevision
+    : seamstressActionDeferred.payload.sourceCharacterStateRevision;
+
   if (
     scheduledTaskSettled.payload.taskId !== seamstressActionDeferred.payload.taskId ||
     scheduledTaskSettled.payload.taskType !== seamstressActionDeferred.payload.taskType ||
-    scheduledTaskSettled.payload.characterStateRevision !== seamstressActionDeferred.payload.sourceCharacterStateRevision
+    scheduledTaskSettled.payload.characterStateRevision !== deferredCharacterStateRevision
   ) {
     reject("ScheduledTaskSettled must match the preceding SeamstressActionDeferred task identity and source revision");
   }
@@ -1027,6 +1054,59 @@ const validateIntegratedDreamerInformationBatch = (
   }
 };
 
+const validateIntegratedSeamstressInformationBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Seamstress information batch requires an existing state");
+  }
+  const state = currentState;
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 ||
+      state.firstNightTaskPlan === undefined || state.currentCharacterState === undefined ||
+      state.seamstressRoleTenureState === undefined || state.seamstressResolutionCapability === undefined) {
+    reject("Seamstress information batch requires the declared capability and first-night runtime state");
+  }
+  if (events.length !== 4) reject("Seamstress information batch must contain exactly four events");
+  const currentCharacterState = state.currentCharacterState;
+  const roleTenures = state.seamstressRoleTenureState;
+  if (currentCharacterState === undefined || roleTenures === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Seamstress information batch requires current character state and role tenures");
+  }
+  assertSharedBatchMetadataForAll(events);
+  const [first, second, third, fourth] = events;
+  if (first?.eventType !== "SeamstressTargetsChosen" || second?.eventType !== "SeamstressAbilitySpent" ||
+      third?.eventType !== "SeamstressInformationDelivered" || fourth?.eventType !== "ScheduledTaskSettled") {
+    reject("Seamstress information batch must be TargetsChosen, AbilitySpent, InformationDelivered, ScheduledTaskSettled");
+  }
+  const choice = first as DomainEventEnvelope<"SeamstressTargetsChosen">;
+  const spend = second as DomainEventEnvelope<"SeamstressAbilitySpent">;
+  const delivery = third as DomainEventEnvelope<"SeamstressInformationDelivered">;
+  const settlement = fourth as DomainEventEnvelope<"ScheduledTaskSettled">;
+  const choiceShape = validateSeamstressTargetsChosenPayloadShape(choice.payload);
+  const spendShape = validateSeamstressAbilitySpentPayloadShape(spend.payload);
+  const deliveryShape = validateSeamstressInformationDeliveredPayloadShape(delivery.payload);
+  if (!choiceShape.valid || !spendShape.valid || !deliveryShape.valid) {
+    reject(!choiceShape.valid ? choiceShape.reason : !spendShape.valid ? spendShape.reason : deliveryShape.valid ? "invalid delivery" : deliveryShape.reason);
+  }
+  const chain = validateSeamstressChoiceSpendChain({ choice: choice.payload, spend: spend.payload });
+  if (!chain.valid) reject(chain.reason);
+  const canonical = validateSeamstressInformationAgainstCanonicalState({
+    choice: choice.payload,
+    spend: spend.payload,
+    delivery: delivery.payload,
+    currentCharacterState,
+    roleTenures,
+    abilityImpairments: state.abilityImpairments
+  });
+  if (!canonical.valid) reject(canonical.reason);
+  if (settlement.payload.taskId !== delivery.payload.taskId || settlement.payload.taskType !== "SEAMSTRESS_ACTION" ||
+      settlement.payload.outcomeType !== "SEAMSTRESS_INFORMATION_DELIVERED" ||
+      settlement.payload.characterStateRevision !== delivery.payload.settlementCharacterStateRevision) {
+    reject("ScheduledTaskSettled must match the Seamstress delivered-information chain at M");
+  }
+};
+
 const validateIntegratedEvilTwinSetupBatch = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -1188,6 +1268,11 @@ export const validateDomainBatchSemantics = (
     return;
   }
 
+  if (first.eventType === "SeamstressTargetsChosen") {
+    validateIntegratedSeamstressInformationBatch(currentState, batchEvents);
+    return;
+  }
+
   if (first.eventType === "EvilTwinPairEstablished") {
     validateIntegratedEvilTwinSetupBatch(currentState, batchEvents);
     return;
@@ -1232,17 +1317,17 @@ export const validateDomainBatchSemantics = (
     return;
   }
 
+  if (first.eventType === "ScriptSelected") {
+    validateIntegratedScriptSelectionBatch(currentState, batchEvents);
+    return;
+  }
+
   if (batchEvents.length !== 2) {
     reject("Only supported single-fact and integrated two-event batches are currently supported");
   }
 
   if (third !== undefined) {
     reject("Integrated two-event batches must not contain a third domain event");
-  }
-
-  if (first.eventType === "ScriptSelected" && second !== undefined && second.eventType === "PhaseTransitioned") {
-    validateIntegratedScriptSelectionBatch(currentState, first, second);
-    return;
   }
 
   if (first.eventType === "SetupGenerated" && second !== undefined && second.eventType === "PhaseTransitioned") {

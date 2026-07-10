@@ -1,4 +1,5 @@
 export * from "./command-result.js";
+export * from "./command-fingerprint.js";
 export * from "./game-command-bus.js";
 export * from "./game-application-service.js";
 export * from "./game-session-runner.js";

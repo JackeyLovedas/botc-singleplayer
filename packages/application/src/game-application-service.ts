@@ -40,6 +40,13 @@ import {
   createDreamerInformationDeliveredScheduledTaskSettlement,
   createDreamerTargetChosenPayload,
   createSeamstressDeferredScheduledTaskSettlement,
+  createSeamstressActionDeferredPayloadV2,
+  createSeamstressTargetsChosenPayload,
+  createSeamstressAbilitySpentPayload,
+  createSeamstressInformationDeliveredPayload,
+  createSeamstressInformationDeliveredScheduledTaskSettlement,
+  createSeamstressResolutionCapabilityDeclaredPayload,
+  canonicalizeSeamstressTargets,
   createEvilTwinInformationDeliveredPayload,
   createEvilTwinPairEstablishedPayload,
   createEvilTwinPairEstablishedScheduledTaskSettlement,
@@ -51,6 +58,8 @@ import {
   getNextUnsettledFirstNightTask,
   isFirstNightTaskSettled,
   isSupportedFirstNightRoleActionTask,
+  isSeamstressActionOpportunityV2,
+  isRoleTenureContinuousAcross,
   tryCreateFirstNightRoleActionOpportunity,
   evaluatePhaseTransition,
   rebuildOptionalGameState,
@@ -63,7 +72,7 @@ import {
   validateSnakeCharmerActionDecision,
   validateWitchActionDecision,
   validateDreamerActionDecision,
-  validateSeamstressActionDecision,
+  validateSeamstressActionDecisionForOpportunity,
   tryCreateEvilTwinPair,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
@@ -88,6 +97,9 @@ import type {
   FirstNightInitializedPayload,
   PhilosopherActionDeferredPayload,
   SeamstressActionDeferredPayload,
+  SeamstressAbilitySpentPayload,
+  SeamstressInformationDeliveredPayload,
+  SeamstressTargetsChosenPayload,
   FirstNightTaskCatalogSnapshot,
   FirstNightTaskPlan,
   FirstNightTaskPlanCreatedPayload,
@@ -121,7 +133,12 @@ import type {
   ScriptSelectedPayload,
   SupportedCommandEnvelope
 } from "@botc/domain-core";
-import { accepted, failed, markIdempotent, rejected } from "./command-result.js";
+import { accepted, acceptedWithEventSummary, failed, markIdempotent, rejected } from "./command-result.js";
+import {
+  captureSupportedCommand,
+  commandFingerprintsRepresentSameCommand
+} from "./command-fingerprint.js";
+import type { CommandFingerprint } from "./command-fingerprint.js";
 import type {
   AssignmentGenerationRejectionDetails,
   CommandExecutionFailed,
@@ -132,7 +149,7 @@ import type {
   SetupGenerationRejectionDetails
 } from "./command-result.js";
 import type { CharacterAssignmentGeneratorPort } from "./ports/character-assignment-generator.js";
-import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
+import type { CommandCommitStore, FingerprintedCommandReceipt } from "./ports/command-commit-store.js";
 import type { FirstNightSystemInformationResolverPort } from "./ports/first-night-system-information-resolver.js";
 import type { FirstNightTaskPlannerPort } from "./ports/first-night-task-planner.js";
 import type { InitialPrivateKnowledgeBuilderPort } from "./ports/initial-private-knowledge-builder.js";
@@ -481,7 +498,22 @@ const firstNightSystemInformationFailureMessage = (
 export class GameApplicationService {
   public constructor(private readonly dependencies: GameApplicationServiceDependencies) {}
 
-  public async execute(command: SupportedCommandEnvelope): Promise<CommandResult> {
+  public async execute(incomingCommand: SupportedCommandEnvelope): Promise<CommandResult> {
+    const capturedResult = captureSupportedCommand(incomingCommand);
+    if (!capturedResult.valid) {
+      const descriptor = Object.getOwnPropertyDescriptor(incomingCommand, "gameId");
+      if (descriptor === undefined || !("value" in descriptor) || typeof descriptor.value !== "string") {
+        throw new TypeError("GameApplicationService requires an own data-property gameId");
+      }
+      return failed(
+        descriptor.value as SupportedCommandEnvelope["gameId"],
+        "DependencyExecutionFailed",
+        `Command snapshot validation failed: ${capturedResult.reason}`,
+        "command-validation"
+      );
+    }
+    const command = capturedResult.captured.snapshot;
+    const commandFingerprint = capturedResult.captured.fingerprint;
     let existingReceipt;
     try {
       existingReceipt = await this.dependencies.commandStore.findCommandReceipt(command.gameId, command.commandId);
@@ -490,7 +522,26 @@ export class GameApplicationService {
     }
 
     if (existingReceipt !== undefined) {
-      return markIdempotent(existingReceipt.result);
+      if (commandFingerprintsRepresentSameCommand(existingReceipt.commandFingerprint, commandFingerprint)) {
+        return markIdempotent(existingReceipt.result);
+      }
+      let conflictEvents;
+      try {
+        conflictEvents = await this.dependencies.commandStore.loadDomainEvents(command.gameId);
+      } catch (error: unknown) {
+        return failed(command.gameId, "CommandStoreReadFailed", errorMessage(error, "Unknown domain event load failure"), "event-load");
+      }
+      try {
+        const conflictState = rebuildOptionalGameState(conflictEvents);
+        return rejected(
+          command.gameId,
+          "CommandIdempotencyConflict",
+          "commandId is already associated with a different command",
+          conflictState?.gameVersion ?? 0
+        );
+      } catch (error: unknown) {
+        return failed(command.gameId, "CanonicalStateRebuildFailed", errorMessage(error, "Unknown canonical state rebuild failure"), "state-rebuild");
+      }
     }
 
     let events;
@@ -512,6 +563,7 @@ export class GameApplicationService {
     if (command.expectedGameVersion !== currentGameVersion) {
       return this.recordRejected(
         command,
+        commandFingerprint,
         rejected(
           command.gameId,
           "ExpectedGameVersionMismatch",
@@ -523,7 +575,7 @@ export class GameApplicationService {
 
     const validation = this.validate(command, state);
     if (validation !== undefined) {
-      return this.recordRejected(command, rejected(command.gameId, validation.code, validation.message, currentGameVersion));
+      return this.recordRejected(command, commandFingerprint, rejected(command.gameId, validation.code, validation.message, currentGameVersion));
     }
 
     const batch = this.createBatchOrReject(command, state, currentGameVersion);
@@ -533,18 +585,18 @@ export class GameApplicationService {
 
     if ("code" in batch) {
       if (batch.code === "SetupGenerationFailed") {
-        return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
+        return this.recordRejected(command, commandFingerprint, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
       }
 
       if (batch.code === "AssignmentGenerationFailed") {
-        return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
+        return this.recordRejected(command, commandFingerprint, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
       }
 
       if (batch.code === "InitialPrivateKnowledgeGenerationFailed") {
-        return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
+        return this.recordRejected(command, commandFingerprint, rejected(command.gameId, batch.code, batch.message, currentGameVersion, false, batch.details));
       }
 
-      return this.recordRejected(command, rejected(command.gameId, batch.code, batch.message, currentGameVersion));
+      return this.recordRejected(command, commandFingerprint, rejected(command.gameId, batch.code, batch.message, currentGameVersion));
     }
 
     const prospective = this.validateProspectiveBatch(command, state, batch);
@@ -553,11 +605,18 @@ export class GameApplicationService {
         return prospective;
       }
 
-      return this.recordRejected(command, rejected(command.gameId, prospective.code, prospective.message, currentGameVersion));
+      return this.recordRejected(command, commandFingerprint, rejected(command.gameId, prospective.code, prospective.message, currentGameVersion));
     }
 
-    const result = accepted(command.gameId, batch.committedGameVersion, batch.events);
-    const receipt: CommandReceipt = { commandId: command.commandId, gameId: command.gameId, result };
+    const result = command.payload.commandType === "SubmitSeamstressAction"
+      ? acceptedWithEventSummary(command.gameId, batch.committedGameVersion, batch.events)
+      : accepted(command.gameId, batch.committedGameVersion, batch.events);
+    const receipt: FingerprintedCommandReceipt<typeof result> = {
+      commandId: command.commandId,
+      gameId: command.gameId,
+      commandFingerprint,
+      result
+    };
 
     try {
       await this.dependencies.commandStore.commitAcceptedCommand({
@@ -1052,7 +1111,11 @@ export class GameApplicationService {
           firstNightTaskPlan: state.firstNightTaskPlan,
           firstNightTaskProgress: state.firstNightTaskProgress,
           currentCharacterState: state.currentCharacterState,
-          firstNightActionOpportunities: state.firstNightActionOpportunities
+          firstNightActionOpportunities: state.firstNightActionOpportunities,
+          seamstressResolutionCapability: state.seamstressResolutionCapability,
+          seamstressRoleTenureState: state.seamstressRoleTenureState,
+          seamstressAbilityState: state.seamstressAbilityState,
+          philosopherGrantedAbilities: state.philosopherGrantedAbilities
         });
         if (!sourceValidation.valid) {
           return {
@@ -1722,7 +1785,7 @@ export class GameApplicationService {
           }
         }
 
-        const decisionValidation = validateSeamstressActionDecision(command.payload.decision);
+        const decisionValidation = validateSeamstressActionDecisionForOpportunity(command.payload.decision, opportunity);
         if (!decisionValidation.valid) {
           return {
             code: decisionValidation.code,
@@ -1764,22 +1827,59 @@ export class GameApplicationService {
           entry.playerId === opportunity.sourcePlayerId &&
           entry.seatNumber === opportunity.sourceSeatNumber
         );
-        const seamstressSourceValid =
-          targetTask.source.kind === "ROLE" &&
-          targetTask.source.role.roleId === "seamstress" &&
-          targetTask.source.playerId === opportunity.sourcePlayerId &&
-          targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
-          currentSourceEntry !== undefined &&
-          currentSourceEntry.role.roleId === "seamstress" &&
-          sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.role) &&
-          sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
-          state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
-
-        if (!seamstressSourceValid) {
-          return {
+        if (!isSeamstressActionOpportunityV2(opportunity)) {
+          const legacySourceValid = targetTask.source.kind === "ROLE" && targetTask.source.role.roleId === "seamstress" &&
+            targetTask.source.playerId === opportunity.sourcePlayerId && targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+            currentSourceEntry !== undefined && currentSourceEntry.role.roleId === "seamstress" &&
+            sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.role) &&
+            sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
+            state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
+          return legacySourceValid ? undefined : {
             code: "ActionSourceNoLongerValid",
-            message: "SubmitSeamstressAction source is no longer the same current base Seamstress state"
+            message: "SubmitSeamstressAction legacy source is no longer the same base Seamstress state"
           };
+        }
+
+        const tenure = state.seamstressRoleTenureState?.records.find((record) => record.roleTenureId === opportunity.sourceRoleTenureId);
+        const instance = state.seamstressAbilityState?.instances.find((entry) => entry.abilityInstanceId === opportunity.abilityInstanceId);
+        const entitlement = state.seamstressAbilityState?.entitlements.find((entry) =>
+          entry.abilityUseEntitlementId === opportunity.abilityUseEntitlementId
+        );
+        if (entitlement?.status === "SPENT") {
+          return { code: "AbilityUseEntitlementAlreadySpent", message: "Seamstress ability entitlement is already spent" };
+        }
+        const abilitySource = opportunity.abilitySource;
+        const taskSourceMatches = abilitySource.kind === "ROLE_TENURE"
+          ? targetTask.source.kind === "ROLE" && targetTask.source.role.roleId === "seamstress" &&
+            targetTask.source.playerId === opportunity.sourcePlayerId && targetTask.source.seatNumber === opportunity.sourceSeatNumber
+          : targetTask.source.kind === "PHILOSOPHER_GAINED_ABILITY" && targetTask.source.sourceRole.roleId === "philosopher" &&
+            targetTask.source.chosenRole.roleId === "seamstress" && targetTask.source.playerId === opportunity.sourcePlayerId &&
+            targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+            (state.philosopherGrantedAbilities?.abilities.some((grant) => grant.grantId === abilitySource.grantId &&
+              grant.sourcePlayerId === opportunity.sourcePlayerId && grant.sourceSeatNumber === opportunity.sourceSeatNumber &&
+              grant.chosenRoleId === "seamstress") ?? false);
+        if (tenure === undefined || instance === undefined || entitlement === undefined || currentSourceEntry === undefined ||
+            !isRoleTenureContinuousAcross(tenure, opportunity.sourceCharacterStateRevision, state.currentCharacterState.revision) ||
+            instance.sourceRoleTenureId !== tenure.roleTenureId || instance.endedCharacterStateRevision !== undefined ||
+            currentSourceEntry.role.roleId !== tenure.roleId || !sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) ||
+            !taskSourceMatches) {
+          return { code: "ActionSourceNoLongerValid", message: "SubmitSeamstressAction source tenure or ability instance is no longer active" };
+        }
+
+        if (command.payload.decision.kind === "CHOOSE_TWO_PLAYERS") {
+          const canonicalTargets = canonicalizeSeamstressTargets({
+            sourcePlayerId: opportunity.sourcePlayerId,
+            targetPlayerIds: command.payload.decision.targetPlayerIds,
+            currentCharacterState: state.currentCharacterState
+          });
+          if (!canonicalTargets.valid || state.roster === undefined || canonicalTargets.targetPlayerIds.some((playerIdValue, index) => {
+            const rosterEntry = state.roster?.entries.find((entry) => entry.playerId === playerIdValue);
+            return rosterEntry === undefined || rosterEntry.seatNumber !== canonicalTargets.targetSeatNumbers[index];
+          })) {
+            return { code: "InvalidSeamstressTarget", message: canonicalTargets.valid
+              ? "SubmitSeamstressAction targets must match the modeled roster"
+              : canonicalTargets.reason };
+          }
         }
 
         return undefined;
@@ -2378,7 +2478,7 @@ export class GameApplicationService {
         };
 
         const phaseTransitionedEvent: DomainEventEnvelope<"PhaseTransitioned"> = {
-          ...common(firstEventSequence + 1),
+          ...common(firstEventSequence + 2),
           eventType: "PhaseTransitioned" as const,
           payload: {
             rulesBaselineVersion: RULES_BASELINE_VERSION,
@@ -2392,7 +2492,13 @@ export class GameApplicationService {
           } satisfies PhaseTransitionedPayload
         };
 
-        return [scriptSelectedEvent, phaseTransitionedEvent];
+        const seamstressCapabilityEvent: DomainEventEnvelope<"SeamstressResolutionCapabilityDeclared"> = {
+          ...common(firstEventSequence + 1),
+          eventType: "SeamstressResolutionCapabilityDeclared" as const,
+          payload: createSeamstressResolutionCapabilityDeclaredPayload(RULES_BASELINE_VERSION)
+        };
+
+        return [scriptSelectedEvent, seamstressCapabilityEvent, phaseTransitionedEvent];
       }
 
       case "GenerateSetup": {
@@ -2603,7 +2709,11 @@ export class GameApplicationService {
           firstNightTaskPlan: state.firstNightTaskPlan,
           firstNightTaskProgress: state.firstNightTaskProgress,
           currentCharacterState: state.currentCharacterState,
-          firstNightActionOpportunities: state.firstNightActionOpportunities
+          firstNightActionOpportunities: state.firstNightActionOpportunities,
+          seamstressResolutionCapability: state.seamstressResolutionCapability,
+          seamstressRoleTenureState: state.seamstressRoleTenureState,
+          seamstressAbilityState: state.seamstressAbilityState,
+          philosopherGrantedAbilities: state.philosopherGrantedAbilities
         });
 
         const firstNightActionOpportunityCreatedEvent: DomainEventEnvelope<"FirstNightActionOpportunityCreated"> = {
@@ -3145,37 +3255,99 @@ export class GameApplicationService {
           );
         }
 
-        const seamstressActionDeferredEvent: DomainEventEnvelope<"SeamstressActionDeferred"> = {
-          ...common(firstEventSequence),
-          eventType: "SeamstressActionDeferred" as const,
-          payload: {
-            rulesBaselineVersion: RULES_BASELINE_VERSION,
-            nightNumber: 1,
+        if (command.payload.decision.kind === "DEFER") {
+          const deferredPayload: SeamstressActionDeferredPayload = isSeamstressActionOpportunityV2(opportunity)
+            ? createSeamstressActionDeferredPayloadV2({
+                rulesBaselineVersion: RULES_BASELINE_VERSION,
+                opportunity,
+                settlementCharacterStateRevision: state.currentCharacterState.revision
+              })
+            : {
+                rulesBaselineVersion: RULES_BASELINE_VERSION,
+                nightNumber: 1,
+                taskId: opportunity.taskId,
+                taskType: opportunity.taskType,
+                opportunityId: opportunity.opportunityId,
+                decisionKind: "DEFER",
+                sourcePlayerId: opportunity.sourcePlayerId,
+                sourceSeatNumber: opportunity.sourceSeatNumber,
+                sourceRole: opportunity.sourceRole,
+                sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
+              };
+          const seamstressActionDeferredEvent: DomainEventEnvelope<"SeamstressActionDeferred"> = {
+            ...common(firstEventSequence),
+            eventType: "SeamstressActionDeferred" as const,
+            payload: deferredPayload
+          };
+          const settlementRevision = "deferSchemaVersion" in deferredPayload
+            ? deferredPayload.settlementCharacterStateRevision
+            : deferredPayload.sourceCharacterStateRevision;
+          const settlement = createSeamstressDeferredScheduledTaskSettlement({
             taskId: opportunity.taskId,
-            taskType: opportunity.taskType,
-            opportunityId: opportunity.opportunityId,
-            decisionKind: "DEFER",
-            sourcePlayerId: opportunity.sourcePlayerId,
-            sourceSeatNumber: opportunity.sourceSeatNumber,
-            sourceRole: opportunity.sourceRole,
-            sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
-          } satisfies SeamstressActionDeferredPayload
-        };
+            characterStateRevision: settlementRevision
+          });
+          const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
+            ...common(firstEventSequence + 1),
+            eventType: "ScheduledTaskSettled" as const,
+            payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, ...settlement } satisfies ScheduledTaskSettledPayload
+          };
+          return [seamstressActionDeferredEvent, scheduledTaskSettledEvent];
+        }
 
-        const settlement = createSeamstressDeferredScheduledTaskSettlement({
+        if (!isSeamstressActionOpportunityV2(opportunity) || state.seamstressRoleTenureState === undefined) {
+          throw new DomainError("InvalidSeamstressTargetsChosenPayload", "Seamstress choice requires a V2 opportunity and role-tenure state");
+        }
+        const sourceRoleTenure = state.seamstressRoleTenureState.records.find((record) =>
+          record.roleTenureId === opportunity.sourceRoleTenureId
+        );
+        if (sourceRoleTenure === undefined) {
+          throw new DomainError("InvalidSeamstressTargetsChosenPayload", "Seamstress choice source tenure is missing");
+        }
+        const choicePayload = createSeamstressTargetsChosenPayload({
+          rulesBaselineVersion: RULES_BASELINE_VERSION,
           taskId: opportunity.taskId,
-          characterStateRevision: opportunity.sourceCharacterStateRevision
+          opportunityId: opportunity.opportunityId,
+          abilityInstanceId: opportunity.abilityInstanceId,
+          abilityUseEntitlementId: opportunity.abilityUseEntitlementId,
+          sourceRoleTenureId: opportunity.sourceRoleTenureId,
+          sourcePlayerId: opportunity.sourcePlayerId,
+          sourceSeatNumber: opportunity.sourceSeatNumber,
+          sourceRole: opportunity.sourceRole,
+          opportunityCharacterStateRevision: opportunity.sourceCharacterStateRevision,
+          currentCharacterState: state.currentCharacterState,
+          targetPlayerIds: command.payload.decision.targetPlayerIds
         });
-        const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
-          ...common(firstEventSequence + 1),
-          eventType: "ScheduledTaskSettled" as const,
-          payload: {
-            rulesBaselineVersion: RULES_BASELINE_VERSION,
-            ...settlement
-          } satisfies ScheduledTaskSettledPayload
-        };
-
-        return [seamstressActionDeferredEvent, scheduledTaskSettledEvent];
+        const spendPayload = createSeamstressAbilitySpentPayload(choicePayload);
+        const informationPayload = createSeamstressInformationDeliveredPayload({
+          choice: choicePayload,
+          currentCharacterState: state.currentCharacterState,
+          sourceRoleTenure,
+          roleTenures: state.seamstressRoleTenureState,
+          abilityImpairments: state.abilityImpairments
+        });
+        const settlement = createSeamstressInformationDeliveredScheduledTaskSettlement(informationPayload);
+        return [
+          {
+            ...common(firstEventSequence),
+            eventType: "SeamstressTargetsChosen" as const,
+            payload: choicePayload satisfies SeamstressTargetsChosenPayload
+          },
+          {
+            ...common(firstEventSequence + 1),
+            eventType: "SeamstressAbilitySpent" as const,
+            payload: spendPayload satisfies SeamstressAbilitySpentPayload
+          },
+          {
+            ...common(firstEventSequence + 2),
+            eventType: "SeamstressInformationDelivered" as const,
+            payload: informationPayload satisfies SeamstressInformationDeliveredPayload
+          },
+          {
+            ...common(firstEventSequence + 3),
+            eventType: "ScheduledTaskSettled" as const,
+            payload: settlement satisfies ScheduledTaskSettledPayload
+          }
+        ];
       }
 
       case "SettleEvilTwinSetup": {
@@ -3419,7 +3591,11 @@ export class GameApplicationService {
     }
   }
 
-  private async recordRejected(command: SupportedCommandEnvelope, result: CommandRejected): Promise<CommandResult> {
+  private async recordRejected(
+    command: SupportedCommandEnvelope,
+    commandFingerprint: CommandFingerprint,
+    result: CommandRejected
+  ): Promise<CommandResult> {
     try {
       await this.dependencies.commandStore.recordRejectedCommand({
         gameId: command.gameId,
@@ -3427,6 +3603,7 @@ export class GameApplicationService {
         receipt: {
           commandId: command.commandId,
           gameId: command.gameId,
+          commandFingerprint,
           result
         }
       });

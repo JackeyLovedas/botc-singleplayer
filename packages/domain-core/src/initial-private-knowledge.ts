@@ -34,7 +34,8 @@ export type PlayerPrivateKnowledgeStage =
   | "MINION_INFORMATION"
   | "DEMON_INFORMATION"
   | "EVIL_TWIN_SETUP_INFORMATION"
-  | "DREAMER_INFORMATION";
+  | "DREAMER_INFORMATION"
+  | "SEAMSTRESS_INFORMATION";
 
 export type FirstNightSession = {
   readonly initializationVersion: SupportedFirstNightInitializationVersion;
@@ -101,11 +102,13 @@ export type PlayerPrivateKnowledgeView = {
   readonly knownMinions: readonly KnownPlayerReference[];
   readonly evilTwinCounterpart?: KnownPlayerReference;
   readonly dreamerInformation?: PlayerDreamerInformationView;
+  readonly seamstressInformation?: readonly PlayerSeamstressInformationView[];
   readonly demonBluffs: readonly RoleSetupSnapshot[];
   readonly ownCharacterKnowledgeModelVersion: SupportedInitialKnowledgeModelVersion;
   readonly teamKnowledgeModelVersion?: string;
   readonly evilTwinKnowledgeModelVersion?: string;
   readonly dreamerKnowledgeModelVersion?: string;
+  readonly seamstressKnowledgeModelVersion?: "seamstress-private-knowledge-v1";
   readonly deliveredKnowledgeStages: readonly PlayerPrivateKnowledgeStage[];
 };
 
@@ -113,6 +116,11 @@ export type PlayerDreamerInformationView = {
   readonly target: KnownPlayerReference;
   readonly goodRole: RoleSetupSnapshot;
   readonly evilRole: RoleSetupSnapshot;
+};
+
+export type PlayerSeamstressInformationView = {
+  readonly targets: readonly [KnownPlayerReference, KnownPlayerReference];
+  readonly deliveredAnswer: "YES" | "NO";
 };
 
 export type InitialPrivateKnowledgeGenerationFailureCode =
@@ -262,11 +270,13 @@ const PLAYER_PRIVATE_KNOWLEDGE_STAGE_ORDER = [
   "MINION_INFORMATION",
   "DEMON_INFORMATION",
   "EVIL_TWIN_SETUP_INFORMATION",
-  "DREAMER_INFORMATION"
+  "DREAMER_INFORMATION",
+  "SEAMSTRESS_INFORMATION"
 ] as const;
 const SUPPORTED_PRIVATE_VIEW_TEAM_KNOWLEDGE_MODEL_VERSION = "first-night-team-knowledge-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION = "evil-twin-knowledge-model-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_DREAMER_KNOWLEDGE_MODEL_VERSION = "dreamer-information-model-v1" as const;
+const SUPPORTED_PRIVATE_VIEW_SEAMSTRESS_KNOWLEDGE_MODEL_VERSION = "seamstress-private-knowledge-v1" as const;
 
 export const hasExactRoleSetupSnapshotShape = (value: unknown): value is RoleSetupSnapshot => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ROLE_SETUP_SNAPSHOT_KEYS)) {
@@ -392,7 +402,9 @@ const validatePrivateKnowledgeViewStages = (
   hasEvilTwinKnowledgeModelVersion: boolean,
   hasEvilTwinCounterpart: boolean,
   hasDreamerKnowledgeModelVersion: boolean,
-  hasDreamerInformation: boolean
+  hasDreamerInformation: boolean,
+  hasSeamstressKnowledgeModelVersion: boolean,
+  hasSeamstressInformation: boolean
 ): InitialPrivateKnowledgeValidationResult => {
   if (!Array.isArray(stages) || !isDenseArray(stages)) {
     return fail("PlayerPrivateKnowledgeView deliveredKnowledgeStages must be a dense array");
@@ -441,6 +453,11 @@ const validatePrivateKnowledgeViewStages = (
     return fail("PlayerPrivateKnowledgeView Dreamer information and model version must be present exactly when Dreamer information is delivered");
   }
 
+  const hasSeamstressStage = stageValues.some((stage) => stage === "SEAMSTRESS_INFORMATION");
+  if (hasSeamstressKnowledgeModelVersion !== hasSeamstressStage || hasSeamstressInformation !== hasSeamstressStage) {
+    return fail("PlayerPrivateKnowledgeView Seamstress information and model version must be present exactly when Seamstress information is delivered");
+  }
+
   return { valid: true };
 };
 
@@ -458,6 +475,25 @@ const hasExactDreamerInformationViewShape = (value: unknown): value is PlayerDre
   );
 };
 
+const hasExactSeamstressInformationHistoryShape = (
+  value: unknown,
+  viewerPlayerId: unknown,
+  viewerSeatNumber: unknown
+): value is readonly PlayerSeamstressInformationView[] => {
+  if (!Array.isArray(value) || !isDenseArray(value) || value.length === 0) return false;
+  return value.every((entry) => {
+    if (!isPlainRecord(entry) || !hasExactEnumerableKeys(entry, ["deliveredAnswer", "targets"]) ||
+        (entry.deliveredAnswer !== "YES" && entry.deliveredAnswer !== "NO") ||
+        !Array.isArray(entry.targets) || !isDenseArray(entry.targets) || entry.targets.length !== 2 ||
+        !hasExactKnownPlayerReferenceShape(entry.targets[0]) || !hasExactKnownPlayerReferenceShape(entry.targets[1])) return false;
+    const first = entry.targets[0];
+    const second = entry.targets[1];
+    return first.playerId !== second.playerId && first.seatNumber < second.seatNumber &&
+      first.playerId !== viewerPlayerId && second.playerId !== viewerPlayerId &&
+      first.seatNumber !== viewerSeatNumber && second.seatNumber !== viewerSeatNumber;
+  });
+};
+
 export const validatePlayerPrivateKnowledgeViewShape = (
   value: unknown
 ): InitialPrivateKnowledgeValidationResult => {
@@ -471,7 +507,9 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     ...(Object.hasOwn(value, "evilTwinCounterpart") ? ["evilTwinCounterpart"] : []),
     ...(Object.hasOwn(value, "evilTwinKnowledgeModelVersion") ? ["evilTwinKnowledgeModelVersion"] : []),
     ...(Object.hasOwn(value, "dreamerInformation") ? ["dreamerInformation"] : []),
-    ...(Object.hasOwn(value, "dreamerKnowledgeModelVersion") ? ["dreamerKnowledgeModelVersion"] : [])
+    ...(Object.hasOwn(value, "dreamerKnowledgeModelVersion") ? ["dreamerKnowledgeModelVersion"] : []),
+    ...(Object.hasOwn(value, "seamstressInformation") ? ["seamstressInformation"] : []),
+    ...(Object.hasOwn(value, "seamstressKnowledgeModelVersion") ? ["seamstressKnowledgeModelVersion"] : [])
   ];
   if (!hasExactEnumerableKeys(value, [...PLAYER_PRIVATE_KNOWLEDGE_VIEW_BASE_KEYS, ...optionalKeys])) {
     return fail("PlayerPrivateKnowledgeView must have exact runtime shape");
@@ -502,6 +540,11 @@ export const validatePlayerPrivateKnowledgeViewShape = (
 
   if (Object.hasOwn(value, "dreamerInformation") && !hasExactDreamerInformationViewShape(value.dreamerInformation)) {
     return fail("PlayerPrivateKnowledgeView dreamerInformation must have exact runtime shape");
+  }
+
+  if (Object.hasOwn(value, "seamstressInformation") &&
+      !hasExactSeamstressInformationHistoryShape(value.seamstressInformation, value.viewerPlayerId, value.viewerSeatNumber)) {
+    return fail("PlayerPrivateKnowledgeView seamstressInformation must be a dense non-empty exact history");
   }
 
   if (
@@ -574,13 +617,21 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     return fail("PlayerPrivateKnowledgeView dreamerKnowledgeModelVersion must be supported");
   }
 
+  const hasSeamstressKnowledgeModelVersion = Object.hasOwn(value, "seamstressKnowledgeModelVersion");
+  if (hasSeamstressKnowledgeModelVersion &&
+      value.seamstressKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_SEAMSTRESS_KNOWLEDGE_MODEL_VERSION) {
+    return fail("PlayerPrivateKnowledgeView seamstressKnowledgeModelVersion must be supported");
+  }
+
   return validatePrivateKnowledgeViewStages(
     value.deliveredKnowledgeStages,
     hasTeamKnowledgeModelVersion,
     hasEvilTwinKnowledgeModelVersion,
     Object.hasOwn(value, "evilTwinCounterpart"),
     hasDreamerKnowledgeModelVersion,
-    Object.hasOwn(value, "dreamerInformation")
+    Object.hasOwn(value, "dreamerInformation"),
+    hasSeamstressKnowledgeModelVersion,
+    Object.hasOwn(value, "seamstressInformation")
   );
 };
 

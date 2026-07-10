@@ -207,6 +207,42 @@ Player and AI views must not expose reliability, source impairment, false-role p
 
 Vortox-forced false Dreamer information and Storyteller-selected false roles remain unimplemented. Those require role-specific false-candidate solving and recorded Storyteller candidate selection before they can be added safely.
 
+## Seamstress First-Night Information
+
+Slice 2B15 implements capability-gated V2 Seamstress information for base and Philosopher-granted first-night sources. It preserves the exact legacy V1 defer-only path.
+
+`SeamstressInformationDelivered` is a historical canonical fact with separate fields for:
+
+- the two canonical target player IDs and seats;
+- settlement-time native current alignments and `ruleCorrectAnswer`;
+- represented source impairment evidence versus unresolved continuous effects;
+- represented active Vortox constraint;
+- fixed `YES` and `NO` candidates plus truth values;
+- complete or partial candidate-legality knowledge;
+- selected candidate, reliability, simulation reason, and `deliveredAnswer`.
+
+Target comparison and modifier evaluation bind to settlement revision `M`. The opportunity binds to revision `N`, and the same source role tenure and ability instance must remain continuously active across `[N, M]`.
+
+The implemented simulator is truth-favoring within the represented model:
+
+- without represented impairment or Vortox, effectiveness is `NOT_PROVEN`, the true candidate is known legal, the false candidate remains unresolved, and the true candidate is selected;
+- with represented source impairment but no Vortox, both candidates are legal and the true candidate is selected;
+- with represented active Vortox, only the false candidate is legal and it is selected, including when the source is impaired.
+
+`NOT_PROVEN` must not be presented as effective. No Dashii adjacency and continuous poison are not derived; the canonical effectiveness structure retains `CONTINUOUS_POISON_NOT_MODELED`.
+
+A legal V2 two-player use always emits `SeamstressAbilitySpent`, including represented drunk or poisoned use. V1/V2 `DEFER` emits no spend.
+
+The source player and source AI receive only an ordered historical array of:
+
+```text
+{ targets: [KnownPlayerReference, KnownPlayerReference], deliveredAnswer: YES | NO }
+```
+
+Projection requires one exact closed V2 opportunity, target choice, spend, delivery, and matching settlement for each history entry. It validates stored facts and never recomputes a delivered answer from later current state. It does not expose target alignments, rule-correct answer, candidate truth/legality, impairment, effectiveness, Vortox, reliability, simulation reason, or internal task/ability IDs.
+
+Registration, life/death/revival, Travellers, Barista, Storyteller free answer choice, other-night recurrence, and general continuous-effect resolution remain unimplemented.
+
 ## Mathematician Ledger
 
 The Mathematician must use a dedicated `MathematicianAbnormalityLedger`. Do not use a generic counter. The ledger records players whose abilities worked abnormally due to another character's ability, excluding the Mathematician's own abnormal result.

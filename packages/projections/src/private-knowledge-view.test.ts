@@ -5,7 +5,9 @@ import {
   EVIL_TWIN_SETUP_KNOWLEDGE_STAGE,
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
   MINION_INFORMATION_KNOWLEDGE_STAGE,
+  PRIVATE_VIEW_SEAMSTRESS_MODEL_VERSION,
   RULES_BASELINE_VERSION,
+  SEAMSTRESS_INFORMATION_STAGE,
   SUPPORTED_DOMAIN_EVENT_VERSION,
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
@@ -21,9 +23,19 @@ import {
   correlationId,
   eventId,
   DomainError,
+  formatBaseSeamstressAbilityInstanceId,
+  formatFirstNightActionOpportunityId,
+  formatRoleTenureId,
+  formatRoleTenureTransitionFactId,
+  formatSeamstressAbilityUseEntitlementId,
+  isSeamstressActionOpportunityV2,
   createEvilTwinInformationDeliveredPayload,
   createEvilTwinPairEstablishedPayload,
   createEvilTwinPairEstablishedScheduledTaskSettlement,
+  createSeamstressAbilitySpentPayload,
+  createSeamstressInformationDeliveredPayload,
+  createSeamstressInformationDeliveredScheduledTaskSettlement,
+  createSeamstressTargetsChosenPayload,
   expectedDemonInformationEntries,
   expectedMinionInformationEntries,
   playerId,
@@ -43,6 +55,7 @@ import type {
   GameState,
   InitialPrivateKnowledgeEstablishedPayload,
   KnownPlayerReference,
+  SeamstressActionOpportunityV2,
   SetupGeneratedPayload
 } from "@botc/domain-core";
 import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
@@ -883,6 +896,274 @@ const dreamerProjectionTamperingCases: readonly [
     };
   }]
 ];
+
+const stateWithSeamstressInformation = (): GameState => {
+  const state = stateWithTaskPlan();
+  const currentCharacterState = state.currentCharacterState;
+  const seamstressRole = state.setup?.roleCatalogSnapshot.roles.find((entry) => entry.roleId === "seamstress");
+  const source = currentCharacterState?.entries.find((entry) =>
+    entry.role.roleId !== "philosopher" && entry.role.roleId !== "vortox"
+  );
+  const targets = currentCharacterState?.entries.filter((entry) => entry.playerId !== source?.playerId).slice(0, 2);
+  if (currentCharacterState === undefined || seamstressRole === undefined || source === undefined ||
+      targets?.[0] === undefined || targets[1] === undefined) {
+    throw new Error("Expected projection Seamstress source facts");
+  }
+  const taskId = scheduledTaskId(`first-night-v1:SEAMSTRESS_ACTION:seat-${String(source.seatNumber).padStart(2, "0")}`);
+  const sourceRoleTenureId = formatRoleTenureId({
+    seatNumber: source.seatNumber,
+    roleId: "seamstress",
+    acquiredCharacterStateRevision: currentCharacterState.revision
+  });
+  const tenure = {
+    roleTenureId: sourceRoleTenureId,
+    playerId: source.playerId,
+    seatNumber: source.seatNumber,
+    roleId: "seamstress" as const,
+    acquiredCharacterStateRevision: currentCharacterState.revision,
+    startedBy: {
+      kind: "CHARACTERS_ASSIGNED" as const,
+      sourceEventId: eventId("projection-seamstress-tenure"),
+      sourceEventSequence: 1,
+      characterStateRevision: 1 as const
+    }
+  };
+  const roleTenures = {
+    records: [...(state.seamstressRoleTenureState?.records ?? []), tenure],
+    processedTransitionFactIds: state.seamstressRoleTenureState?.processedTransitionFactIds ?? []
+  };
+  const abilityInstanceId = formatBaseSeamstressAbilityInstanceId(sourceRoleTenureId);
+  const abilityUseEntitlementId = formatSeamstressAbilityUseEntitlementId(abilityInstanceId);
+  const opportunity: SeamstressActionOpportunityV2 = {
+    nightNumber: 1,
+    opportunityId: actionOpportunityId(`${taskId}:opportunity-01`),
+    opportunityKind: "SEAMSTRESS_FIRST_NIGHT_ACTION",
+    opportunityStatus: "CLOSED",
+    taskId,
+    taskType: "SEAMSTRESS_ACTION",
+    sourcePlayerId: source.playerId,
+    sourceSeatNumber: source.seatNumber,
+    sourceRole: seamstressRole,
+    sourceCharacterStateRevision: currentCharacterState.revision,
+    sourceRoleTenureId,
+    abilitySource: {
+      kind: "ROLE_TENURE",
+      abilityRoleId: "seamstress",
+      roleTenureId: sourceRoleTenureId,
+      acquiredCharacterStateRevision: currentCharacterState.revision
+    },
+    abilityInstanceId,
+    abilityUseEntitlementId,
+    visibility: {
+      visibilitySchemaVersion: "seamstress-first-night-action-v2",
+      resolutionCapabilityVersion: "seamstress-snv-first-night-resolution-v1",
+      canDefer: true,
+      canChooseTargets: true,
+      supportedDecisionKinds: ["DEFER", "CHOOSE_TWO_PLAYERS"],
+      futureUnsupportedDecisionKinds: [],
+      targetSchema: "EXACTLY_TWO_DISTINCT_OTHER_MODELED_PLAYERS"
+    }
+  };
+  const choice = createSeamstressTargetsChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId,
+    opportunityId: opportunity.opportunityId,
+    abilityInstanceId,
+    abilityUseEntitlementId,
+    sourceRoleTenureId,
+    sourcePlayerId: source.playerId,
+    sourceSeatNumber: source.seatNumber,
+    sourceRole: seamstressRole,
+    opportunityCharacterStateRevision: currentCharacterState.revision,
+    currentCharacterState,
+    targetPlayerIds: [targets[1].playerId, targets[0].playerId]
+  });
+  const spend = createSeamstressAbilitySpentPayload(choice);
+  const delivery = createSeamstressInformationDeliveredPayload({
+    choice,
+    currentCharacterState,
+    sourceRoleTenure: tenure,
+    roleTenures,
+    abilityImpairments: state.abilityImpairments
+  });
+  const settlementPayload = createSeamstressInformationDeliveredScheduledTaskSettlement(delivery);
+  const settlement = {
+    taskId: settlementPayload.taskId,
+    taskType: settlementPayload.taskType,
+    nightNumber: settlementPayload.nightNumber,
+    settlementVersion: settlementPayload.settlementVersion,
+    outcomeType: settlementPayload.outcomeType,
+    characterStateRevision: settlementPayload.characterStateRevision
+  };
+
+  return {
+    ...state,
+    seamstressRoleTenureState: roleTenures,
+    seamstressAbilityState: {
+      instances: [{
+        abilityInstanceId,
+        abilityRoleId: "seamstress",
+        holderPlayerId: source.playerId,
+        holderSeatNumber: source.seatNumber,
+        sourceRoleTenureId,
+        source: { ...opportunity.abilitySource },
+        acquiredCharacterStateRevision: currentCharacterState.revision
+      }],
+      entitlements: [{
+        abilityUseEntitlementId,
+        abilityInstanceId,
+        entitlementKind: "BASE_ONCE_PER_GAME",
+        status: "SPENT"
+      }]
+    },
+    firstNightActionOpportunities: { opportunities: [opportunity] },
+    seamstressTargetChoices: { choices: [choice] },
+    seamstressAbilitySpends: { spends: [spend] },
+    seamstressInformation: { deliveries: [delivery] },
+    firstNightTaskProgress: { settlements: [settlement] }
+  };
+};
+
+const stateWithTwoSeamstressDeliveries = (): GameState => {
+  const state = stateWithSeamstressInformation();
+  const firstDelivery = state.seamstressInformation?.deliveries[0];
+  const firstOpportunity = state.firstNightActionOpportunities?.opportunities[0];
+  const currentCharacterState = state.currentCharacterState;
+  const sourceTenure = state.seamstressRoleTenureState?.records.find((entry) =>
+    entry.roleTenureId === firstDelivery?.sourceRoleTenureId
+  );
+  if (firstDelivery === undefined || firstOpportunity === undefined || !isSeamstressActionOpportunityV2(firstOpportunity) || currentCharacterState === undefined ||
+      sourceTenure === undefined || state.seamstressRoleTenureState === undefined ||
+      state.seamstressAbilityState === undefined) {
+    throw new Error("Expected first Seamstress delivery chain");
+  }
+  const settlementState: CurrentCharacterStateSet = {
+    revision: 2,
+    entries: currentCharacterState.entries.map((entry) => ({ ...entry }))
+  };
+  const secondTenureId = formatRoleTenureId({
+    seatNumber: sourceTenure.seatNumber,
+    roleId: "seamstress",
+    acquiredCharacterStateRevision: 2
+  });
+  const secondTenure = {
+    ...sourceTenure,
+    roleTenureId: secondTenureId,
+    acquiredCharacterStateRevision: 2,
+    startedBy: {
+      kind: "ROLE_TENURE_TRANSITION" as const,
+      transitionFactId: formatRoleTenureTransitionFactId({
+        sourceEventSequence: 2,
+        seatNumber: sourceTenure.seatNumber,
+        nextCharacterStateRevision: 2
+      }),
+      sourceEventId: eventId("projection-seamstress-reacquired"),
+      sourceEventSequence: 2,
+      previousCharacterStateRevision: 1,
+      nextCharacterStateRevision: 2
+    }
+  };
+  const roleTenures = {
+    records: [
+      ...state.seamstressRoleTenureState.records.map((entry) => entry.roleTenureId === sourceTenure.roleTenureId
+        ? { ...entry, endedCharacterStateRevision: 2 }
+        : entry),
+      secondTenure
+    ],
+    processedTransitionFactIds: state.seamstressRoleTenureState.processedTransitionFactIds
+  };
+  const abilityInstanceId = formatBaseSeamstressAbilityInstanceId(secondTenureId);
+  const abilityUseEntitlementId = formatSeamstressAbilityUseEntitlementId(abilityInstanceId);
+  const taskId = scheduledTaskId(`${firstDelivery.taskId}:reacquired-revision-2`);
+  const opportunity: SeamstressActionOpportunityV2 = {
+    ...firstOpportunity,
+    opportunityId: formatFirstNightActionOpportunityId({
+      taskType: "SEAMSTRESS_ACTION",
+      seatNumber: firstDelivery.sourceSeatNumber,
+      opportunityIndex: 2
+    }),
+    taskId,
+    sourceCharacterStateRevision: 2,
+    sourceRoleTenureId: secondTenureId,
+    abilitySource: {
+      kind: "ROLE_TENURE",
+      abilityRoleId: "seamstress",
+      roleTenureId: secondTenureId,
+      acquiredCharacterStateRevision: 2
+    },
+    abilityInstanceId,
+    abilityUseEntitlementId
+  };
+  const choice = createSeamstressTargetsChosenPayload({
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    taskId,
+    opportunityId: opportunity.opportunityId,
+    abilityInstanceId,
+    abilityUseEntitlementId,
+    sourceRoleTenureId: secondTenureId,
+    sourcePlayerId: firstDelivery.sourcePlayerId,
+    sourceSeatNumber: firstDelivery.sourceSeatNumber,
+    sourceRole: firstDelivery.sourceRole,
+    opportunityCharacterStateRevision: 2,
+    currentCharacterState: settlementState,
+    targetPlayerIds: [firstDelivery.targetPlayerIds[1], firstDelivery.targetPlayerIds[0]]
+  });
+  const spend = createSeamstressAbilitySpentPayload(choice);
+  const delivery = createSeamstressInformationDeliveredPayload({
+    choice,
+    currentCharacterState: settlementState,
+    sourceRoleTenure: secondTenure,
+    roleTenures,
+    abilityImpairments: state.abilityImpairments
+  });
+  const settlementPayload = createSeamstressInformationDeliveredScheduledTaskSettlement(delivery);
+  const settlement = {
+    taskId: settlementPayload.taskId,
+    taskType: settlementPayload.taskType,
+    nightNumber: settlementPayload.nightNumber,
+    settlementVersion: settlementPayload.settlementVersion,
+    outcomeType: settlementPayload.outcomeType,
+    characterStateRevision: settlementPayload.characterStateRevision
+  };
+
+  return {
+    ...state,
+    currentCharacterState: settlementState,
+    seamstressRoleTenureState: roleTenures,
+    seamstressAbilityState: {
+      instances: [...state.seamstressAbilityState.instances, {
+        abilityInstanceId,
+        abilityRoleId: "seamstress",
+        holderPlayerId: firstDelivery.sourcePlayerId,
+        holderSeatNumber: firstDelivery.sourceSeatNumber,
+        sourceRoleTenureId: secondTenureId,
+        source: { ...opportunity.abilitySource },
+        acquiredCharacterStateRevision: 2
+      }],
+      entitlements: [...state.seamstressAbilityState.entitlements, {
+        abilityUseEntitlementId,
+        abilityInstanceId,
+        entitlementKind: "BASE_ONCE_PER_GAME",
+        status: "SPENT"
+      }]
+    },
+    firstNightActionOpportunities: {
+      opportunities: [...(state.firstNightActionOpportunities?.opportunities ?? []), opportunity]
+    },
+    seamstressTargetChoices: {
+      choices: [...(state.seamstressTargetChoices?.choices ?? []), choice]
+    },
+    seamstressAbilitySpends: {
+      spends: [...(state.seamstressAbilitySpends?.spends ?? []), spend]
+    },
+    seamstressInformation: {
+      deliveries: [...(state.seamstressInformation?.deliveries ?? []), delivery]
+    },
+    firstNightTaskProgress: {
+      settlements: [...(state.firstNightTaskProgress?.settlements ?? []), settlement]
+    }
+  };
+};
 
 describe("private knowledge projections", () => {
   it("gives good players only their own character and no evil-team private facts", () => {
@@ -1812,6 +2093,228 @@ describe("private knowledge projections", () => {
     expect(serialized).not.toContain("truthConstraint");
     expect(serialized).not.toContain("registrationDecision");
     expect(serialized).not.toContain("storyteller");
+  });
+
+  it("projects settled Seamstress target history and answer only to the source player and source AI", () => {
+    const state = stateWithSeamstressInformation();
+    const delivery = state.seamstressInformation?.deliveries[0];
+    if (delivery === undefined) throw new Error("Expected stored Seamstress delivery");
+
+    const playerView = buildPlayerPrivateKnowledgeView(state, delivery.sourcePlayerId);
+    const aiView = buildAiPrivateKnowledgeView(state, delivery.sourcePlayerId);
+    const expectedHistory = [{
+      targets: [
+        { playerId: delivery.targetPlayerIds[0], seatNumber: delivery.targetSeatNumbers[0] },
+        { playerId: delivery.targetPlayerIds[1], seatNumber: delivery.targetSeatNumbers[1] }
+      ],
+      deliveredAnswer: delivery.deliveredAnswer
+    }];
+
+    expect(playerView.seamstressInformation).toStrictEqual(expectedHistory);
+    expect(aiView.seamstressInformation).toStrictEqual(expectedHistory);
+    expect(playerView.seamstressKnowledgeModelVersion).toBe(PRIVATE_VIEW_SEAMSTRESS_MODEL_VERSION);
+    expect(playerView.deliveredKnowledgeStages).toContain(SEAMSTRESS_INFORMATION_STAGE);
+    const serialized = JSON.stringify(playerView);
+    for (const hidden of [
+      "ruleCorrectAnswer",
+      "sourceEffectiveness",
+      "deliveryConstraint",
+      "answerCandidateSet",
+      "informationReliability",
+      "simulationReason",
+      "abilityInstanceId",
+      "abilityUseEntitlementId",
+      "sourceRoleTenureId"
+    ]) expect(serialized).not.toContain(hidden);
+  });
+
+  it("preserves multiple validated Seamstress deliveries as an ordered history array", () => {
+    const state = stateWithTwoSeamstressDeliveries();
+    const deliveries = state.seamstressInformation?.deliveries;
+    if (deliveries?.[0] === undefined || deliveries[1] === undefined) {
+      throw new Error("Expected two Seamstress deliveries");
+    }
+
+    const view = buildPlayerPrivateKnowledgeView(state, deliveries[0].sourcePlayerId);
+    expect(view.seamstressInformation).toHaveLength(2);
+    expect(view.seamstressInformation?.map((entry) => entry.deliveredAnswer)).toStrictEqual(
+      deliveries.map((delivery) => delivery.deliveredAnswer)
+    );
+    expect(view.seamstressInformation?.map((entry) => entry.targets.map((target) => target.playerId))).toStrictEqual(
+      deliveries.map((delivery) => [...delivery.targetPlayerIds])
+    );
+  });
+
+  it("fails player and AI projections closed for an exact duplicate Seamstress delivery chain", () => {
+    const state = stateWithSeamstressInformation();
+    const delivery = state.seamstressInformation?.deliveries[0];
+    if (delivery === undefined) throw new Error("Expected stored Seamstress delivery");
+    const tampered = {
+      ...state,
+      seamstressInformation: {
+        ...state.seamstressInformation,
+        deliveries: [delivery, delivery]
+      }
+    } as GameState;
+
+    expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tampered, delivery.sourcePlayerId));
+    expectPrivateKnowledgeUnavailable(() => buildAiPrivateKnowledgeView(tampered, delivery.sourcePlayerId));
+  });
+
+  it.each([
+    "opportunityId",
+    "taskId",
+    "abilityUseEntitlementId"
+  ] as const)("fails player and AI projections closed when distinct deliveries cross-reuse %s", (chainKey) => {
+    const state = stateWithTwoSeamstressDeliveries();
+    const first = state.seamstressInformation?.deliveries[0];
+    const second = state.seamstressInformation?.deliveries[1];
+    if (first === undefined || second === undefined) throw new Error("Expected two stored Seamstress deliveries");
+    const tampered = {
+      ...state,
+      seamstressInformation: {
+        ...state.seamstressInformation,
+        deliveries: [first, { ...second, [chainKey]: first[chainKey] }]
+      }
+    } as GameState;
+
+    expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tampered, first.sourcePlayerId));
+    expectPrivateKnowledgeUnavailable(() => buildAiPrivateKnowledgeView(tampered, first.sourcePlayerId));
+  });
+
+  it("does not expose Seamstress targets, answer, or stage to any other player", () => {
+    const state = stateWithSeamstressInformation();
+    const delivery = state.seamstressInformation?.deliveries[0];
+    const other = state.roster?.entries.find((entry) =>
+      entry.playerId !== delivery?.sourcePlayerId && !delivery?.targetPlayerIds.includes(entry.playerId)
+    );
+    if (delivery === undefined || other === undefined) throw new Error("Expected Seamstress delivery and other viewer");
+
+    const playerView = buildPlayerPrivateKnowledgeView(state, other.playerId);
+    const aiView = buildAiPrivateKnowledgeView(state, other.playerId);
+    expect(playerView.seamstressInformation).toBeUndefined();
+    expect(playerView.seamstressKnowledgeModelVersion).toBeUndefined();
+    expect(playerView.deliveredKnowledgeStages).not.toContain(SEAMSTRESS_INFORMATION_STAGE);
+    expect(aiView.seamstressInformation).toBeUndefined();
+    const serialized = JSON.stringify(playerView);
+    expect(serialized).not.toContain(delivery.targetPlayerIds[0]);
+    expect(serialized).not.toContain(delivery.targetPlayerIds[1]);
+    expect(serialized).not.toContain("deliveredAnswer");
+  });
+
+  it("keeps delivered Seamstress history unchanged after later current role and alignment changes", () => {
+    const state = stateWithSeamstressInformation();
+    const delivery = state.seamstressInformation?.deliveries[0];
+    if (delivery === undefined || state.currentCharacterState === undefined) throw new Error("Expected Seamstress history state");
+    const before = buildPlayerPrivateKnowledgeView(state, delivery.sourcePlayerId).seamstressInformation;
+    const changed: GameState = {
+      ...state,
+      currentCharacterState: {
+        revision: state.currentCharacterState.revision + 1,
+        entries: state.currentCharacterState.entries.map((entry) => ({
+          ...entry,
+          currentAlignment: entry.currentAlignment === "GOOD" ? "EVIL" : "GOOD"
+        }))
+      }
+    };
+
+    expect(buildPlayerPrivateKnowledgeView(changed, delivery.sourcePlayerId).seamstressInformation).toStrictEqual(before);
+  });
+
+  it.each([
+    ["missing choice", (state: GameState) => ({ ...state, seamstressTargetChoices: undefined })],
+    ["malformed choice collection", (state: GameState) => ({
+      ...state,
+      seamstressTargetChoices: { choices: null }
+    })],
+    ["duplicate choice", (state: GameState) => ({
+      ...state,
+      seamstressTargetChoices: { choices: [state.seamstressTargetChoices!.choices[0]!, state.seamstressTargetChoices!.choices[0]!] }
+    })],
+    ["missing spend", (state: GameState) => ({ ...state, seamstressAbilitySpends: undefined })],
+    ["missing settlement", (state: GameState) => ({ ...state, firstNightTaskProgress: { settlements: [] } })],
+    ["duplicate settlement", (state: GameState) => ({
+      ...state,
+      firstNightTaskProgress: {
+        settlements: [state.firstNightTaskProgress!.settlements[0]!, state.firstNightTaskProgress!.settlements[0]!]
+      }
+    })],
+    ["settlement extra field", (state: GameState) => ({
+      ...state,
+      firstNightTaskProgress: {
+        settlements: [{ ...state.firstNightTaskProgress!.settlements[0]!, hidden: true }]
+      }
+    })],
+    ["missing opportunity", (state: GameState) => ({ ...state, firstNightActionOpportunities: { opportunities: [] } })],
+    ["cross-linked opportunity source seat", (state: GameState) => ({
+      ...state,
+      firstNightActionOpportunities: {
+        opportunities: state.firstNightActionOpportunities!.opportunities.map((opportunity) =>
+          opportunity.opportunityId === state.seamstressInformation!.deliveries[0]!.opportunityId
+            ? { ...opportunity, sourceSeatNumber: opportunity.sourceSeatNumber === 12 ? 11 : 12 }
+            : opportunity
+        )
+      }
+    })],
+    ["hybrid opportunity ability source", (state: GameState) => ({
+      ...state,
+      firstNightActionOpportunities: {
+        opportunities: state.firstNightActionOpportunities!.opportunities.map((opportunity) =>
+          opportunity.opportunityId === state.seamstressInformation!.deliveries[0]!.opportunityId &&
+          isSeamstressActionOpportunityV2(opportunity)
+            ? {
+                ...opportunity,
+                abilitySource: {
+                  kind: "PHILOSOPHER_GRANT",
+                  abilityRoleId: "seamstress",
+                  grantId: "philosopher-grant-v1:seat-01:from-seamstress",
+                  sourceRoleTenureId: opportunity.sourceRoleTenureId,
+                  acquiredCharacterStateRevision: opportunity.sourceCharacterStateRevision
+                }
+              }
+            : opportunity
+        )
+      }
+    })],
+    ["delivery source role mismatches tenure", (state: GameState) => ({
+      ...state,
+      seamstressInformation: {
+        deliveries: [{
+          ...state.seamstressInformation!.deliveries[0]!,
+          sourceRole: state.currentCharacterState!.entries.find((entry) =>
+            entry.playerId === state.seamstressInformation!.deliveries[0]!.targetPlayerIds[0]
+          )!.role
+        }]
+      }
+    })],
+    ["historical chain rules baseline differs from canonical state", (state: GameState) => ({
+      ...state,
+      seamstressTargetChoices: {
+        choices: state.seamstressTargetChoices!.choices.map((choice) => ({ ...choice, rulesBaselineVersion: "tampered-baseline" }))
+      },
+      seamstressAbilitySpends: {
+        spends: state.seamstressAbilitySpends!.spends.map((spend) => ({ ...spend, rulesBaselineVersion: "tampered-baseline" }))
+      },
+      seamstressInformation: {
+        deliveries: state.seamstressInformation!.deliveries.map((delivery) => ({
+          ...delivery,
+          rulesBaselineVersion: "tampered-baseline"
+        }))
+      }
+    })],
+    ["delivery extra field", (state: GameState) => ({
+      ...state,
+      seamstressInformation: {
+        deliveries: [{ ...state.seamstressInformation!.deliveries[0]!, hidden: true }]
+      }
+    })]
+  ] as const)("fails closed for malformed Seamstress historical chain: %s", (_name, tamper) => {
+    const state = stateWithSeamstressInformation();
+    const sourcePlayerId = state.seamstressInformation!.deliveries[0]!.sourcePlayerId;
+    const tampered = tamper(state) as unknown as GameState;
+
+    expectPrivateKnowledgeUnavailable(() => buildPlayerPrivateKnowledgeView(tampered, sourcePlayerId));
+    expectPrivateKnowledgeUnavailable(() => buildAiPrivateKnowledgeView(tampered, sourcePlayerId));
   });
 
   it("defensively copies projection results", () => {

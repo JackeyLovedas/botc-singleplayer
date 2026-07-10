@@ -15,6 +15,7 @@ import type {
   CommitAcceptedCommandInput,
   RecordRejectedCommandInput
 } from "@botc/application";
+import { validateCommandFingerprint } from "@botc/application";
 
 const compositeCommandKey = (gameId: GameId, commandId: CommandId): string => `${gameId}\u0000${commandId}`;
 
@@ -92,10 +93,14 @@ export class MemoryCommandCommitStore implements CommandCommitStore {
       return Promise.reject(new Error("recordRejectedCommand requires a rejected command result"));
     }
 
+    if (!validateCommandFingerprint(input.receipt.commandFingerprint)) {
+      return Promise.reject(new Error("Rejected receipt requires a valid command fingerprint"));
+    }
+
     const key = compositeCommandKey(input.gameId, input.commandId);
     const existing = this.receipts.get(key);
-    if (existing?.result.status === "accepted") {
-      return Promise.reject(new Error("Cannot overwrite an accepted command receipt"));
+    if (existing !== undefined) {
+      return Promise.reject(new Error("Cannot overwrite an existing command receipt"));
     }
 
     this.receipts.set(key, input.receipt);
@@ -118,6 +123,10 @@ export class MemoryCommandCommitStore implements CommandCommitStore {
       throw new Error("commitAcceptedCommand requires an accepted command result");
     }
 
+    if (!validateCommandFingerprint(receipt.commandFingerprint)) {
+      throw new Error("Accepted receipt requires a valid command fingerprint");
+    }
+
     if (receipt.gameId !== eventBatch.gameId || receipt.commandId !== eventBatch.commandId) {
       throw new Error("Accepted receipt key must match event batch key");
     }
@@ -136,6 +145,13 @@ export class MemoryCommandCommitStore implements CommandCommitStore {
 
     if (eventBatch.events.length === 0) {
       throw new Error("Domain event batch must not be empty");
+    }
+
+    if (receipt.result.eventDisclosure === "EVENT_TYPES_ONLY" &&
+        (receipt.result.eventCount !== eventBatch.events.length ||
+          receipt.result.eventTypes.length !== eventBatch.events.length ||
+          !receipt.result.eventTypes.every((eventType, index) => eventType === eventBatch.events[index]?.eventType))) {
+      throw new Error("Accepted event summary must exactly match the canonical event batch");
     }
 
     const existingEvents = this.events.get(eventBatch.gameId) ?? [];

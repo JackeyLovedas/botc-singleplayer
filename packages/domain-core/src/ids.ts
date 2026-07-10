@@ -12,6 +12,11 @@ export type ScheduledTaskId = Brand<string, "ScheduledTaskId">;
 export type ActionOpportunityId = Brand<string, "ActionOpportunityId">;
 export type GrantedAbilityId = Brand<string, "GrantedAbilityId">;
 export type AbilityImpairmentId = Brand<string, "AbilityImpairmentId">;
+export type RoleTenureId = Brand<string, "RoleTenureId">;
+export type RoleTenureTransitionFactId = Brand<string, "RoleTenureTransitionFactId">;
+export type AbilityInstanceId = Brand<string, "AbilityInstanceId">;
+export type AbilityUseEntitlementId = Brand<string, "AbilityUseEntitlementId">;
+export type CandidateId = Brand<string, "CandidateId">;
 
 const asNonEmpty = <TBrand extends string>(value: string, label: TBrand): Brand<string, TBrand> => {
   if (value.trim().length === 0) {
@@ -33,5 +38,12 @@ export const scheduledTaskId = (value: string): ScheduledTaskId => asNonEmpty(va
 export const actionOpportunityId = (value: string): ActionOpportunityId => asNonEmpty(value, "ActionOpportunityId");
 export const grantedAbilityId = (value: string): GrantedAbilityId => asNonEmpty(value, "GrantedAbilityId");
 export const abilityImpairmentId = (value: string): AbilityImpairmentId => asNonEmpty(value, "AbilityImpairmentId");
+export const roleTenureId = (value: string): RoleTenureId => asNonEmpty(value, "RoleTenureId");
+export const roleTenureTransitionFactId = (value: string): RoleTenureTransitionFactId =>
+  asNonEmpty(value, "RoleTenureTransitionFactId");
+export const abilityInstanceId = (value: string): AbilityInstanceId => asNonEmpty(value, "AbilityInstanceId");
+export const abilityUseEntitlementId = (value: string): AbilityUseEntitlementId =>
+  asNonEmpty(value, "AbilityUseEntitlementId");
+export const candidateId = (value: string): CandidateId => asNonEmpty(value, "CandidateId");
 
 export const causationIdFromCommandId = (value: CommandId): CausationId => causationId(value);

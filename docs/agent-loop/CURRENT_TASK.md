@@ -1,22 +1,37 @@
 # Current Task
 
-## Slice 2B15 Corrected v3.1 RULE_DESIGN_PASS; Awaiting Controller Resume
+## Slice 2B15 Waiting For CI And Independent Review
 
-- There is no open slice pull request.
-- The active branch is `main`; implementation remains paused.
-- The previously reviewed v3 remains at `docs/implementation/phase-3-slice-2b15-design.md` with final verdict `RULE_DESIGN_PASS` for exact reviewed `main@bf6c0ecbb8ad8ddba244d69ccb53ec4b26b557ea` and SHA-256 `a0de120b266e26a8d7fcea293b7cb5dbf24c8a4ea5e80cad7cfc121cb1adaa52`.
-- A post-PASS architecture review found three design-contract hazards: the capability script literal did not match the repository constant, accepted Seamstress results exposed canonical payloads, and command-ID retries did not prove structural command identity.
-- The architect's latest corrected complete-replacement v3.1 erratum is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design-erratum-v3.1.md`; SHA-256 is `9d421f44a538e4599c03bccd7f631da18866aa6e709d28735e724af79d130528`.
-- Renewed independent review inspected exact clean `main@70e11001c5fe1d4d2a5bbe2aee233e48ccd90fca` and returned `RULE_DESIGN_PASS` with no blockers.
-- The renewed review is materialized verbatim at `docs/implementation/phase-3-slice-2b15-design-erratum-v3.1-review.md`; SHA-256 is `93f81070e6f0a77e7f38c64c0232c6d0f847a3abfb78183ec792cd4f12d3fc3c`.
-- The erratum changes only capability identity, Seamstress accepted-result disclosure, and shared receipt idempotency. All previously reviewed rule semantics, canonical event order/payloads, settlement behavior, modifier behavior, non-goals, and coverage limits remain unchanged.
-- The implementation work in `packages/domain-core/src/ids.ts` and untracked `packages/domain-core/src/seamstress.ts` is preserved without modification in `stash@{0}` (`5ea5d3e9d1491af04a2b695b13ce7f75d7b46624`) and must not be restored before renewed review passes and the controller resumes implementation.
-- No production code, tests, architecture, coverage matrix, feature branch, pull request, or tag is authorized by this documentation update.
+- Ready pull request: #17 (`https://github.com/JackeyLovedas/botc-singleplayer/pull/17`).
+- Branch: `phase-3/seamstress-first-night-choice-information`.
+- Base: `main` at implementation start revision `5c8712f95e68cae68c4c8e5c194dd96aa05aa284`.
+- Repair implementation commit: `4420eb371b69d712620d01664bc3a61ee41ea8e9`, with the required Codex co-author trailer.
+- Repair round 2 closes the remaining fingerprint Proxy TOCTOU from the independent review of `cb9e0de21162d42d874a0b0495eac0ddc6d429e4`; the reviewed HEAD is reset to pending for the final PR HEAD.
+- PR #17 is open, ready, and not a draft. Its body contains the exact mandatory `Rule Evidence`, `Rule Claims Implemented`, `Explicitly Unsupported Rules`, `Rule Source Revisions`, and `Rule-to-Test Traceability` sections.
+- Fresh evidence is `RULE_READY`; original v3 plus corrected v3.1 has renewed independent `RULE_DESIGN_PASS` with no blockers.
+- Seamstress coverage is conservatively `PARTIAL`, never `COMPLETE`.
+- Other-night recurrence, life/revival, Travellers, registration, Barista, No Dashii poison derivation, and general role/effect lifecycle remain unsupported.
 
-## Gate
+## Local Gate Result
 
-- Completed gate: renewed independent `RULE_DESIGN_PASS` covering the original v3 plus corrected v3.1 erratum on exact clean reviewed HEAD and hashes.
-- Current required step: controller verifies this review commit and explicitly resumes implementation before any stash restoration or implementation edit.
-- The renewed pass confirms no production adapter or migration blocker; only `MemoryCommandCommitStore` exists.
-- Do not restore the implementation stash, switch back to the feature branch, edit implementation surfaces, or open a pull request before the renewed pass and explicit controller resume.
-- Preserve one writer and one open slice pull request at a time.
+- Focused repair suites: 2 files / 187 tests passed.
+- Windows-compatible application package command: 3 files / 173 tests passed.
+- `pnpm typecheck`: passed.
+- `pnpm lint`: passed.
+- `pnpm test`: 21 files / 717 tests passed.
+- `pnpm test:coverage`: 21 files / 717 tests passed.
+- Coverage: 85.04% statements/lines, 78.12% branches, 97.58% functions.
+- `git diff --check`, strict control JSON validation, and deterministic primitive scan passed.
+
+## Remaining Gate
+
+1. Wait for the current PR #17 Ubuntu/Windows CI checks to finish; do not treat an earlier branch-push run as the final PR-head gate.
+2. The independent reviewer must inspect the complete final PR diff, production code, tests, architecture, evidence, and exact PR HEAD.
+3. Final review must return both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`; otherwise use `FIX_REQUIRED` or `HUMAN_BLOCKED`.
+4. Before merge, reviewed HEAD must equal PR HEAD, all required CI must be green, and the worktree must be clean.
+5. The implementer must not merge or start the next slice.
+
+## Stop Conditions
+
+- Stop on substantive rule uncertainty, unsafe accepted-history rewrite, permission failure, unresolved merge conflict, repeated identical CI failure, required test weakening, or a newly discovered production adapter that cannot atomically retain the complete fingerprint.
+- Keep one writing agent, one bounded slice, one feature branch, and one open slice PR.

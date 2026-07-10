@@ -5,6 +5,8 @@ import {
   MINION_INFORMATION_KNOWLEDGE_STAGE,
   DEMON_INFORMATION_KNOWLEDGE_STAGE,
   DREAMER_INFORMATION_STAGE,
+  SEAMSTRESS_INFORMATION_STAGE,
+  PRIVATE_VIEW_SEAMSTRESS_MODEL_VERSION,
   EVIL_TWIN_SETUP_KNOWLEDGE_STAGE,
   SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
   SUPPORTED_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION,
@@ -21,7 +23,11 @@ import {
   validateStoredDemonInformationDelivered,
   validateStoredDreamerInformationDelivered,
   validateStoredEvilTwinInformationDelivered,
-  validateStoredEvilTwinPairEstablished
+  validateStoredEvilTwinPairEstablished,
+  validateStoredSeamstressInformationDelivered,
+  isSeamstressActionOpportunityV2,
+  sameRoleSetupSnapshot,
+  validateSeamstressActionOpportunityV2Shape
 } from "@botc/domain-core";
 import type {
   GameState,
@@ -32,7 +38,8 @@ import type {
   PlayerPrivateKnowledgeStage,
   PlayerPrivateKnowledgeView,
   RoleSetupSnapshot,
-  ScheduledTaskSettlement
+  ScheduledTaskSettlement,
+  SeamstressInformationDeliveredPayload
 } from "@botc/domain-core";
 
 type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishedPayload & {
@@ -284,6 +291,76 @@ const requireDeliveredDreamerInformationIsSettled = (state: GameState): void => 
   }
 };
 
+const storedSeamstressDeliveries = (state: GameState): readonly unknown[] => {
+  const information: unknown = state.seamstressInformation;
+  if (information === undefined) return [];
+  if (!isPlainRecord(information) || !Array.isArray(information.deliveries)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Stored Seamstress information set must contain a deliveries array");
+  }
+  return information.deliveries;
+};
+
+const requireDeliveredSeamstressInformationIsSettled = (state: GameState): void => {
+  if (state.seamstressInformation === undefined && state.firstNightTaskProgress === undefined) return;
+  const deliveries = storedSeamstressDeliveries(state);
+  const settlements = storedFirstNightSettlements(state);
+  const seenOpportunityIds = new Set<string>();
+  const seenTaskIds = new Set<string>();
+  const seenAbilityUseEntitlementIds = new Set<string>();
+  for (const delivery of deliveries) {
+    if (!isPlainRecord(delivery) || typeof delivery.opportunityId !== "string" || typeof delivery.taskId !== "string" ||
+        typeof delivery.abilityUseEntitlementId !== "string") {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Stored Seamstress delivery must expose its historical chain keys");
+    }
+    if (seenOpportunityIds.has(delivery.opportunityId) || seenTaskIds.has(delivery.taskId) ||
+        seenAbilityUseEntitlementIds.has(delivery.abilityUseEntitlementId)) {
+      throw new DomainError(
+        "PrivateKnowledgeUnavailable",
+        "Stored Seamstress deliveries must use unique opportunity, settlement, and ability-spend chains"
+      );
+    }
+    seenOpportunityIds.add(delivery.opportunityId);
+    seenTaskIds.add(delivery.taskId);
+    seenAbilityUseEntitlementIds.add(delivery.abilityUseEntitlementId);
+    const validation = validateStoredSeamstressInformationDelivered({
+      rulesBaselineVersion: state.rulesBaselineVersion,
+      delivery,
+      choices: state.seamstressTargetChoices,
+      spends: state.seamstressAbilitySpends,
+      settlements
+    });
+    if (!validation.valid) throw new DomainError("PrivateKnowledgeUnavailable", validation.reason);
+    const validatedDelivery = delivery as unknown as SeamstressInformationDeliveredPayload;
+    const matchingOpportunities = state.firstNightActionOpportunities?.opportunities.filter((opportunity) =>
+      opportunity.opportunityId === validatedDelivery.opportunityId
+    ) ?? [];
+    const opportunity = matchingOpportunities[0];
+    const opportunityShape = validateSeamstressActionOpportunityV2Shape(opportunity);
+    if (matchingOpportunities.length !== 1 || opportunity === undefined || !opportunityShape.valid ||
+        !isSeamstressActionOpportunityV2(opportunity) || opportunity.opportunityStatus !== "CLOSED" ||
+        opportunity.taskId !== validatedDelivery.taskId || opportunity.taskType !== validatedDelivery.taskType ||
+        opportunity.sourcePlayerId !== validatedDelivery.sourcePlayerId || opportunity.sourceSeatNumber !== validatedDelivery.sourceSeatNumber ||
+        !sameRoleSetupSnapshot(opportunity.sourceRole, validatedDelivery.sourceRole) ||
+        opportunity.sourceRoleTenureId !== validatedDelivery.sourceRoleTenureId ||
+        opportunity.abilityInstanceId !== validatedDelivery.abilityInstanceId ||
+        opportunity.abilityUseEntitlementId !== validatedDelivery.abilityUseEntitlementId ||
+        opportunity.sourceCharacterStateRevision !== validatedDelivery.opportunityCharacterStateRevision) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Stored Seamstress delivery requires one exact historical V2 opportunity");
+    }
+  }
+  for (const settlement of settlements) {
+    if (!isPlainRecord(settlement)) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Stored ScheduledTaskSettled fact must be a plain object");
+    }
+    if (settlement.outcomeType === "SEAMSTRESS_INFORMATION_DELIVERED" && !deliveries.some((delivery) =>
+      isPlainRecord(delivery) && delivery.taskId === settlement.taskId &&
+      delivery.settlementCharacterStateRevision === settlement.characterStateRevision
+    )) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Seamstress information settlement exists without one historical delivery");
+    }
+  }
+};
+
 const deliveredStagesForViewer = (
   state: GameState,
   viewerPlayerId: PlayerId
@@ -303,6 +380,10 @@ const deliveredStagesForViewer = (
 
   if (state.dreamerInformation?.deliveries.some((delivery) => delivery.sourcePlayerId === viewerPlayerId) === true) {
     stages.push(DREAMER_INFORMATION_STAGE);
+  }
+
+  if (state.seamstressInformation?.deliveries.some((delivery) => delivery.sourcePlayerId === viewerPlayerId) === true) {
+    stages.push(SEAMSTRESS_INFORMATION_STAGE);
   }
 
   return stages;
@@ -327,6 +408,7 @@ export const buildPlayerPrivateKnowledgeView = (
   const deliveredTeamEntries = requireDeliveredTeamInformationIsSettled(state).filter((entry) => entry.recipientPlayerId === viewerPlayerId);
   requireDeliveredEvilTwinInformationIsSettled(state);
   requireDeliveredDreamerInformationIsSettled(state);
+  requireDeliveredSeamstressInformationIsSettled(state);
   const knownDemon = deliveredTeamEntries.find((entry) => entry.kind === "DEMON_IDENTITY");
   const knownMinions = deliveredTeamEntries
     .filter((entry) => entry.kind === "MINION_IDENTITIES")
@@ -336,6 +418,9 @@ export const buildPlayerPrivateKnowledgeView = (
     .flatMap((entry) => entry.kind === "DEMON_BLUFFS" ? entry.roles.map(cloneRoleSetupSnapshot) : []);
   const evilTwinCounterpart = findEvilTwinCounterpartForViewer(state.evilTwinInformation, viewerPlayerId);
   const dreamerDelivery = state.dreamerInformation?.deliveries.find((delivery) => delivery.sourcePlayerId === viewerPlayerId);
+  const seamstressDeliveries = state.seamstressInformation?.deliveries.filter((delivery) =>
+    delivery.sourcePlayerId === viewerPlayerId
+  ) ?? [];
 
   const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId);
   const hasTeamKnowledge = deliveredKnowledgeStages.some((stage) =>
@@ -368,6 +453,18 @@ export const buildPlayerPrivateKnowledgeView = (
             evilRole: cloneRoleSetupSnapshot(dreamerDelivery.evilRole)
           },
           dreamerKnowledgeModelVersion: SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION
+        }),
+    ...(seamstressDeliveries.length === 0
+      ? {}
+      : {
+          seamstressInformation: seamstressDeliveries.map((delivery) => ({
+            targets: [
+              cloneKnownPlayerReference({ playerId: delivery.targetPlayerIds[0], seatNumber: delivery.targetSeatNumbers[0] }),
+              cloneKnownPlayerReference({ playerId: delivery.targetPlayerIds[1], seatNumber: delivery.targetSeatNumbers[1] })
+            ] as const,
+            deliveredAnswer: delivery.deliveredAnswer
+          })),
+          seamstressKnowledgeModelVersion: PRIVATE_VIEW_SEAMSTRESS_MODEL_VERSION
         }),
     ownCharacterKnowledgeModelVersion: privateKnowledge.knowledgeModelVersion,
     ...(hasTeamKnowledge

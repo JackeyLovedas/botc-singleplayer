@@ -7,10 +7,13 @@ import {
   cloneFirstNightTaskCatalogSnapshot,
   commandId,
   correlationId,
+  isSeamstressActionOpportunityV2,
   playerId,
   rebuildOptionalGameState,
   roleId,
-  scheduledTaskId
+  scheduledTaskId,
+  validateDomainBatchSemantics,
+  validateDomainEventStream
 } from "@botc/domain-core";
 import type {
   AnyDomainEventEnvelope,
@@ -22,16 +25,25 @@ import type {
   FirstNightTaskPlanningFailure,
   FirstNightTaskPlanningResult,
   GameId,
-  GeneratedCharacterAssignment
+  GeneratedCharacterAssignment,
+  SupportedCommandEnvelope
 } from "@botc/domain-core";
-import { GameApplicationService, accepted, rejected } from "@botc/application";
+import {
+  GameApplicationService,
+  accepted,
+  captureSupportedCommand,
+  rejected,
+  validateCommandFingerprint
+} from "@botc/application";
 import type {
   CharacterAssignmentGeneratorPort,
-  CommandAccepted,
   CommandExecutionFailed,
+  CommandReceipt,
   CommandReceiptResult,
   CommandRejected,
   CommandResult,
+  EventSummaryCommandAccepted,
+  FullEventCommandAccepted,
   FirstNightSystemInformationResolverPort,
   FirstNightTaskPlannerPort,
   InitialPrivateKnowledgeBuilderPort,
@@ -178,8 +190,17 @@ const makeServiceWithoutFirstNightTaskPlanner = (
   return { service, commandStore };
 };
 
-const expectAcceptedResult: (result: CommandResult) => asserts result is CommandAccepted = (result) => {
+const expectAcceptedResult: (result: CommandResult) => asserts result is FullEventCommandAccepted = (result) => {
   expect(result.status).toBe("accepted");
+  expect("events" in result).toBe(true);
+};
+
+const expectEventSummaryAcceptedResult: (
+  result: CommandResult
+) => asserts result is EventSummaryCommandAccepted = (result) => {
+  expect(result.status).toBe("accepted");
+  expect("eventTypes" in result).toBe(true);
+  expect("events" in result).toBe(false);
 };
 
 const expectFailedResult: (result: CommandResult) => asserts result is CommandExecutionFailed = (result) => {
@@ -259,14 +280,24 @@ const noPhilosopherExactRoleIds = [
   "fang_gu"
 ].map(roleId);
 
-const reachNoPhilosopherFirstNightTaskPlan = async (service: GameApplicationService): Promise<void> => {
+const noPhilosopherVortoxExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
+  id === "fang_gu" ? roleId("vortox") : id === "barber" ? roleId("artist") : id
+);
+const noPhilosopherNoDashiiExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
+  id === "fang_gu" ? roleId("no_dashii") : id === "barber" ? roleId("artist") : id
+);
+
+const reachNoPhilosopherFirstNightTaskPlan = async (
+  service: GameApplicationService,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
+): Promise<void> => {
   await service.execute(createGameCommand());
   await service.execute(selectScriptCommand());
   await service.execute(generateSetupCommand({
     payload: {
       commandType: "GenerateSetup",
       constraints: {
-        exactRoleIds: noPhilosopherExactRoleIds
+        exactRoleIds
       }
     }
   }));
@@ -278,9 +309,10 @@ const reachNoPhilosopherFirstNightTaskPlan = async (service: GameApplicationServ
 
 const reachOpenBaseSnakeCharmerOpportunity = async (
   service: GameApplicationService,
-  commandStore: MemoryCommandCommitStore
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
 ) => {
-  await reachNoPhilosopherFirstNightTaskPlan(service);
+  await reachNoPhilosopherFirstNightTaskPlan(service, exactRoleIds);
   await service.execute(settleFirstNightSystemTaskCommand({
     commandId: commandId("settle-minion-before-base-snake"),
     expectedGameVersion: 7
@@ -327,9 +359,10 @@ const reachOpenBaseSnakeCharmerOpportunity = async (
 
 const reachEvilTwinSetupTask = async (
   service: GameApplicationService,
-  commandStore: MemoryCommandCommitStore
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
 ) => {
-  const { baseTask, opportunity, state } = await reachOpenBaseSnakeCharmerOpportunity(service, commandStore);
+  const { baseTask, opportunity, state } = await reachOpenBaseSnakeCharmerOpportunity(service, commandStore, exactRoleIds);
   const target = state.currentCharacterState?.entries.find((entry) =>
     entry.role.characterType !== "DEMON" &&
     entry.playerId !== opportunity.sourcePlayerId
@@ -374,9 +407,10 @@ const reachEvilTwinSetupTask = async (
 
 const reachWitchActionTask = async (
   service: GameApplicationService,
-  commandStore: MemoryCommandCommitStore
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
 ) => {
-  const { evilTwinTask } = await reachEvilTwinSetupTask(service, commandStore);
+  const { evilTwinTask } = await reachEvilTwinSetupTask(service, commandStore, exactRoleIds);
   const evilTwinResult = await service.execute(settleEvilTwinSetupCommand({
     commandId: commandId("settle-evil-twin-before-witch"),
     expectedGameVersion: 11,
@@ -403,9 +437,10 @@ const reachWitchActionTask = async (
 
 const reachOpenWitchActionOpportunity = async (
   service: GameApplicationService,
-  commandStore: MemoryCommandCommitStore
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
 ) => {
-  const { beforeWitch, witchTask } = await reachWitchActionTask(service, commandStore);
+  const { beforeWitch, witchTask } = await reachWitchActionTask(service, commandStore, exactRoleIds);
   const openResult = await service.execute(openFirstNightRoleActionOpportunityCommand({
     commandId: commandId("open-witch-action"),
     expectedGameVersion: 12,
@@ -430,9 +465,10 @@ const reachOpenWitchActionOpportunity = async (
 
 const reachDreamerActionTask = async (
   service: GameApplicationService,
-  commandStore: MemoryCommandCommitStore
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
 ) => {
-  const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore);
+  const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore, exactRoleIds);
   const witchTarget = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
   if (witchTarget === undefined) {
     throw new Error("Expected Witch target before Dreamer");
@@ -469,9 +505,10 @@ const reachDreamerActionTask = async (
 
 const reachOpenDreamerActionOpportunity = async (
   service: GameApplicationService,
-  commandStore: MemoryCommandCommitStore
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
 ) => {
-  const { beforeDreamer, dreamerTask } = await reachDreamerActionTask(service, commandStore);
+  const { beforeDreamer, dreamerTask } = await reachDreamerActionTask(service, commandStore, exactRoleIds);
   const openResult = await service.execute(openFirstNightRoleActionOpportunityCommand({
     commandId: commandId("open-dreamer-action"),
     expectedGameVersion: 14,
@@ -496,9 +533,10 @@ const reachOpenDreamerActionOpportunity = async (
 
 const reachSeamstressActionTask = async (
   service: GameApplicationService,
-  commandStore: MemoryCommandCommitStore
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
 ) => {
-  const { dreamerTask, opportunity, state } = await reachOpenDreamerActionOpportunity(service, commandStore);
+  const { dreamerTask, opportunity, state } = await reachOpenDreamerActionOpportunity(service, commandStore, exactRoleIds);
   const dreamerTarget = state.currentCharacterState?.entries.find((entry) =>
     entry.playerId !== opportunity.sourcePlayerId
   );
@@ -539,9 +577,10 @@ const reachSeamstressActionTask = async (
 
 const reachOpenSeamstressActionOpportunity = async (
   service: GameApplicationService,
-  commandStore: MemoryCommandCommitStore
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
 ) => {
-  const { beforeSeamstress, seamstressTask } = await reachSeamstressActionTask(service, commandStore);
+  const { beforeSeamstress, seamstressTask } = await reachSeamstressActionTask(service, commandStore, exactRoleIds);
   const openResult = await service.execute(openFirstNightRoleActionOpportunityCommand({
     commandId: commandId("open-seamstress-action"),
     expectedGameVersion: 16,
@@ -670,6 +709,17 @@ class ThrowingCanonicalStreamCommandStore extends MemoryCommandCommitStore {
   }
 }
 
+class ReceiptOverrideCommandStore extends MemoryCommandCommitStore {
+  public receiptOverride: CommandReceipt | undefined;
+
+  public override findCommandReceipt(gameIdValue: GameId, commandIdValue: ReturnType<typeof commandId>): Promise<CommandReceipt | undefined> {
+    if (this.receiptOverride?.gameId === gameIdValue && this.receiptOverride.commandId === commandIdValue) {
+      return Promise.resolve(this.receiptOverride);
+    }
+    return super.findCommandReceipt(gameIdValue, commandIdValue);
+  }
+}
+
 class FaultInjectingIdGenerator extends FixedIdGenerator {
   public failNextBatchId = false;
   public failEventCallNumber: number | undefined;
@@ -752,7 +802,7 @@ const expectRetryableFirstNightTaskPlanningFailureWithoutWrites = async (
   expect(failedResult.message).toContain(expectedMessagePart);
   expect(failedResult.message).not.toContain("DomainValidationFailed");
   expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-  expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+  expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
   expect(commandStore.getGameVersion(command.gameId)).toBe(6);
   expect(commandStore.rejectedCount).toBe(0);
 
@@ -769,7 +819,7 @@ const expectRetryableFirstNightTaskPlanningFailureWithoutWrites = async (
 
   expectAcceptedResult(retried);
   expect(retried.gameVersion).toBe(7);
-  expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+  expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(12);
 
   return failedResult;
 };
@@ -807,7 +857,7 @@ const expectRetryableFirstNightSystemInformationFailureWithoutWrites = async (
   });
   expect(failedResult.message).toContain(expectedMessagePart);
   expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-  expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+  expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(12);
   expect(commandStore.getGameVersion(command.gameId)).toBe(7);
   expect(commandStore.rejectedCount).toBe(0);
 
@@ -877,10 +927,15 @@ describe("GameApplicationService", () => {
     const first = await service.execute(command);
     const second = await service.execute(command);
     const events = await commandStore.loadDomainEvents(command.gameId);
+    const receipt = await commandStore.findCommandReceipt(command.gameId, command.commandId);
 
     expect(first).toMatchObject({ status: "rejected", code: "ExpectedGameVersionMismatch", idempotent: false });
     expect(second).toMatchObject({ status: "rejected", code: "ExpectedGameVersionMismatch", idempotent: true });
     expect(events).toHaveLength(0);
+    expect(receipt?.result).toStrictEqual(first);
+    expect(validateCommandFingerprint(receipt?.commandFingerprint)).toBe(true);
+    expect(JSON.stringify(first)).not.toContain("canonicalCommandJson");
+    expect(JSON.stringify(first)).not.toContain("digestHex");
     expect(commandStore.acceptedCount).toBe(0);
     expect(commandStore.rejectedCount).toBe(1);
     expect(commandStore.getGameVersion(command.gameId)).toBe(0);
@@ -973,7 +1028,7 @@ describe("GameApplicationService", () => {
 
     expectAcceptedResult(retried);
     expect(retried.gameVersion).toBe(2);
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(3);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(4);
     expect((await commandStore.findCommandReceipt(command.gameId, command.commandId))?.result.status).toBe("accepted");
   });
 
@@ -1201,8 +1256,8 @@ describe("GameApplicationService", () => {
     const state = rebuildOptionalGameState(events);
 
     expectAcceptedResult(result);
-    expect(result.events).toHaveLength(2);
-    expect(events).toHaveLength(3);
+    expect(result.events).toHaveLength(3);
+    expect(events).toHaveLength(4);
     expect(events[1]).toMatchObject({
       eventType: "ScriptSelected",
       eventSequence: 2,
@@ -1210,18 +1265,25 @@ describe("GameApplicationService", () => {
       commandId: selectScriptCommand().commandId
     });
     expect(events[2]).toMatchObject({
-      eventType: "PhaseTransitioned",
+      eventType: "SeamstressResolutionCapabilityDeclared",
       eventSequence: 3,
+      gameVersion: 2,
+      commandId: selectScriptCommand().commandId,
+      payload: { scriptId: "sects-and-violets" }
+    });
+    expect(events[3]).toMatchObject({
+      eventType: "PhaseTransitioned",
+      eventSequence: 4,
       gameVersion: 2,
       commandId: selectScriptCommand().commandId
     });
-    expect(events[1]?.batchId).toBe(events[2]?.batchId);
-    expect(events[1]?.commandId).toBe(events[2]?.commandId);
-    expect(events[1]?.gameVersion).toBe(events[2]?.gameVersion);
+    expect(events[1]?.batchId).toBe(events[3]?.batchId);
+    expect(events[1]?.commandId).toBe(events[3]?.commandId);
+    expect(events[1]?.gameVersion).toBe(events[3]?.gameVersion);
     expect(state?.selectedScript).toMatchObject({ scriptId: "sects-and-violets" });
     expect(state?.phase).toBe("SETUP_GENERATION");
     expect(state?.gameVersion).toBe(2);
-    expect(state?.lastEventSequence).toBe(3);
+    expect(state?.lastEventSequence).toBe(4);
     expect(commandStore.acceptedCount).toBe(2);
   });
 
@@ -1238,9 +1300,10 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(second);
     expect(second).toMatchObject({ status: "accepted", idempotent: true, gameId: command.gameId });
     expect(second.events).toStrictEqual(first.events);
-    expect(events).toHaveLength(3);
+    expect(events).toHaveLength(4);
     expect(events[1]?.eventType).toBe("ScriptSelected");
-    expect(events[2]?.eventType).toBe("PhaseTransitioned");
+    expect(events[2]?.eventType).toBe("SeamstressResolutionCapabilityDeclared");
+    expect(events[3]?.eventType).toBe("PhaseTransitioned");
     expect(commandStore.acceptedCount).toBe(2);
     expect(commandStore.getGameVersion(command.gameId)).toBe(2);
   });
@@ -1305,7 +1368,7 @@ describe("GameApplicationService", () => {
     const state = rebuildOptionalGameState(events);
 
     expect(result).toMatchObject({ status: "rejected", code: "ScriptAlreadySelected", currentGameVersion: 2 });
-    expect(events).toHaveLength(3);
+    expect(events).toHaveLength(4);
     expect(commandStore.getGameVersion(ids.game)).toBe(2);
     expect(state?.selectedScript).toMatchObject({ scriptId: "sects-and-violets" });
     expect(state?.phase).toBe("SETUP_GENERATION");
@@ -1319,9 +1382,10 @@ describe("GameApplicationService", () => {
     await service.execute(selectScriptCommand());
     const events = await MemoryCommandCommitStore.prototype.loadDomainEvents.call(commandStore, ids.game);
 
-    expect(events).toHaveLength(3);
+    expect(events).toHaveLength(4);
     expect(events[1]?.eventSequence).toBe(2);
     expect(events[2]?.eventSequence).toBe(3);
+    expect(events[3]?.eventSequence).toBe(4);
   });
 
   it("rejects GenerateSetup when the game does not exist", async () => {
@@ -1358,7 +1422,7 @@ describe("GameApplicationService", () => {
       commandId: commandId("ai-setup"),
       actor: aiActor
     }))).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(3);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(4);
   });
 
   it("allows System actors to GenerateSetup with a two-event batch", async () => {
@@ -1373,11 +1437,11 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(result);
     expect(result.events).toHaveLength(2);
     expect(result.gameVersion).toBe(3);
-    expect(events).toHaveLength(5);
-    expect(events[3]).toMatchObject({ eventType: "SetupGenerated", eventSequence: 4, gameVersion: 3 });
-    expect(events[4]).toMatchObject({ eventType: "PhaseTransitioned", eventSequence: 5, gameVersion: 3 });
-    expect(events[3]?.batchId).toBe(events[4]?.batchId);
-    expect(events[3]?.commandId).toBe(events[4]?.commandId);
+    expect(events).toHaveLength(6);
+    expect(events[4]).toMatchObject({ eventType: "SetupGenerated", eventSequence: 5, gameVersion: 3 });
+    expect(events[5]).toMatchObject({ eventType: "PhaseTransitioned", eventSequence: 6, gameVersion: 3 });
+    expect(events[4]?.batchId).toBe(events[5]?.batchId);
+    expect(events[4]?.commandId).toBe(events[5]?.commandId);
     expect(state?.phase).toBe("CHARACTER_ASSIGNMENT");
     expect(state?.setup?.actualRoles).toHaveLength(12);
     expect("assignment" in (state ?? {})).toBe(false);
@@ -1415,7 +1479,7 @@ describe("GameApplicationService", () => {
     });
     expect(failedReceipt).toBeUndefined();
     expect(commandStore.rejectedCount).toBe(0);
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(3);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(4);
 
     const fixed = makeService(commandStore, testSetupGenerator, idGenerator, clock);
     const retried = await fixed.service.execute(command);
@@ -1424,7 +1488,7 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(retried);
     expect(retried.gameVersion).toBe(3);
     expect(receipt?.result.status).toBe("accepted");
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(5);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(6);
   });
 
   it("returns DependencyExecutionFailed when SetupGenerator throws without saving a receipt and allows retry", async () => {
@@ -1454,7 +1518,7 @@ describe("GameApplicationService", () => {
     });
     expect(failedReceipt).toBeUndefined();
     expect(commandStore.rejectedCount).toBe(0);
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(3);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(4);
 
     const fixed = makeService(commandStore, testSetupGenerator, idGenerator, clock);
     const retried = await fixed.service.execute(command);
@@ -1463,7 +1527,7 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(retried);
     expect(retried.gameVersion).toBe(3);
     expect(receipt?.result.status).toBe("accepted");
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(5);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(6);
   });
 
   it("rejects unsolvable GenerateSetup without appending events or increasing gameVersion", async () => {
@@ -1482,7 +1546,7 @@ describe("GameApplicationService", () => {
     const receipt = await commandStore.findCommandReceipt(ids.game, command.commandId);
 
     expect(result).toMatchObject({ status: "rejected", code: "SetupGenerationFailed", currentGameVersion: 2 });
-    expect(events).toHaveLength(3);
+    expect(events).toHaveLength(4);
     expect(commandStore.getGameVersion(ids.game)).toBe(2);
     expect(receipt?.result.status).toBe("rejected");
   });
@@ -1549,7 +1613,7 @@ describe("GameApplicationService", () => {
         failure: structuredFailure
       }
     });
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(3);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(4);
   });
 
   it("returns the original accepted GenerateSetup result on retry", async () => {
@@ -1566,7 +1630,7 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(second);
     expect(second).toMatchObject({ status: "accepted", idempotent: true, gameVersion: 3 });
     expect(second.events).toStrictEqual(first.events);
-    expect(events).toHaveLength(5);
+    expect(events).toHaveLength(6);
   });
 
   it("rejects stale GenerateSetup expectedGameVersion", async () => {
@@ -1831,7 +1895,7 @@ describe("GameApplicationService", () => {
         failure: assignmentFailure
       }
     });
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(6);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(7);
   });
 
   it("keeps unknown batch construction failures retryable without saving DomainValidationFailed receipts", async () => {
@@ -1882,7 +1946,7 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(6);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(7);
 
     const fixed = makeService(commandStore, testSetupGenerator, idGenerator, clock, testAssignmentGenerator);
     const retried = await fixed.service.execute(command);
@@ -1939,7 +2003,7 @@ describe("GameApplicationService", () => {
       currentGameVersion: 4
     });
     expect(receipt?.result.status).toBe("rejected");
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(6);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(7);
   });
 
   it("keeps nextBatchId failures retryable without events or receipts", async () => {
@@ -1994,7 +2058,7 @@ describe("GameApplicationService", () => {
     expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
   });
 
-  it("keeps second nextEventId failures in two-event batches retryable without partial events", async () => {
+  it("keeps later nextEventId failures in multi-event batches retryable without partial events", async () => {
     const commandStore = new MemoryCommandCommitStore();
     const idGenerator = new FaultInjectingIdGenerator();
     const { service } = makeService(commandStore, testSetupGenerator, idGenerator);
@@ -2018,7 +2082,7 @@ describe("GameApplicationService", () => {
     const retried = await service.execute(command);
 
     expectAcceptedResult(retried);
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(3);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(4);
   });
 
   it("keeps clock failures retryable without events or receipts", async () => {
@@ -2127,10 +2191,11 @@ describe("GameApplicationService", () => {
     expect(eventsAfterFailure).toHaveLength(1);
     expect(eventsAfterFailure[0]?.eventType).toBe("GameCreated");
     expectAcceptedResult(retried);
-    expect(retried.events).toHaveLength(2);
-    expect(eventsAfterRetry).toHaveLength(3);
+    expect(retried.events).toHaveLength(3);
+    expect(eventsAfterRetry).toHaveLength(4);
     expect(eventsAfterRetry[1]?.eventType).toBe("ScriptSelected");
-    expect(eventsAfterRetry[2]?.eventType).toBe("PhaseTransitioned");
+    expect(eventsAfterRetry[2]?.eventType).toBe("SeamstressResolutionCapabilityDeclared");
+    expect(eventsAfterRetry[3]?.eventType).toBe("PhaseTransitioned");
   });
 
   it("does not allow the commit store to accept a second successful batch for one game command", async () => {
@@ -2144,6 +2209,8 @@ describe("GameApplicationService", () => {
       gameVersion: 2,
       commandId: command.commandId
     });
+    const captured = captureSupportedCommand(command);
+    if (!captured.valid) throw new Error(captured.reason);
 
     await expect(
       commandStore.commitAcceptedCommand({
@@ -2159,6 +2226,7 @@ describe("GameApplicationService", () => {
         receipt: {
           commandId: command.commandId,
           gameId: command.gameId,
+          commandFingerprint: captured.captured.fingerprint,
           result: accepted(command.gameId, 2, [duplicateEvent])
         }
       })
@@ -2182,18 +2250,18 @@ describe("GameApplicationService", () => {
     expect(result.events).toHaveLength(2);
     expect(result.events[0]).toMatchObject({
       eventType: "FirstNightInitialized",
-      eventSequence: 9,
+      eventSequence: 10,
       gameVersion: 6,
       commandId: command.commandId
     });
     expect(result.events[1]).toMatchObject({
       eventType: "InitialPrivateKnowledgeEstablished",
-      eventSequence: 10,
+      eventSequence: 11,
       gameVersion: 6,
       commandId: command.commandId
     });
     expect(result.events[0]?.batchId).toBe(result.events[1]?.batchId);
-    expect(events).toHaveLength(10);
+    expect(events).toHaveLength(11);
     expect(state?.phase).toBe("FIRST_NIGHT");
     expect(state?.nightNumber).toBe(1);
     expect(state?.dayNumber).toBe(0);
@@ -2217,7 +2285,7 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(second);
     expect(second).toMatchObject({ status: "accepted", idempotent: true, gameVersion: 6 });
     expect(second.events).toStrictEqual(first.events);
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
   });
 
   it("rejects InitializeFirstNight before setup, roster, assignment, or FIRST_NIGHT prerequisites exist", async () => {
@@ -2269,7 +2337,7 @@ describe("GameApplicationService", () => {
       code: "FirstNightAlreadyInitialized",
       currentGameVersion: 6
     });
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(10);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(11);
   });
 
   it("keeps missing initial private knowledge builder failures retryable without receipts", async () => {
@@ -2290,7 +2358,7 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(8);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(9);
 
     const fixed = makeService(commandStore, testSetupGenerator, idGenerator, clock, testAssignmentGenerator, testInitialPrivateKnowledgeBuilder);
     const retried = await fixed.service.execute(command);
@@ -2368,7 +2436,7 @@ describe("GameApplicationService", () => {
         failure: generationFailure
       }
     });
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(8);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(9);
   });
 
   it("plans first-night tasks with one event and leaves phase at FIRST_NIGHT", async () => {
@@ -2385,7 +2453,7 @@ describe("GameApplicationService", () => {
     expect(result.events).toHaveLength(1);
     expect(result.events[0]).toMatchObject({
       eventType: "FirstNightTaskPlanCreated",
-      eventSequence: 11,
+      eventSequence: 12,
       gameVersion: 7,
       commandId: command.commandId
     });
@@ -2410,7 +2478,7 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(second);
     expect(second).toMatchObject({ status: "accepted", idempotent: true, gameVersion: 7 });
     expect(second.events).toStrictEqual(first.events);
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(12);
   });
 
   it("rejects PlanFirstNightTasks before setup, roster, assignment, first night, or own-character knowledge exists", async () => {
@@ -2483,7 +2551,7 @@ describe("GameApplicationService", () => {
     });
     expect((await commandStore.findCommandReceipt(duplicateCommand.gameId, duplicateCommand.commandId))?.result.status).toBe("rejected");
     expect((await commandStore.findCommandReceipt(staleCommand.gameId, staleCommand.commandId))?.result.status).toBe("rejected");
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(11);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
   });
 
   it("keeps missing first-night task planner failures retryable without receipts", async () => {
@@ -2504,7 +2572,7 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
 
     const fixed = makeService(
       commandStore,
@@ -2593,7 +2661,7 @@ describe("GameApplicationService", () => {
     expect(failedResult.message).toContain("Invalid first-night task catalog dependency");
     expect(plannerCalls).toBe(0);
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
     expect(commandStore.acceptedCount).toBe(6);
     expect(commandStore.rejectedCount).toBe(0);
 
@@ -2652,7 +2720,7 @@ describe("GameApplicationService", () => {
     expect(failedResult.message).toContain("first-night-v1:WITCH_ACTION:seat-08");
     expect(failedResult.message).toContain("witch");
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
     expect(commandStore.rejectedCount).toBe(0);
 
     const fixed = makeService(
@@ -2807,7 +2875,7 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(10);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
     expect(commandStore.getGameVersion(command.gameId)).toBe(6);
     expect(commandStore.rejectedCount).toBe(0);
   });
@@ -2859,7 +2927,7 @@ describe("GameApplicationService", () => {
     });
     expect(failedResult.message).not.toContain("DomainValidationFailed");
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(10);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(11);
     expect(commandStore.rejectedCount).toBe(0);
 
     const fixed = makeService(
@@ -2900,7 +2968,7 @@ describe("GameApplicationService", () => {
     expect(state?.demonInformation).toBeUndefined();
     expect(state?.firstNightTaskProgress).toBeUndefined();
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeDefined();
-    expect(events).toHaveLength(11);
+    expect(events).toHaveLength(12);
   });
 
   it("opens a deterministic Philosopher first-night action opportunity without settling the task", async () => {
@@ -2915,7 +2983,7 @@ describe("GameApplicationService", () => {
     expect(result).toMatchObject({ status: "accepted", gameVersion: 8, idempotent: false });
     expect(result.events).toHaveLength(1);
     expect(result.events[0]).toMatchObject({
-      eventSequence: 12,
+      eventSequence: 13,
       gameVersion: 8,
       eventType: "FirstNightActionOpportunityCreated",
       payload: {
@@ -2939,7 +3007,7 @@ describe("GameApplicationService", () => {
     expect(state?.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("OPEN");
     expect(state?.firstNightTaskProgress).toBeUndefined();
     expect(state?.minionInformation).toBeUndefined();
-    expect(events).toHaveLength(12);
+    expect(events).toHaveLength(13);
   });
 
   it("allows Storyteller to open the Philosopher opportunity and rejects human or AI open attempts with receipts", async () => {
@@ -2960,7 +3028,7 @@ describe("GameApplicationService", () => {
     await expect(actorService.execute(aiCommand)).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
     expect((await actorStore.findCommandReceipt(humanCommand.gameId, humanCommand.commandId))?.result.status).toBe("rejected");
     expect((await actorStore.findCommandReceipt(aiCommand.gameId, aiCommand.commandId))?.result.status).toBe("rejected");
-    expect(await actorStore.loadDomainEvents(ids.game)).toHaveLength(11);
+    expect(await actorStore.loadDomainEvents(ids.game)).toHaveLength(12);
   });
 
   it("rejects duplicate, wrong-task, and unsupported role action opportunity opening with saved receipts", async () => {
@@ -2978,7 +3046,7 @@ describe("GameApplicationService", () => {
       currentGameVersion: 8
     });
     expect((await commandStore.findCommandReceipt(duplicate.gameId, duplicate.commandId))?.result.status).toBe("rejected");
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(13);
 
     const wrongOrderStore = new MemoryCommandCommitStore();
     const { service: wrongOrderService } = makeService(wrongOrderStore);
@@ -3029,7 +3097,7 @@ describe("GameApplicationService", () => {
       "ScheduledTaskSettled"
     ]);
     expect(result.events[0]).toMatchObject({
-      eventSequence: 13,
+      eventSequence: 14,
       gameVersion: 9,
       eventType: "PhilosopherActionDeferred",
       payload: {
@@ -3042,7 +3110,7 @@ describe("GameApplicationService", () => {
       }
     });
     expect(result.events[1]).toMatchObject({
-      eventSequence: 14,
+      eventSequence: 15,
       gameVersion: 9,
       eventType: "ScheduledTaskSettled",
       payload: {
@@ -3060,7 +3128,7 @@ describe("GameApplicationService", () => {
     expect(state?.currentCharacterState?.revision).toBe(1);
     expect(state?.minionInformation).toBeUndefined();
     expect(state?.demonInformation).toBeUndefined();
-    expect(events).toHaveLength(14);
+    expect(events).toHaveLength(15);
   });
 
   it("allows the source player, Storyteller, and System to submit DEFER but rejects non-source players", async () => {
@@ -3109,7 +3177,7 @@ describe("GameApplicationService", () => {
     });
     expect((await mismatchStore.findCommandReceipt(humanCommand.gameId, humanCommand.commandId))?.result.status).toBe("rejected");
     expect((await mismatchStore.findCommandReceipt(aiCommand.gameId, aiCommand.commandId))?.result.status).toBe("rejected");
-    expect(await mismatchStore.loadDomainEvents(ids.game)).toHaveLength(12);
+    expect(await mismatchStore.loadDomainEvents(ids.game)).toHaveLength(13);
   });
 
   it("accepts Philosopher ability choice and rejects missing opportunities before role action settlement", async () => {
@@ -3138,7 +3206,7 @@ describe("GameApplicationService", () => {
       "ScheduledTaskSettled"
     ]);
     expect((await commandStore.findCommandReceipt(choose.gameId, choose.commandId))?.result.status).toBe("accepted");
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(17);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(18);
 
     const otherStore = new MemoryCommandCommitStore();
     const { service: otherService } = makeService(otherStore);
@@ -3160,7 +3228,7 @@ describe("GameApplicationService", () => {
       currentGameVersion: 8
     });
     expect((await otherStore.findCommandReceipt(wrongOpportunity.gameId, wrongOpportunity.commandId))?.result.status).toBe("rejected");
-    expect(await otherStore.loadDomainEvents(ids.game)).toHaveLength(12);
+    expect(await otherStore.loadDomainEvents(ids.game)).toHaveLength(13);
   });
 
   it("rejects invalid Philosopher ability choices with saved receipts", async () => {
@@ -3226,7 +3294,7 @@ describe("GameApplicationService", () => {
         currentGameVersion: 8
       });
       expect((await store.findCommandReceipt(testCase.command.gameId, testCase.command.commandId))?.result.status, testCase.name).toBe("rejected");
-      expect(await store.loadDomainEvents(ids.game), testCase.name).toHaveLength(12);
+      expect(await store.loadDomainEvents(ids.game), testCase.name).toHaveLength(13);
     }
   });
 
@@ -3344,7 +3412,7 @@ describe("GameApplicationService", () => {
     expect(result).toMatchObject({ status: "accepted", gameVersion: 10, idempotent: false });
     expect(result.events).toHaveLength(1);
     expect(result.events[0]).toMatchObject({
-      eventSequence: 18,
+      eventSequence: 19,
       gameVersion: 10,
       eventType: "FirstNightActionOpportunityCreated",
       payload: {
@@ -3709,7 +3777,7 @@ describe("GameApplicationService", () => {
       "SnakeCharmerNoSwapResolved",
       "ScheduledTaskSettled"
     ]);
-    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([19, 20, 21]);
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([20, 21, 22]);
     expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([11]));
     expect(result.events[0]?.payload).toMatchObject({
       taskId: philosopherGainedSnakeCharmerTaskId,
@@ -3810,7 +3878,7 @@ describe("GameApplicationService", () => {
       "AbilityImpairmentApplied",
       "ScheduledTaskSettled"
     ]);
-    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([19, 20, 21, 22]);
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([20, 21, 22, 23]);
     expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([11]));
     const targetChosenEvent = result.events[0];
     const swapEvent = result.events[1];
@@ -4236,7 +4304,7 @@ describe("GameApplicationService", () => {
     });
     expect((await commandStore.findCommandReceipt(submitAgain.gameId, submitAgain.commandId))?.result.status).toBe("rejected");
     expect((await commandStore.findCommandReceipt(openAgain.gameId, openAgain.commandId))?.result.status).toBe("rejected");
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(14);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(15);
   });
 
   it("keeps role action metadata generation failures classified independently without receipts", async () => {
@@ -4258,10 +4326,10 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(11);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
   });
 
-  it("does not persist receipts or events when role action opportunity construction throws a DomainError", async () => {
+  it("rejects role-action command accessors before receipt or event work", async () => {
     const { service, commandStore } = makeService();
     await reachFirstNightTaskPlan(service);
     let taskIdReads = 0;
@@ -4283,16 +4351,16 @@ describe("GameApplicationService", () => {
     expectFailedResult(failedResult);
     expect(failedResult).toMatchObject({
       code: "DependencyExecutionFailed",
-      failureStage: "first-night-role-action",
-      currentGameVersion: 7,
+      failureStage: "command-validation",
       retryable: true
     });
-    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(failedResult.message).toContain("enumerable data properties");
+    expect("currentGameVersion" in failedResult).toBe(false);
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(11);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
   });
 
-  it("does not persist receipts or events when Philosopher DEFER construction throws a DomainError", async () => {
+  it("rejects Philosopher DEFER command accessors before receipt or event work", async () => {
     const { service, commandStore } = makeService();
     await reachOpenPhilosopherActionOpportunity(service);
     let opportunityIdReads = 0;
@@ -4318,13 +4386,13 @@ describe("GameApplicationService", () => {
     expectFailedResult(failedResult);
     expect(failedResult).toMatchObject({
       code: "DependencyExecutionFailed",
-      failureStage: "first-night-role-action",
-      currentGameVersion: 8,
+      failureStage: "command-validation",
       retryable: true
     });
-    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(failedResult.message).toContain("enumerable data properties");
+    expect("currentGameVersion" in failedResult).toBe(false);
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(12);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(13);
   });
 
   it("settles MINION_INFO and DEMON_INFO after Philosopher DEFER on the golden plan", async () => {
@@ -4369,7 +4437,7 @@ describe("GameApplicationService", () => {
       "WITCH_ACTION",
       "CERENOVUS_ACTION"
     ]);
-    expect(events).toHaveLength(18);
+    expect(events).toHaveLength(19);
   });
 
   it("settles MINION_INFO before DEMON_INFO on a no-Philosopher first-night plan", async () => {
@@ -4393,12 +4461,12 @@ describe("GameApplicationService", () => {
       "ScheduledTaskSettled"
     ]);
     expect(result.events[0]).toMatchObject({
-      eventSequence: 12,
+      eventSequence: 13,
       gameVersion: 8,
       eventType: "MinionInformationDelivered"
     });
     expect(result.events[1]).toMatchObject({
-      eventSequence: 13,
+      eventSequence: 14,
       gameVersion: 8,
       eventType: "ScheduledTaskSettled"
     });
@@ -4418,7 +4486,7 @@ describe("GameApplicationService", () => {
       characterStateRevision: state?.minionInformation?.resolvedEvilTeam.characterStateRevision
     });
     expect(commandStore.getGameVersion(ids.game)).toBe(8);
-    expect(events).toHaveLength(13);
+    expect(events).toHaveLength(14);
   });
 
   it("settles DEMON_INFO only after MINION_INFO has been settled", async () => {
@@ -4459,7 +4527,7 @@ describe("GameApplicationService", () => {
       outcomeType: "DEMON_INFORMATION_DELIVERED",
       characterStateRevision: state?.demonInformation?.resolvedEvilTeam.characterStateRevision
     });
-    expect(events).toHaveLength(15);
+    expect(events).toHaveLength(16);
   });
 
   it("returns accepted MINION_INFO settlement on retry without appending events", async () => {
@@ -4474,7 +4542,7 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(second);
     expect(second).toMatchObject({ status: "accepted", idempotent: true, gameVersion: 8 });
     expect(second.events).toStrictEqual(first.events);
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(13);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(14);
   });
 
   it("rejects DEMON_INFO before MINION_INFO and unsupported role task settlement with saved receipts", async () => {
@@ -4494,7 +4562,7 @@ describe("GameApplicationService", () => {
       currentGameVersion: 7
     });
     expect((await noPhilosopherStore.findCommandReceipt(earlyDemon.gameId, earlyDemon.commandId))?.result.status).toBe("rejected");
-    expect(await noPhilosopherStore.loadDomainEvents(earlyDemon.gameId)).toHaveLength(11);
+    expect(await noPhilosopherStore.loadDomainEvents(earlyDemon.gameId)).toHaveLength(12);
 
     const { service, commandStore } = makeService();
     await reachFirstNightTaskPlan(service);
@@ -4517,7 +4585,7 @@ describe("GameApplicationService", () => {
       currentGameVersion: 7
     });
     expect((await commandStore.findCommandReceipt(roleCommand.gameId, roleCommand.commandId))?.result.status).toBe("rejected");
-    expect(await commandStore.loadDomainEvents(roleCommand.gameId)).toHaveLength(11);
+    expect(await commandStore.loadDomainEvents(roleCommand.gameId)).toHaveLength(12);
   });
 
   it("rejects missing, duplicate, stale-version, wrong-phase, and actor-invalid system task settlement with receipts", async () => {
@@ -4597,7 +4665,7 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(12);
 
     const fixed = makeService(
       commandStore,
@@ -4791,7 +4859,7 @@ describe("GameApplicationService", () => {
     });
     expect(failedResult.message).not.toContain("DomainValidationFailed");
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(12);
 
     const fixed = makeService(
       commandStore,
@@ -4845,7 +4913,7 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(11);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(12);
   });
 
   it("settles EVIL_TWIN_SETUP as pair, private information, and scheduled settlement", async () => {
@@ -4869,7 +4937,7 @@ describe("GameApplicationService", () => {
       "EvilTwinInformationDelivered",
       "ScheduledTaskSettled"
     ]);
-    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([20, 21, 22]);
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([21, 22, 23]);
     expect(state?.evilTwinPairs?.pairs).toHaveLength(1);
     expect(state?.evilTwinInformation?.entries).toHaveLength(2);
     expect(state?.evilTwinInformation?.entries.map((entry) => entry.kind)).toStrictEqual([
@@ -5039,7 +5107,7 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(19);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(20);
   });
 
   it("opens WITCH_ACTION as a safe deterministic first-night action opportunity", async () => {
@@ -5178,7 +5246,7 @@ describe("GameApplicationService", () => {
       "WitchDeathPendingMarked",
       "ScheduledTaskSettled"
     ]);
-    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([24, 25, 26]);
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([25, 26, 27]);
     expect(state?.witchTargetChoices?.choices).toHaveLength(1);
     expect(state?.witchDeathPending?.pendingDeaths).toHaveLength(1);
     expect(state?.witchIneffectiveResolutions).toBeUndefined();
@@ -5399,7 +5467,7 @@ describe("GameApplicationService", () => {
       "DreamerInformationDelivered",
       "ScheduledTaskSettled"
     ]);
-    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([28, 29, 30]);
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([29, 30, 31]);
     expect(state?.dreamerTargetChoices?.choices).toHaveLength(1);
     expect(state?.dreamerInformation?.deliveries).toHaveLength(1);
     expect(state?.dreamerInformation?.deliveries[0]).toMatchObject({
@@ -5588,10 +5656,10 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(27);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(28);
   });
 
-  it("keeps SubmitDreamerAction construction DomainErrors retryable without receipts or events", async () => {
+  it("rejects SubmitDreamerAction accessors before receipt or event work", async () => {
     const { service, commandStore } = makeService();
     const { dreamerTask, opportunity, state } = await reachOpenDreamerActionOpportunity(service, commandStore);
     const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
@@ -5624,13 +5692,13 @@ describe("GameApplicationService", () => {
     expectFailedResult(failedResult);
     expect(failedResult).toMatchObject({
       code: "DependencyExecutionFailed",
-      failureStage: "first-night-role-action",
-      currentGameVersion: 15,
+      failureStage: "command-validation",
       retryable: true
     });
-    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(failedResult.message).toContain("enumerable data properties");
+    expect("currentGameVersion" in failedResult).toBe(false);
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(27);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(28);
   });
 
   it("opens base Seamstress as the next safe deterministic first-night DEFER opportunity", async () => {
@@ -5649,6 +5717,7 @@ describe("GameApplicationService", () => {
     const opportunity = state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
       candidate.taskId === seamstressTask.taskId
     );
+    if (opportunity === undefined) throw new Error("Expected base Seamstress opportunity");
 
     expectAcceptedResult(result);
     expect(result.gameVersion).toBe(17);
@@ -5662,9 +5731,13 @@ describe("GameApplicationService", () => {
         taskType: "SEAMSTRESS_ACTION",
         opportunityStatus: "OPEN",
         visibility: {
+          visibilitySchemaVersion: "seamstress-first-night-action-v2",
+          resolutionCapabilityVersion: "seamstress-snv-first-night-resolution-v1",
           canDefer: true,
-          supportedDecisionKinds: ["DEFER"],
-          futureUnsupportedDecisionKinds: ["CHOOSE_TWO_PLAYERS"]
+          canChooseTargets: true,
+          supportedDecisionKinds: ["DEFER", "CHOOSE_TWO_PLAYERS"],
+          futureUnsupportedDecisionKinds: [],
+          targetSchema: "EXACTLY_TWO_DISTINCT_OTHER_MODELED_PLAYERS"
         }
       }
     });
@@ -5674,11 +5747,16 @@ describe("GameApplicationService", () => {
       taskType: "SEAMSTRESS_ACTION",
       opportunityStatus: "OPEN",
       visibility: {
+        visibilitySchemaVersion: "seamstress-first-night-action-v2",
+        resolutionCapabilityVersion: "seamstress-snv-first-night-resolution-v1",
         canDefer: true,
-        supportedDecisionKinds: ["DEFER"],
-        futureUnsupportedDecisionKinds: ["CHOOSE_TWO_PLAYERS"]
+        canChooseTargets: true,
+        supportedDecisionKinds: ["DEFER", "CHOOSE_TWO_PLAYERS"],
+        futureUnsupportedDecisionKinds: [],
+        targetSchema: "EXACTLY_TWO_DISTINCT_OTHER_MODELED_PLAYERS"
       }
     });
+    expect(isSeamstressActionOpportunityV2(opportunity)).toBe(true);
 
     const serialized = JSON.stringify(opportunity);
     expect(serialized).not.toContain("selectedPlayer");
@@ -5689,7 +5767,7 @@ describe("GameApplicationService", () => {
     expect(serialized).not.toContain("assignment");
   });
 
-  it("rejects early, Human-opened, and Philosopher-gained Seamstress opportunities", async () => {
+  it("rejects early and Human-opened Seamstress opportunities but opens Philosopher-gained V2", async () => {
     const { service, commandStore } = makeService();
     const { seamstressTask } = await reachSeamstressActionTask(service, commandStore);
 
@@ -5731,18 +5809,456 @@ describe("GameApplicationService", () => {
       commandId: commandId("choose-seamstress-before-unsupported-open")
     }));
     const gainedTaskId = scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:SEAMSTRESS_ACTION:seat-10:from-seamstress");
-    await expect(gainedService.execute(openFirstNightRoleActionOpportunityCommand({
+    const gainedResult = await gainedService.execute(openFirstNightRoleActionOpportunityCommand({
       commandId: commandId("open-gained-seamstress-unsupported"),
       expectedGameVersion: 9,
       payload: {
         commandType: "OpenFirstNightRoleActionOpportunity",
         taskId: gainedTaskId
       }
-    }))).resolves.toMatchObject({
-      status: "rejected",
-      code: "UnsupportedRoleActionOpportunity",
-      currentGameVersion: 9
+    }));
+    expectAcceptedResult(gainedResult);
+    expect(gainedResult).toMatchObject({ status: "accepted", gameVersion: 10 });
+    const gainedState = rebuildOptionalGameState(await gainedStore.loadDomainEvents(ids.game));
+    const gainedOpportunity = gainedState?.firstNightActionOpportunities?.opportunities.find((candidate) =>
+      candidate.taskId === gainedTaskId
+    );
+    if (gainedOpportunity === undefined) throw new Error("Expected Philosopher-gained Seamstress opportunity");
+    expect(isSeamstressActionOpportunityV2(gainedOpportunity)).toBe(true);
+    expect(gainedOpportunity).toMatchObject({
+      opportunityKind: "SEAMSTRESS_FIRST_NIGHT_ACTION",
+      sourceRole: { roleId: "philosopher" },
+      abilitySource: { kind: "PHILOSOPHER_GRANT", abilityRoleId: "seamstress" },
+      visibility: { supportedDecisionKinds: ["DEFER", "CHOOSE_TWO_PLAYERS"] }
     });
+  });
+
+  it("settles a V2 Seamstress choice through the four-event canonical batch and summary-only result", async () => {
+    const { service, commandStore } = makeService();
+    const { seamstressTask, opportunity, state: beforeSubmit } = await reachOpenSeamstressActionOpportunity(service, commandStore);
+    if (!isSeamstressActionOpportunityV2(opportunity) || beforeSubmit.currentCharacterState === undefined) {
+      throw new Error("Expected a V2 Seamstress opportunity");
+    }
+    const targets = beforeSubmit.currentCharacterState.entries
+      .filter((entry) => entry.playerId !== opportunity.sourcePlayerId)
+      .slice(0, 3);
+    if (targets[0] === undefined || targets[1] === undefined || targets[2] === undefined) {
+      throw new Error("Expected three modeled players for Seamstress identity checks");
+    }
+    const command = submitSeamstressActionCommand({
+      commandId: commandId("submit-seamstress-choice-v2"),
+      expectedGameVersion: 17,
+      actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+      payload: {
+        commandType: "SubmitSeamstressAction",
+        taskId: seamstressTask.taskId,
+        opportunityId: opportunity.opportunityId,
+        decision: { kind: "CHOOSE_TWO_PLAYERS", targetPlayerIds: [targets[1].playerId, targets[0].playerId] }
+      }
+    });
+
+    const result = await service.execute(command);
+    expectEventSummaryAcceptedResult(result);
+    expect(result).toStrictEqual({
+      status: "accepted",
+      resultSchemaVersion: "accepted-event-summary-v1",
+      eventDisclosure: "EVENT_TYPES_ONLY",
+      gameId: command.gameId,
+      gameVersion: 18,
+      eventCount: 4,
+      eventTypes: ["SeamstressTargetsChosen", "SeamstressAbilitySpent", "SeamstressInformationDelivered", "ScheduledTaskSettled"],
+      idempotent: false
+    });
+    const committedStream = await commandStore.loadDomainEvents(command.gameId);
+    const committed = committedStream.filter((event) => event.commandId === command.commandId);
+    expect(committed.map((event) => event.eventType)).toStrictEqual(result.eventTypes);
+    expect(committed[0]?.payload).toMatchObject({
+      targetPlayerIds: [targets[0].playerId, targets[1].playerId],
+      targetSeatNumbers: [targets[0].seatNumber, targets[1].seatNumber]
+    });
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(command.gameId));
+    expect(state?.seamstressAbilityState?.entitlements.find((entry) =>
+      entry.abilityUseEntitlementId === opportunity.abilityUseEntitlementId
+    )?.status).toBe("SPENT");
+    expect(state?.seamstressInformation?.deliveries).toHaveLength(1);
+    expect(() => validateDomainBatchSemantics(beforeSubmit, committed)).not.toThrow();
+    expect(() => validateDomainEventStream(committedStream)).not.toThrow();
+
+    const invalidBatches: readonly (readonly AnyDomainEventEnvelope[])[] = [
+      committed.slice(0, 3),
+      [committed[1]!, committed[0]!, committed[2]!, committed[3]!],
+      [...committed, { ...committed[3]!, eventId: committed[2]!.eventId, eventSequence: committed[3]!.eventSequence + 1 }],
+      [committed[0]!, committed[1]!, committed[1]!, committed[3]!],
+      [
+        committed[0]!,
+        committed[1]!,
+        {
+          ...committed[2]!,
+          payload: {
+            ...committed[2]!.payload,
+            settlementCharacterStateRevision: opportunity.sourceCharacterStateRevision + 1
+          }
+        } as AnyDomainEventEnvelope,
+        committed[3]!
+      ],
+      [
+        {
+          ...committed[0]!,
+          payload: {
+            ...committed[0]!.payload,
+            sourceRoleTenureId: "role-tenure-v1:seat-03:role-seamstress:acquired-revision-2"
+          }
+        } as AnyDomainEventEnvelope,
+        committed[1]!,
+        committed[2]!,
+        committed[3]!
+      ]
+    ];
+    for (const invalidBatch of invalidBatches) {
+      expect(() => validateDomainBatchSemantics(beforeSubmit, invalidBatch)).toThrow();
+    }
+
+    const commandStart = committedStream.findIndex((event) => event.commandId === command.commandId);
+    const incompleteStream = committedStream.filter((event) =>
+      !(event.commandId === command.commandId && event.eventType === "SeamstressInformationDelivered")
+    );
+    const reorderedStream = [...committedStream];
+    reorderedStream[commandStart] = committed[1]!;
+    reorderedStream[commandStart + 1] = committed[0]!;
+    expect(() => validateDomainEventStream(incompleteStream)).toThrow();
+    expect(() => validateDomainEventStream(reorderedStream)).toThrow();
+
+    const receipt = await commandStore.findCommandReceipt(command.gameId, command.commandId);
+    expect(receipt?.result).toStrictEqual(result);
+    expect("events" in (receipt?.result ?? {})).toBe(false);
+    const retry = await service.execute(command);
+    expect(retry).toStrictEqual({ ...result, idempotent: true });
+
+    const eventCountBeforeConflicts = (await commandStore.loadDomainEvents(command.gameId)).length;
+    const conflictVariants = [
+      submitSeamstressActionCommand({
+        ...command,
+        payload: {
+          ...command.payload,
+          decision: { kind: "CHOOSE_TWO_PLAYERS", targetPlayerIds: [targets[0].playerId, targets[1].playerId] }
+        }
+      }),
+      submitSeamstressActionCommand({
+        ...command,
+        payload: {
+          ...command.payload,
+          decision: { kind: "CHOOSE_TWO_PLAYERS", targetPlayerIds: [targets[1].playerId, targets[2].playerId] }
+        }
+      }),
+      submitSeamstressActionCommand({
+        ...command,
+        payload: { ...command.payload, decision: { kind: "DEFER" } }
+      })
+    ];
+    for (const conflictCommand of conflictVariants) {
+      await expect(service.execute(conflictCommand)).resolves.toStrictEqual({
+        status: "rejected",
+        gameId: command.gameId,
+        code: "CommandIdempotencyConflict",
+        message: "commandId is already associated with a different command",
+        currentGameVersion: 18,
+        idempotent: false
+      });
+    }
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(eventCountBeforeConflicts);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toStrictEqual(receipt);
+  });
+
+  it.each([
+    ["No Dashii present without derived adjacency", noPhilosopherNoDashiiExactRoleIds, "NONE", "NOT_PROVEN"],
+    ["effective Vortox", noPhilosopherVortoxExactRoleIds, "VORTOX_FALSE_REQUIRED", "NOT_PROVEN"]
+  ] as const)(
+    "keeps the four public event types and summary shape invariant for %s",
+    async (_name, exactRoleIds, expectedConstraint, expectedEffectiveness) => {
+      const commandStore = new MemoryCommandCommitStore();
+      const { service } = makeService(commandStore);
+      const { seamstressTask, opportunity, state } = await reachOpenSeamstressActionOpportunity(
+        service,
+        commandStore,
+        exactRoleIds
+      );
+      const targets = state.currentCharacterState?.entries
+        .filter((entry) => entry.playerId !== opportunity.sourcePlayerId)
+        .slice(0, 2);
+      if (targets?.[0] === undefined || targets[1] === undefined) throw new Error("Expected modifier-table targets");
+      const command = submitSeamstressActionCommand({
+        commandId: commandId(`modifier-table-${expectedConstraint.toLowerCase()}`),
+        expectedGameVersion: 17,
+        payload: {
+          commandType: "SubmitSeamstressAction",
+          taskId: seamstressTask.taskId,
+          opportunityId: opportunity.opportunityId,
+          decision: { kind: "CHOOSE_TWO_PLAYERS", targetPlayerIds: [targets[0].playerId, targets[1].playerId] }
+        }
+      });
+
+      const result = await service.execute(command);
+      expectEventSummaryAcceptedResult(result);
+      expect(result).toStrictEqual({
+        status: "accepted",
+        resultSchemaVersion: "accepted-event-summary-v1",
+        eventDisclosure: "EVENT_TYPES_ONLY",
+        gameId: command.gameId,
+        gameVersion: 18,
+        eventCount: 4,
+        eventTypes: ["SeamstressTargetsChosen", "SeamstressAbilitySpent", "SeamstressInformationDelivered", "ScheduledTaskSettled"],
+        idempotent: false
+      });
+      const committed = (await commandStore.loadDomainEvents(command.gameId)).filter((event) =>
+        event.commandId === command.commandId
+      );
+      expect(committed.map((event) => event.eventType)).toStrictEqual(result.eventTypes);
+      const delivery = committed.find((event) => event.eventType === "SeamstressInformationDelivered");
+      if (delivery?.eventType !== "SeamstressInformationDelivered") throw new Error("Expected modifier-table delivery");
+      expect(delivery.payload.deliveryConstraint.kind).toBe(expectedConstraint);
+      expect(delivery.payload.sourceEffectiveness.kind).toBe(expectedEffectiveness);
+      if (expectedConstraint === "NONE") {
+        expect(delivery.payload.sourceEffectiveness).toMatchObject({
+          kind: "NOT_PROVEN",
+          unresolvedEffectKinds: ["CONTINUOUS_POISON_NOT_MODELED"]
+        });
+      }
+      expect(JSON.stringify(result)).not.toContain("VORTOX");
+      expect(JSON.stringify(result)).not.toContain("NOT_PROVEN");
+      expect(JSON.stringify(result)).not.toContain("no_dashii");
+    }
+  );
+
+  it.each(["sects_and_violets", "Sects-And-Violets", " sects-and-violets "])(
+    "rejects noncanonical Seamstress capability script alias %s before event creation",
+    async (scriptId) => {
+      const { service, commandStore } = makeService();
+      await service.execute(createGameCommand());
+      const result = await service.execute(selectScriptCommand({
+        payload: { ...selectScriptCommand().payload, scriptId }
+      }));
+
+      expect(result).toMatchObject({ status: "rejected", code: "UnsupportedScript" });
+      expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(1);
+    }
+  );
+
+  it("treats reordered own data properties as the same structural command", async () => {
+    const { service, commandStore } = makeService();
+    const original = createGameCommand();
+    const reordered = {
+      payload: {
+        storytellerCount: original.payload.storytellerCount,
+        aiPlayerCount: original.payload.aiPlayerCount,
+        humanPlayerCount: original.payload.humanPlayerCount,
+        playerCount: original.payload.playerCount,
+        rulesBaselineVersion: original.payload.rulesBaselineVersion,
+        rootSeed: original.payload.rootSeed,
+        commandType: original.payload.commandType
+      },
+      correlationId: original.correlationId,
+      issuedAt: original.issuedAt,
+      actor: { systemId: "test", kind: "system" as const },
+      expectedGameVersion: original.expectedGameVersion,
+      gameId: original.gameId,
+      commandId: original.commandId
+    } satisfies typeof original;
+
+    const first = await service.execute(original);
+    const retry = await service.execute(reordered);
+
+    expectAcceptedResult(first);
+    expectAcceptedResult(retry);
+    expect(retry).toStrictEqual({ ...first, idempotent: true });
+    expect(await commandStore.loadDomainEvents(original.gameId)).toHaveLength(1);
+    expect(commandStore.getReceiptCount()).toBe(1);
+  });
+
+  it.each([
+    ["actor", (command: ReturnType<typeof createGameCommand>) => ({ ...command, actor: { kind: "system" as const, systemId: "other" } })],
+    ["expected version", (command: ReturnType<typeof createGameCommand>) => ({ ...command, expectedGameVersion: 1 })],
+    ["issuedAt", (command: ReturnType<typeof createGameCommand>) => ({ ...command, issuedAt: "2026-07-07T00:00:00.001Z" })],
+    ["correlationId", (command: ReturnType<typeof createGameCommand>) => ({ ...command, correlationId: correlationId("other-correlation") })],
+    ["payload field", (command: ReturnType<typeof createGameCommand>) => ({ ...command, payload: { ...command.payload, rootSeed: "other-seed" } })],
+    ["extra envelope field", (command: ReturnType<typeof createGameCommand>) => ({ ...command, extra: true }) as unknown as typeof command],
+    ["extra payload field", (command: ReturnType<typeof createGameCommand>) => ({
+      ...command,
+      payload: { ...command.payload, extra: true } as unknown as typeof command.payload
+    })]
+  ] as const)("returns an exact idempotency conflict when the same commandId changes %s", async (_name, mutate) => {
+    const { service, commandStore } = makeService();
+    const original = createGameCommand();
+    const first = await service.execute(original);
+    const originalReceipt = await commandStore.findCommandReceipt(original.gameId, original.commandId);
+    const conflict = await service.execute(mutate(original) as SupportedCommandEnvelope);
+
+    expectAcceptedResult(first);
+    expect(conflict).toStrictEqual({
+      status: "rejected",
+      gameId: original.gameId,
+      code: "CommandIdempotencyConflict",
+      message: "commandId is already associated with a different command",
+      currentGameVersion: 1,
+      idempotent: false
+    });
+    expect(JSON.stringify(conflict)).not.toContain("canonicalCommandJson");
+    expect(JSON.stringify(conflict)).not.toContain("digestHex");
+    expect(await commandStore.loadDomainEvents(original.gameId)).toHaveLength(1);
+    expect(await commandStore.findCommandReceipt(original.gameId, original.commandId)).toStrictEqual(originalReceipt);
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+  });
+
+  it("fails closed for legacy, malformed, and digest-only-matching stored command fingerprints", async () => {
+    const commandStore = new ReceiptOverrideCommandStore();
+    const { service } = makeService(commandStore);
+    const command = createGameCommand();
+    const first = await service.execute(command);
+    expectAcceptedResult(first);
+    const originalReceipt = await commandStore.findCommandReceipt(command.gameId, command.commandId);
+    if (originalReceipt === undefined || originalReceipt.commandFingerprint === undefined) {
+      throw new Error("Expected a fingerprinted receipt");
+    }
+    const incomingCapture = captureSupportedCommand(command);
+    const differentCapture = captureSupportedCommand({ ...command, issuedAt: "different" });
+    if (!incomingCapture.valid || !differentCapture.valid) throw new Error("Expected command captures");
+
+    const malformedFingerprints = [
+      {
+        ...differentCapture.captured.fingerprint,
+        digestHex: incomingCapture.captured.fingerprint.digestHex
+      },
+      { ...originalReceipt.commandFingerprint, digestHex: "0".repeat(64) },
+      {
+        ...originalReceipt.commandFingerprint,
+        canonicalCommandJsonUtf8ByteLength: originalReceipt.commandFingerprint.canonicalCommandJsonUtf8ByteLength + 1
+      },
+      { ...originalReceipt.commandFingerprint, schemaVersion: "future-schema" },
+      { ...originalReceipt.commandFingerprint, canonicalizationAlgorithm: "future-algorithm" },
+      { ...originalReceipt.commandFingerprint, extra: true }
+    ];
+
+    const storedReceipts: CommandReceipt[] = [
+      {
+        commandId: originalReceipt.commandId,
+        gameId: originalReceipt.gameId,
+        result: originalReceipt.result
+      },
+      ...malformedFingerprints.map((commandFingerprint) => ({
+        ...originalReceipt,
+        commandFingerprint
+      }) as unknown as CommandReceipt)
+    ];
+
+    for (const receipt of storedReceipts) {
+      commandStore.receiptOverride = receipt;
+      const conflict = await service.execute(command);
+      expect(conflict).toStrictEqual({
+        status: "rejected",
+        gameId: command.gameId,
+        code: "CommandIdempotencyConflict",
+        message: "commandId is already associated with a different command",
+        currentGameVersion: 1,
+        idempotent: false
+      });
+    }
+
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+  });
+
+  it("resolves an exact nonpersisted idempotency conflict for a revoked stored fingerprint proxy", async () => {
+    const commandStore = new ReceiptOverrideCommandStore();
+    const { service } = makeService(commandStore);
+    const command = createGameCommand();
+    const first = await service.execute(command);
+    expectAcceptedResult(first);
+    const originalReceipt = await commandStore.findCommandReceipt(command.gameId, command.commandId);
+    if (originalReceipt?.commandFingerprint === undefined) throw new Error("Expected a fingerprinted receipt");
+    const revocable = Proxy.revocable(originalReceipt.commandFingerprint, {});
+    revocable.revoke();
+    commandStore.receiptOverride = {
+      ...originalReceipt,
+      commandFingerprint: revocable.proxy
+    };
+
+    const expectedConflict = {
+      status: "rejected",
+      gameId: command.gameId,
+      code: "CommandIdempotencyConflict",
+      message: "commandId is already associated with a different command",
+      currentGameVersion: 1,
+      idempotent: false
+    } as const;
+    await expect(service.execute(command)).resolves.toStrictEqual(expectedConflict);
+
+    commandStore.receiptOverride = undefined;
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(1);
+    expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toStrictEqual(originalReceipt);
+    expect(commandStore.getReceiptCount()).toBe(1);
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+    expect(JSON.stringify(expectedConflict)).not.toContain("canonicalCommandJson");
+    expect(JSON.stringify(expectedConflict)).not.toContain("digestHex");
+    expect(JSON.stringify(expectedConflict)).not.toContain("details");
+  });
+
+  it("rejects a stored fingerprint Proxy that swaps command A to incoming command B on the equality read", async () => {
+    const commandStore = new ReceiptOverrideCommandStore();
+    const { service } = makeService(commandStore);
+    const commandA = createGameCommand();
+    const commandB = {
+      ...commandA,
+      issuedAt: "2026-07-07T00:00:00.001Z"
+    } satisfies typeof commandA;
+    const first = await service.execute(commandA);
+    expectAcceptedResult(first);
+    const originalReceipt = await commandStore.findCommandReceipt(commandA.gameId, commandA.commandId);
+    if (originalReceipt?.commandFingerprint === undefined) throw new Error("Expected a fingerprinted receipt");
+    const storedFingerprint = originalReceipt.commandFingerprint;
+    const incomingCapture = captureSupportedCommand(commandB);
+    if (!incomingCapture.valid) throw new Error("Expected incoming command capture");
+    let canonicalReadsSinceValidationStarted = 0;
+    const swapOnFinalReadProxy = new Proxy({ ...storedFingerprint }, {
+      get: (target, property, receiver) => {
+        if (property === "schemaVersion") canonicalReadsSinceValidationStarted = 0;
+        if (property === "canonicalCommandJson") {
+          canonicalReadsSinceValidationStarted += 1;
+          return canonicalReadsSinceValidationStarted <= 4
+            ? storedFingerprint.canonicalCommandJson
+            : incomingCapture.captured.fingerprint.canonicalCommandJson;
+        }
+        return Reflect.get(target, property, receiver) as unknown;
+      }
+    });
+    commandStore.receiptOverride = {
+      ...originalReceipt,
+      commandFingerprint: swapOnFinalReadProxy
+    };
+
+    const expectedConflict = {
+      status: "rejected",
+      gameId: commandA.gameId,
+      code: "CommandIdempotencyConflict",
+      message: "commandId is already associated with a different command",
+      currentGameVersion: 1,
+      idempotent: false
+    } as const;
+    const execution = service.execute(commandB);
+    await expect(execution).resolves.toStrictEqual(expectedConflict);
+    expect(await execution).not.toStrictEqual({ ...first, idempotent: true });
+
+    commandStore.receiptOverride = undefined;
+    expect(canonicalReadsSinceValidationStarted).toBe(0);
+    expect(await commandStore.loadDomainEvents(commandA.gameId)).toHaveLength(1);
+    expect(await commandStore.findCommandReceipt(commandA.gameId, commandA.commandId)).toStrictEqual(originalReceipt);
+    expect(commandStore.getReceiptCount()).toBe(1);
+    expect(commandStore.acceptedCount).toBe(1);
+    expect(commandStore.rejectedCount).toBe(0);
+    expect(JSON.stringify(expectedConflict)).not.toContain("canonicalCommandJson");
+    expect(JSON.stringify(expectedConflict)).not.toContain("digestHex");
+    expect(JSON.stringify(expectedConflict)).not.toContain("details");
   });
 
   it("defers Seamstress atomically without selecting players, producing information, or spending the ability", async () => {
@@ -5761,18 +6277,22 @@ describe("GameApplicationService", () => {
     });
 
     const result = await service.execute(command);
-    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const allEvents = await commandStore.loadDomainEvents(ids.game);
+    const committed = allEvents.filter((event) => event.commandId === command.commandId);
+    const state = rebuildOptionalGameState(allEvents);
 
-    expectAcceptedResult(result);
+    expectEventSummaryAcceptedResult(result);
     expect(result.gameVersion).toBe(18);
-    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+    expect(result.eventTypes).toStrictEqual([
       "SeamstressActionDeferred",
       "ScheduledTaskSettled"
     ]);
-    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([32, 33]);
-    expect(result.events[0]).toMatchObject({
+    expect(committed.map((event) => event.eventSequence)).toStrictEqual([33, 34]);
+    if (!isSeamstressActionOpportunityV2(opportunity)) throw new Error("Expected V2 Seamstress opportunity");
+    expect(committed[0]).toMatchObject({
       payload: {
         rulesBaselineVersion: RULES_BASELINE_VERSION,
+        deferSchemaVersion: "seamstress-action-deferred-v2",
         nightNumber: 1,
         taskId: seamstressTask.taskId,
         taskType: "SEAMSTRESS_ACTION",
@@ -5781,10 +6301,14 @@ describe("GameApplicationService", () => {
         sourcePlayerId: opportunity.sourcePlayerId,
         sourceSeatNumber: opportunity.sourceSeatNumber,
         sourceRole: opportunity.sourceRole,
-        sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision
+        sourceRoleTenureId: opportunity.sourceRoleTenureId,
+        abilityInstanceId: opportunity.abilityInstanceId,
+        abilityUseEntitlementId: opportunity.abilityUseEntitlementId,
+        opportunityCharacterStateRevision: opportunity.sourceCharacterStateRevision,
+        settlementCharacterStateRevision: opportunity.sourceCharacterStateRevision
       }
     });
-    expect(result.events[1]).toMatchObject({
+    expect(committed[1]).toMatchObject({
       payload: {
         taskId: seamstressTask.taskId,
         taskType: "SEAMSTRESS_ACTION",
@@ -5792,10 +6316,7 @@ describe("GameApplicationService", () => {
         characterStateRevision: opportunity.sourceCharacterStateRevision
       }
     });
-    expect(result.events[0]?.batchId).toBe(result.events[1]?.batchId);
-    expect(result.events[0]?.gameVersion).toBe(result.events[1]?.gameVersion);
-    expect(result.events[0]?.correlationId).toBe(result.events[1]?.correlationId);
-    expect(result.events[0]?.causationId).toBe(result.events[1]?.causationId);
+    expect(committed[0]?.batchId).toBe(committed[1]?.batchId);
     expect(state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
       candidate.opportunityId === opportunity.opportunityId
     )?.opportunityStatus).toBe("CLOSED");
@@ -5816,7 +6337,8 @@ describe("GameApplicationService", () => {
     expect(state?.abilityImpairments).toStrictEqual(beforeSubmit.abilityImpairments);
     expect(state?.initialPrivateKnowledge).toStrictEqual(beforeSubmit.initialPrivateKnowledge);
     expect(state?.dreamerInformation).toStrictEqual(beforeSubmit.dreamerInformation);
-    const serialized = JSON.stringify(result.events);
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("events");
     expect(serialized).not.toContain("selectedPlayer");
     expect(serialized).not.toContain("sameAlignment");
     expect(serialized).not.toContain("answer");
@@ -5825,7 +6347,7 @@ describe("GameApplicationService", () => {
 
     const duplicate = await service.execute(command);
     expect(duplicate).toStrictEqual({ ...result, idempotent: true });
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(33);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(34);
   });
 
   it("accepts Seamstress DEFER from source Human, source AI, Storyteller, and System actors", async () => {
@@ -5852,10 +6374,9 @@ describe("GameApplicationService", () => {
       }))).resolves.toMatchObject({
         status: "accepted",
         gameVersion: 18,
-        events: [
-          { eventType: "SeamstressActionDeferred" },
-          { eventType: "ScheduledTaskSettled" }
-        ]
+        eventDisclosure: "EVENT_TYPES_ONLY",
+        eventCount: 2,
+        eventTypes: ["SeamstressActionDeferred", "ScheduledTaskSettled"]
       });
     }
   });
@@ -5915,7 +6436,7 @@ describe("GameApplicationService", () => {
         code: "InvalidSeamstressActionDecision"
       },
       {
-        name: "future choice",
+        name: "malformed target choice",
         command: submitSeamstressActionCommand({
           commandId: commandId("unsupported-seamstress-choice"),
           expectedGameVersion: 17,
@@ -5929,7 +6450,7 @@ describe("GameApplicationService", () => {
             } as never
           }
         }),
-        code: "UnsupportedSeamstressActionDecision"
+        code: "InvalidSeamstressTarget"
       },
       {
         name: "hidden payload field",
@@ -6045,11 +6566,11 @@ describe("GameApplicationService", () => {
     expectFailedResult(constructionFailure);
     expect(constructionFailure).toMatchObject({
       code: "DependencyExecutionFailed",
-      failureStage: "first-night-role-action",
-      currentGameVersion: 17,
+      failureStage: "command-validation",
       retryable: true
     });
-    expect(constructionFailure.message).not.toContain("DomainValidationFailed");
+    expect(constructionFailure.message).toContain("enumerable data properties");
+    expect("currentGameVersion" in constructionFailure).toBe(false);
     expect(await constructionStore.findCommandReceipt(ids.game, constructionCommand.commandId)).toBeUndefined();
     expect(await constructionStore.loadDomainEvents(ids.game)).toStrictEqual(constructionEvents);
   });
@@ -6088,10 +6609,10 @@ describe("GameApplicationService", () => {
       retryable: true
     });
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(23);
+    expect(await commandStore.loadDomainEvents(command.gameId)).toHaveLength(24);
   });
 
-  it("keeps Witch opportunity construction DomainErrors retryable without receipts or events", async () => {
+  it("rejects Witch opportunity command accessors before receipt or event work", async () => {
     const { service, commandStore } = makeService();
     const { witchTask } = await reachWitchActionTask(service, commandStore);
     let taskIdReads = 0;
@@ -6112,16 +6633,16 @@ describe("GameApplicationService", () => {
     expectFailedResult(failedResult);
     expect(failedResult).toMatchObject({
       code: "DependencyExecutionFailed",
-      failureStage: "first-night-role-action",
-      currentGameVersion: 12,
+      failureStage: "command-validation",
       retryable: true
     });
-    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(failedResult.message).toContain("enumerable data properties");
+    expect("currentGameVersion" in failedResult).toBe(false);
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(22);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(23);
   });
 
-  it("keeps SubmitWitchAction construction DomainErrors retryable without receipts or events", async () => {
+  it("rejects SubmitWitchAction accessors before receipt or event work", async () => {
     const { service, commandStore } = makeService();
     const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore);
     const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
@@ -6154,13 +6675,13 @@ describe("GameApplicationService", () => {
     expectFailedResult(failedResult);
     expect(failedResult).toMatchObject({
       code: "DependencyExecutionFailed",
-      failureStage: "first-night-role-action",
-      currentGameVersion: 13,
+      failureStage: "command-validation",
       retryable: true
     });
-    expect(failedResult.message).not.toContain("DomainValidationFailed");
+    expect(failedResult.message).toContain("enumerable data properties");
+    expect("currentGameVersion" in failedResult).toBe(false);
     expect(await commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(23);
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(24);
   });
 
   it("rejects AI and Storyteller actors for CreateGame and SelectScript", async () => {

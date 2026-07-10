@@ -407,6 +407,68 @@ The events share task identity and source character-state revision; the settleme
 
 Player and AI private projections remain structurally unchanged. They must not expose the Seamstress task or opportunity, `DEFER`, the source snapshot or revision, the future `CHOOSE_TWO_PLAYERS` decision, or any impairment, truth, reliability, registration, or consumption detail.
 
+Slice 2B15 extends Seamstress through a public-capability-gated V2 path while preserving exact V1 replay:
+
+```text
+SelectScript
+-> record ScriptSelected
+-> record SeamstressResolutionCapabilityDeclared
+-> record PhaseTransitioned
+
+OpenFirstNightRoleActionOpportunity(SEAMSTRESS_ACTION)
+-> require the public capability for V2
+-> resolve one active base or Philosopher-granted ability instance and unspent entitlement at revision N
+-> create exact V2 FirstNightActionOpportunityCreated
+
+SubmitSeamstressAction(CHOOSE_TWO_PLAYERS)
+-> validate actor, V2 opportunity, next task, continuous source tenure [N, M], and unspent entitlement
+-> canonicalize two distinct non-self modeled targets by numeric seat at M
+-> record SeamstressTargetsChosen
+-> record SeamstressAbilitySpent
+-> record SeamstressInformationDelivered
+-> record ScheduledTaskSettled(outcomeType = SEAMSTRESS_INFORMATION_DELIVERED)
+```
+
+The public capability is identical across hidden assignments and binds only the supported rules baseline, script, role-catalog signature, fixed-roster/native-alignment model, represented-effect coverage, and deterministic delivery policy. Legacy streams without the capability may still replay and create only the exact V1 defer-only opportunity.
+
+V2 source identity is not player-plus-current-role alone. It is:
+
+```text
+RoleTenureId
+-> SeamstressAbilityInstanceId(base tenure | Philosopher grant)
+-> SeamstressAbilityUseEntitlementId(BASE_ONCE_PER_GAME)
+```
+
+`CharactersAssigned` bootstraps relevant tenures. The sole production transition adapter in this slice consumes the already existing `SnakeCharmerDemonSwapApplied` fact; the pure reducer also proves that leaving and reacquiring a role creates a new tenure/instance. A V2 settlement requires the same tenure and instance to remain continuously active from opportunity revision `N` through settlement revision `M`. The implementation does not add a general role-change event or lifecycle subsystem.
+
+The legal choice batch is exactly:
+
+```text
+SeamstressTargetsChosen
+SeamstressAbilitySpent
+SeamstressInformationDelivered
+ScheduledTaskSettled
+```
+
+No prefix may survive a later failure. A legal use always spends the referenced entitlement, including represented drunk or poisoned use. V1 and V2 `DEFER` remain exact two-event, non-spending paths.
+
+Seamstress information keeps separate canonical structures for:
+
+- settlement-time native-alignment comparison and `ruleCorrectAnswer`;
+- represented source impairment evidence versus unresolved continuous effects;
+- represented active Vortox false-information constraint;
+- fixed `YES`/`NO` candidates and their truth values;
+- complete versus partial candidate-legality knowledge;
+- selected candidate, reliability, simulation reason, and delivered answer.
+
+Absent represented impairment is `NOT_PROVEN`, not `EFFECTIVE`. Represented impairment is `KNOWN_INEFFECTIVE`, but without Vortox the truth-favoring simulator may still deliver the true answer. Represented active Vortox makes only the false candidate legal, including when the source is impaired. A No Dashii-containing assignment does not derive poison; `CONTINUOUS_POISON_NOT_MODELED` remains explicit.
+
+Accepted Seamstress command results expose only `accepted-event-summary-v1` with ordered event types/count. Full canonical envelopes remain in `DomainEventBatch.events` and the event store. Other command accepted-result shapes remain unchanged.
+
+Every newly persisted accepted or rejected receipt stores a descriptor-captured `supported-command-structural-fingerprint-v1`. Exact captured canonical command JSON decides command equivalence; SHA-256 and byte length validate integrity only. Legacy or malformed fingerprints, or a reused command ID with a different captured command, fail closed as `CommandIdempotencyConflict` without receipt overwrite, event work, or fingerprint disclosure.
+
+The source-only private projection contains an ordered history of `{ targets, deliveredAnswer }`. Before exposure, stored V2 opportunity, choice, spend, delivery, and settlement shapes and chain fields must correlate exactly. Projection never recomputes historical information from the latest character state and never exposes comparison truth, modifier/effectiveness facts, Vortox metadata, reliability, candidate legality, or internal IDs.
+
 ### Settlement And Snapshot Revision Binding
 
 System team information settlement requires three revision facts to agree:
@@ -432,7 +494,7 @@ That means:
 - each delivered event remains bound to its own `DeliveredEvilTeamSnapshot`;
 - projections must preserve each delivered fact independently.
 
-The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, implement Witch nomination-triggered death, implement Vortox false information, implement Storyteller free false-role choice, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, Snake Charmer target-selection opportunities for base and Philosopher-gained sources, the base Witch target-selection opportunity, the base Dreamer target-selection opportunity, and the base Seamstress first-night DEFER-only opportunity.
+The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, implement Witch nomination-triggered death, implement general Vortox behavior outside the represented Seamstress constraint, implement Storyteller free false-role/answer choice, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, Snake Charmer target-selection opportunities for base and Philosopher-gained sources, the base Witch target-selection opportunity, the base Dreamer target-selection opportunity, legacy base Seamstress defer-only opportunities, and capability-gated V2 Seamstress target selection for base and Philosopher-granted sources.
 
 ## ActionOpportunity Flow
 

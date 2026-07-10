@@ -1,5 +1,6 @@
 import type {
   AnyDomainEventEnvelope,
+  DomainEventType,
   AssignmentGenerationFailure,
   GameId,
   InitialPrivateKnowledgeGenerationFailure,
@@ -52,7 +53,10 @@ export type CommandRejectionCode =
   | "InvalidWitchTarget"
   | "InvalidDreamerTarget"
   | "InvalidSeamstressActionDecision"
+  | "InvalidSeamstressTarget"
   | "UnsupportedSeamstressActionDecision"
+  | "AbilityUseEntitlementAlreadySpent"
+  | "CommandIdempotencyConflict"
   | "UnsupportedCommand"
   | "DomainValidationFailed";
 
@@ -65,13 +69,33 @@ export type StructuredCommandRejectionCode =
   | InitialPrivateKnowledgeGenerationRejectionCode;
 export type GeneralCommandRejectionCode = Exclude<CommandRejectionCode, StructuredCommandRejectionCode>;
 
-export type CommandAccepted = {
+export const ACCEPTED_EVENT_SUMMARY_RESULT_VERSION = "accepted-event-summary-v1" as const;
+
+export type FullEventCommandAccepted = {
   readonly status: "accepted";
   readonly gameId: GameId;
   readonly gameVersion: number;
   readonly events: readonly AnyDomainEventEnvelope[];
   readonly idempotent: boolean;
+  readonly resultSchemaVersion?: never;
+  readonly eventDisclosure?: never;
+  readonly eventCount?: never;
+  readonly eventTypes?: never;
 };
+
+export type EventSummaryCommandAccepted = {
+  readonly status: "accepted";
+  readonly resultSchemaVersion: typeof ACCEPTED_EVENT_SUMMARY_RESULT_VERSION;
+  readonly eventDisclosure: "EVENT_TYPES_ONLY";
+  readonly gameId: GameId;
+  readonly gameVersion: number;
+  readonly eventCount: number;
+  readonly eventTypes: readonly DomainEventType[];
+  readonly idempotent: boolean;
+  readonly events?: never;
+};
+
+export type CommandAccepted = FullEventCommandAccepted | EventSummaryCommandAccepted;
 
 export type SetupGenerationRejectionDetails = {
   readonly kind: "setup-generation";
@@ -183,11 +207,27 @@ export const accepted = (
   gameVersion: number,
   events: readonly AnyDomainEventEnvelope[],
   idempotent = false
-): CommandAccepted => ({
+): FullEventCommandAccepted => ({
   status: "accepted",
   gameId,
   gameVersion,
   events,
+  idempotent
+});
+
+export const acceptedWithEventSummary = (
+  gameId: GameId,
+  gameVersion: number,
+  canonicalEvents: readonly AnyDomainEventEnvelope[],
+  idempotent = false
+): EventSummaryCommandAccepted => ({
+  status: "accepted",
+  resultSchemaVersion: ACCEPTED_EVENT_SUMMARY_RESULT_VERSION,
+  eventDisclosure: "EVENT_TYPES_ONLY",
+  gameId,
+  gameVersion,
+  eventCount: canonicalEvents.length,
+  eventTypes: canonicalEvents.map((event) => event.eventType),
   idempotent
 });
 
@@ -314,11 +354,7 @@ export function rejected(
   };
 }
 
-export const markIdempotent = (result: CommandResult): CommandResult => {
-  if (result.status === "failed") {
-    return result;
-  }
-
+export const markIdempotent = (result: CommandReceiptResult): CommandReceiptResult => {
   if (result.status === "accepted") {
     return { ...result, idempotent: true };
   }

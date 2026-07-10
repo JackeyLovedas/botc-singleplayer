@@ -7,6 +7,7 @@ import {
   applyDomainEvent,
   batchId,
   commandId,
+  createSeamstressResolutionCapabilityDeclaredPayload,
   evaluatePhaseTransition,
   eventId,
   rebuildGameState,
@@ -41,6 +42,29 @@ const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
 };
 
 const createdState = () => rebuildGameState([gameCreatedEvent()]);
+
+const seamstressCapabilityDeclaredEvent = (
+  overrides: Partial<DomainEventEnvelope<"SeamstressResolutionCapabilityDeclared">> = {}
+): DomainEventEnvelope<"SeamstressResolutionCapabilityDeclared"> => {
+  const selected = scriptSelectedEvent();
+  return {
+    category: "domain",
+    eventId: eventId("event-seamstress-resolution-capability"),
+    gameId: selected.gameId,
+    batchId: selected.batchId,
+    gameVersion: selected.gameVersion,
+    eventSequence: 3,
+    eventType: "SeamstressResolutionCapabilityDeclared",
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION,
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: selected.commandId,
+    createdAt: selected.createdAt,
+    correlationId: selected.correlationId,
+    causationId: selected.causationId,
+    payload: createSeamstressResolutionCapabilityDeclaredPayload(RULES_BASELINE_VERSION),
+    ...overrides
+  };
+};
 const setupGenerationState = () => rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent()]);
 const characterAssignmentState = () =>
   rebuildGameState([gameCreatedEvent(), scriptSelectedEvent(), phaseTransitionedEvent(), setupGeneratedEvent(), setupPhaseTransitionedEvent()]);
@@ -138,6 +162,67 @@ describe("domain batch semantic validation", () => {
 
   it("accepts a legal SelectScript two-event batch", () => {
     expect(() => validateDomainBatchSemantics(createdState(), [scriptSelectedEvent(), phaseTransitionedEvent()])).not.toThrow();
+  });
+
+  it("accepts the exact three-event SelectScript capability batch", () => {
+    const capability = seamstressCapabilityDeclaredEvent();
+    const transitioned = phaseTransitionedEvent({ eventSequence: 4 });
+
+    expect(() => validateDomainBatchSemantics(createdState(), [scriptSelectedEvent(), capability, transitioned])).not.toThrow();
+  });
+
+  it.each(["sects_and_violets", "Sects-And-Violets", " sects-and-violets "])(
+    "rejects noncanonical Seamstress capability script literal %s",
+    (scriptId) => {
+      const capability = seamstressCapabilityDeclaredEvent({
+        payload: {
+          ...createSeamstressResolutionCapabilityDeclaredPayload(RULES_BASELINE_VERSION),
+          scriptId
+        } as never
+      });
+      expectDomainCode(
+        () => validateDomainBatchSemantics(createdState(), [
+          scriptSelectedEvent(),
+          capability,
+          phaseTransitionedEvent({ eventSequence: 4 })
+        ]),
+        "InvalidDomainBatchSemantics"
+      );
+    }
+  );
+
+  it("replays the exact capability fact and rejects a literal-tampered stream", () => {
+    const exact = [
+      gameCreatedEvent(),
+      scriptSelectedEvent(),
+      seamstressCapabilityDeclaredEvent(),
+      phaseTransitionedEvent({ eventSequence: 4 })
+    ];
+    expect(() => rebuildGameState(exact)).not.toThrow();
+    const tampered = exact.map((event) => event.eventType === "SeamstressResolutionCapabilityDeclared"
+      ? {
+          ...event,
+          payload: { ...event.payload, scriptId: "sects_and_violets" }
+        } as AnyDomainEventEnvelope
+      : event);
+    expect(() => rebuildGameState(tampered)).toThrow();
+  });
+
+  it("rejects bare, reordered, and mismatched Seamstress capability facts", () => {
+    const capability = seamstressCapabilityDeclaredEvent();
+    const transitioned = phaseTransitionedEvent({ eventSequence: 4 });
+    expectDomainCode(() => validateDomainBatchSemantics(createdState(), [capability]), "InvalidDomainBatchSemantics");
+    expectDomainCode(
+      () => validateDomainBatchSemantics(createdState(), [scriptSelectedEvent(), transitioned, capability]),
+      "InvalidDomainBatchSemantics"
+    );
+    expectDomainCode(
+      () => validateDomainBatchSemantics(createdState(), [scriptSelectedEvent(), {
+        ...capability,
+        batchId: batchId("other-capability-batch")
+      }, transitioned]),
+      "InvalidDomainBatchSemantics"
+    );
   });
 
   it("rejects a bare ScriptSelected event", () => {
@@ -501,7 +586,9 @@ describe("domain batch semantic validation", () => {
         ...settlement,
         payload: {
           ...settlement.payload,
-          characterStateRevision: deferred.payload.sourceCharacterStateRevision + 1
+          characterStateRevision: ("sourceCharacterStateRevision" in deferred.payload
+            ? deferred.payload.sourceCharacterStateRevision
+            : deferred.payload.opportunityCharacterStateRevision) + 1
         }
       }]),
       "InvalidDomainBatchSemantics"

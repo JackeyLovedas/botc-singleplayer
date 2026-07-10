@@ -1,22 +1,35 @@
 import type { AnyDomainEventEnvelope, CommandId, DomainEventBatch, GameId } from "@botc/domain-core";
-import type { CommandReceiptResult } from "../command-result.js";
+import type { CommandAccepted, CommandReceiptResult, CommandRejected } from "../command-result.js";
+import type { CommandFingerprint } from "../command-fingerprint.js";
 
-export type CommandReceipt = {
+export type LegacyCommandReceipt = {
   readonly commandId: CommandId;
   readonly gameId: GameId;
   readonly result: CommandReceiptResult;
+  readonly commandFingerprint?: never;
 };
+
+export type FingerprintedCommandReceipt<
+  TResult extends CommandReceiptResult = CommandReceiptResult
+> = {
+  readonly commandId: CommandId;
+  readonly gameId: GameId;
+  readonly commandFingerprint: CommandFingerprint;
+  readonly result: TResult;
+};
+
+export type CommandReceipt = LegacyCommandReceipt | FingerprintedCommandReceipt;
 
 export type CommitAcceptedCommandInput = {
   readonly expectedGameVersion: number;
   readonly eventBatch: DomainEventBatch;
-  readonly receipt: CommandReceipt;
+  readonly receipt: FingerprintedCommandReceipt<CommandAccepted>;
 };
 
 export type RecordRejectedCommandInput = {
   readonly gameId: GameId;
   readonly commandId: CommandId;
-  readonly receipt: CommandReceipt;
+  readonly receipt: FingerprintedCommandReceipt<CommandRejected>;
 };
 
 export type CommandCommitStore = {
