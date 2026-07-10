@@ -20,33 +20,30 @@
 - 2B11 Evil Twin setup and pair knowledge.
 - 2B12 Witch target choice and deferred-death marker.
 - 2B13 Dreamer action and historical information delivery.
+- 2B14 Seamstress base first-night opportunity and DEFER settlement skeleton.
 
 ## Current Delivery
-- Open slice PR: #16, ready (`https://github.com/JackeyLovedas/botc-singleplayer/pull/16`).
-- Branch: `phase-3/seamstress-first-night-defer-skeleton`.
-- Latest accepted slice merge: `a911ae0964dec444ef5bac59bf4d05f991353ccf` (PR #15).
-- Last reviewed slice HEAD: `a7adf6316140275afbf32681e6f141cb528c3546`.
-- Accepted tag: `phase-3-slice-2b13-dreamer-action-information-skeleton`.
-- Slice 2B13 passed independent review and all required Ubuntu/Windows CI checks; its remote feature branch was deleted after merge.
-- Candidate Slice `2B14` Seamstress rule evidence is materialized at `docs/rules/evidence/2B14.md` from live sources retrieved on 2026-07-10.
-- Research verdict is `RULE_READY`; `unresolvedConflicts` is none; rule coverage remains `SKELETON`.
-- The bounded DEFER-only architect design is materialized at `docs/implementation/phase-3-slice-2b14-design.md` with proposed status `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW`.
-- The independent read-only source/evidence and rule-design review is materialized at `docs/implementation/phase-3-slice-2b14-design-review.md` with verdict `RULE_DESIGN_PASS` and blockers none.
-- Implementation is authorized only for the exact materialized DEFER-only design at commit `c23038b28e103fcfb353c63558dc14627fa74cd5`, design blob `ac0ef3076d6b8801d1f8d597ecb81dcb9e0ca663`; no scope change is authorized.
-- Controller confirmation is complete for gate commit `b9a60fe48368938416178c9362a37494681ae493`; design-gate CI run `29071921796` passed.
-- The sole feature branch `phase-3/seamstress-first-night-defer-skeleton` contains the exact reviewed DEFER-only implementation. Focused checks, the real application command, typecheck, lint, 626 tests, and coverage with 626 tests passed locally.
-- Implementation commit `15f6291b43043c2479d614e41fa0dd77e11a0d9a` includes the required Codex co-author trailer.
-- PR #16 is open, ready, based on `main`, and has required CI checks in progress. Status is `WAITING_CI`; no merge is authorized before independent code/rule review and the remaining merge gates.
+- Open slice PR: none.
+- Branch: `main`.
+- Latest accepted slice merge: `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b` (PR #16).
+- Last reviewed slice HEAD: `833967f44e73294903df47545982a9de86bb33ad`.
+- Accepted tag: `phase-3-slice-2b14-seamstress-first-night-defer-skeleton`.
+- PR #16 received independent `PASS`, `CODE_REVIEW_PASS`, and `RULE_REVIEW_PASS` at the exact reviewed HEAD.
+- All four required PR #16 CI checks succeeded before merge.
+- PR #16 was merged as `3f66c99a30e35cc6a0fd39d47285d5ec7bede84b`; the remote feature branch was deleted and `main` was pulled.
+- The accepted 2B14 tag was pushed and points to the merge commit.
+- Slice 2B14 remains the exact reviewed DEFER-only scope. It does not broaden Seamstress beyond the accepted `SKELETON` coverage and partial base first-night DEFER dimension.
+- The next candidate label is `2B15`; its role and scope are intentionally unset.
+- Fresh 2B15 rule research is pending. No evidence, design, implementation, feature branch, or pull request exists for 2B15.
 
 ## Mandatory Rule Gate
 - Canonical instructions: `docs/agent-loop/AUTOPILOT_PROMPT.md`.
 - Configured roles: read-only `rule-researcher`, read-only `architect`, read-only `reviewer`, and sole-writer `implementer`; the concurrency cap remains three, so gated roles run sequentially where needed.
-- The 2B14 research, design-materialization, and independent design-review gates are satisfied by `docs/rules/evidence/2B14.md`, `RULE_READY`, `docs/implementation/phase-3-slice-2b14-design.md`, and `docs/implementation/phase-3-slice-2b14-design-review.md` with `RULE_DESIGN_PASS`.
-- The read-only reviewer independently verified main/evidence/design revisions and blobs, live source revisions and hashes, claims `2B14-C1` through `2B14-C3`, exact contracts, atomic replay behavior, projection boundaries, affected files/tests, conservative `SKELETON` coverage, and the stale impaired-use repository defect.
-- Implementation must remain inside the exact reviewed design. The ready pull request is allowed only after focused checks and all full local gates pass.
+- Slice 2B14 completed the required rule-evidence, rule-design, independent review, implementation, CI, code/rule review, and merge gates.
+- Candidate 2B15 is blocked pending fresh rule research; its scope must not be inferred from 2B14 or any earlier slice.
+- Required future order remains: fresh research -> materialized evidence -> `RULE_READY` -> bounded design -> independent `RULE_DESIGN_PASS` -> controller confirmation -> implementation -> focused/full gates -> ready PR -> CI -> independent code/rule review.
 - `RULE_CONFLICT` and `RULE_SOURCE_UNAVAILABLE` map to `HUMAN_BLOCKED`.
-- Final PR merge requires both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS` plus the existing code and CI gates.
-- No snapshot was used for 2B14 evidence; the listed sources were retrieved live on 2026-07-10 with revisions, timestamps, and hashes recorded for independent review.
+- No production, architecture, evidence, design, matrix, branch, PR, or tag work for 2B15 is authorized by this governance update.
 
 ## Loop Limits
 - One open slice PR and one writer at a time.
