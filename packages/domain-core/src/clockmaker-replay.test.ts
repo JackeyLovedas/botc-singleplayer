@@ -136,6 +136,7 @@ const batch = (state = readyState()) => {
   const delivery = canonicalDelivery(state);
   return [envelope(state, "ClockmakerInformationDelivered", delivery, 1), envelope(state, "ScheduledTaskSettled", createClockmakerInformationDeliveredScheduledTaskSettlement(delivery), 2)] as const;
 };
+const reverseKeys = <T extends object>(value: T): T => Object.fromEntries(Object.entries(value).reverse()) as T;
 
 describe("Clockmaker replay and atomic batch semantics", () => {
   it("applies exactly InformationDelivered then ScheduledTaskSettled against pre-event state", () => {
@@ -150,6 +151,35 @@ describe("Clockmaker replay and atomic batch semantics", () => {
       characterStateRevision: events[1].payload.characterStateRevision
     });
     expect(validateDomainEventStream([...canonicalStream(), ...events])).toBeUndefined();
+  });
+
+  it("accepts semantically identical reversed key order through replay and prospective validation", () => {
+    const state = readyState();
+    const events = batch(state);
+    const payload = reverseKeys({
+      ...events[0].payload,
+      sourceContract: reverseKeys(events[0].payload.sourceContract),
+      nativeDemonReferences: [reverseKeys(events[0].payload.nativeDemonReferences[0])],
+      nativeMinionReferences: events[0].payload.nativeMinionReferences.map(reverseKeys),
+      pairDistanceSnapshots: events[0].payload.pairDistanceSnapshots.map(reverseKeys),
+      vortoxConstraint: reverseKeys(events[0].payload.vortoxConstraint)
+    }) as unknown as ClockmakerInformationDeliveredPayload;
+    const reordered: DomainEventEnvelope<"ClockmakerInformationDelivered"> = { ...events[0], payload };
+    expect(validateDomainBatchSemantics(state, [reordered, events[1]])).toBeUndefined();
+    expect(() => applyDomainEventBatch(state, [reordered, events[1]])).not.toThrow();
+    expect(validateDomainEventStream([...canonicalStream(), reordered, events[1]])).toBeUndefined();
+  });
+
+  it("turns sparse and hostile replay payloads into stable domain validation failures", () => {
+    const state = readyState();
+    const events = batch(state);
+    const sparse = new Array(2);
+    const proxy = new Proxy(events[0].payload, {});
+    for (const payload of [{ ...events[0].payload, pairDistanceSnapshots: sparse }, proxy]) {
+      const hostile = { ...events[0], payload } as DomainEventEnvelope<"ClockmakerInformationDelivered">;
+      expect(() => validateDomainBatchSemantics(state, [hostile, events[1]])).toThrow();
+      expect(() => applyDomainEvent(state, hostile)).toThrow();
+    }
   });
 
   it("prospectively rejects the complete corrupted batch without mutating pre-event state", () => {

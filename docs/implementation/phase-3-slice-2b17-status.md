@@ -1,4 +1,12 @@
-# Phase 3 Slice 2B17 Status: Accepted
+# Phase 3 Slice 2B17 Status: Accepted; 2B17.1 Validation Hotfix Active
+
+## Active 2B17.1 Hotfix
+
+- Branch: `phase-3/clockmaker-validation-hardening`.
+- Scope: strict dense standard arrays, hostile-value fail-closed validation, and insertion-order-independent canonical comparison only.
+- Rule semantics, event contract, event order, candidate domain, Vortox/impairment semantics, and private projection contract are unchanged.
+- Clockmaker remains `PARTIAL`; Slice 2B18 is prohibited.
+- Local gates passed: focused `4 files / 263 tests`, full and coverage `28 files / 900 tests`, `85.92%` statements/lines, `80.00%` branches, and `97.86%` functions. Feature commit, PR, and CI remain pending.
 
 ## Delivery
 

@@ -1,20 +1,20 @@
 {
-  "status": "COMPLETED",
+  "status": "RUNNING",
   "currentPR": null,
   "currentPRUrl": null,
-  "currentBranch": "main",
-  "currentSlice": null,
+  "currentBranch": "phase-3/clockmaker-validation-hardening",
+  "currentSlice": "2B17.1",
   "reviewedHead": "04237a2053a64301a515fffeb417958a381a0dc6",
   "currentReviewHeadAuthority": null,
   "exactHeadCIAuthority": "GitHub checks attached to the exact emitted closeout commit after push",
-  "repairRound": 1,
+  "repairRound": 0,
   "designRound": 3,
   "maxDesignRounds": 3,
   "userContinuationAuthorization": "EXTRA_DESIGN_ROUND_3_VORTOX_HISTORICAL_BICONDITIONAL",
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "candidateRole": "clockmaker",
-  "candidateScope": "FIRST_NIGHT_NATIVE_AND_PHILOSOPHER_GAINED_INFORMATION",
+  "candidateScope": "CLOCKMAKER_DENSE_ARRAY_AND_CANONICAL_COMPARISON_HARDENING",
   "currentDesignHash": "fde5aebea89e003c38938c338abfd4fdd1370c88814f965c41a0dcda7b3d1e06",
   "designReviewRound2Hash": "148d756129a1eb08678d30b5d094e88b90ebd0842b4021e7dee1bed5fad5be8d",
   "ruleReady": true,
@@ -119,7 +119,7 @@
       "genericImpairmentSource": false
     }
   },
-  "lastAction": "Merged accepted Slice 2B17 PR #19, re-read and archived both exact final-review comments, recorded distinct final-reviewed-head and merge-commit CI provenance, and prepared the single docs-only closeout commit.",
+  "lastAction": "Completed the bounded Slice 2B17.1 implementation and local gates: focused 4 files / 263 tests, full and coverage 28 files / 900 tests, with Clockmaker still PARTIAL and no rule/event/projection contract change.",
   "lastError": null,
-  "nextAction": "Push the single docs-only closeout commit and verify GitHub checks attached to its exact emitted SHA. Do not start Slice 2B18."
+  "nextAction": "Commit and publish the single hotfix PR, then freeze the exact feature HEAD for CI and independent review. Do not start Slice 2B18."
 }

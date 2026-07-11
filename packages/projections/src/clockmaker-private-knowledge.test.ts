@@ -110,6 +110,7 @@ const deliveryOf = (state: GameState): ClockmakerInformationDeliveredPayload => 
   if (delivery === undefined) throw new Error("Expected Clockmaker delivery");
   return delivery;
 };
+const reverseKeys = <T extends object>(value: T): T => Object.fromEntries(Object.entries(value).reverse()) as T;
 
 const philosopherChain = (state: GameState) => {
   const source = state.currentCharacterState!.entries.find((entry) => entry.role.roleId === "philosopher")!;
@@ -217,6 +218,30 @@ describe("Clockmaker private knowledge projection", () => {
       { ...state, firstNightTaskProgress: { settlements: [{ ...settlement, characterStateRevision: settlement.characterStateRevision + 1 }] } }
     ];
     for (const corrupted of corruptions) expect(() => buildPlayerPrivateKnowledgeView(corrupted, delivery.sourceContract.sourcePlayerId)).toThrow();
+  });
+
+  it("accepts reordered stored facts but rejects hostile stored delivery collections", () => {
+    const state = clockmakerState();
+    const delivery = deliveryOf(state);
+    const reordered = reverseKeys({ ...delivery, sourceContract: reverseKeys(delivery.sourceContract),
+      nativeDemonReferences: [reverseKeys(delivery.nativeDemonReferences[0])],
+      nativeMinionReferences: delivery.nativeMinionReferences.map(reverseKeys),
+      pairDistanceSnapshots: delivery.pairDistanceSnapshots.map(reverseKeys),
+      vortoxConstraint: reverseKeys(delivery.vortoxConstraint) }) as unknown as ClockmakerInformationDeliveredPayload;
+    const accepted: GameState = { ...state, clockmakerInformation: { deliveries: [reordered] } };
+    expect(buildPlayerPrivateKnowledgeView(accepted, delivery.sourceContract.sourcePlayerId).clockmakerInformation)
+      .toStrictEqual({ distance: delivery.selectedDistance });
+    const extra = [delivery] as ClockmakerInformationDeliveredPayload[] & { extra?: boolean }; extra.extra = true;
+    const proxy = new Proxy([delivery], {});
+    for (const deliveries of [extra, proxy]) {
+      expect(() => buildPlayerPrivateKnowledgeView({ ...state, clockmakerInformation: { deliveries } },
+        delivery.sourceContract.sourcePlayerId)).toThrow();
+    }
+    const settlementProxy = new Proxy(state.firstNightTaskProgress!.settlements, {});
+    for (const settlements of [settlementProxy]) {
+      expect(() => buildPlayerPrivateKnowledgeView({ ...state, firstNightTaskProgress: { settlements } },
+        delivery.sourceContract.sourcePlayerId)).toThrow();
+    }
   });
 
   it("rejects pair truth candidate policy and all four independent Vortox identity corruptions", () => {

@@ -71,6 +71,7 @@ const delivery = (demonRole: RoleSetupSnapshot = vortox, constraint: ClockmakerV
   nativeDemonReferences: [reference(2, demonRole)], nativeMinionReferences: [reference(5, witch), reference(10, cerenovus)],
   sourceEffectiveness: { kind: "EFFECTIVE", representedImpairmentIds: [] }, vortoxConstraint: constraint
 });
+const reverseKeys = <T extends object>(value: T): T => Object.fromEntries(Object.entries(value).reverse()) as T;
 
 describe("Clockmaker pure rules", () => {
   it("returns distance one for adjacent Demon and Minion seats", () => expect(calculateClockmakerPairDistance(1, 2)).toBe(1));
@@ -117,6 +118,79 @@ describe("Clockmaker pure rules", () => {
       expect(validateClockmakerInformationDeliveredPayloadShape({ ...stored, legalCandidateDistances })).toMatchObject({ valid: false });
     }
   });
+  it("rejects every sparse Clockmaker tuple, partial hole, and nonstandard array property", () => {
+    const stored = delivery();
+    const sparse = (length: number): unknown[] => new Array(length) as unknown[];
+    const partial = sparse(2); partial[1] = stored.nativeMinionReferences[1];
+    const extra = [...stored.outputDomain] as number[] & { hidden?: boolean }; extra.hidden = true;
+    const mutations: unknown[] = [
+      { ...stored, nativeDemonReferences: sparse(1) },
+      { ...stored, nativeMinionReferences: sparse(2) },
+      { ...stored, pairDistanceSnapshots: sparse(2) },
+      { ...stored, outputDomain: sparse(7) },
+      { ...stored, legalCandidateDistances: sparse(stored.legalCandidateDistances.length) },
+      { ...stored, sourceEffectiveness: { kind: "KNOWN_DRUNK", sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE", representedImpairmentIds: sparse(1) } },
+      { ...stored, nativeMinionReferences: partial },
+      { ...stored, outputDomain: extra }
+    ];
+    for (const mutation of mutations) {
+      expect(() => validateClockmakerInformationDeliveredPayloadShape(mutation)).not.toThrow();
+      expect(validateClockmakerInformationDeliveredPayloadShape(mutation)).toMatchObject({ valid: false });
+    }
+    expect(() => calculateClockmakerTruth(1, sparse(2))).toThrow(TypeError);
+  });
+
+  it("accepts insertion-order-independent canonical objects while preserving array order", () => {
+    const stored = delivery();
+    const reordered = reverseKeys({
+      ...stored,
+      sourceContract: reverseKeys(stored.sourceContract),
+      nativeDemonReferences: [reverseKeys({ ...stored.nativeDemonReferences[0], role: reverseKeys(stored.nativeDemonReferences[0].role) })],
+      nativeMinionReferences: stored.nativeMinionReferences.map((entry) => reverseKeys({ ...entry, role: reverseKeys(entry.role) })),
+      pairDistanceSnapshots: stored.pairDistanceSnapshots.map(reverseKeys),
+      vortoxConstraint: reverseKeys(stored.vortoxConstraint)
+    });
+    expect(validateClockmakerInformationDeliveredPayloadShape(reordered)).toStrictEqual({ valid: true });
+    expect(validateClockmakerInformationDeliveredPayloadShape({ ...reordered, pairDistanceSnapshots: [...reordered.pairDistanceSnapshots].reverse() })).toMatchObject({ valid: false });
+    expect(validateClockmakerInformationDeliveredPayloadShape({ ...reordered, selectedDistance: reordered.ruleCorrectDistance })).toMatchObject({ valid: false });
+    expect(validateClockmakerInformationDeliveredPayloadShape({ ...reordered, sourceContract: { ...reordered.sourceContract, extra: true } })).toMatchObject({ valid: false });
+    const { taskId: _taskId, ...missing } = reordered.sourceContract; void _taskId;
+    expect(validateClockmakerInformationDeliveredPayloadShape({ ...reordered, sourceContract: missing })).toMatchObject({ valid: false });
+  });
+
+  it("fails closed for Proxy accessor symbol cycle and nonplain hostile payloads without invoking getters", () => {
+    const stored = delivery();
+    let getterCalls = 0;
+    const accessor = { ...stored } as Record<string, unknown>;
+    Object.defineProperty(accessor, "selectedDistance", { enumerable: true, get: () => { getterCalls += 1; return stored.selectedDistance; } });
+    const symbol = { ...stored } as Record<PropertyKey, unknown>; symbol[Symbol("hidden")] = true;
+    const cycle = { ...stored } as Record<string, unknown>; cycle.sourceContract = cycle;
+    const proxy = new Proxy(stored, {});
+    const { proxy: revoked, revoke } = Proxy.revocable(stored, {}); revoke();
+    const sparseWithGetter = new Array(2) as unknown[];
+    Object.defineProperty(sparseWithGetter, 1, { enumerable: true, get: () => { getterCalls += 1; return stored.nativeMinionReferences[1]; } });
+    for (const hostile of [proxy, revoked, accessor, symbol, cycle, new Date(), { ...stored, nativeMinionReferences: sparseWithGetter }]) {
+      expect(() => validateClockmakerInformationDeliveredPayloadShape(hostile)).not.toThrow();
+      expect(validateClockmakerInformationDeliveredPayloadShape(hostile)).toMatchObject({ valid: false });
+    }
+    expect(getterCalls).toBe(0);
+  });
+
+  it("accepts null-prototype records and frozen standard arrays while rejecting nonstandard prototypes and negative zero", () => {
+    const stored = delivery();
+    const nullPrototype = Object.assign(Object.create(null) as Record<string, unknown>, stored);
+    expect(validateClockmakerInformationDeliveredPayloadShape(nullPrototype)).toStrictEqual({ valid: true });
+    class DomainArray extends Array<number> {}
+    const subclass = new DomainArray(...stored.outputDomain);
+    const alteredPrototype = [...stored.outputDomain]; Object.setPrototypeOf(alteredPrototype, null);
+    const frozen = Object.freeze([...stored.outputDomain]);
+    expect(validateClockmakerInformationDeliveredPayloadShape({ ...stored, outputDomain: frozen })).toStrictEqual({ valid: true });
+    const negativeZero = [...stored.outputDomain]; negativeZero[0] = -0;
+    for (const outputDomain of [subclass, alteredPrototype, negativeZero]) {
+      expect(() => validateClockmakerInformationDeliveredPayloadShape({ ...stored, outputDomain })).not.toThrow();
+      expect(validateClockmakerInformationDeliveredPayloadShape({ ...stored, outputDomain })).toMatchObject({ valid: false });
+    }
+  });
   it("fails closed when a required false candidate set is empty", () => {
     const stored = delivery();
     expect(validateClockmakerInformationDeliveredPayloadShape({ ...stored, legalCandidateDistances: [] })).toMatchObject({ valid: false });
@@ -141,6 +215,18 @@ describe("Clockmaker source and historical contracts", () => {
     expect(canActorSettleClockmakerInformation({ kind: "storyteller" })).toBe(true);
     expect(canActorSettleClockmakerInformation({ kind: "human", playerId: roster[0]!.playerId })).toBe(false);
     expect(canActorSettleClockmakerInformation({ kind: "ai", playerId: roster[1]!.playerId })).toBe(false);
+  });
+
+  it("fails closed when direct source validation receives transparent or revoked Proxy contracts", () => {
+    const task: ScheduledTask = { taskId: baseContract.taskId, taskType: "CLOCKMAKER_INFORMATION", taskClass: "ROLE_INFORMATION", orderKey: { baseOrder: 800, insertionOrder: 0 },
+      source: { kind: "ROLE", playerId: roster[0]!.playerId, seatNumber: seatNumber(1), role: clockmaker }, status: "PENDING", settlementPolicy: "REEVALUATE_SOURCE_AT_SETTLEMENT" };
+    const input = { firstNightTaskPlan: { taskPlanVersion: "first-night-task-plan-v1" as const, tasks: [task] }, currentCharacterState: state(), setup };
+    const transparent = new Proxy(baseContract, {});
+    const revocable = Proxy.revocable(baseContract, {}); revocable.revoke();
+    for (const contract of [transparent, revocable.proxy]) {
+      expect(() => validateBaseClockmakerSourceContract({ contract, ...input })).not.toThrow();
+      expect(validateBaseClockmakerSourceContract({ contract, ...input })).toMatchObject({ valid: false });
+    }
   });
 
   it("reproduces canonical base gained and delivery identifiers", () => {

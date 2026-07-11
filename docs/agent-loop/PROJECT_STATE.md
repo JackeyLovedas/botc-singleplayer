@@ -3,11 +3,12 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
+- Active bounded hotfix: Slice 2B17.1 Clockmaker validation hardening on `phase-3/clockmaker-validation-hardening`.
 - Accepted: 2B13 through 2B17.
 - Slice 2B17 merged through PR [#19](https://github.com/JackeyLovedas/botc-singleplayer/pull/19) at merge SHA `4b29a3f7b05d521a9d8468ffc33c77eec3cb16c4`.
 - Final reviewed feature HEAD: `04237a2053a64301a515fffeb417958a381a0dc6`.
 - Final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, no blockers.
-- Current branch: `main`; no current PR or slice.
+- Current branch: `phase-3/clockmaker-validation-hardening`; PR pending publication.
 - Clockmaker remains `PARTIAL`.
 - Slice 2B18 was not started.
 
@@ -21,6 +22,6 @@
 
 The accepted slice covers the bounded base and Philosopher-gained first-night Clockmaker information pipeline, canonical Philosopher duplicate drunkenness, supported Snake Charmer settlement timing, effective Vortox false information, exact historical validation, and source-only projection. Registration, Travellers, death/revival, canonical poisoned Clockmaker, impaired Vortox, unsupported native counts, later-night acquisition, recurrence, general lifecycle machinery, free-form Storyteller choice, UI, Electron, and persistence remain unsupported.
 
-## Stop
+## Current Hotfix Boundary
 
-This run reached `maxSlices = 1`. No next slice is active; do not begin Slice 2B18.
+Only sparse/nonstandard array rejection, hostile-input fail-closed behavior, and key-order-independent canonical semantic comparison are in scope. Rules, events, projections, and coverage level are unchanged. Do not begin Slice 2B18.
