@@ -1,15 +1,15 @@
 {
   "status": "RUNNING",
-  "currentPR": null,
+  "currentPR": 18,
   "currentBranch": "phase-3/cerenovus-first-night-madness-marker",
   "currentSlice": "2B16",
-  "reviewedHead": "db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0",
+  "reviewedHead": null,
   "repairRound": 0,
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "rescopeAuthorization": "CERENOVUS_EFFECTIVE_ONLY",
   "completedSlices": ["2B13", "2B14", "2B15"],
-  "lastAction": "Completed the exact reviewed effective-only Slice 2B16 implementation and documentation on the preserved dirty branch, then closed the controller's two pre-publish evidence gaps with Cerenovus-specific opportunity actor tests and direct constructed-noncanonical DRUNK/POISONED pre-construction boundary tests. Typecheck, lint, 22 files / 761 tests, coverage, and diff checks pass; no commit, push, or PR exists yet.",
+  "lastAction": "Committed and pushed preliminary product HEAD a59a9489adbd5032bf6adac3d98e280d7d7cbd05, then opened unique PR #18 at https://github.com/JackeyLovedas/botc-singleplayer/pull/18 with the complete effective-only rule, source, projection, historical, Storyteller, impairment, test, coverage, and merge-gate sections.",
   "lastError": null,
   "blockerAudit": [
     {
@@ -19,5 +19,5 @@
       "resolution": "User authorized CERENOVUS_EFFECTIVE_ONLY; impaired simulation remains unsupported and implementation requires renewed rule-design review."
     }
   ],
-  "nextAction": "Controller performs the pre-publish scope and traceability audit, then authorizes commit/push/PR preparation without merging"
+  "nextAction": "Commit and push the bounded PR bookkeeping docs, update PR #18 to the final docs HEAD, then wait for exact-HEAD required CI without modifying the frozen branch"
 }

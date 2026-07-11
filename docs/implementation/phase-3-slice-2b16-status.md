@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented and locally verified on branch `phase-3/cerenovus-first-night-madness-marker` from reviewed dirty HEAD `db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0`. No commit, push, or PR has been created yet.
+Implemented and locally verified on branch `phase-3/cerenovus-first-night-madness-marker` from reviewed dirty HEAD `db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0`. Preliminary product HEAD `a59a9489adbd5032bf6adac3d98e280d7d7cbd05` is pushed, and [PR #18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18) is open. The final bounded PR bookkeeping docs commit and exact-HEAD CI are pending.
 
 Rules baseline: Phase One v2.1. Rule evidence `docs/rules/evidence/2B16.md` has SHA-256 `f0d8d976cd9366d7e4603173caeb01d3fd7461c27c484501f79d8d0b0ce5175a`; the effective-only design has SHA-256 `7c1c2bd7f849913b3cacf2e5a14c8ce83a32dbdecef8591267074e6cf4ef0e3f`. The independent design review is preserved verbatim at SHA-256 `5d1c60eb2f42f4cab01243f8dd00ab0ad38ca4fc5a98a094345ef7f663c0af16` and returned `RULE_DESIGN_PASS` with no blockers.
 
@@ -104,4 +104,4 @@ superseded Cerenovus event/state/view symbol scan: clean in packages
 
 ## Merge Gate
 
-The branch is ready for controller pre-publish audit, not merge. Before merge it still requires a committed and pushed frozen feature HEAD, a complete PR body with source revisions and rule-to-test traceability, green CI on that exact HEAD, one complete independent final review returning both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`, both verbatim GitHub audit comments re-read against the current PR HEAD, and a clean worktree.
+PR #18 is published but not mergeable yet. After the bounded bookkeeping commit, the branch must freeze. Merge still requires green CI on that exact final HEAD, one complete independent final review returning both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`, both verbatim GitHub audit comments re-read against the current PR HEAD, and a clean worktree.

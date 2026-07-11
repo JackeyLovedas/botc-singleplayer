@@ -1,12 +1,14 @@
 # Current Task
 
-## Slice 2B16 Effective-Only Rescope — Implemented And Locally Verified
+## Slice 2B16 Effective-Only Rescope — PR #18 Published, CI Pending
 
 - Role: `Cerenovus`.
 - Scope authorization: `CERENOVUS_EFFECTIVE_ONLY`.
 - Source-impaired execution status: `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY`.
 - Branch: `phase-3/cerenovus-first-night-madness-marker`.
-- The preserved dirty worktree contains the completed implementation and tests; do not reset or discard them. No commit, push, or PR exists yet.
+- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18).
+- Preliminary product HEAD: `a59a9489adbd5032bf6adac3d98e280d7d7cbd05`; pushed to the same feature branch.
+- Only this bounded PR bookkeeping update remains before the branch freezes on its final docs HEAD.
 - Fresh external rule truth remains `RULE_READY`; no source conflict exists.
 - The prior design and prior `RULE_DESIGN_PASS` are superseded by the effective-only event and failure contract.
 - The independent reviewer returned `RULE_DESIGN_PASS` with no blockers for exact HEAD `db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0`, evidence SHA-256 `f0d8d976cd9366d7e4603173caeb01d3fd7461c27c484501f79d8d0b0ce5175a`, and design SHA-256 `7c1c2bd7f849913b3cacf2e5a14c8ce83a32dbdecef8591267074e6cf4ef0e3f`.
@@ -36,9 +38,9 @@ The private instruction is target-only and contains no Cerenovus player identity
 
 ## Next Gate
 
-1. Controller audits exact scope, test traceability, status documentation, old-symbol removal, and worktree state.
-2. Only after that checkpoint, prepare the attributed commit, push the same branch, and create/update one slice PR with the five required rule sections.
-3. Do not merge before exact-HEAD CI, complete independent final code/rule review, both verbatim GitHub audit comments, and clean-worktree verification.
+1. Commit and push only the five bounded PR bookkeeping documents.
+2. Update PR #18 body to name the final docs HEAD and mark exact-HEAD CI pending.
+3. Freeze the branch. Do not modify, review, merge, or tag before exact-HEAD CI and controller direction.
 
 ## Limits
 

@@ -28,14 +28,15 @@
 ## Current Delivery
 
 - Active slice: 2B16, effective-only Cerenovus first-night choice, marker history, and private instruction; implementation and local verification complete.
-- Branch: `phase-3/cerenovus-first-night-madness-marker`; preserved dirty worktree, no commit, push, or PR.
+- Branch: `phase-3/cerenovus-first-night-madness-marker`; preliminary product HEAD `a59a9489adbd5032bf6adac3d98e280d7d7cbd05` pushed.
+- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18); the final bounded docs commit and exact-HEAD CI are pending.
 - Rescope authorization: `CERENOVUS_EFFECTIVE_ONLY`.
 - Source-impaired execution: `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY`.
 - External rules remain `RULE_READY`; all original URLs, revisions, hashes, and impaired-source rule truth remain recorded.
 - The prior design SHA beginning `4f474b7a` and prior `RULE_DESIGN_PASS` are superseded.
 - Corrected event contract: choice, effective marker, target instruction, and `CERENOVUS_MADNESS_MARKED` settlement.
 - Independent effective-only review returned `RULE_DESIGN_PASS` with no blockers for exact dirty HEAD `db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0`, evidence `f0d8d976...`, and design `7c1c2bd7...`; the exact implementation is now complete locally and coverage remains `PARTIAL`.
-- Full local gates pass after closing both controller evidence gaps: typecheck, lint, 22 files / 761 tests, coverage 22 files / 761 tests, and `git diff --check`. No commit, push, or PR exists yet.
+- Full local gates pass after closing both controller evidence gaps: typecheck, lint, 22 files / 761 tests, coverage 22 files / 761 tests, and `git diff --check`.
 - This controlled round has `maxSlices=1`, `maxRepairRounds=2`, no heartbeat, and no 2B17 work.
 
 ## Rule And Design Gate
@@ -85,8 +86,8 @@
 
 ## Next Gate
 
-- Controller performs the pre-publish scope/traceability audit of the completed dirty tree and status document.
-- After controller authorization, commit with required attribution, push the same branch, and create one slice PR. Do not merge before exact-HEAD CI and complete independent final review.
+- Commit and push only the bounded PR bookkeeping docs, update PR #18 to the final docs HEAD, then freeze the branch for exact-HEAD CI.
+- Do not review, merge, or tag before CI and controller direction.
 - Do not begin Slice 2B17 in this controlled round.
 
 ## Loop Limits
