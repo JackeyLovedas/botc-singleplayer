@@ -61,6 +61,7 @@ export type DomainErrorCode =
   | "InvalidCerenovusMadnessInstructionDeliveredPayload"
   | "InvalidDreamerTargetChosenPayload"
   | "InvalidDreamerInformationDeliveredPayload"
+  | "InvalidClockmakerInformationDeliveredPayload"
   | "InvalidEvilTwinPairEstablishedPayload"
   | "DuplicateEvilTwinPairEstablished"
   | "InvalidEvilTwinInformationDeliveredPayload"

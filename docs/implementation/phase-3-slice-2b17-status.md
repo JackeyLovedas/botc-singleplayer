@@ -1,28 +1,32 @@
-# Phase 3 Slice 2B17 Status: RULE_DESIGN_PASS
+# Phase 3 Slice 2B17 Status: Final Review Repair Round 1
 
-## Gate Status
+## Current State
 
-- Rule evidence: `RULE_READY`.
-- Rule design: `RULE_DESIGN_PASS`.
-- Remaining design blockers: `[]`.
-- Implementation authorized only after the docs-only gate commit passes exact-SHA CI.
-- Implementation, feature branch and PR: not started.
-- Coverage target/status: `PARTIAL`, never `COMPLETE`.
+- PR: [#19](https://github.com/JackeyLovedas/botc-singleplayer/pull/19).
+- Branch: `phase-3/clockmaker-first-night-information`.
+- Product implementation HEAD: `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5`.
+- Product-head CI: push run `29147953027` and pull-request run `29147961984`, both `SUCCESS`.
+- Product local validation: focused 7 files / 341 tests; full and coverage 28 files / 891 tests; 85.85% statements/lines, 79.93% branches, 97.84% functions.
+- Rule evidence/design gates: `RULE_READY` and round-3 `RULE_DESIGN_PASS`.
+- Role coverage: `PARTIAL`, never `COMPLETE`.
 
-## Exact Artifacts
+## Round-1 Final Review
 
-- Evidence `docs/rules/evidence/2B17.md`: `db1fb83335e6a2083f85797b83516b8b646538ee3afcfd5ac92319147432d97e`.
-- Round-3 design `docs/implementation/phase-3-slice-2b17-design.md`: `fde5aebea89e003c38938c338abfd4fdd1370c88814f965c41a0dcda7b3d1e06`.
-- Round-1 review: `8e16646c6b98aa45111e6385175e5d9e18ef83dea98f637d192126cbf0bd9d35`, FIX.
-- Round-2 review: `148d756129a1eb08678d30b5d094e88b90ebd0842b4021e7dee1bed5fad5be8d`, FIX.
-- Round-3 review `docs/implementation/phase-3-slice-2b17-design-review-round-3.md`: `2c472cfdca5578d0aa556e4ec02761854362fcf3470a4188e294cfe74dafbe62`, PASS.
+- Reviewed PR/head: `#19` / `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5`.
+- Historical verdicts: `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`.
+- Report: `docs/implementation/phase-3-slice-2b17-final-review-round-1.md`.
+- Report SHA-256: `18029ee553930ed54429d13010c9a18e5a6994262b817d64dd2469aad0a20afc`.
+- Sole blocker: six committed control/status/PR-body documents described a pre-publish state after PR #19 and exact-head CI already existed.
+- Reviewer passed the production behavior, rule implementation, Vortox historical biconditional, events/replay/receipts, projection, traceability, night order, role matrix, live PR body, and product-head CI.
 
-## Bounded Authorization
+## Repair Scope
 
-Only the exact two-event Clockmaker information pipeline, seven canonical histories, 99-row trace contract, strict native-Demon/Vortox/tenure biconditional, exact preserved drunkenness provenance, source-only historical projection, and existing receipt/retry/CI gates are authorized.
+This repair changes only seven documentation files: the six stale files plus the verbatim round-1 review report. It does not change production, tests, workflow, evidence, design, design-review reports, or `ROLE_COVERAGE_MATRIX.md`.
 
-Registration, Travellers, death/revival, canonical poisoned Clockmaker, impaired Vortox, unsupported native counts, later-night acquisition, recurrence, generic tenure/ability refactoring, general character/alignment changes, UI, persistence and Slice 2B18 remain out of scope.
+## Live Authority
 
-## Next Step
+The current review head is the live GitHub PR #19 `headRefOid`. Exact-head CI is the set of GitHub checks attached to that same head. Because this docs-only commit cannot self-reference its future SHA or future run identifiers, those live GitHub values are authoritative after push.
 
-Push the docs-only gate commit on `main`, wait for exact-SHA Ubuntu and Windows CI success, then create exactly one bounded feature branch. Do not open a PR or implement before that gate.
+## Remaining Gates
+
+Push this docs-only repair, wait for all exact-head push and pull-request checks to succeed, freeze the new live PR head, and request one fresh complete independent final review. Only both final pass verdicts with empty blockers, both verbatim audit comments, comment re-read, and all merge gates can authorize merge.

@@ -40,7 +40,7 @@ jobs:
         run: pnpm test:coverage
 
   deterministic-windows:
-    name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch/dreamer
+    name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch/dreamer/clockmaker
     runs-on: windows-latest
 
     steps:
@@ -70,6 +70,9 @@ jobs:
 
       - name: Initial private knowledge tests
         run: pnpm --filter @botc/information-engine test
+
+      - name: Clockmaker domain and replay tests
+        run: pnpm exec vitest run --workspace vitest.workspace.ts packages/domain-core/src/clockmaker.test.ts packages/domain-core/src/clockmaker-replay.test.ts packages/domain-core/src/philosopher-ability.test.ts
 
       - name: Projection leakage tests
         run: pnpm --filter @botc/projections test

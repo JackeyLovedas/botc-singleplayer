@@ -41,6 +41,7 @@ import type {
   SeamstressResolutionCapabilityDeclaredPayload,
   SeamstressTargetsChosenPayload
 } from "./seamstress.js";
+import type { ClockmakerInformationDeliveredPayload } from "./clockmaker.js";
 import type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
@@ -91,6 +92,7 @@ export type {
   SeamstressResolutionCapabilityDeclaredPayload,
   SeamstressTargetsChosenPayload
 } from "./seamstress.js";
+export type { ClockmakerInformationDeliveredPayload } from "./clockmaker.js";
 export type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
@@ -214,6 +216,7 @@ export type DomainEventPayloadByType = {
   readonly CerenovusMadnessInstructionDelivered: CerenovusMadnessInstructionDeliveredPayload;
   readonly DreamerTargetChosen: DreamerTargetChosenPayload;
   readonly DreamerInformationDelivered: DreamerInformationDeliveredPayload;
+  readonly ClockmakerInformationDelivered: ClockmakerInformationDeliveredPayload;
   readonly EvilTwinPairEstablished: EvilTwinPairEstablishedPayload;
   readonly EvilTwinInformationDelivered: EvilTwinInformationDeliveredPayload;
   readonly MinionInformationDelivered: MinionInformationDeliveredPayload;

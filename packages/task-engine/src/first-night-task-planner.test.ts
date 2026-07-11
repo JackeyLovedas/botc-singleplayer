@@ -118,6 +118,23 @@ describe("FirstNightTaskPlanner", () => {
     ]);
   });
 
+  it("orders supported Snake Charmer before base Clockmaker before Dreamer", () => {
+    const supportedOrder = testFirstNightTaskCatalog.definitions
+      .filter((definition) =>
+        definition.taskType === "SNAKE_CHARMER_ACTION" ||
+        definition.taskType === "CLOCKMAKER_INFORMATION" ||
+        definition.taskType === "DREAMER_ACTION"
+      )
+      .sort((left, right) => left.baseOrder - right.baseOrder)
+      .map((definition) => [definition.taskType, definition.baseOrder]);
+
+    expect(supportedOrder).toStrictEqual([
+      ["SNAKE_CHARMER_ACTION", 400],
+      ["CLOCKMAKER_INFORMATION", 800],
+      ["DREAMER_ACTION", 900]
+    ]);
+  });
+
   it("always creates MINION_INFO and DEMON_INFO without frozen recipients", () => {
     const plan = generatePlan();
     const systemTasks = plan.tasks.filter((task) => task.source.kind === "SYSTEM");
