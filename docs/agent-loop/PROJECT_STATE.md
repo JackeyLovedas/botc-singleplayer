@@ -3,17 +3,24 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Accepted: 2B13 through 2B16.
-- Slice 2B17 is open as PR [#19](https://github.com/JackeyLovedas/botc-singleplayer/pull/19) on `phase-3/clockmaker-first-night-information`.
-- Product implementation HEAD `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5` passed push run `29147953027` and pull-request run `29147961984`.
-- Round-1 final review on that product HEAD returned historical `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` solely for stale final documentation.
-- Repair round: `1 / 2`.
-- Clockmaker remains `PARTIAL`; Slice 2B18 is prohibited.
+- Accepted: 2B13 through 2B17.
+- Slice 2B17 merged through PR [#19](https://github.com/JackeyLovedas/botc-singleplayer/pull/19) at merge SHA `4b29a3f7b05d521a9d8468ffc33c77eec3cb16c4`.
+- Final reviewed feature HEAD: `04237a2053a64301a515fffeb417958a381a0dc6`.
+- Final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, no blockers.
+- Current branch: `main`; no current PR or slice.
+- Clockmaker remains `PARTIAL`.
+- Slice 2B18 was not started.
 
-## Repair Boundary
+## CI Provenance
 
-Only `AUTOPILOT_LOG.md`, `AUTOPILOT_STATE.json`, `CURRENT_TASK.md`, `PROJECT_STATE.md`, `phase-3-slice-2b17-status.md`, `phase-3-slice-2b17-pr-body.md`, and the verbatim round-1 review report change. Production, tests, workflow, evidence, design, design reviews, and the coverage matrix remain byte-unchanged.
+- `productHeadCI`: exact final reviewed HEAD `04237a2053a64301a515fffeb417958a381a0dc6`; push `29148485853`, pull request `29148486733`, both `SUCCESS`.
+- `mergeCommitCI`: exact merge SHA `4b29a3f7b05d521a9d8468ffc33c77eec3cb16c4`; main push `29148842440`, accepted-tag push `29148853648`, both `SUCCESS`.
+- `closeoutCommitCI`: live GitHub checks attached to the exact emitted docs-only closeout SHA; not inherited from either earlier commit.
 
-## Live Authority And Remaining Gates
+## Accepted Boundary
 
-The live GitHub PR #19 `headRefOid` is the current review-head authority. GitHub checks attached to that exact live head are the exact-head CI authority. After this docs-only repair is pushed, all attached push and pull-request checks must succeed before a fresh complete independent final review. Passing review, both verbatim audit comments, audit-comment re-read, and merge requirements remain pending.
+The accepted slice covers the bounded base and Philosopher-gained first-night Clockmaker information pipeline, canonical Philosopher duplicate drunkenness, supported Snake Charmer settlement timing, effective Vortox false information, exact historical validation, and source-only projection. Registration, Travellers, death/revival, canonical poisoned Clockmaker, impaired Vortox, unsupported native counts, later-night acquisition, recurrence, general lifecycle machinery, free-form Storyteller choice, UI, Electron, and persistence remain unsupported.
+
+## Stop
+
+This run reached `maxSlices = 1`. No next slice is active; do not begin Slice 2B18.

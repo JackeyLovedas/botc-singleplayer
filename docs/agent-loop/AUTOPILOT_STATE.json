@@ -1,12 +1,12 @@
 {
-  "status": "RUNNING",
-  "currentPR": 19,
-  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/19",
-  "currentBranch": "phase-3/clockmaker-first-night-information",
-  "currentSlice": "2B17",
-  "reviewedHead": null,
-  "currentReviewHeadAuthority": "GitHub PR #19 headRefOid",
-  "exactHeadCIAuthority": "GitHub checks attached to the live PR #19 headRefOid",
+  "status": "COMPLETED",
+  "currentPR": null,
+  "currentPRUrl": null,
+  "currentBranch": "main",
+  "currentSlice": null,
+  "reviewedHead": "04237a2053a64301a515fffeb417958a381a0dc6",
+  "currentReviewHeadAuthority": null,
+  "exactHeadCIAuthority": "GitHub checks attached to the exact emitted closeout commit after push",
   "repairRound": 1,
   "designRound": 3,
   "maxDesignRounds": 3,
@@ -22,7 +22,7 @@
   "implementationAuthorized": true,
   "designReviewHash": "2c472cfdca5578d0aa556e4ec02761854362fcf3470a4188e294cfe74dafbe62",
   "slice2B18Prohibited": true,
-  "completedSlices": ["2B13", "2B14", "2B15", "2B16"],
+  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17"],
   "slice2B17ProductImplementation": {
     "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
     "commit": "feat: add Clockmaker first-night information",
@@ -45,6 +45,47 @@
     "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
     "ruleVerdict": "RULE_REVIEW_PASS",
     "status": "HISTORICAL_INVALIDATED_BY_DOCS_REPAIR"
+  },
+  "slice2B17Acceptance": {
+    "pr": 19,
+    "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/19",
+    "productImplementationHead": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
+    "finalReviewedHead": "04237a2053a64301a515fffeb417958a381a0dc6",
+    "mergeCommit": "4b29a3f7b05d521a9d8468ffc33c77eec3cb16c4",
+    "mergedAt": "2026-07-11T10:07:25Z",
+    "repairRound": 1,
+    "codeVerdict": "CODE_REVIEW_PASS",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [],
+    "finalReviewCodeComment": {
+      "id": 4944705609,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/19#issuecomment-4944705609",
+      "bodySha256": "79c27259768300c44b1f44d8700dc890131561964eda917c3e1f9818e3bffdf5",
+      "archive": "docs/reviews/pr-19-code-review-final.md"
+    },
+    "finalReviewRuleComment": {
+      "id": 4944705926,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/19#issuecomment-4944705926",
+      "bodySha256": "1b86fb8651fb5fe2deb653ffac22a7b190762fd3b0dc11c5fcca12948971631e",
+      "archive": "docs/reviews/pr-19-rule-review-final.md"
+    },
+    "productHeadCI": {
+      "sha": "04237a2053a64301a515fffeb417958a381a0dc6",
+      "pushRun": 29148485853,
+      "pullRequestRun": 29148486733,
+      "status": "SUCCESS"
+    },
+    "mergeCommitCI": {
+      "sha": "4b29a3f7b05d521a9d8468ffc33c77eec3cb16c4",
+      "mainPushRun": 29148842440,
+      "acceptedTagPushRun": 29148853648,
+      "status": "SUCCESS"
+    },
+    "closeoutCommitCI": {
+      "authority": "GitHub checks attached to the exact emitted closeout commit",
+      "status": "PENDING_LIVE_AUTHORITY"
+    },
+    "coverageStatus": "PARTIAL"
   },
   "previousRunCloseoutCI": {
     "sha": "5da9c9425ae0b0f0d76610d14cfbcdc33166cb9b",
@@ -78,7 +119,7 @@
       "genericImpairmentSource": false
     }
   },
-  "lastAction": "Materialized the complete round-1 final review and synchronized the six stale Slice 2B17 control/status/PR-body documents for docs-only repair round 1.",
-  "lastError": "Round-1 final review on product head 69c3f0375883bd9ec7908b5f9f609dad5e6fcee5 returned CODE_REVIEW_FIX_REQUIRED and RULE_REVIEW_PASS because six committed documentation files were stale.",
-  "nextAction": "Commit and push the seven-file docs-only repair, require all GitHub checks attached to the new live PR #19 headRefOid to succeed, freeze that head, then request one fresh complete independent final review."
+  "lastAction": "Merged accepted Slice 2B17 PR #19, re-read and archived both exact final-review comments, recorded distinct final-reviewed-head and merge-commit CI provenance, and prepared the single docs-only closeout commit.",
+  "lastError": null,
+  "nextAction": "Push the single docs-only closeout commit and verify GitHub checks attached to its exact emitted SHA. Do not start Slice 2B18."
 }

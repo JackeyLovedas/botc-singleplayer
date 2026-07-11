@@ -1,20 +1,21 @@
 # Current Task
 
-## Slice 2B17 — Final Review Repair Round 1 / 2
+## No Active Slice
 
-- Branch: `phase-3/clockmaker-first-night-information`.
-- PR: [#19](https://github.com/JackeyLovedas/botc-singleplayer/pull/19), open and non-draft.
-- Product implementation HEAD: `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5`.
-- Product-head push CI: run `29147953027`, `SUCCESS`.
-- Product-head pull-request CI: run `29147961984`, `SUCCESS`.
-- Round-1 final review: historical `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` on product HEAD `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5`.
-- Round-1 blocker: six committed control/status/PR-body documents were stale; production, tests, workflow, evidence, design, design reviews, and rule matrix passed review and are unchanged by this repair.
-- Clockmaker remains `PARTIAL`; Slice 2B18 remains prohibited.
+- Phase 3 Slice 2B17 is `COMPLETED` and merged through PR [#19](https://github.com/JackeyLovedas/botc-singleplayer/pull/19).
+- Current branch: `main`.
+- Current PR: none.
+- Current slice: none.
+- Final reviewed feature HEAD: `04237a2053a64301a515fffeb417958a381a0dc6`.
+- Merge SHA: `4b29a3f7b05d521a9d8468ffc33c77eec3cb16c4`.
+- Final verdicts: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`.
+- Clockmaker remains `PARTIAL`.
+- Slice 2B18 was not started and remains prohibited in this completed run.
 
-## Live Authority
+## Closeout CI Authority
 
-The current review head is the live GitHub PR #19 `headRefOid`. Exact-head CI means the GitHub checks attached to that same live `headRefOid`. This document does not predict or self-reference the SHA or run identifiers of its future docs-only repair commit.
+The final reviewed HEAD passed push run `29148485853` and pull-request run `29148486733`. The merge SHA passed main-push run `29148842440` and accepted-tag-push run `29148853648`. The docs-only closeout commit cannot self-reference its future SHA; GitHub checks attached to the exact emitted closeout SHA are authoritative after push.
 
-## Remaining Gates
+## Stop
 
-Commit and push only the seven repair documents, require exact-head push and pull-request CI on the new live PR head, freeze it, then obtain one fresh complete independent final review. After both final pass verdicts, the two required verbatim audit comments must be published and re-read before merge.
+Push and verify the single docs-only closeout commit. Do not create a new slice, PR, feature branch, merge, or tag as part of this completed run.
