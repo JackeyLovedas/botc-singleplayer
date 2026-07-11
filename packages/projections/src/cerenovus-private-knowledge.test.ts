@@ -7,9 +7,14 @@ import {
   createCerenovusMadnessMarkedPayload,
   createCerenovusScheduledTaskSettlement,
   formatCerenovusAbilityInstanceId,
+  formatCerenovusChoiceId,
+  formatCerenovusInstructionDeliveryId,
+  formatCerenovusMarkerId,
+  formatRoleTenureId,
   playerId,
   rebuildGameState,
-  roleId
+  roleId,
+  seatNumber
 } from "@botc/domain-core";
 import type { CerenovusActionOpportunity, GameState } from "@botc/domain-core";
 import {
@@ -129,12 +134,36 @@ describe("Cerenovus private knowledge", () => {
     const marker = fixture.state.cerenovusMadnessMarkers!.markers[0]!;
     const instruction = fixture.state.cerenovusMadnessInstructions!.deliveries[0]!;
     const opportunity = fixture.state.firstNightActionOpportunities!.opportunities[0]!;
+    const settlement = fixture.state.firstNightTaskProgress!.settlements[0]!;
+    const task = fixture.state.firstNightTaskPlan!.tasks.find((entry) => entry.taskType === "CERENOVUS_ACTION")!;
     for (const state of [
       { ...fixture.state, cerenovusChoices: { choices: [choice, choice] } },
       { ...fixture.state, cerenovusMadnessMarkers: { markers: [marker, marker] } },
       { ...fixture.state, cerenovusMadnessInstructions: { deliveries: [instruction, instruction] } },
-      { ...fixture.state, firstNightActionOpportunities: { opportunities: [opportunity, opportunity] } }
+      { ...fixture.state, firstNightTaskProgress: { settlements: [settlement, settlement] } },
+      { ...fixture.state, firstNightActionOpportunities: { opportunities: [opportunity, opportunity] } },
+      { ...fixture.state, firstNightTaskPlan: { ...fixture.state.firstNightTaskPlan!, tasks: [...fixture.state.firstNightTaskPlan!.tasks, task] } }
     ]) expect(() => buildPlayerPrivateKnowledgeView(state, fixture.targetPlayerId)).toThrow();
+  });
+
+  it("rejects stored semantic Cerenovus opportunity IDs whose embedded seat conflicts with the source chain", () => {
+    const fixture = completed();
+    const opportunity = fixture.state.firstNightActionOpportunities!.opportunities[0]!;
+    const choice = fixture.state.cerenovusChoices!.choices[0]!;
+    const marker = fixture.state.cerenovusMadnessMarkers!.markers[0]!;
+    const instruction = fixture.state.cerenovusMadnessInstructions!.deliveries[0]!;
+    const mismatchedId = actionOpportunityId("first-night-v1:CERENOVUS_ACTION:seat-02:opportunity-01");
+    const mismatchedChoiceId = formatCerenovusChoiceId(mismatchedId);
+    const mismatchedMarkerId = formatCerenovusMarkerId(mismatchedId);
+    const state: GameState = {
+      ...fixture.state,
+      firstNightActionOpportunities: { opportunities: [{ ...opportunity, opportunityId: mismatchedId }] },
+      cerenovusChoices: { choices: [{ ...choice, opportunityId: mismatchedId, choiceId: mismatchedChoiceId }] },
+      cerenovusMadnessMarkers: { markers: [{ ...marker, opportunityId: mismatchedId, choiceId: mismatchedChoiceId, markerId: mismatchedMarkerId }] },
+      cerenovusMadnessInstructions: { deliveries: [{ ...instruction, opportunityId: mismatchedId, choiceId: mismatchedChoiceId,
+        markerId: mismatchedMarkerId, deliveryId: formatCerenovusInstructionDeliveryId(mismatchedId, instruction.recipientSeatNumber) }] }
+    };
+    expect(() => buildPlayerPrivateKnowledgeView(state, fixture.targetPlayerId)).toThrow();
   });
 
   it("rejects sparse Cerenovus choice marker and instruction collections", () => {
@@ -145,21 +174,59 @@ describe("Cerenovus private knowledge", () => {
     expect(() => buildPlayerPrivateKnowledgeView({ ...fixture.state, cerenovusMadnessInstructions: { deliveries: sparse as never } }, fixture.targetPlayerId)).toThrow();
   });
 
-  it("does not recompute historical Cerenovus instruction from later character impairment Vortox or alignment state", () => {
+  it("does not recompute historical Cerenovus instruction from independent later source target role alignment or impairment state", () => {
     const fixture = completed();
+    const sourceEntry = fixture.state.currentCharacterState!.entries.find((entry) => entry.playerId === fixture.sourcePlayerId)!;
     const targetEntry = fixture.state.currentCharacterState!.entries.find((entry) => entry.playerId === fixture.targetPlayerId)!;
-    const later: GameState = { ...fixture.state, currentCharacterState: { revision: 2, entries: fixture.state.currentCharacterState!.entries.map((entry) =>
-      entry.playerId === fixture.targetPlayerId ? { ...targetEntry, role: { ...targetEntry.role, roleId: roleId("vortox") }, currentAlignment: "EVIL" } : entry) } };
-    expect(buildPlayerPrivateKnowledgeView(later, fixture.targetPlayerId).cerenovusMadnessInstruction)
-      .toStrictEqual(buildPlayerPrivateKnowledgeView(fixture.state, fixture.targetPlayerId).cerenovusMadnessInstruction);
+    const expected = buildPlayerPrivateKnowledgeView(fixture.state, fixture.targetPlayerId).cerenovusMadnessInstruction;
+    const variants: readonly GameState[] = [
+      { ...fixture.state, currentCharacterState: { revision: 2, entries: fixture.state.currentCharacterState!.entries.map((entry) =>
+        entry.playerId === fixture.sourcePlayerId ? { ...sourceEntry, role: { ...sourceEntry.role, roleId: roleId("witch") } } : entry) } },
+      { ...fixture.state, currentCharacterState: { revision: 2, entries: fixture.state.currentCharacterState!.entries.map((entry) =>
+        entry.playerId === fixture.sourcePlayerId ? { ...sourceEntry, currentAlignment: "GOOD" } : entry) } },
+      { ...fixture.state, currentCharacterState: { revision: 2, entries: fixture.state.currentCharacterState!.entries.map((entry) =>
+        entry.playerId === fixture.targetPlayerId ? { ...targetEntry, role: { ...targetEntry.role, roleId: roleId("vortox") } } : entry) } },
+      { ...fixture.state, currentCharacterState: { revision: 2, entries: fixture.state.currentCharacterState!.entries.map((entry) =>
+        entry.playerId === fixture.targetPlayerId ? { ...targetEntry, currentAlignment: "EVIL" } : entry) } },
+      { ...fixture.state, abilityImpairments: { impairments: [{ impairmentId: "later-test-only" as never, kind: "POISONED",
+        sourceKind: "SNAKE_CHARMER_DEMON_HIT", sourcePlayerId: playerId("later-source"), affectedPlayerId: fixture.sourcePlayerId,
+        affectedSeatNumber: sourceEntry.seatNumber, affectedRole: sourceEntry.role, sourceCharacterStateRevision: 2 }] } }
+    ];
+    for (const state of variants) {
+      expect(buildPlayerPrivateKnowledgeView(state, fixture.targetPlayerId).cerenovusMadnessInstruction).toStrictEqual(expected);
+    }
   });
 
   it("rejects independently and jointly cross-linked Cerenovus source target catalog tenure ability marker and delivery facts", () => {
     const fixture = completed();
+    const choice = fixture.state.cerenovusChoices!.choices[0]!;
+    const marker = fixture.state.cerenovusMadnessMarkers!.markers[0]!;
     const instruction = fixture.state.cerenovusMadnessInstructions!.deliveries[0]!;
-    expect(() => buildPlayerPrivateKnowledgeView({ ...fixture.state,
-      cerenovusMadnessInstructions: { deliveries: [{ ...instruction, recipientPlayerId: playerId("cross-linked") }] }
-    }, fixture.targetPlayerId)).toThrow();
+    const opportunity = fixture.state.firstNightActionOpportunities!.opportunities[0]!;
+    const otherTenure = formatRoleTenureId({ seatNumber: seatNumber(2), roleId: "cerenovus", acquiredCharacterStateRevision: 1 });
+    const states: readonly GameState[] = [
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, sourcePlayerId: playerId("cross-source") }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, sourceSeatNumber: seatNumber(2) }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, sourceRole: { ...choice.sourceRole, roleId: roleId("witch") } }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, roleCatalogSignature: "wrong-catalog" }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, sourceRoleTenureId: otherTenure }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, abilitySource: { ...choice.abilitySource, kind: "PHILOSOPHER_GRANT" as never } }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, abilitySource: { ...choice.abilitySource, abilityRoleId: "witch" as never } }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, abilitySource: { ...choice.abilitySource, roleTenureId: otherTenure } }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, abilitySource: { ...choice.abilitySource, acquiredCharacterStateRevision: 2 } }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, sourceAbilityInstanceId: "wrong-instance" as never }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, opportunityCharacterStateRevision: 2 }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, settlementCharacterStateRevision: 2 }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, targetPlayerId: playerId("wrong-target") }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, targetSeatNumber: seatNumber(3) }] } },
+      { ...fixture.state, cerenovusMadnessMarkers: { markers: [{ ...marker, markerId: "wrong-marker" }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, choiceId: "wrong-choice" }] } },
+      { ...fixture.state, cerenovusMadnessInstructions: { deliveries: [{ ...instruction, deliveryId: "wrong-delivery" }] } },
+      { ...fixture.state, firstNightActionOpportunities: { opportunities: [{ ...opportunity, opportunityId: actionOpportunityId("first-night-v1:CERENOVUS_ACTION:seat-02:opportunity-01") }] } },
+      { ...fixture.state, cerenovusChoices: { choices: [{ ...choice, taskId: "wrong-task" as never }] } }
+    ];
+    expect(states).toHaveLength(19);
+    for (const state of states) expect(() => buildPlayerPrivateKnowledgeView(state, fixture.targetPlayerId)).toThrow();
     expect(() => buildPlayerPrivateKnowledgeView({ ...fixture.state,
       seamstressRoleTenureState: { records: [], processedTransitionFactIds: [] },
       cerenovusMadnessInstructions: { deliveries: [{ ...instruction, madAboutRoleId: roleId("mutant") }] }

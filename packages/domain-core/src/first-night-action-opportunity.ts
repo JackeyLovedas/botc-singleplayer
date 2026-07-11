@@ -736,6 +736,7 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
 
   if (value.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION") {
     if (value.taskType !== "CERENOVUS_ACTION" || parsedId.taskType !== "CERENOVUS_ACTION" ||
+        parsedId.seatNumber !== value.sourceSeatNumber ||
         !hasExactCerenovusActionOpportunityVisibilityShape(value.visibility) ||
         !isPlainRecord(value.sourceRole) || value.sourceRole.roleId !== "cerenovus" ||
         !Number.isSafeInteger(value.sourceCharacterStateRevision) || (value.sourceCharacterStateRevision as number) < 1 ||

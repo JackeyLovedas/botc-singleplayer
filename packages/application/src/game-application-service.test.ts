@@ -789,6 +789,10 @@ class FaultInjectingIdGenerator extends FixedIdGenerator {
   public failEventCallNumber: number | undefined;
   private eventCallCount = 0;
 
+  public failEventAfter(offset: number): void {
+    this.failEventCallNumber = this.eventCallCount + offset;
+  }
+
   public override nextBatchId(): BatchId {
     if (this.failNextBatchId) {
       this.failNextBatchId = false;
@@ -812,6 +816,10 @@ class FaultInjectingIdGenerator extends FixedIdGenerator {
 class FaultInjectingClock extends FixedClock {
   public failClockCallNumber: number | undefined;
   private clockCallCount = 0;
+
+  public failClockAfter(offset: number): void {
+    this.failClockCallNumber = this.clockCallCount + offset;
+  }
 
   public override now(): string {
     this.clockCallCount += 1;
@@ -6935,37 +6943,65 @@ describe("Slice 2B16 Cerenovus first-night integration", () => {
     await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", retryable: true });
     expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
     expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))?.gameVersion).toBe(state.gameVersion);
+    expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))?.firstNightActionOpportunities?.opportunities
+      .find((entry) => entry.opportunityId === opportunity.opportunityId)?.opportunityStatus).toBe("OPEN");
     boundary.createBatch = original;
     await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
   });
 
-  it("keeps every Cerenovus metadata construction prospective and commit fault retryable without burning the command ID", async () => {
-    for (const fault of ["metadata", "commit"] as const) {
+  it("keeps every Cerenovus batch event and clock metadata position retryable without burning the command ID", async () => {
+    const faults = [
+      { name: "batch-id", code: "MetadataGenerationFailed", stage: "event-metadata", configure: (idsValue: FaultInjectingIdGenerator, clockValue: FaultInjectingClock, store: MemoryCommandCommitStore): void => { void clockValue; void store; idsValue.failNextBatchId = true; } },
+      ...([1, 2, 3, 4] as const).map((position) => ({ name: `event-id-${position}`, code: "MetadataGenerationFailed", stage: "event-metadata",
+        configure: (idsValue: FaultInjectingIdGenerator, clockValue: FaultInjectingClock, store: MemoryCommandCommitStore): void => { void clockValue; void store; idsValue.failEventAfter(position); } })),
+      ...([1, 2, 3, 4] as const).map((position) => ({ name: `clock-${position}`, code: "MetadataGenerationFailed", stage: "event-metadata",
+        configure: (idsValue: FaultInjectingIdGenerator, clockValue: FaultInjectingClock, store: MemoryCommandCommitStore): void => { void idsValue; void store; clockValue.failClockAfter(position); } })),
+      { name: "before-commit", code: "EventStoreAppendFailed", stage: "accepted-commit", configure: (idsValue: FaultInjectingIdGenerator, clockValue: FaultInjectingClock, store: MemoryCommandCommitStore): void => { void idsValue; void clockValue; store.failBeforeCommit = true; } },
+      { name: "during-commit", code: "EventStoreAppendFailed", stage: "accepted-commit", configure: (idsValue: FaultInjectingIdGenerator, clockValue: FaultInjectingClock, store: MemoryCommandCommitStore): void => { void idsValue; void clockValue; store.failDuringCommit = true; } }
+    ] as const;
+    for (const fault of faults) {
       const store = new MemoryCommandCommitStore();
       const idsGenerator = new FaultInjectingIdGenerator();
-      const { service } = makeService(store, testSetupGenerator, idsGenerator);
+      const clock = new FaultInjectingClock();
+      const { service } = makeService(store, testSetupGenerator, idsGenerator, clock);
       const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, store);
       const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
       if (target === undefined) throw new Error("Expected Cerenovus target");
       const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
-        target.playerId, roleId("dreamer"), { commandId: commandId(`retry-${fault}-cerenovus`) });
+        target.playerId, roleId("dreamer"), { commandId: commandId(`retry-${fault.name}-cerenovus`) });
       const before = await store.loadDomainEvents(ids.game);
-      if (fault === "metadata") idsGenerator.failNextBatchId = true;
-      else store.failBeforeCommit = true;
-      await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", retryable: true });
+      fault.configure(idsGenerator, clock, store);
+      await expect(service.execute(command), fault.name).resolves.toMatchObject({ status: "failed", code: fault.code,
+        failureStage: fault.stage, retryable: true, currentGameVersion: state.gameVersion });
       expect(await store.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
       expect(await store.loadDomainEvents(ids.game)).toStrictEqual(before);
+      const failedState = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+      expect(failedState?.gameVersion, fault.name).toBe(state.gameVersion);
+      expect(failedState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.opportunityId === opportunity.opportunityId)?.opportunityStatus, fault.name).toBe("OPEN");
       await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
     }
   });
 
-  it("preserves Witch Evil Twin Dreamer and Seamstress behavior after Cerenovus repair", async () => {
+  it("keeps thrown Cerenovus event construction retryable without burning the command ID", async () => {
     const { service, commandStore } = makeService();
-    const { state } = await reachNextCerenovusActionTask(service, commandStore);
-    expect(state.firstNightTaskPlan?.tasks.map((entry) => entry.taskType)).toEqual(expect.arrayContaining([
-      "WITCH_ACTION", "DREAMER_ACTION", "SEAMSTRESS_ACTION"
-    ]));
-    expect(state.firstNightTaskPlan?.taskCatalogSnapshot.definitions.map((entry) => entry.taskType)).toContain("EVIL_TWIN_SETUP");
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+      target.playerId, roleId("dreamer"), { commandId: commandId("retry-construction-cerenovus") });
+    const boundary = service as unknown as { createBatch: (...args: readonly unknown[]) => DomainEventBatch };
+    const original = boundary.createBatch.bind(service);
+    boundary.createBatch = (): DomainEventBatch => { throw new Error("injected Cerenovus event construction failure"); };
+    const before = await commandStore.loadDomainEvents(ids.game);
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", code: "DependencyExecutionFailed",
+      failureStage: "command-validation", retryable: true, currentGameVersion: state.gameVersion });
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))?.firstNightActionOpportunities?.opportunities
+      .find((entry) => entry.opportunityId === opportunity.opportunityId)?.opportunityStatus).toBe("OPEN");
+    boundary.createBatch = original;
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
   });
 
   it("accepts and projects a complete self-targeted Cerenovus action", async () => {

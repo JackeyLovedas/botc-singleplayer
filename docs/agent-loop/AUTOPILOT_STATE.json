@@ -1,19 +1,18 @@
 {
-  "status": "WAITING_CI",
+  "status": "READY_TO_PUBLISH",
   "currentPR": 18,
   "currentBranch": "phase-3/cerenovus-first-night-madness-marker",
   "currentSlice": "2B16",
   "reviewedHead": null,
-  "repairRound": 1,
+  "repairRound": 2,
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "rescopeAuthorization": "CERENOVUS_EFFECTIVE_ONLY",
-  "currentDesignHash": "743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12",
-  "designRevalidationReportHash": "643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c",
-  "repairCommit": "fa149336c1b70d879cfe082546fba8880746a0ab",
-  "finalDocsHead": "PENDING_THIS_BOOKKEEPING_COMMIT",
+  "currentDesignHash": "6d790e201347222621b8cfb5afeee77d3e0224faa4c438b9f67c1994edeb12a0",
+  "designReviewHash": "3519e696c42a2b83a8822611bceb2c279390759f97193836e4009bb5e177c8f8",
+  "finalReviewRound2Hash": "24fc958b2df03c6a0d55d2d2cfa6e7b4a0f05d7847a3e52fec32056a75abe254",
   "completedSlices": ["2B13", "2B14", "2B15"],
-  "lastAction": "Published repair commit fa149336c1b70d879cfe082546fba8880746a0ab to PR #18 after exact 21-file audit. Current design is 743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12, evidence is 5204b8995a40b8cee237f2b004f59f16e0751667ffdd3b9b5691265f425d9cb0, and design revalidation is 643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c. Local full and coverage gates each passed 24 files / 821 tests. Final bookkeeping HEAD is pending this commit; exact-head CI is pending.",
+  "lastAction": "Completed repair round 2 for reviewed design 6d790e201347222621b8cfb5afeee77d3e0224faa4c438b9f67c1994edeb12a0: semantic opportunity-seat binding, exhaustive direct replay/projection/application regressions, honest external-order and prior-role traceability, and current-truth synchronization. Focused 296, full 824 and coverage 824 tests passed; coverage is 85.53% statements/lines, 78.90% branches and 97.73% functions. No new exact-head CI is claimed before push.",
   "lastError": null,
   "blockerAudit": [
     {
@@ -35,7 +34,21 @@
         "Implement missing direct Cerenovus replay, batch, prospective, actor, target, stored-chain, metadata, and retry tests with exact test-name traceability.",
         "Use every mandatory rule-evidence heading and record explicit sourced VortoxRules and alignmentChangeRules."
       ]
+    },
+    {
+      "kind": "FINAL_REVIEW_ROUND_2",
+      "status": "REPAIR_IMPLEMENTED_PENDING_NEW_HEAD_GATES",
+      "reviewedHead": "45aabfe825d45329a80a178a943cce3bb6491ce1",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "designRepairStatus": "RULE_DESIGN_PASS",
+      "blockers": [
+        "Bind canonical Cerenovus opportunity ID embedded seat to sourceSeatNumber.",
+        "Replace overbroad literal-name traceability with exhaustive or honestly narrowed direct assertions.",
+        "Synchronize current-truth status and PARTIAL coverage artifacts.",
+        "Freeze a new exact HEAD, run fresh CI, and obtain complete final review."
+      ]
     }
   ],
-  "nextAction": "Freeze the final bookkeeping HEAD after push, wait for exact-head Ubuntu and Windows CI, then obtain a new complete independent final review; do not modify, comment, merge, or tag"
+  "nextAction": "Commit and push the exact round-2 repair, update PR #18 with the actual head and results, freeze the branch, wait for exact-head Ubuntu and Windows CI, then obtain complete independent final review; do not comment, merge, tag, or start another slice"
 }

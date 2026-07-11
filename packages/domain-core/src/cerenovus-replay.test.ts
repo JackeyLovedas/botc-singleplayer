@@ -13,9 +13,12 @@ import {
   createCerenovusScheduledTaskSettlement,
   eventId,
   formatCerenovusAbilityInstanceId,
+  formatRoleTenureId,
   playerId,
   rebuildGameState,
-  roleId
+  roleId,
+  scheduledTaskId,
+  seatNumber
 } from "./index.js";
 import type {
   AnyDomainEventEnvelope,
@@ -109,6 +112,15 @@ const invalid = (events: readonly AnyDomainEventEnvelope[], current = fixture().
   expect(() => applyDomainEventBatch(current, events)).toThrowError(DomainError);
 };
 
+const permutations = <T>(values: readonly T[]): readonly (readonly T[])[] =>
+  values.length === 0
+    ? [[]]
+    : values.flatMap((value, index) => permutations(values.filter((_, candidateIndex) => candidateIndex !== index))
+      .map((suffix) => [value, ...suffix]));
+
+const resequence = (events: readonly AnyDomainEventEnvelope[]): readonly AnyDomainEventEnvelope[] =>
+  events.map((event, index) => ({ ...event, eventSequence: 21 + index }));
+
 describe("Cerenovus effective replay", () => {
   it("exact effective replay", () => {
     const replayed = applyDomainEventBatch(fixture().state, batch());
@@ -122,34 +134,73 @@ describe("Cerenovus effective replay", () => {
     for (const event of batch()) invalid([event]);
   });
 
-  it("rejects every Cerenovus event reordering", () => {
+  it("rejects all 23 noncanonical Cerenovus event permutations", () => {
     const events = batch();
-    invalid([events[1], events[0], events[2], events[3]]);
-    invalid([events[0], events[2], events[1], events[3]]);
-    invalid([events[0], events[1], events[3], events[2]]);
+    const candidates = permutations(events);
+    expect(candidates).toHaveLength(24);
+    let accepted = 0;
+    for (const candidate of candidates) {
+      const ordered = resequence(candidate);
+      if (candidate.every((event, index) => event.eventType === events[index]?.eventType)) {
+        expect(() => applyDomainEventBatch(fixture().state, ordered)).not.toThrow();
+        accepted += 1;
+      } else {
+        invalid(ordered);
+      }
+    }
+    expect(accepted).toBe(1);
   });
 
-  it("rejects mismatched Cerenovus batch command version and sequence metadata", () => {
+  it("rejects independent Cerenovus batch command version and all four sequence metadata mutations", () => {
     const events = batch();
+    invalid([events[0], { ...events[1], batchId: batchId("other") }, events[2], events[3]]);
     invalid([events[0], { ...events[1], commandId: commandId("other") }, events[2], events[3]]);
     invalid([events[0], { ...events[1], gameVersion: 12 }, events[2], events[3]]);
-    invalid([events[0], { ...events[1], eventSequence: 30 }, events[2], events[3]]);
+    for (const index of [0, 1, 2, 3] as const) {
+      invalid(events.map((event, eventIndex) => eventIndex === index ? { ...event, eventSequence: 30 + index } : event));
+    }
   });
 
-  it("rejects unrelated and forbidden lifecycle events mixed into a Cerenovus batch", () => {
+  it("rejects a metadata-aligned real PhaseTransitioned lifecycle event mixed into a Cerenovus batch", () => {
     const events = batch();
-    invalid([...events, { ...events[3], eventId: eventId("forbidden-extra"), eventSequence: 25 }]);
+    const lifecycle = phaseTransitionedEvent({
+      gameId: events[0].gameId, batchId: events[0].batchId, gameVersion: events[0].gameVersion,
+      commandId: events[0].commandId, correlationId: events[0].correlationId, causationId: events[0].causationId,
+      rulesBaselineVersion: events[0].rulesBaselineVersion, eventSequence: 25, eventId: eventId("forbidden-phase-transition")
+    });
+    invalid([...events, lifecycle]);
   });
 
-  it("rejects forged Cerenovus source provenance independently and in combination", () => {
+  it("rejects a duplicate Cerenovus settlement independently", () => {
+    const events = batch();
+    invalid([...events, { ...events[3], eventId: eventId("duplicate-settlement"), eventSequence: 25 }]);
+  });
+
+  it("rejects every Cerenovus choice provenance field independently and in combination", () => {
     const events = batch();
     const choice = events[0];
-    for (const payload of [
+    const otherTenure = formatRoleTenureId({ seatNumber: seatNumber(2), roleId: "cerenovus", acquiredCharacterStateRevision: 1 });
+    const payloads = [
+      { ...choice.payload, rulesBaselineVersion: "wrong" },
+      { ...choice.payload, nightNumber: 2 as never },
+      { ...choice.payload, taskId: scheduledTaskId("first-night-v1:CERENOVUS_ACTION:seat-02") },
+      { ...choice.payload, taskType: "WITCH_ACTION" as never },
+      { ...choice.payload, opportunityId: actionOpportunityId("first-night-v1:CERENOVUS_ACTION:seat-02:opportunity-01") },
       { ...choice.payload, sourcePlayerId: playerId("forged") },
       { ...choice.payload, sourceSeatNumber: events[2].payload.recipientSeatNumber },
       { ...choice.payload, sourceRole: { ...choice.payload.sourceRole, roleId: roleId("witch") } },
+      { ...choice.payload, sourceRoleTenureId: otherTenure },
+      { ...choice.payload, sourceAbilityInstanceId: "wrong-instance" as never },
+      { ...choice.payload, abilitySource: { ...choice.payload.abilitySource, kind: "PHILOSOPHER_GRANT" as never } },
+      { ...choice.payload, abilitySource: { ...choice.payload.abilitySource, abilityRoleId: "witch" as never } },
+      { ...choice.payload, abilitySource: { ...choice.payload.abilitySource, roleTenureId: otherTenure } },
+      { ...choice.payload, abilitySource: { ...choice.payload.abilitySource, acquiredCharacterStateRevision: 2 } },
+      { ...choice.payload, opportunityCharacterStateRevision: 2 },
+      { ...choice.payload, settlementCharacterStateRevision: 2 },
       { ...choice.payload, sourcePlayerId: playerId("forged"), sourceSeatNumber: events[2].payload.recipientSeatNumber }
-    ]) invalid([{ ...choice, payload }, events[1], events[2], events[3]]);
+    ];
+    expect(payloads).toHaveLength(17);
+    for (const payload of payloads) invalid([{ ...choice, payload }, events[1], events[2], events[3]]);
   });
 
   it("settles Cerenovus only after one exact complete effective chain", () => {
@@ -159,8 +210,18 @@ describe("Cerenovus effective replay", () => {
     invalid([events[0], events[2], events[3]]);
   });
 
-  it("rejects stale closed mismatched duplicate and wrong-revision Cerenovus opportunities", () => {
+  it("rejects each stored Cerenovus opportunity source binding embedded seat duplicate status and revision mutation", () => {
     const valid = fixture();
+    const mismatchedId = actionOpportunityId("first-night-v1:CERENOVUS_ACTION:seat-02:opportunity-01");
+    const mutations: readonly CerenovusActionOpportunity[] = [
+      { ...valid.opportunity, sourcePlayerId: playerId("wrong-opportunity-source") },
+      { ...valid.opportunity, sourceSeatNumber: seatNumber(2) },
+      { ...valid.opportunity, sourceRole: { ...valid.opportunity.sourceRole, roleId: roleId("witch") } },
+      { ...valid.opportunity, opportunityId: mismatchedId }
+    ];
+    for (const opportunity of mutations) {
+      invalid(batch(), { ...valid.state, firstNightActionOpportunities: { opportunities: [opportunity] } });
+    }
     invalid(batch(), { ...valid.state, firstNightActionOpportunities: { opportunities: [{ ...valid.opportunity, opportunityStatus: "CLOSED" }] } });
     invalid(batch(), { ...valid.state, firstNightActionOpportunities: { opportunities: [valid.opportunity, valid.opportunity] } });
     invalid(batch(), { ...valid.state, currentCharacterState: { ...valid.state.currentCharacterState!, revision: 2 } });

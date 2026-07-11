@@ -20,6 +20,7 @@ import {
   seatNumber,
   scheduledTaskId,
   validateCerenovusActionDecision,
+  validateCerenovusActionOpportunityShape,
   validateCerenovusChoiceAgainstState,
   validateCerenovusChoiceRecordedPayloadShape,
   validateCerenovusInstructionAgainstChain,
@@ -89,6 +90,50 @@ const impairment = (kind: "DRUNK" | "POISONED"): AbilityImpairmentSet => ({ impa
 }] });
 
 describe("Cerenovus effective-only first-night facts", () => {
+  it("rejects a syntactically canonical Cerenovus opportunity ID with mismatched embedded source seat", () => {
+    const mismatched = {
+      ...opportunity,
+      opportunityId: actionOpportunityId("first-night-v1:CERENOVUS_ACTION:seat-02:opportunity-01")
+    };
+    expect(validateCerenovusActionOpportunityShape(mismatched)).toMatchObject({ valid: false });
+  });
+
+  it("rejects syntactically canonical choice and marker IDs with mismatched embedded source seat", () => {
+    const recorded = choice();
+    const mismatchedOpportunityId = actionOpportunityId("first-night-v1:CERENOVUS_ACTION:seat-02:opportunity-01");
+    const mismatchedChoice = {
+      ...recorded,
+      opportunityId: mismatchedOpportunityId,
+      choiceId: formatCerenovusChoiceId(mismatchedOpportunityId)
+    };
+    expect(validateCerenovusChoiceRecordedPayloadShape(mismatchedChoice)).toMatchObject({ valid: false });
+    expect(validateCerenovusChoiceAgainstState({ choice: mismatchedChoice, opportunity: { ...opportunity, opportunityId: mismatchedOpportunityId }, roster, setup, roleTenures })).toMatchObject({ valid: false });
+    const marker = createCerenovusMadnessMarkedPayload(recorded);
+    const mismatchedMarker = {
+      ...marker,
+      opportunityId: mismatchedOpportunityId,
+      choiceId: formatCerenovusChoiceId(mismatchedOpportunityId),
+      markerId: formatCerenovusMarkerId(mismatchedOpportunityId)
+    };
+    expect(validateCerenovusMadnessMarkedPayloadShape(mismatchedMarker)).toMatchObject({ valid: false });
+  });
+
+  it("rejects a syntactically canonical instruction ID cross-linked to another source-seat chain", () => {
+    const recorded = choice();
+    const marker = createCerenovusMadnessMarkedPayload(recorded);
+    const instruction = createCerenovusMadnessInstructionDeliveredPayload(recorded, marker);
+    const otherOpportunityId = actionOpportunityId("first-night-v1:CERENOVUS_ACTION:seat-02:opportunity-01");
+    const crossLinked = {
+      ...instruction,
+      opportunityId: otherOpportunityId,
+      choiceId: formatCerenovusChoiceId(otherOpportunityId),
+      markerId: formatCerenovusMarkerId(otherOpportunityId),
+      deliveryId: formatCerenovusInstructionDeliveryId(otherOpportunityId, instruction.recipientSeatNumber)
+    };
+    expect(validateCerenovusMadnessInstructionDeliveredPayloadShape(crossLinked)).toEqual({ valid: true });
+    expect(validateCerenovusInstructionAgainstChain(recorded, marker, crossLinked)).toMatchObject({ valid: false });
+  });
+
   it("accepts every modeled roster player without consulting life state", () => {
     for (const target of roster) {
       expect(() => createCerenovusChoiceRecordedPayload({ rulesBaselineVersion: RULES_BASELINE_VERSION, opportunity,
