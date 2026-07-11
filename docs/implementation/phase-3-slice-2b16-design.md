@@ -1,504 +1,323 @@
-# Phase 3 Slice 2B16 Design — Effective-Only Cerenovus First Night
+# Phase 3 Slice 2B16 Repair-Round-1 Design: Effective-Only Cerenovus
 
-## Provenance
+## status
 
-- Slice: `2B16`.
-- Scope authorization: `CERENOVUS_EFFECTIVE_ONLY`.
-- Rule authority: corrected `docs/rules/evidence/2B16.md`.
-- The prior design SHA-256 beginning `4f474b7a` and its prior `RULE_DESIGN_PASS` are superseded.
-- The current feature branch and dirty worktree are preserved; no product event has been committed, pushed, or persisted.
-- Implementation remains paused until a new independent reviewer returns `RULE_DESIGN_PASS` for this exact evidence, design, and current diff.
+- Repair round: `1 / 2`.
+- Current PR: `#18`.
+- Frozen reviewed HEAD `86d973485e940c0ef0469dd169db3ab1dc7a417d` returned `CODE_REVIEW_FIX_REQUIRED` and `RULE_REVIEW_FIX_REQUIRED`.
+- Implementation is paused. This document does not authorize production or test edits before a renewed independent `RULE_DESIGN_PASS`.
+- The effective-only event contract is unchanged.
 
-## ruleClaims
+## provenance
 
-1. Cerenovus acts on the first night.
-2. It chooses one player and one on-script Townsfolk or Outsider character.
-3. Any modeled roster player is legal, including the source itself.
-4. Formal rules permit dead targets; this repository has no life-state model and therefore adds no alive-only restriction.
-5. The selected character may be in or out of play.
-6. For the effective path, one real `MAD` marker is established.
-7. The instruction applies during the next day and following night.
-8. Its natural removal is the next dawn; source death, leaving play, or ability loss can end it earlier.
-9. This slice records the marker and removal policy but executes no expiry, removal, judgment, or punishment.
-10. Only the selected target receives the private instruction.
-11. The target learns the Cerenovus character and the character about which it should be mad, not the identity of the Cerenovus player.
-12. Drunk/poisoned rules remain true, but simulated settlement is unsupported in this effective-only slice.
-13. Official first-night order is `witch -> cerenovus -> fearmonger`.
-14. Official other-night order is `witch -> cerenovus -> pithag`.
-15. Cerenovus remains `PARTIAL`.
+- Corrected rule evidence: `docs/rules/evidence/2B16.md`.
+- Corrected evidence SHA-256: `5204b8995a40b8cee237f2b004f59f16e0751667ffdd3b9b5691265f425d9cb0`.
+- Prior effective-only design SHA-256 `7c1c2bd7f849913b3cacf2e5a14c8ce83a32dbdecef8591267074e6cf4ef0e3f` is superseded.
+- Prior effective-only design review SHA-256 `5d1c60eb2f42f4cab01243f8dd00ab0ad38ca4fc5a98a094345ef7f663c0af16` is superseded for implementation authorization.
+- Frozen final-review report is preserved verbatim at `docs/implementation/phase-3-slice-2b16-final-review-round-1.md`, SHA-256 `7af520124ee01a5c195ca5d1aecd146a86b5ed109ef8ba4795c5be4847e0ab3c`.
+- Old exact-head CI runs `29138672803` and `29138673732` succeeded for `86d9734...` but are historical only after any repair commit.
 
-## invariants
+## feasibility
 
-- Domain events are canonical truth.
-- One accepted command produces exactly four events in fixed order.
-- The marker is immutable historical future-trigger policy, not a general active-effect engine.
-- No accepted effective batch may be created or replayed when a represented impairment affects the source player.
-- The application capability failure occurs before batch IDs, event metadata, events, receipts, opportunity closure, or version changes.
-- Stored private knowledge is validated from its historical chain and is not recomputed from later character or impairment state.
-- The target view contains no source player or seat identity.
-- Source status alone grants no visibility; self-targeting grants visibility only because source and recipient are the same player.
-- This slice adds no canonical impairment producer.
-- IDs and comparisons are deterministic and locale-independent.
+All four final-review blockers are repairable inside `CERENOVUS_EFFECTIVE_ONLY`. No event name, command scope, impairment producer/import/injection, Vortox runtime, alignment-change runtime, lifecycle behavior, or other role implementation is added.
 
-## domainTypes
+## sourcedRuleConclusions
 
-```ts
-const CERENOVUS_CHOICE_MODEL_VERSION = "cerenovus-choice-v1";
-const CERENOVUS_MADNESS_MARKER_VERSION = "cerenovus-madness-marker-v1";
-const CERENOVUS_MADNESS_INSTRUCTION_MODEL_VERSION =
-  "cerenovus-madness-instruction-v1";
-const CERENOVUS_INFORMATION_STAGE = "CERENOVUS_INFORMATION";
+- Vortox falsifies information from Townsfolk abilities. Cerenovus is a Minion, so no retrieved rule transforms its selected character, effective marker, Cerenovus identity shown to the target, or instruction. No Vortox runtime is added and coverage remains incomplete.
+- Character and alignment are independent. Ordinary selected-character legality is based on character type `TOWNSFOLK | OUTSIDER`, not the current alignment of a player holding that character. An evil Townsfolk/Outsider remains legal; a good Minion/Demon does not become ordinarily legal.
+- Target alignment does not alter target legality, stored role, marker, or instruction. Source alignment change alone does not remove the Cerenovus character or ability.
+- Alignment-change runtime remains out of scope.
 
-type CerenovusInstructionWindow = "TOMORROW_DAY_AND_NIGHT";
-type CerenovusMarkerRemovalRule =
-  "NEXT_DAWN_OR_SOURCE_DEATH_OR_LEAVES_PLAY";
+## unchangedEffectiveOnlyEventContract
 
-type CerenovusActionDecision = {
-  readonly kind: "CHOOSE_PLAYER_AND_CHARACTER";
-  readonly targetPlayerId: PlayerId;
-  readonly chosenRoleId: RoleId;
-};
-
-type CerenovusAbilitySourceDescriptor = {
-  readonly kind: "ROLE_TENURE";
-  readonly abilityRoleId: "cerenovus";
-  readonly roleTenureId: RoleTenureId;
-  readonly acquiredCharacterStateRevision: number;
-};
-
-type CerenovusEffectiveOnlyCapabilityGateResult =
-  | { readonly supported: true }
-  | {
-      readonly supported: false;
-      readonly reason:
-        "SOURCE_IMPAIRMENT_UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY";
-      readonly eventPolicy: "CREATE_NO_EVENTS";
-      readonly receiptPolicy: "WRITE_NO_RECEIPT";
-      readonly opportunityPolicy: "KEEP_OPEN";
-    };
-```
-
-The existing opportunity remains a base-role-only `CERENOVUS_FIRST_NIGHT_ACTION` with exact player, seat, role snapshot, role tenure, Cerenovus ability instance, opportunity revision, target schema `ANY_MODELED_ROSTER_PLAYER`, and character schema `ON_SCRIPT_TOWNSFOLK_OR_OUTSIDER`.
-
-```ts
-type CerenovusChoiceSet = {
-  readonly choices: readonly CerenovusChoiceRecordedPayload[];
-};
-type CerenovusMadnessMarkerSet = {
-  readonly markers: readonly CerenovusMadnessMarkedPayload[];
-};
-type CerenovusMadnessInstructionSet = {
-  readonly deliveries:
-    readonly CerenovusMadnessInstructionDeliveredPayload[];
-};
-```
-
-Remove the uncommitted `CerenovusResolution` effective/impaired union and `CerenovusResolutionSet`.
-
-## commands
-
-```ts
-type SubmitCerenovusActionCommandPayload = {
-  readonly commandType: "SubmitCerenovusAction";
-  readonly taskId: ScheduledTaskId;
-  readonly opportunityId: ActionOpportunityId;
-  readonly decision: CerenovusActionDecision;
-};
-type SubmitCerenovusActionCommand =
-  CommandEnvelope<SubmitCerenovusActionCommandPayload>;
-```
-
-Actor policy:
-
-- source Human or source AI: allowed;
-- non-source Human/AI: rejected;
-- Storyteller/System submission: rejected;
-- Storyteller/System may use the existing opportunity-opening command.
-
-The decision accepts no source identity, role snapshot, target role/alignment, impairment, effectiveness, marker, instruction, execution, or lifecycle outcome.
-
-Application order is exact:
-
-1. Capture and fingerprint command.
-2. Resolve an existing receipt.
-3. Load and rebuild canonical state.
-4. Validate expected version.
-5. Validate phase, actor, exact payload, task, opportunity, next-task status, source tenure/instance, roster target, and selected character.
-6. Run the effective-only capability gate.
-7. Only when supported, allocate metadata and construct the batch.
-
-The gate matches any represented `DRUNK` or `POISONED` impairment whose `affectedPlayerId` equals the opportunity source player. Its external failure discloses no impairment details.
-
-## events
-
-Use exactly:
+Accepted healthy execution remains exactly:
 
 1. `CerenovusChoiceRecorded`
 2. `CerenovusMadnessMarked`
 3. `CerenovusMadnessInstructionDelivered`
-4. `ScheduledTaskSettled`
+4. `ScheduledTaskSettled` with `CERENOVUS_MADNESS_MARKED`
 
-Settlement outcome is `CERENOVUS_MADNESS_MARKED`.
+No impaired-resolution event, fake notification event, phase transition, execution, death, marker-removal, Vortox, alignment-change, or recurrence event is permitted.
 
-Remove the uncommitted `CerenovusResolutionRecorded`, `CerenovusPrivateNotificationDelivered`, `CERENOVUS_ACTION_RECORDED`, and all impaired resolution payload/state contracts.
+## invariants
 
-## eventOrder
+1. Every outer source field is bound to the exact referenced opportunity, task, tenure record, parsed tenure ID, and parsed ability-instance ID.
+2. Capability evaluation always uses the validated opportunity source, never a choice payload source.
+3. Exact keys and primitives are checked before formatter calls; a canonical Cerenovus opportunity ID is required before any cast or formatting.
+4. `recipientSeatNumber` is validated before instruction delivery-ID formatting.
+5. A choice is not canonical merely because its derived marker/instruction agree with forged outer provenance.
+6. Replay, integrated-batch validation, application validation, projection, and prospective validation enforce the same source chain.
+7. Projection validates stored historical source links but does not recompute already delivered knowledge from later current character or impairment state.
+8. Every design requirement maps to an exact test file and exact test name. Broad unrelated-suite claims are not traceability.
+9. Constructed impairment sets are explicitly test-only/noncanonical and never appended as `AbilityImpairmentApplied` history.
+10. Cerenovus remains `PARTIAL`.
+
+## canonicalOpportunityIdValidation
+
+Add a non-throwing helper:
+
+```ts
+const isCanonicalCerenovusOpportunityId = (
+  value: unknown
+): value is ActionOpportunityId =>
+  typeof value === "string" &&
+  /^first-night-v1:CERENOVUS_ACTION:seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)$/.test(value);
+```
+
+Choice, marker, and instruction shape validation order is exact:
+
+1. exact enumerable keys;
+2. primitive types and non-empty strings;
+3. canonical Cerenovus opportunity ID;
+4. valid seat values, including recipient seat before delivery formatting;
+5. formatter comparisons and embedded-ID reproduction;
+6. role snapshot and discriminated-union validation.
+
+The validators return invalid without throwing for `undefined`, `null`, `false`, `0`, `1`, `{}`, `[]`, empty/blank strings, malformed IDs, Witch IDs, seat `00`, and opportunity `00`.
+
+## choiceShapeProvenanceBinding
+
+After parsing tenure and ability instance, require all of:
 
 ```text
-CerenovusChoiceRecorded
--> CerenovusMadnessMarked
--> CerenovusMadnessInstructionDelivered
--> ScheduledTaskSettled
+tenureId.valid
+tenureId.roleId === cerenovus
+tenureId.seatNumber === sourceSeatNumber
+tenureId.acquiredCharacterStateRevision === abilitySource.acquiredCharacterStateRevision
+abilityInstance.valid
+abilityInstance.roleTenureId === sourceRoleTenureId
+abilityInstance.seatNumber === sourceSeatNumber
+abilityInstance.acquiredCharacterStateRevision === abilitySource.acquiredCharacterStateRevision
+abilitySource.kind === ROLE_TENURE
+abilitySource.abilityRoleId === cerenovus
+abilitySource.roleTenureId === sourceRoleTenureId
 ```
 
-No `AbilityImpairmentApplied`, ineffective-resolution, phase-transition, execution, death, marker-removal, or recurrence event is legal in the batch.
+## choiceOpportunityTenureBinding
 
-## payloadShapes
-
-### CerenovusChoiceRecorded
+`validateCerenovusChoiceAgainstState` accepts stored `RoleTenureState` and binds exact:
 
 ```ts
-{
-  rulesBaselineVersion: string;
-  modelVersion: "cerenovus-choice-v1";
-  nightNumber: 1;
-  choiceId: string;
-  taskId: ScheduledTaskId;
-  taskType: "CERENOVUS_ACTION";
-  opportunityId: ActionOpportunityId;
-  decisionKind: "CHOOSE_PLAYER_AND_CHARACTER";
-  sourcePlayerId: PlayerId;
-  sourceSeatNumber: SeatNumber;
-  sourceRole: RoleSetupSnapshot;
-  sourceRoleTenureId: RoleTenureId;
-  sourceAbilityInstanceId: AbilityInstanceId;
-  abilitySource: CerenovusAbilitySourceDescriptor;
-  opportunityCharacterStateRevision: number;
-  settlementCharacterStateRevision: number;
-  targetPlayerId: PlayerId;
-  targetSeatNumber: SeatNumber;
-  chosenGoodRoleId: RoleId;
-  chosenGoodRole: RoleSetupSnapshot;
-  roleCatalogSignature: string;
-}
-```
-
-`chosenGoodRole.characterType` is exactly `TOWNSFOLK` or `OUTSIDER`; default alignment alone is insufficient.
-
-### CerenovusMadnessMarked
-
-```ts
-{
-  rulesBaselineVersion: string;
-  markerVersion: "cerenovus-madness-marker-v1";
-  nightNumber: 1;
-  appliedNightNumber: 1;
-  markerId: string;
-  choiceId: string;
-  taskId: ScheduledTaskId;
-  taskType: "CERENOVUS_ACTION";
-  opportunityId: ActionOpportunityId;
-  sourcePlayerId: PlayerId;
-  sourceSeatNumber: SeatNumber;
-  sourceRole: RoleSetupSnapshot;
-  sourceRoleTenureId: RoleTenureId;
-  sourceAbilityInstanceId: AbilityInstanceId;
-  abilitySource: CerenovusAbilitySourceDescriptor;
-  sourceCharacterStateRevision: number;
-  targetPlayerId: PlayerId;
-  targetSeatNumber: SeatNumber;
-  madAboutRoleId: RoleId;
-  madAboutRole: RoleSetupSnapshot;
-  roleCatalogSignature: string;
-  markerStatus: "ESTABLISHED";
-  instructionWindow: "TOMORROW_DAY_AND_NIGHT";
-  removalRule: "NEXT_DAWN_OR_SOURCE_DEATH_OR_LEAVES_PLAY";
-  sourceAbilityDependency: {
-    readonly kind: "SOURCE_ABILITY_INSTANCE";
-    readonly permanentLossPolicy: "REMOVE_MARKER";
-    readonly reacquisitionPolicy: "NEW_INSTANCE_DOES_NOT_RESUME";
-  };
-}
-```
-
-This is history plus future policy; it does not claim executable expiry/removal.
-
-### CerenovusMadnessInstructionDelivered
-
-```ts
-{
-  rulesBaselineVersion: string;
-  modelVersion: "cerenovus-madness-instruction-v1";
-  nightNumber: 1;
-  deliveryId: string;
-  choiceId: string;
-  markerId: string;
-  taskId: ScheduledTaskId;
-  taskType: "CERENOVUS_ACTION";
-  opportunityId: ActionOpportunityId;
-  recipientPlayerId: PlayerId;
-  recipientSeatNumber: SeatNumber;
-  selectedByCharacter: "cerenovus";
-  madAboutRoleId: RoleId;
-  madAboutRole: RoleSetupSnapshot;
-  roleCatalogSignature: string;
-  instructionWindow: "TOMORROW_DAY_AND_NIGHT";
-  deliveryCharacterStateRevision: number;
-  deliveryStatus: "DELIVERED";
-}
-```
-
-The delivery intentionally contains no source player/seat, tenure/instance, impairment/effectiveness, execution eligibility, or Storyteller note. It derives only from validated choice and marker facts.
-
-### ScheduledTaskSettled
-
-```ts
-{
-  rulesBaselineVersion: string;
-  nightNumber: 1;
-  taskId: ScheduledTaskId;
-  taskType: "CERENOVUS_ACTION";
-  settlementVersion: "scheduled-task-settlement-v1";
-  outcomeType: "CERENOVUS_MADNESS_MARKED";
-  characterStateRevision: number;
-}
-```
-
-## stateChanges
-
-- Choice closes exactly one matching open opportunity and appends immutable choice history.
-- Marker appends one immutable marker/policy fact, not a generic effect, timer, execution authority, or lifecycle query.
-- Instruction appends immutable delivered knowledge.
-- Settlement updates ordinary first-night progress; existing task-progress calculation exposes the next supported task without a transition event.
-- The fail-closed impairment gate changes no state.
-
-## privateProjection
-
-Persist stage order:
-
-```text
-EVIL_TWIN_SETUP_INFORMATION
-CERENOVUS_INFORMATION
-DREAMER_INFORMATION
-```
-
-```ts
-type PlayerCerenovusMadnessInstructionView = {
-  readonly selectedByCharacter: "cerenovus";
-  readonly madAboutRoleId: RoleId;
-  readonly instructionWindow: "TOMORROW_DAY_AND_NIGHT";
+type ValidateCerenovusChoiceAgainstStateInput = {
+  readonly choice: CerenovusChoiceRecordedPayload;
+  readonly opportunity: CerenovusActionOpportunity;
+  readonly roster: PlayerRoster;
+  readonly setup: GeneratedSetup;
+  readonly roleTenures: RoleTenureState;
 };
 ```
 
-The parent private view adds optional `cerenovusMadnessInstruction` and `cerenovusKnowledgeModelVersion: "cerenovus-madness-instruction-v1"`. It exposes no source identity, marker/task/opportunity IDs, assignment/current state, other-player roles, impairment, execution, or Storyteller data. Player and AI views use the same stored fact.
+Choice equals opportunity for `nightNumber`, `taskId`, `taskType`, `opportunityId`, `sourcePlayerId`, `sourceSeatNumber`, `sourceRole` via `sameRoleSetupSnapshot`, `sourceCharacterStateRevision`, `sourceRoleTenureId`, `sourceAbilityInstanceId`, and every `abilitySource` field.
 
-## storedValidation
+Exactly one stored tenure record must match. It binds player, seat, role `cerenovus`, acquisition revision, tenure ID, opportunity, and choice. Parsed tenure identity reproduces the same seat, role, and acquisition revision.
 
-Before rendering any instruction:
+## currentSourceAndTaskBinding
 
-1. Require setup, historical roster, catalog, task plan, opportunity state, choice/marker/delivery collections, and settlement progress.
-2. Validate every exact runtime shape and supported model version.
-3. Require globally unique choice, marker, delivery, opportunity, and Cerenovus task IDs.
-4. Require exactly one closed Cerenovus opportunity per choice.
-5. Require one base Cerenovus task with matching source player, seat, and role snapshot.
-6. Bind target and chosen role to historical roster/catalog facts.
-7. Revalidate chosen type as `TOWNSFOLK | OUTSIDER`.
-8. Require exactly one marker per choice.
-9. Require exact choice-to-marker source, target, role, task, opportunity, catalog, tenure, instance, and revision linkage.
-10. Require exactly one delivery per marker and choice.
-11. Require recipient equals the choice target.
-12. Require selected character and window equal the marker.
-13. Require exactly one matching settlement.
-14. Require outcome `CERENOVUS_MADNESS_MARKED` and matching revision.
-15. Require reverse completeness: no orphan marker, delivery, or settlement.
-16. Reject extra keys, sparse arrays, duplicates, malformed versions, and cross-linked chains.
+Application and replay additionally require:
 
-Projection does not consult latest `currentCharacterState` or `abilityImpairments` to recompute historical delivery.
+- exactly one current character entry for the opportunity source player/seat;
+- current role snapshot equals opportunity source role and is Cerenovus;
+- tenure remains continuous from opportunity through settlement revision;
+- task source player, seat, and role snapshot equal the opportunity;
+- task is the current next unsettled `CERENOVUS_ACTION`;
+- opportunity is exact, open, unique, and at the expected revision.
+
+## capabilityGateAuthority
+
+Application, integrated batch, and event replay call only:
+
+```ts
+evaluateCerenovusEffectiveOnlyCapability({
+  sourcePlayerId: opportunity.sourcePlayerId,
+  abilityImpairments: state.abilityImpairments
+});
+```
+
+The external failure remains `ApplicationNotConfigured / first-night-role-action / retryable`, with the existing generic message and no metadata, batch, event, prospective, receipt, opportunity closure, or version change.
 
 ## replayValidation
 
-- Choice requires exact open opportunity, current base tenure/instance, current task/revision, legal target/role, and no represented source impairment.
-- Marker requires one preceding choice, no duplicate marker, and deterministic equality with the marker derived from that choice.
-- Instruction requires matching choice/marker and deterministic equality with the derived instruction.
-- Settlement requires the complete preceding chain.
-- Naked, reordered, duplicate, malformed, extra-key, revision-mismatched, cross-linked, or impairment-conflicting events fail closed.
-- Later impairment does not retroactively invalidate already delivered historical knowledge during projection.
+Event application order for choice is: resolve opportunity; validate opportunity and choice shapes; resolve task; resolve exactly one tenure; bind full source chain; evaluate capability with opportunity source; require continuity/revision; check uniqueness; close/apply.
 
-## batchSemantics
+Reject naked, missing, duplicate, reordered, mixed, wrong-metadata, nonconsecutive, stale/closed/mismatched/duplicate-opportunity, forged-provenance, and impairment-conflicting histories. A forged unaffected payload source cannot bypass impairment of the actual opportunity source.
 
-The accepted batch has exactly four ordered events, one batch ID, one command ID, one committed game version, consecutive sequences, one rules baseline, one valid open opportunity, no matching source impairment in input state, and no unrelated event. Batch validation reconstructs marker, instruction, and settlement from choice and compares every field.
+## integratedBatchAndProspectiveValidation
 
-## prospectiveValidation
+Integrated batch validation resolves and validates opportunity before capability evaluation, passes stored tenure state, uses opportunity source, retains the exact four-event order, reconstructs marker/instruction/settlement, and compares every field.
 
-Before append, validate integrated semantics, apply all four events to isolated prospective state, verify opportunity closure plus one choice/marker/delivery/settlement and next-task computation, then reject every partial, reordered, mismatched, duplicate, or impairment-conflicting batch. Prospective failures are retryable at `first-night-role-action` with no receipt or partial append.
+Corrupted prospective input fails atomically with no event, receipt, version, task, or opportunity mutation. The same command ID remains retryable after the test fault is removed. Use an existing test-only fault harness or narrow spy; add no production injection API.
 
-## receiptSemantics
+## storedProjectionValidation
 
-```ts
-{
-  status: "accepted";
-  resultSchemaVersion: "accepted-event-summary-v1";
-  eventDisclosure: "EVENT_TYPES_ONLY";
-  eventCount: 4;
-  eventTypes: readonly [
-    "CerenovusChoiceRecorded",
-    "CerenovusMadnessMarked",
-    "CerenovusMadnessInstructionDelivered",
-    "ScheduledTaskSettled"
-  ];
-}
-```
+Projection passes stored tenure state into choice-chain validation and checks the same source/opportunity/task/tenure/ability linkage. It rejects missing, duplicate, sparse, hostile, extra-key, or cross-linked choice/marker/instruction/settlement/opportunity/task facts. Only the target receives `selectedByCharacter`, `madAboutRoleId`, and `instructionWindow`; source and internal fields remain hidden.
 
-The receipt exposes no source, target, chosen character, marker, or instruction payload. Exact retry returns the stored idempotent summary; changed fingerprint conflicts. The impairment gate stores no receipt, leaving the command ID retryable after future capability support.
+## VortoxAndAlignmentRuntimeBoundary
 
-## failureBoundary
-
-For a valid submission whose source has a represented matching `DRUNK` or `POISONED` fact:
-
-```ts
-{
-  status: "failed";
-  code: "ApplicationNotConfigured";
-  failureStage: "first-night-role-action";
-  retryable: true;
-  currentGameVersion: number;
-}
-```
-
-Use the generic message `Cerenovus effective-only settlement is not configured for the current canonical state`. Do not disclose impairment kind, source, ID, or effectiveness. Return after deterministic validation but before any batch/event ID, clock, construction, prospective work, receipt, or append; keep task unsettled and opportunity open.
-
-The pure gate may be unit-tested with a constructed `AbilityImpairmentSet`, explicitly identified as noncanonical/unreachable in current stored history. No integration fixture may fabricate a canonical impairment history. Other construction, dependency, metadata, prospective, and commit failures retain existing retryable classifications; `MetadataGenerationFailed` remains distinct.
-
-## deterministicIds
-
-```text
-role-tenure-v1:seat-SS:role-cerenovus:acquired-revision-R
-cerenovus-ability-instance-v1:ROLE_TENURE:seat-SS:role-cerenovus:acquired-revision-R
-cerenovus-choice-v1:<canonical-opportunity-id>
-cerenovus-madness-marker-v1:<canonical-opportunity-id>
-cerenovus-madness-instruction-v1:<canonical-opportunity-id>:recipient-seat-SS
-```
-
-Every parser reproduces embedded values. No `Date.now`, `Math.random`, random UUID, `localeCompare`, `Intl.Collator`, environment locale, or insertion-order-dependent selection is allowed.
-
-## compatibilityAndMigration
-
-- No Cerenovus product event was committed or persisted, so renaming uncommitted events needs no migration.
-- Existing snapshots omit optional new collections and remain rebuildable.
-- Adding Cerenovus to role-tenure grammar is backward compatible.
-- The new optional stage/view preserves older views.
-- Existing receipt schemas remain compatible.
-- Do not retain aliases for discarded uncommitted event names; aliases would freeze an unsupported impaired contract.
+- No Vortox event, state, projection transformation, answer candidate, or false-information branch is introduced.
+- No alignment-change command, event, replay path, projection, or lifecycle is introduced.
+- Sourced conclusions are documentation and regression-prohibition claims only.
 
 ## testPlan
 
 1. Verify official first-night raw order `witch -> cerenovus -> fearmonger`.
 2. Verify official other-night raw order `witch -> cerenovus -> pithag`.
-3. Preserve supported subset order `WITCH_ACTION(600) -> CERENOVUS_ACTION(700) -> CLOCKMAKER_INFORMATION(800)` without calling Clockmaker the official immediate successor.
-4. Open the Cerenovus opportunity only when its task is next.
+3. Preserve supported subset order without calling the supported successor the official immediate successor.
+4. Open the opportunity only when Cerenovus is next.
 5. Allow System to open it.
 6. Allow Storyteller to open it.
-7. Reject Human/AI opening attempts.
-8. Reject a non-base, stale, closed, duplicate, mismatched-role, mismatched-seat, or mismatched-revision opportunity.
-9. Require one active base Cerenovus role tenure and ability instance.
+7. Reject Human/AI opening attempts without events or opportunity creation.
+8. Reject non-base, stale, closed, duplicate, mismatched-source, mismatched-role/seat, or wrong-revision opportunity state.
+9. Require exactly one active base Cerenovus tenure and canonical ability instance with complete player/seat/role/acquisition binding.
 10. Allow source Human submission.
 11. Allow source AI submission.
 12. Reject non-source Human/AI.
 13. Reject Storyteller/System submission.
-14. Accept self-target.
-15. Accept every modeled roster player without checking alive/dead state.
+14. Accept and fully project self-target.
+15. Accept every modeled roster player without claiming life-state completeness.
 16. Reject unknown target.
 17. Accept on-script Townsfolk.
 18. Accept on-script Outsider.
-19. Accept a legal role absent from assignments.
+19. Accept a legal character absent from assignments.
 20. Reject Minion.
 21. Reject Demon.
-22. Reject off-script role and Goblin without reviewed jinx capability.
-23. Reject malformed and extra-key decisions.
-24. Reject actor-supplied impairment, effectiveness, marker, instruction, or execution outcomes.
-25. Produce exactly the four-event effective batch.
-26. Verify shared batch ID, command ID, version, and consecutive sequences.
-27. Verify exact choice payload and historical catalog binding.
-28. Verify exact marker payload, `TOMORROW_DAY_AND_NIGHT`, and recorded removal policy.
-29. Verify exact instruction payload contains no source player or seat fields.
-30. Verify settlement outcome `CERENOVUS_MADNESS_MARKED`.
-31. Verify settlement exposes the next supported task without a phase transition.
-32. Verify the selected target receives the instruction.
-33. Verify the source receives it only when self-targeted.
-34. Verify a non-target source does not receive it.
-35. Verify every other player receives no Cerenovus instruction.
-36. Verify player and AI views are identical.
-37. Verify projections contain no source identity, assignment, state, marker ID, task/opportunity ID, impairment, or execution fact.
+22. Reject Traveller, Fabled, off-script role, and Goblin without reviewed jinx capability.
+23. Reject malformed/extra-key decisions and hostile primitives without throwing.
+24. Reject actor-supplied source, impairment, effectiveness, marker, instruction, execution, Vortox, or alignment outcomes.
+25. Produce exactly the four effective events.
+26. Verify shared batch ID, command ID, committed version, consecutive sequences, and baseline.
+27. Bind every choice source field to opportunity, task, tenure, parsed tenure, ability instance, current source, catalog, and revisions.
+28. Verify exact marker payload, window, and recorded removal policy.
+29. Verify exact instruction payload and absence of source/internal fields.
+30. Verify settlement outcome and linkage.
+31. Verify next supported task without a phase transition.
+32. Project only to selected target.
+33. Project to source only when self-targeted.
+34. Hide from non-target source.
+35. Hide from every other player.
+36. Keep player and AI views identical.
+37. Hide source identity, canonical state, IDs, impairment, effectiveness, execution, Storyteller, Vortox, and alignment internals.
 38. Verify stage/value/model-version coupling and ordering.
-39. Validate the complete stored choice-marker-delivery-settlement chain.
-40. Reject missing marker, delivery, or settlement.
-41. Reject duplicate marker, delivery, settlement, choice, opportunity, or task links.
-42. Reject cross-linked source, target, role, catalog, revision, tenure, ability-instance, marker, and delivery values.
-43. Reject malformed model versions, sparse arrays, and extra fields.
-44. Reject tampered canonical state during projection.
-45. Reject naked Cerenovus events.
-46. Reject reordered events.
-47. Reject wrong batch metadata or nonconsecutive sequences.
-48. Reject any forbidden phase, execution, death, removal, or recurrence event mixed into the batch.
-49. Unit-test constructed `DRUNK` gate input as unsupported with no event/receipt authorization.
-50. Unit-test constructed `POISONED` gate input identically.
-51. Verify gate result contains no impairment details.
-52. Verify healthy canonical state passes the gate; do not describe this as immunity.
-53. Verify no Cerenovus test constructs a fake canonical `AbilityImpairmentApplied` history.
-54. Verify replay rejects an effective choice against a directly constructed impairment-conflicting state.
-55. Verify prospective validation rejects partial or corrupted batches without append.
-56. Verify accepted idempotent retry appends nothing.
+39. Validate complete choice-marker-instruction-settlement-opportunity-task-tenure chain.
+40. Reject every missing chain position.
+41. Reject duplicate choice, marker, instruction, settlement, opportunity, and task links.
+42. Reject independently and jointly cross-linked source player, seat, role, catalog, tenure, ability source, instance, target, revision, marker, and delivery.
+43. Reject malformed versions, sparse collections, extra keys, hostile opportunity-ID primitives, malformed canonical IDs, and hostile recipient seats without throwing.
+44. Reject tampered canonical projection state while preserving later-state historical behavior.
+45. Reject each naked Cerenovus event.
+46. Reject every event reordering.
+47. Reject mismatched batch ID, command ID, committed version, and nonconsecutive sequence.
+48. Reject unrelated or forbidden phase/execution/death/removal/recurrence events mixed into the batch.
+49. Unit-test constructed noncanonical DRUNK gate input with exact no-write result.
+50. Unit-test constructed noncanonical POISONED gate input identically.
+51. Verify gate and application failure disclose no impairment details or receipt/event authorization.
+52. Verify healthy canonical state passes without claiming immunity.
+53. Verify no Cerenovus test appends fake canonical `AbilityImpairmentApplied` history.
+54. Reject effective replay against impairment of the actual opportunity source, including forged unaffected payload source.
+55. Reject corrupted prospective batches atomically and allow same command ID after fault removal.
+56. Verify accepted event-summary idempotent retry appends nothing.
 57. Verify different fingerprint on the same command ID conflicts.
-58. Verify metadata, construction, prospective, and commit failures remain retryable and do not burn the command ID.
+58. Verify Cerenovus-specific metadata failure at each event position, construction failure, prospective failure, and accepted-commit failure are retryable/no-burn and succeed after fault removal.
 59. Preserve Witch, Evil Twin, Dreamer, and Seamstress behavior and projection stages.
-60. Verify coverage matrix remains `PARTIAL`.
-61. Run typecheck, lint, complete tests, coverage, and `git diff --check`.
-62. Verify deterministic behavior on Ubuntu and Windows.
+60. Verify sourced Vortox/alignment conclusions remain runtime out of scope and matrix remains `PARTIAL`.
+61. Run typecheck, lint, focused tests, complete tests, coverage, and `git diff --check`.
+62. Verify deterministic behavior on exact-head Ubuntu and Windows CI.
 
-## ruleToTestTraceability
+## exactTestNameTraceability
 
-- Target/self/dead-model boundary: 14–16.
-- Townsfolk/Outsider and out-of-play rule: 17–22.
-- Effective marker and instruction: 25–30.
-- Private knowledge boundary: 32–38.
-- Stored historical validation: 39–44.
-- Atomic/replay/prospective guarantees: 45–48 and 54–58.
-- Impaired rule truth plus unsupported execution boundary: 49–53.
-- Night order: 1–3.
-- Honest partial coverage: 59–62.
+Status values here describe the repair plan, not completed implementation. `EXISTING_REVALIDATE` means a direct test exists but must be rerun after repairs; `PLANNED_REPAIR` means the exact direct test must be added or renamed before claiming completion.
+
+| Item | Rule/contract claim | Exact test file | Exact test name | Status |
+|---:|---|---|---|---|
+| 1 | First-night official order | `packages/rules-snv/src/catalog.test.ts` | `preserves official Cerenovus first-night neighbors witch and fearmonger` | PLANNED_REPAIR |
+| 2 | Other-night official order | `packages/rules-snv/src/catalog.test.ts` | `preserves official Cerenovus other-night neighbors witch and pithag` | PLANNED_REPAIR |
+| 3 | Supported subset order | `packages/rules-snv/src/catalog.test.ts` | `orders the supported subset Witch then Cerenovus then Clockmaker without claiming official adjacency` | PLANNED_REPAIR |
+| 4 | Next-task opportunity | `packages/application/src/game-application-service.test.ts` | `opens the Cerenovus opportunity only when its task is next` | PLANNED_REPAIR |
+| 5 | System opening | `packages/application/src/game-application-service.test.ts` | `allows System to open the Cerenovus opportunity when its task is next` | EXISTING_REVALIDATE |
+| 6 | Storyteller opening | `packages/application/src/game-application-service.test.ts` | `allows Storyteller to open the Cerenovus opportunity when its task is next` | EXISTING_REVALIDATE |
+| 7 | Human/AI opening denied | `packages/application/src/game-application-service.test.ts` | `rejects Human and AI Cerenovus opening attempts without event or opportunity creation` | PLANNED_REPAIR |
+| 8 | Invalid opportunity state | `packages/domain-core/src/cerenovus-replay.test.ts` | `rejects stale closed mismatched duplicate and wrong-revision Cerenovus opportunities` | PLANNED_REPAIR |
+| 9 | Exact tenure/instance | `packages/domain-core/src/cerenovus.test.ts` | `binds the opportunity and choice to exactly one canonical active base Cerenovus tenure and ability instance` | PLANNED_REPAIR |
+| 10 | Source Human submits | `packages/application/src/game-application-service.test.ts` | `accepts SubmitCerenovusAction from the source Human` | PLANNED_REPAIR |
+| 11 | Source AI submits | `packages/application/src/game-application-service.test.ts` | `accepts SubmitCerenovusAction from the source AI` | PLANNED_REPAIR |
+| 12 | Non-source submits denied | `packages/application/src/game-application-service.test.ts` | `rejects SubmitCerenovusAction from non-source Human and AI actors` | PLANNED_REPAIR |
+| 13 | Privileged submit denied | `packages/application/src/game-application-service.test.ts` | `rejects Storyteller and System SubmitCerenovusAction submissions` | PLANNED_REPAIR |
+| 14 | Full self-target | `packages/application/src/game-application-service.test.ts` | `accepts and projects a complete self-targeted Cerenovus action` | PLANNED_REPAIR |
+| 15 | Any roster target | `packages/domain-core/src/cerenovus.test.ts` | `accepts every modeled roster player without consulting life state` | PLANNED_REPAIR |
+| 16 | Unknown target denied | `packages/application/src/game-application-service.test.ts` | `rejects an unknown Cerenovus target without append` | PLANNED_REPAIR |
+| 17 | Townsfolk legal | `packages/domain-core/src/cerenovus.test.ts` | `accepts an on-script Townsfolk selected character` | PLANNED_REPAIR |
+| 18 | Outsider legal | `packages/domain-core/src/cerenovus.test.ts` | `accepts an on-script Outsider selected character` | PLANNED_REPAIR |
+| 19 | Out-of-play legal | `packages/domain-core/src/cerenovus.test.ts` | `accepts a legal selected character absent from assignments` | PLANNED_REPAIR |
+| 20 | Minion denied | `packages/domain-core/src/cerenovus.test.ts` | `rejects an ordinary Minion selected character` | PLANNED_REPAIR |
+| 21 | Demon denied | `packages/domain-core/src/cerenovus.test.ts` | `rejects an ordinary Demon selected character` | PLANNED_REPAIR |
+| 22 | Unsupported types/jinx denied | `packages/domain-core/src/cerenovus.test.ts` | `rejects Traveller Fabled off-script and unsupported Goblin selections` | PLANNED_REPAIR |
+| 23 | Exact hostile decision shape | `packages/domain-core/src/cerenovus.test.ts` | `rejects malformed extra-key and hostile-primitive Cerenovus decisions without throwing` | PLANNED_REPAIR |
+| 24 | No actor-supplied outcomes | `packages/application/src/game-application-service.test.ts` | `rejects actor-supplied Cerenovus source impairment effectiveness marker instruction execution Vortox and alignment outcomes` | PLANNED_REPAIR |
+| 25 | Exact four events | `packages/application/src/game-application-service.test.ts` | `commits exactly choice marker instruction and settlement for healthy Cerenovus` | PLANNED_REPAIR |
+| 26 | Exact metadata/sequences | `packages/application/src/game-application-service.test.ts` | `commits one Cerenovus batch with shared metadata and consecutive sequences` | PLANNED_REPAIR |
+| 27 | Complete source binding | `packages/domain-core/src/cerenovus.test.ts` | `binds every choice source field to the referenced opportunity` | PLANNED_REPAIR |
+| 27 | Forged source replay | `packages/domain-core/src/cerenovus-replay.test.ts` | `rejects forged Cerenovus source provenance independently and in combination` | PLANNED_REPAIR |
+| 28 | Marker payload | `packages/domain-core/src/cerenovus.test.ts` | `records the exact effective Cerenovus marker window and removal policy` | PLANNED_REPAIR |
+| 29 | Instruction privacy | `packages/domain-core/src/cerenovus.test.ts` | `records the exact target instruction without source or internal fields` | PLANNED_REPAIR |
+| 30 | Settlement linkage | `packages/domain-core/src/cerenovus-replay.test.ts` | `settles Cerenovus only after one exact complete effective chain` | PLANNED_REPAIR |
+| 31 | Next supported task | `packages/application/src/game-application-service.test.ts` | `exposes the next supported task after Cerenovus without a phase transition` | PLANNED_REPAIR |
+| 32 | Target-only projection | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `projects the Cerenovus instruction only to the selected target` | PLANNED_REPAIR |
+| 33 | Self-target visibility | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `projects the Cerenovus instruction to the source only when self-targeted` | PLANNED_REPAIR |
+| 34 | Non-target source hidden | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `hides the Cerenovus instruction from a non-target source` | PLANNED_REPAIR |
+| 35 | Others hidden | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `hides the Cerenovus instruction from every other player` | PLANNED_REPAIR |
+| 36 | Player/AI equality | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `keeps Cerenovus player and AI private views identical` | PLANNED_REPAIR |
+| 37 | Internal privacy | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `hides every Cerenovus source canonical internal impairment execution Vortox and alignment field` | PLANNED_REPAIR |
+| 38 | Stage coupling/order | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `couples Cerenovus stage value and model version in canonical order` | PLANNED_REPAIR |
+| 39 | Complete stored chain | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `validates one complete Cerenovus choice marker instruction settlement opportunity task and tenure chain` | PLANNED_REPAIR |
+| 40 | Missing chain facts | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `rejects every missing Cerenovus choice marker instruction settlement opportunity and task position` | PLANNED_REPAIR |
+| 41 | Duplicate chain facts | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `rejects duplicate Cerenovus choice marker instruction settlement opportunity and task links` | PLANNED_REPAIR |
+| 42 | Cross-linked chain facts | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `rejects independently and jointly cross-linked Cerenovus source target catalog tenure ability marker and delivery facts` | PLANNED_REPAIR |
+| 43 | Hostile payload shapes | `packages/domain-core/src/cerenovus.test.ts` | `rejects hostile opportunityId and recipient-seat primitives malformed canonical IDs and extra payload keys without throwing` | PLANNED_REPAIR |
+| 43 | Sparse stored collections | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `rejects sparse Cerenovus choice marker and instruction collections` | PLANNED_REPAIR |
+| 44 | Historical projection | `packages/projections/src/cerenovus-private-knowledge.test.ts` | `does not recompute historical Cerenovus instruction from later character impairment Vortox or alignment state` | PLANNED_REPAIR |
+| 45 | Naked events | `packages/domain-core/src/cerenovus-replay.test.ts` | `rejects each naked Cerenovus event` | PLANNED_REPAIR |
+| 46 | Reordering | `packages/domain-core/src/cerenovus-replay.test.ts` | `rejects every Cerenovus event reordering` | PLANNED_REPAIR |
+| 47 | Wrong metadata | `packages/domain-core/src/cerenovus-replay.test.ts` | `rejects mismatched Cerenovus batch command version and sequence metadata` | PLANNED_REPAIR |
+| 48 | Mixed forbidden events | `packages/domain-core/src/cerenovus-replay.test.ts` | `rejects unrelated and forbidden lifecycle events mixed into a Cerenovus batch` | PLANNED_REPAIR |
+| 49 | DRUNK gate | `packages/domain-core/src/cerenovus.test.ts` | `fails closed for constructed noncanonical DRUNK Cerenovus capability input` | EXISTING_REVALIDATE |
+| 50 | POISONED gate | `packages/domain-core/src/cerenovus.test.ts` | `fails closed for constructed noncanonical POISONED Cerenovus capability input` | EXISTING_REVALIDATE |
+| 51 | Generic no-write gate | `packages/application/src/game-application-service.test.ts` | `returns the exact no-write application boundary for constructed-noncanonical Cerenovus source impairment` | EXISTING_REVALIDATE |
+| 52 | Healthy gate | `packages/domain-core/src/cerenovus.test.ts` | `allows healthy represented state without claiming immunity` | EXISTING_REVALIDATE |
+| 53 | No fake history | `packages/domain-core/src/cerenovus-replay.test.ts` | `uses constructed impairment only as test state and never appends AbilityImpairmentApplied history` | PLANNED_REPAIR |
+| 54 | Actual-source impairment replay | `packages/domain-core/src/cerenovus-replay.test.ts` | `rejects actual-source impairment replay even when payload forges an unaffected source` | PLANNED_REPAIR |
+| 55 | Prospective atomicity/retry | `packages/application/src/game-application-service.test.ts` | `keeps corrupted Cerenovus prospective failure atomic and retryable with the same command ID` | PLANNED_REPAIR |
+| 56 | Idempotent summary | `packages/application/src/game-application-service.test.ts` | `returns the stored Cerenovus event summary idempotently without append` | PLANNED_REPAIR |
+| 57 | Fingerprint conflict | `packages/application/src/game-application-service.test.ts` | `rejects a changed Cerenovus fingerprint on the same command ID` | PLANNED_REPAIR |
+| 58 | Fault retry/no-burn | `packages/application/src/game-application-service.test.ts` | `keeps every Cerenovus metadata construction prospective and commit fault retryable without burning the command ID` | PLANNED_REPAIR |
+| 59 | Prior-role regression | `packages/application/src/game-application-service.test.ts` | `preserves Witch Evil Twin Dreamer and Seamstress behavior after Cerenovus repair` | PLANNED_REPAIR |
+| 60 | Vortox/alignment/matrix boundary | `packages/domain-core/src/cerenovus.test.ts` | `keeps Vortox and alignment-change runtime out of scope and Cerenovus coverage PARTIAL` | PLANNED_REPAIR |
+| 61 | Local gates | `docs/implementation/phase-3-slice-2b16-status.md` | `repair-round-1 local gate record for exact repaired HEAD` | PLANNED_REPAIR |
+| 62 | Exact-head CI | `.github/workflows/ci.yml` (existing; no workflow edit) | Pending exact repaired-HEAD Ubuntu and Windows deterministic CI runs after authorized push | PLANNED_REPAIR |
 
 ## explicitOutOfScope
 
-- Drunk/poisoned Cerenovus simulated choice, marker suppression, and target notification.
-- Generic or role-specific impairment production, import, or injection.
-- Actual madness conduct detection or Storyteller judgment.
-- Actual execution, death, day ending, or execution accounting.
-- Marker expiry, removal, suspension, resumption, source-death cleanup, or source-leaves-play cleanup.
-- Life state, dead-player enforcement, Travellers, and exile.
-- Goblin jinx and Vigormortis.
-- Gained Cerenovus abilities and general character change.
-- Other-night recurrence.
-- First-night completion or phase transition.
-- AI choice generation.
-- UI, Electron, SQLite.
-- Any other slice, including 2B17.
-- Any claim of complete Cerenovus support or Cerenovus immunity.
+- Drunk/poisoned simulation, impairment production/import/injection, Vortox runtime, alignment-change runtime, character/life/effect lifecycle, marker cleanup, judgment, execution, other-night recurrence, Goblin jinx, Vigormortis retention, gained Cerenovus, UI, Electron, persistence, and Slice 2B17.
+
+## implementationFileBoundaryAfterRenewedPass
+
+Production edits, only after renewed `RULE_DESIGN_PASS`, are limited to:
+
+- `packages/domain-core/src/cerenovus.ts`
+- `packages/domain-core/src/event-applier.ts`
+- `packages/domain-core/src/domain-batch-semantics.ts`
+- `packages/projections/src/index.ts`
+- `packages/application/src/game-application-service.ts`
+- optionally `packages/domain-core/src/first-night-action-opportunity.ts` only for shared validation hardening
+
+Tests are limited to existing Cerenovus/application tests, new `cerenovus-replay.test.ts`, new `cerenovus-private-knowledge.test.ts`, and optional direct opportunity tests. No existing test weakening.
 
 ## completionCriteria
 
-- Corrected evidence retains full impaired rule truth and records unsupported canonical reachability.
-- Revised implementation contains no impaired settlement event or union.
-- No generic impairment source, import, or injection is added.
-- The effective-only application guard has exact retryable no-write behavior.
-- Accepted path uses the exact four events and settlement outcome.
-- Target and character validation match sourced rules.
-- Marker history records future window/removal policy without executing lifecycle.
-- Target-only projections hide source identity and all internal facts.
-- Stored validation proves one complete closed chain.
-- Replay, batch, prospective, receipt, retry, and deterministic contracts pass.
-- New and existing tests pass on Ubuntu and Windows.
-- Matrix and PR body mark impaired settlement, lifecycle, judgment, execution, and recurrence unsupported.
-- Cerenovus remains `PARTIAL`.
-- A new independent reviewer returns `RULE_DESIGN_PASS` for the exact corrected evidence, design, and current diff before implementation resumes.
+- Corrected evidence has every mandatory heading, both Vortox revisions/hashes, 27 regressions, `PARTIAL`, and `RULE_READY`.
+- A renewed independent reviewer returns `RULE_DESIGN_PASS` for the exact evidence/design/control/PR diff.
+- Full source/opportunity/tenure binding and canonical ID validation are implemented without changing the event contract.
+- Capability evaluation always uses opportunity source.
+- Every exact-name test exists and passes before completion is claimed.
+- Local and exact-head Ubuntu/Windows gates pass on the repaired frozen HEAD.
+- Final complete review returns `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`, no blockers, with both audit comments reverified.
 
-READY_FOR_RULE_DESIGN_REVIEW
+READY_FOR_RULE_DESIGN_REREVIEW

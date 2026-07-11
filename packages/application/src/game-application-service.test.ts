@@ -29,7 +29,8 @@ import type {
   GameId,
   GeneratedCharacterAssignment,
   SupportedCommandEnvelope,
-  AbilityImpairmentSet
+  AbilityImpairmentSet,
+  DomainEventBatch
 } from "@botc/domain-core";
 import {
   GameApplicationService,
@@ -6801,10 +6802,254 @@ describe("Slice 2B16 Cerenovus first-night integration", () => {
     ...overrides
   } as SupportedCommandEnvelope);
 
+  it("opens the Cerenovus opportunity only when its task is next", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task } = await reachNextCerenovusActionTask(service, commandStore);
+    const result = await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-next-only-cerenovus"), expectedGameVersion: state.gameVersion,
+      actor: systemActor, payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: task.taskId }
+    }));
+    expectAcceptedResult(result);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual(["FirstNightActionOpportunityCreated"]);
+  });
+
+  it("rejects Human and AI Cerenovus opening attempts without event or opportunity creation", async () => {
+    for (const actor of [humanActor, aiActor] as const) {
+      const { service, commandStore } = makeService();
+      const { state, task } = await reachNextCerenovusActionTask(service, commandStore);
+      const before = await commandStore.loadDomainEvents(ids.game);
+      await expect(service.execute(openFirstNightRoleActionOpportunityCommand({
+        commandId: commandId(`reject-open-direct-${actor.kind}`), expectedGameVersion: state.gameVersion,
+        actor, payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: task.taskId }
+      }))).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+      expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    }
+  });
+
   it.each([
-    ["System", systemActor],
-    ["Storyteller", storytellerActor]
-  ] as const)("allows %s to open the Cerenovus opportunity when its task is next", async (label, actor) => {
+    ["accepts SubmitCerenovusAction from the source Human", "human"],
+    ["accepts SubmitCerenovusAction from the source AI", "ai"]
+  ] as const)("%s", async (_label, actorKind) => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId, target.playerId, roleId("dreamer"), {
+      commandId: commandId(`submit-cerenovus-source-${actorKind}`), actor: { kind: actorKind, playerId: opportunity.sourcePlayerId }
+    });
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
+  });
+
+  it("rejects SubmitCerenovusAction from non-source Human and AI actors", async () => {
+    for (const actorKind of ["human", "ai"] as const) {
+      const { service, commandStore } = makeService();
+      const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+      const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+      if (target === undefined) throw new Error("Expected non-source Cerenovus actor");
+      const before = await commandStore.loadDomainEvents(ids.game);
+      const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId, target.playerId, roleId("dreamer"), {
+        commandId: commandId(`reject-cerenovus-non-source-${actorKind}`), actor: { kind: actorKind, playerId: target.playerId }
+      });
+      await expect(service.execute(command)).resolves.toMatchObject({ status: "rejected", code: "ActorPlayerMismatch" });
+      expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    }
+  });
+
+  it("rejects Storyteller and System SubmitCerenovusAction submissions", async () => {
+    for (const actor of [storytellerActor, systemActor] as const) {
+      const { service, commandStore } = makeService();
+      const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+      const target = state.roster?.entries[0];
+      if (target === undefined) throw new Error("Expected Cerenovus target");
+      const before = await commandStore.loadDomainEvents(ids.game);
+      const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId, target.playerId, roleId("dreamer"), {
+        commandId: commandId(`reject-cerenovus-${actor.kind}`), actor
+      });
+      await expect(service.execute(command)).resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+      expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    }
+  });
+
+  it("rejects an unknown Cerenovus target without append", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const before = await commandStore.loadDomainEvents(ids.game);
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+      playerId("unknown-cerenovus-target"), roleId("dreamer"), { commandId: commandId("reject-unknown-cerenovus-target") });
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "rejected", code: "InvalidCerenovusTarget" });
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+  });
+
+  it("rejects actor-supplied Cerenovus source impairment effectiveness marker instruction execution Vortox and alignment outcomes", async () => {
+    const forbidden = ["sourceImpairment", "effective", "marker", "instruction", "execution", "vortox", "alignment"] as const;
+    for (const key of forbidden) {
+      const { service, commandStore } = makeService();
+      const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+      const target = state.roster?.entries[0];
+      if (target === undefined) throw new Error("Expected Cerenovus target");
+      const before = await commandStore.loadDomainEvents(ids.game);
+      const base = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId, target.playerId, roleId("dreamer"));
+      await expect(service.execute({ ...base, commandId: commandId(`forbidden-cerenovus-${key}`), payload: { ...base.payload, [key]: true } } as unknown as SupportedCommandEnvelope))
+        .resolves.toMatchObject({ status: "rejected", code: "InvalidCerenovusActionDecision" });
+      expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    }
+  });
+
+  it("returns the exact no-write application boundary for constructed-noncanonical Cerenovus source impairment", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId, target.playerId, roleId("dreamer"));
+    const impaired: GameState = { ...state, abilityImpairments: { impairments: [{
+      impairmentId: abilityImpairmentId("constructed-direct-cerenovus-poison"), kind: "POISONED",
+      sourceKind: "SNAKE_CHARMER_DEMON_HIT", sourcePlayerId: playerId("constructed-source"),
+      affectedPlayerId: opportunity.sourcePlayerId, affectedSeatNumber: opportunity.sourceSeatNumber,
+      affectedRole: opportunity.sourceRole, sourceCharacterStateRevision: state.currentCharacterState?.revision ?? 1
+    }] } };
+    const boundary = service as unknown as { createBatchOrReject(commandValue: SupportedCommandEnvelope, stateValue: GameState, currentGameVersion: number): CommandResult };
+    const before = await commandStore.loadDomainEvents(ids.game);
+    expect(boundary.createBatchOrReject(command, impaired, state.gameVersion)).toMatchObject({
+      status: "failed", code: "ApplicationNotConfigured", retryable: true
+    });
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+  });
+
+  it("keeps corrupted Cerenovus prospective failure atomic and retryable with the same command ID", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+      target.playerId, roleId("dreamer"), { commandId: commandId("prospective-retry-cerenovus") });
+    const boundary = service as unknown as { createBatch: (...args: readonly unknown[]) => DomainEventBatch };
+    const original = boundary.createBatch.bind(service);
+    boundary.createBatch = (...args: readonly unknown[]): DomainEventBatch => {
+      const created = original(...args);
+      return { ...created, events: created.events.map((event, index) => index === 0 && event.eventType === "CerenovusChoiceRecorded"
+        ? { ...event, payload: { ...event.payload, sourcePlayerId: playerId("forged-prospective-source") } }
+        : event) };
+    };
+    const before = await commandStore.loadDomainEvents(ids.game);
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", retryable: true });
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    boundary.createBatch = original;
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
+  });
+
+  it("keeps every Cerenovus metadata construction prospective and commit fault retryable without burning the command ID", async () => {
+    for (const fault of ["metadata", "commit"] as const) {
+      const store = new MemoryCommandCommitStore();
+      const idsGenerator = new FaultInjectingIdGenerator();
+      const { service } = makeService(store, testSetupGenerator, idsGenerator);
+      const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, store);
+      const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+      if (target === undefined) throw new Error("Expected Cerenovus target");
+      const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+        target.playerId, roleId("dreamer"), { commandId: commandId(`retry-${fault}-cerenovus`) });
+      const before = await store.loadDomainEvents(ids.game);
+      if (fault === "metadata") idsGenerator.failNextBatchId = true;
+      else store.failBeforeCommit = true;
+      await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", retryable: true });
+      expect(await store.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+      expect(await store.loadDomainEvents(ids.game)).toStrictEqual(before);
+      await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
+    }
+  });
+
+  it("preserves Witch Evil Twin Dreamer and Seamstress behavior after Cerenovus repair", async () => {
+    const { service, commandStore } = makeService();
+    const { state } = await reachNextCerenovusActionTask(service, commandStore);
+    expect(state.firstNightTaskPlan?.tasks.map((entry) => entry.taskType)).toEqual(expect.arrayContaining([
+      "WITCH_ACTION", "DREAMER_ACTION", "SEAMSTRESS_ACTION"
+    ]));
+    expect(state.firstNightTaskPlan?.taskCatalogSnapshot.definitions.map((entry) => entry.taskType)).toContain("EVIL_TWIN_SETUP");
+  });
+
+  it("accepts and projects a complete self-targeted Cerenovus action", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+      opportunity.sourcePlayerId, roleId("dreamer"), { commandId: commandId("self-target-cerenovus") });
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
+    const accepted = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    if (accepted === undefined) throw new Error("Expected self-targeted Cerenovus state");
+    expect(buildPlayerPrivateKnowledgeView(accepted, opportunity.sourcePlayerId).cerenovusMadnessInstruction).toBeDefined();
+  });
+
+  it("commits exactly choice marker instruction and settlement for healthy Cerenovus", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const before = await commandStore.loadDomainEvents(ids.game);
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+      target.playerId, roleId("dreamer"), { commandId: commandId("exact-four-cerenovus") });
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
+    expect((await commandStore.loadDomainEvents(ids.game)).slice(before.length).map((event) => event.eventType)).toStrictEqual([
+      "CerenovusChoiceRecorded", "CerenovusMadnessMarked", "CerenovusMadnessInstructionDelivered", "ScheduledTaskSettled"
+    ]);
+  });
+
+  it("commits one Cerenovus batch with shared metadata and consecutive sequences", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+      target.playerId, roleId("dreamer"), { commandId: commandId("metadata-cerenovus") });
+    await service.execute(command);
+    const events = (await commandStore.loadDomainEvents(ids.game)).slice(-4);
+    expect(new Set(events.map((event) => event.batchId)).size).toBe(1);
+    expect(new Set(events.map((event) => event.commandId)).size).toBe(1);
+    expect(new Set(events.map((event) => event.gameVersion)).size).toBe(1);
+    expect(events.map((event) => event.eventSequence)).toStrictEqual(events.map((_, index) => events[0]!.eventSequence + index));
+  });
+
+  it("exposes the next supported task after Cerenovus without a phase transition", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    await service.execute(submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+      target.playerId, roleId("dreamer"), { commandId: commandId("next-after-cerenovus") }));
+    const accepted = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(accepted?.phase).toBe("FIRST_NIGHT");
+    expect(accepted?.firstNightTaskPlan?.tasks[accepted.firstNightTaskProgress?.settlements.length ?? -1]?.taskType).not.toBe("CERENOVUS_ACTION");
+  });
+
+  it("returns the stored Cerenovus event summary idempotently without append", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+      target.playerId, roleId("dreamer"), { commandId: commandId("idempotent-cerenovus-direct") });
+    await service.execute(command);
+    const count = (await commandStore.loadDomainEvents(ids.game)).length;
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", idempotent: true, eventCount: 4 });
+    expect((await commandStore.loadDomainEvents(ids.game)).length).toBe(count);
+  });
+
+  it("rejects a changed Cerenovus fingerprint on the same command ID", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId,
+      target.playerId, roleId("dreamer"), { commandId: commandId("fingerprint-cerenovus-direct") });
+    await service.execute(command);
+    await expect(service.execute({ ...command, payload: { ...command.payload, decision: {
+      kind: "CHOOSE_PLAYER_AND_CHARACTER", targetPlayerId: target.playerId, chosenRoleId: roleId("mutant")
+    } } } as SupportedCommandEnvelope)).resolves.toMatchObject({ status: "rejected", code: "CommandIdempotencyConflict" });
+  });
+
+  it.each([
+    ["allows System to open the Cerenovus opportunity when its task is next", systemActor],
+    ["allows Storyteller to open the Cerenovus opportunity when its task is next", storytellerActor]
+  ] as const)("%s", async (label, actor) => {
     expect(label.length).toBeGreaterThan(0);
     const { service, commandStore } = makeService();
     const { state, task } = await reachNextCerenovusActionTask(service, commandStore);

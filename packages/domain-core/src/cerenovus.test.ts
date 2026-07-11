@@ -20,13 +20,14 @@ import {
   seatNumber,
   scheduledTaskId,
   validateCerenovusActionDecision,
+  validateCerenovusChoiceAgainstState,
   validateCerenovusChoiceRecordedPayloadShape,
   validateCerenovusInstructionAgainstChain,
   validateCerenovusMadnessInstructionDeliveredPayloadShape,
   validateCerenovusMadnessMarkedPayloadShape,
   validateCerenovusMarkerAgainstChoice
 } from "./index.js";
-import type { AbilityImpairmentSet, CerenovusActionOpportunity, GeneratedSetup, PlayerRoster, RoleSetupSnapshot } from "./index.js";
+import type { AbilityImpairmentSet, CerenovusActionOpportunity, CerenovusChoiceRecordedPayload, GeneratedSetup, PlayerRoster, RoleSetupSnapshot, RoleTenureState } from "./index.js";
 
 const role = (id: string, characterType: RoleSetupSnapshot["characterType"], defaultAlignment: RoleSetupSnapshot["defaultAlignment"]): RoleSetupSnapshot => ({
   roleId: roleId(id), characterType, defaultAlignment, edition: "sects-and-violets",
@@ -65,6 +66,17 @@ const choice = (chosenRoleId = roleId("dreamer")) => createCerenovusChoiceRecord
   rulesBaselineVersion: RULES_BASELINE_VERSION, opportunity, settlementCharacterStateRevision: 1,
   targetPlayerId, chosenRoleId, roster, setup
 });
+const roleTenures: RoleTenureState = {
+  records: [{
+    roleTenureId: tenureId,
+    playerId: sourcePlayerId,
+    seatNumber: seatNumber(1),
+    roleId: "cerenovus",
+    acquiredCharacterStateRevision: 1,
+    startedBy: { kind: "CHARACTERS_ASSIGNED", sourceEventId: "event-assigned" as never, sourceEventSequence: 1, characterStateRevision: 1 }
+  }],
+  processedTransitionFactIds: []
+};
 
 const impairment = (kind: "DRUNK" | "POISONED"): AbilityImpairmentSet => ({ impairments: [kind === "DRUNK" ? {
   impairmentId: abilityImpairmentId("constructed-drunk"), kind, sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
@@ -77,6 +89,66 @@ const impairment = (kind: "DRUNK" | "POISONED"): AbilityImpairmentSet => ({ impa
 }] });
 
 describe("Cerenovus effective-only first-night facts", () => {
+  it("accepts every modeled roster player without consulting life state", () => {
+    for (const target of roster) {
+      expect(() => createCerenovusChoiceRecordedPayload({ rulesBaselineVersion: RULES_BASELINE_VERSION, opportunity,
+        settlementCharacterStateRevision: 1, targetPlayerId: target.playerId, chosenRoleId: roleId("dreamer"), roster, setup })).not.toThrow();
+    }
+  });
+
+  it("accepts an on-script Townsfolk selected character", () => {
+    expect(validateCerenovusChoiceRecordedPayloadShape(choice(roleId("dreamer")))).toEqual({ valid: true });
+  });
+
+  it("accepts an on-script Outsider selected character", () => {
+    expect(validateCerenovusChoiceRecordedPayloadShape(choice(roleId("mutant")))).toEqual({ valid: true });
+  });
+
+  it("accepts a legal selected character absent from assignments", () => {
+    expect(setup.actualRoles.some((entry) => entry.roleId === "mutant")).toBe(false);
+    expect(validateCerenovusChoiceRecordedPayloadShape(choice(roleId("mutant")))).toEqual({ valid: true });
+  });
+
+  it("rejects an ordinary Minion selected character", () => {
+    expect(() => choice(roleId("cerenovus"))).toThrow("on-script Townsfolk or Outsider");
+  });
+
+  it("rejects an ordinary Demon selected character", () => {
+    expect(() => choice(roleId("fang_gu"))).toThrow("on-script Townsfolk or Outsider");
+  });
+
+  it("rejects Traveller Fabled off-script and unsupported Goblin selections", () => {
+    for (const selected of ["traveller", "fabled", "off_script", "goblin"]) {
+      expect(() => choice(roleId(selected))).toThrow("on-script Townsfolk or Outsider");
+    }
+  });
+
+  it("rejects malformed extra-key and hostile-primitive Cerenovus decisions without throwing", () => {
+    const candidates: readonly unknown[] = [undefined, null, false, 0, 1, "", {}, [],
+      { kind: "CHOOSE_PLAYER_AND_CHARACTER", targetPlayerId, chosenRoleId: roleId("dreamer"), effective: true }];
+    for (const candidate of candidates) {
+      expect(() => validateCerenovusActionDecision(candidate)).not.toThrow();
+      expect(validateCerenovusActionDecision(candidate).valid).toBe(false);
+    }
+  });
+
+  it("records the exact effective Cerenovus marker window and removal policy", () => {
+    expect(createCerenovusMadnessMarkedPayload(choice())).toMatchObject({ markerStatus: "ESTABLISHED",
+      instructionWindow: "TOMORROW_DAY_AND_NIGHT", removalRule: "NEXT_DAWN_OR_SOURCE_DEATH_OR_LEAVES_PLAY" });
+  });
+
+  it("records the exact target instruction without source or internal fields", () => {
+    const recorded = choice();
+    const instruction = createCerenovusMadnessInstructionDeliveredPayload(recorded, createCerenovusMadnessMarkedPayload(recorded));
+    expect(instruction).toMatchObject({ recipientPlayerId: targetPlayerId, selectedByCharacter: "cerenovus" });
+    expect(JSON.stringify(instruction)).not.toMatch(/sourcePlayer|sourceSeat|abilityInstance|impair|execution|vortox/i);
+  });
+
+  it("keeps Vortox and alignment-change runtime out of scope and Cerenovus coverage PARTIAL", () => {
+    const serialized = JSON.stringify(choice());
+    expect(serialized).not.toMatch(/vortox|alignmentChange|alignment-change/i);
+  });
+
   it("accepts only the exact decision surface and deterministic ability identity", () => {
     expect(validateCerenovusActionDecision({ kind: "CHOOSE_PLAYER_AND_CHARACTER", targetPlayerId, chosenRoleId: roleId("dreamer") })).toEqual({ valid: true });
     expect(validateCerenovusActionDecision({ kind: "CHOOSE_PLAYER_AND_CHARACTER", targetPlayerId, chosenRoleId: roleId("dreamer"), effective: true }).valid).toBe(false);
@@ -107,6 +179,18 @@ describe("Cerenovus effective-only first-night facts", () => {
       supported: false,
       reason: "SOURCE_IMPAIRMENT_UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY",
       eventPolicy: "CREATE_NO_EVENTS", receiptPolicy: "WRITE_NO_RECEIPT", opportunityPolicy: "KEEP_OPEN"
+    });
+  });
+
+  it("fails closed for constructed noncanonical DRUNK Cerenovus capability input", () => {
+    expect(evaluateCerenovusEffectiveOnlyCapability({ sourcePlayerId, abilityImpairments: impairment("DRUNK") })).toMatchObject({
+      supported: false, eventPolicy: "CREATE_NO_EVENTS", receiptPolicy: "WRITE_NO_RECEIPT", opportunityPolicy: "KEEP_OPEN"
+    });
+  });
+
+  it("fails closed for constructed noncanonical POISONED Cerenovus capability input", () => {
+    expect(evaluateCerenovusEffectiveOnlyCapability({ sourcePlayerId, abilityImpairments: impairment("POISONED") })).toMatchObject({
+      supported: false, eventPolicy: "CREATE_NO_EVENTS", receiptPolicy: "WRITE_NO_RECEIPT", opportunityPolicy: "KEEP_OPEN"
     });
   });
 
@@ -210,5 +294,56 @@ describe("Cerenovus effective-only first-night facts", () => {
     expect(evaluateCerenovusEffectiveOnlyCapability({
       sourcePlayerId: playerId("unaffected-player"), abilityImpairments: impairment("DRUNK")
     })).toEqual({ supported: true });
+  });
+
+  it("binds every choice source field to the referenced opportunity", () => {
+    const recorded = choice();
+    expect(validateCerenovusChoiceAgainstState({ choice: recorded, opportunity, roster, setup, roleTenures })).toEqual({ valid: true });
+    const mutations: readonly [string, CerenovusChoiceRecordedPayload][] = [
+      ["sourcePlayerId", { ...recorded, sourcePlayerId: playerId("forged-source") }],
+      ["sourceSeatNumber", { ...recorded, sourceSeatNumber: seatNumber(2) }],
+      ["sourceRole", { ...recorded, sourceRole: { ...recorded.sourceRole, roleId: roleId("witch") } }],
+      ["abilitySource.kind", { ...recorded, abilitySource: { ...recorded.abilitySource, kind: "PHILOSOPHER_GRANT" as never } }],
+      ["abilitySource.role", { ...recorded, abilitySource: { ...recorded.abilitySource, abilityRoleId: "witch" as never } }],
+      ["abilitySource.tenure", { ...recorded, abilitySource: { ...recorded.abilitySource, roleTenureId: formatRoleTenureId({ seatNumber: seatNumber(2), roleId: "cerenovus", acquiredCharacterStateRevision: 1 }) } }],
+      ["abilitySource.acquisition", { ...recorded, abilitySource: { ...recorded.abilitySource, acquiredCharacterStateRevision: 2 } }]
+    ];
+    for (const [label, forged] of mutations) {
+      expect(validateCerenovusChoiceAgainstState({ choice: forged, opportunity, roster, setup, roleTenures }), label).toMatchObject({ valid: false });
+    }
+  });
+
+  it("binds the opportunity and choice to exactly one canonical active base Cerenovus tenure and ability instance", () => {
+    const recorded = choice();
+    const invalidTenures: readonly [string, RoleTenureState][] = [
+      ["missing", { records: [], processedTransitionFactIds: [] }],
+      ["duplicate", { records: [roleTenures.records[0]!, roleTenures.records[0]!], processedTransitionFactIds: [] }],
+      ["player", { ...roleTenures, records: [{ ...roleTenures.records[0]!, playerId: playerId("wrong") }] }],
+      ["seat", { ...roleTenures, records: [{ ...roleTenures.records[0]!, seatNumber: seatNumber(2) }] }],
+      ["role", { ...roleTenures, records: [{ ...roleTenures.records[0]!, roleId: "philosopher" }] }],
+      ["acquisition", { ...roleTenures, records: [{ ...roleTenures.records[0]!, acquiredCharacterStateRevision: 2 }] }]
+    ];
+    for (const [label, candidate] of invalidTenures) {
+      expect(validateCerenovusChoiceAgainstState({ choice: recorded, opportunity, roster, setup, roleTenures: candidate }), label).toMatchObject({ valid: false });
+    }
+  });
+
+  it("rejects hostile opportunityId and recipient-seat primitives malformed canonical IDs and extra payload keys without throwing", () => {
+    const recorded = choice();
+    const marker = createCerenovusMadnessMarkedPayload(recorded);
+    const instruction = createCerenovusMadnessInstructionDeliveredPayload(recorded, marker);
+    const hostile: readonly unknown[] = [undefined, null, false, 0, 1, {}, [], "", " ", "bad", "first-night-v1:WITCH_ACTION:seat-01:opportunity-01", "first-night-v1:CERENOVUS_ACTION:seat-00:opportunity-01", "first-night-v1:CERENOVUS_ACTION:seat-01:opportunity-00"];
+    for (const opportunityId of hostile) {
+      expect(() => validateCerenovusChoiceRecordedPayloadShape({ ...recorded, opportunityId, choiceId: `cerenovus-choice-v1:${String(opportunityId)}` })).not.toThrow();
+      expect(validateCerenovusChoiceRecordedPayloadShape({ ...recorded, opportunityId, choiceId: `cerenovus-choice-v1:${String(opportunityId)}` }).valid).toBe(false);
+      expect(() => validateCerenovusMadnessMarkedPayloadShape({ ...marker, opportunityId, choiceId: `cerenovus-choice-v1:${String(opportunityId)}`, markerId: `cerenovus-madness-marker-v1:${String(opportunityId)}` })).not.toThrow();
+      expect(validateCerenovusMadnessMarkedPayloadShape({ ...marker, opportunityId, choiceId: `cerenovus-choice-v1:${String(opportunityId)}`, markerId: `cerenovus-madness-marker-v1:${String(opportunityId)}` }).valid).toBe(false);
+      expect(() => validateCerenovusMadnessInstructionDeliveredPayloadShape({ ...instruction, opportunityId, choiceId: `cerenovus-choice-v1:${String(opportunityId)}`, markerId: `cerenovus-madness-marker-v1:${String(opportunityId)}` })).not.toThrow();
+      expect(validateCerenovusMadnessInstructionDeliveredPayloadShape({ ...instruction, opportunityId, choiceId: `cerenovus-choice-v1:${String(opportunityId)}`, markerId: `cerenovus-madness-marker-v1:${String(opportunityId)}` }).valid).toBe(false);
+    }
+    for (const recipientSeatNumber of [undefined, null, false, 0, 13, {}, []]) {
+      expect(() => validateCerenovusMadnessInstructionDeliveredPayloadShape({ ...instruction, recipientSeatNumber })).not.toThrow();
+      expect(validateCerenovusMadnessInstructionDeliveredPayloadShape({ ...instruction, recipientSeatNumber }).valid).toBe(false);
+    }
   });
 });

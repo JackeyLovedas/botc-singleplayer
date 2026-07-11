@@ -1,15 +1,17 @@
 {
-  "status": "RUNNING",
+  "status": "READY_FOR_PRE_PUBLISH_AUDIT",
   "currentPR": 18,
   "currentBranch": "phase-3/cerenovus-first-night-madness-marker",
   "currentSlice": "2B16",
   "reviewedHead": null,
-  "repairRound": 0,
+  "repairRound": 1,
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "rescopeAuthorization": "CERENOVUS_EFFECTIVE_ONLY",
+  "currentDesignHash": "743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12",
+  "designRevalidationReportHash": "643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c",
   "completedSlices": ["2B13", "2B14", "2B15"],
-  "lastAction": "Committed and pushed preliminary product HEAD a59a9489adbd5032bf6adac3d98e280d7d7cbd05, then opened unique PR #18 at https://github.com/JackeyLovedas/botc-singleplayer/pull/18 with the complete effective-only rule, source, projection, historical, Storyteller, impairment, test, coverage, and merge-gate sections.",
+  "lastAction": "Materialized and reverse-verified the targeted renewed design revalidation for design SHA-256 743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12 as report SHA-256 643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c. RULE_DESIGN_PASS remains valid with no blockers; implementation local gates remain 24 files / 821 tests. Exact repaired-HEAD GitHub CI remains pending until an authorized push.",
   "lastError": null,
   "blockerAudit": [
     {
@@ -17,7 +19,21 @@
       "status": "RESCOPED_NOT_ERASED",
       "finding": "Current canonical histories cannot create Philosopher-duplicate drunkenness or Snake-Charmer-hit poisoning on a still-active base Cerenovus. Directly constructed impairment sets are not canonical stored histories.",
       "resolution": "User authorized CERENOVUS_EFFECTIVE_ONLY; impaired simulation remains unsupported and implementation requires renewed rule-design review."
+    },
+    {
+      "kind": "FINAL_REVIEW_ROUND_1",
+      "status": "REPAIR_REQUIRED",
+      "reviewedHead": "86d973485e940c0ef0469dd169db3ab1dc7a417d",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "designRepairStatus": "RULE_DESIGN_PASS",
+      "blockers": [
+        "Bind every Cerenovus choice source field and tenure fact to the referenced opportunity and evaluate impairment using opportunity source.",
+        "Require canonical opportunityId runtime validation before every formatter and add hostile primitive cases.",
+        "Implement missing direct Cerenovus replay, batch, prospective, actor, target, stored-chain, metadata, and retry tests with exact test-name traceability.",
+        "Use every mandatory rule-evidence heading and record explicit sourced VortoxRules and alignmentChangeRules."
+      ]
     }
   ],
-  "nextAction": "Commit and push the bounded PR bookkeeping docs, update PR #18 to the final docs HEAD, then wait for exact-HEAD required CI without modifying the frozen branch"
+  "nextAction": "Controller performs the required pre-publish audit; do not commit or push before authorization"
 }

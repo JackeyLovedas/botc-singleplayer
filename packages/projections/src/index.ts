@@ -382,7 +382,7 @@ const requireDeliveredCerenovusMadnessInstructionsAreSettled = (
   );
   if (state.cerenovusChoices === undefined && state.cerenovusMadnessMarkers === undefined &&
       state.cerenovusMadnessInstructions === undefined && cerenovusSettlements.length === 0) return [];
-  if (state.setup === undefined || state.roster === undefined || state.firstNightTaskPlan === undefined ||
+  if (state.setup === undefined || state.roster === undefined || state.firstNightTaskPlan === undefined || state.seamstressRoleTenureState === undefined ||
       state.firstNightActionOpportunities === undefined || !isPlainRecord(state.cerenovusChoices) ||
       !Array.isArray(state.cerenovusChoices.choices) || !isPlainRecord(state.cerenovusMadnessMarkers) ||
       !Array.isArray(state.cerenovusMadnessMarkers.markers) || !isPlainRecord(state.cerenovusMadnessInstructions) ||
@@ -424,7 +424,13 @@ const requireDeliveredCerenovusMadnessInstructionsAreSettled = (
         !sameRoleSetupSnapshot(task[0].source.role, choice.sourceRole)) {
       throw new DomainError("PrivateKnowledgeUnavailable", "Cerenovus choice requires one exact closed opportunity and base task source");
     }
-    const choiceStateValidation = validateCerenovusChoiceAgainstState({ choice, opportunity, roster: state.roster.entries, setup: state.setup });
+    const choiceStateValidation = validateCerenovusChoiceAgainstState({
+      choice,
+      opportunity,
+      roster: state.roster.entries,
+      setup: state.setup,
+      roleTenures: state.seamstressRoleTenureState
+    });
     if (!choiceStateValidation.valid) throw new DomainError("PrivateKnowledgeUnavailable", choiceStateValidation.reason);
     const matchingMarkers = markers.filter((entry) => isPlainRecord(entry) && entry.choiceId === choice.choiceId);
     const matchingInstructions = instructions.filter((entry) => isPlainRecord(entry) && entry.choiceId === choice.choiceId);

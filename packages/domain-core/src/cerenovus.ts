@@ -10,6 +10,7 @@ import type { PlayerRoster, SeatNumber } from "./player-roster.js";
 import type { GeneratedSetup, RoleSetupSnapshot } from "./setup-types.js";
 import { sameRoleSetupSnapshot } from "./setup-types.js";
 import { parseRoleTenureId } from "./seamstress.js";
+import type { RoleTenureState } from "./seamstress.js";
 
 export const CERENOVUS_CHOICE_MODEL_VERSION = "cerenovus-choice-v1" as const;
 export const CERENOVUS_MADNESS_MARKER_VERSION = "cerenovus-madness-marker-v1" as const;
@@ -130,6 +131,11 @@ export type CerenovusValidationResult = { readonly valid: true } | { readonly va
 const fail = (reason: string): CerenovusValidationResult => ({ valid: false, reason });
 const nonEmpty = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 const positiveInteger = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
+const isSeatNumber = (value: unknown): value is SeatNumber =>
+  typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 12;
+const isCanonicalCerenovusOpportunityId = (value: unknown): value is ActionOpportunityId =>
+  typeof value === "string" &&
+  /^first-night-v1:CERENOVUS_ACTION:seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)$/.test(value);
 const seatText = (seatNumber: SeatNumber): string => String(seatNumber).padStart(2, "0");
 const canonicalJson = (value: unknown): string => {
   const normalize = (candidate: unknown): unknown => {
@@ -267,16 +273,27 @@ const CHOICE_KEYS = [...PROVENANCE_KEYS, "choiceId", "chosenGoodRole", "chosenGo
 const MARKER_KEYS = ["abilitySource", "appliedNightNumber", "choiceId", "instructionWindow", "madAboutRole", "madAboutRoleId", "markerId", "markerStatus", "markerVersion", "nightNumber", "opportunityId", "removalRule", "roleCatalogSignature", "rulesBaselineVersion", "sourceAbilityDependency", "sourceAbilityInstanceId", "sourceCharacterStateRevision", "sourcePlayerId", "sourceRole", "sourceRoleTenureId", "sourceSeatNumber", "targetPlayerId", "targetSeatNumber", "taskId", "taskType"] as const;
 const INSTRUCTION_KEYS = ["choiceId", "deliveryCharacterStateRevision", "deliveryId", "deliveryStatus", "instructionWindow", "madAboutRole", "madAboutRoleId", "markerId", "modelVersion", "nightNumber", "opportunityId", "recipientPlayerId", "recipientSeatNumber", "roleCatalogSignature", "rulesBaselineVersion", "selectedByCharacter", "taskId", "taskType"] as const;
 
-const validAbilitySource = (value: unknown, roleTenureId: unknown, sourceAbilityInstanceId: unknown): boolean => {
+const validAbilitySource = (
+  value: unknown,
+  roleTenureId: unknown,
+  sourceAbilityInstanceId: unknown,
+  sourceSeatNumber: unknown
+): boolean => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["abilityRoleId", "acquiredCharacterStateRevision", "kind", "roleTenureId"])) return false;
-  const parsed = parseCerenovusAbilityInstanceId(sourceAbilityInstanceId);
-  return value.kind === "ROLE_TENURE" && value.abilityRoleId === "cerenovus" && value.roleTenureId === roleTenureId && positiveInteger(value.acquiredCharacterStateRevision) && parsed.valid && parsed.roleTenureId === roleTenureId && parsed.acquiredCharacterStateRevision === value.acquiredCharacterStateRevision;
+  const tenure = parseRoleTenureId(roleTenureId);
+  const instance = parseCerenovusAbilityInstanceId(sourceAbilityInstanceId);
+  return isSeatNumber(sourceSeatNumber) && positiveInteger(value.acquiredCharacterStateRevision) &&
+    value.kind === "ROLE_TENURE" && value.abilityRoleId === "cerenovus" && value.roleTenureId === roleTenureId &&
+    tenure.valid && tenure.roleId === "cerenovus" && tenure.seatNumber === sourceSeatNumber &&
+    tenure.acquiredCharacterStateRevision === value.acquiredCharacterStateRevision &&
+    instance.valid && instance.roleTenureId === roleTenureId && instance.seatNumber === sourceSeatNumber &&
+    instance.acquiredCharacterStateRevision === value.acquiredCharacterStateRevision;
 };
 
 const validateChoiceProvenance = (value: Record<string, unknown>): CerenovusValidationResult =>
-  nonEmpty(value.rulesBaselineVersion) && value.nightNumber === 1 && nonEmpty(value.taskId) && value.taskType === "CERENOVUS_ACTION" && nonEmpty(value.opportunityId) &&
-  nonEmpty(value.sourcePlayerId) && positiveInteger(value.sourceSeatNumber) && hasExactRoleSetupSnapshotShape(value.sourceRole) && value.sourceRole.roleId === "cerenovus" &&
-  nonEmpty(value.sourceRoleTenureId) && nonEmpty(value.sourceAbilityInstanceId) && validAbilitySource(value.abilitySource, value.sourceRoleTenureId, value.sourceAbilityInstanceId) &&
+  nonEmpty(value.rulesBaselineVersion) && value.nightNumber === 1 && nonEmpty(value.taskId) && value.taskType === "CERENOVUS_ACTION" && isCanonicalCerenovusOpportunityId(value.opportunityId) &&
+  nonEmpty(value.sourcePlayerId) && isSeatNumber(value.sourceSeatNumber) && hasExactRoleSetupSnapshotShape(value.sourceRole) && value.sourceRole.roleId === "cerenovus" &&
+  nonEmpty(value.sourceRoleTenureId) && nonEmpty(value.sourceAbilityInstanceId) && validAbilitySource(value.abilitySource, value.sourceRoleTenureId, value.sourceAbilityInstanceId, value.sourceSeatNumber) &&
   positiveInteger(value.opportunityCharacterStateRevision) && positiveInteger(value.settlementCharacterStateRevision) &&
   value.settlementCharacterStateRevision >= value.opportunityCharacterStateRevision
     ? { valid: true } : fail("Cerenovus choice provenance is invalid");
@@ -295,11 +312,14 @@ export const validateCerenovusChoiceRecordedPayloadShape = (value: unknown): Cer
 export const validateCerenovusMadnessMarkedPayloadShape = (value: unknown): CerenovusValidationResult => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, MARKER_KEYS)) return fail("CerenovusMadnessMarked must have exact keys");
   if (!hasExactRoleSetupSnapshotShape(value.sourceRole) || !hasExactRoleSetupSnapshotShape(value.madAboutRole) || !isPlainRecord(value.sourceAbilityDependency)) return fail("CerenovusMadnessMarked embedded values are invalid");
+  if (!isCanonicalCerenovusOpportunityId(value.opportunityId) || !isSeatNumber(value.sourceSeatNumber) || !isSeatNumber(value.targetSeatNumber)) {
+    return fail("CerenovusMadnessMarked opportunity or seat fields are invalid");
+  }
   return nonEmpty(value.rulesBaselineVersion) && value.markerVersion === CERENOVUS_MADNESS_MARKER_VERSION && value.nightNumber === 1 && value.appliedNightNumber === 1 &&
-    value.markerId === formatCerenovusMarkerId(value.opportunityId as ActionOpportunityId) && value.choiceId === formatCerenovusChoiceId(value.opportunityId as ActionOpportunityId) &&
-    nonEmpty(value.taskId) && value.taskType === "CERENOVUS_ACTION" && nonEmpty(value.sourcePlayerId) && positiveInteger(value.sourceSeatNumber) && value.sourceRole.roleId === "cerenovus" &&
-    nonEmpty(value.sourceRoleTenureId) && nonEmpty(value.sourceAbilityInstanceId) && validAbilitySource(value.abilitySource, value.sourceRoleTenureId, value.sourceAbilityInstanceId) && positiveInteger(value.sourceCharacterStateRevision) &&
-    nonEmpty(value.targetPlayerId) && positiveInteger(value.targetSeatNumber) && nonEmpty(value.madAboutRoleId) && value.madAboutRole.roleId === value.madAboutRoleId &&
+    value.markerId === formatCerenovusMarkerId(value.opportunityId) && value.choiceId === formatCerenovusChoiceId(value.opportunityId) &&
+    nonEmpty(value.taskId) && value.taskType === "CERENOVUS_ACTION" && nonEmpty(value.sourcePlayerId) && value.sourceRole.roleId === "cerenovus" &&
+    nonEmpty(value.sourceRoleTenureId) && nonEmpty(value.sourceAbilityInstanceId) && validAbilitySource(value.abilitySource, value.sourceRoleTenureId, value.sourceAbilityInstanceId, value.sourceSeatNumber) && positiveInteger(value.sourceCharacterStateRevision) &&
+    nonEmpty(value.targetPlayerId) && nonEmpty(value.madAboutRoleId) && value.madAboutRole.roleId === value.madAboutRoleId &&
     (value.madAboutRole.characterType === "TOWNSFOLK" || value.madAboutRole.characterType === "OUTSIDER") && nonEmpty(value.roleCatalogSignature) &&
     value.markerStatus === "ESTABLISHED" && value.instructionWindow === "TOMORROW_DAY_AND_NIGHT" && value.removalRule === "NEXT_DAWN_OR_SOURCE_DEATH_OR_LEAVES_PLAY" &&
     hasExactEnumerableKeys(value.sourceAbilityDependency, ["kind", "permanentLossPolicy", "reacquisitionPolicy"]) && value.sourceAbilityDependency.kind === "SOURCE_ABILITY_INSTANCE" &&
@@ -309,24 +329,49 @@ export const validateCerenovusMadnessMarkedPayloadShape = (value: unknown): Cere
 
 export const validateCerenovusMadnessInstructionDeliveredPayloadShape = (value: unknown): CerenovusValidationResult => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, INSTRUCTION_KEYS)) return fail("CerenovusMadnessInstructionDelivered must have exact keys");
+  if (!isCanonicalCerenovusOpportunityId(value.opportunityId) || !isSeatNumber(value.recipientSeatNumber)) {
+    return fail("CerenovusMadnessInstructionDelivered opportunity or recipient seat is invalid");
+  }
   return nonEmpty(value.rulesBaselineVersion) && value.modelVersion === CERENOVUS_MADNESS_INSTRUCTION_MODEL_VERSION && value.nightNumber === 1 &&
-    value.deliveryId === formatCerenovusInstructionDeliveryId(value.opportunityId as ActionOpportunityId, value.recipientSeatNumber as SeatNumber) &&
-    value.choiceId === formatCerenovusChoiceId(value.opportunityId as ActionOpportunityId) && value.markerId === formatCerenovusMarkerId(value.opportunityId as ActionOpportunityId) &&
-    nonEmpty(value.taskId) && value.taskType === "CERENOVUS_ACTION" && nonEmpty(value.recipientPlayerId) && positiveInteger(value.recipientSeatNumber) &&
+    value.deliveryId === formatCerenovusInstructionDeliveryId(value.opportunityId, value.recipientSeatNumber) &&
+    value.choiceId === formatCerenovusChoiceId(value.opportunityId) && value.markerId === formatCerenovusMarkerId(value.opportunityId) &&
+    nonEmpty(value.taskId) && value.taskType === "CERENOVUS_ACTION" && nonEmpty(value.recipientPlayerId) &&
     value.selectedByCharacter === "cerenovus" && nonEmpty(value.madAboutRoleId) && hasExactRoleSetupSnapshotShape(value.madAboutRole) && value.madAboutRole.roleId === value.madAboutRoleId &&
     (value.madAboutRole.characterType === "TOWNSFOLK" || value.madAboutRole.characterType === "OUTSIDER") && nonEmpty(value.roleCatalogSignature) &&
     value.instructionWindow === "TOMORROW_DAY_AND_NIGHT" && positiveInteger(value.deliveryCharacterStateRevision) && value.deliveryStatus === "DELIVERED"
     ? { valid: true } : fail("CerenovusMadnessInstructionDelivered fields are invalid");
 };
 
-export const validateCerenovusChoiceAgainstState = (input: { readonly choice: CerenovusChoiceRecordedPayload; readonly opportunity: CerenovusActionOpportunity; readonly roster: PlayerRoster; readonly setup: GeneratedSetup }): CerenovusValidationResult => {
+export const validateCerenovusChoiceAgainstState = (input: {
+  readonly choice: CerenovusChoiceRecordedPayload;
+  readonly opportunity: CerenovusActionOpportunity;
+  readonly roster: PlayerRoster;
+  readonly setup: GeneratedSetup;
+  readonly roleTenures: RoleTenureState;
+}): CerenovusValidationResult => {
   const shape = validateCerenovusChoiceRecordedPayloadShape(input.choice);
   if (!shape.valid) return shape;
   const target = input.roster.find((entry) => entry.playerId === input.choice.targetPlayerId && entry.seatNumber === input.choice.targetSeatNumber);
   const role = input.setup.roleCatalogSnapshot.roles.find((entry) => entry.roleId === input.choice.chosenGoodRoleId);
-  return input.opportunity.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION" && input.opportunity.opportunityId === input.choice.opportunityId && input.opportunity.taskId === input.choice.taskId &&
+  const tenureMatches = input.roleTenures.records.filter((entry) => entry.roleTenureId === input.opportunity.sourceRoleTenureId);
+  const tenure = tenureMatches[0];
+  const parsedTenure = parseRoleTenureId(input.opportunity.sourceRoleTenureId);
+  return input.opportunity.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION" && input.opportunity.nightNumber === input.choice.nightNumber &&
+    input.opportunity.taskId === input.choice.taskId && input.opportunity.taskType === input.choice.taskType && input.opportunity.opportunityId === input.choice.opportunityId &&
+    input.opportunity.sourcePlayerId === input.choice.sourcePlayerId && input.opportunity.sourceSeatNumber === input.choice.sourceSeatNumber &&
+    sameRoleSetupSnapshot(input.opportunity.sourceRole, input.choice.sourceRole) &&
+    input.opportunity.sourceCharacterStateRevision === input.choice.opportunityCharacterStateRevision &&
     input.opportunity.sourceRoleTenureId === input.choice.sourceRoleTenureId && input.opportunity.sourceAbilityInstanceId === input.choice.sourceAbilityInstanceId &&
-    input.opportunity.sourceCharacterStateRevision === input.choice.opportunityCharacterStateRevision && target !== undefined && role !== undefined &&
+    input.opportunity.abilitySource.kind === input.choice.abilitySource.kind && input.opportunity.abilitySource.abilityRoleId === input.choice.abilitySource.abilityRoleId &&
+    input.opportunity.abilitySource.roleTenureId === input.choice.abilitySource.roleTenureId &&
+    input.opportunity.abilitySource.acquiredCharacterStateRevision === input.choice.abilitySource.acquiredCharacterStateRevision &&
+    tenureMatches.length === 1 && tenure !== undefined && tenure.roleTenureId === input.opportunity.sourceRoleTenureId &&
+    tenure.playerId === input.opportunity.sourcePlayerId && tenure.playerId === input.choice.sourcePlayerId &&
+    tenure.seatNumber === input.opportunity.sourceSeatNumber && tenure.seatNumber === input.choice.sourceSeatNumber && tenure.roleId === "cerenovus" &&
+    tenure.acquiredCharacterStateRevision === input.opportunity.abilitySource.acquiredCharacterStateRevision &&
+    tenure.acquiredCharacterStateRevision === input.choice.abilitySource.acquiredCharacterStateRevision &&
+    parsedTenure.valid && parsedTenure.roleId === "cerenovus" && parsedTenure.seatNumber === tenure.seatNumber &&
+    parsedTenure.acquiredCharacterStateRevision === tenure.acquiredCharacterStateRevision && target !== undefined && role !== undefined &&
     (role.characterType === "TOWNSFOLK" || role.characterType === "OUTSIDER") && sameRoleSetupSnapshot(role, input.choice.chosenGoodRole) && input.setup.roleCatalogSignature === input.choice.roleCatalogSignature
     ? { valid: true } : fail("Cerenovus choice does not match canonical opportunity, roster, or catalog state");
 };

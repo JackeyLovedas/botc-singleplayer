@@ -1,107 +1,100 @@
-# Phase 3 Slice 2B16 Status: Cerenovus Effective-Only First-Night Marker
+# Phase 3 Slice 2B16 Status: Repair Round 1
 
 ## Status
 
-Implemented and locally verified on branch `phase-3/cerenovus-first-night-madness-marker` from reviewed dirty HEAD `db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0`. Preliminary product HEAD `a59a9489adbd5032bf6adac3d98e280d7d7cbd05` is pushed, and [PR #18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18) is open. The final bounded PR bookkeeping docs commit and exact-HEAD CI are pending.
+PR [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18) remains open on `phase-3/cerenovus-first-night-madness-marker`. Complete final review of frozen HEAD `86d973485e940c0ef0469dd169db3ab1dc7a417d` returned both `CODE_REVIEW_FIX_REQUIRED` and `RULE_REVIEW_FIX_REQUIRED` at `2026-07-11T12:02:08+08:00`.
 
-Rules baseline: Phase One v2.1. Rule evidence `docs/rules/evidence/2B16.md` has SHA-256 `f0d8d976cd9366d7e4603173caeb01d3fd7461c27c484501f79d8d0b0ce5175a`; the effective-only design has SHA-256 `7c1c2bd7f849913b3cacf2e5a14c8ce83a32dbdecef8591267074e6cf4ef0e3f`. The independent design review is preserved verbatim at SHA-256 `5d1c60eb2f42f4cab01243f8dd00ab0ad38ca4fc5a98a094345ef7f663c0af16` and returned `RULE_DESIGN_PASS` with no blockers.
+Repair round is `1 / 2`. Merge is unauthorized. The exact bounded implementation repair and direct regression expansion are complete in the working tree; commit and push remain blocked pending controller pre-publish audit.
 
-## Rule Evidence
+## Renewed Rule Design Pass
 
-- User-approved overrides were checked first.
-- Official Cerenovus Wiki revision: `3048`.
-- Official States Wiki revision: `1039`.
-- Official Glossary Wiki revision: `2874`.
-- Chinese Cerenovus Wiki revision: `4198`.
-- Chinese Madness Wiki revision: `5883`.
-- Official `nightsheet.json` SHA-256 begins `99a2815`; verified first-night order is `witch -> cerenovus -> fearmonger` and other-night order is `witch -> cerenovus -> pithag`.
-- Source-impaired execution status is `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY` under the current repository's canonical producers.
+- Review: `docs/implementation/phase-3-slice-2b16-repair-round-1-design-review.md`.
+- Review SHA-256: `363271a48ae4f2595ef7287e850d8a38b4fa1b94e42f97b6b15b25d5de9da645`.
+- Reviewed evidence: `5204b8995a40b8cee237f2b004f59f16e0751667ffdd3b9b5691265f425d9cb0`.
+- Reviewed design: `858698463994f4c6a70911fc4255a42a4b77691b1e5dae1cbab437c7d5fd3c9b`.
+- Verdict: `RULE_DESIGN_PASS`; remaining blockers `[]`.
+- The reviewer corrected one report-only nightsheet hash typo and reverse-verified that no other report byte changed.
 
-## Rule Claims Implemented
+## Targeted Current-Design Revalidation
 
-- A current base Cerenovus receives one deterministic first-night opportunity when its task is next.
-- Source Human or AI actors may choose any modeled roster player, including self.
-- The selected character must be an on-script Townsfolk or Outsider; in-play assignment is not required.
-- A supported effective submission creates exactly:
+- Current design SHA-256: `743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12`.
+- Revalidation artifact: `docs/implementation/phase-3-slice-2b16-repair-round-1-design-revalidation.md`.
+- Revalidation SHA-256: `643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c`.
+- Verdict: `RULE_DESIGN_PASS`; `remainingBlockers = []`.
+- Reviewer reverse comparison: exact match; 3,038 bytes, 49 logical lines / LF bytes, zero CR, UTF-8 valid, no BOM, terminal LF present, transport markers omitted.
+- Only traceability row 62 changed: it now names the existing byte-unchanged CI workflow and keeps repaired-HEAD Ubuntu/Windows runs pending until an authorized push.
+- The revalidation is design-only and does not replace the required independent final implementation review.
 
-```text
-CerenovusChoiceRecorded
-CerenovusMadnessMarked
-CerenovusMadnessInstructionDelivered
-ScheduledTaskSettled(CERENOVUS_MADNESS_MARKED)
-```
+## Review And CI Invalidation
 
-- Marker history records `TOMORROW_DAY_AND_NIGHT`, `NEXT_DAWN_OR_SOURCE_DEATH_OR_LEAVES_PLAY`, and the source-ability-instance dependency as future policy only.
-- Only the target receives the private instruction. Its view contains only `selectedByCharacter`, `madAboutRoleId`, and `instructionWindow`; source identity and internal IDs are excluded.
-- Stored, replay, integrated-batch, prospective, receipt, and deterministic-ID validation fail closed on incomplete, reordered, malformed, duplicate, or cross-linked facts.
-- Accepted results disclose only four ordered event types and count. Idempotent retry appends nothing; a different fingerprint conflicts.
+- Historical final-review report: `docs/implementation/phase-3-slice-2b16-final-review-round-1.md`.
+- Report SHA-256: `7af520124ee01a5c195ca5d1aecd146a86b5ed109ef8ba4795c5be4847e0ab3c`.
+- Frozen-head push CI `29138672803` and PR CI `29138673732` succeeded for `86d9734...`.
+- Those CI results and the old final review are historical only and cannot authorize a repaired head.
+- Any repaired commit requires fresh exact-head Ubuntu/Windows CI, a new complete final review, and new/reverified verbatim code/rule audit comments.
 
-## Effective-Only Capability Gate
+## Four Final-Review Blockers
 
-After command, task, opportunity, source, target, and character validation—but before generator, batch, metadata, event, prospective, receipt, closure, or version work—the pure gate checks represented matching source impairment.
+1. Choice replay did not bind every source player, seat, role, ability-source, tenure, and ability-instance fact to the referenced opportunity; capability evaluation used payload source instead of validated opportunity source.
+2. Marker and instruction shape validators could reach formatter calls with non-string/noncanonical opportunity IDs.
+3. The PR overstated completion and traceability of the reviewed 62-item plan; direct Cerenovus replay, batch, prospective, actor, target, stored-chain, metadata, and retry tests are missing.
+4. Rule evidence did not use every mandatory heading and lacked explicit sourced `VortoxRules` and `alignmentChangeRules`.
 
-A constructed matching `DRUNK` or `POISONED` input returns:
+## Corrected Rule Evidence
 
-```text
-status = failed
-code = ApplicationNotConfigured
-failureStage = first-night-role-action
-retryable = true
-message = Cerenovus effective-only settlement is not configured for the current canonical state
-```
+- Evidence SHA-256: `5204b8995a40b8cee237f2b004f59f16e0751667ffdd3b9b5691265f425d9cb0`.
+- Every mandatory heading is explicit.
+- Official Vortox oldid `3017`, UTF-8 SHA-256 `4630f76e5bf06ee9e9990854708fabed2a25b9d3c6ea170e2fd4598ef5f5cf07`.
+- Chinese Vortox oldid `6198`, UTF-8 SHA-256 `36716eb890bd93b2fed5d27f67ccdc6c7a13fa67900a4a11a685580c0c3608ff`.
+- Required regressions: 27 sequential items.
+- `ruleCoverageStatus = PARTIAL`.
+- Terminal rule verdict: `RULE_READY`.
 
-It authorizes no events or receipt and keeps the opportunity open. Unit fixtures identify these sets as constructed and noncanonical; no Cerenovus test fabricates an `AbilityImpairmentApplied` stored history.
+## Corrected Repair Design
 
-## Explicitly Unsupported Rules
+- Superseded pre-row-62-correction design SHA-256: `858698463994f4c6a70911fc4255a42a4b77691b1e5dae1cbab437c7d5fd3c9b`.
+- Current design SHA-256: `743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12`.
+- Prior design `7c1c2bd...` and review `5d1c60eb...` are superseded for implementation authorization.
+- Effective-only event names and settlement outcome are unchanged.
+- The repair binds all outer source fields to opportunity, task, stored tenure, parsed tenure, ability instance, and current source.
+- Application, batch, and replay capability evaluation must use `opportunity.sourcePlayerId`.
+- Canonical opportunity ID and recipient seat checks must precede formatter calls and return invalid without throwing for hostile primitives.
+- Replay, batch, prospective, and projection validation must reject forged source chains, hostile values, missing/duplicate/reordered/mixed facts, wrong metadata, and actual-source impairment conflicts.
+- The 62-item minimum plan is retained and mapped item-by-item to exact planned test file and test name.
+- Terminal design status: `READY_FOR_RULE_DESIGN_REREVIEW`.
 
-- Drunk/poisoned simulated choice, fake marker suppression, and target notification.
-- Generic or role-specific impairment production, import, or injection.
-- Actual madness conduct detection, Storyteller judgment, execution, death, or day ending.
-- Marker expiry/removal/suspension/resumption and source-death or leaves-play cleanup.
-- Other-night recurrence.
-- Life-state restrictions, Travellers, exile, Goblin jinx, Vigormortis, or gained Cerenovus abilities.
-- General character/alignment change handling, AI choice generation, UI, Electron, SQLite, and Slice 2B17.
-- Any claim that Cerenovus is immune or complete.
+## Vortox And Alignment Conclusions
 
-## Rule-to-Test Traceability
+- Vortox false-information rules apply to Townsfolk abilities; Cerenovus is a Minion.
+- No sourced rule transforms the Cerenovus selected character, marker, identity shown to the target, or instruction.
+- Character type, not a holder’s current alignment, controls ordinary selected-character legality.
+- An evil Townsfolk/Outsider remains legal; a good Minion/Demon does not become ordinarily legal.
+- No Vortox or alignment-change runtime is implemented. Both remain explicitly out of scope and incomplete.
 
-- Opportunity actor policy: Cerenovus-specific System/Storyteller opening tests and Human/AI no-event/no-opportunity rejection tests.
-- Target, self-target, and character legality: `cerenovus.test.ts` choice tables and application rejection tests.
-- Effective marker, instruction, settlement, and privacy: Cerenovus domain payload tests plus the application four-event integration test.
-- Fail-closed impairment boundary: constructed-noncanonical DRUNK/POISONED pure domain-gate tests plus direct pre-construction application-boundary tests asserting the exact generic failure and zero batch, event, opportunity, or receipt effects.
-- Exact runtime shape and tamper rejection: decision, choice, marker, instruction, deterministic-ID, chain, and extra-key tests.
-- Replay, atomicity, prospective validation, receipt summaries, idempotency, and projection history: domain-batch, rebuild, application, and private-projection suites.
-- Night order and supported subset order: rules catalog and application task-order regressions.
-- Non-regression: all 22 repository test files.
+## Test Traceability Status
 
-The reviewed design's 62-item plan is covered across the new 36-test Cerenovus domain suite, the Cerenovus application integration tests, and the existing opportunity, task-order, batch, replay, prospective, receipt, determinism, and projection suites. The 36 dedicated domain tests exceed the user's minimum 30 Cerenovus checks.
+The 63 locally resolvable matrix rows now resolve to their designated test or status record. Direct suites include 52 Cerenovus domain tests, 10 Cerenovus replay tests, 13 Cerenovus projection tests, and the exact application/rules regressions named by the matrix. Full local test and coverage runs each passed 24 files / 821 tests. Matrix item 62 uses the existing byte-unchanged `.github/workflows/ci.yml` and remains pending as exact repaired-HEAD Ubuntu/Windows results until the authorized repaired commit is pushed; local success is not substituted for CI evidence.
 
-## Coverage Status
+Trace item 27 includes direct replay coverage for independently and jointly forged source provenance. Trace item 43 separately covers hostile payload primitives in domain-core and sparse stored-chain collections in projections.
 
-Cerenovus remains `PARTIAL`, never `COMPLETE`.
+## Explicitly Unsupported
 
-- Base ability and first-night behavior: `PARTIAL`; effective-only choice, marker history, instruction, and settlement are implemented.
-- Drunk and poisoned behavior: `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY`; rule truth is retained, simulation is not implemented.
-- Projection: `PARTIAL`; target-only effective historical instruction is implemented.
-- Marker lifecycle and Storyteller discretion: `PARTIAL` only because policy is recorded; no execution is implemented.
-- Other-night, Philosopher, character change, alignment change, death interaction, and recurrence remain unsupported or unevaluated as recorded in the matrix.
+- Drunk/poison simulation and any impairment producer/import/injection.
+- Vortox runtime and alignment-change runtime.
+- Character/life/effect lifecycle, marker removal/expiry, Storyteller judgment, execution, and other-night recurrence.
+- Goblin jinx, Vigormortis retention, gained Cerenovus, UI, Electron, persistence, and Slice 2B17.
+- Any immunity or `COMPLETE` claim.
 
-## Verification
+## Local Validation
 
-Final local verification on the uncommitted implementation tree:
+repair-round-1 local gate record for exact repaired HEAD
 
-```text
-pnpm typecheck: passed
-pnpm lint: passed with zero warnings
-focused suites: passed, 5 files / 509 tests
-dedicated Cerenovus domain suite: passed, 36 tests
-pnpm test: passed, 22 files / 761 tests
-pnpm test:coverage: passed, 22 files / 761 tests
-coverage: 85.34% statements/lines, 77.96% branches, 97.72% functions
-git diff --check: passed
-superseded Cerenovus event/state/view symbol scan: clean in packages
-```
+- `git diff --check`: passed.
+- `pnpm typecheck`: passed.
+- `pnpm lint`: passed.
+- `pnpm test`: 24 files / 821 tests passed.
+- `pnpm test:coverage`: 24 files / 821 tests passed; 85.52% statements/lines, 78.66% branches, 97.73% functions.
 
-## Merge Gate
+## Next Gate
 
-PR #18 is published but not mergeable yet. After the bounded bookkeeping commit, the branch must freeze. Merge still requires green CI on that exact final HEAD, one complete independent final review returning both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`, both verbatim GitHub audit comments re-read against the current PR HEAD, and a clean worktree.
+Controller pre-publish audit. No commit or push before that decision.

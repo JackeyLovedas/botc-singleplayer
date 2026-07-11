@@ -1,6 +1,8 @@
 import { DomainError } from "./errors.js";
 import type { AnyDomainEventEnvelope, DomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
+import { validateCerenovusActionOpportunityShape } from "./first-night-action-opportunity.js";
+import { getNextUnsettledFirstNightTask } from "./first-night-task-plan.js";
 import {
   evilTwinInformationEntriesEqual,
   expectedEvilTwinInformationEntries
@@ -34,9 +36,10 @@ import {
   validateSeamstressInformationAgainstCanonicalState,
   validateSeamstressInformationDeliveredPayloadShape,
   validateSeamstressResolutionCapabilityDeclaredPayload,
-  validateSeamstressTargetsChosenPayloadShape
+  validateSeamstressTargetsChosenPayloadShape,
+  isRoleTenureContinuousAcross
 } from "./seamstress.js";
-import { SUPPORTED_SCRIPT_ID } from "./setup-types.js";
+import { sameRoleSetupSnapshot, SUPPORTED_SCRIPT_ID } from "./setup-types.js";
 
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
 type IneffectiveWitchEffectiveness = Extract<WitchEffectivenessResult, { readonly effective: false }>;
@@ -1076,7 +1079,8 @@ const validateIntegratedCerenovusActionBatch = (
   const state = currentState;
   if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 ||
       state.dayNumber !== 0 || state.setup === undefined || state.roster === undefined ||
-      state.currentCharacterState === undefined || state.firstNightTaskPlan === undefined) {
+      state.currentCharacterState === undefined || state.firstNightTaskPlan === undefined ||
+      state.seamstressRoleTenureState === undefined) {
     throw new DomainError("InvalidDomainBatchSemantics", "Cerenovus action batch requires first-night setup, roster, task, and current character state");
   }
   if (events.length !== 4) reject("Cerenovus action batch must contain exactly four events");
@@ -1091,21 +1095,48 @@ const validateIntegratedCerenovusActionBatch = (
   const instruction = third as DomainEventEnvelope<"CerenovusMadnessInstructionDelivered">;
   const settlement = fourth as DomainEventEnvelope<"ScheduledTaskSettled">;
   const choiceShape = validateCerenovusChoiceRecordedPayloadShape(choice.payload);
+  const opportunityMatches = state.firstNightActionOpportunities?.opportunities.filter((entry) =>
+    entry.opportunityId === choice.payload.opportunityId && entry.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION"
+  ) ?? [];
   const opportunity = findCerenovusOpportunity(state.firstNightActionOpportunities, choice.payload.opportunityId);
-  if (!choiceShape.valid || opportunity === undefined) reject(!choiceShape.valid ? choiceShape.reason : "Cerenovus batch requires one matching opportunity");
-  const choiceState = validateCerenovusChoiceAgainstState({ choice: choice.payload, opportunity: opportunity!, roster: state.roster.entries, setup: state.setup });
-  const capability = evaluateCerenovusEffectiveOnlyCapability({ sourcePlayerId: choice.payload.sourcePlayerId, abilityImpairments: state.abilityImpairments });
+  const opportunityShape = validateCerenovusActionOpportunityShape(opportunity);
+  if (!choiceShape.valid || opportunityMatches.length !== 1 || opportunity === undefined || opportunity.opportunityStatus !== "OPEN" || !opportunityShape.valid) {
+    reject(!choiceShape.valid ? choiceShape.reason : !opportunityShape.valid ? opportunityShape.reason : "Cerenovus batch requires one matching opportunity");
+  }
+  const choiceState = validateCerenovusChoiceAgainstState({
+    choice: choice.payload,
+    opportunity: opportunity!,
+    roster: state.roster.entries,
+    setup: state.setup,
+    roleTenures: state.seamstressRoleTenureState
+  });
+  const capability = evaluateCerenovusEffectiveOnlyCapability({ sourcePlayerId: opportunity!.sourcePlayerId, abilityImpairments: state.abilityImpairments });
+  const currentSources = state.currentCharacterState.entries.filter((entry) =>
+    entry.playerId === opportunity!.sourcePlayerId && entry.seatNumber === opportunity!.sourceSeatNumber
+  );
+  const currentSource = currentSources[0];
+  const tenureMatches = state.seamstressRoleTenureState.records.filter((entry) => entry.roleTenureId === opportunity!.sourceRoleTenureId);
+  const tenure = tenureMatches[0];
+  const taskMatches = state.firstNightTaskPlan.tasks.filter((entry) => entry.taskId === opportunity!.taskId);
+  const task = taskMatches[0];
+  const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+  const sourceAndTaskValid = currentSources.length === 1 && currentSource !== undefined && currentSource.role.roleId === "cerenovus" &&
+    sameRoleSetupSnapshot(currentSource.role, opportunity!.sourceRole) && tenureMatches.length === 1 && tenure !== undefined &&
+    isRoleTenureContinuousAcross(tenure, opportunity!.sourceCharacterStateRevision, choice.payload.settlementCharacterStateRevision) &&
+    taskMatches.length === 1 && task !== undefined && task.taskType === "CERENOVUS_ACTION" && task.taskClass === "ROLE_ACTION" &&
+    task.source.kind === "ROLE" && task.source.playerId === opportunity!.sourcePlayerId && task.source.seatNumber === opportunity!.sourceSeatNumber &&
+    sameRoleSetupSnapshot(task.source.role, opportunity!.sourceRole) && nextTask?.taskId === task.taskId;
   const markerLink = validateCerenovusMarkerAgainstChoice(choice.payload, marker.payload);
   const instructionLink = validateCerenovusInstructionAgainstChain(choice.payload, marker.payload, instruction.payload);
   const expectedMarker = createCerenovusMadnessMarkedPayload(choice.payload);
   const expectedInstruction = createCerenovusMadnessInstructionDeliveredPayload(choice.payload, marker.payload);
-  if (!choiceState.valid || !capability.supported || !markerLink.valid || !instructionLink.valid ||
+  if (!choiceState.valid || !sourceAndTaskValid || !capability.supported || !markerLink.valid || !instructionLink.valid ||
       !sameCerenovusMarkerPayload(marker.payload, expectedMarker) ||
       !sameCerenovusInstructionPayload(instruction.payload, expectedInstruction) ||
       settlement.payload.taskId !== choice.payload.taskId || settlement.payload.taskType !== "CERENOVUS_ACTION" ||
       settlement.payload.outcomeType !== "CERENOVUS_MADNESS_MARKED" ||
       settlement.payload.characterStateRevision !== choice.payload.settlementCharacterStateRevision) {
-    reject(!choiceState.valid ? choiceState.reason : !capability.supported ? "Cerenovus effective batch conflicts with represented source impairment" : !markerLink.valid ? markerLink.reason : !instructionLink.valid ? instructionLink.reason : "Cerenovus batch facts do not match their canonical choice and settlement");
+    reject(!choiceState.valid ? choiceState.reason : !sourceAndTaskValid ? "Cerenovus batch source, tenure, or task binding is invalid" : !capability.supported ? "Cerenovus effective batch conflicts with represented source impairment" : !markerLink.valid ? markerLink.reason : !instructionLink.valid ? instructionLink.reason : "Cerenovus batch facts do not match their canonical choice and settlement");
   }
 };
 

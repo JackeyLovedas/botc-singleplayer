@@ -79,6 +79,7 @@ import {
   validateSnakeCharmerActionDecision,
   validateWitchActionDecision,
   validateCerenovusActionDecision,
+  validateCerenovusActionOpportunityShape,
   validateDreamerActionDecision,
   validateSeamstressActionDecisionForOpportunity,
   tryCreateEvilTwinPair,
@@ -1592,6 +1593,8 @@ export class GameApplicationService {
         if (targetTask === undefined) return { code: "ScheduledTaskNotFound", message: `Scheduled task ${payload.taskId} does not exist in the first-night task plan` };
         const opportunity = findCerenovusOpportunity(state.firstNightActionOpportunities, payload.opportunityId);
         if (opportunity === undefined) return { code: "ActionOpportunityNotFound", message: `Cerenovus opportunity ${payload.opportunityId} does not exist` };
+        const opportunityShape = validateCerenovusActionOpportunityShape(opportunity);
+        if (!opportunityShape.valid) return { code: "ActionSourceNoLongerValid", message: opportunityShape.reason };
         if (opportunity.opportunityStatus === "CLOSED") return { code: "ActionOpportunityAlreadyClosed", message: `Action opportunity ${payload.opportunityId} is already closed` };
         if (command.actor.playerId !== opportunity.sourcePlayerId) return { code: "ActorPlayerMismatch", message: "SubmitCerenovusAction actor must match the opportunity source player" };
         if (opportunity.taskId !== payload.taskId) return { code: "ScheduledTaskNotNext", message: "SubmitCerenovusAction taskId must match its opportunity" };
@@ -1605,8 +1608,11 @@ export class GameApplicationService {
           targetTask.source.playerId === opportunity.sourcePlayerId && targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
           sameRoleSetupSnapshot(targetTask.source.role, opportunity.sourceRole) && currentSource?.role.roleId === "cerenovus" &&
           currentSource !== undefined && sameRoleSetupSnapshot(currentSource.role, opportunity.sourceRole) && tenure.length === 1 && tenure[0] !== undefined &&
+          tenure[0].playerId === opportunity.sourcePlayerId && tenure[0].seatNumber === opportunity.sourceSeatNumber &&
+          tenure[0].roleId === "cerenovus" &&
           isRoleTenureContinuousAcross(tenure[0], opportunity.sourceCharacterStateRevision, state.currentCharacterState.revision) &&
           formatCerenovusAbilityInstanceId({ roleTenureId: tenure[0].roleTenureId }) === opportunity.sourceAbilityInstanceId &&
+          opportunity.abilitySource.kind === "ROLE_TENURE" && opportunity.abilitySource.abilityRoleId === "cerenovus" &&
           opportunity.abilitySource.roleTenureId === tenure[0].roleTenureId &&
           opportunity.abilitySource.acquiredCharacterStateRevision === tenure[0].acquiredCharacterStateRevision;
         if (!sourceValid) return { code: "ActionSourceNoLongerValid", message: "SubmitCerenovusAction source tenure or ability instance is no longer the same active base Cerenovus" };

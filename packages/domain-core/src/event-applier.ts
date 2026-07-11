@@ -1424,13 +1424,37 @@ const validateCerenovusChoiceRecordedPayloadForState = (state: GameState, payloa
       state.seamstressRoleTenureState === undefined) {
     throw new DomainError("InvalidCerenovusChoiceRecordedPayload", "Cerenovus choice requires first-night canonical source state");
   }
+  const opportunityMatches = state.firstNightActionOpportunities?.opportunities.filter((entry) =>
+    entry.opportunityId === payload.opportunityId && entry.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION"
+  ) ?? [];
   const opportunity = findCerenovusOpportunity(state.firstNightActionOpportunities, payload.opportunityId);
-  if (opportunity === undefined) throw new DomainError("InvalidCerenovusChoiceRecordedPayload", "Cerenovus choice requires one matching opportunity");
-  const validation = validateCerenovusChoiceAgainstState({ choice: payload, opportunity, roster: state.roster.entries, setup: state.setup });
-  const capability = evaluateCerenovusEffectiveOnlyCapability({ sourcePlayerId: payload.sourcePlayerId, abilityImpairments: state.abilityImpairments });
-  const tenure = state.seamstressRoleTenureState.records.filter((entry) => entry.roleTenureId === payload.sourceRoleTenureId);
-  if (!validation.valid || !capability.supported || tenure.length !== 1 || tenure[0] === undefined ||
-      !isRoleTenureContinuousAcross(tenure[0], payload.opportunityCharacterStateRevision, payload.settlementCharacterStateRevision) ||
+  if (opportunityMatches.length !== 1 || opportunity === undefined || opportunity.opportunityStatus !== "OPEN") {
+    throw new DomainError("InvalidCerenovusChoiceRecordedPayload", "Cerenovus choice requires one exact open matching opportunity");
+  }
+  const validation = validateCerenovusChoiceAgainstState({
+    choice: payload,
+    opportunity,
+    roster: state.roster.entries,
+    setup: state.setup,
+    roleTenures: state.seamstressRoleTenureState
+  });
+  const capability = evaluateCerenovusEffectiveOnlyCapability({ sourcePlayerId: opportunity.sourcePlayerId, abilityImpairments: state.abilityImpairments });
+  const tenures = state.seamstressRoleTenureState.records.filter((entry) => entry.roleTenureId === opportunity.sourceRoleTenureId);
+  const tenure = tenures[0];
+  const currentSources = state.currentCharacterState.entries.filter((entry) =>
+    entry.playerId === opportunity.sourcePlayerId && entry.seatNumber === opportunity.sourceSeatNumber
+  );
+  const currentSource = currentSources[0];
+  const taskMatches = state.firstNightTaskPlan.tasks.filter((entry) => entry.taskId === opportunity.taskId);
+  const task = taskMatches[0];
+  const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+  const sourceAndTaskValid = currentSources.length === 1 && currentSource !== undefined && currentSource.role.roleId === "cerenovus" &&
+    sameRoleSetupSnapshot(currentSource.role, opportunity.sourceRole) && taskMatches.length === 1 && task !== undefined &&
+    task.taskType === "CERENOVUS_ACTION" && task.taskClass === "ROLE_ACTION" && task.source.kind === "ROLE" &&
+    task.source.playerId === opportunity.sourcePlayerId && task.source.seatNumber === opportunity.sourceSeatNumber &&
+    sameRoleSetupSnapshot(task.source.role, opportunity.sourceRole) && nextTask?.taskId === task.taskId;
+  if (!validation.valid || !capability.supported || tenures.length !== 1 || tenure === undefined || !sourceAndTaskValid ||
+      !isRoleTenureContinuousAcross(tenure, payload.opportunityCharacterStateRevision, payload.settlementCharacterStateRevision) ||
       payload.settlementCharacterStateRevision !== state.currentCharacterState.revision ||
       (state.cerenovusChoices?.choices.some((entry) => entry.choiceId === payload.choiceId || entry.opportunityId === payload.opportunityId || entry.taskId === payload.taskId) ?? false)) {
     throw new DomainError("InvalidCerenovusChoiceRecordedPayload", validation.valid ? "Cerenovus choice tenure, revision, or uniqueness is invalid" : validation.reason);

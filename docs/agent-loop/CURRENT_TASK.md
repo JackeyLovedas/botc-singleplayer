@@ -1,51 +1,56 @@
 # Current Task
 
-## Slice 2B16 Effective-Only Rescope — PR #18 Published, CI Pending
+## Slice 2B16 Repair Round 1 — Implementation Repair Authorized
 
 - Role: `Cerenovus`.
 - Scope authorization: `CERENOVUS_EFFECTIVE_ONLY`.
-- Source-impaired execution status: `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY`.
-- Branch: `phase-3/cerenovus-first-night-madness-marker`.
 - PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18).
-- Preliminary product HEAD: `a59a9489adbd5032bf6adac3d98e280d7d7cbd05`; pushed to the same feature branch.
-- Only this bounded PR bookkeeping update remains before the branch freezes on its final docs HEAD.
-- Fresh external rule truth remains `RULE_READY`; no source conflict exists.
-- The prior design and prior `RULE_DESIGN_PASS` are superseded by the effective-only event and failure contract.
-- The independent reviewer returned `RULE_DESIGN_PASS` with no blockers for exact HEAD `db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0`, evidence SHA-256 `f0d8d976cd9366d7e4603173caeb01d3fd7461c27c484501f79d8d0b0ce5175a`, and design SHA-256 `7c1c2bd7f849913b3cacf2e5a14c8ce83a32dbdecef8591267074e6cf4ef0e3f`.
-- The complete report is preserved verbatim in `docs/implementation/phase-3-slice-2b16-effective-only-design-review.md`; implementation of only that exact design is authorized.
-- The exact effective-only implementation is complete locally. Typecheck, lint, focused 509, full 761, coverage 761, and `git diff --check` pass.
-- Cerenovus-specific tests prove System/Storyteller opening, Human/AI opening rejection without events or opportunities, and exact constructed-noncanonical DRUNK/POISONED pre-construction no-write failures.
-- `docs/implementation/phase-3-slice-2b16-status.md` records rule evidence, implemented claims, unsupported rules, source revisions, traceability, verification, and the remaining merge gates.
+- Branch: `phase-3/cerenovus-first-night-madness-marker`.
+- Frozen reviewed HEAD: `86d973485e940c0ef0469dd169db3ab1dc7a417d`.
+- Final review timestamp: `2026-07-11T12:02:08+08:00`.
+- Verdicts: `CODE_REVIEW_FIX_REQUIRED` and `RULE_REVIEW_FIX_REQUIRED`.
+- Repair round: `1 / 2`.
+- Merge remains unauthorized. The bounded repair implementation is authorized; no commit or push is authorized before all local gates and controller pre-publish audit.
 
-## Corrected Effective-Only Contract
+## Four Blockers
 
-An accepted healthy base first-night action uses exactly:
+1. Bind all choice source/opportunity/task/tenure/ability-instance facts and evaluate capability using validated opportunity source.
+2. Validate canonical Cerenovus opportunity IDs and recipient seat primitives before formatter calls.
+3. Add the missing direct Cerenovus-specific tests for the reviewed 62-item plan and use exact test-name traceability.
+4. Conform evidence to every mandatory heading and explicitly source Vortox and alignment-change conclusions.
 
-1. `CerenovusChoiceRecorded`
-2. `CerenovusMadnessMarked`
-3. `CerenovusMadnessInstructionDelivered`
-4. `ScheduledTaskSettled` with `CERENOVUS_MADNESS_MARKED`
+## Corrected Documentation
 
-The private instruction is target-only and contains no Cerenovus player identity. Marker history records `TOMORROW_DAY_AND_NIGHT` plus `NEXT_DAWN_OR_SOURCE_DEATH_OR_LEAVES_PLAY` policy without implementing lifecycle, judgment, or execution.
+- Evidence SHA-256: `5204b8995a40b8cee237f2b004f59f16e0751667ffdd3b9b5691265f425d9cb0`; terminal `RULE_READY`; coverage `PARTIAL`.
+- Current repair design SHA-256: `743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12`; only trace row 62 changed from the prior reviewed design, to reference the existing unchanged CI workflow and pending exact-head runs.
+- Historical final-review report SHA-256: `7af520124ee01a5c195ca5d1aecd146a86b5ed109ef8ba4795c5be4847e0ab3c`.
+- Corrected rule-design review SHA-256: `363271a48ae4f2595ef7287e850d8a38b4fa1b94e42f97b6b15b25d5de9da645`; `RULE_DESIGN_PASS`; `remainingBlockers = []`.
+- Targeted renewed design revalidation SHA-256: `643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c`; reviewed current design `743affb3...`; `RULE_DESIGN_PASS`; `remainingBlockers = []`.
+- Official Vortox oldid `3017`; Chinese Vortox oldid `6198`.
+- Vortox and alignment-change runtime remain explicitly out of scope.
 
-## Impairment Gate
+## Gate State
 
-- Full BOTC drunk/poison truth remains documented: normal-looking choice and target simulation, but no real marker or execution authority.
-- Slice 2B16 does not implement that simulation.
-- A pure constructed matching impairment reaching the effective-only gate returns generic retryable `ApplicationNotConfigured` at `first-night-role-action` before metadata, events, receipts, closure, or version change.
-- No test may present a constructed impairment as a canonical stored history.
-- No impairment producer, import command, injection boundary, or other role is added.
+- CI runs `29138672803` and `29138673732` were green for `86d9734...`, but are historical only and cannot authorize a repaired head.
+- The old final review and old audit state remain invalid for merge.
+- The renewed reviewer explicitly authorized implementation within the exact repair design and file boundary.
+- Any repaired commit requires fresh exact-head Ubuntu/Windows CI and a new complete final review.
+
+## Repair Result
+
+- Full source/opportunity/task/tenure/current-source binding is implemented; capability checks use the validated opportunity source.
+- Canonical opportunity-ID and recipient-seat validation precedes formatter use.
+- All 64 exact trace rows resolve to literal tests in the designated files.
+- Local typecheck, lint, diff, 821-test full suite, and 821-test coverage suite pass.
+- Exact repaired-HEAD Ubuntu/Windows CI remains pending until an authorized commit and push; it is not claimed locally.
 
 ## Next Gate
 
-1. Commit and push only the five bounded PR bookkeeping documents.
-2. Update PR #18 body to name the final docs HEAD and mark exact-HEAD CI pending.
-3. Freeze the branch. Do not modify, review, merge, or tag before exact-HEAD CI and controller direction.
+Controller pre-publish audit before any commit or push.
 
 ## Limits
 
 - `maxSlices = 1`; only Slice 2B16.
-- `maxRepairRounds = 2` for the future PR.
-- Heartbeat remains disabled.
-- Do not research, design, or implement 2B17.
+- `maxRepairRounds = 2`.
+- No heartbeat and no Slice 2B17.
 - Cerenovus remains `PARTIAL`; nothing is `COMPLETE`.

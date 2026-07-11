@@ -27,28 +27,30 @@
 
 ## Current Delivery
 
-- Active slice: 2B16, effective-only Cerenovus first-night choice, marker history, and private instruction; implementation and local verification complete.
+- Active slice: 2B16 effective-only Cerenovus, repair round 1; bounded implementation repair is authorized by renewed `RULE_DESIGN_PASS`.
 - Branch: `phase-3/cerenovus-first-night-madness-marker`; preliminary product HEAD `a59a9489adbd5032bf6adac3d98e280d7d7cbd05` pushed.
-- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18); the final bounded docs commit and exact-HEAD CI are pending.
+- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18); frozen reviewed HEAD `86d973485e940c0ef0469dd169db3ab1dc7a417d` returned both fix-required verdicts and is not mergeable.
 - Rescope authorization: `CERENOVUS_EFFECTIVE_ONLY`.
 - Source-impaired execution: `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY`.
 - External rules remain `RULE_READY`; all original URLs, revisions, hashes, and impaired-source rule truth remain recorded.
 - The prior design SHA beginning `4f474b7a` and prior `RULE_DESIGN_PASS` are superseded.
 - Corrected event contract: choice, effective marker, target instruction, and `CERENOVUS_MADNESS_MARKED` settlement.
-- Independent effective-only review returned `RULE_DESIGN_PASS` with no blockers for exact dirty HEAD `db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0`, evidence `f0d8d976...`, and design `7c1c2bd7...`; the exact implementation is now complete locally and coverage remains `PARTIAL`.
-- Full local gates pass after closing both controller evidence gaps: typecheck, lint, 22 files / 761 tests, coverage 22 files / 761 tests, and `git diff --check`.
+- The prior effective-only design review and green CI for `86d9734...` are historical only after repair; neither authorizes merge.
+- Corrected evidence `5204b899...` and repair design `85869846...` address the schema, Vortox/alignment, source binding, hostile-ID, sparse-projection, replay-provenance, and exact-test-traceability specifications. Coverage remains `PARTIAL`.
+- Corrected complete rule-design review SHA-256 `363271a48ae4f2595ef7287e850d8a38b4fa1b94e42f97b6b15b25d5de9da645` returned `RULE_DESIGN_PASS` for the prior repair design.
+- Current repair design SHA-256 is `743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12`; targeted renewed revalidation SHA-256 `643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c` returned `RULE_DESIGN_PASS` with no blockers. Only trace row 62 changed, preserving the existing byte-identical CI workflow and pending exact-head CI requirement.
 - This controlled round has `maxSlices=1`, `maxRepairRounds=2`, no heartbeat, and no 2B17 work.
 
 ## Rule And Design Gate
 
-- Slice 2B16 evidence is fresh, complete, and ends in `RULE_READY`.
+- Corrected Slice 2B16 evidence has every mandatory heading, both Vortox revisions/hashes, 27 regressions, `PARTIAL`, and ends in `RULE_READY`.
 - The preserved prior review reports remain immutable audit history but do not authorize the rescope.
 - Canonical reachability audit proved the only current impairment producers cannot affect a still-active base Cerenovus; direct constructed impairment sets are not stored histories.
 - The user authorized an effective-only implementation rather than generic impairment infrastructure or another role.
 - Corrected design removes the impaired settlement union, adds a no-write effective-only capability gate, and specifies 62 sequential regressions.
 - Drunk/poison simulation remains true BOTC behavior but unsupported in this slice; this does not mean Cerenovus immunity.
-- The complete renewed review is archived verbatim at `docs/implementation/phase-3-slice-2b16-effective-only-design-review.md`; its report hash is recorded in the current Autopilot log.
-- The reviewer found no blockers. Only the exact reviewed effective-only implementation is authorized.
+- The complete final `FIX_REQUIRED` report is archived verbatim at `docs/implementation/phase-3-slice-2b16-final-review-round-1.md`.
+- All four blockers are resolved in design but remain to be repaired and tested in production. The effective-only event contract is unchanged.
 
 ## Implemented 2B15 Boundary
 
@@ -86,8 +88,8 @@
 
 ## Next Gate
 
-- Commit and push only the bounded PR bookkeeping docs, update PR #18 to the final docs HEAD, then freeze the branch for exact-HEAD CI.
-- Do not review, merge, or tag before CI and controller direction.
+- Implement the exact bounded repair and direct tests, then run every local gate.
+- Do not commit, push, review, merge, or tag before controller pre-publish audit.
 - Do not begin Slice 2B17 in this controlled round.
 
 ## Loop Limits
