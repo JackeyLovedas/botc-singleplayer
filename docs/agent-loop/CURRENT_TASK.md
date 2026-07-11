@@ -1,25 +1,19 @@
 # Current Task
 
-## HUMAN_BLOCKED — Slice 2B17
+## Slice 2B17 — Rule And Design Gates Passed
 
 - Candidate: Clockmaker, `FIRST_NIGHT_NATIVE_AND_PHILOSOPHER_GAINED_INFORMATION`.
-- Branch: `main`.
+- Branch: `main`; no feature branch yet.
 - PR: none.
-- Reviewed implementation HEAD: none.
-- Rule evidence: `RULE_READY`, `PARTIAL`, no source conflict.
-- Design round: `2 / 2` exhausted.
-- Final design verdict: `RULE_DESIGN_FIX_REQUIRED`.
-- `RULE_DESIGN_PASS` was not obtained.
-- `implementationAuthorized = false`.
+- Implementation: not started.
+- Evidence: `RULE_READY`, SHA-256 `db1fb83335e6a2083f85797b83516b8b646538ee3afcfd5ac92319147432d97e`.
+- Round-3 design: SHA-256 `fde5aebea89e003c38938c338abfd4fdd1370c88814f965c41a0dcda7b3d1e06`.
+- Round-3 review: `RULE_DESIGN_PASS`, SHA-256 `2c472cfdca5578d0aa556e4ec02761854362fcf3470a4188e294cfe74dafbe62`, blockers `[]`.
+- User authorization: `EXTRA_DESIGN_ROUND_3_VORTOX_HISTORICAL_BICONDITIONAL`.
+- Coverage remains `PARTIAL`.
 
-## Blocking Finding
+## Next Gate
 
-Stored Clockmaker projection lacks an explicit biconditional between the historical native Demon reference and the stored Vortox constraint/tenure identity at settlement:
+Commit and push the documentation-only rule/design gate on `main`, then require exact-SHA Ubuntu and Windows CI success. Only after that gate may the controller create one bounded feature branch and begin the exact reviewed implementation.
 
-`VORTOX_FALSE_REQUIRED` must exist if and only if the exact historical native Demon reference is the exact catalog Vortox. The constraint player/seat/role and exact active tenure must bind to that same reference. Stored `NONE` must reject a historical native Vortox reference even if hostile state removed its tenure.
-
-Required hostile stored-state cases are not yet in an authorized design: downgraded native Vortox to `NONE`, cross-linked constraint identity, forged Vortox constraint for a non-Vortox Demon, and tenure/constraint identity differing from the stored native Demon reference.
-
-## Stop
-
-The governed design-round limit has been reached. No third design round, design repair, production/test change, feature branch, PR, partial implementation, or Slice 2B18 work is authorized. Await explicit human direction.
+No feature branch, PR, tag, production code, or tests exist for 2B17 yet. Slice 2B18 remains prohibited.

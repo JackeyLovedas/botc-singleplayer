@@ -1,57 +1,73 @@
 # Phase 3 Slice 2B17 Design: Clockmaker First-Night Information
 
-Design round: `2 / 2`  
+Design round: `3 / 3`
 Status: implementation unauthorized pending independent `RULE_DESIGN_PASS`.
 
-Evidence independently read and verified:
+User continuation authorization:
+
+- The user explicitly authorized one additional design round beyond the previous `2 / 2` limit.
+- This round may close only the single stored Vortox historical-identity blocker.
+- It does not authorize production changes, test implementation, branch creation or scope expansion.
+
+Evidence remains unchanged:
 
 - `docs/rules/evidence/2B17.md`
 - SHA-256: `db1fb83335e6a2083f85797b83516b8b646538ee3afcfd5ac92319147432d97e`
 - terminal verdict: `RULE_READY`
 - coverage: `PARTIAL`
-- `docs/rules/USER_OVERRIDES.md`: no applicable override
-- `docs/rules/ROLE_COVERAGE_MATRIX.md`
-- `docs/agent-loop/REVIEW_PROTOCOL.md`
-- CurrentCharacterState, task-plan, Philosopher grant/insertion/impairment, Snake Charmer transitions, Vortox tenure, replay, batch, stored projection, receipts and application code/tests.
+- no applicable user override
+- no unresolved source conflict.
 
-Round-1 design:
+Round-2 design:
 
-- SHA-256: `c35e45b8f863167af6d18311a3072d7100d696d112377f361c1d36121ff0aa51`
+- SHA-256: `0892e4e8b74279f445100a7912f1b5220aba9ab51369aac8ce3a8603d62a1787`
+
+Round-2 review:
+
+- `docs/implementation/phase-3-slice-2b17-design-review-round-2.md`
+- SHA-256: `148d756129a1eb08678d30b5d094e88b90ebd0842b4021e7dee1bed5fad5be8d`
 - verdict: `RULE_DESIGN_FIX_REQUIRED`
+- remaining blockers: one.
 
-Round 2 closes only:
+Round 3 closes only:
 
-1. exact historical impairment provenance;
-2. exact historical Vortox tenure/effectiveness provenance;
-3. supported-history and idempotency trace consistency;
-4. explicit external-evidence classification for full nightsheet order.
+```text
+stored native Demon snapshot
+↔ Vortox constraint
+↔ preserved active/effective Vortox tenure
+```
 
-No rule conclusion, event contract, production boundary or coverage claim is expanded.
+at `settlementCharacterStateRevision`.
+
+No rule conclusion, supported history, event, command, production boundary or coverage claim is expanded.
 
 ## ruleClaims
 
 1. Clockmaker learns the seated distance from the current Demon to the nearest current Minion.
 2. Native identity is determined exclusively by settlement-time `CurrentCharacterState.role.characterType`, never alignment.
 3. The supported 12-player setup has exactly one native Demon and two native Minions.
-4. Both Demon–Minion pairs must be calculated; the minimum distance is the native truth.
+4. Both Demon–Minion pairs are calculated; the minimum is the native truth.
 5. Adjacent seats have distance `1`; opposite seats have distance `6`.
 6. Canonical native truth is `1..6`.
-7. The complete numeric information domain is `0..6`; `0` is sourced for no-Demon/no-Minion cases, which are not canonical in this slice.
-8. Base Clockmaker resolves after Snake Charmer and sees a preceding canonical Demon-hit swap.
+7. The complete numeric domain is `0..6`; `0` is sourced for unsupported no-Demon/no-Minion histories.
+8. Base Clockmaker resolves after Snake Charmer.
 9. Philosopher-gained Clockmaker resolves after Philosopher and before Minion information.
-10. A Philosopher choosing Clockmaker canonically makes the original Clockmaker drunk.
-11. Drunk without Vortox retains all `0..6` as rule-legal information, including truth.
-12. The deterministic single-player drunk policy selects the smallest false value while preserving truth in the recorded legal set.
-13. Current effective Vortox permits only false values.
-14. Vortox plus canonical Clockmaker drunkenness still excludes truth.
-15. Poison uses the same pure candidate-legality rule as drunkenness, but a poisoned current Clockmaker is not canonically reachable.
-16. A stored `KNOWN_DRUNK` delivery is valid only when its represented impairment ID binds to the exact preserved canonical impairment fact.
-17. A stored `VORTOX_FALSE_REQUIRED` delivery is valid only when its constraint binds to the exact active Vortox tenure and no represented impairment disabled that tenure at settlement.
-18. Delivered information is historical and is not recomputed from later state or later unrelated impairments.
+10. Philosopher choosing Clockmaker canonically makes the original Clockmaker drunk.
+11. Drunk without Vortox retains all `0..6` as legal information, including truth.
+12. The deterministic drunk policy selects the smallest false value while preserving truth in the legal set.
+13. An effective current Vortox permits only false values.
+14. Vortox plus Clockmaker drunkenness still excludes truth.
+15. Poison has the same pure candidate legality as drunkenness but no canonical poisoned-Clockmaker producer exists.
+16. Stored `KNOWN_DRUNK` requires the exact preserved canonical impairment fact.
+17. Stored `VORTOX_FALSE_REQUIRED` requires the exact active and effective preserved Vortox tenure.
+18. At settlement revision, `VORTOX_FALSE_REQUIRED` exists if and only if the delivery’s single historical native Demon is the exact setup-catalog Vortox.
+19. When that biconditional is true, the native Demon, constraint and tenure must describe the same player, seat and exact Vortox role.
+20. When it is false, the native Demon must not be Vortox and no active Vortox tenure may conflict with `NONE`.
+21. Delivered information is historical and is not recomputed from later state or later unrelated impairments.
 
 ## supportedCanonicalHistories
 
-The exact supported canonical history set contains seven entries:
+The exact supported canonical history set remains seven entries:
 
 ```ts
 type SupportedClockmakerCanonicalHistory =
@@ -64,74 +80,73 @@ type SupportedClockmakerCanonicalHistory =
   | "PHILOSOPHER_GAINED_EFFECTIVE_WITH_VORTOX";
 ```
 
-Meaning:
-
 1. `BASE_EFFECTIVE_NATIVE`
-   - one base Clockmaker;
-   - one current native Demon;
-   - two current native Minions;
-   - no represented source impairment;
-   - no active Vortox constraint.
+   - base source;
+   - one non-Vortox native Demon;
+   - two native Minions;
+   - no source impairment;
+   - `vortoxConstraint.kind === "NONE"`.
 
 2. `BASE_EFFECTIVE_AFTER_SNAKE_CHARMER_SWAP`
-   - canonical Snake Charmer Demon-hit occurs before base Clockmaker;
-   - Clockmaker uses the new current Demon seat.
+   - canonical Demon-hit precedes base Clockmaker;
+   - delivery uses the new current Demon seat.
 
 3. `PHILOSOPHER_GAINED_EFFECTIVE_NATIVE`
-   - exact grant and inserted task;
-   - resolves after Philosopher and before `MINION_INFO`.
+   - exact grant and insertion;
+   - resolves before `MINION_INFO`.
 
 4. `ORIGINAL_BASE_DRUNK_AFTER_PHILOSOPHER_GAIN`
-   - Philosopher gains Clockmaker;
-   - exact preserved duplicate-role impairment makes the original Clockmaker drunk;
-   - original base task later resolves using drunk candidate legality.
+   - exact duplicate-role impairment;
+   - original base Clockmaker resolves drunk.
 
 5. `BASE_EFFECTIVE_WITH_VORTOX`
-   - base Clockmaker effective;
-   - one exact effective Vortox tenure active at settlement;
-   - false-only candidate set.
+   - the stored native Demon is exact Vortox;
+   - exact active/effective matching Vortox tenure;
+   - false-only candidates.
 
 6. `ORIGINAL_BASE_DRUNK_WITH_VORTOX`
-   - canonical original-Clockmaker drunkenness;
-   - exact effective Vortox tenure active;
-   - Vortox excludes truth.
+   - exact source drunkenness;
+   - stored native Demon is exact Vortox;
+   - exact active/effective matching tenure;
+   - truth excluded.
 
 7. `PHILOSOPHER_GAINED_EFFECTIVE_WITH_VORTOX`
-   - exact Philosopher grant/insertion;
-   - gained source effective;
-   - exact effective Vortox tenure active;
-   - false-only candidate set.
+   - exact grant/insertion;
+   - stored native Demon is exact Vortox;
+   - exact active/effective matching tenure;
+   - truth excluded.
 
-Every one of these seven histories must have:
+Every supported history requires:
 
-- a direct accepted event-history integration test;
-- a direct idempotent retry assertion using the identical command;
-- zero events on retry;
-- the same stored accepted summary.
+- a direct accepted event-history test;
+- identical-command retry;
+- the same accepted summary;
+- `idempotent: true`;
+- zero append;
+- unchanged version.
 
-Constructed `GameState` alone does not establish canonical reachability.
+Constructed `GameState` alone is not canonical reachability evidence.
 
 ## unsupportedCanonicalHistories
 
-These may be exercised only through pure helpers or fail-closed guards:
+Only pure helpers or fail-closed guards may cover:
 
 - poisoned player who remains Clockmaker;
 - Spy, Recluse or Summoner registration;
-- zero Demons;
-- zero Minions;
+- zero Demons or Minions;
 - multiple Demons;
-- Minion count other than exactly two;
+- Minion count other than two;
 - Travellers;
-- life/death/revival;
+- death/revival/life state;
 - impaired current Vortox;
-- multiple current Vortox entries;
-- current Vortox without one exact active tenure;
-- general Pit-Hag, Barber or other character change;
-- general alignment-change machinery;
+- multiple current Vortox;
+- Vortox without one exact active tenure;
+- Vortox constraint inconsistent with the stored native Demon;
+- general character/alignment changes;
 - later-night Philosopher acquisition;
-- recurring other-night Clockmaker execution.
+- recurring Clockmaker behavior.
 
-No successful canonical settlement event may be created for these histories.
+No successful canonical event may claim these histories.
 
 ## identityModel
 
@@ -141,25 +156,25 @@ Use:
 type ClockmakerIdentityModel = "NATIVE_CHARACTER_TYPE_ONLY";
 ```
 
-The Clockmaker-specific resolver validates the full 12-entry current state and selects only:
+The resolver selects only:
 
 ```ts
 entry.role.characterType === "DEMON"
 entry.role.characterType === "MINION"
 ```
 
-It never uses `currentAlignment` for classification.
+It never classifies by alignment.
 
 Canonical requirements:
 
-- exactly one Demon reference;
-- exactly two Minion references;
-- distinct player and seat identity;
+- exactly one native Demon reference;
+- exactly two native Minion references;
+- distinct players and seats;
 - exact setup-catalog role snapshots;
-- exact roster player/seat identity;
+- roster identity equality;
 - numeric seat ordering.
 
-Clockmaker-specific resolution failures:
+Failures:
 
 - `INVALID_CURRENT_CHARACTER_STATE`
 - `INVALID_NATIVE_DEMON_COUNT`
@@ -167,7 +182,7 @@ Clockmaker-specific resolution failures:
 - `DUPLICATE_NATIVE_REFERENCE`
 - `UNSUPPORTED_REGISTRATION_REQUIRED`
 
-Do not reuse current-alignment or registration approximations. Do not extend the Seamstress tenure grammar to Clockmaker.
+Registration and alignment approximations are forbidden. The Seamstress tenure grammar is not extended to Clockmaker.
 
 ## distanceFormula
 
@@ -179,9 +194,9 @@ counter       = (d - m + 12) % 12
 pairDistance  = min(clockwise, counter)
 ```
 
-Directional values must be `1..11`; the nearest value must be `1..6`.
+Directional values are `1..11`; nearest distance is `1..6`.
 
-Canonical truth:
+Truth:
 
 ```text
 truth = min(
@@ -196,7 +211,7 @@ Pair snapshots sort by:
 2. Minion seat;
 3. stable `<`/`>` player-ID comparison.
 
-No locale-sensitive comparison is permitted.
+Locale-sensitive ordering is forbidden.
 
 ## candidateDomain
 
@@ -209,16 +224,14 @@ const CLOCKMAKER_DISTANCE_DOMAIN =
 
 Rules:
 
-- canonical native truth is `1..6`;
-- output domain is exactly dense ordered `0..6`;
-- negative, `>6`, fractional, `NaN`, infinity, string, sparse, duplicate or unordered values are invalid;
-- false candidates are domain values unequal to truth;
+- canonical truth: `1..6`;
+- output domain: exact dense ordered `0..6`;
+- reject negative, `>6`, fractional, nonfinite, string, sparse, duplicate or unordered values;
+- false candidates differ from truth;
 - an empty required false set fails closed;
-- no-Demon/no-Minion does not create a canonical `0` delivery in this slice.
+- unsupported missing-type histories do not create canonical `0` deliveries.
 
 ## sourceEffectiveness
-
-Use:
 
 ```ts
 type ClockmakerSourceEffectiveness =
@@ -233,27 +246,24 @@ type ClockmakerSourceEffectiveness =
     };
 ```
 
-Base source resolution:
+Base source:
 
-- zero matching represented impairments: `EFFECTIVE`;
-- exactly one valid canonical Philosopher duplicate impairment: `KNOWN_DRUNK`;
-- more than one relevant impairment: fail closed;
-- matching Snake Charmer poison: unsupported/fail closed;
-- malformed or cross-linked impairment: fail closed.
+- no relevant impairment: `EFFECTIVE`;
+- exactly one valid Philosopher duplicate impairment: `KNOWN_DRUNK`;
+- duplicate, malformed or cross-linked impairment: fail closed;
+- Snake Charmer poison affecting a current Clockmaker: unsupported/fail closed.
 
-Gained source resolution:
+Gained source:
 
-- exact supported gained source is effective;
-- impairment of the original Clockmaker does not impair the Philosopher source;
-- any impairment of the gained source is unsupported/fail closed.
+- supported gained source is effective;
+- original Clockmaker impairment does not impair the Philosopher source;
+- an impairment affecting the gained source is unsupported/fail closed.
 
-Pure candidate helpers may accept `DRUNK` and `POISONED`; canonical events may contain only `EFFECTIVE` or `KNOWN_DRUNK`.
+Pure helpers may model drunk or poisoned legality. Canonical payloads contain only `EFFECTIVE` or `KNOWN_DRUNK`.
 
 ### Exact preserved impairment contract
 
-For a `KNOWN_DRUNK` delivery, its single `representedImpairmentIds[0]` must bind to exactly one preserved `AbilityImpairmentApplied` fact in `state.abilityImpairments`.
-
-The matching impairment must satisfy every field:
+For `KNOWN_DRUNK`, the sole represented impairment ID binds to exactly one preserved `AbilityImpairmentApplied` fact with exact:
 
 ```text
 impairmentId
@@ -267,36 +277,21 @@ chosenRoleId === clockmaker
 sourceCharacterStateRevision
 ```
 
-Additional binding:
+It additionally binds:
 
-- `affectedPlayerId` equals the base Clockmaker source;
-- `affectedSeatNumber` equals the base source seat;
-- `affectedRole` equals the exact stored/catalog Clockmaker source role;
-- the impairment source player equals the exact Philosopher choice/grant source that chose Clockmaker;
-- the impairment source seat encoded in the canonical impairment ID equals that Philosopher source seat;
-- the affected seat encoded in the ID equals the base source seat;
-- `sourceCharacterStateRevision` equals the matching Philosopher choice/grant revision;
-- the revision is not after Clockmaker settlement;
-- the canonical impairment ID is reproduced exactly;
-- exactly one matching choice/grant/impairment chain exists.
+- affected player/seat/role to the base Clockmaker source;
+- impairment source to the exact Philosopher choice/grant;
+- encoded source and affected seats;
+- choice/grant revision;
+- revision at or before settlement;
+- reproducible canonical impairment ID;
+- exactly one choice/grant/impairment chain.
 
-Stored validation rejects:
+Missing, duplicate, forged or cross-linked represented impairment is invalid.
 
-- missing represented impairment;
-- duplicate matching impairment;
-- forged ID;
-- wrong kind or source kind;
-- wrong Philosopher source;
-- wrong affected player, seat or role;
-- wrong chosen role;
-- wrong revision;
-- an impairment cross-linked from another delivery/source.
-
-Later unrelated impairments are ignored for historical recomputation, but do not replace the represented fact.
+Later unrelated impairment facts do not recompute the delivery and cannot replace the represented impairment.
 
 ## vortoxConstraint
-
-Use:
 
 ```ts
 type ClockmakerVortoxConstraint =
@@ -310,50 +305,91 @@ type ClockmakerVortoxConstraint =
     };
 ```
 
-At settlement, `VORTOX_FALSE_REQUIRED` requires:
+### Runtime Vortox resolution
 
-- exactly one current exact-catalog Vortox role;
+`VORTOX_FALSE_REQUIRED` requires at settlement:
+
+- exactly one current exact-catalog Vortox;
 - exactly one matching active Vortox tenure;
-- tenure player and seat equal the current Vortox;
-- tenure role is `vortox`;
-- tenure acquisition revision is at or before settlement;
-- tenure has no end revision at or before settlement;
-- parsed tenure ID reproduces role, seat and acquisition revision;
-- no canonical represented impairment disabled that tenure at settlement.
+- matching player and seat;
+- role `vortox`;
+- acquisition revision at or before settlement;
+- no end revision at or before settlement;
+- canonical parsed tenure ID;
+- no represented impairment disabling that tenure.
 
-Zero current Vortox yields `NONE` only when:
+`NONE` is allowed only if:
 
-- CurrentCharacterState is otherwise valid;
-- no active Vortox tenure conflicts with the absence;
-- no malformed Vortox-related tenure or impairment makes effectiveness indeterminate.
+- current state is valid;
+- the current native Demon is not Vortox;
+- no active Vortox tenure conflicts with that absence;
+- no malformed Vortox tenure/impairment makes effectiveness indeterminate.
 
-The following fail closed and must never degrade to `NONE`:
+Fail closed rather than returning `NONE` for:
 
-- current Vortox with no active tenure;
-- multiple matching active tenures;
-- a tenure ID cross-linked to another player/seat/revision;
-- multiple current Vortox entries;
-- malformed Vortox-related impairment;
-- a represented impairment that disables the current Vortox at settlement;
-- conflicting active Vortox tenure state.
+- current Vortox with missing tenure;
+- multiple matching tenures;
+- cross-linked tenure;
+- multiple current Vortox;
+- malformed relevant impairment;
+- settlement-time impaired Vortox;
+- conflicting active Vortox tenure.
 
-Do not copy Seamstress behavior that maps missing tenure to `NONE`.
+Do not copy the Seamstress missing-tenure-to-`NONE` behavior.
 
-### Historical Vortox binding
+### Strict historical Vortox biconditional
 
-Stored validation of `VORTOX_FALSE_REQUIRED` uses preserved tenure and impairment history at `settlementCharacterStateRevision`, not later current role state.
+At `delivery.settlementCharacterStateRevision`, stored validation must enforce:
 
-It requires:
+```text
+delivery.vortoxConstraint.kind === "VORTOX_FALSE_REQUIRED"
+iff
+delivery.nativeDemonReferences[0].role
+  is the exact setup-catalog Vortox snapshot
+```
 
-1. exactly one role-tenure record with the stored `vortoxRoleTenureId`;
-2. exact player/seat/role/acquisition identity;
-3. activity at the stored settlement revision;
-4. no matching impairment whose applicable revision is within that tenure and at or before settlement;
-5. no malformed relevant impairment preventing a safe effectiveness decision.
+This is a strict biconditional, not two optional independent validations.
 
-For stored `NONE`, validation requires no active preserved Vortox tenure at settlement revision.
+When true:
 
-A later impairment with a revision after settlement does not rewrite or invalidate a historically effective Vortox constraint.
+1. `nativeDemonReferences` has exactly one entry.
+2. That reference’s exact role snapshot equals the setup-catalog Vortox.
+3. The constraint’s player equals the native Demon player.
+4. The constraint’s seat equals the native Demon seat.
+5. `evaluatedCharacterStateRevision` equals settlement revision.
+6. Exactly one preserved tenure matches `vortoxRoleTenureId`.
+7. The tenure player and seat equal both the constraint and native Demon.
+8. The tenure role is `vortox`.
+9. The tenure’s catalog role snapshot identity is the same exact Vortox role represented by the native Demon.
+10. The tenure is active at settlement revision.
+11. The tenure ID reproduces seat, role and acquisition revision.
+12. No represented impairment disabled that tenure at or before settlement.
+
+When false:
+
+1. the stored native Demon role is not Vortox;
+2. the constraint is exactly `{kind: "NONE"}`;
+3. no preserved Vortox tenure is active at settlement revision;
+4. no conflicting active Vortox tenure or malformed relevant impairment makes absence indeterminate.
+
+The validator must reject:
+
+- native Vortox plus missing tenure plus constraint downgraded to `NONE`;
+- native Vortox plus constraint cross-linked to another player or seat;
+- non-Vortox native Demon plus forged `VORTOX_FALSE_REQUIRED`;
+- valid-looking Vortox tenure/constraint whose player, seat or role snapshot differs from the native Demon.
+
+Stored historical validation uses only:
+
+- the delivery’s immutable native Demon snapshot;
+- setup catalog;
+- preserved tenure history;
+- preserved impairment history;
+- settlement revision.
+
+It must not consult later current character state to redetermine whether the historical Demon was Vortox.
+
+A later post-settlement impairment does not invalidate an historically effective Vortox.
 
 ## simulationPolicy
 
@@ -371,7 +407,7 @@ const CLOCKMAKER_SIMULATION_POLICY_VERSION =
 | drunk | active | `[0..6] - truth` | smallest false |
 | poisoned pure helper | active | `[0..6] - truth` | smallest false |
 
-Simulation reasons:
+Reasons:
 
 - `RULE_CORRECT_REQUIRED`
 - `DETERMINISTIC_SMALLEST_FALSE_HARMFUL_DEFAULT`
@@ -383,7 +419,7 @@ Reliability:
 - `DETERMINISTIC_FALSE_WITH_KNOWN_DRUNKENNESS`
 - `VORTOX_CONSTRAINED_FALSE`
 
-Truth, source effectiveness, Vortox constraint, legal candidates and policy remain distinct fields.
+Truth, effectiveness, Vortox constraint, legality and policy remain separate.
 
 ## baseSourceContract
 
@@ -400,16 +436,16 @@ type BaseClockmakerSourceContract = {
 
 Require:
 
-- exact next unsettled `CLOCKMAKER_INFORMATION`;
+- exact next unsettled Clockmaker task;
 - class `ROLE_INFORMATION`;
 - source kind `ROLE`;
-- canonical task ID with encoded seat equal to source seat;
-- exact catalog Clockmaker/Townsfolk role;
-- one current matching source player/seat;
+- canonical task ID and encoded seat;
+- exact catalog Clockmaker/Townsfolk;
+- one current matching source;
 - current role still exact Clockmaker;
-- settlement at current revision.
+- current settlement revision.
 
-The tuple is the bounded base ability identity.
+This tuple is the bounded base source identity.
 
 ## philosopherGainedSourceContract
 
@@ -430,20 +466,20 @@ type PhilosopherGainedClockmakerSourceContract = {
 
 Require exactly one matching:
 
-- `PHILOSOPHER_GAINED_ABILITY` task source;
+- gained-ability task source;
 - Philosopher grant;
 - task insertion;
 - source player/seat;
-- exact Philosopher source role;
-- exact Clockmaker gained role;
+- Philosopher source role;
+- Clockmaker gained role;
 - grant ID;
 - grant task/opportunity;
 - inserted task ID;
 - insertion revision;
-- order key `{baseOrder: 100, insertionOrder: 1}`;
-- current source still matching the bounded Philosopher source.
+- order `{100,1}`;
+- current bounded Philosopher source.
 
-The grant ID plus exact task/source tuple is the gained ability identity.
+The grant and task/source tuple is the gained source identity.
 
 ## commands
 
@@ -456,28 +492,27 @@ type SettleClockmakerInformationCommandPayload = {
 };
 ```
 
-No actor-supplied distance, source, identity, truth, candidates, impairment, Vortox, policy or revision.
+No actor-supplied answer, source, identity, truth, candidates, impairment, Vortox, policy or revision.
 
 Actors:
 
-- System: allowed;
-- Storyteller: allowed;
-- Human/AI: `ActorNotAllowed`.
+- System and Storyteller allowed;
+- Human and AI rejected.
 
-Exact payload keys:
+Exact keys:
 
 ```text
 commandType
 taskId
 ```
 
-Precise new rejection codes where required:
+Precise new rejection codes where needed:
 
 - `InvalidClockmakerInformationCommand`
 - `UnsupportedClockmakerInformationTask`
 - `InformationSourceNoLongerValid`
 
-Existing prerequisite, stale-version, task-not-found, already-settled and task-not-next codes remain authoritative.
+Existing prerequisite, task and version codes remain authoritative.
 
 ## events
 
@@ -492,7 +527,7 @@ Settlement outcome:
 "CLOCKMAKER_INFORMATION_DELIVERED"
 ```
 
-No choice, opportunity, impairment, registration, truth-only or Storyteller-selection event is added.
+No additional event is introduced.
 
 ## eventOrder
 
@@ -503,22 +538,21 @@ ClockmakerInformationDelivered
 ScheduledTaskSettled
 ```
 
-Envelopes share batch ID, command ID, committed version, baseline, timestamp, correlation and causation. Sequences are consecutive.
+Envelopes share metadata and use consecutive sequences.
 
-Full official order is external evidence:
+Full official order remains external evidence:
 
-- official nightsheet commit: `3d6d930a9e600321f93b2567a2e88948a675bc1e`
-- pinned SHA-256: `99a2815bb31bcec3e107bf7f1c2fb305e301d317981d855704d3d954ec4c3f75`
-- positions including dusk:
-  - Philosopher `14`
-  - Minion info `20`
-  - Demon info `24`
-  - Snake Charmer `37`
-  - Clockmaker `60`
-  - Dreamer `61`
-  - Seamstress `62`
+- commit: `3d6d930a9e600321f93b2567a2e88948a675bc1e`
+- SHA-256: `99a2815bb31bcec3e107bf7f1c2fb305e301d317981d855704d3d954ec4c3f75`
+- Philosopher `14`
+- Minion info `20`
+- Demon info `24`
+- Snake Charmer `37`
+- Clockmaker `60`
+- Dreamer `61`
+- Seamstress `62`
 
-Runtime supported-subset test:
+Runtime subset:
 
 ```text
 SNAKE_CHARMER_ACTION
@@ -528,7 +562,7 @@ CLOCKMAKER_INFORMATION
 DREAMER_ACTION
 ```
 
-Gained runtime order:
+Gained order:
 
 ```text
 PHILOSOPHER_ACTION {100,0}
@@ -538,7 +572,7 @@ gained CLOCKMAKER_INFORMATION {100,1}
 MINION_INFO {200,0}
 ```
 
-No unit test may claim to prove the official order using a test-local literal.
+No test-local literal may claim official-order proof.
 
 ## payloadShapes
 
@@ -596,19 +630,17 @@ Pair snapshot:
 }
 ```
 
-Invariants:
+Invariants include:
 
-- one Demon reference;
-- two sorted Minion references;
-- two sorted pair snapshots;
-- exact reference links;
-- reproducible pair distances;
-- truth equals the pair minimum;
-- output domain exact `0..6`;
-- legal candidates reproduce effectiveness/Vortox rules;
-- selected value is legal and reproduces policy;
-- exact catalog role snapshots;
-- exact keys and dense arrays.
+- one native Demon;
+- two sorted native Minions;
+- two exact pair snapshots;
+- reproducible geometry;
+- truth equals minimum;
+- exact domain/candidates/policy;
+- exact catalog snapshots;
+- exact nested keys;
+- strict native-Demon/Vortox biconditional.
 
 ## stateChanges
 
@@ -620,18 +652,18 @@ clockmakerInformation?: {
 };
 ```
 
-Delivery application:
+Delivery:
 
 - validates against pre-event state;
-- appends one immutable delivery;
-- rejects duplicate delivery ID or task;
-- does not settle the task.
+- appends one historical delivery;
+- rejects duplicate delivery/task;
+- does not settle.
 
-Settlement application:
+Settlement:
 
-- requires one exact matching Clockmaker delivery;
-- appends ordinary task settlement;
-- does not modify character state, impairments, tenure, grants, insertion or setup.
+- requires one exact delivery;
+- appends task settlement;
+- changes no character, impairment, tenure, grant or setup state.
 
 ## historicalSnapshot
 
@@ -639,30 +671,34 @@ The delivery stores:
 
 - exact source contract;
 - settlement revision;
-- native Demon/Minion references;
+- native Demon and Minion snapshots;
 - pair calculations;
 - truth;
 - source effectiveness;
-- represented impairment ID when drunk;
+- represented impairment ID;
 - Vortox constraint and tenure ID;
 - candidates;
 - selected result;
 - policy and reliability.
 
-Replay recomputes against the pre-event state.
+Replay reconstructs against pre-event state.
 
-Stored validation later validates the preserved historical chains:
+Stored validation uses the delivery snapshot and preserved histories to verify:
 
-- exact represented impairment fact;
-- exact Vortox tenure/effectiveness fact;
-- exact source/task/grant/insertion;
-- internal computation.
+1. source/task/grant/insertion;
+2. exact represented source impairment;
+3. exact Demon/Minion geometry;
+4. strict Vortox biconditional;
+5. exact matching Vortox tenure when the native Demon is Vortox;
+6. no active conflicting Vortox tenure when the native Demon is not Vortox;
+7. settlement-time Vortox effectiveness;
+8. candidates and policy.
 
-It does not recompute from later current role, alignment or unrelated impairment state.
+It does not use later current state to reconstruct historical identity or answer.
 
 ## privateProjection
 
-Extend the private view with:
+Expose only:
 
 ```ts
 clockmakerInformation?: {
@@ -672,67 +708,84 @@ clockmakerInformation?: {
 clockmakerKnowledgeModelVersion?: "clockmaker-information-v1";
 ```
 
-Add stage:
+Stage:
 
 ```ts
 "CLOCKMAKER_INFORMATION"
 ```
 
-Only the exact source receives distance, model and stage. Player/AI views are identical.
+Only the source receives it. Player and AI views are identical.
 
-Never expose identities, seats, pairs, truth, candidates, impairment, Vortox, source contract, grant, task, revision, policy, assignment or canonical state.
-
-Place Clockmaker after own-character bootstrap and before team-information stages in the fixed private-view ordering. Runtime task order remains separately enforced.
+Never expose identities, pairs, truth, candidates, impairment, Vortox, tenure, policy, assignment, task or canonical state.
 
 ## storedValidation
 
 Before projection require:
 
 - dense exact delivery collection;
-- exact baseline/model/shape;
-- unique delivery and task ID;
-- one exact planned task;
-- exact base or gained source contract;
-- exact grant/insertion for gained source;
-- one exact matching settlement;
-- settlement revision equals delivery revision;
-- internally reproducible identities, pairs, truth, candidates and policy;
+- exact baseline/version/shape;
+- unique delivery/task;
+- one exact task;
+- exact source contract;
+- exact grant/insertion when gained;
+- one exact settlement;
+- revision equality;
+- reproducible geometry/truth/candidates/policy;
 - exact source viewer;
-- no orphan delivery or settlement.
+- no orphan facts.
 
-For `KNOWN_DRUNK`, additionally require the exact preserved impairment contract described under `sourceEffectiveness`.
+For `KNOWN_DRUNK`, require the exact preserved impairment chain.
 
-For `VORTOX_FALSE_REQUIRED`, additionally require the exact preserved active tenure and no settlement-time disabling impairment described under `vortoxConstraint`.
+For Vortox, enforce the strict biconditional:
 
-For `NONE`, require no preserved active Vortox tenure at settlement.
+```text
+constraint is VORTOX_FALSE_REQUIRED
+iff
+the single stored native Demon role snapshot is exact catalog Vortox
+```
 
-Historical validation may ignore:
+True branch requires:
 
-- current role/alignment after settlement;
-- unrelated impairment facts;
-- impairments whose applicable revision is strictly after settlement.
+- constraint player/seat equals native Demon;
+- exact Vortox role equality;
+- exactly one matching active/effective preserved tenure;
+- no settlement-time disabling impairment.
 
-It may not ignore a missing or forged represented impairment or Vortox tenure.
+False branch requires:
+
+- native Demon is not Vortox;
+- constraint is `NONE`;
+- no active preserved Vortox tenure conflicts with that absence.
+
+Stored validation explicitly rejects:
+
+1. native Vortox + missing tenure + downgraded `NONE`;
+2. native Vortox + constraint cross-linked to another player/seat;
+3. non-Vortox native Demon + forged `VORTOX_FALSE_REQUIRED`;
+4. valid-looking tenure/constraint whose player/seat/role differs from the stored native Demon.
+
+Later role, alignment or impairment state is not used to recompute the result. A later unrelated or post-settlement impairment is ignored only after the required historical facts validate.
 
 ## replayValidation
 
 Event application must:
 
-1. require first night/night 1/day 0;
-2. require setup, roster, current state and task plan;
-3. resolve exact next Clockmaker task;
-4. validate source contract;
-5. resolve current native identity;
-6. resolve exact source impairment;
-7. resolve exact current Vortox and active tenure;
-8. fail closed for indeterminate or impaired Vortox;
-9. rebuild the full delivery;
-10. compare every field;
-11. reject an existing task delivery;
-12. append delivery;
-13. accept settlement only after that delivery.
+1. require first-night canonical prerequisites;
+2. resolve the exact next Clockmaker task;
+3. validate source;
+4. resolve native identity;
+5. resolve exact source impairment;
+6. resolve current Vortox and active tenure;
+7. enforce at settlement that current native Demon is Vortox if and only if `VORTOX_FALSE_REQUIRED`;
+8. require constraint, native Demon and tenure identity equality;
+9. fail closed for indeterminate or impaired Vortox;
+10. rebuild the complete delivery;
+11. compare every field;
+12. reject duplicate delivery;
+13. append delivery;
+14. accept only its exact settlement.
 
-Reject naked, reversed, partial, duplicate, extra, metadata-mismatched, source-forged, grant-forged, impairment-forged, tenure-forged, revision-forged, identity-forged, candidate-forged and mixed-lifecycle batches.
+Replay rejects the same four Vortox/native-Demon identity corruptions required by stored validation, in addition to all previous naked, reordered, forged and mixed batches.
 
 ## batchSemantics
 
@@ -743,35 +796,25 @@ ClockmakerInformationDelivered
 ScheduledTaskSettled
 ```
 
-Validate:
-
-- shared metadata;
-- consecutive sequence;
-- exact delivery shape;
-- settlement task/type/revision/outcome;
-- one-to-one linkage;
-- no unrelated event;
-- no second delivery/settlement.
-
-The batch is atomic.
+Validate shared metadata, consecutive sequence, exact payload, settlement linkage and no extra event. The batch remains atomic.
 
 ## prospectiveValidation
 
-The existing prospective pipeline applies the complete batch before persistence.
+The prospective pipeline applies the complete batch before persistence.
 
-Corruption of source, grant, impairment, Vortox tenure, identity, pairs, truth, candidates, selection, policy, revision or settlement fails with:
+Any source, impairment, native identity, Vortox biconditional, tenure, pair, truth, candidate, selection, revision or settlement corruption fails with:
 
 - no append;
 - no receipt;
 - no version advancement;
-- task still pending;
-- same command ID retryable after fault removal.
+- task pending;
+- same command retryable.
 
-No production fault-injection API is added.
+No production fault injection is introduced.
 
 ## receiptSemantics
 
-Accepted disclosure:
+Accepted summary:
 
 ```ts
 {
@@ -785,18 +828,7 @@ Accepted disclosure:
 }
 ```
 
-No canonical payload is returned.
-
-For every one of the seven supported histories:
-
-- identical retry returns the stored summary;
-- `idempotent: true`;
-- no append;
-- unchanged game version.
-
-Changed fingerprint with the same command ID returns `CommandIdempotencyConflict`.
-
-Deterministic rejections persist receipts. Dependency, metadata, prospective and accepted-commit failures do not.
+All seven supported histories require exact idempotent retry with zero append. Changed fingerprints conflict. Retryable failures write no receipt.
 
 ## failureBoundary
 
@@ -808,16 +840,17 @@ Add:
 
 | Failure | Result |
 |---|---|
-| deterministic actor/phase/version/task/payload/source error | stored rejected receipt |
-| unsupported poison/registration/count/life history | `ApplicationNotConfigured`, role-information stage, retryable |
-| missing/multiple/conflicting Vortox tenure | `ApplicationNotConfigured`, role-information stage, retryable |
-| malformed or impaired current Vortox | `ApplicationNotConfigured`, role-information stage, retryable |
-| Clockmaker resolution/construction throw | `DependencyExecutionFailed`, role-information stage |
-| metadata failure | `MetadataGenerationFailed`, event-metadata stage |
-| prospective rejection | `DependencyExecutionFailed`, prospective-validation stage |
-| commit failure | `EventStoreAppendFailed`, accepted-commit stage |
+| deterministic validation | stored rejection |
+| unsupported poison/registration/count/life | `ApplicationNotConfigured` |
+| missing/conflicting Vortox tenure | `ApplicationNotConfigured` |
+| Vortox/native-Demon biconditional mismatch | `ApplicationNotConfigured` or prospective/replay rejection according to boundary |
+| impaired/malformed Vortox | `ApplicationNotConfigured` |
+| resolver/construction throw | `DependencyExecutionFailed` |
+| metadata | `MetadataGenerationFailed` |
+| prospective | `DependencyExecutionFailed` |
+| commit | `EventStoreAppendFailed` |
 
-Retryable failures preserve events, version, settlement, receipt absence and command-ID availability.
+Retryable failures preserve state and command availability.
 
 ## deterministicIds
 
@@ -827,19 +860,13 @@ Use:
 clockmaker-delivery-v1:<exact-task-id>:settlement-revision-<positive integer>
 ```
 
-Parser requirements:
+Require exact base/gained task grammar and byte-for-byte reproduction.
 
-- string only;
-- exact base or gained Clockmaker task grammar;
-- task ID reproduced exactly;
-- positive safe revision;
-- full ID reproduced byte-for-byte.
-
-No clock/random/UUID/locale/insertion-order-derived canonical identity. Pair/candidate order is numeric.
+No random, clock-derived, UUID, locale or insertion-order-derived canonical identity.
 
 ## testPlan
 
-Every named test must contain the direct assertions described. Literal test-name presence is not traceability.
+The original 95 tests remain required and unweakened. Four independent direct stored-corruption tests are added, producing continuous rows `1..99`.
 
 1. `clockmaker.test.ts` — `returns distance one for adjacent Demon and Minion seats`
 2. `clockmaker.test.ts` — `keeps clockwise and counterclockwise wrap-around symmetric`
@@ -926,58 +953,67 @@ Every named test must contain the direct assertions described. Literal test-name
 83. `clockmaker-private-knowledge.test.ts` — `rejects a represented impairment cross-linked from another Clockmaker source or delivery`
 84. `clockmaker-private-knowledge.test.ts` — `rejects stored Vortox constraint with missing multiple conflicting or inactive tenure`
 85. `clockmaker-private-knowledge.test.ts` — `rejects malformed or settlement-time impaired Vortox but ignores a later post-settlement impairment`
-86. `clockmaker-private-knowledge.test.ts` — `preserves historical distance after later role alignment and unrelated impairment changes`
-87. `game-application-service.test.ts` — `settles canonical BASE_EFFECTIVE_NATIVE`
-88. `game-application-service.test.ts` — `settles canonical BASE_EFFECTIVE_AFTER_SNAKE_CHARMER_SWAP using the new Demon seat`
-89. `game-application-service.test.ts` — `settles canonical PHILOSOPHER_GAINED_EFFECTIVE_NATIVE before Minion information`
-90. `game-application-service.test.ts` — `settles canonical ORIGINAL_BASE_DRUNK_AFTER_PHILOSOPHER_GAIN with the smallest false distance`
-91. `game-application-service.test.ts` — `settles canonical BASE_EFFECTIVE_WITH_VORTOX with false-only information`
-92. `game-application-service.test.ts` — `settles canonical ORIGINAL_BASE_DRUNK_WITH_VORTOX with truth excluded`
-93. `game-application-service.test.ts` — `settles canonical PHILOSOPHER_GAINED_EFFECTIVE_WITH_VORTOX with truth excluded`
-94. `game-application-service.test.ts` — `retries every one of the seven supported Clockmaker histories idempotently without append`
-95. `private-knowledge-view.test.ts` — `preserves prior Dreamer Seamstress Cerenovus Evil Twin Witch and team projection contracts after Clockmaker`
+86. `clockmaker-private-knowledge.test.ts` — `rejects native Vortox with missing tenure when its constraint is downgraded to NONE`
+87. `clockmaker-private-knowledge.test.ts` — `rejects native Vortox whose constraint is cross-linked to another player or seat`
+88. `clockmaker-private-knowledge.test.ts` — `rejects forged VORTOX_FALSE_REQUIRED when the stored native Demon is not Vortox`
+89. `clockmaker-private-knowledge.test.ts` — `rejects valid-looking Vortox tenure and constraint whose player seat or role differs from the stored native Demon`
+90. `clockmaker-private-knowledge.test.ts` — `preserves historical distance after later role alignment and unrelated impairment changes`
+91. `game-application-service.test.ts` — `settles canonical BASE_EFFECTIVE_NATIVE`
+92. `game-application-service.test.ts` — `settles canonical BASE_EFFECTIVE_AFTER_SNAKE_CHARMER_SWAP using the new Demon seat`
+93. `game-application-service.test.ts` — `settles canonical PHILOSOPHER_GAINED_EFFECTIVE_NATIVE before Minion information`
+94. `game-application-service.test.ts` — `settles canonical ORIGINAL_BASE_DRUNK_AFTER_PHILOSOPHER_GAIN with the smallest false distance`
+95. `game-application-service.test.ts` — `settles canonical BASE_EFFECTIVE_WITH_VORTOX with false-only information`
+96. `game-application-service.test.ts` — `settles canonical ORIGINAL_BASE_DRUNK_WITH_VORTOX with truth excluded`
+97. `game-application-service.test.ts` — `settles canonical PHILOSOPHER_GAINED_EFFECTIVE_WITH_VORTOX with truth excluded`
+98. `game-application-service.test.ts` — `retries every one of the seven supported Clockmaker histories idempotently without append`
+99. `private-knowledge-view.test.ts` — `preserves prior Dreamer Seamstress Cerenovus Evil Twin Witch and team projection contracts after Clockmaker`
 
-Row 34 is definitively `EXTERNAL_RULE_EVIDENCE`. It is not a `catalog.test.ts` test and may not be implemented as a test-local literal. The reviewer independently retrieves the pinned artifact and validates its hash and positions.
+Row 34 remains definitively `EXTERNAL_RULE_EVIDENCE`, not a catalog unit test.
+
+Rows 86–89 are four independent direct assertions. They may not be combined into a generic named test without each corruption being separately constructed and asserted.
 
 ## explicitOutOfScope
 
-- registration engine;
-- Spy, Recluse and Summoner execution;
-- zero-Demon/zero-Minion canonical delivery;
-- multiple-Demon or non-two-Minion canonical history;
+Unchanged:
+
+- registration;
+- Spy/Recluse/Summoner execution;
+- missing/multiple native type histories;
 - Travellers;
-- death/revival/life eligibility;
+- death/revival;
 - canonical poisoned Clockmaker;
 - canonical impaired Vortox;
-- other-night Philosopher acquisition;
-- recurring Clockmaker behavior;
-- general tenure/ability-instance refactor;
-- Pit-Hag/Barber/general character change;
-- general alignment change;
-- Storyteller free-choice UI;
+- later-night acquisition;
+- recurring Clockmaker;
+- generic tenure/ability refactor;
+- general character/alignment change;
+- Storyteller UI;
 - AI decisions;
 - first-night completion;
-- UI, Electron, SQLite;
+- UI/Electron/SQLite;
 - Slice 2B18.
 
 ## completionCriteria
 
-1. Independent reviewer returns `RULE_DESIGN_PASS` for this exact round-2 design.
+1. Independent reviewer returns `RULE_DESIGN_PASS` for this exact user-authorized round-3 design.
 2. Production changes remain within the previously reviewed bounded files.
-3. The exact two-event contract is unchanged.
-4. All seven supported canonical histories have direct accepted event-history tests.
-5. Row 94 directly retries all seven supported histories and verifies zero append.
-6. `KNOWN_DRUNK` stored projection binds the exact preserved impairment fact.
-7. Vortox stored projection binds the exact active settlement-time tenure and effectiveness.
-8. Missing/multiple/conflicting Vortox tenure, malformed impairment and impaired Vortox fail closed.
-9. All 95 trace rows contain real assertions or the explicit row-34 external-evidence classification.
-10. Poison, registration and unsupported counts receive no canonical support claim.
-11. Targeted tests, typecheck, lint, full tests, coverage and `git diff --check` pass.
-12. PR body is complete before branch freeze.
-13. Exact frozen-head Ubuntu and Windows CI pass.
-14. One complete final report returns `CODE_REVIEW_PASS`, `RULE_REVIEW_PASS`, and empty blockers.
-15. Both verbatim GitHub audit comments are re-read and verified.
-16. Coverage matrix is updated to `PARTIAL`, never `COMPLETE`.
+3. The exact two-event contract remains unchanged.
+4. Stored validation implements the strict native-Demon/Vortox-constraint biconditional.
+5. The true branch binds native Demon, constraint and one active/effective tenure to the same player, seat and exact role.
+6. The false branch requires a non-Vortox native Demon and no conflicting active Vortox tenure.
+7. Rows 86–89 independently reject all four named stored corruptions.
+8. All seven supported canonical histories have direct accepted event-history tests.
+9. Row 98 retries all seven histories and verifies zero append.
+10. `KNOWN_DRUNK` binds its exact preserved impairment.
+11. Missing/multiple/conflicting Vortox tenure and impaired/malformed Vortox fail closed.
+12. All 99 trace rows contain real assertions or row 34’s explicit external-evidence classification.
+13. Poison, registration, death and unsupported counts receive no canonical support claim.
+14. Targeted tests, typecheck, lint, full tests, coverage and `git diff --check` pass.
+15. PR body is complete before freeze.
+16. Exact frozen-head Ubuntu and Windows CI pass.
+17. Complete final review returns both pass verdicts and no blockers.
+18. Both verbatim audit comments are re-read and verified.
+19. Coverage matrix remains `PARTIAL`, never `COMPLETE`.
 
 Recommended production changes remain:
 
@@ -1006,23 +1042,23 @@ Recommended test changes remain:
 - `packages/task-engine/src/first-night-task-planner.test.ts`
 - `packages/projections/src/private-knowledge-view.test.ts`
 
-`packages/rules-snv/src/catalog.test.ts` is not modified for external full-order proof. Existing runtime subset tests may be extended only where they inspect real production catalog/task definitions.
+`packages/rules-snv/src/catalog.test.ts` is not modified for external full-order proof.
 
 Documentation after implementation:
 
 - `docs/implementation/phase-3-slice-2b17-status.md`
 - `docs/rules/ROLE_COVERAGE_MATRIX.md`
-- current controller state/log files
+- controller state/log files
 - complete PR traceability.
 
 Forbidden production changes remain:
 
 - setup generation or fixed role counts;
-- task-planner ordering values;
+- task ordering values;
 - Philosopher insertion behavior;
 - Snake Charmer transition behavior;
-- Seamstress/Dreamer/Cerenovus semantics;
-- generic registration, life, Traveller, poison or character-change frameworks;
+- prior role semantics;
+- generic registration, life, poison or character-change systems;
 - Slice 2B18.
 
 Required PR body headings remain exactly:
@@ -1049,15 +1085,15 @@ Required PR body headings remain exactly:
 
 `PARTIAL`
 
-After acceptance, Clockmaker may advance from `SKELETON` to `PARTIAL` for:
+After acceptance, Clockmaker may become `PARTIAL` for:
 
 - base first-night native information;
 - Philosopher-gained first-night information;
-- exact canonical Philosopher drunkenness provenance;
-- current effective Vortox false constraint with exact tenure provenance;
+- canonical Philosopher drunkenness;
+- current effective Vortox with exact native-Demon/tenure provenance;
 - Snake Charmer settlement-time interaction;
-- validated historical private projection.
+- historical source-only projection.
 
-It remains incomplete for poison reachability, registration, death, Travellers, multiple/no-Demon histories, later-night acquisition, general character changes and full Storyteller discretion.
+It remains incomplete for poison reachability, registration, death, Travellers, unsupported native counts, later-night acquisition, general character changes and full Storyteller discretion.
 
 READY_FOR_RULE_DESIGN_REVIEW
