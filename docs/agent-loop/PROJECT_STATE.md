@@ -3,32 +3,22 @@
 ## Phase
 
 - Phase 3 — controlled vertical slices.
-- Completed and accepted: 2B13, 2B14, 2B15, and 2B16.
-- Current governed run: completed at its configured maximum of one slice.
-- No active slice, feature branch, or PR. Slice 2B17 is not started.
+- Accepted: 2B13 through 2B16.
+- Slice 2B17: `HUMAN_BLOCKED` at final permitted rule-design review.
+- Current branch: `main`; no feature branch or PR.
+- Slice 2B18 is prohibited.
 
-## Slice 2B16 Acceptance
+## Gate State
 
-- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18), merged.
-- Frozen feature HEAD: `8f88250273cd119089ba3529aa27724d99d11306`.
-- Merge SHA: `8a7ba648513a84e3a91dcd2d268634440cf27585`.
-- Final review: `CODE_REVIEW_PASS`, `RULE_REVIEW_PASS`, `remainingBlockers = []`.
-- Both original GitHub review comments are archived verbatim in `docs/reviews/` with original URL, timestamp, and exact UTF-8 body SHA-256.
+- Evidence `docs/rules/evidence/2B17.md`: SHA-256 `db1fb83335e6a2083f85797b83516b8b646538ee3afcfd5ac92319147432d97e`; `RULE_READY`; `PARTIAL`.
+- Round-2 design: SHA-256 `0892e4e8b74279f445100a7912f1b5220aba9ab51369aac8ce3a8603d62a1787`.
+- Round-1 review: SHA-256 `8e16646c6b98aa45111e6385175e5d9e18ef83dea98f637d192126cbf0bd9d35`; `RULE_DESIGN_FIX_REQUIRED`.
+- Round-2 review: SHA-256 `148d756129a1eb08678d30b5d094e88b90ebd0842b4021e7dee1bed5fad5be8d`; `RULE_DESIGN_FIX_REQUIRED`.
+- `RULE_DESIGN_PASS`: absent.
+- Implementation authorization: false.
 
-## CI Provenance
+## Blocker
 
-- Product feature gate: runs `29141710268` and `29141711653` succeeded for exact feature SHA `8f88250273cd119089ba3529aa27724d99d11306`.
-- Merge evidence: main-push run `29142021919` and accepted-tag-push run `29142029944` succeeded for exact merge SHA `8a7ba648513a84e3a91dcd2d268634440cf27585`.
-- Closeout evidence: not self-recorded. The controller must use Git/GitHub after push to identify the exact closeout SHA and wait for CI attached to that SHA. No status is inherited across commits.
+The stored Vortox constraint lacks biconditional binding to the delivery's historical native Demon reference and exact active tenure identity. Replay validity does not replace hostile stored-projection validation.
 
-## Rule And Coverage Truth
-
-- Cerenovus effective-only first-night choice, madness marker, private instruction, settlement, semantic opportunity identity, provenance chain, replay validation, and target-only historical projection are accepted.
-- Cerenovus remains `PARTIAL`, never `COMPLETE`.
-- Source-impaired handling is `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY` and fail-closed, not immunity.
-- No generic impairment source exists.
-- Drunk/poison simulation, Vortox runtime, character/alignment lifecycle, madness judgment, execution, death, cleanup, recurrence, gained-Cerenovus, jinx, UI, persistence, and Slice 2B17 remain unsupported.
-
-## Pause
-
-Complete the single docs-only closeout and verify its exact-SHA CI. Then remain paused until a new explicit user goal or controller authorization.
+The maximum design round `2 / 2` is exhausted. No repair, implementation, branch, PR, tag, or next slice may proceed without explicit human direction.

@@ -1,34 +1,25 @@
 # Current Task
 
-## Completed — Slice 2B16 Closeout
+## HUMAN_BLOCKED — Slice 2B17
 
-- Slice: `2B16`, Cerenovus effective-only first-night madness marker and private instruction.
-- Status: accepted and merged through [PR #18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18).
-- Frozen feature HEAD: `8f88250273cd119089ba3529aa27724d99d11306`.
-- Merge SHA: `8a7ba648513a84e3a91dcd2d268634440cf27585`.
+- Candidate: Clockmaker, `FIRST_NIGHT_NATIVE_AND_PHILOSOPHER_GAINED_INFORMATION`.
 - Branch: `main`.
-- Active PR: none.
-- Repair round: `2 / 2`.
-- This governed run reached `maxSlices = 1`; Slice 2B17 is not started or authorized.
+- PR: none.
+- Reviewed implementation HEAD: none.
+- Rule evidence: `RULE_READY`, `PARTIAL`, no source conflict.
+- Design round: `2 / 2` exhausted.
+- Final design verdict: `RULE_DESIGN_FIX_REQUIRED`.
+- `RULE_DESIGN_PASS` was not obtained.
+- `implementationAuthorized = false`.
 
-## Final Review
+## Blocking Finding
 
-- Independent verdicts: `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`.
-- `remainingBlockers = []`.
-- Exact GitHub comments are archived at:
-  - `docs/reviews/pr-18-code-review-final.md`
-  - `docs/reviews/pr-18-rule-review-final.md`
+Stored Clockmaker projection lacks an explicit biconditional between the historical native Demon reference and the stored Vortox constraint/tenure identity at settlement:
 
-## CI Provenance
+`VORTOX_FALSE_REQUIRED` must exist if and only if the exact historical native Demon reference is the exact catalog Vortox. The constraint player/seat/role and exact active tenure must bind to that same reference. Stored `NONE` must reject a historical native Vortox reference even if hostile state removed its tenure.
 
-- `productHeadCI`: feature SHA `8f88250273cd119089ba3529aa27724d99d11306`; push run `29141710268` and PR run `29141711653`; both `SUCCESS`.
-- `mergeCommitCI`: merge SHA `8a7ba648513a84e3a91dcd2d268634440cf27585`; main-push run `29142021919` and accepted-tag-push run `29142029944`; both `SUCCESS`.
-- `closeoutCommitCI`: pending. The closeout commit cannot embed its own future SHA or run identifiers. Git/GitHub become authoritative after push, and the controller must verify CI for that exact emitted SHA without inheriting earlier status.
+Required hostile stored-state cases are not yet in an authorized design: downgraded native Vortox to `NONE`, cross-linked constraint identity, forged Vortox constraint for a non-Vortox Demon, and tenure/constraint identity differing from the stored native Demon reference.
 
-## Preserved Boundary
+## Stop
 
-Cerenovus remains `PARTIAL`. Source-impaired behavior remains `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY` and fail-closed; there is no generic impairment producer, import, or arbitrary injection. Drunk/poison simulation, Vortox runtime, character/alignment lifecycle, madness judgment, execution/death/day accounting, marker cleanup, other-night recurrence, gained Cerenovus, Goblin jinx, Vigormortis retention, UI, Electron, persistence, and Slice 2B17 remain out of scope.
-
-## Stop Condition
-
-After the single docs-only closeout commit is pushed, wait for exact-closeout-SHA CI and report it. Do not create a PR or tag, modify the accepted tag, or start Slice 2B17.
+The governed design-round limit has been reached. No third design round, design repair, production/test change, feature branch, PR, partial implementation, or Slice 2B18 work is authorized. Await explicit human direction.

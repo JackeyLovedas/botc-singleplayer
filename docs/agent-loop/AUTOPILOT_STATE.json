@@ -1,45 +1,55 @@
 {
-  "status": "COMPLETED",
+  "status": "HUMAN_BLOCKED",
   "currentPR": null,
   "currentBranch": "main",
-  "currentSlice": null,
-  "reviewedHead": "8f88250273cd119089ba3529aa27724d99d11306",
-  "mergeCommit": "8a7ba648513a84e3a91dcd2d268634440cf27585",
-  "repairRound": 2,
+  "currentSlice": "2B17",
+  "reviewedHead": null,
+  "repairRound": 0,
+  "designRound": 2,
   "maxSlices": 1,
   "maxRepairRounds": 2,
-  "rescopeAuthorization": "CERENOVUS_EFFECTIVE_ONLY",
-  "currentDesignHash": "6d790e201347222621b8cfb5afeee77d3e0224faa4c438b9f67c1994edeb12a0",
-  "designReviewHash": "3519e696c42a2b83a8822611bceb2c279390759f97193836e4009bb5e177c8f8",
-  "finalReviewCodeCommentBodyHash": "10c0fe3ef6853554efdf38d9c632c252fcb5a345d33bcbc294beed4f79689ff5",
-  "finalReviewRuleCommentBodyHash": "5dcdda7c6491329f2750a0bbc01d99ccc22c7a0e23202ab36e28e91db3d043a9",
+  "candidateRole": "clockmaker",
+  "candidateScope": "FIRST_NIGHT_NATIVE_AND_PHILOSOPHER_GAINED_INFORMATION",
+  "currentDesignHash": "0892e4e8b74279f445100a7912f1b5220aba9ab51369aac8ce3a8603d62a1787",
+  "designReviewRound2Hash": "148d756129a1eb08678d30b5d094e88b90ebd0842b4021e7dee1bed5fad5be8d",
+  "ruleReady": true,
+  "ruleDesignPass": false,
+  "implementationAuthorized": false,
+  "slice2B18Prohibited": true,
   "completedSlices": ["2B13", "2B14", "2B15", "2B16"],
-  "productHeadCI": {
-    "sha": "8f88250273cd119089ba3529aa27724d99d11306",
-    "pushRun": 29141710268,
-    "pullRequestRun": 29141711653,
-    "status": "SUCCESS",
-    "scope": "Frozen feature HEAD product gate"
+  "previousRunCloseoutCI": {
+    "sha": "5da9c9425ae0b0f0d76610d14cfbcdc33166cb9b",
+    "run": 29142246611,
+    "status": "SUCCESS"
   },
-  "mergeCommitCI": {
-    "sha": "8a7ba648513a84e3a91dcd2d268634440cf27585",
-    "mainPushRun": 29142021919,
-    "acceptedTagPushRun": 29142029944,
-    "status": "SUCCESS",
-    "scope": "Merge-commit evidence for main push and accepted-tag push; not inherited by the closeout commit"
+  "previousRun2B16": {
+    "mergeCommit": "8a7ba648513a84e3a91dcd2d268634440cf27585",
+    "reviewedHead": "8f88250273cd119089ba3529aa27724d99d11306",
+    "repairRound": 2,
+    "rescopeAuthorization": "CERENOVUS_EFFECTIVE_ONLY",
+    "designHash": "6d790e201347222621b8cfb5afeee77d3e0224faa4c438b9f67c1994edeb12a0",
+    "designReviewHash": "3519e696c42a2b83a8822611bceb2c279390759f97193836e4009bb5e177c8f8",
+    "finalReviewCodeCommentBodyHash": "10c0fe3ef6853554efdf38d9c632c252fcb5a345d33bcbc294beed4f79689ff5",
+    "finalReviewRuleCommentBodyHash": "5dcdda7c6491329f2750a0bbc01d99ccc22c7a0e23202ab36e28e91db3d043a9",
+    "productHeadCI": {
+      "sha": "8f88250273cd119089ba3529aa27724d99d11306",
+      "pushRun": 29141710268,
+      "pullRequestRun": 29141711653,
+      "status": "SUCCESS"
+    },
+    "mergeCommitCI": {
+      "sha": "8a7ba648513a84e3a91dcd2d268634440cf27585",
+      "mainPushRun": 29142021919,
+      "acceptedTagPushRun": 29142029944,
+      "status": "SUCCESS"
+    },
+    "impairmentBoundary": {
+      "status": "UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY",
+      "behavior": "FAIL_CLOSED",
+      "genericImpairmentSource": false
+    }
   },
-  "closeoutCommitCI": {
-    "sha": null,
-    "runs": [],
-    "status": "PENDING_POST_PUSH_AUTHORITY",
-    "scope": "This commit cannot self-reference its future SHA or CI. Git and GitHub are authoritative after push; the controller must wait for and verify CI attached to the exact emitted closeout SHA."
-  },
-  "impairmentBoundary": {
-    "status": "UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY",
-    "behavior": "FAIL_CLOSED",
-    "genericImpairmentSource": false
-  },
-  "lastAction": "Merged and accepted Slice 2B16 through PR #18, archived both exact GitHub final-review comments, and prepared the single docs-only post-merge closeout. Cerenovus remains PARTIAL.",
-  "lastError": null,
-  "nextAction": "Push the one docs-only closeout commit, then wait for and verify CI for its exact Git/GitHub SHA. Do not start Slice 2B17."
+  "lastAction": "Materialized the complete final permitted round-2 design review. It returned RULE_DESIGN_FIX_REQUIRED with one stored-Vortox historical biconditional blocker. The design-round limit is exhausted; no repair or implementation is authorized.",
+  "lastError": "Design round 2/2 ended RULE_DESIGN_FIX_REQUIRED: stored Vortox constraint lacks biconditional binding to the historical native Demon reference and exact tenure identity.",
+  "nextAction": "HUMAN_BLOCKED. Await explicit human direction; do not run a third design round, implement, create a feature branch or PR, or start Slice 2B18."
 }
