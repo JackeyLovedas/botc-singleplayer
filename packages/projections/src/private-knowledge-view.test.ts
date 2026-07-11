@@ -2341,4 +2341,15 @@ describe("private knowledge projections", () => {
     expect(second.demonBluffs[0]?.roleId).not.toBe("mutated-bluff");
     expect(second.knownMinions[0]?.playerId).not.toBe("mutated-player");
   });
+
+  it("keeps pre-Clockmaker private views byte-shape compatible without the new stage or fields", () => {
+    const state = stateWithPrivateKnowledge();
+    const viewer = state.roster?.entries[0];
+    if (viewer === undefined) throw new Error("Expected viewer");
+    const view = buildPlayerPrivateKnowledgeView(state, viewer.playerId);
+    expect(view).not.toHaveProperty("clockmakerInformation");
+    expect(view).not.toHaveProperty("clockmakerKnowledgeModelVersion");
+    expect(view.deliveredKnowledgeStages).not.toContain("CLOCKMAKER_INFORMATION");
+    expect(buildAiPrivateKnowledgeView(state, viewer.playerId)).toStrictEqual(view);
+  });
 });

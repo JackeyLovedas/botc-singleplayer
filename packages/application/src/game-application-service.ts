@@ -82,6 +82,13 @@ import {
   validateCerenovusActionOpportunityShape,
   validateDreamerActionDecision,
   validateSeamstressActionDecisionForOpportunity,
+  canActorSettleClockmakerInformation,
+  validateSettleClockmakerInformationCommandPayload,
+  resolveClockmakerNativeReferences,
+  resolveClockmakerSourceEffectiveness,
+  resolveClockmakerVortoxConstraint,
+  createClockmakerInformationDeliveredPayload,
+  createClockmakerInformationDeliveredScheduledTaskSettlement,
   tryCreateEvilTwinPair,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
@@ -139,6 +146,8 @@ import type {
   CerenovusChoiceRecordedPayload,
   CerenovusMadnessInstructionDeliveredPayload,
   CerenovusMadnessMarkedPayload,
+  ClockmakerInformationDeliveredPayload,
+  ClockmakerSourceContract,
   SetupGeneratedPayload,
   SetupGenerationConstraints,
   SetupGenerationFailure,
@@ -621,7 +630,8 @@ export class GameApplicationService {
     }
 
     const result = command.payload.commandType === "SubmitSeamstressAction" ||
-      command.payload.commandType === "SubmitCerenovusAction"
+      command.payload.commandType === "SubmitCerenovusAction" ||
+      command.payload.commandType === "SettleClockmakerInformation"
       ? acceptedWithEventSummary(command.gameId, batch.committedGameVersion, batch.events)
       : accepted(command.gameId, batch.committedGameVersion, batch.events);
     const receipt: FingerprintedCommandReceipt<typeof result> = {
@@ -990,6 +1000,42 @@ export class GameApplicationService {
           };
         }
 
+        return undefined;
+      }
+
+      case "SettleClockmakerInformation": {
+        if (!canActorSettleClockmakerInformation(command.actor)) {
+          return { code: "ActorNotAllowed", message: `${command.actor.kind} actors cannot execute SettleClockmakerInformation` };
+        }
+        const payloadValidation = validateSettleClockmakerInformationCommandPayload(command.payload);
+        if (!payloadValidation.valid) return { code: "InvalidClockmakerInformationCommand", message: payloadValidation.reason };
+        if (state === undefined) return { code: "GameNotCreated", message: "SettleClockmakerInformation requires an existing game" };
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: "SettleClockmakerInformation requires first night before day one" };
+        }
+        if (state.firstNight === undefined) return { code: "FirstNightNotInitialized", message: "Clockmaker settlement requires first-night initialization" };
+        if (state.initialPrivateKnowledge === undefined) return { code: "InitialPrivateKnowledgeNotEstablished", message: "Clockmaker settlement requires initial private knowledge" };
+        if (state.firstNightTaskPlan === undefined) return { code: "FirstNightTaskPlanNotCreated", message: "Clockmaker settlement requires a first-night task plan" };
+        if (state.currentCharacterState === undefined || state.setup === undefined || state.roster === undefined || state.seamstressRoleTenureState === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "Clockmaker settlement requires complete canonical character state" };
+        }
+        const requestedTaskId = command.payload.taskId;
+        const task = state.firstNightTaskPlan.tasks.find((entry) => entry.taskId === requestedTaskId);
+        if (task === undefined) return { code: "ScheduledTaskNotFound", message: "Clockmaker task was not found" };
+        if (isFirstNightTaskSettled(state.firstNightTaskProgress, task.taskId)) return { code: "ScheduledTaskAlreadySettled", message: "Clockmaker task is already settled" };
+        const next = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+        if (next?.taskId !== task.taskId) return { code: "ScheduledTaskNotNext", message: "Clockmaker task is not the next unsettled task" };
+        if (task.taskType !== "CLOCKMAKER_INFORMATION" || task.taskClass !== "ROLE_INFORMATION" ||
+            (task.source.kind !== "ROLE" && task.source.kind !== "PHILOSOPHER_GAINED_ABILITY")) {
+          return { code: "UnsupportedClockmakerInformationTask", message: "Task is not a supported Clockmaker information task" };
+        }
+        const taskSource = task.source;
+        const sourceRole = taskSource.kind === "ROLE" ? taskSource.role : taskSource.sourceRole;
+        const source = state.currentCharacterState.entries.filter((entry) => entry.playerId === taskSource.playerId && entry.seatNumber === taskSource.seatNumber);
+        if (source.length !== 1 || source[0] === undefined || !sameRoleSetupSnapshot(source[0].role, sourceRole) ||
+            (taskSource.kind === "ROLE" ? sourceRole.roleId !== "clockmaker" : sourceRole.roleId !== "philosopher")) {
+          return { code: "InformationSourceNoLongerValid", message: "Clockmaker information source no longer matches its bounded current character" };
+        }
         return undefined;
       }
 
@@ -1958,6 +2004,31 @@ export class GameApplicationService {
     return assertNever(command.payload);
   }
 
+  private clockmakerSourceContract(state: GameState, taskId: ClockmakerInformationDeliveredPayload["taskId"]): ClockmakerSourceContract | undefined {
+    const task = state.firstNightTaskPlan?.tasks.find((entry) => entry.taskId === taskId);
+    if (task === undefined || task.taskType !== "CLOCKMAKER_INFORMATION" || task.taskClass !== "ROLE_INFORMATION") return undefined;
+    if (task.source.kind === "ROLE") return {
+      kind: "BASE_CLOCKMAKER", taskId: task.taskId, sourcePlayerId: task.source.playerId, sourceSeatNumber: task.source.seatNumber,
+      sourceRole: task.source.role, taskPlanVersion: state.firstNightTaskPlan!.taskPlanVersion
+    };
+    if (task.source.kind !== "PHILOSOPHER_GAINED_ABILITY") return undefined;
+    const gainedSource = task.source;
+    const grants = state.philosopherGrantedAbilities?.abilities.filter((grant) =>
+      grant.sourcePlayerId === gainedSource.playerId && grant.sourceSeatNumber === gainedSource.seatNumber &&
+      grant.grantedAtOpportunityId === gainedSource.opportunityId && grant.sourceCharacterStateRevision === gainedSource.sourceCharacterStateRevision &&
+      grant.chosenRoleId === "clockmaker" && sameRoleSetupSnapshot(grant.sourceRole, gainedSource.sourceRole) && sameRoleSetupSnapshot(grant.chosenRole, gainedSource.chosenRole)
+    ) ?? [];
+    const insertions = state.firstNightTaskInsertions?.insertions.filter((entry) => entry.taskId === task.taskId &&
+      entry.insertedByOpportunityId === gainedSource.opportunityId && entry.insertedByPlayerId === gainedSource.playerId) ?? [];
+    if (grants.length !== 1 || grants[0] === undefined || insertions.length !== 1 || insertions[0] === undefined) return undefined;
+    return {
+      kind: "PHILOSOPHER_GAINED_CLOCKMAKER", taskId: task.taskId, sourcePlayerId: gainedSource.playerId, sourceSeatNumber: gainedSource.seatNumber,
+      sourceRole: gainedSource.sourceRole, gainedRole: gainedSource.chosenRole, grantId: grants[0].grantId,
+      grantedAtTaskId: grants[0].grantedAtTaskId, grantedAtOpportunityId: grants[0].grantedAtOpportunityId,
+      insertionCharacterStateRevision: insertions[0].sourceCharacterStateRevision
+    };
+  }
+
   private createBatchOrReject(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
@@ -1976,6 +2047,24 @@ export class GameApplicationService {
     readonly details: InitialPrivateKnowledgeGenerationRejectionDetails;
   } {
     try {
+      if (command.payload.commandType === "SettleClockmakerInformation" && state !== undefined) {
+        const contract = this.clockmakerSourceContract(state, command.payload.taskId);
+        const native = state.currentCharacterState === undefined || state.roster === undefined || state.setup === undefined
+          ? { valid: false as const, reason: "Clockmaker native identity source state is unavailable" }
+          : resolveClockmakerNativeReferences({ currentCharacterState: state.currentCharacterState, roster: state.roster.entries, setup: state.setup });
+        const effectiveness = contract === undefined || state.currentCharacterState === undefined
+          ? { valid: false as const, reason: "Clockmaker source contract is unavailable" }
+          : resolveClockmakerSourceEffectiveness({ contract, settlementRevision: state.currentCharacterState.revision,
+              grants: state.philosopherGrantedAbilities ?? { abilities: [] }, ...(state.abilityImpairments === undefined ? {} : { impairments: state.abilityImpairments }) });
+        const constraint = state.currentCharacterState === undefined || state.setup === undefined || state.seamstressRoleTenureState === undefined
+          ? { valid: false as const, reason: "Clockmaker Vortox source state is unavailable" }
+          : resolveClockmakerVortoxConstraint({ currentCharacterState: state.currentCharacterState, setup: state.setup, roleTenures: state.seamstressRoleTenureState,
+              ...(state.abilityImpairments === undefined ? {} : { abilityImpairments: state.abilityImpairments }) });
+        if (!native.valid || !effectiveness.valid || !constraint.valid) {
+          const reason = !native.valid ? native.reason : !effectiveness.valid ? effectiveness.reason : !constraint.valid ? constraint.reason : "unsupported";
+          return failed(command.gameId, "ApplicationNotConfigured", reason, "first-night-role-information", currentGameVersion);
+        }
+      }
       if (command.payload.commandType === "SubmitCerenovusAction" && state !== undefined) {
         const opportunity = findCerenovusOpportunity(state.firstNightActionOpportunities, command.payload.opportunityId);
         if (opportunity !== undefined) {
@@ -2046,7 +2135,8 @@ export class GameApplicationService {
           command.payload.commandType === "SubmitWitchAction" ||
           command.payload.commandType === "SubmitCerenovusAction" ||
           command.payload.commandType === "SubmitDreamerAction" ||
-          command.payload.commandType === "SubmitSeamstressAction"
+          command.payload.commandType === "SubmitSeamstressAction" ||
+          command.payload.commandType === "SettleClockmakerInformation"
         ) {
           const failureStage = command.payload.commandType === "PlanFirstNightTasks"
             ? "first-night-task-planning"
@@ -2054,7 +2144,9 @@ export class GameApplicationService {
               ? "first-night-system-information"
               : command.payload.commandType === "SettleEvilTwinSetup"
                 ? "first-night-role-setup"
-              : "first-night-role-action";
+              : command.payload.commandType === "SettleClockmakerInformation"
+                ? "first-night-role-information"
+                : "first-night-role-action";
           return failed(
             command.gameId,
             "DependencyExecutionFailed",
@@ -3467,6 +3559,30 @@ export class GameApplicationService {
         ];
       }
 
+      case "SettleClockmakerInformation": {
+        if (state === undefined || state.currentCharacterState === undefined || state.roster === undefined || state.setup === undefined || state.seamstressRoleTenureState === undefined) {
+          throw new DomainError("InvalidDomainBatchSemantics", "Clockmaker event creation requires complete canonical state");
+        }
+        const contract = this.clockmakerSourceContract(state, command.payload.taskId);
+        if (contract === undefined) throw new DomainError("InvalidClockmakerInformationDeliveredPayload", "Clockmaker source contract is unavailable");
+        const native = resolveClockmakerNativeReferences({ currentCharacterState: state.currentCharacterState, roster: state.roster.entries, setup: state.setup });
+        const effectiveness = resolveClockmakerSourceEffectiveness({ contract, settlementRevision: state.currentCharacterState.revision,
+          grants: state.philosopherGrantedAbilities ?? { abilities: [] }, ...(state.abilityImpairments === undefined ? {} : { impairments: state.abilityImpairments }) });
+        const constraint = resolveClockmakerVortoxConstraint({ currentCharacterState: state.currentCharacterState, setup: state.setup,
+          roleTenures: state.seamstressRoleTenureState, ...(state.abilityImpairments === undefined ? {} : { abilityImpairments: state.abilityImpairments }) });
+        if (!native.valid || !effectiveness.valid || !constraint.valid) throw new DomainError("InvalidClockmakerInformationDeliveredPayload", "Clockmaker canonical resolution is unsupported");
+        const delivery = createClockmakerInformationDeliveredPayload({ rulesBaselineVersion: RULES_BASELINE_VERSION, sourceContract: contract,
+          settlementCharacterStateRevision: state.currentCharacterState.revision, nativeDemonReferences: [native.demon], nativeMinionReferences: native.minions,
+          sourceEffectiveness: effectiveness.effectiveness, vortoxConstraint: constraint.constraint });
+        const settlement = createClockmakerInformationDeliveredScheduledTaskSettlement(delivery);
+        const firstMetadata = common(firstEventSequence);
+        const secondMetadata = common(firstEventSequence + 1);
+        return [
+          { ...firstMetadata, eventType: "ClockmakerInformationDelivered", payload: delivery satisfies ClockmakerInformationDeliveredPayload },
+          { ...secondMetadata, createdAt: firstMetadata.createdAt, eventType: "ScheduledTaskSettled", payload: settlement satisfies ScheduledTaskSettledPayload }
+        ];
+      }
+
       case "SettleEvilTwinSetup": {
         if (
           state === undefined ||
@@ -3648,6 +3764,10 @@ export class GameApplicationService {
           "first-night-role-setup",
           batch.expectedGameVersion
         );
+      }
+
+      if (command.payload.commandType === "SettleClockmakerInformation") {
+        return failed(batch.gameId, "DependencyExecutionFailed", error.message, "first-night-role-information", batch.expectedGameVersion);
       }
 
       if (

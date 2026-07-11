@@ -8,6 +8,7 @@ import {
   cloneFirstNightTaskCatalogSnapshot,
   commandId,
   correlationId,
+  eventId,
   isSeamstressActionOpportunityV2,
   playerId,
   rebuildOptionalGameState,
@@ -30,7 +31,8 @@ import type {
   GeneratedCharacterAssignment,
   SupportedCommandEnvelope,
   AbilityImpairmentSet,
-  DomainEventBatch
+  DomainEventBatch,
+  SettleClockmakerInformationCommand
 } from "@botc/domain-core";
 import {
   GameApplicationService,
@@ -51,6 +53,8 @@ import type {
   FirstNightSystemInformationResolverPort,
   FirstNightTaskPlannerPort,
   InitialPrivateKnowledgeBuilderPort,
+  IdGenerator,
+  Clock,
   SetupGeneratorPort
 } from "@botc/application";
 import {
@@ -91,8 +95,8 @@ import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@b
 const makeService = (
   commandStore = new MemoryCommandCommitStore(),
   setupGenerator: SetupGeneratorPort = testSetupGenerator,
-  idGenerator = new FixedIdGenerator(),
-  clock = new FixedClock(),
+  idGenerator: IdGenerator = new FixedIdGenerator(),
+  clock: Clock = new FixedClock(),
   characterAssignmentGenerator: CharacterAssignmentGeneratorPort = testAssignmentGenerator,
   initialPrivateKnowledgeBuilder: InitialPrivateKnowledgeBuilderPort = testInitialPrivateKnowledgeBuilder,
   firstNightTaskPlanner: FirstNightTaskPlannerPort = testFirstNightTaskPlanner,
@@ -293,6 +297,18 @@ const noPhilosopherNoDashiiExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
 );
 const cerenovusExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
   id === "evil_twin" ? roleId("cerenovus") : id
+);
+const clockmakerExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
+  id === "mathematician" ? roleId("clockmaker") : id
+);
+const clockmakerVortoxExactRoleIds = clockmakerExactRoleIds.map((id) =>
+  id === "fang_gu" ? roleId("vortox") : id === "barber" ? roleId("artist") : id
+);
+const philosopherClockmakerExactRoleIds = clockmakerExactRoleIds.map((id) =>
+  id === "flowergirl" ? roleId("philosopher") : id
+);
+const philosopherClockmakerVortoxExactRoleIds = philosopherClockmakerExactRoleIds.map((id) =>
+  id === "fang_gu" ? roleId("vortox") : id === "barber" ? roleId("artist") : id
 );
 
 const reachNextCerenovusActionTask = async (
@@ -525,6 +541,111 @@ const reachOpenWitchActionOpportunity = async (
   }
 
   return { beforeWitch, witchTask, opportunity, state };
+};
+
+const reachClockmakerInformationTask = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = clockmakerExactRoleIds
+) => {
+  const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore, exactRoleIds);
+  const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+  if (target === undefined) throw new Error("Expected Witch target before Clockmaker");
+  const result = await service.execute(submitWitchActionCommand({
+    commandId: commandId("settle-witch-before-clockmaker"), expectedGameVersion: state.gameVersion,
+    payload: { commandType: "SubmitWitchAction", taskId: witchTask.taskId, opportunityId: opportunity.opportunityId,
+      decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+  }));
+  expectAcceptedResult(result);
+  const ready = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const task = ready?.firstNightTaskPlan?.tasks.find((entry) => entry.taskType === "CLOCKMAKER_INFORMATION");
+  if (ready === undefined || task === undefined) throw new Error("Expected Clockmaker information task");
+  expect(ready.firstNightTaskPlan?.tasks[ready.firstNightTaskProgress?.settlements.length ?? 0]?.taskId).toBe(task.taskId);
+  return { state: ready, task };
+};
+
+const settleClockmakerCommand = (
+  state: GameState,
+  taskIdValue: ReturnType<typeof scheduledTaskId>,
+  overrides: Partial<SettleClockmakerInformationCommand> = {}
+): SettleClockmakerInformationCommand => ({
+  commandId: commandId("settle-clockmaker"), gameId: ids.game, expectedGameVersion: state.gameVersion, actor: systemActor,
+  issuedAt: "2026-07-11T09:00:00.000Z", correlationId: correlationId("settle-clockmaker"),
+  payload: { commandType: "SettleClockmakerInformation", taskId: taskIdValue }, ...overrides
+});
+
+const advanceToNextClockmaker = async (
+  service: GameApplicationService,
+  store: MemoryCommandCommitStore,
+  chooseSnakeDemon = false,
+  idPrefix = "advance-clockmaker"
+): Promise<{ readonly state: GameState; readonly task: NonNullable<GameState["firstNightTaskPlan"]>["tasks"][number] }> => {
+  for (let step = 0; step < 12; step += 1) {
+    const state = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const next = state?.firstNightTaskPlan?.tasks[state.firstNightTaskProgress?.settlements.length ?? 0];
+    if (state === undefined || next === undefined) throw new Error("Expected next task while advancing Clockmaker");
+    if (next.taskType === "CLOCKMAKER_INFORMATION") return { state, task: next };
+    if (next.taskType === "MINION_INFO" || next.taskType === "DEMON_INFO") {
+      await service.execute(settleFirstNightSystemTaskCommand({ commandId: commandId(`${idPrefix}-${step}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "SettleFirstNightSystemTask", taskId: next.taskId } }));
+      continue;
+    }
+    if (next.taskType === "SNAKE_CHARMER_ACTION") {
+      await service.execute(openFirstNightRoleActionOpportunityCommand({ commandId: commandId(`${idPrefix}-open-snake-${step}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: next.taskId } }));
+      const opened = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+      const opportunity = opened?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === next.taskId);
+      const target = opened?.currentCharacterState?.entries.find((entry) => entry.playerId !== opportunity?.sourcePlayerId &&
+        (chooseSnakeDemon ? entry.role.characterType === "DEMON" : entry.role.characterType !== "DEMON"));
+      if (opened === undefined || opportunity === undefined || target === undefined) throw new Error("Expected Snake Charmer advance target");
+      await service.execute(submitSnakeCharmerActionCommand({ commandId: commandId(`${idPrefix}-snake-${step}`), expectedGameVersion: opened.gameVersion,
+        actor: { kind: "ai", playerId: opportunity.sourcePlayerId }, payload: { commandType: "SubmitSnakeCharmerAction", taskId: next.taskId,
+          opportunityId: opportunity.opportunityId, decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } } }));
+      continue;
+    }
+    if (next.taskType === "EVIL_TWIN_SETUP") {
+      await service.execute(settleEvilTwinSetupCommand({ commandId: commandId(`${idPrefix}-evil-twin-${step}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "SettleEvilTwinSetup", taskId: next.taskId } }));
+      continue;
+    }
+    if (next.taskType === "WITCH_ACTION") {
+      await service.execute(openFirstNightRoleActionOpportunityCommand({ commandId: commandId(`${idPrefix}-open-witch-${step}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: next.taskId } }));
+      const opened = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+      const opportunity = opened?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === next.taskId);
+      const target = opened?.roster?.entries.find((entry) => entry.playerId !== opportunity?.sourcePlayerId);
+      if (opened === undefined || opportunity === undefined || target === undefined) throw new Error("Expected Witch advance target");
+      await service.execute(submitWitchActionCommand({ commandId: commandId(`${idPrefix}-witch-${step}`), expectedGameVersion: opened.gameVersion,
+        actor: { kind: "ai", playerId: opportunity.sourcePlayerId }, payload: { commandType: "SubmitWitchAction", taskId: next.taskId,
+          opportunityId: opportunity.opportunityId, decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } } }));
+      continue;
+    }
+    throw new Error(`Unsupported advance task ${next.taskType}`);
+  }
+  throw new Error("Clockmaker advance exceeded bounded steps");
+};
+
+const reachGainedClockmakerTask = async (
+  service: GameApplicationService,
+  store: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = philosopherClockmakerExactRoleIds
+) => {
+  await reachNoPhilosopherFirstNightTaskPlan(service, exactRoleIds);
+  const planned = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+  const philosopherTask = planned?.firstNightTaskPlan?.tasks[0];
+  if (planned === undefined || philosopherTask?.taskType !== "PHILOSOPHER_ACTION") throw new Error("Expected Philosopher first");
+  await service.execute(openFirstNightRoleActionOpportunityCommand({ commandId: commandId("open-philosopher-clockmaker"), expectedGameVersion: planned.gameVersion,
+    payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: philosopherTask.taskId } }));
+  const opened = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+  const opportunity = opened?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === philosopherTask.taskId);
+  if (opened === undefined || opportunity === undefined) throw new Error("Expected Philosopher Clockmaker opportunity");
+  await service.execute(submitPhilosopherActionCommand({ commandId: commandId("choose-clockmaker"), expectedGameVersion: opened.gameVersion, actor: systemActor,
+    payload: { commandType: "SubmitPhilosopherAction", taskId: philosopherTask.taskId, opportunityId: opportunity.opportunityId,
+      decision: { kind: "CHOOSE_GOOD_CHARACTER", roleId: roleId("clockmaker") } } }));
+  const gained = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+  const task = gained?.firstNightTaskPlan?.tasks[gained.firstNightTaskProgress?.settlements.length ?? 0];
+  if (gained === undefined || task?.taskType !== "CLOCKMAKER_INFORMATION" || task.source.kind !== "PHILOSOPHER_GAINED_ABILITY") throw new Error("Expected gained Clockmaker task");
+  return { state: gained, task };
 };
 
 const reachDreamerActionTask = async (
@@ -6789,6 +6910,174 @@ describe("GameApplicationService", () => {
     expect(createResult.status).toBe("accepted");
     expect(selectResult.status).toBe("accepted");
     expect(commandStore.acceptedCount).toBe(2);
+  });
+
+  it("inserts gained Clockmaker after Philosopher and before Minion information", async () => {
+    const store = new MemoryCommandCommitStore();
+    const { service } = makeService(store);
+    await reachOpenPhilosopherActionOpportunity(service);
+
+    const result = await service.execute(choosePhilosopherRoleCommand("clockmaker", {
+      commandId: commandId("choose-clockmaker-order")
+    }));
+    const state = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const taskTypes = state?.firstNightTaskPlan?.tasks.map((task) => task.taskType);
+
+    expectAcceptedResult(result);
+    expect(taskTypes).toBeDefined();
+    expect(taskTypes?.indexOf("PHILOSOPHER_ACTION")).toBeLessThan(taskTypes?.indexOf("CLOCKMAKER_INFORMATION") ?? -1);
+    expect(taskTypes?.indexOf("CLOCKMAKER_INFORMATION")).toBeLessThan(taskTypes?.indexOf("MINION_INFO") ?? -1);
+  });
+
+  describe("Clockmaker first-night information application", () => {
+    it.each([
+      ["System", systemActor],
+      ["Storyteller", storytellerActor]
+    ])("allows %s to settle the next base Clockmaker task with summary-only idempotency", async (_name, actor) => {
+      const { service, commandStore } = makeService();
+      const { state, task } = await reachClockmakerInformationTask(service, commandStore);
+      const command = settleClockmakerCommand(state, task.taskId, { actor, commandId: commandId(`clockmaker-${actor.kind}`) });
+      const before = (await commandStore.loadDomainEvents(ids.game)).length;
+      const result = await service.execute(command);
+      expectEventSummaryAcceptedResult(result);
+      expect(result).toMatchObject({ eventCount: 2, eventTypes: ["ClockmakerInformationDelivered", "ScheduledTaskSettled"], idempotent: false });
+      await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", idempotent: true, eventCount: 2 });
+      expect((await commandStore.loadDomainEvents(ids.game)).length).toBe(before + 2);
+      await expect(service.execute({ ...command, payload: { ...command.payload, taskId: scheduledTaskId("first-night-v1:CLOCKMAKER_INFORMATION:seat-12") } }))
+        .resolves.toMatchObject({ status: "rejected", code: "CommandIdempotencyConflict" });
+    });
+
+    it("rejects Human AI hidden malformed missing wrong early stale duplicate and outside-phase commands", async () => {
+      const outside = makeService();
+      await outside.service.execute(createGameCommand());
+      await expect(outside.service.execute({ ...settleClockmakerCommand({ gameVersion: 1 } as GameState, scheduledTaskId("first-night-v1:CLOCKMAKER_INFORMATION:seat-01"), {
+        commandId: commandId("clockmaker-outside"), expectedGameVersion: 1
+      }) })).resolves.toMatchObject({ status: "rejected", code: "CommandNotAllowedInPhase" });
+      const { service, commandStore } = makeService();
+      await reachNoPhilosopherFirstNightTaskPlan(service, clockmakerExactRoleIds);
+      const earlyState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+      const task = earlyState?.firstNightTaskPlan?.tasks.find((entry) => entry.taskType === "CLOCKMAKER_INFORMATION");
+      if (earlyState === undefined || task === undefined) throw new Error("Expected early Clockmaker task");
+      await expect(service.execute(settleClockmakerCommand(earlyState, task.taskId))).resolves.toMatchObject({ status: "rejected", code: "ScheduledTaskNotNext" });
+      const readyPair = makeService();
+      const ready = await reachClockmakerInformationTask(readyPair.service, readyPair.commandStore);
+      for (const [id, actor] of [["human", humanActor], ["ai", aiActor]] as const) {
+        await expect(readyPair.service.execute(settleClockmakerCommand(ready.state, ready.task.taskId, { commandId: commandId(`clockmaker-${id}`), actor })))
+          .resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+      }
+      await expect(readyPair.service.execute({ ...settleClockmakerCommand(ready.state, ready.task.taskId, { commandId: commandId("clockmaker-hidden") }), payload: {
+        commandType: "SettleClockmakerInformation", taskId: ready.task.taskId, answer: 3
+      } } as unknown as SupportedCommandEnvelope)).resolves.toMatchObject({ status: "rejected", code: "InvalidClockmakerInformationCommand" });
+      await expect(readyPair.service.execute(settleClockmakerCommand(ready.state, scheduledTaskId("first-night-v1:CLOCKMAKER_INFORMATION:seat-12"), { commandId: commandId("clockmaker-missing") })))
+        .resolves.toMatchObject({ status: "rejected", code: "ScheduledTaskNotFound" });
+      await expect(readyPair.service.execute(settleClockmakerCommand(ready.state, ready.task.taskId, { commandId: commandId("clockmaker-stale"), expectedGameVersion: ready.state.gameVersion - 1 })))
+        .resolves.toMatchObject({ status: "rejected", code: "ExpectedGameVersionMismatch" });
+      const acceptedCommand = settleClockmakerCommand(ready.state, ready.task.taskId, { commandId: commandId("clockmaker-once") });
+      await expect(readyPair.service.execute(acceptedCommand)).resolves.toMatchObject({ status: "accepted" });
+      const after = rebuildOptionalGameState(await readyPair.commandStore.loadDomainEvents(ids.game));
+      if (after === undefined) throw new Error("Expected settled Clockmaker state");
+      await expect(readyPair.service.execute(settleClockmakerCommand(after, ready.task.taskId, { commandId: commandId("clockmaker-duplicate") })))
+        .resolves.toMatchObject({ status: "rejected", code: "ScheduledTaskAlreadySettled" });
+    });
+
+    it("settles effective Vortox Clockmaker with false-only information", async () => {
+      const { service, commandStore } = makeService();
+      const { state, task } = await reachClockmakerInformationTask(service, commandStore, clockmakerVortoxExactRoleIds);
+      const command = settleClockmakerCommand(state, task.taskId, { commandId: commandId("clockmaker-vortox") });
+      const result = await service.execute(command);
+      expectEventSummaryAcceptedResult(result);
+      await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", idempotent: true, eventCount: 2 });
+      const rebuilt = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+      const delivery = rebuilt?.clockmakerInformation?.deliveries[0];
+      expect(delivery?.vortoxConstraint.kind).toBe("VORTOX_FALSE_REQUIRED");
+      expect(delivery?.selectedDistance).not.toBe(delivery?.ruleCorrectDistance);
+      expect(delivery?.legalCandidateDistances).not.toContain(delivery?.ruleCorrectDistance);
+    });
+
+    it.each([
+      ["native", philosopherClockmakerExactRoleIds, false],
+      ["Vortox", philosopherClockmakerVortoxExactRoleIds, true]
+    ])("settles Philosopher-gained effective and original drunk Clockmaker with %s", async (_name, roles, withVortox) => {
+      const { service, commandStore } = makeService();
+      const gained = await reachGainedClockmakerTask(service, commandStore, roles);
+      const gainedCommand = settleClockmakerCommand(gained.state, gained.task.taskId, { commandId: commandId(`gained-clockmaker-${_name}`) });
+      await expect(service.execute(gainedCommand))
+        .resolves.toMatchObject({ status: "accepted", eventCount: 2 });
+      await expect(service.execute(gainedCommand)).resolves.toMatchObject({ status: "accepted", idempotent: true });
+      const base = await advanceToNextClockmaker(service, commandStore, false, `after-gained-${_name}`);
+      const baseCommand = settleClockmakerCommand(base.state, base.task.taskId, { commandId: commandId(`drunk-base-clockmaker-${_name}`) });
+      await expect(service.execute(baseCommand))
+        .resolves.toMatchObject({ status: "accepted", eventCount: 2 });
+      await expect(service.execute(baseCommand)).resolves.toMatchObject({ status: "accepted", idempotent: true });
+      const rebuilt = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+      const deliveries = rebuilt?.clockmakerInformation?.deliveries ?? [];
+      expect(deliveries).toHaveLength(2);
+      expect(deliveries[0]?.sourceContract.kind).toBe("PHILOSOPHER_GAINED_CLOCKMAKER");
+      expect(deliveries[0]?.sourceEffectiveness.kind).toBe("EFFECTIVE");
+      expect(deliveries[1]?.sourceContract.kind).toBe("BASE_CLOCKMAKER");
+      expect(deliveries[1]?.sourceEffectiveness.kind).toBe("KNOWN_DRUNK");
+      expect(deliveries.every((entry) => entry.vortoxConstraint.kind === (withVortox ? "VORTOX_FALSE_REQUIRED" : "NONE"))).toBe(true);
+      for (const entry of deliveries) {
+        if (withVortox) expect(entry.selectedDistance).not.toBe(entry.ruleCorrectDistance);
+      }
+    });
+
+    it("settles base Clockmaker from the post-Snake-Charmer-swap current native Demon seat", async () => {
+      const { service, commandStore } = makeService();
+      await reachNoPhilosopherFirstNightTaskPlan(service, clockmakerExactRoleIds);
+      const ready = await advanceToNextClockmaker(service, commandStore, true, "snake-swap-clockmaker");
+      const command = settleClockmakerCommand(ready.state, ready.task.taskId, { commandId: commandId("clockmaker-after-swap") });
+      await expect(service.execute(command))
+        .resolves.toMatchObject({ status: "accepted", eventCount: 2 });
+      await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", idempotent: true });
+      const rebuilt = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+      const delivery = rebuilt?.clockmakerInformation?.deliveries[0];
+      const demon = ready.state.currentCharacterState?.entries.find((entry) => entry.role.characterType === "DEMON");
+      expect(delivery?.nativeDemonReferences[0].playerId).toBe(demon?.playerId);
+      expect(delivery?.nativeDemonReferences[0].seatNumber).toBe(demon?.seatNumber);
+    });
+
+    it("maps metadata prospective and commit faults without appending or receipts", async () => {
+      const base = makeService();
+      const { state, task } = await reachClockmakerInformationTask(base.service, base.commandStore);
+      const beforeEvents = (await base.commandStore.loadDomainEvents(ids.game)).length;
+      const beforeReceipts = base.commandStore.getReceiptCount();
+      const throwingIds = { nextBatchId: () => { throw new Error("metadata"); }, nextEventId: () => eventId("unused") };
+      const metadataService = makeService(base.commandStore, testSetupGenerator, throwingIds).service;
+      await expect(metadataService.execute(settleClockmakerCommand(state, task.taskId, { commandId: commandId("clockmaker-metadata") })))
+        .resolves.toMatchObject({ status: "failed", code: "MetadataGenerationFailed", failureStage: "event-metadata" });
+      for (const failurePosition of [1, 2]) {
+        let calls = 0;
+        const idsAtPosition: IdGenerator = { nextBatchId: () => batchId(`clockmaker-id-position-${failurePosition}`), nextEventId: () => {
+          calls += 1;
+          if (calls === failurePosition) throw new Error("event metadata");
+          return eventId(`clockmaker-id-position-${failurePosition}-${calls}`);
+        } };
+        const service = makeService(base.commandStore, testSetupGenerator, idsAtPosition).service;
+        await expect(service.execute(settleClockmakerCommand(state, task.taskId, { commandId: commandId(`clockmaker-event-id-fault-${failurePosition}`) })))
+          .resolves.toMatchObject({ status: "failed", code: "MetadataGenerationFailed", failureStage: "event-metadata" });
+      }
+      for (const failurePosition of [1, 2]) {
+        let calls = 0;
+        const clock = { now: () => {
+          calls += 1;
+          if (calls === failurePosition) throw new Error("clock metadata");
+          return "2026-07-11T09:00:00.000Z";
+        } };
+        const service = makeService(base.commandStore, testSetupGenerator, new FixedIdGenerator(), clock).service;
+        await expect(service.execute(settleClockmakerCommand(state, task.taskId, { commandId: commandId(`clockmaker-clock-fault-${failurePosition}`) })))
+          .resolves.toMatchObject({ status: "failed", code: "MetadataGenerationFailed", failureStage: "event-metadata" });
+      }
+      const duplicateIds = { nextBatchId: () => batchId("clockmaker-duplicate-batch"), nextEventId: () => eventId("clockmaker-duplicate-event") };
+      const prospectiveService = makeService(base.commandStore, testSetupGenerator, duplicateIds).service;
+      await expect(prospectiveService.execute(settleClockmakerCommand(state, task.taskId, { commandId: commandId("clockmaker-prospective") })))
+        .resolves.toMatchObject({ status: "failed", code: "DependencyExecutionFailed", failureStage: "first-night-role-information" });
+      base.commandStore.failBeforeCommit = true;
+      await expect(base.service.execute(settleClockmakerCommand(state, task.taskId, { commandId: commandId("clockmaker-commit") })))
+        .resolves.toMatchObject({ status: "failed", code: "EventStoreAppendFailed", failureStage: "accepted-commit" });
+      expect((await base.commandStore.loadDomainEvents(ids.game)).length).toBe(beforeEvents);
+      expect(base.commandStore.getReceiptCount()).toBe(beforeReceipts);
+    });
   });
 });
 

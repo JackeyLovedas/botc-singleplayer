@@ -7,6 +7,7 @@ import {
   DREAMER_INFORMATION_STAGE,
   CERENOVUS_INFORMATION_STAGE,
   CERENOVUS_MADNESS_INSTRUCTION_MODEL_VERSION,
+  CLOCKMAKER_INFORMATION_MODEL_VERSION,
   SEAMSTRESS_INFORMATION_STAGE,
   PRIVATE_VIEW_SEAMSTRESS_MODEL_VERSION,
   EVIL_TWIN_SETUP_KNOWLEDGE_STAGE,
@@ -27,6 +28,7 @@ import {
   validateStoredEvilTwinInformationDelivered,
   validateStoredEvilTwinPairEstablished,
   validateStoredSeamstressInformationDelivered,
+  validateStoredClockmakerInformationDelivered,
   validateCerenovusActionOpportunityShape,
   validateCerenovusChoiceAgainstState,
   validateCerenovusChoiceRecordedPayloadShape,
@@ -52,8 +54,11 @@ import type {
   CerenovusChoiceRecordedPayload,
   CerenovusMadnessInstructionDeliveredPayload,
   CerenovusMadnessMarkedPayload,
-  SeamstressInformationDeliveredPayload
+  SeamstressInformationDeliveredPayload,
+  ClockmakerInformationDeliveredPayload
 } from "@botc/domain-core";
+
+const isDenseArray = (value: readonly unknown[]): boolean => value.every((_, index) => Object.hasOwn(value, index));
 
 type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishedPayload & {
   readonly knowledgeModelVersion: typeof SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION;
@@ -458,6 +463,40 @@ const requireDeliveredCerenovusMadnessInstructionsAreSettled = (
   return validatedInstructions;
 };
 
+const requireDeliveredClockmakerInformationIsSettled = (
+  state: GameState
+): readonly ClockmakerInformationDeliveredPayload[] => {
+  const settlements = storedFirstNightSettlements(state);
+  const clockmakerSettlements = settlements.filter((entry) => isPlainRecord(entry) && entry.outcomeType === "CLOCKMAKER_INFORMATION_DELIVERED");
+  const information: unknown = state.clockmakerInformation;
+  if (information === undefined && clockmakerSettlements.length === 0) return [];
+  if (!isPlainRecord(information) || Object.keys(information).length !== 1 || !Object.hasOwn(information, "deliveries") ||
+      !Array.isArray(information.deliveries) || !isDenseArray(information.deliveries) || state.firstNightTaskPlan === undefined ||
+      state.roster === undefined || state.setup === undefined || state.seamstressRoleTenureState === undefined) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Clockmaker projection requires one dense delivery collection and complete historical source facts");
+  }
+  const deliveries: readonly unknown[] = information.deliveries;
+  const deliveryIds = deliveries.map((entry) => isPlainRecord(entry) ? entry.deliveryId : undefined);
+  const taskIds = deliveries.map((entry) => isPlainRecord(entry) ? entry.taskId : undefined);
+  if (deliveries.length !== clockmakerSettlements.length || deliveryIds.some((id, index) => typeof id !== "string" || deliveryIds.indexOf(id) !== index) ||
+      taskIds.some((id, index) => typeof id !== "string" || taskIds.indexOf(id) !== index)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Clockmaker deliveries and settlements must form unique one-to-one chains");
+  }
+  const validated: ClockmakerInformationDeliveredPayload[] = [];
+  for (const delivery of deliveries) {
+    const validation = validateStoredClockmakerInformationDelivered({ rulesBaselineVersion: state.rulesBaselineVersion, delivery,
+      firstNightTaskPlan: state.firstNightTaskPlan, roster: state.roster.entries, setup: state.setup,
+      ...(state.philosopherAbilityChoices === undefined ? {} : { choices: state.philosopherAbilityChoices }),
+      ...(state.philosopherGrantedAbilities === undefined ? {} : { grants: state.philosopherGrantedAbilities }),
+      ...(state.firstNightTaskInsertions === undefined ? {} : { insertions: state.firstNightTaskInsertions }),
+      ...(state.abilityImpairments === undefined ? {} : { impairments: state.abilityImpairments }),
+      roleTenures: state.seamstressRoleTenureState, settlements });
+    if (!validation.valid) throw new DomainError("PrivateKnowledgeUnavailable", validation.reason);
+    validated.push(delivery as ClockmakerInformationDeliveredPayload);
+  }
+  return validated;
+};
+
 const deliveredStagesForViewer = (
   state: GameState,
   viewerPlayerId: PlayerId
@@ -477,6 +516,10 @@ const deliveredStagesForViewer = (
 
   if (state.cerenovusMadnessInstructions?.deliveries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
     stages.push(CERENOVUS_INFORMATION_STAGE);
+  }
+
+  if (state.clockmakerInformation?.deliveries.some((delivery) => delivery.sourceContract.sourcePlayerId === viewerPlayerId) === true) {
+    stages.push("CLOCKMAKER_INFORMATION");
   }
 
   if (state.dreamerInformation?.deliveries.some((delivery) => delivery.sourcePlayerId === viewerPlayerId) === true) {
@@ -509,6 +552,7 @@ export const buildPlayerPrivateKnowledgeView = (
   const deliveredTeamEntries = requireDeliveredTeamInformationIsSettled(state).filter((entry) => entry.recipientPlayerId === viewerPlayerId);
   requireDeliveredEvilTwinInformationIsSettled(state);
   const cerenovusInstructions = requireDeliveredCerenovusMadnessInstructionsAreSettled(state);
+  const clockmakerDeliveries = requireDeliveredClockmakerInformationIsSettled(state);
   requireDeliveredDreamerInformationIsSettled(state);
   requireDeliveredSeamstressInformationIsSettled(state);
   const knownDemon = deliveredTeamEntries.find((entry) => entry.kind === "DEMON_IDENTITY");
@@ -521,6 +565,9 @@ export const buildPlayerPrivateKnowledgeView = (
   const evilTwinCounterpart = findEvilTwinCounterpartForViewer(state.evilTwinInformation, viewerPlayerId);
   const cerenovusInstruction = cerenovusInstructions.find((delivery) => delivery.recipientPlayerId === viewerPlayerId);
   const dreamerDelivery = state.dreamerInformation?.deliveries.find((delivery) => delivery.sourcePlayerId === viewerPlayerId);
+  const viewerClockmakerDeliveries = clockmakerDeliveries.filter((delivery) => delivery.sourceContract.sourcePlayerId === viewerPlayerId);
+  if (viewerClockmakerDeliveries.length > 1) throw new DomainError("PrivateKnowledgeUnavailable", "Viewer has multiple Clockmaker deliveries in the supported first-night history");
+  const clockmakerDelivery = viewerClockmakerDeliveries[0];
   const seamstressDeliveries = state.seamstressInformation?.deliveries.filter((delivery) =>
     delivery.sourcePlayerId === viewerPlayerId
   ) ?? [];
@@ -566,6 +613,12 @@ export const buildPlayerPrivateKnowledgeView = (
             evilRole: cloneRoleSetupSnapshot(dreamerDelivery.evilRole)
           },
           dreamerKnowledgeModelVersion: SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION
+        }),
+    ...(clockmakerDelivery === undefined
+      ? {}
+      : {
+          clockmakerInformation: { distance: clockmakerDelivery.selectedDistance },
+          clockmakerKnowledgeModelVersion: CLOCKMAKER_INFORMATION_MODEL_VERSION
         }),
     ...(seamstressDeliveries.length === 0
       ? {}

@@ -39,6 +39,7 @@ import {
   validateSeamstressTargetsChosenPayloadShape,
   isRoleTenureContinuousAcross
 } from "./seamstress.js";
+import { validateClockmakerInformationAgainstCanonicalState } from "./clockmaker.js";
 import { sameRoleSetupSnapshot, SUPPORTED_SCRIPT_ID } from "./setup-types.js";
 
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
@@ -1193,6 +1194,47 @@ const validateIntegratedSeamstressInformationBatch = (
   }
 };
 
+const validateIntegratedClockmakerInformationBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) reject("Clockmaker information batch requires an existing state");
+  const state = currentState as GameState;
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 || state.firstNightTaskPlan === undefined ||
+      state.currentCharacterState === undefined || state.roster === undefined || state.setup === undefined || state.seamstressRoleTenureState === undefined) {
+    reject("Clockmaker information batch requires complete first-night canonical state");
+  }
+  if (events.length !== 2) reject("Clockmaker information batch must contain exactly two events");
+  assertSharedBatchMetadataForAll(events);
+  const [first, second] = events;
+  if (first?.eventType !== "ClockmakerInformationDelivered" || second?.eventType !== "ScheduledTaskSettled") {
+    reject("Clockmaker information batch must be InformationDelivered then ScheduledTaskSettled");
+  }
+  const delivery = first as DomainEventEnvelope<"ClockmakerInformationDelivered">;
+  const settlement = second as DomainEventEnvelope<"ScheduledTaskSettled">;
+  if (delivery.gameId !== state.gameId || settlement.gameId !== state.gameId || delivery.gameId !== settlement.gameId ||
+      delivery.correlationId !== settlement.correlationId || delivery.causationId !== settlement.causationId || delivery.createdAt !== settlement.createdAt ||
+      delivery.eventId === settlement.eventId) reject("Clockmaker batch envelopes must share exact canonical metadata and distinct event IDs");
+  const validation = validateClockmakerInformationAgainstCanonicalState({
+    delivery: delivery.payload,
+    firstNightTaskPlan: state.firstNightTaskPlan!,
+    ...(state.firstNightTaskProgress === undefined ? {} : { firstNightTaskProgress: state.firstNightTaskProgress }),
+    currentCharacterState: state.currentCharacterState!,
+    roster: state.roster!.entries,
+    setup: state.setup!,
+    grants: state.philosopherGrantedAbilities ?? { abilities: [] },
+    insertions: state.firstNightTaskInsertions ?? { insertions: [] },
+    roleTenures: state.seamstressRoleTenureState!,
+    ...(state.abilityImpairments === undefined ? {} : { abilityImpairments: state.abilityImpairments })
+  });
+  if (!validation.valid) reject(validation.reason);
+  if (settlement.payload.rulesBaselineVersion !== delivery.payload.rulesBaselineVersion || settlement.payload.taskId !== delivery.payload.taskId ||
+      settlement.payload.taskType !== "CLOCKMAKER_INFORMATION" || settlement.payload.outcomeType !== "CLOCKMAKER_INFORMATION_DELIVERED" ||
+      settlement.payload.nightNumber !== 1 || settlement.payload.characterStateRevision !== delivery.payload.settlementCharacterStateRevision) {
+    reject("ScheduledTaskSettled must exactly link the Clockmaker delivery");
+  }
+};
+
 const validateIntegratedEvilTwinSetupBatch = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -1346,6 +1388,11 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "CerenovusChoiceRecorded") {
     validateIntegratedCerenovusActionBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (first.eventType === "ClockmakerInformationDelivered") {
+    validateIntegratedClockmakerInformationBatch(currentState, batchEvents);
     return;
   }
 

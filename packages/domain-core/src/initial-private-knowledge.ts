@@ -35,6 +35,7 @@ export type PlayerPrivateKnowledgeStage =
   | "DEMON_INFORMATION"
   | "EVIL_TWIN_SETUP_INFORMATION"
   | "CERENOVUS_INFORMATION"
+  | "CLOCKMAKER_INFORMATION"
   | "DREAMER_INFORMATION"
   | "SEAMSTRESS_INFORMATION";
 
@@ -104,6 +105,7 @@ export type PlayerPrivateKnowledgeView = {
   readonly evilTwinCounterpart?: KnownPlayerReference;
   readonly cerenovusMadnessInstruction?: PlayerCerenovusMadnessInstructionView;
   readonly dreamerInformation?: PlayerDreamerInformationView;
+  readonly clockmakerInformation?: PlayerClockmakerInformationView;
   readonly seamstressInformation?: readonly PlayerSeamstressInformationView[];
   readonly demonBluffs: readonly RoleSetupSnapshot[];
   readonly ownCharacterKnowledgeModelVersion: SupportedInitialKnowledgeModelVersion;
@@ -111,6 +113,7 @@ export type PlayerPrivateKnowledgeView = {
   readonly evilTwinKnowledgeModelVersion?: string;
   readonly cerenovusKnowledgeModelVersion?: "cerenovus-madness-instruction-v1";
   readonly dreamerKnowledgeModelVersion?: string;
+  readonly clockmakerKnowledgeModelVersion?: "clockmaker-information-v1";
   readonly seamstressKnowledgeModelVersion?: "seamstress-private-knowledge-v1";
   readonly deliveredKnowledgeStages: readonly PlayerPrivateKnowledgeStage[];
 };
@@ -126,6 +129,8 @@ export type PlayerDreamerInformationView = {
   readonly goodRole: RoleSetupSnapshot;
   readonly evilRole: RoleSetupSnapshot;
 };
+
+export type PlayerClockmakerInformationView = { readonly distance: 0 | 1 | 2 | 3 | 4 | 5 | 6 };
 
 export type PlayerSeamstressInformationView = {
   readonly targets: readonly [KnownPlayerReference, KnownPlayerReference];
@@ -280,6 +285,7 @@ const PLAYER_PRIVATE_KNOWLEDGE_STAGE_ORDER = [
   "DEMON_INFORMATION",
   "EVIL_TWIN_SETUP_INFORMATION",
   "CERENOVUS_INFORMATION",
+  "CLOCKMAKER_INFORMATION",
   "DREAMER_INFORMATION",
   "SEAMSTRESS_INFORMATION"
 ] as const;
@@ -287,6 +293,7 @@ const SUPPORTED_PRIVATE_VIEW_TEAM_KNOWLEDGE_MODEL_VERSION = "first-night-team-kn
 const SUPPORTED_PRIVATE_VIEW_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION = "evil-twin-knowledge-model-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_CERENOVUS_KNOWLEDGE_MODEL_VERSION = "cerenovus-madness-instruction-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_DREAMER_KNOWLEDGE_MODEL_VERSION = "dreamer-information-model-v1" as const;
+const SUPPORTED_PRIVATE_VIEW_CLOCKMAKER_KNOWLEDGE_MODEL_VERSION = "clockmaker-information-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_SEAMSTRESS_KNOWLEDGE_MODEL_VERSION = "seamstress-private-knowledge-v1" as const;
 
 export const hasExactRoleSetupSnapshotShape = (value: unknown): value is RoleSetupSnapshot => {
@@ -414,6 +421,8 @@ const validatePrivateKnowledgeViewStages = (
   hasEvilTwinCounterpart: boolean,
   hasCerenovusKnowledgeModelVersion: boolean,
   hasCerenovusMadnessInstruction: boolean,
+  hasClockmakerKnowledgeModelVersion: boolean,
+  hasClockmakerInformation: boolean,
   hasDreamerKnowledgeModelVersion: boolean,
   hasDreamerInformation: boolean,
   hasSeamstressKnowledgeModelVersion: boolean,
@@ -466,6 +475,11 @@ const validatePrivateKnowledgeViewStages = (
     return fail("PlayerPrivateKnowledgeView Dreamer information and model version must be present exactly when Dreamer information is delivered");
   }
 
+  const hasClockmakerStage = stageValues.some((stage) => stage === "CLOCKMAKER_INFORMATION");
+  if (hasClockmakerKnowledgeModelVersion !== hasClockmakerStage || hasClockmakerInformation !== hasClockmakerStage) {
+    return fail("PlayerPrivateKnowledgeView Clockmaker information and model version must be present exactly when Clockmaker information is delivered");
+  }
+
   const hasCerenovusStage = stageValues.some((stage) => stage === "CERENOVUS_INFORMATION");
   if (hasCerenovusKnowledgeModelVersion !== hasCerenovusStage || hasCerenovusMadnessInstruction !== hasCerenovusStage) {
     return fail("PlayerPrivateKnowledgeView Cerenovus notification and model version must be present exactly when Cerenovus information is delivered");
@@ -492,6 +506,10 @@ const hasExactDreamerInformationViewShape = (value: unknown): value is PlayerDre
     value.evilRole.defaultAlignment === "EVIL"
   );
 };
+
+const hasExactClockmakerInformationViewShape = (value: unknown): value is PlayerClockmakerInformationView =>
+  isPlainRecord(value) && hasExactEnumerableKeys(value, ["distance"]) && typeof value.distance === "number" &&
+  Number.isSafeInteger(value.distance) && value.distance >= 0 && value.distance <= 6;
 
 const hasExactCerenovusMadnessInstructionViewShape = (value: unknown): value is PlayerCerenovusMadnessInstructionView => {
   return isPlainRecord(value) &&
@@ -536,6 +554,8 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     ...(Object.hasOwn(value, "cerenovusKnowledgeModelVersion") ? ["cerenovusKnowledgeModelVersion"] : []),
     ...(Object.hasOwn(value, "dreamerInformation") ? ["dreamerInformation"] : []),
     ...(Object.hasOwn(value, "dreamerKnowledgeModelVersion") ? ["dreamerKnowledgeModelVersion"] : []),
+    ...(Object.hasOwn(value, "clockmakerInformation") ? ["clockmakerInformation"] : []),
+    ...(Object.hasOwn(value, "clockmakerKnowledgeModelVersion") ? ["clockmakerKnowledgeModelVersion"] : []),
     ...(Object.hasOwn(value, "seamstressInformation") ? ["seamstressInformation"] : []),
     ...(Object.hasOwn(value, "seamstressKnowledgeModelVersion") ? ["seamstressKnowledgeModelVersion"] : [])
   ];
@@ -568,6 +588,10 @@ export const validatePlayerPrivateKnowledgeViewShape = (
 
   if (Object.hasOwn(value, "dreamerInformation") && !hasExactDreamerInformationViewShape(value.dreamerInformation)) {
     return fail("PlayerPrivateKnowledgeView dreamerInformation must have exact runtime shape");
+  }
+
+  if (Object.hasOwn(value, "clockmakerInformation") && !hasExactClockmakerInformationViewShape(value.clockmakerInformation)) {
+    return fail("PlayerPrivateKnowledgeView clockmakerInformation must have exact runtime shape");
   }
 
   if (Object.hasOwn(value, "cerenovusMadnessInstruction") && !hasExactCerenovusMadnessInstructionViewShape(value.cerenovusMadnessInstruction)) {
@@ -649,6 +673,11 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     return fail("PlayerPrivateKnowledgeView dreamerKnowledgeModelVersion must be supported");
   }
 
+  const hasClockmakerKnowledgeModelVersion = Object.hasOwn(value, "clockmakerKnowledgeModelVersion");
+  if (hasClockmakerKnowledgeModelVersion && value.clockmakerKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_CLOCKMAKER_KNOWLEDGE_MODEL_VERSION) {
+    return fail("PlayerPrivateKnowledgeView clockmakerKnowledgeModelVersion must be supported");
+  }
+
   const hasCerenovusKnowledgeModelVersion = Object.hasOwn(value, "cerenovusKnowledgeModelVersion");
   if (hasCerenovusKnowledgeModelVersion &&
       value.cerenovusKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_CERENOVUS_KNOWLEDGE_MODEL_VERSION) {
@@ -668,6 +697,8 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     Object.hasOwn(value, "evilTwinCounterpart"),
     hasCerenovusKnowledgeModelVersion,
     Object.hasOwn(value, "cerenovusMadnessInstruction"),
+    hasClockmakerKnowledgeModelVersion,
+    Object.hasOwn(value, "clockmakerInformation"),
     hasDreamerKnowledgeModelVersion,
     Object.hasOwn(value, "dreamerInformation"),
     hasSeamstressKnowledgeModelVersion,

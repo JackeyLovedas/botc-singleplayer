@@ -5,6 +5,7 @@ import type { WitchActionDecision } from "./witch.js";
 import type { DreamerActionDecision } from "./dreamer.js";
 import type { CerenovusActionDecision } from "./cerenovus.js";
 import type { SetupGenerationConstraints } from "./setup-types.js";
+import { hasExactEnumerableKeys, isPlainRecord } from "./initial-private-knowledge.js";
 
 export type HumanActor = {
   readonly kind: "human";
@@ -135,6 +136,24 @@ export type SubmitSeamstressActionCommandPayload = {
   readonly decision: SeamstressActionDecision;
 };
 
+export type SettleClockmakerInformationCommandPayload = {
+  readonly commandType: "SettleClockmakerInformation";
+  readonly taskId: ScheduledTaskId;
+};
+
+export const validateSettleClockmakerInformationCommandPayload = (value: unknown):
+  | { readonly valid: true; readonly payload: SettleClockmakerInformationCommandPayload }
+  | { readonly valid: false; readonly reason: string } => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["commandType", "taskId"]) || value.commandType !== "SettleClockmakerInformation" ||
+      typeof value.taskId !== "string" || !/^first-night-v1:(?:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2])|PHILOSOPHER_GAINED:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2]):from-clockmaker)$/.test(value.taskId)) {
+    return { valid: false, reason: "SettleClockmakerInformation must contain only its command type and canonical Clockmaker task ID" };
+  }
+  return { valid: true, payload: value as unknown as SettleClockmakerInformationCommandPayload };
+};
+
+export const canActorSettleClockmakerInformation = (actor: CommandActor): actor is SystemActor | StorytellerActor =>
+  actor.kind === "system" || actor.kind === "storyteller";
+
 export type SupportedCommandPayload =
   | CreateGameCommandPayload
   | SelectScriptCommandPayload
@@ -151,7 +170,8 @@ export type SupportedCommandPayload =
   | SubmitWitchActionCommandPayload
   | SubmitCerenovusActionCommandPayload
   | SubmitDreamerActionCommandPayload
-  | SubmitSeamstressActionCommandPayload;
+  | SubmitSeamstressActionCommandPayload
+  | SettleClockmakerInformationCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
@@ -168,6 +188,7 @@ export type SubmitWitchActionCommand = CommandEnvelope<SubmitWitchActionCommandP
 export type SubmitCerenovusActionCommand = CommandEnvelope<SubmitCerenovusActionCommandPayload>;
 export type SubmitDreamerActionCommand = CommandEnvelope<SubmitDreamerActionCommandPayload>;
 export type SubmitSeamstressActionCommand = CommandEnvelope<SubmitSeamstressActionCommandPayload>;
+export type SettleClockmakerInformationCommand = CommandEnvelope<SettleClockmakerInformationCommandPayload>;
 export type SupportedCommandEnvelope =
   | CreateGameCommand
   | SelectScriptCommand
@@ -184,4 +205,5 @@ export type SupportedCommandEnvelope =
   | SubmitWitchActionCommand
   | SubmitCerenovusActionCommand
   | SubmitDreamerActionCommand
-  | SubmitSeamstressActionCommand;
+  | SubmitSeamstressActionCommand
+  | SettleClockmakerInformationCommand;

@@ -21,6 +21,7 @@ import type {
   CerenovusChoiceRecordedPayload,
   CerenovusMadnessInstructionDeliveredPayload,
   CerenovusMadnessMarkedPayload,
+  ClockmakerInformationDeliveredPayload,
   SeamstressAbilitySpentPayload,
   SeamstressInformationDeliveredPayload,
   SeamstressTargetsChosenPayload,
@@ -29,6 +30,11 @@ import type {
   WitchTargetChosenPayload,
   SetupGeneratedPayload
 } from "./events.js";
+import {
+  appendClockmakerInformationDelivery,
+  hasClockmakerInformationForSettlement,
+  validateClockmakerInformationAgainstCanonicalState
+} from "./clockmaker.js";
 import {
   appendCerenovusChoice,
   appendCerenovusInstruction,
@@ -1418,6 +1424,26 @@ const validateSeamstressInformationDeliveredPayloadForState = (
   if (!validation.valid) throw new DomainError("InvalidSeamstressInformationDeliveredPayload", validation.reason);
 };
 
+const validateClockmakerInformationDeliveredPayloadForState = (
+  state: GameState,
+  payload: ClockmakerInformationDeliveredPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 || state.firstNightTaskPlan === undefined ||
+      state.currentCharacterState === undefined || state.roster === undefined || state.setup === undefined || state.seamstressRoleTenureState === undefined) {
+    throw new DomainError("InvalidClockmakerInformationDeliveredPayload", "Clockmaker information requires complete first-night canonical state");
+  }
+  if (state.clockmakerInformation?.deliveries.some((delivery) => delivery.deliveryId === payload.deliveryId || delivery.taskId === payload.taskId)) {
+    throw new DomainError("InvalidClockmakerInformationDeliveredPayload", "Clockmaker delivery and task must be unique");
+  }
+  const validation = validateClockmakerInformationAgainstCanonicalState({
+    delivery: payload, firstNightTaskPlan: state.firstNightTaskPlan, ...(state.firstNightTaskProgress === undefined ? {} : { firstNightTaskProgress: state.firstNightTaskProgress }),
+    currentCharacterState: state.currentCharacterState, roster: state.roster.entries, setup: state.setup,
+    grants: state.philosopherGrantedAbilities ?? { abilities: [] }, insertions: state.firstNightTaskInsertions ?? { insertions: [] },
+    roleTenures: state.seamstressRoleTenureState, ...(state.abilityImpairments === undefined ? {} : { abilityImpairments: state.abilityImpairments })
+  });
+  if (!validation.valid) throw new DomainError("InvalidClockmakerInformationDeliveredPayload", validation.reason);
+};
+
 const validateCerenovusChoiceRecordedPayloadForState = (state: GameState, payload: CerenovusChoiceRecordedPayload): void => {
   if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 || state.setup === undefined ||
       state.roster === undefined || state.currentCharacterState === undefined || state.firstNightTaskPlan === undefined ||
@@ -1629,6 +1655,13 @@ const validateScheduledTaskSettledPayloadForState = (
     return;
   }
 
+  if (payload.taskType === "CLOCKMAKER_INFORMATION") {
+    if (payload.outcomeType !== "CLOCKMAKER_INFORMATION_DELIVERED" || !hasClockmakerInformationForSettlement(state.clockmakerInformation, payload)) {
+      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match delivered Clockmaker information");
+    }
+    return;
+  }
+
   if (payload.taskType === "DREAMER_ACTION") {
     if (
       payload.outcomeType !== "DREAMER_INFORMATION_DELIVERED" ||
@@ -1721,6 +1754,8 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidDreamerTargetChosenPayload";
     case "DreamerInformationDelivered":
       return "InvalidDreamerInformationDeliveredPayload";
+    case "ClockmakerInformationDelivered":
+      return "InvalidClockmakerInformationDeliveredPayload";
     case "EvilTwinPairEstablished":
       return "InvalidEvilTwinPairEstablishedPayload";
     case "EvilTwinInformationDelivered":
@@ -2456,6 +2491,20 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
       if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("InvalidCerenovusMadnessInstructionDeliveredPayload", "Cerenovus instruction rules baseline must match game state");
       validateCerenovusMadnessInstructionDeliveredPayloadForState(state, event.payload);
       return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, cerenovusMadnessInstructions: appendCerenovusInstruction(state.cerenovusMadnessInstructions, event.payload) };
+    }
+
+    case "ClockmakerInformationDelivered": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "ClockmakerInformationDelivered requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidClockmakerInformationDeliveredPayload", "ClockmakerInformationDelivered rules baseline must match state");
+      }
+      validateClockmakerInformationDeliveredPayloadForState(state, event.payload);
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        clockmakerInformation: appendClockmakerInformationDelivery(state.clockmakerInformation, event.payload)
+      };
     }
 
     case "DreamerTargetChosen": {

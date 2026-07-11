@@ -4,16 +4,15 @@
 
 - Phase 3 controlled vertical slices.
 - Accepted: 2B13 through 2B16.
-- Slice 2B17 has `RULE_READY` and `RULE_DESIGN_PASS` for the exact user-authorized round-3 design.
-- Current branch: `main`; no feature branch or PR.
-- Implementation has not started.
+- Slice 2B17 has `RULE_READY`, round-3 `RULE_DESIGN_PASS`, and a bounded local implementation with all local gates green, awaiting controller pre-publish audit.
+- Current branch: `phase-3/clockmaker-first-night-information`; no PR.
+- Clockmaker remains `PARTIAL`.
 - Slice 2B18 is prohibited.
 
-## Gate Provenance
+## Current Boundary
 
-- Evidence: `db1fb83335e6a2083f85797b83516b8b646538ee3afcfd5ac92319147432d97e`, `PARTIAL`, `RULE_READY`.
-- Design: `fde5aebea89e003c38938c338abfd4fdd1370c88814f965c41a0dcda7b3d1e06`, round `3 / 3`.
-- Independent review: `2c472cfdca5578d0aa556e4ec02761854362fcf3470a4188e294cfe74dafbe62`, `RULE_DESIGN_PASS`, `remainingBlockers=[]`.
-- Implementation authorization is bounded to that exact evidence/design/review package.
+2B17 is limited to base and Philosopher-gained first-night Clockmaker information, canonical Philosopher duplicate drunkenness, current native character types, the supported Snake Charmer transition, effective current Vortox, exact historical validation, and source-only projection. Registration, Travellers, death, canonical poisoned Clockmaker, impaired Vortox, unsupported native counts, later-night acquisition, recurrence, general lifecycle machinery, UI, persistence, and Slice 2B18 remain outside the accepted boundary.
 
-The docs-only gate commit and its exact Ubuntu/Windows CI must pass before the unique feature branch is created. Registration, Travellers, death/revival, canonical poison, impaired Vortox, unsupported native counts, later-night acquisition, generic framework expansion, persistence, UI and Slice 2B18 remain unauthorized.
+## Pending Gates
+
+Attributed commit, push, PR creation from the complete 17-heading draft, exact frozen-head Ubuntu/Windows CI, complete independent final review, and both verbatim GitHub audit comments remain pending. No pass verdict or exact-head CI is claimed by the local implementation state.
