@@ -19,14 +19,21 @@
   "currentDesignHash": "773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed",
   "designReviewRound2Hash": null,
   "ruleReady": true,
-  "ruleDesignPass": false,
-  "implementationAuthorized": false,
-  "designReviewHash": null,
+  "ruleDesignPass": true,
+  "implementationAuthorized": true,
+  "designReviewPath": "docs/implementation/phase-3-slice-2b17-2-design-review.md",
+  "designReviewHash": "5a4862b8a6538b1609171f9ba2e7ce2292c0aadedcefb225ea65c7abd28e3742",
   "slice2B19Prohibited": true,
   "ruleResearchVerdict": "RULE_READY",
   "ruleEvidencePath": "docs/rules/evidence/2B17-2.md",
   "ruleEvidenceSha256": "ced6042dcfcbb2e14d86ef97c15b4c8bae2a263bd8aa30332a16b54683143eab",
   "unresolvedConflicts": [],
+  "remainingBlockers": [
+    "slice2B18.firstNightWindowDefinition",
+    "slice2B18.ownAbilityExclusion",
+    "slice2B18.candidateNumberDomain",
+    "slice2B18.duplicateMathematicianRule"
+  ],
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "slice2B18ProductionProhibited": true,
   "slice2B18BlockedHistory": {
@@ -195,7 +202,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Materialized the complete read-only architect design for Slice 2B17.2 at docs/implementation/phase-3-slice-2b17-2-design.md; it is ready only for independent rule-design review.",
+  "lastAction": "Materialized the complete independent Slice 2B17.2 design review with RULE_DESIGN_PASS; the exact reviewed scheduling V2 implementation scope is authorized after this gate commit passes exact-head CI.",
   "lastError": null,
-  "nextAction": "Run one independent RULE_DESIGN review of the exact Slice 2B17.2 design and its rule sources. Do not branch, implement, test, open a PR, resume 2B18 production, or start Slice 2B19 without RULE_DESIGN_PASS."
+  "nextAction": "Commit and push this implementation-authorization gate on main, require exact-head CI success, then create the sole phase-3/philosopher-gained-task-scheduling-v2 feature branch. Do not resume 2B18 production or start Slice 2B19."
 }

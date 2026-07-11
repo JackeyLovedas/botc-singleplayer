@@ -9,7 +9,7 @@
 - Current slice: `2B17.2`.
 - Recovery anchor: `823c256af6e367a28ea383be81ca26b9b61ad314`.
 - Prior exact-head CI: `29156186840`, `SUCCESS`.
-- `ruleReady=true`; `ruleDesignPass=false`; `implementationAuthorized=false`.
+- `ruleReady=true`; `ruleDesignPass=true`; `implementationAuthorized=true`.
 - Rule verdict: `RULE_READY`.
 - Evidence: `docs/rules/evidence/2B17-2.md`.
 - Evidence SHA-256: `ced6042dcfcbb2e14d86ef97c15b4c8bae2a263bd8aa30332a16b54683143eab`.
@@ -18,6 +18,9 @@
 - Design round: `1 / 2`; repair round: `0 / 2`; `maxSlices=1`.
 - Approved simulator override: `BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1`.
 - Design readiness: `READY_FOR_RULE_DESIGN_REVIEW`; this is not implementation authorization.
+- Independent design review: `docs/implementation/phase-3-slice-2b17-2-design-review.md`.
+- Design-review SHA-256: `5a4862b8a6538b1609171f9ba2e7ce2292c0aadedcefb225ea65c7abd28e3742`.
+- Design-review verdict: `RULE_DESIGN_PASS`; no Slice 2B17.2 implementation blocker remains.
 - Slice 2B18 production remains prohibited; Slice 2B19 is prohibited.
 - Slice 2B19 is prohibited.
 
@@ -31,4 +34,4 @@ Slice 2B18 remains historical `HUMAN_BLOCKED` with terminal `RULE_CONFLICT`. Its
 
 ## Current Gate
 
-The exact architect design is materialized and awaits independent rule-design review. `ruleDesignPass=false` and `implementationAuthorized=false`; no feature branch, production code, tests, or PR are authorized until `RULE_DESIGN_PASS`. Do not resume Slice 2B18 production or start Slice 2B19.
+The exact architect design passed independent rule-design review. After this authorization commit has successful exact-head CI, implementation is authorized only on the sole `phase-3/philosopher-gained-task-scheduling-v2` feature branch and only within the reviewed Slice 2B17.2 scope. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.

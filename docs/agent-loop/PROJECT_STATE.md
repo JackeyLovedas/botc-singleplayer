@@ -4,7 +4,7 @@
 
 - Phase 3 controlled vertical slices.
 - Active controlled candidate: Slice 2B17.2 Philosopher-gained first-night scheduling V2, scope `PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2`.
-- Current control state: `RUNNING` on `main`; no PR or feature branch; `RULE_READY` and the round-1 architect design are recorded, while rule-design-pass and implementation gates remain false.
+- Current control state: `RUNNING` on `main`; no PR or feature branch; `RULE_READY`, the round-1 architect design, and independent `RULE_DESIGN_PASS` are recorded. The reviewed Slice 2B17.2 implementation is authorized after the exact-head CI gate succeeds.
 - Accepted: 2B13 through 2B17.1.
 - Slice 2B17.1 merged through PR [#20](https://github.com/JackeyLovedas/botc-singleplayer/pull/20) at merge SHA `19923f4aa62c86cc2db995587d65b586fd365b8a`.
 - Final reviewed feature HEAD: `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`.
@@ -31,6 +31,6 @@ The approved simulator strategy `BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1`
 
 Slice 2B17.2 evidence is `docs/rules/evidence/2B17-2.md`, SHA-256 `ced6042dcfcbb2e14d86ef97c15b4c8bae2a263bd8aa30332a16b54683143eab`, with terminal `RULE_READY`. This authorizes design review only; no implementation is authorized.
 
-The exact round-1 architect design is `docs/implementation/phase-3-slice-2b17-2-design.md`, SHA-256 `773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed`, with readiness `READY_FOR_RULE_DESIGN_REVIEW`. Independent rule-design review remains pending; `ruleDesignPass=false` and `implementationAuthorized=false`.
+The exact round-1 architect design is `docs/implementation/phase-3-slice-2b17-2-design.md`, SHA-256 `773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed`. Its complete independent review is `docs/implementation/phase-3-slice-2b17-2-design-review.md`, SHA-256 `5a4862b8a6538b1609171f9ba2e7ce2292c0aadedcefb225ea65c7abd28e3742`, with `RULE_DESIGN_PASS`, no Slice 2B17.2 blocker, and implementation authorization limited to the exact reviewed scope.
 
 Slice 2B18 remains historical `HUMAN_BLOCKED`. Its immutable evidence is `docs/rules/evidence/2B18.md` (SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`). Four conflicts remain: first-night window start, own-ability exclusion, false-number domain, and duplicate-holder behavior. Slice 2B19 was not started.
