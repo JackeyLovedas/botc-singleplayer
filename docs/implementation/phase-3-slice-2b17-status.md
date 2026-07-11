@@ -1,15 +1,31 @@
-# Phase 3 Slice 2B17 Status: Accepted; 2B17.1 Validation Hotfix Active
+# Phase 3 Slice 2B17 and 2B17.1 Status: Accepted
 
-## Active 2B17.1 Hotfix
+## Accepted 2B17.1 Validation Hardening
 
-- Branch: `phase-3/clockmaker-validation-hardening`.
+- PR [#20](https://github.com/JackeyLovedas/botc-singleplayer/pull/20) merged at `2026-07-11T12:09:57Z`.
+- Initial hotfix commit: `61acdb59c1ae2e598e7bca85f9864807b738fb3d`.
+- Frozen final reviewed feature HEAD: `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`.
+- Merge SHA: `19923f4aa62c86cc2db995587d65b586fd365b8a`.
+- Accepted tag: `phase-3-slice-2b17-1-clockmaker-validation-hardening`.
+- Repair round: `1 / 2`.
+- Final review: `CODE_REVIEW_PASS`, `RULE_REVIEW_PASS`, `ruleSemanticsChanged=false`, `remainingBlockers=[]`.
 - Scope: strict dense standard arrays, hostile-value fail-closed validation, and insertion-order-independent canonical comparison only.
 - Rule semantics, event contract, event order, candidate domain, Vortox/impairment semantics, and private projection contract are unchanged.
 - Clockmaker remains `PARTIAL`; Slice 2B18 is prohibited.
-- Historical feature HEAD `61acdb59c1ae2e598e7bca85f9864807b738fb3d` passed push `29151455861` and PR `29151474534`, then independent review returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`, `ruleSemanticsChanged=false`. Its exact-head CI branch coverage was `79.99%`; `80.00%` was the separate local result. The exact complete reviewer report was not available to the writer and has not been reconstructed.
-- Repair round `1 / 2` guards every `ClockmakerInformationSet.deliveries` read before iteration, including duplicate detection and `ScheduledTaskSettled` linkage. Local gates passed: focused `4 files / 264 tests`, full and coverage `28 files / 901 tests`, `85.94%` statements/lines, `80.04%` branches, and `97.86%` functions. New commit and exact-head CI remain pending.
+- Repair round 1 guards every `ClockmakerInformationSet.deliveries` read before iteration, including duplicate detection and `ScheduledTaskSettled` linkage. Exact-head gates passed `28 files / 901 tests` at `85.94%` statements/lines, `80.04%` branches, and `97.86%` functions.
 
-## Delivery
+### 2B17.1 Final Review Archives
+
+- Code review: [original comment](https://github.com/JackeyLovedas/botc-singleplayer/pull/20#issuecomment-4945610208), created `2026-07-11T12:09:24Z`, exact UTF-8 body SHA-256 `78c1b537e0bd358ed656ef297b1111edf4f6a553d77e89fbf4a470c361e37d6b`, archived at `docs/reviews/pr-20-code-review-final.md`.
+- Rule review: [original comment](https://github.com/JackeyLovedas/botc-singleplayer/pull/20#issuecomment-4945610541), created `2026-07-11T12:09:26Z`, exact UTF-8 body SHA-256 `b4559bbfc197f505899b1d268947f1404871cc440752ddda70b2c88aab1f0fe2`, archived at `docs/reviews/pr-20-rule-review-final.md`.
+
+### 2B17.1 CI Provenance
+
+- `productHeadCI`: SHA `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`; push [29151838214](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29151838214) and pull request [29151839311](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29151839311), both `SUCCESS`.
+- `mergeCommitCI`: SHA `19923f4aa62c86cc2db995587d65b586fd365b8a`; main push [29152171989](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29152171989) and accepted-tag push [29152177469](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29152177469), both `SUCCESS`.
+- `closeoutCommitCI`: live GitHub checks attached to the exact emitted docs-only closeout SHA; not inherited from product or merge commits.
+
+## Original 2B17 Delivery
 
 - PR [#19](https://github.com/JackeyLovedas/botc-singleplayer/pull/19) merged at `2026-07-11T10:07:25Z`.
 - Product implementation HEAD: `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5`.

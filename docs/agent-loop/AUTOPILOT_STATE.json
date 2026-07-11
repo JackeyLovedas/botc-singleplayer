@@ -1,11 +1,11 @@
 {
-  "status": "RUNNING",
+  "status": "COMPLETED",
   "currentPR": null,
   "currentPRUrl": null,
-  "currentBranch": "phase-3/clockmaker-validation-hardening",
-  "currentSlice": "2B17.1",
-  "reviewedHead": "61acdb59c1ae2e598e7bca85f9864807b738fb3d",
-  "currentReviewHeadAuthority": "HISTORICAL_INVALIDATED_BY_REPAIR_ROUND_1",
+  "currentBranch": "main",
+  "currentSlice": null,
+  "reviewedHead": "9caaa07a9f3f50bdf8564e48bf50345fed976a4c",
+  "currentReviewHeadAuthority": null,
   "exactHeadCIAuthority": "GitHub checks attached to the exact emitted closeout commit after push",
   "repairRound": 1,
   "designRound": 3,
@@ -22,7 +22,7 @@
   "implementationAuthorized": true,
   "designReviewHash": "2c472cfdca5578d0aa556e4ec02761854362fcf3470a4188e294cfe74dafbe62",
   "slice2B18Prohibited": true,
-  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17"],
+  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1"],
   "slice2B17ProductImplementation": {
     "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
     "commit": "feat: add Clockmaker first-night information",
@@ -87,6 +87,49 @@
     },
     "coverageStatus": "PARTIAL"
   },
+  "slice2B17_1Acceptance": {
+    "pr": 20,
+    "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/20",
+    "productImplementationHead": "61acdb59c1ae2e598e7bca85f9864807b738fb3d",
+    "finalReviewedHead": "9caaa07a9f3f50bdf8564e48bf50345fed976a4c",
+    "mergeCommit": "19923f4aa62c86cc2db995587d65b586fd365b8a",
+    "mergedAt": "2026-07-11T12:09:57Z",
+    "acceptedTag": "phase-3-slice-2b17-1-clockmaker-validation-hardening",
+    "repairRound": 1,
+    "codeVerdict": "CODE_REVIEW_PASS",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "ruleSemanticsChanged": false,
+    "remainingBlockers": [],
+    "finalReviewCodeComment": {
+      "id": 4945610208,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/20#issuecomment-4945610208",
+      "bodySha256": "78c1b537e0bd358ed656ef297b1111edf4f6a553d77e89fbf4a470c361e37d6b",
+      "archive": "docs/reviews/pr-20-code-review-final.md"
+    },
+    "finalReviewRuleComment": {
+      "id": 4945610541,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/20#issuecomment-4945610541",
+      "bodySha256": "b4559bbfc197f505899b1d268947f1404871cc440752ddda70b2c88aab1f0fe2",
+      "archive": "docs/reviews/pr-20-rule-review-final.md"
+    },
+    "productHeadCI": {
+      "sha": "9caaa07a9f3f50bdf8564e48bf50345fed976a4c",
+      "pushRun": 29151838214,
+      "pullRequestRun": 29151839311,
+      "status": "SUCCESS"
+    },
+    "mergeCommitCI": {
+      "sha": "19923f4aa62c86cc2db995587d65b586fd365b8a",
+      "mainPushRun": 29152171989,
+      "acceptedTagPushRun": 29152177469,
+      "status": "SUCCESS"
+    },
+    "closeoutCommitCI": {
+      "authority": "GitHub checks attached to the exact emitted docs-only closeout commit",
+      "status": "PENDING_LIVE_AUTHORITY"
+    },
+    "coverageStatus": "PARTIAL"
+  },
   "previousRunCloseoutCI": {
     "sha": "5da9c9425ae0b0f0d76610d14cfbcdc33166cb9b",
     "run": 29142246611,
@@ -119,7 +162,7 @@
       "genericImpairmentSource": false
     }
   },
-  "lastAction": "Implemented repair round 1 after historical CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS: all Clockmaker stored delivery collection reads are guarded before iteration; local focused 4/264 and full/coverage 28/901 pass with 85.94% statements/lines, 80.04% branches, and 97.86% functions.",
+  "lastAction": "Merged accepted Slice 2B17.1 PR #20, re-read and archived both exact final-review comments, recorded distinct product-head and merge-commit CI provenance, and prepared the docs-only closeout.",
   "lastError": null,
-  "nextAction": "Commit and push repair round 1 to PR #20, update the live body with precise local versus historical CI provenance, then wait for new exact-head CI and independent review. Do not start Slice 2B18."
+  "nextAction": "Push the single docs-only closeout commit and verify GitHub checks attached to its exact emitted SHA. Do not start Slice 2B18."
 }

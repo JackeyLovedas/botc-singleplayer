@@ -31,10 +31,13 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Phase Three Slice 2B13：Dreamer Action Opportunity and Information Skeleton 已合并
 - Phase Three Slice 2B14：Seamstress First-Night DEFER Skeleton 已合并
 - Phase Three Slice 2B15：Seamstress First-Night Choice and Private Information 已合并
+- Phase Three Slice 2B16：Cerenovus First-Night Madness Marker 已合并
+- Phase Three Slice 2B17：Clockmaker First-Night Distance Information 已合并
+- Phase Three Slice 2B17.1：Clockmaker Validation Hardening 已合并
 
 当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口、固定种子可复现的 12 人《梦殒春宵》真实配板基础、固定 12 人座位名单、可复现角色分配基础、首夜初始化事实、初始自身角色私有知识生成、玩家/AI 私有知识安全投影、首夜 `ScheduledTask` 计划骨架，`MINION_INFO`/`DEMON_INFO` 有序系统信息结算，Philosopher 首夜能力选择、能力授予事实、重复在场角色醉酒标记、获得能力首夜任务动态插入基础，Philosopher 获得的 Snake Charmer 行动机会、非恶魔目标无交换结算、恶魔命中后的当前角色/阵营交换和旧恶魔中毒标记，基础 Snake Charmer 行动与有效性求值，Evil Twin 配对与双子私有知识，以及 Witch 首夜目标选择、待死亡标记和无效结算。它不包含 Witch 实际死亡、提名触发结算、3 alive 失去能力、AI 决策、完整昼夜可玩流程、UI、Electron 或 SQLite 正式适配器。
 
-当前评审分支还包括 Dreamer 首夜历史信息交付，以及 Seamstress 基础/Philosopher 获得能力的首夜双目标选择、稳定能力身份、消耗、受限修正信息与来源私有历史投影；覆盖仍为 `PARTIAL`，不代表完整角色实现。
+当前已接受实现还包括 Dreamer 首夜历史信息交付、Seamstress 基础/Philosopher 获得能力的首夜双目标选择与私有历史投影、Cerenovus 有效路径，以及 Clockmaker 首夜距离信息与严格运行时验证。相关角色覆盖仍为 `PARTIAL`，不代表完整角色实现。Slice 2B18 尚未开始。
 
 重要文档：
 
@@ -89,3 +92,10 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Clockmaker now supports the bounded base and Philosopher-gained first-night distance pipeline, canonical Philosopher duplicate drunkenness, settlement-time Snake Charmer state, effective Vortox false information, strict historical validation, and source-only private projection.
 - Clockmaker remains `PARTIAL`. Registration, Travellers, death/revival, canonical poisoned Clockmaker, impaired Vortox, unsupported native counts, later-night acquisition, recurrence, general lifecycle machinery, free-form Storyteller selection, UI, Electron, and persistence remain unsupported.
 - This governed run completed its configured maximum of one slice and has no active next slice. Slice 2B18 was not started. See `docs/implementation/phase-3-slice-2b17-status.md` and the verbatim PR #19 final-review archives in `docs/reviews/`.
+
+## Slice 2B17.1 Validation Hardening Closeout
+
+- Phase Three Slice 2B17.1 merged through PR #20 at merge SHA `19923f4aa62c86cc2db995587d65b586fd365b8a`; accepted tag `phase-3-slice-2b17-1-clockmaker-validation-hardening` points to that merge.
+- The final reviewed feature HEAD is `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`; push `29151838214`, pull-request `29151839311`, merge-main `29152171989`, and merge-tag `29152177469` all passed.
+- The hotfix enforces strict dense standard arrays, hostile-value fail-closed validation, key-order-independent canonical comparison, and guarded stored-delivery reads. Rule, event, candidate, Vortox, impairment, and private projection semantics are unchanged (`ruleSemanticsChanged=false`).
+- Clockmaker remains `PARTIAL`; all previously unsupported boundaries remain unsupported. Slice 2B18 was not started. See `docs/implementation/phase-3-slice-2b17-status.md` and the verbatim PR #20 final-review archives in `docs/reviews/`.

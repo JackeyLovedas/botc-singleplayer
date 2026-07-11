@@ -1,25 +1,22 @@
 # Current Task
 
-## Active Hotfix
+## No Active Slice
 
-- Phase 3 Slice 2B17.1 hardens only Clockmaker runtime validation; it does not change rules or start Slice 2B18.
-- Current branch: `phase-3/clockmaker-validation-hardening`.
+- Phase 3 Slice 2B17.1 is `COMPLETED` and merged through PR [#20](https://github.com/JackeyLovedas/botc-singleplayer/pull/20).
+- Current branch: `main`.
 - Current PR: none.
-- Current slice: `2B17.1`.
-- Final reviewed feature HEAD: `04237a2053a64301a515fffeb417958a381a0dc6`.
-- Merge SHA: `4b29a3f7b05d521a9d8468ffc33c77eec3cb16c4`.
+- Current slice: none.
+- Final reviewed feature HEAD: `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`.
+- Merge SHA: `19923f4aa62c86cc2db995587d65b586fd365b8a`.
 - Final verdicts: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`.
+- `ruleSemanticsChanged=false`; repair round `1 / 2`.
 - Clockmaker remains `PARTIAL`.
 - Slice 2B18 was not started and remains prohibited in this completed run.
 
 ## Closeout CI Authority
 
-The final reviewed HEAD passed push run `29148485853` and pull-request run `29148486733`. The merge SHA passed main-push run `29148842440` and accepted-tag-push run `29148853648`. The docs-only closeout commit cannot self-reference its future SHA; GitHub checks attached to the exact emitted closeout SHA are authoritative after push.
+The final reviewed HEAD passed push run `29151838214` and pull-request run `29151839311`. The merge SHA passed main-push run `29152171989` and accepted-tag-push run `29152177469`. The docs-only closeout commit cannot self-reference its future SHA; GitHub checks attached to the exact emitted closeout SHA are authoritative after push.
 
-## Scope
+## Stop
 
-Implement strict dense-array/hostile-value validation and insertion-order-independent canonical comparison, run all gates, then publish one PR for independent review. Clockmaker remains `PARTIAL`. Do not start Slice 2B18.
-
-Independent round-1 review of historical HEAD `61acdb59c1ae2e598e7bca85f9864807b738fb3d` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`, with `ruleSemanticsChanged=false`, because two stored-delivery reads preceded the strict collection guard. The complete reviewer report is controller-held and was not reconstructed locally.
-
-Repair round `1 / 2` now guards duplicate detection, append, settlement linkage, and projection stage reads before any Clockmaker delivery iteration. Local validation passed: focused `4 files / 264 tests`; full and coverage `28 files / 901 tests`; coverage `85.94%` statements/lines, `80.04%` branches, and `97.86%` functions. Historical exact-head CI branch coverage was `79.99%`; the earlier `80.00%` figure was local-only. New repair commit and exact-head CI remain pending.
+Commit and push only the docs-only closeout, verify its exact-SHA CI, then stop. Do not create another slice, PR, branch, merge, or tag, and do not start Slice 2B18.
