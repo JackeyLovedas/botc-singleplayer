@@ -13,9 +13,11 @@
 - Rule verdict: `RULE_READY`.
 - Evidence: `docs/rules/evidence/2B17-2.md`.
 - Evidence SHA-256: `ced6042dcfcbb2e14d86ef97c15b4c8bae2a263bd8aa30332a16b54683143eab`.
-- Design round: `0 / 2`; repair round: `0 / 2`; `maxSlices=1`.
+- Design: `docs/implementation/phase-3-slice-2b17-2-design.md`.
+- Design SHA-256: `773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed`.
+- Design round: `1 / 2`; repair round: `0 / 2`; `maxSlices=1`.
 - Approved simulator override: `BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1`.
-- No 2B17.2 design exists yet.
+- Design readiness: `READY_FOR_RULE_DESIGN_REVIEW`; this is not implementation authorization.
 - Slice 2B18 production remains prohibited; Slice 2B19 is prohibited.
 - Slice 2B19 is prohibited.
 
@@ -29,4 +31,4 @@ Slice 2B18 remains historical `HUMAN_BLOCKED` with terminal `RULE_CONFLICT`. Its
 
 ## Current Gate
 
-`RULE_READY` authorizes only a read-only architect design followed by independent rule-design review. No feature branch, production code, tests, or PR are authorized until `RULE_DESIGN_PASS`. Do not resume Slice 2B18 production or start Slice 2B19.
+The exact architect design is materialized and awaits independent rule-design review. `ruleDesignPass=false` and `implementationAuthorized=false`; no feature branch, production code, tests, or PR are authorized until `RULE_DESIGN_PASS`. Do not resume Slice 2B18 production or start Slice 2B19.

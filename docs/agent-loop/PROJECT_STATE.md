@@ -4,7 +4,7 @@
 
 - Phase 3 controlled vertical slices.
 - Active controlled candidate: Slice 2B17.2 Philosopher-gained first-night scheduling V2, scope `PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2`.
-- Current control state: `RUNNING` on `main`; no PR or feature branch; `RULE_READY` is recorded, while design and implementation gates remain false.
+- Current control state: `RUNNING` on `main`; no PR or feature branch; `RULE_READY` and the round-1 architect design are recorded, while rule-design-pass and implementation gates remain false.
 - Accepted: 2B13 through 2B17.1.
 - Slice 2B17.1 merged through PR [#20](https://github.com/JackeyLovedas/botc-singleplayer/pull/20) at merge SHA `19923f4aa62c86cc2db995587d65b586fd365b8a`.
 - Final reviewed feature HEAD: `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`.
@@ -30,5 +30,7 @@ Slice 2B17.1 adds strict sparse/nonstandard-array rejection, hostile-input fail-
 The approved simulator strategy `BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1` schedules supported Philosopher-gained first-night abilities at their normal character positions with base-first and deterministic gained-task tie-breaking. It is a product ordering policy, not a role-rule reinterpretation.
 
 Slice 2B17.2 evidence is `docs/rules/evidence/2B17-2.md`, SHA-256 `ced6042dcfcbb2e14d86ef97c15b4c8bae2a263bd8aa30332a16b54683143eab`, with terminal `RULE_READY`. This authorizes design review only; no implementation is authorized.
+
+The exact round-1 architect design is `docs/implementation/phase-3-slice-2b17-2-design.md`, SHA-256 `773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed`, with readiness `READY_FOR_RULE_DESIGN_REVIEW`. Independent rule-design review remains pending; `ruleDesignPass=false` and `implementationAuthorized=false`.
 
 Slice 2B18 remains historical `HUMAN_BLOCKED`. Its immutable evidence is `docs/rules/evidence/2B18.md` (SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`). Four conflicts remain: first-night window start, own-ability exclusion, false-number domain, and duplicate-holder behavior. Slice 2B19 was not started.

@@ -8,14 +8,15 @@
   "currentReviewHeadAuthority": null,
   "exactHeadCIAuthority": null,
   "repairRound": 0,
-  "designRound": 0,
+  "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": null,
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "candidateRole": "philosopher",
   "candidateScope": "PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2",
-  "currentDesignHash": null,
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b17-2-design.md",
+  "currentDesignHash": "773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed",
   "designReviewRound2Hash": null,
   "ruleReady": true,
   "ruleDesignPass": false,
@@ -194,7 +195,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Materialized the complete Slice 2B17.2 rule evidence at docs/rules/evidence/2B17-2.md; terminal RULE_READY authorizes architecture design only while implementation remains unauthorized.",
+  "lastAction": "Materialized the complete read-only architect design for Slice 2B17.2 at docs/implementation/phase-3-slice-2b17-2-design.md; it is ready only for independent rule-design review.",
   "lastError": null,
-  "nextAction": "Run one read-only architect design for Slice 2B17.2, then independent RULE_DESIGN review. Do not branch, implement, test, open a PR, resume 2B18 production, or start Slice 2B19 without RULE_DESIGN_PASS."
+  "nextAction": "Run one independent RULE_DESIGN review of the exact Slice 2B17.2 design and its rule sources. Do not branch, implement, test, open a PR, resume 2B18 production, or start Slice 2B19 without RULE_DESIGN_PASS."
 }
