@@ -1,27 +1,27 @@
 {
-  "status": "COMPLETED",
+  "status": "RUNNING",
   "currentPR": null,
   "currentPRUrl": null,
   "currentBranch": "main",
-  "currentSlice": null,
-  "reviewedHead": "9caaa07a9f3f50bdf8564e48bf50345fed976a4c",
+  "currentSlice": "2B18",
+  "reviewedHead": null,
   "currentReviewHeadAuthority": null,
-  "exactHeadCIAuthority": "GitHub checks attached to the exact emitted closeout commit after push",
-  "repairRound": 1,
-  "designRound": 3,
-  "maxDesignRounds": 3,
-  "userContinuationAuthorization": "EXTRA_DESIGN_ROUND_3_VORTOX_HISTORICAL_BICONDITIONAL",
+  "exactHeadCIAuthority": null,
+  "repairRound": 0,
+  "designRound": 0,
+  "maxDesignRounds": 2,
+  "userContinuationAuthorization": null,
   "maxSlices": 1,
   "maxRepairRounds": 2,
-  "candidateRole": "clockmaker",
-  "candidateScope": "CLOCKMAKER_DENSE_ARRAY_AND_CANONICAL_COMPARISON_HARDENING",
-  "currentDesignHash": "fde5aebea89e003c38938c338abfd4fdd1370c88814f965c41a0dcda7b3d1e06",
-  "designReviewRound2Hash": "148d756129a1eb08678d30b5d094e88b90ebd0842b4021e7dee1bed5fad5be8d",
-  "ruleReady": true,
-  "ruleDesignPass": true,
-  "implementationAuthorized": true,
-  "designReviewHash": "2c472cfdca5578d0aa556e4ec02761854362fcf3470a4188e294cfe74dafbe62",
-  "slice2B18Prohibited": true,
+  "candidateRole": "mathematician",
+  "candidateScope": "FIRST_NIGHT_ABNORMALITY_LEDGER_AND_PRIVATE_INFORMATION",
+  "currentDesignHash": null,
+  "designReviewRound2Hash": null,
+  "ruleReady": false,
+  "ruleDesignPass": false,
+  "implementationAuthorized": false,
+  "designReviewHash": null,
+  "slice2B19Prohibited": true,
   "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1"],
   "slice2B17ProductImplementation": {
     "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
@@ -162,7 +162,17 @@
       "genericImpairmentSource": false
     }
   },
-  "lastAction": "Merged accepted Slice 2B17.1 PR #20, re-read and archived both exact final-review comments, recorded distinct product-head and merge-commit CI provenance, and prepared the docs-only closeout.",
+  "recoveryAnchor": {
+    "sha": "cf6207c88f97c292be82c684a366806e64c09818",
+    "branch": "main",
+    "worktree": "CLEAN"
+  },
+  "priorCloseoutCI": {
+    "sha": "cf6207c88f97c292be82c684a366806e64c09818",
+    "run": 29152483134,
+    "status": "SUCCESS"
+  },
+  "lastAction": "Started only the Phase 3 Slice 2B18 Mathematician control state from clean main cf6207c88f97c292be82c684a366806e64c09818 after prior closeout CI 29152483134 succeeded.",
   "lastError": null,
-  "nextAction": "Push the single docs-only closeout commit and verify GitHub checks attached to its exact emitted SHA. Do not start Slice 2B18."
+  "nextAction": "Run the mandatory read-only Mathematician rule-truth gate. Do not synthesize evidence, design, create a branch, implement, test, or start Slice 2B19 until the required gates authorize each step."
 }

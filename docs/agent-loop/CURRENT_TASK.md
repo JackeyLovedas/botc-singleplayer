@@ -1,22 +1,22 @@
 # Current Task
 
-## No Active Slice
+## Active Slice 2B18 Control State
 
-- Phase 3 Slice 2B17.1 is `COMPLETED` and merged through PR [#20](https://github.com/JackeyLovedas/botc-singleplayer/pull/20).
+- Candidate role: `mathematician`.
+- Candidate scope: `FIRST_NIGHT_ABNORMALITY_LEDGER_AND_PRIVATE_INFORMATION`.
 - Current branch: `main`.
 - Current PR: none.
-- Current slice: none.
-- Final reviewed feature HEAD: `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`.
-- Merge SHA: `19923f4aa62c86cc2db995587d65b586fd365b8a`.
-- Final verdicts: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`.
-- `ruleSemanticsChanged=false`; repair round `1 / 2`.
-- Clockmaker remains `PARTIAL`.
-- Slice 2B18 was not started and remains prohibited in this completed run.
+- Current slice: `2B18`.
+- Recovery anchor: `cf6207c88f97c292be82c684a366806e64c09818`.
+- Prior closeout CI: `29152483134`, `SUCCESS`.
+- `ruleReady=false`; `ruleDesignPass=false`; `implementationAuthorized=false`.
+- Design round: `0 / 2`; repair round: `0 / 2`; `maxSlices=1`.
+- Slice 2B19 is prohibited.
 
-## Closeout CI Authority
+## Preserved Accepted History
 
-The final reviewed HEAD passed push run `29151838214` and pull-request run `29151839311`. The merge SHA passed main-push run `29152171989` and accepted-tag-push run `29152177469`. The docs-only closeout commit cannot self-reference its future SHA; GitHub checks attached to the exact emitted closeout SHA are authoritative after push.
+Slice 2B17 and validation hotfix 2B17.1 remain accepted. The 2B17.1 final reviewed HEAD was `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`, merge SHA `19923f4aa62c86cc2db995587d65b586fd365b8a`, with `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `ruleSemanticsChanged=false`, and Clockmaker still `PARTIAL`.
 
-## Stop
+## Current Gate
 
-Commit and push only the docs-only closeout, verify its exact-SHA CI, then stop. Do not create another slice, PR, branch, merge, or tag, and do not start Slice 2B18.
+Only the control state is active. No evidence synthesis, design, feature branch, production code, or tests are authorized. The next allowed action is the mandatory read-only Mathematician rule-truth gate. Do not start Slice 2B19.

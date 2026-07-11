@@ -3,13 +3,15 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
+- Active controlled candidate: Slice 2B18 Mathematician, scope `FIRST_NIGHT_ABNORMALITY_LEDGER_AND_PRIVATE_INFORMATION`.
+- Current control state: `RUNNING` on `main`; no PR or feature branch; rule/design/implementation gates are all false.
 - Accepted: 2B13 through 2B17.1.
 - Slice 2B17.1 merged through PR [#20](https://github.com/JackeyLovedas/botc-singleplayer/pull/20) at merge SHA `19923f4aa62c86cc2db995587d65b586fd365b8a`.
 - Final reviewed feature HEAD: `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`.
 - Final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `ruleSemanticsChanged=false`, no blockers; repair round `1 / 2`.
-- Current branch: `main`; no current PR or slice.
+- Current branch: `main`; current slice `2B18`; no current PR.
 - Clockmaker remains `PARTIAL`.
-- Slice 2B18 was not started.
+- Slice 2B19 is prohibited.
 
 ## CI Provenance
 
@@ -25,4 +27,4 @@ The accepted slice covers the bounded base and Philosopher-gained first-night Cl
 
 Slice 2B17.1 adds strict sparse/nonstandard-array rejection, hostile-input fail-closed behavior, key-order-independent canonical semantic comparison, and guarded stored-delivery reads. Rules, events, projections, unsupported mechanics, and Clockmaker's `PARTIAL` level are unchanged.
 
-Slice 2B18 was not started.
+Slice 2B18 is control-state only until the mandatory rule-truth and design gates pass. No evidence synthesis, design, branch, production, or test work is yet authorized. Slice 2B19 was not started.
