@@ -1,9 +1,9 @@
 {
-  "status": "HUMAN_BLOCKED",
+  "status": "RUNNING",
   "currentPR": null,
   "currentPRUrl": null,
   "currentBranch": "main",
-  "currentSlice": "2B18",
+  "currentSlice": "2B17.2",
   "reviewedHead": null,
   "currentReviewHeadAuthority": null,
   "exactHeadCIAuthority": null,
@@ -13,8 +13,8 @@
   "userContinuationAuthorization": null,
   "maxSlices": 1,
   "maxRepairRounds": 2,
-  "candidateRole": "mathematician",
-  "candidateScope": "FIRST_NIGHT_ABNORMALITY_LEDGER_AND_PRIVATE_INFORMATION",
+  "candidateRole": "philosopher",
+  "candidateScope": "PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2",
   "currentDesignHash": null,
   "designReviewRound2Hash": null,
   "ruleReady": false,
@@ -22,16 +22,20 @@
   "implementationAuthorized": false,
   "designReviewHash": null,
   "slice2B19Prohibited": true,
-  "ruleResearchVerdict": "RULE_CONFLICT",
-  "ruleEvidencePath": "docs/rules/evidence/2B18.md",
-  "ruleEvidenceSha256": "9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a",
-  "unresolvedConflicts": [
-    "firstNightWindowDefinition: no source-defined replacement for previous dawn on the first night",
-    "ownAbilityExclusion: another Mathematician holder's ability is unspecified",
-    "candidateNumberDomain: the complete false-number domain and maximum legal false value are unspecified",
-    "duplicateMathematicianRule: holder order and mutual detection are unspecified",
-    "Philosopher-gained Mathematician currently inserts immediately, conflicting with the official instruction to act at the gained character's normal time"
-  ],
+  "ruleResearchVerdict": null,
+  "ruleEvidencePath": null,
+  "ruleEvidenceSha256": null,
+  "unresolvedConflicts": [],
+  "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
+  "slice2B18ProductionProhibited": true,
+  "slice2B18BlockedHistory": {
+    "status": "HUMAN_BLOCKED",
+    "terminalVerdict": "RULE_CONFLICT",
+    "evidencePath": "docs/rules/evidence/2B18.md",
+    "evidenceSha256": "9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a",
+    "unresolvedConflictCount": 5,
+    "implementationAuthorized": false
+  },
   "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1"],
   "slice2B17ProductImplementation": {
     "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
@@ -173,16 +177,16 @@
     }
   },
   "recoveryAnchor": {
-    "sha": "cf6207c88f97c292be82c684a366806e64c09818",
+    "sha": "823c256af6e367a28ea383be81ca26b9b61ad314",
     "branch": "main",
     "worktree": "CLEAN"
   },
   "priorCloseoutCI": {
-    "sha": "cf6207c88f97c292be82c684a366806e64c09818",
-    "run": 29152483134,
+    "sha": "823c256af6e367a28ea383be81ca26b9b61ad314",
+    "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Materialized the complete read-only Mathematician evidence at docs/rules/evidence/2B18.md; terminal RULE_CONFLICT blocks Slice 2B18 before design.",
-  "lastError": "RULE_CONFLICT: five unresolved Mathematician rule and scheduling conflicts require explicit human resolution",
-  "nextAction": "Await explicit human resolution of all five recorded conflicts. Do not design, create a branch, implement, test, open a PR, or start Slice 2B19."
+  "lastAction": "Started only the Phase 3 Slice 2B17.2 control state and recorded approved simulator override BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1; preserved the byte-exact blocked 2B18 evidence.",
+  "lastError": null,
+  "nextAction": "Run fresh read-only rule research for Philosopher-gained first-night scheduling V2. Do not design, branch, implement, test, open a PR, resume 2B18 production, or start Slice 2B19 until authorized."
 }
