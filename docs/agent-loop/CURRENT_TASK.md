@@ -1,6 +1,6 @@
 # Current Task
 
-## Slice 2B16 Repair Round 1 — Implementation Repair Authorized
+## Slice 2B16 Repair Round 1 — Published, Exact-Head CI Pending
 
 - Role: `Cerenovus`.
 - Scope authorization: `CERENOVUS_EFFECTIVE_ONLY`.
@@ -10,7 +10,9 @@
 - Final review timestamp: `2026-07-11T12:02:08+08:00`.
 - Verdicts: `CODE_REVIEW_FIX_REQUIRED` and `RULE_REVIEW_FIX_REQUIRED`.
 - Repair round: `1 / 2`.
-- Merge remains unauthorized. The bounded repair implementation is authorized; no commit or push is authorized before all local gates and controller pre-publish audit.
+- Repair commit: `fa149336c1b70d879cfe082546fba8880746a0ab`.
+- Final bookkeeping HEAD: pending this docs-only commit.
+- Merge remains unauthorized. The branch freezes after the bookkeeping push; exact-head CI and a new complete independent final review are required.
 
 ## Four Blockers
 
@@ -46,7 +48,7 @@
 
 ## Next Gate
 
-Controller pre-publish audit before any commit or push.
+Push the bounded bookkeeping commit, freeze the resulting final HEAD, wait for exact-head Ubuntu/Windows CI, then request the complete independent final review. Do not modify, review, comment, merge, or tag while waiting.
 
 ## Limits
 

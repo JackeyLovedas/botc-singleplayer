@@ -4,7 +4,7 @@
 
 PR [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18) remains open on `phase-3/cerenovus-first-night-madness-marker`. Complete final review of frozen HEAD `86d973485e940c0ef0469dd169db3ab1dc7a417d` returned both `CODE_REVIEW_FIX_REQUIRED` and `RULE_REVIEW_FIX_REQUIRED` at `2026-07-11T12:02:08+08:00`.
 
-Repair round is `1 / 2`. Merge is unauthorized. The exact bounded implementation repair and direct regression expansion are complete in the working tree; commit and push remain blocked pending controller pre-publish audit.
+Repair round is `1 / 2`. Repair commit `fa149336c1b70d879cfe082546fba8880746a0ab` is pushed to PR #18. This bookkeeping commit will become the final docs HEAD, which is pending until commit creation. Merge remains unauthorized; exact final-HEAD CI and a new complete independent final review are required.
 
 ## Renewed Rule Design Pass
 
@@ -97,4 +97,4 @@ repair-round-1 local gate record for exact repaired HEAD
 
 ## Next Gate
 
-Controller pre-publish audit. No commit or push before that decision.
+Commit and push only the five bookkeeping documents, freeze the resulting final HEAD, and wait for exact-head Ubuntu/Windows CI. Then obtain a new complete independent final review. No further branch modification, review comment, merge, or tag is authorized.

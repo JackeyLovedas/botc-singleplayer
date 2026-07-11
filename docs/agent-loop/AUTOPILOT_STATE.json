@@ -1,5 +1,5 @@
 {
-  "status": "READY_FOR_PRE_PUBLISH_AUDIT",
+  "status": "WAITING_CI",
   "currentPR": 18,
   "currentBranch": "phase-3/cerenovus-first-night-madness-marker",
   "currentSlice": "2B16",
@@ -10,8 +10,10 @@
   "rescopeAuthorization": "CERENOVUS_EFFECTIVE_ONLY",
   "currentDesignHash": "743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12",
   "designRevalidationReportHash": "643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c",
+  "repairCommit": "fa149336c1b70d879cfe082546fba8880746a0ab",
+  "finalDocsHead": "PENDING_THIS_BOOKKEEPING_COMMIT",
   "completedSlices": ["2B13", "2B14", "2B15"],
-  "lastAction": "Materialized and reverse-verified the targeted renewed design revalidation for design SHA-256 743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12 as report SHA-256 643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c. RULE_DESIGN_PASS remains valid with no blockers; implementation local gates remain 24 files / 821 tests. Exact repaired-HEAD GitHub CI remains pending until an authorized push.",
+  "lastAction": "Published repair commit fa149336c1b70d879cfe082546fba8880746a0ab to PR #18 after exact 21-file audit. Current design is 743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12, evidence is 5204b8995a40b8cee237f2b004f59f16e0751667ffdd3b9b5691265f425d9cb0, and design revalidation is 643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c. Local full and coverage gates each passed 24 files / 821 tests. Final bookkeeping HEAD is pending this commit; exact-head CI is pending.",
   "lastError": null,
   "blockerAudit": [
     {
@@ -35,5 +37,5 @@
       ]
     }
   ],
-  "nextAction": "Controller performs the required pre-publish audit; do not commit or push before authorization"
+  "nextAction": "Freeze the final bookkeeping HEAD after push, wait for exact-head Ubuntu and Windows CI, then obtain a new complete independent final review; do not modify, comment, merge, or tag"
 }

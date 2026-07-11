@@ -27,18 +27,19 @@
 
 ## Current Delivery
 
-- Active slice: 2B16 effective-only Cerenovus, repair round 1; bounded implementation repair is authorized by renewed `RULE_DESIGN_PASS`.
+- Active slice: 2B16 effective-only Cerenovus, repair round 1; repair commit `fa149336c1b70d879cfe082546fba8880746a0ab` is published and final bookkeeping HEAD is pending this docs-only commit.
 - Branch: `phase-3/cerenovus-first-night-madness-marker`; preliminary product HEAD `a59a9489adbd5032bf6adac3d98e280d7d7cbd05` pushed.
-- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18); frozen reviewed HEAD `86d973485e940c0ef0469dd169db3ab1dc7a417d` returned both fix-required verdicts and is not mergeable.
+- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18); frozen reviewed HEAD `86d973485e940c0ef0469dd169db3ab1dc7a417d` and its CI are historical only; `reviewedHead` is reset to null for the repaired branch.
 - Rescope authorization: `CERENOVUS_EFFECTIVE_ONLY`.
 - Source-impaired execution: `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY`.
 - External rules remain `RULE_READY`; all original URLs, revisions, hashes, and impaired-source rule truth remain recorded.
 - The prior design SHA beginning `4f474b7a` and prior `RULE_DESIGN_PASS` are superseded.
 - Corrected event contract: choice, effective marker, target instruction, and `CERENOVUS_MADNESS_MARKED` settlement.
 - The prior effective-only design review and green CI for `86d9734...` are historical only after repair; neither authorizes merge.
-- Corrected evidence `5204b899...` and repair design `85869846...` address the schema, Vortox/alignment, source binding, hostile-ID, sparse-projection, replay-provenance, and exact-test-traceability specifications. Coverage remains `PARTIAL`.
+- Corrected evidence `5204b899...` and current repair design `743affb3...` address the schema, Vortox/alignment, source binding, hostile-ID, sparse-projection, replay-provenance, and exact-test-traceability specifications. Coverage remains `PARTIAL`.
 - Corrected complete rule-design review SHA-256 `363271a48ae4f2595ef7287e850d8a38b4fa1b94e42f97b6b15b25d5de9da645` returned `RULE_DESIGN_PASS` for the prior repair design.
 - Current repair design SHA-256 is `743affb3d47d0a16fc25b849b1dbe97bf9af07c9ff000cd793a61a5268300a12`; targeted renewed revalidation SHA-256 `643e1e1a5dee2030cf8205594f9a08a7f2415c514ea0466d35b988ec1874b34c` returned `RULE_DESIGN_PASS` with no blockers. Only trace row 62 changed, preserving the existing byte-identical CI workflow and pending exact-head CI requirement.
+- Local final gates: typecheck, lint, diff, full 24 files / 821 tests, and coverage 24 files / 821 tests passed; exact final-HEAD CI remains pending.
 - This controlled round has `maxSlices=1`, `maxRepairRounds=2`, no heartbeat, and no 2B17 work.
 
 ## Rule And Design Gate
