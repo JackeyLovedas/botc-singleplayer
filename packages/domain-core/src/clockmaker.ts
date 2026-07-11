@@ -166,6 +166,15 @@ const fail = (reason: string): ValidationResult => ({ valid: false, reason });
 const positiveInteger = (value: unknown): value is number => typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 const nonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 const dense = (value: unknown): value is readonly unknown[] => isDenseCanonicalArray(value);
+
+export const isClockmakerInformationSetShape = (value: unknown): value is ClockmakerInformationSet => {
+  try {
+    return isCanonicalDataValue(value) && isPlainRecord(value) && Object.keys(value).length === 1 &&
+      Object.hasOwn(value, "deliveries") && isDenseCanonicalArray(value.deliveries);
+  } catch {
+    return false;
+  }
+};
 const catalogRole = (setup: Pick<GeneratedSetup, "roleCatalogSnapshot">, roleId: string): RoleSetupSnapshot | undefined =>
   setup.roleCatalogSnapshot.roles.find((role) => role.roleId === roleId);
 
@@ -603,8 +612,8 @@ export const appendClockmakerInformationDelivery = (
 ): ClockmakerInformationSet => {
   const shape = validateClockmakerInformationDeliveredPayloadShape(payload);
   if (!shape.valid) throw new TypeError(shape.reason);
+  if (state !== undefined && !isClockmakerInformationSetShape(state)) throw new TypeError("Clockmaker delivery collection must be one strict dense standard array");
   const current = state?.deliveries ?? [];
-  if (!isDenseCanonicalArray(current)) throw new TypeError("Clockmaker delivery collection must be one strict dense standard array");
   if (current.some((entry) => entry.deliveryId === payload.deliveryId || entry.taskId === payload.taskId)) throw new TypeError("Clockmaker delivery and task must be unique");
   return { deliveries: [...current, structuredClone(payload)] };
 };
@@ -612,12 +621,15 @@ export const appendClockmakerInformationDelivery = (
 export const hasClockmakerInformationForSettlement = (
   state: ClockmakerInformationSet | undefined,
   settlement: ScheduledTaskSettledPayload
-): boolean => state?.deliveries.some((delivery) =>
-  delivery.taskId === settlement.taskId && settlement.taskType === "CLOCKMAKER_INFORMATION" &&
-  settlement.outcomeType === "CLOCKMAKER_INFORMATION_DELIVERED" && settlement.nightNumber === 1 &&
-  delivery.settlementCharacterStateRevision === settlement.characterStateRevision &&
-  delivery.rulesBaselineVersion === settlement.rulesBaselineVersion
-) ?? false;
+): boolean => {
+  if (state === undefined || !isClockmakerInformationSetShape(state)) return false;
+  return state.deliveries.some((delivery) =>
+    delivery.taskId === settlement.taskId && settlement.taskType === "CLOCKMAKER_INFORMATION" &&
+    settlement.outcomeType === "CLOCKMAKER_INFORMATION_DELIVERED" && settlement.nightNumber === 1 &&
+    delivery.settlementCharacterStateRevision === settlement.characterStateRevision &&
+    delivery.rulesBaselineVersion === settlement.rulesBaselineVersion
+  );
+};
 
 export const validateStoredClockmakerInformationDelivered = (input: {
   readonly rulesBaselineVersion: string;

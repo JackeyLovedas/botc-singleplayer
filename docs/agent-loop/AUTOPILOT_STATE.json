@@ -4,10 +4,10 @@
   "currentPRUrl": null,
   "currentBranch": "phase-3/clockmaker-validation-hardening",
   "currentSlice": "2B17.1",
-  "reviewedHead": "04237a2053a64301a515fffeb417958a381a0dc6",
-  "currentReviewHeadAuthority": null,
+  "reviewedHead": "61acdb59c1ae2e598e7bca85f9864807b738fb3d",
+  "currentReviewHeadAuthority": "HISTORICAL_INVALIDATED_BY_REPAIR_ROUND_1",
   "exactHeadCIAuthority": "GitHub checks attached to the exact emitted closeout commit after push",
-  "repairRound": 0,
+  "repairRound": 1,
   "designRound": 3,
   "maxDesignRounds": 3,
   "userContinuationAuthorization": "EXTRA_DESIGN_ROUND_3_VORTOX_HISTORICAL_BICONDITIONAL",
@@ -119,7 +119,7 @@
       "genericImpairmentSource": false
     }
   },
-  "lastAction": "Completed the bounded Slice 2B17.1 implementation and local gates: focused 4 files / 263 tests, full and coverage 28 files / 900 tests, with Clockmaker still PARTIAL and no rule/event/projection contract change.",
+  "lastAction": "Implemented repair round 1 after historical CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS: all Clockmaker stored delivery collection reads are guarded before iteration; local focused 4/264 and full/coverage 28/901 pass with 85.94% statements/lines, 80.04% branches, and 97.86% functions.",
   "lastError": null,
-  "nextAction": "Commit and publish the single hotfix PR, then freeze the exact feature HEAD for CI and independent review. Do not start Slice 2B18."
+  "nextAction": "Commit and push repair round 1 to PR #20, update the live body with precise local versus historical CI provenance, then wait for new exact-head CI and independent review. Do not start Slice 2B18."
 }

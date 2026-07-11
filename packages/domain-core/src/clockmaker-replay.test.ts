@@ -15,9 +15,11 @@ import {
   correlationId,
   createClockmakerInformationDeliveredPayload,
   createClockmakerInformationDeliveredScheduledTaskSettlement,
+  DomainError,
   causationId,
   eventId,
   grantedAbilityId,
+  hasClockmakerInformationForSettlement,
   rebuildGameState,
   resolveClockmakerNativeReferences,
   resolveClockmakerVortoxConstraint,
@@ -256,5 +258,34 @@ describe("Clockmaker replay and atomic batch semantics", () => {
       { ...events[1].payload, outcomeType: "DREAMER_INFORMATION_DELIVERED" as const },
       { ...events[1].payload, characterStateRevision: events[1].payload.characterStateRevision + 1 }
     ]) expect(() => validateDomainBatchSemantics(state, [events[0], { ...events[1], payload }])).toThrow();
+  });
+
+  it("guards every stored Clockmaker delivery collection read before duplicate and settlement linkage iteration", () => {
+    const state = readyState();
+    const events = batch(state);
+    const matching = events[0].payload;
+    let getterCalls = 0;
+    const partialWithLaterMatch = new Array(2) as ClockmakerInformationDeliveredPayload[];
+    partialWithLaterMatch[1] = matching;
+    const extraKey = [matching] as ClockmakerInformationDeliveredPayload[] & { extra?: boolean };
+    extraKey.extra = true;
+    const transparent = new Proxy([matching], {});
+    const revocable = Proxy.revocable([matching], {}); revocable.revoke();
+    const indexedGetter = new Array(2) as ClockmakerInformationDeliveredPayload[];
+    Object.defineProperty(indexedGetter, 1, { enumerable: true, get: () => { getterCalls += 1; return matching; } });
+    const hostileCollections = [partialWithLaterMatch, extraKey, transparent, revocable.proxy, indexedGetter];
+
+    for (const deliveries of hostileCollections) {
+      const malformedSet = { deliveries } as unknown as NonNullable<GameState["clockmakerInformation"]>;
+      expect(hasClockmakerInformationForSettlement(malformedSet, events[1].payload)).toBe(false);
+
+      const beforeDelivery = { ...state, clockmakerInformation: malformedSet };
+      expect(() => applyDomainEvent(beforeDelivery, events[0])).toThrowError(DomainError);
+
+      const delivered = applyDomainEvent(state, events[0]);
+      const beforeSettlement = { ...delivered, clockmakerInformation: malformedSet };
+      expect(() => applyDomainEvent(beforeSettlement, events[1])).toThrowError(DomainError);
+    }
+    expect(getterCalls).toBe(0);
   });
 });

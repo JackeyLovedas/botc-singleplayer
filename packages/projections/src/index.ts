@@ -502,7 +502,8 @@ const requireDeliveredClockmakerInformationIsSettled = (
 
 const deliveredStagesForViewer = (
   state: GameState,
-  viewerPlayerId: PlayerId
+  viewerPlayerId: PlayerId,
+  clockmakerDeliveries: readonly ClockmakerInformationDeliveredPayload[]
 ): readonly PlayerPrivateKnowledgeStage[] => {
   const stages: PlayerPrivateKnowledgeStage[] = [INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE];
   if (state.minionInformation?.entries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
@@ -521,7 +522,7 @@ const deliveredStagesForViewer = (
     stages.push(CERENOVUS_INFORMATION_STAGE);
   }
 
-  if (state.clockmakerInformation?.deliveries.some((delivery) => delivery.sourceContract.sourcePlayerId === viewerPlayerId) === true) {
+  if (clockmakerDeliveries.some((delivery) => delivery.sourceContract.sourcePlayerId === viewerPlayerId)) {
     stages.push("CLOCKMAKER_INFORMATION");
   }
 
@@ -575,7 +576,7 @@ export const buildPlayerPrivateKnowledgeView = (
     delivery.sourcePlayerId === viewerPlayerId
   ) ?? [];
 
-  const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId);
+  const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId, clockmakerDeliveries);
   const hasTeamKnowledge = deliveredKnowledgeStages.some((stage) =>
     stage === MINION_INFORMATION_KNOWLEDGE_STAGE ||
     stage === DEMON_INFORMATION_KNOWLEDGE_STAGE

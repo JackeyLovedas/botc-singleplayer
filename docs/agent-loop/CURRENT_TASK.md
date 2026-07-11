@@ -20,4 +20,6 @@ The final reviewed HEAD passed push run `29148485853` and pull-request run `2914
 
 Implement strict dense-array/hostile-value validation and insertion-order-independent canonical comparison, run all gates, then publish one PR for independent review. Clockmaker remains `PARTIAL`. Do not start Slice 2B18.
 
-Local validation passed: focused `4 files / 263 tests`; full and coverage `28 files / 900 tests`; coverage `85.92%` statements/lines, `80.00%` branches, and `97.86%` functions. PR publication and exact-head CI remain pending.
+Independent round-1 review of historical HEAD `61acdb59c1ae2e598e7bca85f9864807b738fb3d` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`, with `ruleSemanticsChanged=false`, because two stored-delivery reads preceded the strict collection guard. The complete reviewer report is controller-held and was not reconstructed locally.
+
+Repair round `1 / 2` now guards duplicate detection, append, settlement linkage, and projection stage reads before any Clockmaker delivery iteration. Local validation passed: focused `4 files / 264 tests`; full and coverage `28 files / 901 tests`; coverage `85.94%` statements/lines, `80.04%` branches, and `97.86%` functions. Historical exact-head CI branch coverage was `79.99%`; the earlier `80.00%` figure was local-only. New repair commit and exact-head CI remain pending.
