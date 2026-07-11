@@ -7078,6 +7078,22 @@ describe("GameApplicationService", () => {
       expect((await base.commandStore.loadDomainEvents(ids.game)).length).toBe(beforeEvents);
       expect(base.commandStore.getReceiptCount()).toBe(beforeReceipts);
     });
+
+    it("accepts key-reordered Clockmaker payloads at the application prospective boundary", async () => {
+      const { service, commandStore } = makeService();
+      const { state, task } = await reachClockmakerInformationTask(service, commandStore);
+      const command = settleClockmakerCommand(state, task.taskId, { commandId: commandId("clockmaker-reordered-prospective") });
+      const boundary = service as unknown as { createBatch: (...args: readonly unknown[]) => DomainEventBatch };
+      const original = boundary.createBatch.bind(service);
+      boundary.createBatch = (...args: readonly unknown[]): DomainEventBatch => {
+        const created = original(...args);
+        return { ...created, events: created.events.map((event) => event.eventType === "ClockmakerInformationDelivered"
+          ? { ...event, payload: Object.fromEntries(Object.entries(event.payload).reverse()) as typeof event.payload }
+          : event) };
+      };
+      await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 2 });
+      boundary.createBatch = original;
+    });
   });
 });
 

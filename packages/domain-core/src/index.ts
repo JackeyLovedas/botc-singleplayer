@@ -1,5 +1,6 @@
 export * from "./character-assignment.js";
 export * from "./clockmaker.js";
+export * from "./canonical-data.js";
 export * from "./command.js";
 export * from "./cerenovus.js";
 export * from "./current-character-state.js";

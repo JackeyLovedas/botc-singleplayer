@@ -12,6 +12,7 @@ import type { RoleTenureRecord, RoleTenureState } from "./seamstress.js";
 import { isRoleTenureActiveAt, parseRoleTenureId } from "./seamstress.js";
 import type { GeneratedSetup, RoleSetupSnapshot } from "./setup-types.js";
 import { sameRoleSetupSnapshot } from "./setup-types.js";
+import { isCanonicalDataValue, isDenseCanonicalArray, sameCanonicalDataValue } from "./canonical-data.js";
 
 export type ClockmakerDistance = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -39,7 +40,7 @@ export const calculateClockmakerTruth = (
   demonSeat: unknown,
   minionSeats: readonly unknown[]
 ): number => {
-  if (!Array.isArray(minionSeats) || minionSeats.length !== 2) {
+  if (!isDenseCanonicalArray(minionSeats) || minionSeats.length !== 2) {
     throw new TypeError("Clockmaker canonical truth requires exactly two Minions");
   }
   const distances = minionSeats.map((seat) => calculateClockmakerPairDistance(demonSeat, seat));
@@ -164,7 +165,16 @@ type ValidationResult = { readonly valid: true } | { readonly valid: false; read
 const fail = (reason: string): ValidationResult => ({ valid: false, reason });
 const positiveInteger = (value: unknown): value is number => typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 const nonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
-const dense = (value: readonly unknown[]): boolean => value.every((_, index) => Object.hasOwn(value, index));
+const dense = (value: unknown): value is readonly unknown[] => isDenseCanonicalArray(value);
+
+export const isClockmakerInformationSetShape = (value: unknown): value is ClockmakerInformationSet => {
+  try {
+    return isCanonicalDataValue(value) && isPlainRecord(value) && Object.keys(value).length === 1 &&
+      Object.hasOwn(value, "deliveries") && isDenseCanonicalArray(value.deliveries);
+  } catch {
+    return false;
+  }
+};
 const catalogRole = (setup: Pick<GeneratedSetup, "roleCatalogSnapshot">, roleId: string): RoleSetupSnapshot | undefined =>
   setup.roleCatalogSnapshot.roles.find((role) => role.roleId === roleId);
 
@@ -207,7 +217,10 @@ export const validateBaseClockmakerSourceContract = (input: {
   readonly setup: Pick<GeneratedSetup, "roleCatalogSnapshot">;
 }): ValidationResult => {
   const keys = ["kind", "sourcePlayerId", "sourceRole", "sourceSeatNumber", "taskId", "taskPlanVersion"] as const;
-  if (!isPlainRecord(input.contract) || !hasExactEnumerableKeys(input.contract, keys) || input.contract.kind !== "BASE_CLOCKMAKER" ||
+  if (!isDenseCanonicalArray(input.firstNightTaskPlan.tasks) || !isDenseCanonicalArray(input.currentCharacterState.entries) ||
+      !isDenseCanonicalArray(input.setup.roleCatalogSnapshot.roles) || input.firstNightTaskProgress !== undefined &&
+      !isDenseCanonicalArray(input.firstNightTaskProgress.settlements)) return fail("Base Clockmaker source collections must be strict dense standard arrays");
+  if (!isCanonicalDataValue(input.contract) || !isPlainRecord(input.contract) || !hasExactEnumerableKeys(input.contract, keys) || input.contract.kind !== "BASE_CLOCKMAKER" ||
       !nonEmptyString(input.contract.taskId) || !nonEmptyString(input.contract.sourcePlayerId) || !isSeat(input.contract.sourceSeatNumber) ||
       !hasExactRoleSetupSnapshotShape(input.contract.sourceRole) || input.contract.taskPlanVersion !== input.firstNightTaskPlan.taskPlanVersion) {
     return fail("Base Clockmaker source contract must have exact runtime shape and plan version");
@@ -238,7 +251,11 @@ export const validatePhilosopherGainedClockmakerSourceContract = (input: {
   readonly insertions: FirstNightTaskInsertion;
 }): ValidationResult => {
   const keys = ["gainedRole", "grantId", "grantedAtOpportunityId", "grantedAtTaskId", "insertionCharacterStateRevision", "kind", "sourcePlayerId", "sourceRole", "sourceSeatNumber", "taskId"] as const;
-  if (!isPlainRecord(input.contract) || !hasExactEnumerableKeys(input.contract, keys) || input.contract.kind !== "PHILOSOPHER_GAINED_CLOCKMAKER" ||
+  if (!isDenseCanonicalArray(input.firstNightTaskPlan.tasks) || !isDenseCanonicalArray(input.currentCharacterState.entries) ||
+      !isDenseCanonicalArray(input.setup.roleCatalogSnapshot.roles) || !isDenseCanonicalArray(input.grants.abilities) ||
+      !isDenseCanonicalArray(input.insertions.insertions) || input.firstNightTaskProgress !== undefined &&
+      !isDenseCanonicalArray(input.firstNightTaskProgress.settlements)) return fail("Gained Clockmaker source collections must be strict dense standard arrays");
+  if (!isCanonicalDataValue(input.contract) || !isPlainRecord(input.contract) || !hasExactEnumerableKeys(input.contract, keys) || input.contract.kind !== "PHILOSOPHER_GAINED_CLOCKMAKER" ||
       !nonEmptyString(input.contract.taskId) || !nonEmptyString(input.contract.sourcePlayerId) || !isSeat(input.contract.sourceSeatNumber) ||
       !hasExactRoleSetupSnapshotShape(input.contract.sourceRole) || !hasExactRoleSetupSnapshotShape(input.contract.gainedRole) ||
       !nonEmptyString(input.contract.grantId) || !nonEmptyString(input.contract.grantedAtTaskId) || !nonEmptyString(input.contract.grantedAtOpportunityId) ||
@@ -275,7 +292,9 @@ export const resolveClockmakerNativeReferences = (input: {
 }):
   | { readonly valid: true; readonly demon: ClockmakerNativeReference; readonly minions: readonly [ClockmakerNativeReference, ClockmakerNativeReference]; readonly pairs: readonly [ClockmakerPairDistanceSnapshot, ClockmakerPairDistanceSnapshot]; readonly truth: ClockmakerDistance }
   | { readonly valid: false; readonly reason: string } => {
-  if (!positiveInteger(input.currentCharacterState.revision) || input.currentCharacterState.entries.length !== 12 || input.roster.length !== 12) return { valid: false, reason: "Clockmaker requires valid fixed current state and roster" };
+  if (!isDenseCanonicalArray(input.currentCharacterState.entries) || !isDenseCanonicalArray(input.roster) ||
+      !isDenseCanonicalArray(input.setup.roleCatalogSnapshot.roles) || !positiveInteger(input.currentCharacterState.revision) ||
+      input.currentCharacterState.entries.length !== 12 || input.roster.length !== 12) return { valid: false, reason: "Clockmaker requires valid fixed current state and roster" };
   const rosterByPlayer = new Map(input.roster.map((entry) => [entry.playerId, entry]));
   const references: ClockmakerNativeReference[] = [];
   const seenPlayers = new Set<string>();
@@ -312,6 +331,9 @@ export const resolveClockmakerVortoxConstraint = (input: {
   readonly roleTenures: RoleTenureState;
   readonly abilityImpairments?: AbilityImpairmentSet;
 }): { readonly valid: true; readonly constraint: ClockmakerVortoxConstraint } | { readonly valid: false; readonly reason: string } => {
+  if (!isDenseCanonicalArray(input.currentCharacterState.entries) || !isDenseCanonicalArray(input.setup.roleCatalogSnapshot.roles) ||
+      !isDenseCanonicalArray(input.roleTenures.records) || input.abilityImpairments !== undefined &&
+      !isDenseCanonicalArray(input.abilityImpairments.impairments)) return { valid: false, reason: "Clockmaker Vortox inputs must use strict dense standard arrays" };
   const expectedVortox = catalogRole(input.setup, "vortox");
   if (expectedVortox === undefined || expectedVortox.characterType !== "DEMON") return { valid: false, reason: "Clockmaker requires exact catalog Vortox" };
   const current = input.currentCharacterState.entries.filter((entry) => sameRoleSetupSnapshot(entry.role, expectedVortox));
@@ -407,7 +429,8 @@ export const createClockmakerInformationDeliveredPayload = (input: {
 };
 
 export const validateClockmakerInformationDeliveredPayloadShape = (value: unknown): ValidationResult => {
-  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, deliveryKeys) || !nonEmptyString(value.rulesBaselineVersion) ||
+  try {
+  if (!isCanonicalDataValue(value) || !isPlainRecord(value) || !hasExactEnumerableKeys(value, deliveryKeys) || !nonEmptyString(value.rulesBaselineVersion) ||
       value.informationModelVersion !== CLOCKMAKER_INFORMATION_MODEL_VERSION || value.knowledgeStage !== "CLOCKMAKER_INFORMATION" ||
       value.nightNumber !== 1 || value.taskType !== "CLOCKMAKER_INFORMATION" || !nonEmptyString(value.taskId) || !positiveInteger(value.settlementCharacterStateRevision) ||
       value.identityModel !== "NATIVE_CHARACTER_TYPE_ONLY" || value.ringSeatCount !== 12 || !validSourceContractShape(value.sourceContract) ||
@@ -440,18 +463,21 @@ export const validateClockmakerInformationDeliveredPayloadShape = (value: unknow
     clockwiseDistance: (minion.seatNumber - demon.seatNumber + 12) % 12, counterClockwiseDistance: (demon.seatNumber - minion.seatNumber + 12) % 12,
     nearestDistance: calculateClockmakerPairDistance(demon.seatNumber, minion.seatNumber) as ClockmakerDistance
   }));
-  if (delivery.pairDistanceSnapshots.some((pair, index) => JSON.stringify(pair) !== JSON.stringify(expectedPairs[index]))) return fail("Clockmaker pair snapshots must reproduce native geometry");
+  if (delivery.pairDistanceSnapshots.some((pair, index) => !sameCanonicalDataValue(pair, expectedPairs[index]))) return fail("Clockmaker pair snapshots must reproduce native geometry");
   const truth = Math.min(expectedPairs[0]!.nearestDistance, expectedPairs[1]!.nearestDistance) as ClockmakerDistance;
   if (delivery.ruleCorrectDistance !== truth) return fail("Clockmaker rule-correct distance must be the nearest native pair");
   const expectedSelection = resolveClockmakerCandidates({ truth, source: delivery.sourceEffectiveness.kind === "KNOWN_DRUNK" ? "DRUNK" : "EFFECTIVE", vortoxFalseRequired: delivery.vortoxConstraint.kind === "VORTOX_FALSE_REQUIRED" });
   const expectedReliability: ClockmakerInformationReliability = delivery.vortoxConstraint.kind === "VORTOX_FALSE_REQUIRED" ? "VORTOX_CONSTRAINED_FALSE" :
     delivery.sourceEffectiveness.kind === "KNOWN_DRUNK" ? "DETERMINISTIC_FALSE_WITH_KNOWN_DRUNKENNESS" : "RULE_CORRECT_EFFECTIVE";
-  if (JSON.stringify(delivery.legalCandidateDistances) !== JSON.stringify(expectedSelection.legalCandidates) || delivery.selectedDistance !== expectedSelection.selectedDistance ||
+  if (!sameCanonicalDataValue(delivery.legalCandidateDistances, expectedSelection.legalCandidates) || delivery.selectedDistance !== expectedSelection.selectedDistance ||
       delivery.simulationReason !== expectedSelection.reason || delivery.informationReliability !== expectedReliability ||
       delivery.vortoxConstraint.kind === "VORTOX_FALSE_REQUIRED" && delivery.vortoxConstraint.evaluatedCharacterStateRevision !== delivery.settlementCharacterStateRevision) {
     return fail("Clockmaker candidates, selection, policy, reliability, and constraint revision must be reproducible");
   }
   return { valid: true };
+  } catch {
+    return fail("ClockmakerInformationDelivered must fail closed for hostile runtime values");
+  }
 };
 
 export const validateClockmakerKnownDrunkBinding = (input: {
@@ -459,6 +485,9 @@ export const validateClockmakerKnownDrunkBinding = (input: {
   readonly grants: GrantedAbilitySet;
   readonly impairments: AbilityImpairmentSet;
 }): ValidationResult => {
+  const shape = validateClockmakerInformationDeliveredPayloadShape(input.delivery);
+  if (!shape.valid) return shape;
+  if (!isDenseCanonicalArray(input.grants.abilities) || !isDenseCanonicalArray(input.impairments.impairments)) return fail("KNOWN_DRUNK source collections must be strict dense standard arrays");
   if (input.delivery.sourceEffectiveness.kind !== "KNOWN_DRUNK") return { valid: true };
   if (input.delivery.sourceContract.kind !== "BASE_CLOCKMAKER") return fail("Only the original base Clockmaker may use KNOWN_DRUNK");
   const id = input.delivery.sourceEffectiveness.representedImpairmentIds[0];
@@ -482,6 +511,8 @@ export const validateClockmakerHistoricalVortoxBinding = (input: {
 }): ValidationResult => {
   const shape = validateClockmakerInformationDeliveredPayloadShape(input.delivery);
   if (!shape.valid) return shape;
+  if (!isDenseCanonicalArray(input.roleTenures.records) || !isDenseCanonicalArray(input.setup.roleCatalogSnapshot.roles) ||
+      input.abilityImpairments !== undefined && !isDenseCanonicalArray(input.abilityImpairments.impairments)) return fail("Stored Vortox source collections must be strict dense standard arrays");
   const demon = input.delivery.nativeDemonReferences[0];
   const expectedVortox = catalogRole(input.setup, "vortox");
   if (expectedVortox === undefined || expectedVortox.characterType !== "DEMON") return fail("Stored Clockmaker history requires exact catalog Vortox");
@@ -519,6 +550,8 @@ export const resolveClockmakerSourceEffectiveness = (input: {
   readonly grants: GrantedAbilitySet;
   readonly impairments?: AbilityImpairmentSet;
 }): { readonly valid: true; readonly effectiveness: ClockmakerSourceEffectiveness } | { readonly valid: false; readonly reason: string } => {
+  if (!isCanonicalDataValue(input.contract) || !isDenseCanonicalArray(input.grants.abilities) ||
+      input.impairments !== undefined && !isDenseCanonicalArray(input.impairments.impairments)) return { valid: false, reason: "Clockmaker effectiveness inputs must use canonical dense data" };
   const relevant = (input.impairments?.impairments ?? []).filter((entry) =>
     entry.affectedPlayerId === input.contract.sourcePlayerId && entry.affectedSeatNumber === input.contract.sourceSeatNumber &&
     entry.sourceCharacterStateRevision <= input.settlementRevision &&
@@ -567,7 +600,7 @@ export const validateClockmakerInformationAgainstCanonicalState = (input: {
     sourceEffectiveness: effectiveness.effectiveness,
     vortoxConstraint: constraint.constraint
   });
-  if (JSON.stringify(expected) !== JSON.stringify(input.delivery)) return fail("Clockmaker delivery must equal the complete canonical settlement-time resolution");
+  if (!sameCanonicalDataValue(expected, input.delivery)) return fail("Clockmaker delivery must equal the complete canonical settlement-time resolution");
   const drunk = validateClockmakerKnownDrunkBinding({ delivery: input.delivery, grants: input.grants, impairments: input.abilityImpairments ?? { impairments: [] } });
   if (!drunk.valid) return drunk;
   return validateClockmakerHistoricalVortoxBinding({ delivery: input.delivery, setup: input.setup, roleTenures: input.roleTenures, ...(input.abilityImpairments === undefined ? {} : { abilityImpairments: input.abilityImpairments }) });
@@ -579,6 +612,7 @@ export const appendClockmakerInformationDelivery = (
 ): ClockmakerInformationSet => {
   const shape = validateClockmakerInformationDeliveredPayloadShape(payload);
   if (!shape.valid) throw new TypeError(shape.reason);
+  if (state !== undefined && !isClockmakerInformationSetShape(state)) throw new TypeError("Clockmaker delivery collection must be one strict dense standard array");
   const current = state?.deliveries ?? [];
   if (current.some((entry) => entry.deliveryId === payload.deliveryId || entry.taskId === payload.taskId)) throw new TypeError("Clockmaker delivery and task must be unique");
   return { deliveries: [...current, structuredClone(payload)] };
@@ -587,12 +621,15 @@ export const appendClockmakerInformationDelivery = (
 export const hasClockmakerInformationForSettlement = (
   state: ClockmakerInformationSet | undefined,
   settlement: ScheduledTaskSettledPayload
-): boolean => state?.deliveries.some((delivery) =>
-  delivery.taskId === settlement.taskId && settlement.taskType === "CLOCKMAKER_INFORMATION" &&
-  settlement.outcomeType === "CLOCKMAKER_INFORMATION_DELIVERED" && settlement.nightNumber === 1 &&
-  delivery.settlementCharacterStateRevision === settlement.characterStateRevision &&
-  delivery.rulesBaselineVersion === settlement.rulesBaselineVersion
-) ?? false;
+): boolean => {
+  if (state === undefined || !isClockmakerInformationSetShape(state)) return false;
+  return state.deliveries.some((delivery) =>
+    delivery.taskId === settlement.taskId && settlement.taskType === "CLOCKMAKER_INFORMATION" &&
+    settlement.outcomeType === "CLOCKMAKER_INFORMATION_DELIVERED" && settlement.nightNumber === 1 &&
+    delivery.settlementCharacterStateRevision === settlement.characterStateRevision &&
+    delivery.rulesBaselineVersion === settlement.rulesBaselineVersion
+  );
+};
 
 export const validateStoredClockmakerInformationDelivered = (input: {
   readonly rulesBaselineVersion: string;
@@ -609,6 +646,12 @@ export const validateStoredClockmakerInformationDelivered = (input: {
 }): ValidationResult => {
   const shape = validateClockmakerInformationDeliveredPayloadShape(input.delivery);
   if (!shape.valid) return shape;
+  if (!isDenseCanonicalArray(input.firstNightTaskPlan.tasks) || !isDenseCanonicalArray(input.roster) ||
+      !isDenseCanonicalArray(input.settlements) || !isDenseCanonicalArray(input.roleTenures.records) ||
+      input.grants !== undefined && !isDenseCanonicalArray(input.grants.abilities) ||
+      input.choices !== undefined && !isDenseCanonicalArray(input.choices.choices) ||
+      input.insertions !== undefined && !isDenseCanonicalArray(input.insertions.insertions) ||
+      input.impairments !== undefined && !isDenseCanonicalArray(input.impairments.impairments)) return fail("Stored Clockmaker collections must be strict dense standard arrays");
   const delivery = input.delivery as ClockmakerInformationDeliveredPayload;
   if (delivery.rulesBaselineVersion !== input.rulesBaselineVersion) return fail("Stored Clockmaker delivery rules baseline must match game state");
   const tasks = input.firstNightTaskPlan.tasks.filter((task) => task.taskId === delivery.taskId);

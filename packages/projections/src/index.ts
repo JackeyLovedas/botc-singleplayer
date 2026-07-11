@@ -29,6 +29,8 @@ import {
   validateStoredEvilTwinPairEstablished,
   validateStoredSeamstressInformationDelivered,
   validateStoredClockmakerInformationDelivered,
+  isCanonicalDataValue,
+  isDenseCanonicalArray,
   validateCerenovusActionOpportunityShape,
   validateCerenovusChoiceAgainstState,
   validateCerenovusChoiceRecordedPayloadShape,
@@ -57,8 +59,6 @@ import type {
   SeamstressInformationDeliveredPayload,
   ClockmakerInformationDeliveredPayload
 } from "@botc/domain-core";
-
-const isDenseArray = (value: readonly unknown[]): boolean => value.every((_, index) => Object.hasOwn(value, index));
 
 type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishedPayload & {
   readonly knowledgeModelVersion: typeof SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION;
@@ -237,7 +237,7 @@ const storedFirstNightSettlements = (state: GameState): readonly unknown[] => {
   if (progress === undefined) {
     return [];
   }
-  if (!isPlainRecord(progress) || !Array.isArray(progress.settlements)) {
+  if (!isCanonicalDataValue(progress) || !isPlainRecord(progress) || !Array.isArray(progress.settlements)) {
     throw new DomainError("PrivateKnowledgeUnavailable", "Stored first-night task progress must contain a settlements array");
   }
 
@@ -467,11 +467,14 @@ const requireDeliveredClockmakerInformationIsSettled = (
   state: GameState
 ): readonly ClockmakerInformationDeliveredPayload[] => {
   const settlements = storedFirstNightSettlements(state);
+  if (!isDenseCanonicalArray(settlements)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Clockmaker projection requires one strict dense settlement collection");
+  }
   const clockmakerSettlements = settlements.filter((entry) => isPlainRecord(entry) && entry.outcomeType === "CLOCKMAKER_INFORMATION_DELIVERED");
   const information: unknown = state.clockmakerInformation;
   if (information === undefined && clockmakerSettlements.length === 0) return [];
-  if (!isPlainRecord(information) || Object.keys(information).length !== 1 || !Object.hasOwn(information, "deliveries") ||
-      !Array.isArray(information.deliveries) || !isDenseArray(information.deliveries) || state.firstNightTaskPlan === undefined ||
+  if (!isCanonicalDataValue(information) || !isPlainRecord(information) || Object.keys(information).length !== 1 || !Object.hasOwn(information, "deliveries") ||
+      !isDenseCanonicalArray(information.deliveries) || state.firstNightTaskPlan === undefined ||
       state.roster === undefined || state.setup === undefined || state.seamstressRoleTenureState === undefined) {
     throw new DomainError("PrivateKnowledgeUnavailable", "Clockmaker projection requires one dense delivery collection and complete historical source facts");
   }
@@ -499,7 +502,8 @@ const requireDeliveredClockmakerInformationIsSettled = (
 
 const deliveredStagesForViewer = (
   state: GameState,
-  viewerPlayerId: PlayerId
+  viewerPlayerId: PlayerId,
+  clockmakerDeliveries: readonly ClockmakerInformationDeliveredPayload[]
 ): readonly PlayerPrivateKnowledgeStage[] => {
   const stages: PlayerPrivateKnowledgeStage[] = [INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE];
   if (state.minionInformation?.entries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
@@ -518,7 +522,7 @@ const deliveredStagesForViewer = (
     stages.push(CERENOVUS_INFORMATION_STAGE);
   }
 
-  if (state.clockmakerInformation?.deliveries.some((delivery) => delivery.sourceContract.sourcePlayerId === viewerPlayerId) === true) {
+  if (clockmakerDeliveries.some((delivery) => delivery.sourceContract.sourcePlayerId === viewerPlayerId)) {
     stages.push("CLOCKMAKER_INFORMATION");
   }
 
@@ -572,7 +576,7 @@ export const buildPlayerPrivateKnowledgeView = (
     delivery.sourcePlayerId === viewerPlayerId
   ) ?? [];
 
-  const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId);
+  const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId, clockmakerDeliveries);
   const hasTeamKnowledge = deliveredKnowledgeStages.some((stage) =>
     stage === MINION_INFORMATION_KNOWLEDGE_STAGE ||
     stage === DEMON_INFORMATION_KNOWLEDGE_STAGE

@@ -33,6 +33,7 @@ import type {
 import {
   appendClockmakerInformationDelivery,
   hasClockmakerInformationForSettlement,
+  isClockmakerInformationSetShape,
   validateClockmakerInformationAgainstCanonicalState
 } from "./clockmaker.js";
 import {
@@ -1432,8 +1433,13 @@ const validateClockmakerInformationDeliveredPayloadForState = (
       state.currentCharacterState === undefined || state.roster === undefined || state.setup === undefined || state.seamstressRoleTenureState === undefined) {
     throw new DomainError("InvalidClockmakerInformationDeliveredPayload", "Clockmaker information requires complete first-night canonical state");
   }
-  if (state.clockmakerInformation?.deliveries.some((delivery) => delivery.deliveryId === payload.deliveryId || delivery.taskId === payload.taskId)) {
-    throw new DomainError("InvalidClockmakerInformationDeliveredPayload", "Clockmaker delivery and task must be unique");
+  if (state.clockmakerInformation !== undefined) {
+    if (!isClockmakerInformationSetShape(state.clockmakerInformation)) {
+      throw new DomainError("InvalidClockmakerInformationDeliveredPayload", "Stored Clockmaker delivery collection must be one strict dense standard array");
+    }
+    if (state.clockmakerInformation.deliveries.some((delivery) => delivery.deliveryId === payload.deliveryId || delivery.taskId === payload.taskId)) {
+      throw new DomainError("InvalidClockmakerInformationDeliveredPayload", "Clockmaker delivery and task must be unique");
+    }
   }
   const validation = validateClockmakerInformationAgainstCanonicalState({
     delivery: payload, firstNightTaskPlan: state.firstNightTaskPlan, ...(state.firstNightTaskProgress === undefined ? {} : { firstNightTaskProgress: state.firstNightTaskProgress }),
