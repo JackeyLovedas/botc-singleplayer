@@ -70,3 +70,12 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Seamstress is overall `PARTIAL`, never `COMPLETE`. Other-night recurrence, life/revival, Travellers, registration, Barista, No Dashii poison derivation, AI choice, UI, Electron, SQLite, and production persistence remain unsupported.
 - This governed autopilot run completed its maximum three slices (2B13 through 2B15) and is paused with no active next slice.
 - See `docs/implementation/phase-3-slice-2b15-status.md` for the exact implemented boundary, rule traceability, exclusions, and verification evidence.
+
+## Slice 2B16 Closeout
+
+- Phase Three Slice 2B16 merged through PR #18 at merge SHA `8a7ba648513a84e3a91dcd2d268634440cf27585`.
+- The accepted feature HEAD is `8f88250273cd119089ba3529aa27724d99d11306`; its push and pull-request product CI passed, and both merge-SHA main/tag push runs passed.
+- Cerenovus effective-only first-night choice, madness marker, target-private instruction, settlement, semantic provenance validation, and historical target projection are accepted.
+- Cerenovus remains `PARTIAL`. Source-impaired behavior remains `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY` and fail-closed; no generic impairment source was added.
+- Drunk/poison simulation, Vortox runtime, character/alignment lifecycle, actual madness judgment, execution/death/cleanup, other-night recurrence, gained-Cerenovus interactions, UI, Electron, persistence, and Slice 2B17 remain unsupported.
+- This governed run completed its configured maximum of one slice and is paused. See `docs/implementation/phase-3-slice-2b16-status.md` and the verbatim final-review archives in `docs/reviews/`.

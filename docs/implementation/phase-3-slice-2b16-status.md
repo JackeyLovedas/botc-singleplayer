@@ -1,42 +1,49 @@
-# Phase 3 Slice 2B16 Status: Repair Round 2
+# Phase 3 Slice 2B16 Status: Accepted
 
-## Status
+## Delivery
 
-Round `2 / 2` implementation and local validation are complete. PR #18 remains open. The old frozen HEAD `45aabfe825d45329a80a178a943cce3bb6491ce1`, its successful CI and its double-fix-required review become historical when this repair is committed.
+- PR [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18) merged at `2026-07-11T05:57:01Z`.
+- Frozen feature HEAD: `8f88250273cd119089ba3529aa27724d99d11306`.
+- Merge SHA: `8a7ba648513a84e3a91dcd2d268634440cf27585`.
+- Repair round: `2 / 2`.
+- Final review: `CODE_REVIEW_PASS`, `RULE_REVIEW_PASS`, `remainingBlockers = []`.
+- Overall role status: `PARTIAL`.
 
-No future commit SHA is embedded here. After push, the branch and PR `headRefOid` define the exact frozen HEAD. Fresh exact-head CI is not claimed until GitHub reports it.
+## Final Review Archives
 
-## Provenance
+- Code comment: [original](https://github.com/JackeyLovedas/botc-singleplayer/pull/18#issuecomment-4942851565), timestamp `2026-07-11T05:56:36Z`, exact UTF-8 body SHA-256 `10c0fe3ef6853554efdf38d9c632c252fcb5a345d33bcbc294beed4f79689ff5`, archived at `docs/reviews/pr-18-code-review-final.md`.
+- Rule comment: [original](https://github.com/JackeyLovedas/botc-singleplayer/pull/18#issuecomment-4942851678), timestamp `2026-07-11T05:56:38Z`, exact UTF-8 body SHA-256 `5dcdda7c6491329f2750a0bbc01d99ccc22c7a0e23202ab36e28e91db3d043a9`, archived at `docs/reviews/pr-18-rule-review-final.md`.
 
-- Evidence: `5204b8995a40b8cee237f2b004f59f16e0751667ffdd3b9b5691265f425d9cb0`, `RULE_READY`, `PARTIAL`.
-- Round-2 design: `6d790e201347222621b8cfb5afeee77d3e0224faa4c438b9f67c1994edeb12a0`.
-- Round-2 final review: `24fc958b2df03c6a0d55d2d2cfa6e7b4a0f05d7847a3e52fec32056a75abe254`, both fix-required verdicts.
-- Round-2 design review: `3519e696c42a2b83a8822611bceb2c279390759f97193836e4009bb5e177c8f8`, `RULE_DESIGN_PASS`, blockers `[]`.
+Both archives preserve the original marker and complete report body verbatim inside explicit delimiters.
 
-## Findings Resolved
+## CI Provenance
 
-1. Canonical opportunity-ID embedded seat now equals `sourceSeatNumber` independently of task/tenure coincidence.
-2. Choice and marker shapes enforce the same semantic identity; instruction remains privacy-minimal and validates through the full stored chain.
-3. Replay assertions cover all 24 event permutations, complete metadata positions, real lifecycle mixing, duplicate settlement, opportunity mutations and every provenance field.
-4. Projection assertions cover each duplicate, each cross-link category, semantic seat mismatch, combined forgery and independent historical variants.
-5. Application assertions cover every designed metadata/construction/prospective/commit fault with atomic same-command retry.
-6. Official order is traced to external evidence, supported runtime order to the production catalog, and prior-role behavior to existing real execution/projection tests.
-7. Current-truth documents and coverage matrix no longer claim pending round-1 repair or complete role coverage.
+### productHeadCI
 
-## Local Validation
+- SHA: `8f88250273cd119089ba3529aa27724d99d11306`.
+- Push run [29141710268](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29141710268): `SUCCESS`.
+- Pull-request run [29141711653](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29141711653): `SUCCESS`.
+- Scope: frozen feature HEAD product gate.
 
-- Focused: 5 files / 296 tests passed.
-- Typecheck and file-scoped lint: passed.
-- Full lint: passed.
-- Full tests: 24 files / 824 tests passed.
-- Coverage tests: 24 files / 824 tests passed.
-- Coverage: 85.53% statements/lines, 78.90% branches, 97.73% functions.
-- Diff check: passed.
+### mergeCommitCI
 
-## Explicitly Unsupported
+- SHA: `8a7ba648513a84e3a91dcd2d268634440cf27585`.
+- Main-push run [29142021919](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29142021919): `SUCCESS`.
+- Accepted-tag-push run [29142029944](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29142029944): `SUCCESS`.
+- Scope: evidence for the exact merge commit under distinct `main` and accepted-tag push contexts.
 
-Drunk/poison production or simulation, impaired target notification, Vortox runtime, character/alignment lifecycle, madness judgment, execution, death/day accounting, marker removal/cleanup, other-night recurrence, gained Cerenovus, Goblin jinx, Vigormortis retention, UI, Electron, persistence and Slice 2B17 remain out of scope. Cerenovus remains `PARTIAL`.
+### closeoutCommitCI
 
-## Next Gate
+The closeout commit cannot self-reference its future SHA or future run identifiers. Git and GitHub are authoritative after push. The controller must wait for and verify CI attached to the exact emitted closeout SHA. Product-head or merge-commit CI is not inherited by the closeout commit.
 
-Commit and push the exact repair, update PR traceability with the actual HEAD and local results, freeze the branch, and wait for fresh exact-head push/PR Ubuntu and Windows CI. Then obtain a new complete independent final review. Do not comment, merge or tag.
+## Accepted Boundary
+
+The accepted slice implements only the reviewed effective-first-night Cerenovus choice, marker, target-private instruction, settlement, semantic ID/provenance validation, replay/batch atomicity, and historical target projection. It does not implement actual madness judgment or execution.
+
+Source-impaired behavior remains `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY` and fail-closed. No generic impairment producer, import, arbitrary event injection, or simulated target notification exists.
+
+Drunk/poison simulation, Vortox runtime, character/alignment lifecycle, execution, death/day accounting, marker removal/expiry/cleanup, other-night recurrence, gained Cerenovus, Goblin jinx, Vigormortis retention, UI, Electron, persistence, and Slice 2B17 remain explicitly out of scope.
+
+## Stop
+
+This governed run reached `maxSlices = 1`. Do not start Slice 2B17, create another PR or tag, or modify the accepted tag during this closeout.

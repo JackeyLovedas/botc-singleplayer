@@ -1,46 +1,34 @@
 # Current Task
 
-## Slice 2B16 Repair Round 2 — Ready To Publish
+## Completed — Slice 2B16 Closeout
 
-- Role: Cerenovus.
-- Scope authorization: `CERENOVUS_EFFECTIVE_ONLY`.
-- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18).
-- Branch: `phase-3/cerenovus-first-night-madness-marker`.
-- Historical frozen HEAD: `45aabfe825d45329a80a178a943cce3bb6491ce1`.
-- Historical exact-head push CI `29140790900`: success.
-- Historical exact-head PR CI `29140792281`: success.
-- Historical final-review verdicts: `CODE_REVIEW_FIX_REQUIRED` and `RULE_REVIEW_FIX_REQUIRED`.
+- Slice: `2B16`, Cerenovus effective-only first-night madness marker and private instruction.
+- Status: accepted and merged through [PR #18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18).
+- Frozen feature HEAD: `8f88250273cd119089ba3529aa27724d99d11306`.
+- Merge SHA: `8a7ba648513a84e3a91dcd2d268634440cf27585`.
+- Branch: `main`.
+- Active PR: none.
 - Repair round: `2 / 2`.
-- `reviewedHead`: null until a new frozen HEAD receives complete independent final review.
+- This governed run reached `maxSlices = 1`; Slice 2B17 is not started or authorized.
 
-## Rule And Design Gate
+## Final Review
 
-- Evidence SHA-256: `5204b8995a40b8cee237f2b004f59f16e0751667ffdd3b9b5691265f425d9cb0`; `RULE_READY`; `PARTIAL`.
-- Round-2 design SHA-256: `6d790e201347222621b8cfb5afeee77d3e0224faa4c438b9f67c1994edeb12a0`.
-- Round-2 final-review report SHA-256: `24fc958b2df03c6a0d55d2d2cfa6e7b4a0f05d7847a3e52fec32056a75abe254`.
-- Round-2 design-review SHA-256: `3519e696c42a2b83a8822611bceb2c279390759f97193836e4009bb5e177c8f8`; `RULE_DESIGN_PASS`; blockers `[]`.
+- Independent verdicts: `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`.
+- `remainingBlockers = []`.
+- Exact GitHub comments are archived at:
+  - `docs/reviews/pr-18-code-review-final.md`
+  - `docs/reviews/pr-18-rule-review-final.md`
 
-## Repair Result
+## CI Provenance
 
-- Canonical Cerenovus opportunity IDs bind their embedded seat to `sourceSeatNumber` in opportunity, choice and marker validation.
-- Instruction privacy is unchanged and source identity remains bound through the complete stored chain.
-- Replay directly covers one canonical plus all 23 noncanonical permutations, batch/command/version/all sequence positions, a real metadata-aligned `PhaseTransitioned`, duplicate settlement, stored-opportunity mutations and full choice provenance.
-- Projection directly covers semantic seat mismatch, every duplicate class, independent cross-links, a combined forgery and independent later source/target role/alignment/impairment variants.
-- Application directly covers batch ID, all four event-ID positions, all four clock positions, event construction, prospective corruption, pre-commit and during-commit retry boundaries.
-- Official night order remains external evidence; supported runtime subset order remains a real catalog test.
-- Prior-role regression traceability references existing real execution and projection tests instead of a task-presence proxy.
-- Cerenovus remains `PARTIAL` and every explicit out-of-scope item remains unimplemented.
+- `productHeadCI`: feature SHA `8f88250273cd119089ba3529aa27724d99d11306`; push run `29141710268` and PR run `29141711653`; both `SUCCESS`.
+- `mergeCommitCI`: merge SHA `8a7ba648513a84e3a91dcd2d268634440cf27585`; main-push run `29142021919` and accepted-tag-push run `29142029944`; both `SUCCESS`.
+- `closeoutCommitCI`: pending. The closeout commit cannot embed its own future SHA or run identifiers. Git/GitHub become authoritative after push, and the controller must verify CI for that exact emitted SHA without inheriting earlier status.
 
-## Local Gates
+## Preserved Boundary
 
-- Focused: 5 files / 296 tests passed.
-- `pnpm typecheck`: passed.
-- File-scoped lint and `pnpm lint`: passed.
-- `pnpm test`: 24 files / 824 tests passed.
-- `pnpm test:coverage`: 24 files / 824 tests passed.
-- Coverage: 85.53% statements/lines, 78.90% branches, 97.73% functions.
-- `git diff --check`: passed.
+Cerenovus remains `PARTIAL`. Source-impaired behavior remains `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY` and fail-closed; there is no generic impairment producer, import, or arbitrary injection. Drunk/poison simulation, Vortox runtime, character/alignment lifecycle, madness judgment, execution/death/day accounting, marker cleanup, other-night recurrence, gained Cerenovus, Goblin jinx, Vigormortis retention, UI, Electron, persistence, and Slice 2B17 remain out of scope.
 
-## Next Gate
+## Stop Condition
 
-Commit and push the exact round-2 repair with required attribution, update PR #18, freeze the resulting HEAD, and require fresh exact-head Ubuntu/Windows push and PR CI. Then obtain one complete independent final review with both pass verdicts. Do not merge, comment, tag or start Slice 2B17.
+After the single docs-only closeout commit is pushed, wait for exact-closeout-SHA CI and report it. Do not create a PR or tag, modify the accepted tag, or start Slice 2B17.

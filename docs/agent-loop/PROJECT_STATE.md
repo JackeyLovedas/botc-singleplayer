@@ -3,36 +3,32 @@
 ## Phase
 
 - Phase 3 — controlled vertical slices.
-- Completed and accepted: 2B13, 2B14 and 2B15.
-- Active: 2B16 Cerenovus effective-only, repair round `2 / 2`.
-- No Slice 2B17 work is authorized.
+- Completed and accepted: 2B13, 2B14, 2B15, and 2B16.
+- Current governed run: completed at its configured maximum of one slice.
+- No active slice, feature branch, or PR. Slice 2B17 is not started.
 
-## Current Truth
+## Slice 2B16 Acceptance
 
-- Branch: `phase-3/cerenovus-first-night-madness-marker`.
-- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18), open and non-draft.
-- Historical reviewed HEAD `45aabfe825d45329a80a178a943cce3bb6491ce1` and its successful CI are superseded by round-2 repair work.
-- Its complete final review returned `CODE_REVIEW_FIX_REQUIRED` and `RULE_REVIEW_FIX_REQUIRED` and is preserved verbatim.
-- `reviewedHead` is null for the new repair until complete final review.
+- PR: [#18](https://github.com/JackeyLovedas/botc-singleplayer/pull/18), merged.
+- Frozen feature HEAD: `8f88250273cd119089ba3529aa27724d99d11306`.
+- Merge SHA: `8a7ba648513a84e3a91dcd2d268634440cf27585`.
+- Final review: `CODE_REVIEW_PASS`, `RULE_REVIEW_PASS`, `remainingBlockers = []`.
+- Both original GitHub review comments are archived verbatim in `docs/reviews/` with original URL, timestamp, and exact UTF-8 body SHA-256.
+
+## CI Provenance
+
+- Product feature gate: runs `29141710268` and `29141711653` succeeded for exact feature SHA `8f88250273cd119089ba3529aa27724d99d11306`.
+- Merge evidence: main-push run `29142021919` and accepted-tag-push run `29142029944` succeeded for exact merge SHA `8a7ba648513a84e3a91dcd2d268634440cf27585`.
+- Closeout evidence: not self-recorded. The controller must use Git/GitHub after push to identify the exact closeout SHA and wait for CI attached to that SHA. No status is inherited across commits.
 
 ## Rule And Coverage Truth
 
-- Evidence `5204b8995a40b8cee237f2b004f59f16e0751667ffdd3b9b5691265f425d9cb0`: `RULE_READY`, no conflict, `PARTIAL`.
-- Round-2 design `6d790e201347222621b8cfb5afeee77d3e0224faa4c438b9f67c1994edeb12a0`.
-- Round-2 design review `3519e696c42a2b83a8822611bceb2c279390759f97193836e4009bb5e177c8f8`: `RULE_DESIGN_PASS`, blockers `[]`.
-- Effective-only choice, marker, target instruction and settlement exist.
-- Canonical opportunity embedded-seat, source, task, tenure, ability and stored-chain binding are implemented and directly tested.
-- Historical target-only projection remains `PARTIAL`.
-- Drunk/poison simulation remains `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY`, not immunity.
-- Vortox, character/alignment lifecycle, death, cleanup, Storyteller judgment, execution and other-night recurrence remain unimplemented.
+- Cerenovus effective-only first-night choice, madness marker, private instruction, settlement, semantic opportunity identity, provenance chain, replay validation, and target-only historical projection are accepted.
+- Cerenovus remains `PARTIAL`, never `COMPLETE`.
+- Source-impaired handling is `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY` and fail-closed, not immunity.
+- No generic impairment source exists.
+- Drunk/poison simulation, Vortox runtime, character/alignment lifecycle, madness judgment, execution, death, cleanup, recurrence, gained-Cerenovus, jinx, UI, persistence, and Slice 2B17 remain unsupported.
 
-## Validation
+## Pause
 
-- Focused: 5 files / 296 tests passed.
-- Full: 24 files / 824 tests passed.
-- Coverage: 24 files / 824 tests passed; 85.53% statements/lines, 78.90% branches, 97.73% functions.
-- Typecheck, file lint, full lint and diff check passed.
-
-## Delivery Gate
-
-Publish one attributed repair commit without embedding its future SHA in repository documents. After push, Git/PR `headRefOid` is the exact HEAD authority. Only GitHub CI attached to that exact SHA counts. Freeze the branch, wait for all Ubuntu/Windows checks, then request one complete independent final code/rule review. No merge, review comment, tag or next slice is authorized.
+Complete the single docs-only closeout and verify its exact-SHA CI. Then remain paused until a new explicit user goal or controller authorization.
