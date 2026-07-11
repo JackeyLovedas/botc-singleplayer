@@ -18,6 +18,9 @@ import type {
   SnakeCharmerTargetChosenPayload,
   DreamerInformationDeliveredPayload,
   DreamerTargetChosenPayload,
+  CerenovusChoiceRecordedPayload,
+  CerenovusMadnessInstructionDeliveredPayload,
+  CerenovusMadnessMarkedPayload,
   SeamstressAbilitySpentPayload,
   SeamstressInformationDeliveredPayload,
   SeamstressTargetsChosenPayload,
@@ -26,6 +29,17 @@ import type {
   WitchTargetChosenPayload,
   SetupGeneratedPayload
 } from "./events.js";
+import {
+  appendCerenovusChoice,
+  appendCerenovusInstruction,
+  appendCerenovusMarker,
+  evaluateCerenovusEffectiveOnlyCapability,
+  findCerenovusOpportunity,
+  hasCerenovusChainForSettlement,
+  validateCerenovusChoiceAgainstState,
+  validateCerenovusInstructionAgainstChain,
+  validateCerenovusMarkerAgainstChoice
+} from "./cerenovus.js";
 import {
   appendEvilTwinPair,
   cloneEvilTwinInformationDeliveredPayload,
@@ -43,6 +57,7 @@ import {
   closeFirstNightActionOpportunity,
   closeSeamstressInformationOpportunity,
   closeSeamstressFirstNightActionOpportunity,
+  closeCerenovusFirstNightActionOpportunity,
   findFirstNightActionOpportunityById,
   hasClosedPhilosopherOpportunityForSettlement,
   hasClosedSeamstressOpportunityForSettlement,
@@ -1403,6 +1418,69 @@ const validateSeamstressInformationDeliveredPayloadForState = (
   if (!validation.valid) throw new DomainError("InvalidSeamstressInformationDeliveredPayload", validation.reason);
 };
 
+const validateCerenovusChoiceRecordedPayloadForState = (state: GameState, payload: CerenovusChoiceRecordedPayload): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 || state.setup === undefined ||
+      state.roster === undefined || state.currentCharacterState === undefined || state.firstNightTaskPlan === undefined ||
+      state.seamstressRoleTenureState === undefined) {
+    throw new DomainError("InvalidCerenovusChoiceRecordedPayload", "Cerenovus choice requires first-night canonical source state");
+  }
+  const opportunityMatches = state.firstNightActionOpportunities?.opportunities.filter((entry) =>
+    entry.opportunityId === payload.opportunityId && entry.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION"
+  ) ?? [];
+  const opportunity = findCerenovusOpportunity(state.firstNightActionOpportunities, payload.opportunityId);
+  if (opportunityMatches.length !== 1 || opportunity === undefined || opportunity.opportunityStatus !== "OPEN") {
+    throw new DomainError("InvalidCerenovusChoiceRecordedPayload", "Cerenovus choice requires one exact open matching opportunity");
+  }
+  const validation = validateCerenovusChoiceAgainstState({
+    choice: payload,
+    opportunity,
+    roster: state.roster.entries,
+    setup: state.setup,
+    roleTenures: state.seamstressRoleTenureState
+  });
+  const capability = evaluateCerenovusEffectiveOnlyCapability({ sourcePlayerId: opportunity.sourcePlayerId, abilityImpairments: state.abilityImpairments });
+  const tenures = state.seamstressRoleTenureState.records.filter((entry) => entry.roleTenureId === opportunity.sourceRoleTenureId);
+  const tenure = tenures[0];
+  const currentSources = state.currentCharacterState.entries.filter((entry) =>
+    entry.playerId === opportunity.sourcePlayerId && entry.seatNumber === opportunity.sourceSeatNumber
+  );
+  const currentSource = currentSources[0];
+  const taskMatches = state.firstNightTaskPlan.tasks.filter((entry) => entry.taskId === opportunity.taskId);
+  const task = taskMatches[0];
+  const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+  const sourceAndTaskValid = currentSources.length === 1 && currentSource !== undefined && currentSource.role.roleId === "cerenovus" &&
+    sameRoleSetupSnapshot(currentSource.role, opportunity.sourceRole) && taskMatches.length === 1 && task !== undefined &&
+    task.taskType === "CERENOVUS_ACTION" && task.taskClass === "ROLE_ACTION" && task.source.kind === "ROLE" &&
+    task.source.playerId === opportunity.sourcePlayerId && task.source.seatNumber === opportunity.sourceSeatNumber &&
+    sameRoleSetupSnapshot(task.source.role, opportunity.sourceRole) && nextTask?.taskId === task.taskId;
+  if (!validation.valid || !capability.supported || tenures.length !== 1 || tenure === undefined || !sourceAndTaskValid ||
+      !isRoleTenureContinuousAcross(tenure, payload.opportunityCharacterStateRevision, payload.settlementCharacterStateRevision) ||
+      payload.settlementCharacterStateRevision !== state.currentCharacterState.revision ||
+      (state.cerenovusChoices?.choices.some((entry) => entry.choiceId === payload.choiceId || entry.opportunityId === payload.opportunityId || entry.taskId === payload.taskId) ?? false)) {
+    throw new DomainError("InvalidCerenovusChoiceRecordedPayload", validation.valid ? "Cerenovus choice tenure, revision, or uniqueness is invalid" : validation.reason);
+  }
+};
+
+const validateCerenovusMadnessMarkedPayloadForState = (state: GameState, payload: CerenovusMadnessMarkedPayload): void => {
+  const choices = state.cerenovusChoices?.choices.filter((entry) => entry.choiceId === payload.choiceId) ?? [];
+  if (choices.length !== 1 || choices[0] === undefined || (state.cerenovusMadnessMarkers?.markers.some((entry) => entry.markerId === payload.markerId || entry.choiceId === payload.choiceId) ?? false)) {
+    throw new DomainError("InvalidCerenovusMadnessMarkedPayload", "Cerenovus marker requires one unique preceding choice");
+  }
+  const validation = validateCerenovusMarkerAgainstChoice(choices[0], payload);
+  if (!validation.valid) throw new DomainError("InvalidCerenovusMadnessMarkedPayload", validation.reason);
+};
+
+const validateCerenovusMadnessInstructionDeliveredPayloadForState = (state: GameState, payload: CerenovusMadnessInstructionDeliveredPayload): void => {
+  const choices = state.cerenovusChoices?.choices.filter((entry) => entry.choiceId === payload.choiceId) ?? [];
+  const markers = state.cerenovusMadnessMarkers?.markers.filter((entry) => entry.choiceId === payload.choiceId && entry.markerId === payload.markerId) ?? [];
+  if (choices.length !== 1 || choices[0] === undefined || markers.length !== 1 || markers[0] === undefined ||
+      (state.cerenovusMadnessInstructions?.deliveries.some((entry) => entry.deliveryId === payload.deliveryId || entry.choiceId === payload.choiceId) ?? false)) {
+    throw new DomainError("InvalidCerenovusMadnessInstructionDeliveredPayload", "Cerenovus instruction requires one unique choice and marker");
+  }
+  const validation = validateCerenovusInstructionAgainstChain(choices[0], markers[0], payload);
+  if (!validation.valid) throw new DomainError("InvalidCerenovusMadnessInstructionDeliveredPayload", validation.reason);
+};
+
 const validateScheduledTaskSettledPayloadForState = (
   state: GameState,
   payload: ScheduledTaskSettledPayload
@@ -1544,6 +1622,13 @@ const validateScheduledTaskSettledPayloadForState = (
     throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled uses an unsupported Witch outcome");
   }
 
+  if (payload.taskType === "CERENOVUS_ACTION") {
+    if (!hasCerenovusChainForSettlement({ choices: state.cerenovusChoices, markers: state.cerenovusMadnessMarkers, instructions: state.cerenovusMadnessInstructions, settlement: payload })) {
+      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match one complete Cerenovus chain");
+    }
+    return;
+  }
+
   if (payload.taskType === "DREAMER_ACTION") {
     if (
       payload.outcomeType !== "DREAMER_INFORMATION_DELIVERED" ||
@@ -1568,7 +1653,7 @@ const validateScheduledTaskSettledPayloadForState = (
 
   throw new DomainError(
     "InvalidScheduledTaskSettledPayload",
-    "ScheduledTaskSettled only supports PHILOSOPHER_ACTION, SNAKE_CHARMER_ACTION, EVIL_TWIN_SETUP, WITCH_ACTION, DREAMER_ACTION, SEAMSTRESS_ACTION, MINION_INFO, and DEMON_INFO in this slice"
+    "ScheduledTaskSettled only supports represented first-night system and role actions in this slice"
   );
 };
 
@@ -1626,6 +1711,12 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidWitchDeathPendingMarkedPayload";
     case "WitchIneffectiveResolved":
       return "InvalidWitchIneffectiveResolvedPayload";
+    case "CerenovusChoiceRecorded":
+      return "InvalidCerenovusChoiceRecordedPayload";
+    case "CerenovusMadnessMarked":
+      return "InvalidCerenovusMadnessMarkedPayload";
+    case "CerenovusMadnessInstructionDelivered":
+      return "InvalidCerenovusMadnessInstructionDeliveredPayload";
     case "DreamerTargetChosen":
       return "InvalidDreamerTargetChosenPayload";
     case "DreamerInformationDelivered":
@@ -2338,6 +2429,33 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
           event.payload
         )
       };
+    }
+
+    case "CerenovusChoiceRecorded": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "CerenovusChoiceRecorded requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("InvalidCerenovusChoiceRecordedPayload", "Cerenovus choice rules baseline must match game state");
+      validateCerenovusChoiceRecordedPayloadForState(state, event.payload);
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightActionOpportunities: closeCerenovusFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
+        cerenovusChoices: appendCerenovusChoice(state.cerenovusChoices, event.payload)
+      };
+    }
+
+    case "CerenovusMadnessMarked": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "CerenovusMadnessMarked requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("InvalidCerenovusMadnessMarkedPayload", "Cerenovus marker rules baseline must match game state");
+      validateCerenovusMadnessMarkedPayloadForState(state, event.payload);
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, cerenovusMadnessMarkers: appendCerenovusMarker(state.cerenovusMadnessMarkers, event.payload) };
+    }
+
+    case "CerenovusMadnessInstructionDelivered": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "CerenovusMadnessInstructionDelivered requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("InvalidCerenovusMadnessInstructionDeliveredPayload", "Cerenovus instruction rules baseline must match game state");
+      validateCerenovusMadnessInstructionDeliveredPayloadForState(state, event.payload);
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, cerenovusMadnessInstructions: appendCerenovusInstruction(state.cerenovusMadnessInstructions, event.payload) };
     }
 
     case "DreamerTargetChosen": {

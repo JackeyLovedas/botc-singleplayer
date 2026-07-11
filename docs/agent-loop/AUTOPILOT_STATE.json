@@ -1,10 +1,54 @@
 {
-  "status": "RUNNING",
-  "currentPR": null,
-  "currentBranch": "main",
+  "status": "READY_TO_PUBLISH",
+  "currentPR": 18,
+  "currentBranch": "phase-3/cerenovus-first-night-madness-marker",
+  "currentSlice": "2B16",
   "reviewedHead": null,
-  "repairRound": 0,
+  "repairRound": 2,
+  "maxSlices": 1,
+  "maxRepairRounds": 2,
+  "rescopeAuthorization": "CERENOVUS_EFFECTIVE_ONLY",
+  "currentDesignHash": "6d790e201347222621b8cfb5afeee77d3e0224faa4c438b9f67c1994edeb12a0",
+  "designReviewHash": "3519e696c42a2b83a8822611bceb2c279390759f97193836e4009bb5e177c8f8",
+  "finalReviewRound2Hash": "24fc958b2df03c6a0d55d2d2cfa6e7b4a0f05d7847a3e52fec32056a75abe254",
   "completedSlices": ["2B13", "2B14", "2B15"],
-  "lastAction": "Materialized the independent Slice 2B16 correction-round rereview verbatim at docs/implementation/phase-3-slice-2b16-design-review-round-2.md (SHA-256 27da37850a411d9cda371a189d4d7cf1b6dcaa010bd16e6dd055a9254ceb11ac). The reviewer passed exact main@4a6fbfb349f562d9292b6343f0bb4dd125e0a1e1 against evidence SHA-256 1ee54550a4e886e27e6f665c2275f21d4d04b5d67c68eab3f1bdd598cc0594ca, design SHA-256 4f474b7ad914881a1b795432fe2d298678c1b799e1fe826b52a3fd81c030e33b, and round-1 review SHA-256 4b48eaa3d49b54b0683a8c38ce5a5e27348b4947c1f349b49e77abbe84c37825. Verdict RULE_DESIGN_PASS with remainingBlockers []; reviewed-head CI run 29104166882 succeeded. Implementation is next but remains unstarted pending controller verification and explicit authorization.",
-  "lastError": null
+  "lastAction": "Completed repair round 2 for reviewed design 6d790e201347222621b8cfb5afeee77d3e0224faa4c438b9f67c1994edeb12a0: semantic opportunity-seat binding, exhaustive direct replay/projection/application regressions, honest external-order and prior-role traceability, and current-truth synchronization. Focused 296, full 824 and coverage 824 tests passed; coverage is 85.53% statements/lines, 78.90% branches and 97.73% functions. No new exact-head CI is claimed before push.",
+  "lastError": null,
+  "blockerAudit": [
+    {
+      "kind": "CANONICAL_IMPAIRMENT_REACHABILITY",
+      "status": "RESCOPED_NOT_ERASED",
+      "finding": "Current canonical histories cannot create Philosopher-duplicate drunkenness or Snake-Charmer-hit poisoning on a still-active base Cerenovus. Directly constructed impairment sets are not canonical stored histories.",
+      "resolution": "User authorized CERENOVUS_EFFECTIVE_ONLY; impaired simulation remains unsupported and implementation requires renewed rule-design review."
+    },
+    {
+      "kind": "FINAL_REVIEW_ROUND_1",
+      "status": "REPAIR_REQUIRED",
+      "reviewedHead": "86d973485e940c0ef0469dd169db3ab1dc7a417d",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "designRepairStatus": "RULE_DESIGN_PASS",
+      "blockers": [
+        "Bind every Cerenovus choice source field and tenure fact to the referenced opportunity and evaluate impairment using opportunity source.",
+        "Require canonical opportunityId runtime validation before every formatter and add hostile primitive cases.",
+        "Implement missing direct Cerenovus replay, batch, prospective, actor, target, stored-chain, metadata, and retry tests with exact test-name traceability.",
+        "Use every mandatory rule-evidence heading and record explicit sourced VortoxRules and alignmentChangeRules."
+      ]
+    },
+    {
+      "kind": "FINAL_REVIEW_ROUND_2",
+      "status": "REPAIR_IMPLEMENTED_PENDING_NEW_HEAD_GATES",
+      "reviewedHead": "45aabfe825d45329a80a178a943cce3bb6491ce1",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "designRepairStatus": "RULE_DESIGN_PASS",
+      "blockers": [
+        "Bind canonical Cerenovus opportunity ID embedded seat to sourceSeatNumber.",
+        "Replace overbroad literal-name traceability with exhaustive or honestly narrowed direct assertions.",
+        "Synchronize current-truth status and PARTIAL coverage artifacts.",
+        "Freeze a new exact HEAD, run fresh CI, and obtain complete final review."
+      ]
+    }
+  ],
+  "nextAction": "Commit and push the exact round-2 repair, update PR #18 with the actual head and results, freeze the branch, wait for exact-head Ubuntu and Windows CI, then obtain complete independent final review; do not comment, merge, tag, or start another slice"
 }

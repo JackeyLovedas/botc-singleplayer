@@ -1,5 +1,6 @@
 export * from "./character-assignment.js";
 export * from "./command.js";
+export * from "./cerenovus.js";
 export * from "./current-character-state.js";
 export * from "./deterministic-random.js";
 export * from "./domain-batch-semantics.js";

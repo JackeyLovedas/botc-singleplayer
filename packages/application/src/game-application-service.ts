@@ -36,6 +36,13 @@ import {
   createWitchIneffectiveResolvedPayload,
   createWitchIneffectiveScheduledTaskSettlement,
   createWitchTargetChosenPayload,
+  createCerenovusChoiceRecordedPayload,
+  createCerenovusMadnessInstructionDeliveredPayload,
+  createCerenovusMadnessMarkedPayload,
+  createCerenovusScheduledTaskSettlement,
+  evaluateCerenovusEffectiveOnlyCapability,
+  findCerenovusOpportunity,
+  formatCerenovusAbilityInstanceId,
   createDreamerInformationDeliveredPayload,
   createDreamerInformationDeliveredScheduledTaskSettlement,
   createDreamerTargetChosenPayload,
@@ -71,6 +78,8 @@ import {
   validatePhilosopherGoodCharacterChoice,
   validateSnakeCharmerActionDecision,
   validateWitchActionDecision,
+  validateCerenovusActionDecision,
+  validateCerenovusActionOpportunityShape,
   validateDreamerActionDecision,
   validateSeamstressActionDecisionForOpportunity,
   tryCreateEvilTwinPair,
@@ -127,6 +136,9 @@ import type {
   WitchDeathPendingPayload,
   WitchIneffectiveResolvedPayload,
   WitchTargetChosenPayload,
+  CerenovusChoiceRecordedPayload,
+  CerenovusMadnessInstructionDeliveredPayload,
+  CerenovusMadnessMarkedPayload,
   SetupGeneratedPayload,
   SetupGenerationConstraints,
   SetupGenerationFailure,
@@ -608,7 +620,8 @@ export class GameApplicationService {
       return this.recordRejected(command, commandFingerprint, rejected(command.gameId, prospective.code, prospective.message, currentGameVersion));
     }
 
-    const result = command.payload.commandType === "SubmitSeamstressAction"
+    const result = command.payload.commandType === "SubmitSeamstressAction" ||
+      command.payload.commandType === "SubmitCerenovusAction"
       ? acceptedWithEventSummary(command.gameId, batch.committedGameVersion, batch.events)
       : accepted(command.gameId, batch.committedGameVersion, batch.events);
     const receipt: FingerprintedCommandReceipt<typeof result> = {
@@ -1557,6 +1570,62 @@ export class GameApplicationService {
         return undefined;
       }
 
+      case "SubmitCerenovusAction": {
+        const payload = command.payload;
+        if (state === undefined) return { code: "GameNotCreated", message: "SubmitCerenovusAction requires an existing game" };
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: `SubmitCerenovusAction cannot execute during ${state.phase}` };
+        }
+        if (state.firstNight === undefined) return { code: "FirstNightNotInitialized", message: "SubmitCerenovusAction requires first night initialization" };
+        if (state.firstNightTaskPlan === undefined) return { code: "FirstNightTaskPlanNotCreated", message: "SubmitCerenovusAction requires a first-night task plan" };
+        if (state.setup === undefined) return { code: "SetupNotGenerated", message: "SubmitCerenovusAction requires setup role catalog" };
+        if (state.currentCharacterState === undefined) return { code: "CharacterAssignmentNotCreated", message: "SubmitCerenovusAction requires current character state" };
+        if (state.roster === undefined) return { code: "PlayerRosterNotCreated", message: "SubmitCerenovusAction requires player roster" };
+        if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, ["commandType", "decision", "opportunityId", "taskId"])) {
+          return { code: "InvalidCerenovusActionDecision", message: "SubmitCerenovusAction payload must have exact runtime shape without hidden fields" };
+        }
+        if (command.actor.kind !== "human" && command.actor.kind !== "ai") {
+          return { code: "ActorNotAllowed", message: `${command.actor.kind} actors cannot execute SubmitCerenovusAction` };
+        }
+        const decisionValidation = validateCerenovusActionDecision(payload.decision);
+        if (!decisionValidation.valid) return { code: "InvalidCerenovusActionDecision", message: decisionValidation.reason };
+        const targetTask = state.firstNightTaskPlan.tasks.find((task) => task.taskId === payload.taskId);
+        if (targetTask === undefined) return { code: "ScheduledTaskNotFound", message: `Scheduled task ${payload.taskId} does not exist in the first-night task plan` };
+        const opportunity = findCerenovusOpportunity(state.firstNightActionOpportunities, payload.opportunityId);
+        if (opportunity === undefined) return { code: "ActionOpportunityNotFound", message: `Cerenovus opportunity ${payload.opportunityId} does not exist` };
+        const opportunityShape = validateCerenovusActionOpportunityShape(opportunity);
+        if (!opportunityShape.valid) return { code: "ActionSourceNoLongerValid", message: opportunityShape.reason };
+        if (opportunity.opportunityStatus === "CLOSED") return { code: "ActionOpportunityAlreadyClosed", message: `Action opportunity ${payload.opportunityId} is already closed` };
+        if (command.actor.playerId !== opportunity.sourcePlayerId) return { code: "ActorPlayerMismatch", message: "SubmitCerenovusAction actor must match the opportunity source player" };
+        if (opportunity.taskId !== payload.taskId) return { code: "ScheduledTaskNotNext", message: "SubmitCerenovusAction taskId must match its opportunity" };
+        if (isFirstNightTaskSettled(state.firstNightTaskProgress, payload.taskId)) return { code: "ScheduledTaskAlreadySettled", message: `Scheduled task ${payload.taskId} is already settled` };
+        const nextTask = getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+        if (nextTask?.taskId !== targetTask.taskId) return { code: "ScheduledTaskNotNext", message: `Scheduled task ${targetTask.taskId} is not the next unsettled first-night task` };
+        const currentSource = state.currentCharacterState.entries.find((entry) => entry.playerId === opportunity.sourcePlayerId && entry.seatNumber === opportunity.sourceSeatNumber);
+        const tenure = state.seamstressRoleTenureState?.records.filter((entry) => entry.roleTenureId === opportunity.sourceRoleTenureId) ?? [];
+        const sourceValid = targetTask.taskType === "CERENOVUS_ACTION" && targetTask.taskClass === "ROLE_ACTION" &&
+          targetTask.source.kind === "ROLE" && targetTask.source.role.roleId === "cerenovus" &&
+          targetTask.source.playerId === opportunity.sourcePlayerId && targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+          sameRoleSetupSnapshot(targetTask.source.role, opportunity.sourceRole) && currentSource?.role.roleId === "cerenovus" &&
+          currentSource !== undefined && sameRoleSetupSnapshot(currentSource.role, opportunity.sourceRole) && tenure.length === 1 && tenure[0] !== undefined &&
+          tenure[0].playerId === opportunity.sourcePlayerId && tenure[0].seatNumber === opportunity.sourceSeatNumber &&
+          tenure[0].roleId === "cerenovus" &&
+          isRoleTenureContinuousAcross(tenure[0], opportunity.sourceCharacterStateRevision, state.currentCharacterState.revision) &&
+          formatCerenovusAbilityInstanceId({ roleTenureId: tenure[0].roleTenureId }) === opportunity.sourceAbilityInstanceId &&
+          opportunity.abilitySource.kind === "ROLE_TENURE" && opportunity.abilitySource.abilityRoleId === "cerenovus" &&
+          opportunity.abilitySource.roleTenureId === tenure[0].roleTenureId &&
+          opportunity.abilitySource.acquiredCharacterStateRevision === tenure[0].acquiredCharacterStateRevision;
+        if (!sourceValid) return { code: "ActionSourceNoLongerValid", message: "SubmitCerenovusAction source tenure or ability instance is no longer the same active base Cerenovus" };
+        if (!state.roster.entries.some((entry) => entry.playerId === payload.decision.targetPlayerId)) {
+          return { code: "InvalidCerenovusTarget", message: "SubmitCerenovusAction target must be a modeled roster player" };
+        }
+        const selectedRole = state.setup.roleCatalogSnapshot.roles.find((role) => role.roleId === payload.decision.chosenRoleId);
+        if (selectedRole === undefined || (selectedRole.characterType !== "TOWNSFOLK" && selectedRole.characterType !== "OUTSIDER")) {
+          return { code: "InvalidCerenovusCharacter", message: "SubmitCerenovusAction character must be an on-script Townsfolk or Outsider" };
+        }
+        return undefined;
+      }
+
       case "SubmitDreamerAction": {
         if (state === undefined) {
           return { code: "GameNotCreated", message: "SubmitDreamerAction requires an existing game" };
@@ -1907,6 +1976,25 @@ export class GameApplicationService {
     readonly details: InitialPrivateKnowledgeGenerationRejectionDetails;
   } {
     try {
+      if (command.payload.commandType === "SubmitCerenovusAction" && state !== undefined) {
+        const opportunity = findCerenovusOpportunity(state.firstNightActionOpportunities, command.payload.opportunityId);
+        if (opportunity !== undefined) {
+          const capability = evaluateCerenovusEffectiveOnlyCapability({
+            sourcePlayerId: opportunity.sourcePlayerId,
+            abilityImpairments: state.abilityImpairments
+          });
+          if (!capability.supported) {
+            return failed(
+              command.gameId,
+              "ApplicationNotConfigured",
+              "Cerenovus effective-only settlement is not configured for the current canonical state",
+              "first-night-role-action",
+              currentGameVersion
+            );
+          }
+        }
+      }
+
       const generatedSetup = this.generateSetupOrReject(command, state, currentGameVersion);
       if (generatedSetup !== undefined && "code" in generatedSetup) {
         return generatedSetup;
@@ -1956,6 +2044,7 @@ export class GameApplicationService {
           command.payload.commandType === "SubmitPhilosopherAction" ||
           command.payload.commandType === "SubmitSnakeCharmerAction" ||
           command.payload.commandType === "SubmitWitchAction" ||
+          command.payload.commandType === "SubmitCerenovusAction" ||
           command.payload.commandType === "SubmitDreamerAction" ||
           command.payload.commandType === "SubmitSeamstressAction"
         ) {
@@ -3143,6 +3232,34 @@ export class GameApplicationService {
         ];
       }
 
+      case "SubmitCerenovusAction": {
+        if (state === undefined || state.setup === undefined || state.currentCharacterState === undefined || state.roster === undefined) {
+          throw new DomainError("InvalidDomainBatchSemantics", "SubmitCerenovusAction event creation requires setup, current character state, and roster");
+        }
+        const opportunity = findCerenovusOpportunity(state.firstNightActionOpportunities, command.payload.opportunityId);
+        if (opportunity === undefined || opportunity.opportunityStatus !== "OPEN") {
+          throw new DomainError("InvalidCerenovusChoiceRecordedPayload", "SubmitCerenovusAction requires one open Cerenovus opportunity");
+        }
+        const choice = createCerenovusChoiceRecordedPayload({
+          rulesBaselineVersion: RULES_BASELINE_VERSION,
+          opportunity,
+          settlementCharacterStateRevision: state.currentCharacterState.revision,
+          targetPlayerId: command.payload.decision.targetPlayerId,
+          chosenRoleId: command.payload.decision.chosenRoleId,
+          roster: state.roster.entries,
+          setup: state.setup
+        });
+        const marker = createCerenovusMadnessMarkedPayload(choice);
+        const instruction = createCerenovusMadnessInstructionDeliveredPayload(choice, marker);
+        const settlement = createCerenovusScheduledTaskSettlement(choice);
+        return [
+          { ...common(firstEventSequence), eventType: "CerenovusChoiceRecorded", payload: choice satisfies CerenovusChoiceRecordedPayload },
+          { ...common(firstEventSequence + 1), eventType: "CerenovusMadnessMarked", payload: marker satisfies CerenovusMadnessMarkedPayload },
+          { ...common(firstEventSequence + 2), eventType: "CerenovusMadnessInstructionDelivered", payload: instruction satisfies CerenovusMadnessInstructionDeliveredPayload },
+          { ...common(firstEventSequence + 3), eventType: "ScheduledTaskSettled", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, ...settlement } satisfies ScheduledTaskSettledPayload }
+        ];
+      }
+
       case "SubmitDreamerAction": {
         if (
           state === undefined ||
@@ -3538,6 +3655,7 @@ export class GameApplicationService {
         command.payload.commandType === "SubmitPhilosopherAction" ||
         command.payload.commandType === "SubmitSnakeCharmerAction" ||
         command.payload.commandType === "SubmitWitchAction" ||
+        command.payload.commandType === "SubmitCerenovusAction" ||
         command.payload.commandType === "SubmitDreamerAction" ||
         command.payload.commandType === "SubmitSeamstressAction"
       ) {

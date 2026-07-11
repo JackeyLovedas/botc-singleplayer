@@ -3,6 +3,7 @@ import type { PhilosopherActionDecision, SeamstressActionDecision } from "./firs
 import type { SnakeCharmerActionDecision } from "./snake-charmer.js";
 import type { WitchActionDecision } from "./witch.js";
 import type { DreamerActionDecision } from "./dreamer.js";
+import type { CerenovusActionDecision } from "./cerenovus.js";
 import type { SetupGenerationConstraints } from "./setup-types.js";
 
 export type HumanActor = {
@@ -120,6 +121,13 @@ export type SubmitDreamerActionCommandPayload = {
   readonly decision: DreamerActionDecision;
 };
 
+export type SubmitCerenovusActionCommandPayload = {
+  readonly commandType: "SubmitCerenovusAction";
+  readonly taskId: ScheduledTaskId;
+  readonly opportunityId: ActionOpportunityId;
+  readonly decision: CerenovusActionDecision;
+};
+
 export type SubmitSeamstressActionCommandPayload = {
   readonly commandType: "SubmitSeamstressAction";
   readonly taskId: ScheduledTaskId;
@@ -141,6 +149,7 @@ export type SupportedCommandPayload =
   | SubmitPhilosopherActionCommandPayload
   | SubmitSnakeCharmerActionCommandPayload
   | SubmitWitchActionCommandPayload
+  | SubmitCerenovusActionCommandPayload
   | SubmitDreamerActionCommandPayload
   | SubmitSeamstressActionCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
@@ -156,6 +165,7 @@ export type OpenFirstNightRoleActionOpportunityCommand = CommandEnvelope<OpenFir
 export type SubmitPhilosopherActionCommand = CommandEnvelope<SubmitPhilosopherActionCommandPayload>;
 export type SubmitSnakeCharmerActionCommand = CommandEnvelope<SubmitSnakeCharmerActionCommandPayload>;
 export type SubmitWitchActionCommand = CommandEnvelope<SubmitWitchActionCommandPayload>;
+export type SubmitCerenovusActionCommand = CommandEnvelope<SubmitCerenovusActionCommandPayload>;
 export type SubmitDreamerActionCommand = CommandEnvelope<SubmitDreamerActionCommandPayload>;
 export type SubmitSeamstressActionCommand = CommandEnvelope<SubmitSeamstressActionCommandPayload>;
 export type SupportedCommandEnvelope =
@@ -172,5 +182,6 @@ export type SupportedCommandEnvelope =
   | SubmitPhilosopherActionCommand
   | SubmitSnakeCharmerActionCommand
   | SubmitWitchActionCommand
+  | SubmitCerenovusActionCommand
   | SubmitDreamerActionCommand
   | SubmitSeamstressActionCommand;

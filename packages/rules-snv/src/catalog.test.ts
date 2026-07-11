@@ -188,6 +188,12 @@ describe("Sects & Violets role catalog", () => {
 describe("Sects & Violets first-night task catalog", () => {
   const definitions = SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG.definitions;
 
+  it("orders the supported subset Witch then Cerenovus then Clockmaker without claiming official adjacency", () => {
+    const supported = definitions.map((definition) => definition.taskType);
+    expect(supported.indexOf("WITCH_ACTION")).toBeLessThan(supported.indexOf("CERENOVUS_ACTION"));
+    expect(supported.indexOf("CERENOVUS_ACTION")).toBeLessThan(supported.indexOf("CLOCKMAKER_INFORMATION"));
+  });
+
   it("contains exactly 11 canonical first-night task definitions", () => {
     expect(definitions.map((definition) => definition.taskType)).toStrictEqual([
       "PHILOSOPHER_ACTION",

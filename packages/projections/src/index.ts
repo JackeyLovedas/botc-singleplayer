@@ -5,6 +5,8 @@ import {
   MINION_INFORMATION_KNOWLEDGE_STAGE,
   DEMON_INFORMATION_KNOWLEDGE_STAGE,
   DREAMER_INFORMATION_STAGE,
+  CERENOVUS_INFORMATION_STAGE,
+  CERENOVUS_MADNESS_INSTRUCTION_MODEL_VERSION,
   SEAMSTRESS_INFORMATION_STAGE,
   PRIVATE_VIEW_SEAMSTRESS_MODEL_VERSION,
   EVIL_TWIN_SETUP_KNOWLEDGE_STAGE,
@@ -25,6 +27,14 @@ import {
   validateStoredEvilTwinInformationDelivered,
   validateStoredEvilTwinPairEstablished,
   validateStoredSeamstressInformationDelivered,
+  validateCerenovusActionOpportunityShape,
+  validateCerenovusChoiceAgainstState,
+  validateCerenovusChoiceRecordedPayloadShape,
+  validateCerenovusInstructionAgainstChain,
+  validateCerenovusMadnessInstructionDeliveredPayloadShape,
+  validateCerenovusMarkerAgainstChoice,
+  validateCerenovusMadnessMarkedPayloadShape,
+  validateScheduledTaskSettlementShape,
   isSeamstressActionOpportunityV2,
   sameRoleSetupSnapshot,
   validateSeamstressActionOpportunityV2Shape
@@ -39,6 +49,9 @@ import type {
   PlayerPrivateKnowledgeView,
   RoleSetupSnapshot,
   ScheduledTaskSettlement,
+  CerenovusChoiceRecordedPayload,
+  CerenovusMadnessInstructionDeliveredPayload,
+  CerenovusMadnessMarkedPayload,
   SeamstressInformationDeliveredPayload
 } from "@botc/domain-core";
 
@@ -361,6 +374,90 @@ const requireDeliveredSeamstressInformationIsSettled = (state: GameState): void 
   }
 };
 
+const requireDeliveredCerenovusMadnessInstructionsAreSettled = (
+  state: GameState
+): readonly CerenovusMadnessInstructionDeliveredPayload[] => {
+  const cerenovusSettlements = storedFirstNightSettlements(state).filter((settlement) =>
+    isPlainRecord(settlement) && settlement.taskType === "CERENOVUS_ACTION"
+  );
+  if (state.cerenovusChoices === undefined && state.cerenovusMadnessMarkers === undefined &&
+      state.cerenovusMadnessInstructions === undefined && cerenovusSettlements.length === 0) return [];
+  if (state.setup === undefined || state.roster === undefined || state.firstNightTaskPlan === undefined || state.seamstressRoleTenureState === undefined ||
+      state.firstNightActionOpportunities === undefined || !isPlainRecord(state.cerenovusChoices) ||
+      !Array.isArray(state.cerenovusChoices.choices) || !isPlainRecord(state.cerenovusMadnessMarkers) ||
+      !Array.isArray(state.cerenovusMadnessMarkers.markers) || !isPlainRecord(state.cerenovusMadnessInstructions) ||
+      !Array.isArray(state.cerenovusMadnessInstructions.deliveries)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Cerenovus projection requires complete stored chain collections and canonical setup state");
+  }
+  const choices: readonly unknown[] = state.cerenovusChoices.choices;
+  const markers: readonly unknown[] = state.cerenovusMadnessMarkers.markers;
+  const instructions: readonly unknown[] = state.cerenovusMadnessInstructions.deliveries;
+  const unique = (values: readonly unknown[]): boolean => values.every((value, index) =>
+    typeof value === "string" && value.length > 0 && values.indexOf(value) === index
+  );
+  const choiceIds = choices.map((entry) => isPlainRecord(entry) ? entry.choiceId : undefined);
+  const choiceOpportunityIds = choices.map((entry) => isPlainRecord(entry) ? entry.opportunityId : undefined);
+  const choiceTaskIds = choices.map((entry) => isPlainRecord(entry) ? entry.taskId : undefined);
+  const markerIds = markers.map((entry) => isPlainRecord(entry) ? entry.markerId : undefined);
+  const markerChoiceIds = markers.map((entry) => isPlainRecord(entry) ? entry.choiceId : undefined);
+  const deliveryIds = instructions.map((entry) => isPlainRecord(entry) ? entry.deliveryId : undefined);
+  const deliveryChoiceIds = instructions.map((entry) => isPlainRecord(entry) ? entry.choiceId : undefined);
+  const settlementTaskIds = cerenovusSettlements.map((entry) => isPlainRecord(entry) ? entry.taskId : undefined);
+  if (![choiceIds, choiceOpportunityIds, choiceTaskIds, markerIds, markerChoiceIds, deliveryIds, deliveryChoiceIds, settlementTaskIds].every(unique) ||
+      choices.length !== markers.length || choices.length !== instructions.length || choices.length !== cerenovusSettlements.length) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Cerenovus stored facts must form globally unique one-to-one chains");
+  }
+
+  const validatedInstructions: CerenovusMadnessInstructionDeliveredPayload[] = [];
+  for (const rawChoice of choices) {
+    const choiceShape = validateCerenovusChoiceRecordedPayloadShape(rawChoice);
+    if (!choiceShape.valid) throw new DomainError("PrivateKnowledgeUnavailable", choiceShape.reason);
+    const choice = rawChoice as CerenovusChoiceRecordedPayload;
+    const matchingOpportunities = state.firstNightActionOpportunities.opportunities.filter((entry) => entry.opportunityId === choice.opportunityId);
+    const opportunity = matchingOpportunities[0];
+    const opportunityShape = validateCerenovusActionOpportunityShape(opportunity);
+    const task = state.firstNightTaskPlan.tasks.filter((entry) => entry.taskId === choice.taskId);
+    if (matchingOpportunities.length !== 1 || opportunity === undefined || !opportunityShape.valid ||
+        opportunity.opportunityKind !== "CERENOVUS_FIRST_NIGHT_ACTION" || opportunity.opportunityStatus !== "CLOSED" ||
+        task.length !== 1 || task[0]?.taskType !== "CERENOVUS_ACTION" || task[0].source.kind !== "ROLE" ||
+        task[0].source.playerId !== choice.sourcePlayerId || task[0].source.seatNumber !== choice.sourceSeatNumber ||
+        !sameRoleSetupSnapshot(task[0].source.role, choice.sourceRole)) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Cerenovus choice requires one exact closed opportunity and base task source");
+    }
+    const choiceStateValidation = validateCerenovusChoiceAgainstState({
+      choice,
+      opportunity,
+      roster: state.roster.entries,
+      setup: state.setup,
+      roleTenures: state.seamstressRoleTenureState
+    });
+    if (!choiceStateValidation.valid) throw new DomainError("PrivateKnowledgeUnavailable", choiceStateValidation.reason);
+    const matchingMarkers = markers.filter((entry) => isPlainRecord(entry) && entry.choiceId === choice.choiceId);
+    const matchingInstructions = instructions.filter((entry) => isPlainRecord(entry) && entry.choiceId === choice.choiceId);
+    const matchingSettlements = cerenovusSettlements.filter((entry) => isPlainRecord(entry) && entry.taskId === choice.taskId);
+    if (matchingMarkers.length !== 1 || matchingInstructions.length !== 1 || matchingSettlements.length !== 1) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Cerenovus choice requires one marker, instruction, and settlement");
+    }
+    const markerShape = validateCerenovusMadnessMarkedPayloadShape(matchingMarkers[0]);
+    const instructionShape = validateCerenovusMadnessInstructionDeliveredPayloadShape(matchingInstructions[0]);
+    const settlementShape = validateScheduledTaskSettlementShape(matchingSettlements[0]);
+    if (!markerShape.valid) throw new DomainError("PrivateKnowledgeUnavailable", markerShape.reason);
+    if (!instructionShape.valid) throw new DomainError("PrivateKnowledgeUnavailable", instructionShape.reason);
+    if (!settlementShape.valid) throw new DomainError("PrivateKnowledgeUnavailable", settlementShape.reason);
+    const marker = matchingMarkers[0] as CerenovusMadnessMarkedPayload;
+    const instruction = matchingInstructions[0] as CerenovusMadnessInstructionDeliveredPayload;
+    const settlement = matchingSettlements[0] as ScheduledTaskSettlement;
+    const markerLink = validateCerenovusMarkerAgainstChoice(choice, marker);
+    const instructionLink = validateCerenovusInstructionAgainstChain(choice, marker, instruction);
+    if (!markerLink.valid || !instructionLink.valid || settlement.taskType !== "CERENOVUS_ACTION" ||
+        settlement.outcomeType !== "CERENOVUS_MADNESS_MARKED" || settlement.characterStateRevision !== choice.settlementCharacterStateRevision) {
+      throw new DomainError("PrivateKnowledgeUnavailable", !markerLink.valid ? markerLink.reason : !instructionLink.valid ? instructionLink.reason : "Cerenovus settlement does not match its complete chain");
+    }
+    validatedInstructions.push(instruction);
+  }
+  return validatedInstructions;
+};
+
 const deliveredStagesForViewer = (
   state: GameState,
   viewerPlayerId: PlayerId
@@ -376,6 +473,10 @@ const deliveredStagesForViewer = (
 
   if (state.evilTwinInformation?.entries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
     stages.push(EVIL_TWIN_SETUP_KNOWLEDGE_STAGE);
+  }
+
+  if (state.cerenovusMadnessInstructions?.deliveries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
+    stages.push(CERENOVUS_INFORMATION_STAGE);
   }
 
   if (state.dreamerInformation?.deliveries.some((delivery) => delivery.sourcePlayerId === viewerPlayerId) === true) {
@@ -407,6 +508,7 @@ export const buildPlayerPrivateKnowledgeView = (
 
   const deliveredTeamEntries = requireDeliveredTeamInformationIsSettled(state).filter((entry) => entry.recipientPlayerId === viewerPlayerId);
   requireDeliveredEvilTwinInformationIsSettled(state);
+  const cerenovusInstructions = requireDeliveredCerenovusMadnessInstructionsAreSettled(state);
   requireDeliveredDreamerInformationIsSettled(state);
   requireDeliveredSeamstressInformationIsSettled(state);
   const knownDemon = deliveredTeamEntries.find((entry) => entry.kind === "DEMON_IDENTITY");
@@ -417,6 +519,7 @@ export const buildPlayerPrivateKnowledgeView = (
     .filter((entry) => entry.kind === "DEMON_BLUFFS")
     .flatMap((entry) => entry.kind === "DEMON_BLUFFS" ? entry.roles.map(cloneRoleSetupSnapshot) : []);
   const evilTwinCounterpart = findEvilTwinCounterpartForViewer(state.evilTwinInformation, viewerPlayerId);
+  const cerenovusInstruction = cerenovusInstructions.find((delivery) => delivery.recipientPlayerId === viewerPlayerId);
   const dreamerDelivery = state.dreamerInformation?.deliveries.find((delivery) => delivery.sourcePlayerId === viewerPlayerId);
   const seamstressDeliveries = state.seamstressInformation?.deliveries.filter((delivery) =>
     delivery.sourcePlayerId === viewerPlayerId
@@ -440,6 +543,16 @@ export const buildPlayerPrivateKnowledgeView = (
       : {
           evilTwinCounterpart: cloneKnownPlayerReference(evilTwinCounterpart),
           evilTwinKnowledgeModelVersion: SUPPORTED_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION
+        }),
+    ...(cerenovusInstruction === undefined
+      ? {}
+      : {
+          cerenovusMadnessInstruction: {
+            selectedByCharacter: "cerenovus" as const,
+            madAboutRoleId: cerenovusInstruction.madAboutRoleId,
+            instructionWindow: cerenovusInstruction.instructionWindow
+          },
+          cerenovusKnowledgeModelVersion: CERENOVUS_MADNESS_INSTRUCTION_MODEL_VERSION
         }),
     ...(dreamerDelivery === undefined
       ? {}
