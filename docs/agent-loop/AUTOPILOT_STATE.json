@@ -17,14 +17,14 @@
   "candidateScope": "PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2",
   "currentDesignHash": null,
   "designReviewRound2Hash": null,
-  "ruleReady": false,
+  "ruleReady": true,
   "ruleDesignPass": false,
   "implementationAuthorized": false,
   "designReviewHash": null,
   "slice2B19Prohibited": true,
-  "ruleResearchVerdict": null,
-  "ruleEvidencePath": null,
-  "ruleEvidenceSha256": null,
+  "ruleResearchVerdict": "RULE_READY",
+  "ruleEvidencePath": "docs/rules/evidence/2B17-2.md",
+  "ruleEvidenceSha256": "ced6042dcfcbb2e14d86ef97c15b4c8bae2a263bd8aa30332a16b54683143eab",
   "unresolvedConflicts": [],
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "slice2B18ProductionProhibited": true,
@@ -33,7 +33,15 @@
     "terminalVerdict": "RULE_CONFLICT",
     "evidencePath": "docs/rules/evidence/2B18.md",
     "evidenceSha256": "9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a",
-    "unresolvedConflictCount": 5,
+    "originalUnresolvedConflictCount": 5,
+    "remainingUnresolvedConflictCount": 4,
+    "remainingUnresolvedConflicts": [
+      "firstNightWindowDefinition",
+      "ownAbilityExclusion",
+      "candidateNumberDomain",
+      "duplicateMathematicianRule"
+    ],
+    "schedulingPrerequisiteStatus": "RULE_READY_PENDING_DESIGN_AND_IMPLEMENTATION",
     "implementationAuthorized": false
   },
   "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1"],
@@ -186,7 +194,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Started only the Phase 3 Slice 2B17.2 control state and recorded approved simulator override BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1; preserved the byte-exact blocked 2B18 evidence.",
+  "lastAction": "Materialized the complete Slice 2B17.2 rule evidence at docs/rules/evidence/2B17-2.md; terminal RULE_READY authorizes architecture design only while implementation remains unauthorized.",
   "lastError": null,
-  "nextAction": "Run fresh read-only rule research for Philosopher-gained first-night scheduling V2. Do not design, branch, implement, test, open a PR, resume 2B18 production, or start Slice 2B19 until authorized."
+  "nextAction": "Run one read-only architect design for Slice 2B17.2, then independent RULE_DESIGN review. Do not branch, implement, test, open a PR, resume 2B18 production, or start Slice 2B19 without RULE_DESIGN_PASS."
 }
