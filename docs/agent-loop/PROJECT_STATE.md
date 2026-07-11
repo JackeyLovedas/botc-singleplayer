@@ -27,28 +27,27 @@
 
 ## Current Delivery
 
-- Candidate slice: 2B16, Cerenovus rule-design gate.
-- Branch: `main`; no feature branch or open slice PR.
-- Governance base and research boundary: `7d8694f21d0f6d6ea6226b385bd893dd42754188`.
-- Evidence commit base: `00c3c01e35b2a117db28a72e007e6c7079bb9990`.
-- Corrected evidence: `docs/rules/evidence/2B16.md`, SHA-256 `1ee54550a4e886e27e6f665c2275f21d4d04b5d67c68eab3f1bdd598cc0594ca`.
-- Round-1 review: `docs/implementation/phase-3-slice-2b16-design-review-round-1.md`, SHA-256 `4b48eaa3d49b54b0683a8c38ce5a5e27348b4947c1f349b49e77abbe84c37825`, verdict `RULE_DESIGN_FIX_REQUIRED` on `ec9c546797070dfa5ab3d1d7838de16d14941358`.
-- Corrected proposed design: `docs/implementation/phase-3-slice-2b16-design.md`, SHA-256 `4f474b7ad914881a1b795432fe2d298678c1b799e1fe826b52a3fd81c030e33b`.
-- Independent rereview: `docs/implementation/phase-3-slice-2b16-design-review-round-2.md`, SHA-256 `27da37850a411d9cda371a189d4d7cf1b6dcaa010bd16e6dd055a9254ceb11ac`.
-- Reviewed exact HEAD: `4a6fbfb349f562d9292b6343f0bb4dd125e0a1e1`; exact-head CI run `29104166882` succeeded.
-- Status: `RULE_DESIGN_PASS`; `remainingBlockers=[]`; coverage remains `PARTIAL`.
-- Next authorized stage: controller verification and explicit implementation authorization. No implementation branch, production change, test change, coverage-matrix change, or PR exists yet.
+- Active slice: 2B16, effective-only Cerenovus first-night choice, marker history, and private instruction; implementation and local verification complete.
+- Branch: `phase-3/cerenovus-first-night-madness-marker`; preserved dirty worktree, no commit, push, or PR.
+- Rescope authorization: `CERENOVUS_EFFECTIVE_ONLY`.
+- Source-impaired execution: `UNSUPPORTED_UNREACHABLE_IN_CURRENT_CANONICAL_HISTORY`.
+- External rules remain `RULE_READY`; all original URLs, revisions, hashes, and impaired-source rule truth remain recorded.
+- The prior design SHA beginning `4f474b7a` and prior `RULE_DESIGN_PASS` are superseded.
+- Corrected event contract: choice, effective marker, target instruction, and `CERENOVUS_MADNESS_MARKED` settlement.
+- Independent effective-only review returned `RULE_DESIGN_PASS` with no blockers for exact dirty HEAD `db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0`, evidence `f0d8d976...`, and design `7c1c2bd7...`; the exact implementation is now complete locally and coverage remains `PARTIAL`.
+- Full local gates pass after closing both controller evidence gaps: typecheck, lint, 22 files / 761 tests, coverage 22 files / 761 tests, and `git diff --check`. No commit, push, or PR exists yet.
 - This controlled round has `maxSlices=1`, `maxRepairRounds=2`, no heartbeat, and no 2B17 work.
 
 ## Rule And Design Gate
 
 - Slice 2B16 evidence is fresh, complete, and ends in `RULE_READY`.
-- The original proposed design received `RULE_DESIGN_FIX_REQUIRED`; its complete independent report is preserved verbatim in the round-1 audit file.
-- The corrected design addresses command/task schemas, event provenance, stable source tenure/ability identity, closed impairment references, complete projection-chain validation, duration wording, real persisted stage literals, exact raw `pithag`, retryable failure contracts, 41 planned regressions, and all 23 evidence traces.
-- Its bounded four-event contract keeps effective/impaired accepted disclosures and target notifications branch-invariant while storing represented resolution truth canonically.
-- Effective requirement data is stable source-bound historical creation context only; madness judgment, enforcement, execution, death, recurrence, gained abilities, and general lifecycle processing remain out of scope.
-- The independent rereview returned `RULE_DESIGN_PASS` with no remaining blocker for exact `main@4a6fbfb349f562d9292b6343f0bb4dd125e0a1e1` and the exact artifact hashes above.
-- Implementation remains unstarted until controller verification and explicit authorization.
+- The preserved prior review reports remain immutable audit history but do not authorize the rescope.
+- Canonical reachability audit proved the only current impairment producers cannot affect a still-active base Cerenovus; direct constructed impairment sets are not stored histories.
+- The user authorized an effective-only implementation rather than generic impairment infrastructure or another role.
+- Corrected design removes the impaired settlement union, adds a no-write effective-only capability gate, and specifies 62 sequential regressions.
+- Drunk/poison simulation remains true BOTC behavior but unsupported in this slice; this does not mean Cerenovus immunity.
+- The complete renewed review is archived verbatim at `docs/implementation/phase-3-slice-2b16-effective-only-design-review.md`; its report hash is recorded in the current Autopilot log.
+- The reviewer found no blockers. Only the exact reviewed effective-only implementation is authorized.
 
 ## Implemented 2B15 Boundary
 
@@ -86,8 +85,8 @@
 
 ## Next Gate
 
-- Controller verifies the exact pass report, reviewed HEAD, artifact hashes, and successful reviewed-head CI, then explicitly authorizes the sole implementation branch and reviewed scope.
-- Do not create a feature branch, edit production code or tests, change the coverage matrix, or open a PR before that explicit authorization.
+- Controller performs the pre-publish scope/traceability audit of the completed dirty tree and status document.
+- After controller authorization, commit with required attribution, push the same branch, and create one slice PR. Do not merge before exact-HEAD CI and complete independent final review.
 - Do not begin Slice 2B17 in this controlled round.
 
 ## Loop Limits

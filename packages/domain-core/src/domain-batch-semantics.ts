@@ -12,6 +12,18 @@ import type { SnakeCharmerEffectivenessResult } from "./snake-charmer.js";
 import { evaluateWitchEffectiveness } from "./witch.js";
 import type { WitchEffectivenessResult } from "./witch.js";
 import {
+  createCerenovusMadnessInstructionDeliveredPayload,
+  createCerenovusMadnessMarkedPayload,
+  evaluateCerenovusEffectiveOnlyCapability,
+  findCerenovusOpportunity,
+  sameCerenovusInstructionPayload,
+  sameCerenovusMarkerPayload,
+  validateCerenovusChoiceAgainstState,
+  validateCerenovusChoiceRecordedPayloadShape,
+  validateCerenovusInstructionAgainstChain,
+  validateCerenovusMarkerAgainstChoice
+} from "./cerenovus.js";
+import {
   createDreamerInformationDeliveredPayload,
   evaluateDreamerEffectiveness,
   sameDreamerInformationDelivery
@@ -1054,6 +1066,49 @@ const validateIntegratedDreamerInformationBatch = (
   }
 };
 
+const validateIntegratedCerenovusActionBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Cerenovus action batch requires an existing current state");
+  }
+  const state = currentState;
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 ||
+      state.dayNumber !== 0 || state.setup === undefined || state.roster === undefined ||
+      state.currentCharacterState === undefined || state.firstNightTaskPlan === undefined) {
+    throw new DomainError("InvalidDomainBatchSemantics", "Cerenovus action batch requires first-night setup, roster, task, and current character state");
+  }
+  if (events.length !== 4) reject("Cerenovus action batch must contain exactly four events");
+  assertSharedBatchMetadataForAll(events);
+  const [first, second, third, fourth] = events;
+  if (first?.eventType !== "CerenovusChoiceRecorded" || second?.eventType !== "CerenovusMadnessMarked" ||
+      third?.eventType !== "CerenovusMadnessInstructionDelivered" || fourth?.eventType !== "ScheduledTaskSettled") {
+    reject("Cerenovus action batch must be ChoiceRecorded, MadnessMarked, MadnessInstructionDelivered, ScheduledTaskSettled");
+  }
+  const choice = first as DomainEventEnvelope<"CerenovusChoiceRecorded">;
+  const marker = second as DomainEventEnvelope<"CerenovusMadnessMarked">;
+  const instruction = third as DomainEventEnvelope<"CerenovusMadnessInstructionDelivered">;
+  const settlement = fourth as DomainEventEnvelope<"ScheduledTaskSettled">;
+  const choiceShape = validateCerenovusChoiceRecordedPayloadShape(choice.payload);
+  const opportunity = findCerenovusOpportunity(state.firstNightActionOpportunities, choice.payload.opportunityId);
+  if (!choiceShape.valid || opportunity === undefined) reject(!choiceShape.valid ? choiceShape.reason : "Cerenovus batch requires one matching opportunity");
+  const choiceState = validateCerenovusChoiceAgainstState({ choice: choice.payload, opportunity: opportunity!, roster: state.roster.entries, setup: state.setup });
+  const capability = evaluateCerenovusEffectiveOnlyCapability({ sourcePlayerId: choice.payload.sourcePlayerId, abilityImpairments: state.abilityImpairments });
+  const markerLink = validateCerenovusMarkerAgainstChoice(choice.payload, marker.payload);
+  const instructionLink = validateCerenovusInstructionAgainstChain(choice.payload, marker.payload, instruction.payload);
+  const expectedMarker = createCerenovusMadnessMarkedPayload(choice.payload);
+  const expectedInstruction = createCerenovusMadnessInstructionDeliveredPayload(choice.payload, marker.payload);
+  if (!choiceState.valid || !capability.supported || !markerLink.valid || !instructionLink.valid ||
+      !sameCerenovusMarkerPayload(marker.payload, expectedMarker) ||
+      !sameCerenovusInstructionPayload(instruction.payload, expectedInstruction) ||
+      settlement.payload.taskId !== choice.payload.taskId || settlement.payload.taskType !== "CERENOVUS_ACTION" ||
+      settlement.payload.outcomeType !== "CERENOVUS_MADNESS_MARKED" ||
+      settlement.payload.characterStateRevision !== choice.payload.settlementCharacterStateRevision) {
+    reject(!choiceState.valid ? choiceState.reason : !capability.supported ? "Cerenovus effective batch conflicts with represented source impairment" : !markerLink.valid ? markerLink.reason : !instructionLink.valid ? instructionLink.reason : "Cerenovus batch facts do not match their canonical choice and settlement");
+  }
+};
+
 const validateIntegratedSeamstressInformationBatch = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -1255,6 +1310,11 @@ export const validateDomainBatchSemantics = (
     }
 
     reject("Witch batch must continue with DeathPendingMarked or IneffectiveResolved");
+    return;
+  }
+
+  if (first.eventType === "CerenovusChoiceRecorded") {
+    validateIntegratedCerenovusActionBatch(currentState, batchEvents);
     return;
   }
 

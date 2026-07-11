@@ -31,6 +31,11 @@ import type {
   DreamerTargetChosenPayload
 } from "./dreamer.js";
 import type {
+  CerenovusChoiceRecordedPayload,
+  CerenovusMadnessInstructionDeliveredPayload,
+  CerenovusMadnessMarkedPayload
+} from "./cerenovus.js";
+import type {
   SeamstressAbilitySpentPayload,
   SeamstressInformationDeliveredPayload,
   SeamstressResolutionCapabilityDeclaredPayload,
@@ -75,6 +80,11 @@ export type {
   DreamerInformationDeliveredPayload,
   DreamerTargetChosenPayload
 } from "./dreamer.js";
+export type {
+  CerenovusChoiceRecordedPayload,
+  CerenovusMadnessInstructionDeliveredPayload,
+  CerenovusMadnessMarkedPayload
+} from "./cerenovus.js";
 export type {
   SeamstressAbilitySpentPayload,
   SeamstressInformationDeliveredPayload,
@@ -199,6 +209,9 @@ export type DomainEventPayloadByType = {
   readonly WitchTargetChosen: WitchTargetChosenPayload;
   readonly WitchDeathPendingMarked: WitchDeathPendingPayload;
   readonly WitchIneffectiveResolved: WitchIneffectiveResolvedPayload;
+  readonly CerenovusChoiceRecorded: CerenovusChoiceRecordedPayload;
+  readonly CerenovusMadnessMarked: CerenovusMadnessMarkedPayload;
+  readonly CerenovusMadnessInstructionDelivered: CerenovusMadnessInstructionDeliveredPayload;
   readonly DreamerTargetChosen: DreamerTargetChosenPayload;
   readonly DreamerInformationDelivered: DreamerInformationDeliveredPayload;
   readonly EvilTwinPairEstablished: EvilTwinPairEstablishedPayload;

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   RULES_BASELINE_VERSION,
   DomainError,
+  abilityImpairmentId,
   actionOpportunityId,
   batchId,
   cloneFirstNightTaskCatalogSnapshot,
@@ -24,9 +25,11 @@ import type {
   FirstNightTaskPlan,
   FirstNightTaskPlanningFailure,
   FirstNightTaskPlanningResult,
+  GameState,
   GameId,
   GeneratedCharacterAssignment,
-  SupportedCommandEnvelope
+  SupportedCommandEnvelope,
+  AbilityImpairmentSet
 } from "@botc/domain-core";
 import {
   GameApplicationService,
@@ -82,6 +85,7 @@ import {
   testSetupGenerator,
   systemActor
 } from "@botc/test-harness";
+import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
 
 const makeService = (
   commandStore = new MemoryCommandCommitStore(),
@@ -286,6 +290,65 @@ const noPhilosopherVortoxExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
 const noPhilosopherNoDashiiExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
   id === "fang_gu" ? roleId("no_dashii") : id === "barber" ? roleId("artist") : id
 );
+const cerenovusExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
+  id === "evil_twin" ? roleId("cerenovus") : id
+);
+
+const reachNextCerenovusActionTask = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore
+) => {
+  const { baseTask, opportunity: snakeOpportunity, state: snakeState } =
+    await reachOpenBaseSnakeCharmerOpportunity(service, commandStore, cerenovusExactRoleIds);
+  const snakeTarget = snakeState.currentCharacterState?.entries.find((entry) =>
+    entry.playerId !== snakeOpportunity.sourcePlayerId && entry.role.characterType !== "DEMON"
+  );
+  if (snakeTarget === undefined) throw new Error("Expected Cerenovus fixture Snake Charmer target");
+  await service.execute(submitSnakeCharmerActionCommand({
+    commandId: commandId("settle-snake-before-cerenovus"), expectedGameVersion: snakeState.gameVersion,
+    actor: { kind: "ai", playerId: snakeOpportunity.sourcePlayerId },
+    payload: { commandType: "SubmitSnakeCharmerAction", taskId: baseTask.taskId, opportunityId: snakeOpportunity.opportunityId,
+      decision: { kind: "CHOOSE_PLAYER", targetPlayerId: snakeTarget.playerId } }
+  }));
+  const beforeWitch = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const witchTask = beforeWitch?.firstNightTaskPlan?.tasks.find((task) => task.taskType === "WITCH_ACTION");
+  if (beforeWitch === undefined || witchTask === undefined) throw new Error("Expected Witch before Cerenovus");
+  await service.execute(openFirstNightRoleActionOpportunityCommand({
+    commandId: commandId("open-witch-before-cerenovus"), expectedGameVersion: beforeWitch.gameVersion,
+    payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: witchTask.taskId }
+  }));
+  const witchOpen = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const witchOpportunity = witchOpen?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === witchTask.taskId);
+  const witchTarget = witchOpen?.roster?.entries.find((entry) => entry.playerId !== witchOpportunity?.sourcePlayerId);
+  if (witchOpen === undefined || witchOpportunity === undefined || witchTarget === undefined) throw new Error("Expected open Witch before Cerenovus");
+  await service.execute(submitWitchActionCommand({
+    commandId: commandId("settle-witch-before-cerenovus"), expectedGameVersion: witchOpen.gameVersion,
+    actor: { kind: "ai", playerId: witchOpportunity.sourcePlayerId },
+    payload: { commandType: "SubmitWitchAction", taskId: witchTask.taskId, opportunityId: witchOpportunity.opportunityId,
+      decision: { kind: "CHOOSE_PLAYER", targetPlayerId: witchTarget.playerId } }
+  }));
+  const beforeCerenovus = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const task = beforeCerenovus?.firstNightTaskPlan?.tasks.find((entry) => entry.taskType === "CERENOVUS_ACTION");
+  if (beforeCerenovus === undefined || task === undefined) throw new Error("Expected Cerenovus task");
+  return { state: beforeCerenovus, task };
+};
+
+const reachOpenCerenovusActionOpportunity = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore
+) => {
+  const { state: beforeCerenovus, task } = await reachNextCerenovusActionTask(service, commandStore);
+  await service.execute(openFirstNightRoleActionOpportunityCommand({
+    commandId: commandId("open-cerenovus"), expectedGameVersion: beforeCerenovus.gameVersion,
+    payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: task.taskId }
+  }));
+  const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const opportunity = state?.firstNightActionOpportunities?.opportunities.find((entry) =>
+    entry.taskId === task.taskId && entry.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION"
+  );
+  if (state === undefined || opportunity === undefined) throw new Error("Expected open Cerenovus opportunity");
+  return { state, task, opportunity };
+};
 
 const reachNoPhilosopherFirstNightTaskPlan = async (
   service: GameApplicationService,
@@ -6717,5 +6780,218 @@ describe("GameApplicationService", () => {
     expect(createResult.status).toBe("accepted");
     expect(selectResult.status).toBe("accepted");
     expect(commandStore.acceptedCount).toBe(2);
+  });
+});
+
+describe("Slice 2B16 Cerenovus first-night integration", () => {
+  const submitCerenovus = (
+    state: NonNullable<ReturnType<typeof rebuildOptionalGameState>>,
+    taskIdValue: ReturnType<typeof scheduledTaskId>,
+    opportunityIdValue: ReturnType<typeof actionOpportunityId>,
+    sourcePlayerId: ReturnType<typeof playerId>,
+    targetPlayerId: ReturnType<typeof playerId>,
+    chosenRoleId: ReturnType<typeof roleId>,
+    overrides: Partial<SupportedCommandEnvelope> = {}
+  ): SupportedCommandEnvelope => ({
+    commandId: commandId("submit-cerenovus"), gameId: ids.game, expectedGameVersion: state.gameVersion,
+    actor: { kind: "ai", playerId: sourcePlayerId }, issuedAt: "2026-07-10T00:00:00.000Z",
+    correlationId: correlationId("correlation-submit-cerenovus"),
+    payload: { commandType: "SubmitCerenovusAction", taskId: taskIdValue, opportunityId: opportunityIdValue,
+      decision: { kind: "CHOOSE_PLAYER_AND_CHARACTER", targetPlayerId, chosenRoleId } },
+    ...overrides
+  } as SupportedCommandEnvelope);
+
+  it.each([
+    ["System", systemActor],
+    ["Storyteller", storytellerActor]
+  ] as const)("allows %s to open the Cerenovus opportunity when its task is next", async (label, actor) => {
+    expect(label.length).toBeGreaterThan(0);
+    const { service, commandStore } = makeService();
+    const { state, task } = await reachNextCerenovusActionTask(service, commandStore);
+    const beforeEvents = await commandStore.loadDomainEvents(ids.game);
+    const result = await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId(`open-cerenovus-${actor.kind}`),
+      expectedGameVersion: state.gameVersion,
+      actor,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: task.taskId }
+    }));
+    expectAcceptedResult(result);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual(["FirstNightActionOpportunityCreated"]);
+    const afterEvents = await commandStore.loadDomainEvents(ids.game);
+    expect(afterEvents).toHaveLength(beforeEvents.length + 1);
+    const opened = rebuildOptionalGameState(afterEvents)?.firstNightActionOpportunities?.opportunities.filter((entry) =>
+      entry.taskId === task.taskId && entry.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION"
+    );
+    expect(opened).toHaveLength(1);
+    expect(opened?.[0]?.opportunityStatus).toBe("OPEN");
+  });
+
+  it.each([
+    ["Human", humanActor],
+    ["AI", aiActor]
+  ] as const)("rejects %s attempts to open the Cerenovus opportunity without event or opportunity creation", async (label, actor) => {
+    expect(label.length).toBeGreaterThan(0);
+    const { service, commandStore } = makeService();
+    const { state, task } = await reachNextCerenovusActionTask(service, commandStore);
+    const beforeEvents = await commandStore.loadDomainEvents(ids.game);
+    const result = await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId(`reject-open-cerenovus-${actor.kind}`),
+      expectedGameVersion: state.gameVersion,
+      actor,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: task.taskId }
+    }));
+    expect(result).toMatchObject({ status: "rejected", code: "ActorNotAllowed", currentGameVersion: state.gameVersion });
+    const afterEvents = await commandStore.loadDomainEvents(ids.game);
+    expect(afterEvents).toStrictEqual(beforeEvents);
+    expect(rebuildOptionalGameState(afterEvents)?.firstNightActionOpportunities?.opportunities.some((entry) =>
+      entry.taskId === task.taskId && entry.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION"
+    )).toBe(false);
+  });
+
+  it.each(["DRUNK", "POISONED"] as const)("returns the exact no-write application boundary for constructed-noncanonical %s source impairment", async (kind) => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus boundary target");
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId, target.playerId, roleId("dreamer"), {
+      commandId: commandId(`constructed-noncanonical-${kind.toLowerCase()}-cerenovus-boundary`)
+    });
+    const constructedNoncanonicalImpairment: AbilityImpairmentSet["impairments"][number] = kind === "DRUNK"
+      ? {
+          impairmentId: abilityImpairmentId("constructed-noncanonical-cerenovus-drunk"), kind,
+          sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE", sourcePlayerId: playerId("constructed-noncanonical-source"),
+          affectedPlayerId: opportunity.sourcePlayerId, affectedSeatNumber: opportunity.sourceSeatNumber,
+          affectedRole: opportunity.sourceRole, chosenRoleId: roleId("cerenovus"),
+          sourceCharacterStateRevision: state.currentCharacterState?.revision ?? 1
+        }
+      : {
+          impairmentId: abilityImpairmentId("constructed-noncanonical-cerenovus-poisoned"), kind,
+          sourceKind: "SNAKE_CHARMER_DEMON_HIT", sourcePlayerId: playerId("constructed-noncanonical-source"),
+          affectedPlayerId: opportunity.sourcePlayerId, affectedSeatNumber: opportunity.sourceSeatNumber,
+          affectedRole: opportunity.sourceRole, sourceCharacterStateRevision: state.currentCharacterState?.revision ?? 1
+        };
+    const constructedState: GameState = {
+      ...state,
+      abilityImpairments: { impairments: [constructedNoncanonicalImpairment] }
+    };
+    let batchConstructionCalls = 0;
+    const boundary = service as unknown as {
+      createBatchOrReject(commandValue: SupportedCommandEnvelope, stateValue: GameState, currentGameVersion: number): CommandResult;
+      createBatch(...args: readonly unknown[]): never;
+    };
+    boundary.createBatch = (): never => {
+      batchConstructionCalls += 1;
+      throw new Error("effective-only gate invoked batch construction");
+    };
+    const beforeEvents = await commandStore.loadDomainEvents(ids.game);
+    const result = boundary.createBatchOrReject(command, constructedState, state.gameVersion);
+
+    expectFailedResult(result);
+    expect(result).toStrictEqual({
+      status: "failed",
+      gameId: ids.game,
+      code: "ApplicationNotConfigured",
+      message: "Cerenovus effective-only settlement is not configured for the current canonical state",
+      failureStage: "first-night-role-action",
+      retryable: true,
+      currentGameVersion: state.gameVersion
+    });
+    expect(batchConstructionCalls).toBe(0);
+    expect(opportunity.opportunityStatus).toBe("OPEN");
+    expect(constructedState.firstNightActionOpportunities?.opportunities.find((entry) => entry.opportunityId === opportunity.opportunityId)?.opportunityStatus).toBe("OPEN");
+    expect(result).not.toHaveProperty("events");
+    expect(result).not.toHaveProperty("eventTypes");
+    expect(result).not.toHaveProperty("receiptPolicy");
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(beforeEvents);
+  });
+
+  it("appends the effective-only four-event chain, projects a target-only instruction, and preserves idempotency", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const command = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId, target.playerId, roleId("dreamer"));
+    const result = await service.execute(command);
+    expectEventSummaryAcceptedResult(result);
+    expect(result).toMatchObject({
+      eventDisclosure: "EVENT_TYPES_ONLY", eventCount: 4, idempotent: false,
+      eventTypes: ["CerenovusChoiceRecorded", "CerenovusMadnessMarked", "CerenovusMadnessInstructionDelivered", "ScheduledTaskSettled"]
+    });
+    const events = await commandStore.loadDomainEvents(ids.game);
+    const chain = events.slice(-4);
+    expect(chain.map((event) => event.eventType)).toStrictEqual([
+      "CerenovusChoiceRecorded", "CerenovusMadnessMarked", "CerenovusMadnessInstructionDelivered", "ScheduledTaskSettled"
+    ]);
+    expect(chain[1]?.payload).toMatchObject({
+      markerStatus: "ESTABLISHED",
+      instructionWindow: "TOMORROW_DAY_AND_NIGHT",
+      removalRule: "NEXT_DAWN_OR_SOURCE_DEATH_OR_LEAVES_PLAY",
+      targetPlayerId: target.playerId,
+      madAboutRoleId: roleId("dreamer"),
+      sourceAbilityDependency: { permanentLossPolicy: "REMOVE_MARKER", reacquisitionPolicy: "NEW_INSTANCE_DOES_NOT_RESUME" }
+    });
+    expect(chain[2]?.payload).toMatchObject({
+      recipientPlayerId: target.playerId,
+      selectedByCharacter: "cerenovus",
+      madAboutRoleId: roleId("dreamer"),
+      instructionWindow: "TOMORROW_DAY_AND_NIGHT",
+      deliveryStatus: "DELIVERED"
+    });
+    expect(chain[2]?.payload).not.toHaveProperty("sourcePlayerId");
+    expect(chain[2]?.payload).not.toHaveProperty("sourceSeatNumber");
+    expect(chain[3]?.payload).toMatchObject({ outcomeType: "CERENOVUS_MADNESS_MARKED" });
+    const acceptedState = rebuildOptionalGameState(events);
+    if (acceptedState === undefined) throw new Error("Expected accepted Cerenovus state");
+    const playerView = buildPlayerPrivateKnowledgeView(acceptedState, target.playerId);
+    const aiView = buildAiPrivateKnowledgeView(acceptedState, target.playerId);
+    expect(playerView.cerenovusMadnessInstruction).toStrictEqual({
+      selectedByCharacter: "cerenovus",
+      madAboutRoleId: roleId("dreamer"),
+      instructionWindow: "TOMORROW_DAY_AND_NIGHT"
+    });
+    expect(aiView).toStrictEqual(playerView);
+    expect(playerView.deliveredKnowledgeStages).toContain("CERENOVUS_INFORMATION");
+    expect(JSON.stringify(playerView)).not.toMatch(/impair|effective|requirement|marker|execution|sourceAbility|resolutionId/i);
+    const nonTarget = acceptedState.roster?.entries.find((entry) => entry.playerId !== target.playerId);
+    if (nonTarget === undefined) throw new Error("Expected non-target viewer");
+    expect(buildPlayerPrivateKnowledgeView(acceptedState, nonTarget.playerId)).not.toHaveProperty("cerenovusMadnessInstruction");
+    expect(() => buildPlayerPrivateKnowledgeView({
+      ...acceptedState, cerenovusMadnessInstructions: { deliveries: [] }
+    }, target.playerId)).toThrowError(/complete|one marker, instruction, and settlement|one-to-one/i);
+    const instruction = acceptedState.cerenovusMadnessInstructions?.deliveries[0];
+    if (instruction === undefined) throw new Error("Expected stored Cerenovus instruction");
+    expect(() => buildPlayerPrivateKnowledgeView({
+      ...acceptedState, cerenovusMadnessInstructions: { deliveries: [instruction, instruction] }
+    }, target.playerId)).toThrowError(/unique|one-to-one/i);
+    expect(() => buildPlayerPrivateKnowledgeView({
+      ...acceptedState,
+      cerenovusMadnessInstructions: { deliveries: [{ ...instruction, madAboutRoleId: roleId("mutant") }] }
+    }, target.playerId)).toThrowError(/instruction|match/i);
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", idempotent: true, eventCount: 4 });
+    expect((await commandStore.loadDomainEvents(ids.game)).length).toBe(events.length);
+    await expect(service.execute({ ...command, payload: { ...command.payload, decision: {
+      kind: "CHOOSE_PLAYER_AND_CHARACTER", targetPlayerId: target.playerId, chosenRoleId: roleId("mutant")
+    } } } as SupportedCommandEnvelope)).resolves.toMatchObject({ status: "rejected", code: "CommandIdempotencyConflict" });
+  });
+
+  it("rejects privileged actors, hidden fields, and unsupported selected character types without appending", async () => {
+    const { service, commandStore } = makeService();
+    const { state, task, opportunity } = await reachOpenCerenovusActionOpportunity(service, commandStore);
+    const target = state.roster?.entries[0];
+    if (target === undefined) throw new Error("Expected Cerenovus target");
+    const base = submitCerenovus(state, task.taskId, opportunity.opportunityId, opportunity.sourcePlayerId, target.playerId, roleId("dreamer"));
+    const before = (await commandStore.loadDomainEvents(ids.game)).length;
+    await expect(service.execute({ ...base, commandId: commandId("system-cerenovus"), actor: systemActor }))
+      .resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    await expect(service.execute({ ...base, commandId: commandId("storyteller-cerenovus"), actor: storytellerActor }))
+      .resolves.toMatchObject({ status: "rejected", code: "ActorNotAllowed" });
+    await expect(service.execute({ ...base, commandId: commandId("minion-cerenovus"), payload: {
+      ...base.payload, decision: { kind: "CHOOSE_PLAYER_AND_CHARACTER", targetPlayerId: target.playerId, chosenRoleId: roleId("witch") }
+    } } as SupportedCommandEnvelope)).resolves.toMatchObject({ status: "rejected", code: "InvalidCerenovusCharacter" });
+    await expect(service.execute({ ...base, commandId: commandId("hidden-cerenovus"), payload: {
+      ...base.payload, effective: true
+    } } as unknown as SupportedCommandEnvelope)).resolves.toMatchObject({ status: "rejected", code: "InvalidCerenovusActionDecision" });
+    expect((await commandStore.loadDomainEvents(ids.game)).length).toBe(before);
   });
 });

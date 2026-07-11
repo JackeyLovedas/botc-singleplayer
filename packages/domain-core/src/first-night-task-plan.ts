@@ -103,6 +103,7 @@ export type ScheduledTaskSettlementOutcomeType =
   | "EVIL_TWIN_PAIR_ESTABLISHED"
   | "WITCH_DEATH_PENDING_MARKED"
   | "WITCH_INEFFECTIVE"
+  | "CERENOVUS_MADNESS_MARKED"
   | "DREAMER_INFORMATION_DELIVERED"
   | "SEAMSTRESS_INFORMATION_DELIVERED"
   | "SEAMSTRESS_DEFERRED";
@@ -365,6 +366,7 @@ export const isScheduledTaskSettlementOutcomeType = (value: unknown): value is S
   value === "EVIL_TWIN_PAIR_ESTABLISHED" ||
   value === "WITCH_DEATH_PENDING_MARKED" ||
   value === "WITCH_INEFFECTIVE" ||
+  value === "CERENOVUS_MADNESS_MARKED" ||
   value === "DREAMER_INFORMATION_DELIVERED" ||
   value === "SEAMSTRESS_DEFERRED" ||
   value === "SEAMSTRESS_INFORMATION_DELIVERED";

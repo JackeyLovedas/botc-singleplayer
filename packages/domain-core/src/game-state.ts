@@ -23,6 +23,7 @@ import type {
   DreamerInformationSet,
   DreamerTargetChoiceSet
 } from "./dreamer.js";
+import type { CerenovusChoiceSet, CerenovusMadnessInstructionSet, CerenovusMadnessMarkerSet } from "./cerenovus.js";
 import type {
   RoleTenureState,
   SeamstressAbilitySpendSet,
@@ -83,6 +84,9 @@ export type GameState = {
   readonly witchTargetChoices?: WitchTargetChoiceSet;
   readonly witchDeathPending?: WitchDeathPendingSet;
   readonly witchIneffectiveResolutions?: WitchIneffectiveResolutionSet;
+  readonly cerenovusChoices?: CerenovusChoiceSet;
+  readonly cerenovusMadnessMarkers?: CerenovusMadnessMarkerSet;
+  readonly cerenovusMadnessInstructions?: CerenovusMadnessInstructionSet;
   readonly dreamerTargetChoices?: DreamerTargetChoiceSet;
   readonly dreamerInformation?: DreamerInformationSet;
   readonly seamstressTargetChoices?: SeamstressTargetChoiceSet;

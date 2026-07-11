@@ -1,10 +1,23 @@
 {
   "status": "RUNNING",
   "currentPR": null,
-  "currentBranch": "main",
-  "reviewedHead": null,
+  "currentBranch": "phase-3/cerenovus-first-night-madness-marker",
+  "currentSlice": "2B16",
+  "reviewedHead": "db1f09cc35b51f92f6e84ad8cd9c3cb1150983d0",
   "repairRound": 0,
+  "maxSlices": 1,
+  "maxRepairRounds": 2,
+  "rescopeAuthorization": "CERENOVUS_EFFECTIVE_ONLY",
   "completedSlices": ["2B13", "2B14", "2B15"],
-  "lastAction": "Materialized the independent Slice 2B16 correction-round rereview verbatim at docs/implementation/phase-3-slice-2b16-design-review-round-2.md (SHA-256 27da37850a411d9cda371a189d4d7cf1b6dcaa010bd16e6dd055a9254ceb11ac). The reviewer passed exact main@4a6fbfb349f562d9292b6343f0bb4dd125e0a1e1 against evidence SHA-256 1ee54550a4e886e27e6f665c2275f21d4d04b5d67c68eab3f1bdd598cc0594ca, design SHA-256 4f474b7ad914881a1b795432fe2d298678c1b799e1fe826b52a3fd81c030e33b, and round-1 review SHA-256 4b48eaa3d49b54b0683a8c38ce5a5e27348b4947c1f349b49e77abbe84c37825. Verdict RULE_DESIGN_PASS with remainingBlockers []; reviewed-head CI run 29104166882 succeeded. Implementation is next but remains unstarted pending controller verification and explicit authorization.",
-  "lastError": null
+  "lastAction": "Completed the exact reviewed effective-only Slice 2B16 implementation and documentation on the preserved dirty branch, then closed the controller's two pre-publish evidence gaps with Cerenovus-specific opportunity actor tests and direct constructed-noncanonical DRUNK/POISONED pre-construction boundary tests. Typecheck, lint, 22 files / 761 tests, coverage, and diff checks pass; no commit, push, or PR exists yet.",
+  "lastError": null,
+  "blockerAudit": [
+    {
+      "kind": "CANONICAL_IMPAIRMENT_REACHABILITY",
+      "status": "RESCOPED_NOT_ERASED",
+      "finding": "Current canonical histories cannot create Philosopher-duplicate drunkenness or Snake-Charmer-hit poisoning on a still-active base Cerenovus. Directly constructed impairment sets are not canonical stored histories.",
+      "resolution": "User authorized CERENOVUS_EFFECTIVE_ONLY; impaired simulation remains unsupported and implementation requires renewed rule-design review."
+    }
+  ],
+  "nextAction": "Controller performs the pre-publish scope and traceability audit, then authorizes commit/push/PR preparation without merging"
 }
