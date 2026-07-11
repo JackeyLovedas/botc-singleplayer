@@ -1,10 +1,13 @@
 {
   "status": "RUNNING",
-  "currentPR": null,
+  "currentPR": 19,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/19",
   "currentBranch": "phase-3/clockmaker-first-night-information",
   "currentSlice": "2B17",
   "reviewedHead": null,
-  "repairRound": 0,
+  "currentReviewHeadAuthority": "GitHub PR #19 headRefOid",
+  "exactHeadCIAuthority": "GitHub checks attached to the live PR #19 headRefOid",
+  "repairRound": 1,
   "designRound": 3,
   "maxDesignRounds": 3,
   "userContinuationAuthorization": "EXTRA_DESIGN_ROUND_3_VORTOX_HISTORICAL_BICONDITIONAL",
@@ -20,6 +23,29 @@
   "designReviewHash": "2c472cfdca5578d0aa556e4ec02761854362fcf3470a4188e294cfe74dafbe62",
   "slice2B18Prohibited": true,
   "completedSlices": ["2B13", "2B14", "2B15", "2B16"],
+  "slice2B17ProductImplementation": {
+    "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
+    "commit": "feat: add Clockmaker first-night information",
+    "changedFiles": 29,
+    "productHeadCI": {
+      "pushRun": 29147953027,
+      "pullRequestRun": 29147961984,
+      "status": "SUCCESS"
+    },
+    "localValidation": {
+      "focused": "7 files / 341 tests passed",
+      "full": "28 files / 891 tests passed",
+      "coverage": "85.85% statements/lines; 79.93% branches; 97.84% functions"
+    }
+  },
+  "slice2B17FinalReviewRound1": {
+    "reviewedHead": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
+    "report": "docs/implementation/phase-3-slice-2b17-final-review-round-1.md",
+    "reportSha256": "18029ee553930ed54429d13010c9a18e5a6994262b817d64dd2469aad0a20afc",
+    "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "status": "HISTORICAL_INVALIDATED_BY_DOCS_REPAIR"
+  },
   "previousRunCloseoutCI": {
     "sha": "5da9c9425ae0b0f0d76610d14cfbcdc33166cb9b",
     "run": 29142246611,
@@ -52,7 +78,7 @@
       "genericImpairmentSource": false
     }
   },
-  "lastAction": "Completed the bounded uncommitted Slice 2B17 Clockmaker implementation and all local gates: focused 341, full and coverage 891, 85.85% statements/lines, 79.93% branches, 97.84% functions; audited trace rows 1..99 and kept Clockmaker PARTIAL.",
-  "lastError": null,
-  "nextAction": "Controller performs the pre-publish audit of the uncommitted feature worktree. Do not commit, push, open a PR, or start Slice 2B18 in this implementation turn."
+  "lastAction": "Materialized the complete round-1 final review and synchronized the six stale Slice 2B17 control/status/PR-body documents for docs-only repair round 1.",
+  "lastError": "Round-1 final review on product head 69c3f0375883bd9ec7908b5f9f609dad5e6fcee5 returned CODE_REVIEW_FIX_REQUIRED and RULE_REVIEW_PASS because six committed documentation files were stale.",
+  "nextAction": "Commit and push the seven-file docs-only repair, require all GitHub checks attached to the new live PR #19 headRefOid to succeed, freeze that head, then request one fresh complete independent final review."
 }

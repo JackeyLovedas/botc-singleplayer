@@ -1,6 +1,6 @@
 ## Summary
 
-Implements the bounded Slice 2B17 Clockmaker first-night information pipeline. Clockmaker remains `PARTIAL`.
+Implements the bounded Phase 3 Slice 2B17 Clockmaker first-night distance-information pipeline. Clockmaker remains `PARTIAL`.
 
 ## Bounded Scope
 
@@ -8,19 +8,19 @@ Adds base and Philosopher-gained first-night settlement, canonical Philosopher d
 
 ## Rule Evidence
 
-`docs/rules/evidence/2B17.md` is `RULE_READY` with SHA-256 `db1fb83335e6a2083f85797b83516b8b646538ee3afcfd5ac92319147432d97e`. The exact round-3 design is `fde5aebea89e003c38938c338abfd4fdd1370c88814f965c41a0dcda7b3d1e06`; independent design review returned `RULE_DESIGN_PASS` with no blockers.
+`docs/rules/evidence/2B17.md` is `RULE_READY`, SHA-256 `db1fb83335e6a2083f85797b83516b8b646538ee3afcfd5ac92319147432d97e`. The exact round-3 design is `fde5aebea89e003c38938c338abfd4fdd1370c88814f965c41a0dcda7b3d1e06`; independent design review `2c472cfdca5578d0aa556e4ec02761854362fcf3470a4188e294cfe74dafbe62` returned `RULE_DESIGN_PASS` with no blockers.
 
 ## Rule Claims Implemented
 
-Native character type, not alignment, selects the current one Demon and two Minions. Circular distance is the minimum of both directions and then the minimum over both Minion pairs. Base information uses the task's settlement state. Philosopher-gained information occurs at the inserted task; the original Clockmaker can later resolve drunk. An effective current Vortox excludes the true distance.
+Clockmaker resolves the current native Demon and both current native Minions, calculates every distinct pair's shortest circular distance, and delivers the minimum. Base information uses settlement-time state. Philosopher-gained information resolves at its inserted task. A canonical original Clockmaker can later resolve drunk. An effective current Vortox forces a false number.
 
 ## Rule Claims Not Implemented
 
-Registration, absent or multiple Demon execution, noncanonical Minion counts, dead-player/life transitions, Travellers, later-night gained Clockmaker, recurring Clockmaker, and general character/alignment lifecycle behavior are not implemented.
+No-Demon, multiple-Demon, noncanonical Minion-count, dead-player/life-transition, Traveller, later-night gained Clockmaker, recurring Clockmaker, general character/alignment lifecycle, and general registration execution are not implemented.
 
 ## Explicitly Unsupported Rules
 
-Spy/Recluse/Summoner registration, canonical poisoned Clockmaker, impaired Vortox, free-form Storyteller choice, UI, Electron, SQLite, first-night completion, and Slice 2B18 fail closed or remain unreachable and receive no support claim.
+Spy/Recluse/Summoner registration, canonical poisoned Clockmaker production, impaired Vortox, free-form Storyteller selection, UI, Electron, SQLite, first-night completion, and Slice 2B18 remain unsupported or fail closed and receive no completeness claim.
 
 ## Rule Source Revisions
 
@@ -28,40 +28,56 @@ User overrides are pinned at Git revision `8fb8c0b6c42eee8320b1b4c4d9efdf4ec2070
 
 ## Rule-to-Test Traceability
 
-The approved continuous rows `1..99` are audited against assertions in the named suites: rows `1..31`, `35`, and `45..51` map to Clockmaker domain assertions; row `32` to the dedicated Philosopher-gained insertion-order application assertion; row `33` to the dedicated task-engine order assertion; row `34` is only `EXTERNAL_RULE_EVIDENCE`; rows `36..44`, `52..53`, `64..72`, and `91..98` map to application integration assertions and parameterized histories; rows `54..63` map to replay/batch assertions; rows `73..90` map to Clockmaker private projection assertions; row `99` maps to the pre-Clockmaker projection compatibility regression. Rows `86..89` each construct and reject its named Vortox corruption independently.
+The approved continuous rows `1..99` are audited against direct assertions, parameterized histories, or explicit external evidence. Rows `1..31`, `35`, and `45..51` cover domain rules and contracts; rows `32..33` cover Philosopher insertion and task order; row `34` is only `EXTERNAL_RULE_EVIDENCE`; rows `36..44`, `52..53`, `64..72`, and `91..98` cover application behavior; rows `54..63` cover replay/batch behavior; rows `73..90` cover private projection and stored facts; row `99` preserves prior projections. Rows `86..89` independently construct and reject each required Vortox corruption.
 
-## Source Identity And Settlement Timing
+## Distance Model
 
-Base source contracts bind the exact next planned role-information task and current Clockmaker. Gained contracts bind the exact Philosopher, grant, opportunity, insertion, task, seat, and revision. Native identities are resolved from current role snapshots at settlement.
+The complete numeric output domain is the dense integer set `0..6`. A native pair of distinct seats on the fixed 12-seat ring has truth distance `1..6`; both directions are measured and the shorter is used, then the minimum across both native Minions is selected. Sourced `0` represents an exceptional absence of a required identity set, but that canonical history is unsupported and fails closed. False-information candidate sets may still contain `0`.
 
-## Candidate Legality And Simulation Policy
+## Native Character-Type Boundary
 
-The stored domain is exactly `0..6`. Effective non-Vortox information selects truth; canonical drunk information retains the full legal domain; Vortox excludes truth. Legal candidates, selected distance, reliability, and deterministic simulation reason are separate fields.
+Demon and Minion identity is determined by the current role snapshot's native `characterType`, never alignment. A good Demon counts; an evil Townsfolk does not. The supported canonical state requires exactly one native Demon and two native Minions; unsupported identity counts fail closed.
 
-## Vortox And Impairment Boundary
+## Registration Boundary
 
-Vortox requires one exact active/effective tenure bound to the stored native Demon player, seat, and role. Canonical drunkenness binds the preserved Philosopher choice/grant/impairment chain. Poisoned Clockmaker and impaired Vortox remain unsupported.
+This slice is explicitly `NATIVE_CHARACTER_TYPE_ONLY`. It does not implement Storyteller registration decisions for Spy, Recluse, Summoner, or any other registration effect, and it does not claim native classification is the complete BOTC registration rule.
 
-## Event And State Contract
+## Current-State Timing Boundary
 
-Settlement emits exactly `ClockmakerInformationDelivered` followed by `ScheduledTaskSettled` with shared metadata and consecutive sequences. State stores a unique delivery and the linked settlement outcome.
+Each delivery uses `CurrentCharacterState` at that Clockmaker task's settlement revision. A base Clockmaker after a supported Snake Charmer Demon swap uses the new current Demon seat. A Philosopher-gained task resolves at its earlier inserted position. Later role or alignment changes do not recompute a delivered fact.
 
-## Projection And Information Safety
+## Philosopher-Gained Boundary
 
-Only the source sees `{ distance }`, model `clockmaker-information-v1`, and stage `CLOCKMAKER_INFORMATION`. Player and AI views are identical. Hidden identity, geometry, truth, candidates, impairment, Vortox, policy, state, assignment, and task facts are not projected.
+The gained path binds the exact Philosopher source player, seat, role, choice opportunity, grant, inserted `CLOCKMAKER_INFORMATION` task, and insertion revision. It is ordered after `PHILOSOPHER_ACTION` and before `MINION_INFO`. If an original Clockmaker is present, its later base task binds the preserved duplicate-role drunkenness chain.
 
-## Replay Stored And Prospective Validation
+## Impairment Candidate Boundary
 
-Replay, batch, stored-fact, and prospective validators reject naked, reversed, partial, duplicate, extra, cross-linked, malformed, stale, and forged histories atomically. Later current-state changes do not rewrite delivered history.
+Without Vortox, a canonically drunk Clockmaker retains all legal values `0..6`, including truth; deterministic simulation selects the smallest false value without redefining official legality. Pure poisoned legality is the same. A canonical poisoned-Clockmaker producer is not reachable in the accepted history and is not implemented; poisoned behavior is only a pure legality/fail-closed boundary.
 
-## Receipt Failure And Determinism
+## Vortox False-Information Boundary
 
-Deterministic command rejections use stored receipts and structural fingerprints. Metadata, construction, prospective, dependency, and commit failures remain retryable without partial events or receipts. Canonical IDs use task and settlement revision only; banned clock/random/locale primitives are absent.
+An effective current Vortox excludes the rule-correct distance for effective or impaired Townsfolk information. Runtime and stored validation require exact active/effective Vortox tenure provenance. Missing, multiple, conflicting, inactive, malformed, or represented-impaired Vortox histories fail closed.
 
-## Local Validation And Exact-Head CI
+## Storyteller Discretion Boundary
 
-Focused suites passed 7 files / 341 tests. Typecheck, changed-file lint, full lint, and diff checks passed. Full and coverage runs each passed 28 files / 891 tests; coverage is 85.85% statements/lines, 79.93% branches, and 97.84% functions. The Windows deterministic job directly runs Clockmaker domain/replay/order suites, followed by projection, task-engine, and application package tests; its exact new root command was locally verified as 3 files / 46 tests, not a no-op. Only CI/docs changed after the full coverage run, and YAML parse, typecheck, full lint, and diff checks passed. Exact frozen-head Ubuntu and Windows CI are not yet available and are not claimed.
+The deterministic single-player policy selects one member of the sourced legal candidate set. It is simulation policy only, not the full Storyteller freedom to choose among legal correct/incorrect or false candidates. Registration discretion and free-form Storyteller UI remain unsupported.
 
-## Coverage Status And Next Gate
+## Historical Stored-Fact Boundary
 
-Clockmaker is `PARTIAL`. Next: controller pre-publish audit, attributed commit, push, one PR, exact-head CI, then one complete independent final report returning both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS` with no blockers. No merge is authorized yet.
+Delivered knowledge is immutable historical fact. Stored validation binds the exact task, source, settlement revision, native references, pair snapshots, truth, candidate set, selection, impairment provenance, and settlement. The native-Demon/Vortox biconditional requires a stored native Vortox exactly when `VORTOX_FALSE_REQUIRED` is present, with one matching active/effective tenure for the same player, seat, and role; a non-Vortox native Demon cannot carry a forged Vortox constraint. Later current state cannot rewrite the delivery.
+
+## Private Projection Boundary
+
+Only the source receives `{ distance }`, model `clockmaker-information-v1`, and stage `CLOCKMAKER_INFORMATION`; player and AI views are identical. Native identities, pair geometry, rule-correct truth, candidates, impairment, Vortox, simulation policy, current state, assignment, task, and settlement internals are never projected.
+
+## CI Results
+
+Product implementation HEAD `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5` passed historical [push CI run 29147953027](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29147953027) and [pull-request CI run 29147961984](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29147961984). Each run's Ubuntu `validate`, Windows deterministic job, and explicit 3-file / 46-test Clockmaker step succeeded. Round-1 final review on that product head returned historical `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` solely because six committed documentation files were stale.
+
+For the docs-only repair and every later review, the current review-head authority is the live GitHub PR #19 `headRefOid`; exact-head CI authority is the GitHub checks attached to that same live head. This committed artifact does not predict its own future commit SHA or run identifiers.
+
+## Coverage Status
+
+Clockmaker remains `PARTIAL`, never `COMPLETE`. Product local focused suites passed 7 files / 341 tests. Full and coverage runs each passed 28 files / 891 tests at 85.85% statements/lines, 79.93% branches, and 97.84% functions; `clockmaker.ts` reached 97.95% statements/lines, 91.42% branches, and 100% functions.
+
+Remaining gates are successful push and pull-request checks attached to the live repaired PR head, one fresh complete independent final review on that exact head, both verbatim GitHub audit comments with matching head and empty blockers, comment re-read, and all merge requirements. No merge is authorized yet.

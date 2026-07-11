@@ -1,17 +1,20 @@
 # Current Task
 
-## Slice 2B17 — Local Implementation Validation
+## Slice 2B17 — Final Review Repair Round 1 / 2
 
-- Candidate: Clockmaker, `FIRST_NIGHT_NATIVE_AND_PHILOSOPHER_GAINED_INFORMATION`.
 - Branch: `phase-3/clockmaker-first-night-information`.
-- PR: none.
-- Implementation: bounded code, tests, projection, traceability, documentation, and all local gates complete in the uncommitted worktree.
-- Evidence: `RULE_READY`, SHA-256 `db1fb83335e6a2083f85797b83516b8b646538ee3afcfd5ac92319147432d97e`.
-- Design: round 3, SHA-256 `fde5aebea89e003c38938c338abfd4fdd1370c88814f965c41a0dcda7b3d1e06`.
-- Design review: `RULE_DESIGN_PASS`, SHA-256 `2c472cfdca5578d0aa556e4ec02761854362fcf3470a4188e294cfe74dafbe62`, blockers `[]`.
-- Trace contract: all rows `1..99` audited; row `34` is external evidence, not a catalog test.
-- Coverage remains `PARTIAL`.
+- PR: [#19](https://github.com/JackeyLovedas/botc-singleplayer/pull/19), open and non-draft.
+- Product implementation HEAD: `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5`.
+- Product-head push CI: run `29147953027`, `SUCCESS`.
+- Product-head pull-request CI: run `29147961984`, `SUCCESS`.
+- Round-1 final review: historical `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` on product HEAD `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5`.
+- Round-1 blocker: six committed control/status/PR-body documents were stale; production, tests, workflow, evidence, design, design reviews, and rule matrix passed review and are unchanged by this repair.
+- Clockmaker remains `PARTIAL`; Slice 2B18 remains prohibited.
 
-## Next Gate
+## Live Authority
 
-Return the uncommitted feature worktree for controller pre-publish audit. Local gates passed 28 files / 891 tests and coverage at 85.85% statements/lines, 79.93% branches, and 97.84% functions. Do not commit, push, open a PR, merge, or start Slice 2B18 during this implementation turn.
+The current review head is the live GitHub PR #19 `headRefOid`. Exact-head CI means the GitHub checks attached to that same live `headRefOid`. This document does not predict or self-reference the SHA or run identifiers of its future docs-only repair commit.
+
+## Remaining Gates
+
+Commit and push only the seven repair documents, require exact-head push and pull-request CI on the new live PR head, freeze it, then obtain one fresh complete independent final review. After both final pass verdicts, the two required verbatim audit comments must be published and re-read before merge.

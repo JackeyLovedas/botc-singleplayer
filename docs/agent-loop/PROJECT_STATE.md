@@ -4,15 +4,16 @@
 
 - Phase 3 controlled vertical slices.
 - Accepted: 2B13 through 2B16.
-- Slice 2B17 has `RULE_READY`, round-3 `RULE_DESIGN_PASS`, and a bounded local implementation with all local gates green, awaiting controller pre-publish audit.
-- Current branch: `phase-3/clockmaker-first-night-information`; no PR.
-- Clockmaker remains `PARTIAL`.
-- Slice 2B18 is prohibited.
+- Slice 2B17 is open as PR [#19](https://github.com/JackeyLovedas/botc-singleplayer/pull/19) on `phase-3/clockmaker-first-night-information`.
+- Product implementation HEAD `69c3f0375883bd9ec7908b5f9f609dad5e6fcee5` passed push run `29147953027` and pull-request run `29147961984`.
+- Round-1 final review on that product HEAD returned historical `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` solely for stale final documentation.
+- Repair round: `1 / 2`.
+- Clockmaker remains `PARTIAL`; Slice 2B18 is prohibited.
 
-## Current Boundary
+## Repair Boundary
 
-2B17 is limited to base and Philosopher-gained first-night Clockmaker information, canonical Philosopher duplicate drunkenness, current native character types, the supported Snake Charmer transition, effective current Vortox, exact historical validation, and source-only projection. Registration, Travellers, death, canonical poisoned Clockmaker, impaired Vortox, unsupported native counts, later-night acquisition, recurrence, general lifecycle machinery, UI, persistence, and Slice 2B18 remain outside the accepted boundary.
+Only `AUTOPILOT_LOG.md`, `AUTOPILOT_STATE.json`, `CURRENT_TASK.md`, `PROJECT_STATE.md`, `phase-3-slice-2b17-status.md`, `phase-3-slice-2b17-pr-body.md`, and the verbatim round-1 review report change. Production, tests, workflow, evidence, design, design reviews, and the coverage matrix remain byte-unchanged.
 
-## Pending Gates
+## Live Authority And Remaining Gates
 
-Attributed commit, push, PR creation from the complete 17-heading draft, exact frozen-head Ubuntu/Windows CI, complete independent final review, and both verbatim GitHub audit comments remain pending. No pass verdict or exact-head CI is claimed by the local implementation state.
+The live GitHub PR #19 `headRefOid` is the current review-head authority. GitHub checks attached to that exact live head are the exact-head CI authority. After this docs-only repair is pushed, all attached push and pull-request checks must succeed before a fresh complete independent final review. Passing review, both verbatim audit comments, audit-comment re-read, and merge requirements remain pending.
