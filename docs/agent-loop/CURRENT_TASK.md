@@ -3,7 +3,7 @@
 ## Active Slice 2B18A
 
 - Name: `First-Night Ability Outcome Ledger Foundation`.
-- Status: `RUNNING` on `main`; no feature branch or PR exists.
+- Status: `HUMAN_BLOCKED` on `main`; no feature branch or PR exists.
 - Recovery anchor: `b228dd53851a9bd947a41e39187db20735069402`; exact prior main CI `29180118996` was `SUCCESS`.
 - Limits: `maxSlices=1`, `maxRepairRounds=2`, `maxDesignRounds=2`; repair round `0 / 2`, design round `2 / 2`.
 - Candidate scope: `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`.
@@ -16,8 +16,19 @@
 - All five original blockers are resolved for the bounded product scope: scheduling by accepted Slice 2B17.2, and the other four through the explicit approved simulator contracts.
 - Round-1 independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-1.md`, SHA-256 `b5641d7207d488233ec5e2730f948a921cc9d3c0080cf7f182595bf151ddfb4c`, terminal `RULE_DESIGN_FIX_REQUIRED`.
 - Architect round-2 design is `docs/implementation/phase-3-slice-2b18a-design.md`, SHA-256 `62a83e4f7161d8bf5bd9adda6c24e353edf7e0b6b4d752846e426c0f55e8cb59`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`, coverage `PARTIAL`.
-- The complete review and revised design preserve UTF-8/LF/trailing-LF boundaries and exact terminal lines.
+- Round-2 independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-2.md`, SHA-256 `004d80f4b806ccd108736223f32f86577864a0c355ef27cac2015d671ac6e730`, terminal `RULE_DESIGN_FIX_REQUIRED`.
+- The round-2 reviewer examined exact HEAD `f2929b016b5bf3d052bed670f79d0751f3f0e1a2`; exact-head CI run `29185053326` was `SUCCESS` and the worktree was clean.
 - No production code, tests, feature branch, or PR has been created at this design gate.
+
+## Human Block
+
+The allowed `designRound=2/2` is exhausted without `RULE_DESIGN_PASS`. Three blockers remain:
+
+1. The public resolver cannot prove that its supplied context is bound to the current canonical pre-resolution state.
+2. `WitchDeathPendingMarked` is not explicitly frozen as the terminal exception to the marker-only no-fact rule.
+3. The Dreamer/Vortox historical classification wording remains ambiguous.
+
+Continuing requires explicit user authorization for an additional design round or a user-directed rescope. The controller and writer must not infer that authority.
 
 ## Strict Scope Boundary
 
@@ -50,4 +61,4 @@ The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte 
 
 ## Current Gate
 
-Commit and push only the round-1 review, round-2 design, and control documents and verify GitHub CI on the exact emitted main SHA. Then run a fresh independent round-2 rule-design review. Do not create a feature branch, production change, test, or PR until `RULE_DESIGN_PASS` authorizes implementation.
+Commit and push only this blocking review/control closeout and verify GitHub CI on the exact emitted main SHA. Then stop. Do not edit the design into a third round, create production changes/tests/branch/PR, or start 2B18B/2B19 without new user authority.

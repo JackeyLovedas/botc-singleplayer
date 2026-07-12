@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `RUNNING` on `main` for Slice 2B18A; no active PR or feature branch.
+- Current control state: `HUMAN_BLOCKED` on `main` for Slice 2B18A; no active PR or feature branch.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -21,7 +21,9 @@ The approved product contracts define the exclusive `FirstNightInitialized` lowe
 
 The independent resolved evidence is `docs/rules/evidence/2B18-resolved.md`, SHA-256 `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`, terminal `RULE_READY`, `PARTIAL`, with no unresolved rule conflicts. Its verbatim handoff was independently matched at 26,320 UTF-8 bytes, 454 LF bytes, and a trailing LF. All five original conflicts are resolved within the bounded product scope.
 
-Round-1 independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-1.md`, SHA-256 `b5641d7207d488233ec5e2730f948a921cc9d3c0080cf7f182595bf151ddfb4c`, terminal `RULE_DESIGN_FIX_REQUIRED`. The complete round-2 architect revision is `docs/implementation/phase-3-slice-2b18a-design.md`, SHA-256 `62a83e4f7161d8bf5bd9adda6c24e353edf7e0b6b4d752846e426c0f55e8cb59`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`, with coverage fixed at `PARTIAL`. It has not yet passed the fresh round-2 independent review.
+Round-1 independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-1.md`, SHA-256 `b5641d7207d488233ec5e2730f948a921cc9d3c0080cf7f182595bf151ddfb4c`, terminal `RULE_DESIGN_FIX_REQUIRED`. The complete round-2 architect revision is `docs/implementation/phase-3-slice-2b18a-design.md`, SHA-256 `62a83e4f7161d8bf5bd9adda6c24e353edf7e0b6b4d752846e426c0f55e8cb59`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`, with coverage fixed at `PARTIAL`.
+
+The round-2 independent report is `docs/implementation/phase-3-slice-2b18a-design-review-round-2.md`, SHA-256 `004d80f4b806ccd108736223f32f86577864a0c355ef27cac2015d671ac6e730`, terminal `RULE_DESIGN_FIX_REQUIRED`. It reviewed exact main HEAD `f2929b016b5bf3d052bed670f79d0751f3f0e1a2` with successful CI run `29185053326`. Because `designRound=2/2` is exhausted, the slice is `HUMAN_BLOCKED` pending explicit user authorization for another design round or rescope. Remaining blockers are canonical-state binding of the public resolver context, the Witch terminal-marker exception, and unambiguous Dreamer/Vortox historical classification.
 
 This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No production code, tests, branch, or PR exists at this design gate.
 
