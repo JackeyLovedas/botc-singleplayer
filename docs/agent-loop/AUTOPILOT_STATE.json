@@ -8,15 +8,15 @@
   "currentReviewHeadAuthority": null,
   "exactHeadCIAuthority": "GitHub CI attached to the exact startup-control commit on main",
   "repairRound": 0,
-  "designRound": 0,
+  "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": null,
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "candidateRole": "philosopher",
   "candidateScope": "LEGACY_PHILOSOPHER_NO_INSERTION_CHOICE_COMPATIBILITY",
-  "currentDesignPath": null,
-  "currentDesignHash": null,
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b17-3-design.md",
+  "currentDesignHash": "d7fee3c947fbfb1ab2e122531d9552c082a037ea5f66d0d44a6b0ff3b4f5264a",
   "designReviewRound2Hash": null,
   "ruleReady": true,
   "ruleDesignPass": false,
@@ -293,7 +293,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Started only Slice 2B17.3 Legacy Philosopher No-Insertion Choice Compatibility from accepted main dbd8594326333f5e775de3f39c3625346cb80739; this is a compatibility hotfix with no fresh rule research and no rule-semantics change.",
+  "lastAction": "Materialized the complete read-only architect design for Slice 2B17.3 at SHA-256 d7fee3c947fbfb1ab2e122531d9552c082a037ea5f66d0d44a6b0ff3b4f5264a; rule semantics remain unchanged and implementation remains unauthorized.",
   "lastError": null,
-  "nextAction": "Create the bounded Slice 2B17.3 design and obtain independent compatibility design review before implementation. Keep Slice 2B18 HUMAN_BLOCKED on four conflicts and do not start Slice 2B19."
+  "nextAction": "Obtain independent compatibility design review of the exact Slice 2B17.3 design before implementation. Keep Slice 2B18 HUMAN_BLOCKED on four conflicts and do not start Slice 2B19."
 }

@@ -15,7 +15,7 @@
 
 ## Active Slice 2B17.3 Boundary
 
-Legacy V1 plans may accept Philosopher choices whose roles have no first-night insertion mapping, granting and settling without an insertion event. Mapped legacy choices remain fail-closed, while all accepted V2 task ordering and payload contracts remain unchanged. The startup gate has `maxSlices=1`, `maxRepairRounds=2`, repair round `0`, design round `0`, and `implementationAuthorized=false`.
+Legacy V1 plans may accept Philosopher choices whose roles have no first-night insertion mapping, granting and settling without an insertion event. Mapped legacy choices remain fail-closed, while all accepted V2 task ordering and payload contracts remain unchanged. The architect design is `docs/implementation/phase-3-slice-2b17-3-design.md` at SHA-256 `d7fee3c947fbfb1ab2e122531d9552c082a037ea5f66d0d44a6b0ff3b4f5264a`. The gate has `maxSlices=1`, `maxRepairRounds=2`, repair round `0`, design round `1`, and `implementationAuthorized=false` pending independent compatibility review.
 
 ## Slice 2B17.2 Accepted Boundary
 
