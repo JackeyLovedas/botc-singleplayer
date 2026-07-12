@@ -1,6 +1,8 @@
 # Phase 3 Slice 2B17.2 Implementation Status
 
-Status: `REPAIR_ROUND_2_PROVENANCE_FIX_PENDING_PUBLISH`
+Status: `COMPLETED`
+
+Accepted through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) with final reviewed HEAD `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`, merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`, accepted tag `phase-3-slice-2b17-2-philosopher-gained-task-scheduling-v2`, and final `CODE_REVIEW_PASS / RULE_REVIEW_PASS` after repair round 2/2.
 
 This slice implements only the reviewed Philosopher-gained first-night scheduling V2 contract. It does not implement Mathematician information or resolve any of the four preserved Slice 2B18 rule conflicts.
 
@@ -32,3 +34,13 @@ This slice implements only the reviewed Philosopher-gained first-night schedulin
 - No role ability result semantics or player/AI projection fields changed.
 - Mathematician remains `SKELETON`; Slice 2B18 remains `HUMAN_BLOCKED` with four unresolved conflicts.
 - Slice 2B19 was not started.
+
+## Final provenance
+
+- Product-head CI: push `29177463850` and pull request `29177464877`, both `SUCCESS` on the final reviewed HEAD.
+- Merge-commit CI: main push `29177743946` and accepted-tag push `29177757002`, both `SUCCESS` on the merge SHA.
+- Complete independent report SHA-256: `120f006477d498221374685e62a56f31146b57253db5cb4602c201208318e769`.
+- Final code comment: `4949730086`, body SHA-256 `2ea846e405053ccc2cd908177adc7fc1d007718b6dc8017ee5b29e315abc4d44`.
+- Final rule comment: `4949730164`, body SHA-256 `1b5fdeb51bea27a745365a6c42d9da077d27356aecf8ec2f45f440a42c3cd6a0`.
+- Verbatim archives: `docs/reviews/pr-21-code-review-final.md` and `docs/reviews/pr-21-rule-review-final.md`.
+- Slice 2B18 prerequisite status: `docs/rules/evidence/2B18-prerequisite-status.md`; four rule conflicts remain and implementation is unauthorized.

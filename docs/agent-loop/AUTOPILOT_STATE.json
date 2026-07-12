@@ -1,26 +1,26 @@
 {
-  "status": "RUNNING",
-  "currentPR": 21,
-  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/21",
-  "currentBranch": "phase-3/philosopher-gained-task-scheduling-v2",
-  "currentSlice": "2B17.2",
-  "reviewedHead": null,
-  "currentReviewHeadAuthority": null,
-  "exactHeadCIAuthority": "GitHub push and pull_request checks attached to the current PR HEAD; both must be SUCCESS before independent review",
+  "status": "COMPLETED",
+  "currentPR": null,
+  "currentPRUrl": null,
+  "currentBranch": "main",
+  "currentSlice": null,
+  "reviewedHead": "880c4c363dcde292493f2fbc6ebde20a0dfc09c9",
+  "currentReviewHeadAuthority": "Archived GitHub final-review comments for PR #21",
+  "exactHeadCIAuthority": "productHeadCI on frozen feature HEAD 880c4c363dcde292493f2fbc6ebde20a0dfc09c9",
   "repairRound": 2,
   "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": null,
   "maxSlices": 1,
   "maxRepairRounds": 2,
-  "candidateRole": "philosopher",
-  "candidateScope": "PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2",
+  "candidateRole": null,
+  "candidateScope": null,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b17-2-design.md",
   "currentDesignHash": "773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed",
   "designReviewRound2Hash": null,
   "ruleReady": true,
   "ruleDesignPass": true,
-  "implementationAuthorized": true,
+  "implementationAuthorized": false,
   "designReviewPath": "docs/implementation/phase-3-slice-2b17-2-design-review.md",
   "designReviewHash": "5a4862b8a6538b1609171f9ba2e7ce2292c0aadedcefb225ea65c7abd28e3742",
   "slice2B19Prohibited": true,
@@ -49,11 +49,11 @@
       "candidateNumberDomain",
       "duplicateMathematicianRule"
     ],
-    "schedulingPrerequisiteStatus": "REPAIR_ROUND_2_PROVENANCE_FIX_PENDING_PUBLISH",
+    "schedulingPrerequisiteStatus": "RESOLVED_BY_ACCEPTED_SLICE_2B17_2",
     "implementationAuthorized": false
   },
   "slice2B17_2Implementation": {
-    "status": "REPAIR_ROUND_2_PROVENANCE_FIX_PENDING_PUBLISH",
+    "status": "COMPLETED",
     "branch": "phase-3/philosopher-gained-task-scheduling-v2",
     "repairImplementationHead": "e6afb1f54813e3469470e2165577bc424c901fad",
     "pr": 21,
@@ -92,7 +92,57 @@
     ],
     "status": "HISTORICAL_INVALIDATED_BY_PROVENANCE_REPAIR_ROUND_2"
   },
-  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1"],
+  "slice2B17_2Acceptance": {
+    "pr": 21,
+    "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/21",
+    "repairImplementationHead": "e6afb1f54813e3469470e2165577bc424c901fad",
+    "finalReviewedHead": "880c4c363dcde292493f2fbc6ebde20a0dfc09c9",
+    "mergeCommit": "44248dc8172b59a994ceba13e91e1bc32cbe561a",
+    "mergedAt": "2026-07-12T03:06:02Z",
+    "acceptedTag": "phase-3-slice-2b17-2-philosopher-gained-task-scheduling-v2",
+    "repairRound": 2,
+    "ruleReady": true,
+    "ruleDesignVerdict": "RULE_DESIGN_PASS",
+    "codeVerdict": "CODE_REVIEW_PASS",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [],
+    "finalReviewReportSha256": "120f006477d498221374685e62a56f31146b57253db5cb4602c201208318e769",
+    "finalReviewCodeComment": {
+      "id": 4949730086,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/21#issuecomment-4949730086",
+      "createdAt": "2026-07-12T03:04:21Z",
+      "bodySha256": "2ea846e405053ccc2cd908177adc7fc1d007718b6dc8017ee5b29e315abc4d44",
+      "archive": "docs/reviews/pr-21-code-review-final.md"
+    },
+    "finalReviewRuleComment": {
+      "id": 4949730164,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/21#issuecomment-4949730164",
+      "createdAt": "2026-07-12T03:04:23Z",
+      "bodySha256": "1b5fdeb51bea27a745365a6c42d9da077d27356aecf8ec2f45f440a42c3cd6a0",
+      "archive": "docs/reviews/pr-21-rule-review-final.md"
+    },
+    "productHeadCI": {
+      "sha": "880c4c363dcde292493f2fbc6ebde20a0dfc09c9",
+      "pushRun": 29177463850,
+      "pullRequestRun": 29177464877,
+      "status": "SUCCESS"
+    },
+    "mergeCommitCI": {
+      "sha": "44248dc8172b59a994ceba13e91e1bc32cbe561a",
+      "mainPushRun": 29177743946,
+      "acceptedTagPushRun": 29177757002,
+      "status": "SUCCESS"
+    },
+    "closeoutCommitCI": {
+      "authority": "GitHub checks attached to the exact emitted docs-only closeout commit",
+      "status": "PENDING_LIVE_AUTHORITY"
+    },
+    "coverageStatus": {
+      "philosopher": "PARTIAL",
+      "mathematician": "SKELETON"
+    }
+  },
+  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2"],
   "slice2B17ProductImplementation": {
     "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
     "commit": "feat: add Clockmaker first-night information",
@@ -242,7 +292,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Received CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS on historical HEAD 33d956c3 because provenance named a nonexistent repair implementation SHA; repair round 2 corrects documentation only.",
+  "lastAction": "Accepted and merged Slice 2B17.2 through PR #21 after exact-head CI and complete independent CODE_REVIEW_PASS / RULE_REVIEW_PASS; archived both original audit comments verbatim.",
   "lastError": null,
-  "nextAction": "Publish the provenance-only repair round 2, correct the PR body, require successful push and pull_request CI on the new exact HEAD, verify local == remote == PR with a clean worktree and one open PR, then request a fresh complete independent final review. Do not resume 2B18 production or start Slice 2B19."
+  "nextAction": "Push this docs-only closeout and verify CI on its exact commit. Then stop. Slice 2B18 remains HUMAN_BLOCKED on four rule conflicts and requires future explicit user rescope or approved interpretation; do not automatically resume it or start Slice 2B19."
 }

@@ -99,3 +99,11 @@ Windows 本地《血染钟楼》单机游戏项目。
 - The final reviewed feature HEAD is `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`; push `29151838214`, pull-request `29151839311`, merge-main `29152171989`, and merge-tag `29152177469` all passed.
 - The hotfix enforces strict dense standard arrays, hostile-value fail-closed validation, key-order-independent canonical comparison, and guarded stored-delivery reads. Rule, event, candidate, Vortox, impairment, and private projection semantics are unchanged (`ruleSemanticsChanged=false`).
 - Clockmaker remains `PARTIAL`; all previously unsupported boundaries remain unsupported. Slice 2B18 was not started. See `docs/implementation/phase-3-slice-2b17-status.md` and the verbatim PR #20 final-review archives in `docs/reviews/`.
+
+## Slice 2B17.2 Philosopher-Gained Scheduling V2 Closeout
+
+- Phase Three Slice 2B17.2 merged through PR #21 at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`; accepted tag `phase-3-slice-2b17-2-philosopher-gained-task-scheduling-v2` points directly to that merge.
+- The final reviewed feature HEAD is `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`; product-head push `29177463850`, pull-request `29177464877`, merge-main `29177743946`, and merge-tag `29177757002` all passed.
+- New games use versioned V2 Philosopher-gained task insertion at signed catalog positions, with deterministic base/seat/task-ID ordering. Accepted V1 history remains replayable, while new V1 planner output and V1/V2 mixing fail closed.
+- Final independent review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`. Verbatim audit comments are archived in `docs/reviews/pr-21-code-review-final.md` and `docs/reviews/pr-21-rule-review-final.md`.
+- Philosopher remains `PARTIAL`; Mathematician remains `SKELETON`. Slice 2B17.2 resolves only the scheduling prerequisite for Slice 2B18. Four rule conflicts remain, so Slice 2B18 is still `HUMAN_BLOCKED` and requires a future explicit user rescope or approved interpretation. Slice 2B19 was not started.

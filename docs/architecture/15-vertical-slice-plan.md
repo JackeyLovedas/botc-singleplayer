@@ -694,8 +694,12 @@ Acceptance:
 
 ## Philosopher-Gained First-Night Scheduling V2
 
+Acceptance: Slice 2B17.2 completed through PR #21 at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`, with final `CODE_REVIEW_PASS / RULE_REVIEW_PASS`. Philosopher remains `PARTIAL`; Mathematician remains `SKELETON`.
+
 New first-night plans use `first-night-task-plan-v2`. A mapped Philosopher choice records `FirstNightTaskInsertedV2` and a distinct `first-night-v2:PHILOSOPHER_GAINED:*` task ID. The event binds the active catalog signature and target role definition; its effective base order is the target task's catalog base order.
 
 At one catalog position, base tasks use insertion order `0`; gained tasks use their source seat number. The existing explicit stable task-ID comparator is the final tie-break. Therefore base runs before gained, and gained tasks are deterministic without locale or incidental iteration order.
 
 `FirstNightTaskInserted` and `first-night-task-plan-v1` remain accepted historical contracts. V1 ordering is not recalculated, V1/V2 generations cannot mix, and new mapped choices fail closed on an active V1 plan. This scheduling contract does not implement gained Dreamer or Mathematician execution semantics.
+
+This accepted slice resolves only the deterministic scheduling prerequisite previously recorded as Slice 2B18 conflict 5. The four rule conflicts in `docs/rules/evidence/2B18-prerequisite-status.md` remain unresolved. Slice 2B18 is still `HUMAN_BLOCKED` and must not resume without a future explicit user rescope or approved rule interpretation; Slice 2B19 was not started.

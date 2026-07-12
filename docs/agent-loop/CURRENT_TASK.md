@@ -1,39 +1,29 @@
 # Current Task
 
-## Active Slice 2B17.2 Control State
+## Completed Slice 2B17.2
 
-- Candidate role: `philosopher`.
-- Candidate scope: `PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2`.
-- Current branch: `phase-3/philosopher-gained-task-scheduling-v2`.
-- Current PR: [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21).
-- Current slice: `2B17.2`.
-- Recovery anchor: `823c256af6e367a28ea383be81ca26b9b61ad314`.
-- Prior exact-head CI: `29156186840`, `SUCCESS`.
-- `ruleReady=true`; `ruleDesignPass=true`; `implementationAuthorized=true`.
+- Status: `COMPLETED`.
+- Current branch: `main`.
+- Current PR: `null`; PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) is merged.
+- Current slice: `null`.
+- Final reviewed HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
+- Merge SHA: `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
+- Accepted tag: `phase-3-slice-2b17-2-philosopher-gained-task-scheduling-v2`.
 - Rule verdict: `RULE_READY`.
-- Evidence: `docs/rules/evidence/2B17-2.md`.
-- Evidence SHA-256: `ced6042dcfcbb2e14d86ef97c15b4c8bae2a263bd8aa30332a16b54683143eab`.
-- Design: `docs/implementation/phase-3-slice-2b17-2-design.md`.
-- Design SHA-256: `773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed`.
-- Design round: `1 / 2`; repair round: `2 / 2`; `maxSlices=1`.
-- Approved simulator override: `BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1`.
-- Design readiness: `READY_FOR_RULE_DESIGN_REVIEW`; this is not implementation authorization.
-- Independent design review: `docs/implementation/phase-3-slice-2b17-2-design-review.md`.
-- Design-review SHA-256: `5a4862b8a6538b1609171f9ba2e7ce2292c0aadedcefb225ea65c7abd28e3742`.
-- Design-review verdict: `RULE_DESIGN_PASS`; no Slice 2B17.2 implementation blocker remains.
-- Slice 2B18 production remains prohibited; Slice 2B19 is prohibited.
-- Slice 2B19 is prohibited.
-
-## Preserved Accepted History
-
-Slice 2B17 and validation hotfix 2B17.1 remain accepted. The 2B17.1 final reviewed HEAD was `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`, merge SHA `19923f4aa62c86cc2db995587d65b586fd365b8a`, with `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `ruleSemanticsChanged=false`, and Clockmaker still `PARTIAL`.
+- Design-review verdict: `RULE_DESIGN_PASS`.
+- Final verdicts: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`; remaining blockers: none for Slice 2B17.2.
+- Repair round: `2 / 2`; `maxSlices=1`.
+- Product-head CI: push `29177463850`, pull request `29177464877`, both `SUCCESS` on the final reviewed HEAD.
+- Merge-commit CI: main push `29177743946`, accepted-tag push `29177757002`, both `SUCCESS` on the merge SHA.
+- Final review comments: code `4949730086`, rule `4949730164`; verbatim archives are in `docs/reviews/`.
+- Philosopher remains `PARTIAL`; Mathematician remains `SKELETON`; no role is promoted to `COMPLETE`.
 
 ## Preserved Slice 2B18 Block
 
-Slice 2B18 remains historical `HUMAN_BLOCKED` with terminal `RULE_CONFLICT`. Its immutable evidence remains `docs/rules/evidence/2B18.md`, SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`. Four conflicts remain unchanged: `firstNightWindowDefinition`, `ownAbilityExclusion`, `candidateNumberDomain`, and `duplicateMathematicianRule`. Slice 2B17.2 addresses only the scheduling prerequisite and does not authorize Mathematician implementation.
+Slice 2B17.2 resolved only conflict 5, deterministic scheduling for a Philosopher-gained first-night Mathematician task. The immutable evidence `docs/rules/evidence/2B18.md` remains unchanged at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`. Four conflicts remain unresolved: `firstNightWindowDefinition`, `ownAbilityExclusion`, `candidateNumberDomain`, and `duplicateMathematicianRule`.
+
+Slice 2B18 remains `HUMAN_BLOCKED` and unauthorized. It requires a future explicit user rescope or approved rule interpretation. Do not automatically resume Slice 2B18, and do not start Slice 2B19.
 
 ## Current Gate
 
-The first complete independent review of historical HEAD `ebf364ddbd7e6258f88cef2ad80cc174c5887c3a` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; repair round 1 closed all five behavioral and traceability blocker classes. The next independent review of historical HEAD `33d956c3c88c65db2eded28f4bc050f6ec70f640` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` solely because three committed provenance records and the PR body named a nonexistent repair implementation SHA. Repair round 2 corrects that SHA only; it does not change production, tests, rules, evidence, or the previously green validation results. After publishing, require fresh push/PR CI on the new exact HEAD, verify all three HEAD authorities match with a clean worktree and one open PR, then freeze for independent review. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.
-
-Repair implementation commit: `e6afb1f54813e3469470e2165577bc424c901fad`. Subsequent commits are provenance/control tracking commits and must not be described as the repair implementation commit.
+Commit and push this post-merge documentation-only closeout, then verify GitHub CI on that exact closeout SHA. Do not inherit product-head or merge-commit CI for the closeout commit. Stop after exact closeout CI succeeds.
