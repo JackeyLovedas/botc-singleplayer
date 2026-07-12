@@ -7,10 +7,10 @@ Implemented only the reviewed `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION` fr
 ## Implemented
 
 - Derived canonical `FirstNightAbilityOutcomeLedger` initialized by `FirstNightInitialized`, with an exclusive lower boundary and state-bound inclusive resolver upper boundary.
-- Canonical fact and ability-instance IDs, base and Philosopher-gained V1/V2 provenance, closed 16-variant evidence union, exact-key validators, canonical ordering, duplicate removal, conflict rejection, deep clones, and fail-closed domain errors.
+- Canonical fact and ability-instance IDs, formatter round-trip and embedded provenance checks, base and Philosopher-gained V1/V2 provenance, closed 16-variant evidence union, exact nested/value validators, frozen primary identities, canonical ordering, duplicate removal, conflict rejection, field-by-field canonical deep clones, and fail-closed domain errors.
 - One event-applier derivation hook for the frozen terminal allowlist. Intermediate choice, marker, impairment, planning, settlement, and system-information events do not independently create outcome facts.
-- Terminal pre-state adapters for Philosopher, Snake Charmer, Evil Twin, Witch, Cerenovus, Clockmaker, Dreamer, and Seamstress, including current historical role/evidence links and frozen pending/unresolved boundaries.
-- Public state-only `resolveFirstNightMathematicianTrueCountFromState(stateBeforeResolution: unknown)` with own-instance exclusion, window filtering, pending exclusion, unresolved result, player deduplication, stable ordering, and fixed `0..11` product domain.
+- Terminal pre-state adapters for Philosopher, Snake Charmer, Evil Twin, Witch, Cerenovus, Clockmaker, Dreamer, and Seamstress, including historical role/tenure/evidence links, the ineffective Snake Charmer target-role quadrant, and the Dreamer/Vortox proven-versus-unproven matrix.
+- Public state-only `resolveFirstNightMathematicianTrueCountFromState(stateBeforeResolution: unknown)` constructs a validated module-private canonical context, with own-instance exclusion, exclusive/inclusive window filtering, pending exclusion, same-player unresolved redundancy, player deduplication, stable ordering, and fixed `0..11` product domain.
 - GameState/rebuild integration and package-root public contracts. Ledger, evidence, context, and count do not enter player or AI projections.
 
 ## Explicitly Unsupported
@@ -21,16 +21,16 @@ Implemented only the reviewed `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION` fr
 
 ## Rule-to-Test Traceability
 
-- Window, ID, provenance, evidence exact shapes and conflict ordering: `packages/domain-core/src/first-night-ability-outcome-ledger.test.ts`.
+- Window, ID/provenance round-trip, all 16 evidence variants, V1/V2 nested generation, frozen identities, exact count variants, conflict ordering, and nested clone isolation: `packages/domain-core/src/first-night-ability-outcome-ledger.test.ts`.
 - Hostile Proxy/getter/sparse/cycle/symbol/nonplain fail-closed validation: the same dedicated test file.
-- Count own/window/status classification, player deduplication, unresolved boundary, and no final number: the same dedicated test file plus the existing application gained-Mathematician fail-closed regression.
-- Deterministic rebuild and terminal integration: existing `rebuild.test.ts`, role replay suites, and application tests.
-- Projection non-leakage: existing projection suites, which remain green after GameState gains the derived ledger.
+- Canonical-context forgery rejection, lower-window rejection, Snake Charmer historical-target classification, Dreamer/Vortox applicability, count status classification, player deduplication, and unresolved redundancy: the same dedicated test file.
+- Deterministic replay append assertions for effective/impaired Witch and Dreamer: `packages/domain-core/src/rebuild.test.ts`; gained-Mathematician ledger presence and unchanged fail-closed application boundary: `packages/application/src/game-application-service.test.ts`.
+- Projection non-leakage with injected ledger sentinels: `packages/projections/src/private-knowledge-view.test.ts`.
 
 ## Validation
 
-- Focused: `3 files / 403 tests passed` for ledger, rebuild, and application.
-- Full: `29 files / 935 tests passed`.
-- Coverage: `86.20%` statements/lines, `80.29%` branches, `96.96%` functions.
+- Focused: dedicated ledger `19/19`, rebuild `182/182`, projection `77/77`, and gained-Mathematician application regression passed.
+- Full: `29 files / 942 tests passed`.
+- Coverage: `86.27%` statements/lines, `80.32%` branches, `97.44%` functions.
 - `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:coverage`, and affected-file lint passed.
 - Final diff/forbidden scans and exact-head GitHub CI are required before handoff.

@@ -4183,6 +4183,12 @@ describe("domain event rebuild", () => {
     expect(state.witchTargetChoices?.choices).toStrictEqual([targetChosen.payload]);
     expect(state.witchDeathPending?.pendingDeaths).toStrictEqual([pendingDeath.payload]);
     expect(state.witchIneffectiveResolutions).toBeUndefined();
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)).toMatchObject({
+      sourceEventId: pendingDeath.eventId,
+      outcomeStatus: "NORMAL",
+      causeKind: "NO_OTHER_CHARACTER_ABILITY",
+      abilityRoleId: "witch"
+    });
     expect(pendingDeath.payload).toMatchObject({
       taskId: targetChosen.payload.taskId,
       taskType: "WITCH_ACTION",
@@ -4236,6 +4242,12 @@ describe("domain event rebuild", () => {
       sourceImpairmentKind: "POISONED"
     });
     expect(state.witchDeathPending).toBeUndefined();
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)).toMatchObject({
+      sourceEventId: ineffective.eventId,
+      outcomeStatus: "PENDING_TRIGGER",
+      causeKind: "SOURCE_POISONING",
+      abilityRoleId: "witch"
+    });
     expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
       opportunity.opportunityId === targetChosen.payload.opportunityId
     )?.opportunityStatus).toBe("CLOSED");
@@ -4392,6 +4404,12 @@ describe("domain event rebuild", () => {
 
     expect(state.dreamerTargetChoices?.choices).toStrictEqual([targetChosen.payload]);
     expect(state.dreamerInformation?.deliveries).toStrictEqual([information.payload]);
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)).toMatchObject({
+      sourceEventId: information.eventId,
+      outcomeStatus: "NORMAL",
+      causeKind: "NO_OTHER_CHARACTER_ABILITY",
+      abilityRoleId: "dreamer"
+    });
     expect(information.payload).toMatchObject({
       taskId: targetChosen.payload.taskId,
       taskType: "DREAMER_ACTION",

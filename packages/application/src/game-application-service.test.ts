@@ -4636,6 +4636,14 @@ describe("GameApplicationService", () => {
     const ready = await advanceToScheduledTask(service, store, gainedTask.taskId, "advance-gained-mathematician");
     expect(ready.firstNightTaskPlan?.tasks[ready.firstNightTaskProgress?.settlements.length ?? 0]?.taskId).toBe(gainedTask.taskId);
     expect(gainedTask.orderKey).toStrictEqual({ baseOrder: 1100, insertionOrder: opportunity.sourceSeatNumber });
+    expect(ready.firstNightAbilityOutcomeLedger?.facts).toContainEqual(expect.objectContaining({
+      abilityRoleId: "philosopher",
+      outcomeStatus: "NORMAL",
+      causeKind: "NO_OTHER_CHARACTER_ABILITY"
+    }));
+    expect(ready.firstNightAbilityOutcomeLedger?.facts.some((fact) =>
+      fact.evidenceReferences.some((evidence) => evidence.kind === "PHILOSOPHER_GRANT" && evidence.chosenRoleId === "mathematician")
+    )).toBe(true);
     const beforeEvents = await store.loadDomainEvents(ids.game);
     const beforeReceiptCount = store.getReceiptCount();
 

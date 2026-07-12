@@ -3,8 +3,8 @@
 ## Active Slice 2B18A
 
 - Name: `First-Night Ability Outcome Ledger Foundation`.
-- Status: `RUNNING` on `phase-3/first-night-ability-outcome-ledger`; implementation commit `944ba8b22fea31e8d0712573a45121fe70537e0b` is published in PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23).
-- Limits: `maxSlices=1`, `maxRepairRounds=2`, historical `maxDesignRounds=3`; repair round `0 / 2`, final authorized design round `3.2`.
+- Status: `REPAIRING_READY_TO_PUBLISH` on `phase-3/first-night-ability-outcome-ledger`; final-review repair round `1 / 2` for PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23).
+- Limits: `maxSlices=1`, `maxRepairRounds=2`, historical `maxDesignRounds=3`; repair round `1 / 2`, final authorized design round `3.2`.
 - User continuation authorization: `DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION`.
 - `behaviorDesignFrozen=true`; `finalDesignCompletionRound=true`; scope is evidence-contract simplification only.
 - Recovery anchor: `bd74093280bff1ba7b0027552045c7a78e3c44a6`; exact CI `29187357426` was `SUCCESS`; worktree clean; open PR count `0`.
@@ -32,7 +32,8 @@
 - Fresh Design 3.2 review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md`, SHA-256 `8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525`, terminal `RULE_DESIGN_PASS`, with `remainingBlockers=[]`.
 - The reviewer examined exact HEAD `3dc10b4f030be7dd1c314c7a8981b24424bbd02b`; exact-head CI `29192916263` was `SUCCESS`, worktree clean, open PR count zero. Reviewer reverse materialization verification returned `MATCH` for 11,698 UTF-8 bytes, 212 LF bytes and trailing LF.
 - Design 3.2 is the sole implementation authority; behavior remains frozen and this remains the final design-completion round.
-- Bounded implementation is complete locally: `29 files / 935 tests`, coverage `86.20%` statements/lines, `80.29%` branches, `96.96%` functions; typecheck and lint pass. PR #23 contains all required rule-evidence and traceability sections.
+- Final-review round 1 is archived verbatim at `docs/implementation/phase-3-slice-2b18a-final-review-round-1.md`, SHA-256 `4f41ea18c085f329e5631b456816447f14d62319a2f60527d0074d5532f6ef0f`, reviewer integrity `MATCH`. Verdicts are `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`, with 16 findings and 11 remaining blocker groups.
+- Repair round 1 closes those implementation groups with direct Snake Charmer and Dreamer/Vortox regressions, complete canonical context/evidence/provenance/window/count validation, replay-boundary validation, projection sentinels, and corrected PARTIAL traceability. Local gates: typecheck/lint pass, `29 / 942` full tests pass, coverage `86.27%` statements/lines, `80.32%` branches, `97.44%` functions.
 
 ## Authorized Final Design Round 3.2
 
@@ -75,4 +76,4 @@ The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte 
 
 ## Current Gate
 
-Push this PR-tracking commit and require exact-head push and pull-request CI success. Verify branch/PR/remote equality and clean scope, then stop before final review. Do not merge, request final review yet, implement Mathematician delivery/settlement/private number, or begin 2B18B/2B19.
+Implement every round-1 blocker against frozen Design 3.2: historical Snake and Dreamer/Vortox classification, complete internal context, all evidence/value/cross-link/minimum-set contracts, identity/provenance/window/count/integration invariants, direct hostile and integration regressions, and accurate traceability. Then run all gates and update the same PR. Do not merge, request final review yet, implement delivery/settlement/private number, or begin 2B18B/2B19.

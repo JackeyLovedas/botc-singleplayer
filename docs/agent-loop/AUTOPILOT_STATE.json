@@ -7,7 +7,7 @@
   "reviewedHead": "3dc10b4f030be7dd1c314c7a8981b24424bbd02b",
   "currentReviewHeadAuthority": "Complete fresh independent Design 3.2 review on exact main HEAD 3dc10b4f030be7dd1c314c7a8981b24424bbd02b",
   "exactHeadCIAuthority": "Reviewed main HEAD 3dc10b4f030be7dd1c314c7a8981b24424bbd02b with GitHub CI run 29192916263: SUCCESS",
-  "repairRound": 0,
+  "repairRound": 1,
   "designRound": 3.2,
   "maxDesignRounds": 3,
   "userContinuationAuthorization": "DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION",
@@ -458,25 +458,35 @@
     }
   },
   "slice2B18AImplementation": {
-    "status": "PUBLISHED_AWAITING_EXACT_HEAD_CI",
+    "status": "REPAIRING_READY_TO_PUBLISH_ROUND_1",
     "branch": "phase-3/first-night-ability-outcome-ledger",
     "authorizationHead": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
     "authorizationCI": 29193210219,
     "implementationCommit": "944ba8b22fea31e8d0712573a45121fe70537e0b",
     "pr": 23,
     "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/23",
+    "finalReviewRound1": {
+      "reviewedHead": "245e32f85e3a553c6d5302aa0b4bd434b0a3490c",
+      "report": "docs/implementation/phase-3-slice-2b18a-final-review-round-1.md",
+      "reportSha256": "4f41ea18c085f329e5631b456816447f14d62319a2f60527d0074d5532f6ef0f",
+      "integrityVerdict": "MATCH",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "findingCount": 16,
+      "remainingBlockerCount": 11
+    },
     "designAuthority": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
     "designSha256": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
     "coverageStatus": "PARTIAL",
     "localValidation": {
-      "focused": "3 files / 403 tests passed",
-      "full": "29 files / 935 tests passed",
-      "coverage": "86.20% statements/lines; 80.29% branches; 96.96% functions",
+      "focused": "ledger 19/19; rebuild 182/182; projection 77/77; gained-Mathematician application regression passed",
+      "full": "29 files / 942 tests passed",
+      "coverage": "86.27% statements/lines; 80.32% branches; 97.44% functions",
       "typecheck": "PASS",
       "lint": "PASS"
     }
   },
-  "lastAction": "Committed and pushed the bounded outcome-ledger implementation and opened PR 23 with complete rule evidence, unsupported scope, source revisions, and rule-to-test traceability.",
+  "lastAction": "Completed repair round 1 changes and local gates for all final-review round-1 blocker groups; corrected traceability and retained PARTIAL coverage.",
   "lastError": null,
-  "nextAction": "Push this PR-tracking commit, require exact-head push and pull-request CI success, verify matching heads and clean scope, then stop before final review. Do not merge or begin 2B18B/2B19."
+  "nextAction": "Commit and push repair round 1 to the same PR branch, update the PR body, then require exact-head push and pull-request CI before any fresh final review."
 }
