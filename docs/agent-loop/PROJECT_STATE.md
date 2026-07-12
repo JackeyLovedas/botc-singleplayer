@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `RUNNING` on `phase-3/first-night-ability-outcome-ledger`; Design 3.2 implementation is locally green, with no PR yet.
+- Current control state: `RUNNING` on `phase-3/first-night-ability-outcome-ledger`; Design 3.2 implementation is published in PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) and awaits exact-head CI.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.

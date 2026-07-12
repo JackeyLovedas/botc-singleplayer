@@ -1,8 +1,8 @@
 {
   "status": "RUNNING",
-  "currentPR": null,
-  "currentPRUrl": null,
-  "currentBranch": "main",
+  "currentPR": 23,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/23",
+  "currentBranch": "phase-3/first-night-ability-outcome-ledger",
   "currentSlice": "2B18A",
   "reviewedHead": "3dc10b4f030be7dd1c314c7a8981b24424bbd02b",
   "currentReviewHeadAuthority": "Complete fresh independent Design 3.2 review on exact main HEAD 3dc10b4f030be7dd1c314c7a8981b24424bbd02b",
@@ -458,10 +458,13 @@
     }
   },
   "slice2B18AImplementation": {
-    "status": "READY_TO_PUBLISH",
+    "status": "PUBLISHED_AWAITING_EXACT_HEAD_CI",
     "branch": "phase-3/first-night-ability-outcome-ledger",
     "authorizationHead": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
     "authorizationCI": 29193210219,
+    "implementationCommit": "944ba8b22fea31e8d0712573a45121fe70537e0b",
+    "pr": 23,
+    "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/23",
     "designAuthority": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
     "designSha256": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
     "coverageStatus": "PARTIAL",
@@ -473,7 +476,7 @@
       "lint": "PASS"
     }
   },
-  "lastAction": "Implemented the bounded Design 3.2 outcome-ledger and state-only true-count foundation on the sole feature branch; all local full gates pass and coverage remains PARTIAL.",
+  "lastAction": "Committed and pushed the bounded outcome-ledger implementation and opened PR 23 with complete rule evidence, unsupported scope, source revisions, and rule-to-test traceability.",
   "lastError": null,
-  "nextAction": "Run final diff and forbidden scans, commit and push the feature branch, create the exact-title PR with complete rule traceability, then require exact-head push and PR CI before final review. Do not merge or begin 2B18B/2B19."
+  "nextAction": "Push this PR-tracking commit, require exact-head push and pull-request CI success, verify matching heads and clean scope, then stop before final review. Do not merge or begin 2B18B/2B19."
 }
