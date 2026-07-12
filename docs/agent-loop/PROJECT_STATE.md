@@ -3,8 +3,8 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `RUNNING` on `phase-3/philosopher-legacy-no-insertion-compatibility` for Slice 2B17.3; PR [#22](https://github.com/JackeyLovedas/botc-singleplayer/pull/22) is open.
-- Accepted slices: 2B13 through 2B17.2.
+- Current control state: `COMPLETED` on `main`; no active PR or slice.
+- Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
 - Final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, no blockers; repair round `2 / 2`.
@@ -13,13 +13,13 @@
 - Slice 2B17.3 is a bounded compatibility hotfix for legacy Philosopher no-insertion choices. It requires no fresh external rule research and does not change rule semantics.
 - Slice 2B18 remains `HUMAN_BLOCKED` on four conflicts; Slice 2B19 is prohibited and was not started.
 
-## Active Slice 2B17.3 Boundary
+## Slice 2B17.3 Accepted Boundary
 
 Legacy V1 plans may accept Philosopher choices whose roles have no first-night insertion mapping, granting and settling without an insertion event. Mapped legacy choices remain fail-closed, while all accepted V2 task ordering and payload contracts remain unchanged. The architect design is `docs/implementation/phase-3-slice-2b17-3-design.md` at SHA-256 `d7fee3c947fbfb1ab2e122531d9552c082a037ea5f66d0d44a6b0ff3b4f5264a`. The complete independent review is `docs/implementation/phase-3-slice-2b17-3-design-review.md` with `COMPATIBILITY_DESIGN_PASS`, no fixes or Slice 2B17.3 blockers, and `ruleSemanticsChanged=false`. Implementation is authorized after exact-head main CI on the review gate.
 
-The implementation changes only the V2 insertion builder's validation order: role mapping and the no-op return now precede plan/catalog/grant reads. Direct writable accepted-V1, duplicate DRUNK, five mapped-role no-write, builder hostile-input, V2 preservation, replay, batch, and projection regressions pass. Local gates pass 28 files / 923 tests with 86.09% statements/lines, 80.27% branches, and 97.88% functions. Status: `READY_TO_PUBLISH`.
+The implementation changes only the V2 insertion builder's validation order: role mapping and the no-op return now precede plan/catalog/grant reads. Direct writable accepted-V1, duplicate DRUNK, five mapped-role no-write, builder hostile-input, V2 preservation, replay, batch, and projection regressions pass. Local gates pass 28 files / 923 tests with 86.09% statements/lines, 80.27% branches, and 97.88% functions.
 
-Implementation commit `d564b1d49e919ab9dcc365560a8f4745fa39dc3f` is published through PR #22. The final feature head remains pending this PR-tracking commit and its exact push/pull-request CI; no final review verdict exists yet.
+PR #22 accepted implementation `d564b1d49e919ab9dcc365560a8f4745fa39dc3f` at final reviewed HEAD `d6c567838419fc34b6e6406468899e55d46b2979`, merge SHA `139616d2706a193079bf779898b8adeb9f3d049a`, and the accepted tag. Independent final review returned both pass verdicts with no blockers and unchanged rule semantics. Product and merge/tag CI all passed.
 
 ## Slice 2B17.2 Accepted Boundary
 

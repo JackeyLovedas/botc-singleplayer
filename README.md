@@ -34,10 +34,12 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Phase Three Slice 2B16：Cerenovus First-Night Madness Marker 已合并
 - Phase Three Slice 2B17：Clockmaker First-Night Distance Information 已合并
 - Phase Three Slice 2B17.1：Clockmaker Validation Hardening 已合并
+- Phase Three Slice 2B17.2：Philosopher-Gained First-Night Scheduling V2 已合并
+- Phase Three Slice 2B17.3：Legacy Philosopher No-Insertion Compatibility 已合并
 
 当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口、固定种子可复现的 12 人《梦殒春宵》真实配板基础、固定 12 人座位名单、可复现角色分配基础、首夜初始化事实、初始自身角色私有知识生成、玩家/AI 私有知识安全投影、首夜 `ScheduledTask` 计划骨架，`MINION_INFO`/`DEMON_INFO` 有序系统信息结算，Philosopher 首夜能力选择、能力授予事实、重复在场角色醉酒标记、获得能力首夜任务动态插入基础，Philosopher 获得的 Snake Charmer 行动机会、非恶魔目标无交换结算、恶魔命中后的当前角色/阵营交换和旧恶魔中毒标记，基础 Snake Charmer 行动与有效性求值，Evil Twin 配对与双子私有知识，以及 Witch 首夜目标选择、待死亡标记和无效结算。它不包含 Witch 实际死亡、提名触发结算、3 alive 失去能力、AI 决策、完整昼夜可玩流程、UI、Electron 或 SQLite 正式适配器。
 
-当前已接受实现还包括 Dreamer 首夜历史信息交付、Seamstress 基础/Philosopher 获得能力的首夜双目标选择与私有历史投影、Cerenovus 有效路径，以及 Clockmaker 首夜距离信息与严格运行时验证。相关角色覆盖仍为 `PARTIAL`，不代表完整角色实现。Slice 2B18 尚未开始。
+当前已接受实现还包括 Dreamer 首夜历史信息交付、Seamstress 基础/Philosopher 获得能力的首夜双目标选择与私有历史投影、Cerenovus 有效路径，以及 Clockmaker 首夜距离信息与严格运行时验证。相关角色覆盖仍为 `PARTIAL`，不代表完整角色实现。Slice 2B18 因四项规则冲突保持 `HUMAN_BLOCKED`，未恢复实现。
 
 重要文档：
 
@@ -65,6 +67,8 @@ Windows 本地《血染钟楼》单机游戏项目。
 - `docs/implementation/phase-3-slice-2b15-status.md`
 - `docs/implementation/phase-3-slice-2b16-status.md`
 - `docs/implementation/phase-3-slice-2b17-status.md`
+- `docs/implementation/phase-3-slice-2b17-2-status.md`
+- `docs/implementation/phase-3-slice-2b17-3-status.md`
 
 ## Current Delivery Update
 
@@ -107,3 +111,11 @@ Windows 本地《血染钟楼》单机游戏项目。
 - New games use versioned V2 Philosopher-gained task insertion at signed catalog positions, with deterministic base/seat/task-ID ordering. Accepted V1 history remains replayable, while new V1 planner output and V1/V2 mixing fail closed.
 - Final independent review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`. Verbatim audit comments are archived in `docs/reviews/pr-21-code-review-final.md` and `docs/reviews/pr-21-rule-review-final.md`.
 - Philosopher remains `PARTIAL`; Mathematician remains `SKELETON`. Slice 2B17.2 resolves only the scheduling prerequisite for Slice 2B18. Four rule conflicts remain, so Slice 2B18 is still `HUMAN_BLOCKED` and requires a future explicit user rescope or approved interpretation. Slice 2B19 was not started.
+
+## Slice 2B17.3 Legacy Philosopher Compatibility Closeout
+
+- Phase Three Slice 2B17.3 merged through PR #22 at merge SHA `139616d2706a193079bf779898b8adeb9f3d049a`; accepted tag `phase-3-slice-2b17-3-philosopher-legacy-no-insertion-compatibility` points to that merge.
+- The final reviewed feature HEAD is `d6c567838419fc34b6e6406468899e55d46b2979`; product push `29179615504`, pull-request `29179616613`, merge-main `29179930675`, and merge-tag `29179940573` all passed.
+- Accepted legacy V1 histories can now grant and settle Philosopher choices with no first-night insertion mapping. Mapped V1 choices remain fail closed; V2 payloads, task IDs, positions, ordering, replay, and projections remain unchanged.
+- Final independent review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `ruleSemanticsChanged=false`, and no blockers. Verbatim final comments are archived in `docs/reviews/`.
+- Philosopher remains `PARTIAL`; Mathematician remains `SKELETON`. Slice 2B18 remains `HUMAN_BLOCKED` on four conflicts, and Slice 2B19 was not started.

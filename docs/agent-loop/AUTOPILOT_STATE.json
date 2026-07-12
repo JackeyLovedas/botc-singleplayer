@@ -1,12 +1,12 @@
 {
-  "status": "RUNNING",
-  "currentPR": 22,
-  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/22",
-  "currentBranch": "phase-3/philosopher-legacy-no-insertion-compatibility",
-  "currentSlice": "2B17.3",
-  "reviewedHead": null,
-  "currentReviewHeadAuthority": null,
-  "exactHeadCIAuthority": "GitHub CI attached to the exact startup-control commit on main",
+  "status": "COMPLETED",
+  "currentPR": null,
+  "currentPRUrl": null,
+  "currentBranch": "main",
+  "currentSlice": null,
+  "reviewedHead": "d6c567838419fc34b6e6406468899e55d46b2979",
+  "currentReviewHeadAuthority": "Archived GitHub final-review comments for PR #22",
+  "exactHeadCIAuthority": "productHeadCI on frozen feature HEAD d6c567838419fc34b6e6406468899e55d46b2979",
   "repairRound": 0,
   "designRound": 1,
   "maxDesignRounds": 2,
@@ -20,7 +20,7 @@
   "designReviewRound2Hash": null,
   "ruleReady": true,
   "ruleDesignPass": false,
-  "implementationAuthorized": true,
+  "implementationAuthorized": false,
   "compatibilityDesignVerdict": "COMPATIBILITY_DESIGN_PASS",
   "designReviewPath": "docs/implementation/phase-3-slice-2b17-3-design-review.md",
   "designReviewHash": "e24c3dc937cdf937f6eab8de4adbbf363fe28d1c990fde50db3cc3826d90849a",
@@ -146,11 +146,12 @@
     }
   },
   "slice2B17_3Implementation": {
-    "status": "PUBLISHED_AWAITING_EXACT_HEAD_CI",
+    "status": "COMPLETED",
     "branch": "phase-3/philosopher-legacy-no-insertion-compatibility",
     "implementationCommit": "d564b1d49e919ab9dcc365560a8f4745fa39dc3f",
     "pr": 22,
     "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/22",
+    "finalReviewedHead": "d6c567838419fc34b6e6406468899e55d46b2979",
     "ruleSemanticsChanged": false,
     "productionFiles": [
       "packages/domain-core/src/philosopher-ability.ts"
@@ -169,7 +170,51 @@
       "forbiddenScan": "PASS"
     }
   },
-  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2"],
+  "slice2B17_3Acceptance": {
+    "pr": 22,
+    "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/22",
+    "implementationCommit": "d564b1d49e919ab9dcc365560a8f4745fa39dc3f",
+    "finalReviewedHead": "d6c567838419fc34b6e6406468899e55d46b2979",
+    "mergeCommit": "139616d2706a193079bf779898b8adeb9f3d049a",
+    "acceptedTag": "phase-3-slice-2b17-3-philosopher-legacy-no-insertion-compatibility",
+    "compatibilityDesignVerdict": "COMPATIBILITY_DESIGN_PASS",
+    "codeVerdict": "CODE_REVIEW_PASS",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "ruleSemanticsChanged": false,
+    "remainingBlockers": [],
+    "finalReviewReportSha256": "4f0f013b92143417bcf28592eecc62c58e438fac759a3b9f56df0ed266f66bd3",
+    "finalReviewCodeComment": {
+      "id": 4949964176,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/22#issuecomment-4949964176",
+      "createdAt": "2026-07-12T04:34:08Z",
+      "bodySha256": "8009e2a418385274faeedde249d5a53a046ca83a88b07aa954a5aed65882656e",
+      "archive": "docs/reviews/pr-22-code-review-final.md"
+    },
+    "finalReviewRuleComment": {
+      "id": 4949964254,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/22#issuecomment-4949964254",
+      "createdAt": "2026-07-12T04:34:10Z",
+      "bodySha256": "5032b0886977901a1909622f3e076ec870425a8e2357aa6701ea20dd54d151cd",
+      "archive": "docs/reviews/pr-22-rule-review-final.md"
+    },
+    "productHeadCI": {
+      "sha": "d6c567838419fc34b6e6406468899e55d46b2979",
+      "pushRun": 29179615504,
+      "pullRequestRun": 29179616613,
+      "status": "SUCCESS"
+    },
+    "mergeCommitCI": {
+      "sha": "139616d2706a193079bf779898b8adeb9f3d049a",
+      "mainPushRun": 29179930675,
+      "acceptedTagPushRun": 29179940573,
+      "status": "SUCCESS"
+    },
+    "closeoutCommitCI": {
+      "authority": "GitHub checks attached to the exact emitted docs-only closeout commit",
+      "status": "PENDING_LIVE_AUTHORITY"
+    }
+  },
+  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2", "2B17.3"],
   "slice2B17ProductImplementation": {
     "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
     "commit": "feat: add Clockmaker first-night information",
@@ -319,7 +364,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Committed and pushed the reviewed Slice 2B17.3 implementation at d564b1d49e919ab9dcc365560a8f4745fa39dc3f and opened the unique exact-title PR #22 with every required body section.",
+  "lastAction": "Accepted and merged Slice 2B17.3 through PR #22 after exact-head CI and complete independent CODE_REVIEW_PASS / RULE_REVIEW_PASS; archived both original audit comments verbatim.",
   "lastError": null,
-  "nextAction": "Push this PR-tracking commit, require both push and pull-request CI on its exact HEAD, update the live PR CI section, verify local/remote/PR equality and clean scope, then freeze for independent final review."
+  "nextAction": "Push this docs-only closeout and verify CI on its exact commit, then stop. Slice 2B18 remains HUMAN_BLOCKED on four rule conflicts; do not automatically resume it or start Slice 2B19."
 }

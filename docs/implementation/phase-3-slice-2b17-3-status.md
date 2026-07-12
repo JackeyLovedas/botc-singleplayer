@@ -2,11 +2,14 @@
 
 ## Status
 
-`PUBLISHED_AWAITING_EXACT_HEAD_CI`
+`COMPLETED`
 
 - Implementation commit: `d564b1d49e919ab9dcc365560a8f4745fa39dc3f`.
 - PR: [#22](https://github.com/JackeyLovedas/botc-singleplayer/pull/22).
-- Final feature HEAD and exact-head push/PR CI remain pending the PR-tracking commit.
+- Final reviewed HEAD: `d6c567838419fc34b6e6406468899e55d46b2979`.
+- Merge SHA: `139616d2706a193079bf779898b8adeb9f3d049a`.
+- Accepted tag: `phase-3-slice-2b17-3-philosopher-legacy-no-insertion-compatibility`.
+- Final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `ruleSemanticsChanged=false`, blockers `[]`.
 
 ## Implemented Boundary
 
@@ -36,3 +39,12 @@
 ## Preserved Blocks
 
 `docs/rules/evidence/2B18.md` remains unchanged at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`. Slice 2B18 remains `HUMAN_BLOCKED` on four conflicts. Slice 2B19 was not started.
+
+## Final Provenance
+
+- Product-head CI: push `29179615504`, pull request `29179616613`, both `SUCCESS` on the final reviewed HEAD.
+- Merge CI: main `29179930675`, accepted tag `29179940573`, both `SUCCESS` on the merge SHA.
+- Final report SHA-256: `4f0f013b92143417bcf28592eecc62c58e438fac759a3b9f56df0ed266f66bd3`.
+- Final code comment `4949964176`, body SHA-256 `8009e2a418385274faeedde249d5a53a046ca83a88b07aa954a5aed65882656e`.
+- Final rule comment `4949964254`, body SHA-256 `5032b0886977901a1909622f3e076ec870425a8e2357aa6701ea20dd54d151cd`.
+- Verbatim archives: `docs/reviews/pr-22-code-review-final.md` and `docs/reviews/pr-22-rule-review-final.md`.

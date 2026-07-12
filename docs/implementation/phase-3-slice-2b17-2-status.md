@@ -44,3 +44,7 @@ This slice implements only the reviewed Philosopher-gained first-night schedulin
 - Final rule comment: `4949730164`, body SHA-256 `1b5fdeb51bea27a745365a6c42d9da077d27356aecf8ec2f45f440a42c3cd6a0`.
 - Verbatim archives: `docs/reviews/pr-21-code-review-final.md` and `docs/reviews/pr-21-rule-review-final.md`.
 - Slice 2B18 prerequisite status: `docs/rules/evidence/2B18-prerequisite-status.md`; four rule conflicts remain and implementation is unauthorized.
+
+## Subsequent Compatibility Closeout
+
+Slice 2B17.3 subsequently corrected only the legacy V1 no-insertion builder ordering through PR #22. It did not alter this slice's V1/V2 scheduling semantics, role rules, payloads, IDs, or ordering. Slice 2B18 remains `HUMAN_BLOCKED` on the same four conflicts.

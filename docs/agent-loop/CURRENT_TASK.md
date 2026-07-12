@@ -1,16 +1,21 @@
 # Current Task
 
-## Active Slice 2B17.3
+## Completed Slice 2B17.3
 
 - Name: `Legacy Philosopher No-Insertion Choice Compatibility`.
-- Status: `RUNNING` on `phase-3/philosopher-legacy-no-insertion-compatibility`; current PR is [#22](https://github.com/JackeyLovedas/botc-singleplayer/pull/22).
+- Status: `COMPLETED` on `main`; current PR and slice are `null`.
+- PR [#22](https://github.com/JackeyLovedas/botc-singleplayer/pull/22) merged at `139616d2706a193079bf779898b8adeb9f3d049a`.
+- Final reviewed HEAD: `d6c567838419fc34b6e6406468899e55d46b2979`; implementation commit: `d564b1d49e919ab9dcc365560a8f4745fa39dc3f`.
+- Accepted tag: `phase-3-slice-2b17-3-philosopher-legacy-no-insertion-compatibility`.
+- Final verdicts: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`; `ruleSemanticsChanged=false`; blockers `[]`.
+- Product CI: push `29179615504`, pull request `29179616613`; merge CI: main `29179930675`, tag `29179940573`; all `SUCCESS`.
 - Recovery anchor: `dbd8594326333f5e775de3f39c3625346cb80739`; prior exact-main CI `29178027479` was `SUCCESS`.
 - Limits: `maxSlices=1`, `maxRepairRounds=2`; repair round `0 / 2`, design round `1 / 2`.
 - Candidate scope: `LEGACY_PHILOSOPHER_NO_INSERTION_CHOICE_COMPATIBILITY`.
 - This is a deterministic compatibility hotfix. Fresh external rule research is not required and `ruleSemanticsChanged=false`.
 - Architect design: `docs/implementation/phase-3-slice-2b17-3-design.md`, SHA-256 `d7fee3c947fbfb1ab2e122531d9552c082a037ea5f66d0d44a6b0ff3b4f5264a`, terminal `READY_FOR_COMPATIBILITY_REVIEW`.
 - Independent compatibility review: `docs/implementation/phase-3-slice-2b17-3-design-review.md`, repository-file SHA-256 `e24c3dc937cdf937f6eab8de4adbbf363fe28d1c990fde50db3cc3826d90849a`, verdict `COMPATIBILITY_DESIGN_PASS`, required fixes `None`, blockers `[]`.
-- `ruleSemanticsChanged=false`; implementation is authorized only after exact-head CI succeeds on the design-review gate commit.
+- Final audit comments `4949964176` and `4949964254` are archived verbatim in `docs/reviews/`.
 
 ## Hotfix Contract
 
@@ -24,6 +29,4 @@ Do not resume Slice 2B18 and do not start Slice 2B19.
 
 ## Current Gate
 
-The reviewed compatibility repair and direct regressions are locally complete. Focused validation passed 2 files / 222 tests; full and coverage passed 28 files / 923 tests at 86.09% statements/lines, 80.27% branches, and 97.88% functions. Typecheck, lint, diff check, and forbidden-pattern scan pass.
-
-Implementation commit `d564b1d49e919ab9dcc365560a8f4745fa39dc3f` is pushed and PR #22 has the exact required title and body sections. Push this PR-tracking state, then require exact-head push and pull-request CI, update the live PR CI section, and verify clean matching local/remote/PR heads before independent final review.
+Commit and push this post-merge documentation-only closeout, then verify GitHub CI on the exact emitted closeout SHA. Stop afterward; do not resume Slice 2B18 or begin Slice 2B19.
