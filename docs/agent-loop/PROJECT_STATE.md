@@ -3,14 +3,19 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `COMPLETED` on `main`; no active PR or slice.
+- Current control state: `RUNNING` on `main` for Slice 2B17.3; no active PR.
 - Accepted slices: 2B13 through 2B17.2.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
 - Final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, no blockers; repair round `2 / 2`.
 - Accepted tag: `phase-3-slice-2b17-2-philosopher-gained-task-scheduling-v2`.
 - Philosopher remains `PARTIAL`; Mathematician remains `SKELETON`; no role is `COMPLETE`.
-- Slice 2B18 remains `HUMAN_BLOCKED`; Slice 2B19 was not started.
+- Slice 2B17.3 is a bounded compatibility hotfix for legacy Philosopher no-insertion choices. It requires no fresh external rule research and does not change rule semantics.
+- Slice 2B18 remains `HUMAN_BLOCKED` on four conflicts; Slice 2B19 is prohibited and was not started.
+
+## Active Slice 2B17.3 Boundary
+
+Legacy V1 plans may accept Philosopher choices whose roles have no first-night insertion mapping, granting and settling without an insertion event. Mapped legacy choices remain fail-closed, while all accepted V2 task ordering and payload contracts remain unchanged. The startup gate has `maxSlices=1`, `maxRepairRounds=2`, repair round `0`, design round `0`, and `implementationAuthorized=false`.
 
 ## Slice 2B17.2 Accepted Boundary
 
