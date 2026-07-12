@@ -30,4 +30,3 @@ This slice implements only the reviewed Philosopher-gained first-night schedulin
 - No role ability result semantics or player/AI projection fields changed.
 - Mathematician remains `SKELETON`; Slice 2B18 remains `HUMAN_BLOCKED` with four unresolved conflicts.
 - Slice 2B19 was not started.
-
