@@ -2,7 +2,7 @@
   "status": "RUNNING",
   "currentPR": null,
   "currentPRUrl": null,
-  "currentBranch": "main",
+  "currentBranch": "phase-3/philosopher-legacy-no-insertion-compatibility",
   "currentSlice": "2B17.3",
   "reviewedHead": null,
   "currentReviewHeadAuthority": null,
@@ -143,6 +143,27 @@
     "coverageStatus": {
       "philosopher": "PARTIAL",
       "mathematician": "SKELETON"
+    }
+  },
+  "slice2B17_3Implementation": {
+    "status": "READY_TO_PUBLISH",
+    "branch": "phase-3/philosopher-legacy-no-insertion-compatibility",
+    "ruleSemanticsChanged": false,
+    "productionFiles": [
+      "packages/domain-core/src/philosopher-ability.ts"
+    ],
+    "testFiles": [
+      "packages/domain-core/src/philosopher-ability.test.ts",
+      "packages/application/src/game-application-service.test.ts"
+    ],
+    "localValidation": {
+      "focused": "2 files / 222 tests passed",
+      "full": "28 files / 923 tests passed",
+      "coverage": "86.09% statements/lines; 80.27% branches; 97.88% functions",
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "diffCheck": "PASS",
+      "forbiddenScan": "PASS"
     }
   },
   "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2"],
@@ -295,7 +316,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Materialized the complete independent compatibility design review with COMPATIBILITY_DESIGN_PASS, no required fixes, no Slice 2B17.3 blockers, and ruleSemanticsChanged=false.",
+  "lastAction": "Implemented the reviewed Slice 2B17.3 builder-order compatibility fix and direct V1/V2 regression suite; all focused and full local gates pass with ruleSemanticsChanged=false.",
   "lastError": null,
-  "nextAction": "After exact-head CI succeeds, create the sole feature branch phase-3/philosopher-legacy-no-insertion-compatibility and implement only the reviewed compatibility repair. Keep Slice 2B18 HUMAN_BLOCKED and do not start Slice 2B19."
+  "nextAction": "Commit the reviewed implementation with the exact required message, push the sole feature branch, create the unique PR with the required body, and freeze only after exact-head push and PR CI succeed."
 }

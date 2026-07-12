@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
+  LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
   SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM,
   SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION,
   compareFirstNightTaskOrder
@@ -24,7 +25,100 @@ const role = (id: string) => ({
   setupModifier: { outsiderDelta: 0, townsfolkDelta: 0 }
 });
 
+const philosopherChoice = (chosenRoleId: string): PhilosopherAbilityChosenPayload => {
+  const philosopher = role("philosopher");
+  const chosenRole = role(chosenRoleId);
+  return {
+    rulesBaselineVersion: "phase-one-v2.1", nightNumber: 1,
+    taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-02"), taskType: "PHILOSOPHER_ACTION",
+    opportunityId: actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-02:opportunity-01"),
+    decisionKind: "CHOOSE_GOOD_CHARACTER", sourcePlayerId: playerId("philosopher-player"), sourceSeatNumber: seatNumber(2),
+    sourceRole: philosopher, sourceCharacterStateRevision: 1, chosenRole,
+    chosenRoleId: roleId(chosenRoleId), roleCatalogSignature: "roles-v1"
+  };
+};
+
+const philosopherGrant = (choice: PhilosopherAbilityChosenPayload): PhilosopherGrantedAbility => ({
+  grantId: grantedAbilityId(`philosopher-grant-v1:seat-02:from-${choice.chosenRoleId}`),
+  sourcePlayerId: choice.sourcePlayerId, sourceSeatNumber: choice.sourceSeatNumber,
+  sourceRole: choice.sourceRole, sourceCharacterStateRevision: choice.sourceCharacterStateRevision,
+  chosenRole: choice.chosenRole, chosenRoleId: choice.chosenRoleId,
+  chosenRoleCatalogSignature: choice.roleCatalogSignature,
+  grantedAtTaskId: choice.taskId, grantedAtOpportunityId: choice.opportunityId
+});
+
+const taskPlan = (taskPlanVersion: FirstNightTaskPlan["taskPlanVersion"], chosenRoleId = "clockmaker"): FirstNightTaskPlan => ({
+  nightNumber: 1, taskPlanVersion,
+  taskCatalogVersion: SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION,
+  taskCatalogSignatureAlgorithm: SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM,
+  taskCatalogSignature: "test-signature",
+  taskCatalogSnapshot: {
+    taskCatalogVersion: SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION,
+    taskCatalogSignatureAlgorithm: SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM,
+    taskCatalogSignature: "test-signature",
+    definitions: [{
+      taskType: "CLOCKMAKER_INFORMATION", taskClass: "ROLE_INFORMATION", baseOrder: 800,
+      sourceKind: "ROLE", roleId: roleId(chosenRoleId), settlementPolicy: "REEVALUATE_SOURCE_AT_SETTLEMENT"
+    }]
+  },
+  rosterVersion: "roster-v1", assignmentAlgorithmVersion: "assignment-v1", roleCatalogSignature: "roles-v1",
+  knowledgeModelVersion: "initial-own-character-knowledge-v1", knowledgeStage: "OWN_CHARACTER_BOOTSTRAP", tasks: []
+});
+
 describe("Philosopher gained first-night task ordering", () => {
+  it.each([
+    [LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION, "artist"],
+    [LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION, "barber"],
+    [LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION, "philosopher"],
+    [CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION, "artist"],
+    [CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION, "barber"]
+  ] as const)("returns no insertion for %s + %s", (planVersion, chosenRoleId) => {
+    const choice = philosopherChoice(chosenRoleId);
+    expect(createFirstNightTaskInsertedV2Payload({
+      rulesBaselineVersion: "phase-one-v2.1", choice,
+      grant: philosopherGrant(choice), firstNightTaskPlan: taskPlan(planVersion)
+    })).toBeUndefined();
+  });
+
+  it("does not read plan or grant fields for a no-insertion choice", () => {
+    const choice = philosopherChoice("artist");
+    const unreadable = new Proxy({}, {
+      get: () => { throw new Error("no-op input must not be read"); }
+    });
+    expect(createFirstNightTaskInsertedV2Payload({
+      rulesBaselineVersion: "phase-one-v2.1", choice,
+      grant: unreadable as PhilosopherGrantedAbility,
+      firstNightTaskPlan: unreadable as FirstNightTaskPlan
+    })).toBeUndefined();
+  });
+
+  it.each(["snake_charmer", "clockmaker"])("keeps legacy mapped %s choices fail closed", (chosenRoleId) => {
+    const choice = philosopherChoice(chosenRoleId);
+    expect(() => createFirstNightTaskInsertedV2Payload({
+      rulesBaselineVersion: "phase-one-v2.1", choice,
+      grant: philosopherGrant(choice), firstNightTaskPlan: taskPlan(LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION)
+    })).toThrow("V2 insertion requires first-night-task-plan-v2");
+  });
+
+  it("keeps malformed mapped V2 catalog input fail closed", () => {
+    const choice = philosopherChoice("clockmaker");
+    const plan = taskPlan(CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION);
+    expect(() => createFirstNightTaskInsertedV2Payload({
+      rulesBaselineVersion: "phase-one-v2.1", choice, grant: philosopherGrant(choice),
+      firstNightTaskPlan: { ...plan, taskCatalogSnapshot: { ...plan.taskCatalogSnapshot, definitions: [] } }
+    })).toThrow("V2 inserted task must match a role task catalog definition");
+  });
+
+  it("keeps malformed mapped V2 grant input fail closed", () => {
+    const choice = philosopherChoice("clockmaker");
+    const grant = philosopherGrant(choice);
+    expect(() => createFirstNightTaskInsertedV2Payload({
+      rulesBaselineVersion: "phase-one-v2.1", choice,
+      grant: { ...grant, grantId: grantedAbilityId("wrong-grant") },
+      firstNightTaskPlan: taskPlan(CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION)
+    })).toThrow("V2 insertion grant must match the Philosopher choice");
+  });
+
   it("preserves the accepted V1 immediate-insertion order", () => {
     const philosopher = role("philosopher");
     const clockmaker = role("clockmaker");
