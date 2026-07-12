@@ -1,25 +1,29 @@
 {
-  "status": "HUMAN_BLOCKED",
+  "status": "RUNNING",
   "currentPR": null,
   "currentPRUrl": null,
   "currentBranch": "main",
   "currentSlice": "2B18A",
   "reviewedHead": "5a40c04ec50224ce05b43588a54ac0d5253a5ffd",
   "currentReviewHeadAuthority": "Complete fresh independent Design 3.1 review on exact main HEAD 5a40c04ec50224ce05b43588a54ac0d5253a5ffd",
-  "exactHeadCIAuthority": "GitHub CI run 29187068406 on reviewed main HEAD 5a40c04ec50224ce05b43588a54ac0d5253a5ffd: SUCCESS",
+  "exactHeadCIAuthority": "Recovery main HEAD bd74093280bff1ba7b0027552045c7a78e3c44a6 with GitHub CI run 29187357426: SUCCESS",
   "repairRound": 0,
-  "designRound": 3.1,
+  "designRound": 3.2,
   "maxDesignRounds": 3,
-  "userContinuationAuthorization": "DESIGN_ROUND_3_1_CONTRACT_COMPLETION",
+  "userContinuationAuthorization": "DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION",
   "behaviorDesignFrozen": true,
-  "designRound3_1Scope": "CONTRACT_COMPLETION_ONLY",
+  "finalDesignCompletionRound": true,
+  "designRound3_2Scope": "EVIDENCE_CONTRACT_SIMPLIFICATION_ONLY",
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "candidateRole": "mathematician",
   "candidateScope": "FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION",
-  "currentDesignPath": "docs/implementation/phase-3-slice-2b18a-design-round-3-1.md",
-  "currentDesignHash": "97456a3769d29b616af31c1e83dc5b1717809ffbe5a56ab0d86decd800c9710c",
-  "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_1",
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
+  "currentDesignHash": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
+  "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_2",
+  "designRound3_2Path": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
+  "designRound3_2Hash": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
+  "designRound3_2IntegrityVerdict": "MATCH",
   "designRound3_1Path": "docs/implementation/phase-3-slice-2b18a-design-round-3-1.md",
   "designRound3_1Hash": "97456a3769d29b616af31c1e83dc5b1717809ffbe5a56ab0d86decd800c9710c",
   "designRound3_1IntegrityVerdict": "MATCH",
@@ -400,7 +404,7 @@
     }
   },
   "recoveryAnchor": {
-    "sha": "37ae6407e8090a1892bbbc3c369ed9146d1477f7",
+    "sha": "bd74093280bff1ba7b0027552045c7a78e3c44a6",
     "branch": "main",
     "worktree": "CLEAN"
   },
@@ -437,7 +441,23 @@
       "round3DesignReview": "5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b"
     }
   },
-  "lastAction": "Archived the complete fresh Design 3.1 RULE_DESIGN_FIX_REQUIRED report and stopped because the current contract-completion authorization permits no further completion pass.",
-  "lastError": "HUMAN_BLOCKED: canonical evidence references lack exact per-variant cross-links, DOMAIN_RECORD canonical identity mapping, and PLAYER_ROLE_AT_REVISION compound identity.",
-  "nextAction": "Await new explicit user authorization. Do not perform a second Design 3.1 completion, modify Design 3.1 or any history/evidence, implement production code/tests, create a feature branch/PR, or start Slice 2B18B/2B19."
+  "designRound3_2Recovery": {
+    "authorization": "DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION",
+    "recoveryHead": "bd74093280bff1ba7b0027552045c7a78e3c44a6",
+    "recoveryCI": 29187357426,
+    "recoveryCIStatus": "SUCCESS",
+    "worktree": "CLEAN",
+    "openPRCount": 0,
+    "immutableHashes": {
+      "originalRuleEvidence": "9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a",
+      "resolvedRuleEvidence": "7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e",
+      "round3Design": "08d23c8cdef156edd7a90f7f1ee8725ae7b6d29c3809d967343221c1d37eebe8",
+      "round3Review": "5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b",
+      "round3_1Design": "97456a3769d29b616af31c1e83dc5b1717809ffbe5a56ab0d86decd800c9710c",
+      "round3_1Review": "0a4269be1b19a303fab1eb08e0bcd0c9212aed5ec4c2e068c3eb2e9502a99444"
+    }
+  },
+  "lastAction": "Materialized the complete Design 3.2 evidence-contract simplification after all 6/6 architect segments and independent reverse integrity MATCH; behavior and historical artifacts remain frozen.",
+  "lastError": null,
+  "nextAction": "Commit and push the exact Design 3.2/control gate, require exact-head main CI success, then request a fresh independent rule-design review. Do not implement production code/tests, create a feature branch/PR, or start Slice 2B18B/2B19 before RULE_DESIGN_PASS."
 }

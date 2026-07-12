@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `HUMAN_BLOCKED` on `main` for Slice 2B18A after fresh Design 3.1 review; no active PR or feature branch.
+- Current control state: `RUNNING` on `main` for the final authorized Design 3.2 evidence-contract simplification; no active PR or feature branch.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -15,7 +15,7 @@
 
 ## Active Slice 2B18A Boundary
 
-Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=false`, and `implementationAuthorized=false`; design round is `2 / 2` and repair round is `0 / 2`. The recovery anchor is `b228dd53851a9bd947a41e39187db20735069402`, whose exact main CI run `29180118996` succeeded.
+Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=false`, and `implementationAuthorized=false`; final authorized design round is `3.2` and repair round is `0 / 2`. The recovery anchor is `bd74093280bff1ba7b0027552045c7a78e3c44a6`, whose exact main CI run `29187357426` succeeded.
 
 The approved product contracts define the exclusive `FirstNightInitialized` lower boundary and inclusive pre-resolution upper boundary, source-player plus ability-instance self-exclusion, the fixed dense numeric domain `0..11` with deterministic smallest-false product policy, and accepted V2 temporal ordering for duplicate holders. These are simulator policies and must remain distinct from official source claims.
 
@@ -35,9 +35,13 @@ The user explicitly authorized design round `3.1` for contract completion only. 
 
 Design 3.1 is `docs/implementation/phase-3-slice-2b18a-design-round-3-1.md`, SHA-256 `97456a3769d29b616af31c1e83dc5b1717809ffbe5a56ab0d86decd800c9710c`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_1`, coverage `PARTIAL`. It completes the internal context, evidence reference structure, count result, canonical instance ID, override exact-shape, validation and export contracts without changing frozen behavior. Architect integrity verification returned `MATCH`.
 
-Fresh Design 3.1 review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-1.md`, SHA-256 `0a4269be1b19a303fab1eb08e0bcd0c9212aed5ec4c2e068c3eb2e9502a99444`, terminal `RULE_DESIGN_FIX_REQUIRED`. Exact reviewed HEAD `5a40c04ec50224ce05b43588a54ac0d5253a5ffd` had successful CI `29187068406`. Remaining blockers are the missing per-variant evidence semantic cross-links, missing `DOMAIN_RECORD.recordType` to canonical `recordId` source mapping, and missing compound identity for `PLAYER_ROLE_AT_REVISION`. The authorization allows no further completion pass, so the slice is `HUMAN_BLOCKED`; no implementation, branch, PR, 2B18B, or 2B19 has started.
+Fresh Design 3.1 review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-1.md`, SHA-256 `0a4269be1b19a303fab1eb08e0bcd0c9212aed5ec4c2e068c3eb2e9502a99444`, terminal `RULE_DESIGN_FIX_REQUIRED`. Exact reviewed HEAD `5a40c04ec50224ce05b43588a54ac0d5253a5ffd` had successful CI `29187068406`. Remaining blockers are the missing per-variant evidence semantic cross-links, missing `DOMAIN_RECORD.recordType` to canonical `recordId` source mapping, and missing compound identity for `PLAYER_ROLE_AT_REVISION`.
 
-This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No production code, tests, branch, or PR exists at this design gate.
+The user explicitly authorized `DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION` as the final design-completion round. `behaviorDesignFrozen=true`, `finalDesignCompletionRound=true`, `ruleReady=true`, `ruleDesignPass=false`, and `implementationAuthorized=false`. Recovery main is `bd74093280bff1ba7b0027552045c7a78e3c44a6`, CI `29187357426` `SUCCESS`, worktree clean, open PR count zero.
+
+Design 3.2 is `docs/implementation/phase-3-slice-2b18a-design-round-3-2.md`, SHA-256 `615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_2`, coverage `PARTIAL`. It removes the generic `DOMAIN_RECORD`, freezes 16 strong evidence variants, their canonical identities, per-variant cross-links, terminal minimum/conditional evidence sets, and the compound `(playerId, characterStateRevision)` identity without changing frozen behavior. Architect reverse verification returned `MATCH` for 49,803 UTF-8 bytes, 1,363 LF bytes, trailing LF, exact first/last lines, and balanced code fences.
+
+This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No production code, tests, branch, or PR exists at this design gate; implementation remains prohibited pending a fresh independent `RULE_DESIGN_PASS`.
 
 ## Slice 2B17.3 Accepted Boundary
 

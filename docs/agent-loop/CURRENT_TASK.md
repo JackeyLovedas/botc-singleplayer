@@ -3,12 +3,11 @@
 ## Active Slice 2B18A
 
 - Name: `First-Night Ability Outcome Ledger Foundation`.
-- Status: `HUMAN_BLOCKED` on `main`; no feature branch or PR exists.
-- Recovery anchor: `b228dd53851a9bd947a41e39187db20735069402`; exact prior main CI `29180118996` was `SUCCESS`.
-- Limits: `maxSlices=1`, `maxRepairRounds=2`, historical `maxDesignRounds=3`; repair round `0 / 2`, authorized contract-completion design round `3.1`.
-- User continuation authorization: `DESIGN_ROUND_3_1_CONTRACT_COMPLETION`.
-- `behaviorDesignFrozen=true`; scope is contract completion only.
-- Recovery anchor: `37ae6407e8090a1892bbbc3c369ed9146d1477f7`; exact CI `29186059369` was `SUCCESS`; worktree clean; open PR count `0`.
+- Status: `RUNNING` on `main`; no feature branch or PR exists.
+- Limits: `maxSlices=1`, `maxRepairRounds=2`, historical `maxDesignRounds=3`; repair round `0 / 2`, final authorized design round `3.2`.
+- User continuation authorization: `DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION`.
+- `behaviorDesignFrozen=true`; `finalDesignCompletionRound=true`; scope is evidence-contract simplification only.
+- Recovery anchor: `bd74093280bff1ba7b0027552045c7a78e3c44a6`; exact CI `29187357426` was `SUCCESS`; worktree clean; open PR count `0`.
 - Candidate scope: `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`.
 - Authorization gates: `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`.
 - Four explicit user-approved simulator contracts were appended independently to `docs/rules/USER_OVERRIDES.md`: `BOTC-SIM-MATHEMATICIAN-FIRST-NIGHT-WINDOW-V1`, `BOTC-SIM-MATHEMATICIAN-OWN-ABILITY-EXCLUSION-V1`, `BOTC-SIM-MATHEMATICIAN-NUMERIC-DOMAIN-V1`, and `BOTC-SIM-MATHEMATICIAN-DUPLICATE-HOLDER-TEMPORAL-V1`.
@@ -28,9 +27,11 @@
 - Architect integrity verification returned `MATCH`: 44,929 UTF-8 bytes, 1,292 LF bytes, trailing LF, exact first/last lines and valid code-fence parity.
 - Fresh Design 3.1 review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-1.md`, SHA-256 `0a4269be1b19a303fab1eb08e0bcd0c9212aed5ec4c2e068c3eb2e9502a99444`, terminal `RULE_DESIGN_FIX_REQUIRED`.
 - It reviewed exact HEAD `5a40c04ec50224ce05b43588a54ac0d5253a5ffd`; CI `29187068406` was `SUCCESS`, worktree clean, open PR count zero.
+- Design 3.2 is `docs/implementation/phase-3-slice-2b18a-design-round-3-2.md`, SHA-256 `615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_2`, coverage `PARTIAL`.
+- Architect reverse integrity verification returned `MATCH`: 49,803 UTF-8 bytes, 1,363 LF bytes, trailing LF, exact first/last lines, and 46 balanced code fences.
 - No production code, tests, feature branch, or PR has been created at this design gate.
 
-## Authorized Design Round 3.1 Contract Completion
+## Authorized Final Design Round 3.2
 
 The prior behavioral and five contract-group blockers are closed. Fresh Design 3.1 review found the remaining canonical evidence-contract gaps:
 
@@ -38,7 +39,7 @@ The prior behavioral and five contract-group blockers are closed. Fresh Design 3
 2. `DOMAIN_RECORD` lacks an exact `recordType` to canonical `recordId` source mapping.
 3. `PLAYER_ROLE_AT_REVISION` lacks a frozen compound primary identity definition.
 
-The current authorization explicitly permits no second Design 3.1 completion. Continuing requires new user authority; implementation remains prohibited.
+The user explicitly authorized one final Design 3.2 evidence-contract simplification round. All historical artifacts remain immutable: original evidence `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`; resolved evidence `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`; round-3 design/review `08d23c8...eebe8` / `5d43e80a...25d1b`; round-3.1 design/review `97456a37...710c` / `0a4269be...9444`.
 
 ## Strict Scope Boundary
 
@@ -71,4 +72,4 @@ The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte 
 
 ## Current Gate
 
-Commit and push only the complete Design 3.1 review plus blocking controls, require exact-head main CI success, then stop. Do not perform another completion pass, change Design/history/evidence, create production changes/tests/branch/PR, or start 2B18B/2B19.
+Commit and push the exact Design 3.2/control gate, require exact-head main CI success, then request a fresh independent rule-design review. `ruleDesignPass=false` and `implementationAuthorized=false`; do not change behavior/history/evidence or begin production/tests/branch/PR/2B18B/2B19 before `RULE_DESIGN_PASS`.
