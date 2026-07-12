@@ -6,7 +6,7 @@
   "currentSlice": "2B18A",
   "reviewedHead": null,
   "currentReviewHeadAuthority": null,
-  "exactHeadCIAuthority": "GitHub CI on the exact emitted main control commit",
+  "exactHeadCIAuthority": "GitHub CI on the exact emitted main RULE_READY evidence commit",
   "repairRound": 0,
   "designRound": 0,
   "maxDesignRounds": 2,
@@ -18,7 +18,7 @@
   "currentDesignPath": null,
   "currentDesignHash": null,
   "designReviewRound2Hash": null,
-  "ruleReady": false,
+  "ruleReady": true,
   "ruleDesignPass": false,
   "implementationAuthorized": false,
   "compatibilityDesignVerdict": null,
@@ -26,13 +26,13 @@
   "designReviewHash": null,
   "designReviewSourceBodyHash": null,
   "slice2B19Prohibited": true,
-  "ruleResearchVerdict": null,
-  "ruleEvidencePath": null,
-  "ruleEvidenceSha256": null,
+  "ruleResearchVerdict": "RULE_READY",
+  "ruleEvidencePath": "docs/rules/evidence/2B18-resolved.md",
+  "ruleEvidenceSha256": "7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e",
   "ruleSemanticsChanged": true,
   "unresolvedConflicts": [],
   "remainingBlockers": [
-    "Fresh independent rule research and resolved evidence are required before design"
+    "Architect design and independent RULE_DESIGN_PASS are required before implementation"
   ],
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "approvedOverrideIds": [
@@ -45,6 +45,19 @@
   "slice2B18ASettlementProhibited": true,
   "slice2B18ADeliveryProhibited": true,
   "slice2B18BProhibited": true,
+  "slice2B18ResolvedRuleGate": {
+    "status": "RULE_READY",
+    "evidencePath": "docs/rules/evidence/2B18-resolved.md",
+    "evidenceSha256": "7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e",
+    "sourceUtf8Bytes": 26320,
+    "sourceLfCount": 454,
+    "sourceTrailingLf": true,
+    "independentIntegrityVerdict": "MATCH",
+    "originalConflictCount": 5,
+    "resolvedOriginalConflictCount": 5,
+    "unresolvedConflicts": [],
+    "ruleCoverageStatus": "PARTIAL"
+  },
   "slice2B18ProductionProhibited": true,
   "slice2B18BlockedHistory": {
     "status": "HUMAN_BLOCKED",
@@ -371,7 +384,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Started only Slice 2B18A and recorded four explicit user-approved deterministic Mathematician simulation contracts without modifying the immutable original 2B18 evidence.",
+  "lastAction": "Materialized the complete independently researched 2B18 resolved rule evidence verbatim with an independent byte/hash MATCH and terminal RULE_READY; the original conflict evidence remains immutable.",
   "lastError": null,
-  "nextAction": "Push the startup control commit, require exact-head main CI, then run fresh independent Mathematician rule research and materialize docs/rules/evidence/2B18-resolved.md. Do not design or implement before RULE_READY and RULE_DESIGN_PASS; do not settle or deliver Mathematician information or start Slice 2B18B/2B19."
+  "nextAction": "Push the RULE_READY evidence/control commit and require exact-head main CI, then authorize only read-only architect design followed by independent rule-design review. Do not implement before RULE_DESIGN_PASS; do not settle or deliver Mathematician information or start Slice 2B18B/2B19."
 }

@@ -7,11 +7,14 @@
 - Recovery anchor: `b228dd53851a9bd947a41e39187db20735069402`; exact prior main CI `29180118996` was `SUCCESS`.
 - Limits: `maxSlices=1`, `maxRepairRounds=2`, `maxDesignRounds=2`; repair round `0 / 2`, design round `0 / 2`.
 - Candidate scope: `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`.
-- Authorization gates: `ruleReady=false`, `ruleDesignPass=false`, `implementationAuthorized=false`.
+- Authorization gates: `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`.
 - Four explicit user-approved simulator contracts were appended independently to `docs/rules/USER_OVERRIDES.md`: `BOTC-SIM-MATHEMATICIAN-FIRST-NIGHT-WINDOW-V1`, `BOTC-SIM-MATHEMATICIAN-OWN-ABILITY-EXCLUSION-V1`, `BOTC-SIM-MATHEMATICIAN-NUMERIC-DOMAIN-V1`, and `BOTC-SIM-MATHEMATICIAN-DUPLICATE-HOLDER-TEMPORAL-V1`.
 - The approvals are fixed 12-player deterministic single-player product policies, not representations of official multi-holder or first-night dawn rulings.
 - The immutable original conflict evidence `docs/rules/evidence/2B18.md` remains at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`.
-- No resolved evidence, design, production code, tests, feature branch, or PR has been created at this startup gate.
+- Complete resolved rule evidence is `docs/rules/evidence/2B18-resolved.md`, SHA-256 `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`, terminal `RULE_READY`, coverage `PARTIAL`, and `unresolvedConflicts=[]`.
+- The sole writer materialized the independent report verbatim; the independent integrity round-trip matched 26,320 UTF-8 bytes, 454 LF bytes, a trailing LF, first/last lines, and the complete SHA-256.
+- All five original blockers are resolved for the bounded product scope: scheduling by accepted Slice 2B17.2, and the other four through the explicit approved simulator contracts.
+- No design, production code, tests, feature branch, or PR has been created at this rule gate.
 
 ## Strict Scope Boundary
 
@@ -40,8 +43,8 @@ Legacy V1 choices with no first-night task mapping must grant and settle without
 
 ## Preserved Slice 2B18 Conflict History
 
-The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte identity. The user has now supplied four explicit product policies addressing the previously unresolved first-night window, own-instance exclusion, numeric domain, and duplicate-holder temporal behavior. Those approvals do not themselves manufacture `RULE_READY`; fresh independent research and `docs/rules/evidence/2B18-resolved.md` are still mandatory.
+The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte identity. Fresh independent research rechecked the official and Chinese sources, nightsheet, overrides, accepted scheduling prerequisite, current coverage, and role interactions. The resulting `2B18-resolved.md` returns `RULE_READY` without rewriting the historical conflict report.
 
 ## Current Gate
 
-Commit and push only the override/control startup documents and verify GitHub CI on the exact emitted main SHA. Then run the independent rule-truth gate. Do not create a design, feature branch, production change, test, or PR until the required verdicts authorize them.
+Commit and push only the resolved evidence/control documents and verify GitHub CI on the exact emitted main SHA. Then permit only read-only architect design and an independent rule-design review. Do not create a feature branch, production change, test, or PR until `RULE_DESIGN_PASS` authorizes implementation.

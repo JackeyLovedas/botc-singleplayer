@@ -15,11 +15,13 @@
 
 ## Active Slice 2B18A Boundary
 
-Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Startup gates are `ruleReady=false`, `ruleDesignPass=false`, and `implementationAuthorized=false`; design and repair rounds are both `0 / 2`. The recovery anchor is `b228dd53851a9bd947a41e39187db20735069402`, whose exact main CI run `29180118996` succeeded.
+Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=false`, and `implementationAuthorized=false`; design and repair rounds are both `0 / 2`. The recovery anchor is `b228dd53851a9bd947a41e39187db20735069402`, whose exact main CI run `29180118996` succeeded.
 
 The approved product contracts define the exclusive `FirstNightInitialized` lower boundary and inclusive pre-resolution upper boundary, source-player plus ability-instance self-exclusion, the fixed dense numeric domain `0..11` with deterministic smallest-false product policy, and accepted V2 temporal ordering for duplicate holders. These are simulator policies and must remain distinct from official source claims.
 
-This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No resolved evidence, design, production code, tests, branch, or PR exists at the startup gate.
+The independent resolved evidence is `docs/rules/evidence/2B18-resolved.md`, SHA-256 `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`, terminal `RULE_READY`, `PARTIAL`, with no unresolved rule conflicts. Its verbatim handoff was independently matched at 26,320 UTF-8 bytes, 454 LF bytes, and a trailing LF. All five original conflicts are resolved within the bounded product scope.
+
+This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No design, production code, tests, branch, or PR exists at this rule gate.
 
 ## Slice 2B17.3 Accepted Boundary
 
@@ -47,4 +49,4 @@ Local product gates passed 28 files / 907 tests with 86.06% statement/line, 80.2
 
 ## Preserved Slice 2B18 Conflict History
 
-Slice 2B17.2 resolved original conflict 5, the deterministic scheduling prerequisite. The original `docs/rules/evidence/2B18.md` remains unchanged at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`. Its four remaining conflicts are immutable historical findings; the four new `APPROVED` records are the user's explicit resolution policies. Fresh research must independently determine whether `2B18-resolved.md` can return `RULE_READY`; implementation remains unauthorized until that and `RULE_DESIGN_PASS` both occur.
+Slice 2B17.2 resolved original conflict 5, the deterministic scheduling prerequisite. The original `docs/rules/evidence/2B18.md` remains unchanged at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`. Its four remaining conflicts are immutable historical findings; the four new `APPROVED` records are the user's explicit resolution policies. Fresh independent research has now returned `RULE_READY`; implementation remains unauthorized until the independent design gate returns `RULE_DESIGN_PASS`.
