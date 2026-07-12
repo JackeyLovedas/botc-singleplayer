@@ -9,7 +9,8 @@
 - Candidate scope: `LEGACY_PHILOSOPHER_NO_INSERTION_CHOICE_COMPATIBILITY`.
 - This is a deterministic compatibility hotfix. Fresh external rule research is not required and `ruleSemanticsChanged=false`.
 - Architect design: `docs/implementation/phase-3-slice-2b17-3-design.md`, SHA-256 `d7fee3c947fbfb1ab2e122531d9552c082a037ea5f66d0d44a6b0ff3b4f5264a`, terminal `READY_FOR_COMPATIBILITY_REVIEW`.
-- Implementation is not yet authorized. No production code, tests, feature branch, or PR may be created before independent compatibility design review.
+- Independent compatibility review: `docs/implementation/phase-3-slice-2b17-3-design-review.md`, repository-file SHA-256 `e24c3dc937cdf937f6eab8de4adbbf363fe28d1c990fde50db3cc3826d90849a`, verdict `COMPATIBILITY_DESIGN_PASS`, required fixes `None`, blockers `[]`.
+- `ruleSemanticsChanged=false`; implementation is authorized only after exact-head CI succeeds on the design-review gate commit.
 
 ## Hotfix Contract
 
@@ -23,4 +24,4 @@ Do not resume Slice 2B18 and do not start Slice 2B19.
 
 ## Current Gate
 
-Commit and push the exact architect design and updated control state, then verify CI on its exact main SHA. After that, obtain an independent compatibility design review before implementation.
+Commit and push the exact independent compatibility review and updated control state, then verify CI on its exact main SHA. After that, create only `phase-3/philosopher-legacy-no-insertion-compatibility` and implement the reviewed repair.
