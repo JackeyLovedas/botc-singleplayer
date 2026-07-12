@@ -7,7 +7,7 @@
   "reviewedHead": null,
   "currentReviewHeadAuthority": null,
   "exactHeadCIAuthority": "GitHub push and pull_request checks attached to the current PR HEAD; both must be SUCCESS before independent review",
-  "repairRound": 1,
+  "repairRound": 2,
   "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": null,
@@ -49,13 +49,13 @@
       "candidateNumberDomain",
       "duplicateMathematicianRule"
     ],
-    "schedulingPrerequisiteStatus": "REPAIR_ROUND_1_PUBLISHED_AWAITING_FINAL_GATES",
+    "schedulingPrerequisiteStatus": "REPAIR_ROUND_2_PROVENANCE_FIX_PENDING_PUBLISH",
     "implementationAuthorized": false
   },
   "slice2B17_2Implementation": {
-    "status": "REPAIR_ROUND_1_PUBLISHED_AWAITING_FINAL_GATES",
+    "status": "REPAIR_ROUND_2_PROVENANCE_FIX_PENDING_PUBLISH",
     "branch": "phase-3/philosopher-gained-task-scheduling-v2",
-    "repairImplementationHead": "e6afb1f7b14bfc047a6b93d48c18c39bb1e20de7",
+    "repairImplementationHead": "e6afb1f54813e3469470e2165577bc424c901fad",
     "pr": 21,
     "ruleSemanticsChanged": false,
     "v1ReplayPreserved": true,
@@ -82,6 +82,15 @@
       "Correct PR traceability and repair-round control state"
     ],
     "status": "HISTORICAL_INVALIDATED_BY_REPAIR_ROUND_1"
+  },
+  "slice2B17_2FinalReviewRound2": {
+    "reviewedHead": "33d956c3c88c65db2eded28f4bc050f6ec70f640",
+    "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [
+      "Correct the nonexistent repair implementation SHA in committed provenance documents and the PR body"
+    ],
+    "status": "HISTORICAL_INVALIDATED_BY_PROVENANCE_REPAIR_ROUND_2"
   },
   "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1"],
   "slice2B17ProductImplementation": {
@@ -233,7 +242,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Published Slice 2B17.2 repair round 1 to PR #21 after CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED on historical HEAD ebf364dd; corrected PR traceability and local gates are green.",
+  "lastAction": "Received CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS on historical HEAD 33d956c3 because provenance named a nonexistent repair implementation SHA; repair round 2 corrects documentation only.",
   "lastError": null,
-  "nextAction": "Require successful push and pull_request CI on the current PR HEAD, verify local == remote == PR with a clean worktree, freeze the branch, then request a fresh complete independent final review. Do not resume 2B18 production or start Slice 2B19."
+  "nextAction": "Publish the provenance-only repair round 2, correct the PR body, require successful push and pull_request CI on the new exact HEAD, verify local == remote == PR with a clean worktree and one open PR, then request a fresh complete independent final review. Do not resume 2B18 production or start Slice 2B19."
 }
