@@ -9,7 +9,7 @@
 - `behaviorDesignFrozen=true`; `finalDesignCompletionRound=true`; scope is evidence-contract simplification only.
 - Recovery anchor: `bd74093280bff1ba7b0027552045c7a78e3c44a6`; exact CI `29187357426` was `SUCCESS`; worktree clean; open PR count `0`.
 - Candidate scope: `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`.
-- Authorization gates: `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`.
+- Authorization gates: `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`.
 - Four explicit user-approved simulator contracts were appended independently to `docs/rules/USER_OVERRIDES.md`: `BOTC-SIM-MATHEMATICIAN-FIRST-NIGHT-WINDOW-V1`, `BOTC-SIM-MATHEMATICIAN-OWN-ABILITY-EXCLUSION-V1`, `BOTC-SIM-MATHEMATICIAN-NUMERIC-DOMAIN-V1`, and `BOTC-SIM-MATHEMATICIAN-DUPLICATE-HOLDER-TEMPORAL-V1`.
 - The approvals are fixed 12-player deterministic single-player product policies, not representations of official multi-holder or first-night dawn rulings.
 - The immutable original conflict evidence `docs/rules/evidence/2B18.md` remains at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`.
@@ -29,6 +29,9 @@
 - It reviewed exact HEAD `5a40c04ec50224ce05b43588a54ac0d5253a5ffd`; CI `29187068406` was `SUCCESS`, worktree clean, open PR count zero.
 - Design 3.2 is `docs/implementation/phase-3-slice-2b18a-design-round-3-2.md`, SHA-256 `615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_2`, coverage `PARTIAL`.
 - Architect reverse integrity verification returned `MATCH`: 49,803 UTF-8 bytes, 1,363 LF bytes, trailing LF, exact first/last lines, and 46 balanced code fences.
+- Fresh Design 3.2 review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md`, SHA-256 `8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525`, terminal `RULE_DESIGN_PASS`, with `remainingBlockers=[]`.
+- The reviewer examined exact HEAD `3dc10b4f030be7dd1c314c7a8981b24424bbd02b`; exact-head CI `29192916263` was `SUCCESS`, worktree clean, open PR count zero. Reviewer reverse materialization verification returned `MATCH` for 11,698 UTF-8 bytes, 212 LF bytes and trailing LF.
+- Design 3.2 is the sole implementation authority; behavior remains frozen and this remains the final design-completion round.
 - No production code, tests, feature branch, or PR has been created at this design gate.
 
 ## Authorized Final Design Round 3.2
@@ -72,4 +75,4 @@ The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte 
 
 ## Current Gate
 
-Commit and push the exact Design 3.2/control gate, require exact-head main CI success, then request a fresh independent rule-design review. `ruleDesignPass=false` and `implementationAuthorized=false`; do not change behavior/history/evidence or begin production/tests/branch/PR/2B18B/2B19 before `RULE_DESIGN_PASS`.
+Commit and push this exact docs-only review gate and require exact-head main CI success. Then create the sole bounded feature branch and implement only Slice 2B18A from Design 3.2. Do not change behavior/history/evidence, implement Mathematician delivery/settlement/private number, or begin 2B18B/2B19.

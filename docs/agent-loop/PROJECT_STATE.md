@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `RUNNING` on `main` for the final authorized Design 3.2 evidence-contract simplification; no active PR or feature branch.
+- Current control state: `RUNNING` on `main`; Design 3.2 has `RULE_DESIGN_PASS` and bounded Slice 2B18A implementation is authorized, with no active PR or feature branch yet.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -15,7 +15,7 @@
 
 ## Active Slice 2B18A Boundary
 
-Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=false`, and `implementationAuthorized=false`; final authorized design round is `3.2` and repair round is `0 / 2`. The recovery anchor is `bd74093280bff1ba7b0027552045c7a78e3c44a6`, whose exact main CI run `29187357426` succeeded.
+Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=true`, and `implementationAuthorized=true`; final authorized design round is `3.2` and repair round is `0 / 2`. The reviewed design HEAD is `3dc10b4f030be7dd1c314c7a8981b24424bbd02b`, whose exact main CI run `29192916263` succeeded.
 
 The approved product contracts define the exclusive `FirstNightInitialized` lower boundary and inclusive pre-resolution upper boundary, source-player plus ability-instance self-exclusion, the fixed dense numeric domain `0..11` with deterministic smallest-false product policy, and accepted V2 temporal ordering for duplicate holders. These are simulator policies and must remain distinct from official source claims.
 
@@ -41,7 +41,9 @@ The user explicitly authorized `DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATIO
 
 Design 3.2 is `docs/implementation/phase-3-slice-2b18a-design-round-3-2.md`, SHA-256 `615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_2`, coverage `PARTIAL`. It removes the generic `DOMAIN_RECORD`, freezes 16 strong evidence variants, their canonical identities, per-variant cross-links, terminal minimum/conditional evidence sets, and the compound `(playerId, characterStateRevision)` identity without changing frozen behavior. Architect reverse verification returned `MATCH` for 49,803 UTF-8 bytes, 1,363 LF bytes, trailing LF, exact first/last lines, and balanced code fences.
 
-This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No production code, tests, branch, or PR exists at this design gate; implementation remains prohibited pending a fresh independent `RULE_DESIGN_PASS`.
+Fresh independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md`, SHA-256 `8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525`, terminal `RULE_DESIGN_PASS`, `remainingBlockers=[]`. It reviewed exact HEAD `3dc10b4f030be7dd1c314c7a8981b24424bbd02b` with CI `29192916263` `SUCCESS`; the materialized report independently matched 11,698 UTF-8 bytes, 212 LF bytes and trailing LF. Design 3.2 is now the sole implementation authority, with frozen behavior and no Design 3.3.
+
+This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No production code, tests, branch, or PR exists yet; only the bounded Design 3.2 implementation is authorized.
 
 ## Slice 2B17.3 Accepted Boundary
 
