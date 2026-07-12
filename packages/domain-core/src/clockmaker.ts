@@ -6,8 +6,8 @@ import type { FirstNightTaskPlan, FirstNightTaskProgress, ScheduledTask, Schedul
 import { getNextUnsettledFirstNightTask, roleScheduledTaskId, SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION, validateScheduledTaskSettlementShape } from "./first-night-task-plan.js";
 import { hasExactEnumerableKeys, hasExactRoleSetupSnapshotShape, isPlainRecord } from "./initial-private-knowledge.js";
 import type { PlayerRoster, SeatNumber } from "./player-roster.js";
-import type { AbilityImpairmentSet, FirstNightTaskInsertion, GrantedAbilitySet, PhilosopherAbilityChoiceSet } from "./philosopher-ability.js";
-import { formatPhilosopherGainedFirstNightTaskId, formatPhilosopherImpairmentId } from "./philosopher-ability.js";
+import type { AbilityImpairmentSet, AnyFirstNightTaskInsertedPayload, FirstNightTaskInsertion, GrantedAbilitySet, PhilosopherAbilityChoiceSet } from "./philosopher-ability.js";
+import { formatPhilosopherGainedFirstNightTaskId, formatPhilosopherGainedFirstNightTaskIdV2, formatPhilosopherImpairmentId } from "./philosopher-ability.js";
 import type { RoleTenureRecord, RoleTenureState } from "./seamstress.js";
 import { isRoleTenureActiveAt, parseRoleTenureId } from "./seamstress.js";
 import type { GeneratedSetup, RoleSetupSnapshot } from "./setup-types.js";
@@ -100,6 +100,50 @@ export type PhilosopherGainedClockmakerSourceContract = {
 };
 
 export type ClockmakerSourceContract = BaseClockmakerSourceContract | PhilosopherGainedClockmakerSourceContract;
+
+const matchesGainedClockmakerInsertion = (
+  insertion: AnyFirstNightTaskInsertedPayload,
+  task: ScheduledTask,
+  contract: PhilosopherGainedClockmakerSourceContract
+): boolean => {
+  if ("schedulingVersion" in insertion) {
+    return contract.taskId === formatPhilosopherGainedFirstNightTaskIdV2({
+      taskType: "CLOCKMAKER_INFORMATION",
+      sourceSeatNumber: contract.sourceSeatNumber,
+      chosenRoleId: roleId("clockmaker")
+    }) &&
+      insertion.taskType === "CLOCKMAKER_INFORMATION" &&
+      insertion.targetRoleId === "clockmaker" &&
+      insertion.targetCatalogBaseOrder === insertion.effectiveBaseOrder &&
+      task.orderKey.baseOrder === insertion.effectiveBaseOrder &&
+      task.orderKey.insertionOrder === contract.sourceSeatNumber &&
+      insertion.tieBreakSourceSeatNumber === contract.sourceSeatNumber &&
+      insertion.sourcePlayerId === contract.sourcePlayerId &&
+      insertion.sourceSeatNumber === contract.sourceSeatNumber &&
+      insertion.philosopherOpportunityId === contract.grantedAtOpportunityId &&
+      insertion.grantId === contract.grantId &&
+      insertion.sourceCharacterStateRevision === contract.insertionCharacterStateRevision &&
+      sameRoleSetupSnapshot(insertion.sourceRole, contract.sourceRole) &&
+      sameRoleSetupSnapshot(insertion.chosenRole, contract.gainedRole);
+  }
+
+  return contract.taskId === formatPhilosopherGainedFirstNightTaskId({
+    taskType: "CLOCKMAKER_INFORMATION",
+    sourceSeatNumber: contract.sourceSeatNumber,
+    chosenRoleId: roleId("clockmaker")
+  }) &&
+    task.orderKey.baseOrder === 100 &&
+    task.orderKey.insertionOrder === 1 &&
+    insertion.orderKey.baseOrder === 100 &&
+    insertion.orderKey.insertionOrder === 1 &&
+    insertion.insertedByOpportunityId === contract.grantedAtOpportunityId &&
+    insertion.insertedByPlayerId === contract.sourcePlayerId &&
+    insertion.sourceCharacterStateRevision === contract.insertionCharacterStateRevision &&
+    insertion.source.kind === "PHILOSOPHER_GAINED_ABILITY" &&
+    insertion.source.playerId === contract.sourcePlayerId &&
+    sameRoleSetupSnapshot(insertion.source.sourceRole, contract.sourceRole) &&
+    sameRoleSetupSnapshot(insertion.chosenRole, contract.gainedRole);
+};
 export type ClockmakerSourceEffectiveness =
   | { readonly kind: "EFFECTIVE"; readonly representedImpairmentIds: readonly [] }
   | {
@@ -197,7 +241,7 @@ export const parseClockmakerDeliveryId = (value: unknown):
   | { readonly valid: true; readonly taskId: ScheduledTaskId; readonly settlementCharacterStateRevision: number }
   | { readonly valid: false; readonly reason: string } => {
   if (typeof value !== "string") return { valid: false, reason: "Clockmaker delivery ID must be a string" };
-  const match = /^clockmaker-delivery-v1:(first-night-v1:(?:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2])|PHILOSOPHER_GAINED:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2]):from-clockmaker)):settlement-revision-([1-9][0-9]*)$/.exec(value);
+  const match = /^clockmaker-delivery-v1:((?:first-night-v1:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2])|first-night-v[12]:PHILOSOPHER_GAINED:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2]):from-clockmaker)):settlement-revision-([1-9][0-9]*)$/.exec(value);
   if (match === null || match[1] === undefined || match[2] === undefined) return { valid: false, reason: "Clockmaker delivery ID has invalid grammar" };
   const revision = Number(match[2]);
   if (!Number.isSafeInteger(revision) || formatClockmakerDeliveryId({ taskId: match[1] as ScheduledTaskId, settlementCharacterStateRevision: revision }) !== value) {
@@ -270,15 +314,13 @@ export const validatePhilosopherGainedClockmakerSourceContract = (input: {
   const philosopher = catalogRole(input.setup, "philosopher");
   if (task === undefined || next?.taskId !== task.taskId || task.taskType !== "CLOCKMAKER_INFORMATION" || task.taskClass !== "ROLE_INFORMATION" ||
       task.source.kind !== "PHILOSOPHER_GAINED_ABILITY" || grants.length !== 1 || grant === undefined || insertions.length !== 1 || insertion === undefined ||
-      contract.taskId !== formatPhilosopherGainedFirstNightTaskId({ taskType: "CLOCKMAKER_INFORMATION", sourceSeatNumber: contract.sourceSeatNumber, chosenRoleId: roleId("clockmaker") }) ||
-      task.orderKey.baseOrder !== 100 || task.orderKey.insertionOrder !== 1 || insertion.orderKey.baseOrder !== 100 || insertion.orderKey.insertionOrder !== 1 ||
+      !matchesGainedClockmakerInsertion(insertion, task, contract) ||
       task.source.playerId !== contract.sourcePlayerId || task.source.seatNumber !== contract.sourceSeatNumber ||
       !sameRoleSetupSnapshot(task.source.sourceRole, contract.sourceRole) || !sameRoleSetupSnapshot(task.source.chosenRole, contract.gainedRole) ||
       philosopher === undefined || !sameRoleSetupSnapshot(contract.sourceRole, philosopher) || !exactClockmaker(contract.gainedRole, input.setup) ||
       grant.sourcePlayerId !== contract.sourcePlayerId || grant.sourceSeatNumber !== contract.sourceSeatNumber || !sameRoleSetupSnapshot(grant.sourceRole, contract.sourceRole) ||
       !sameRoleSetupSnapshot(grant.chosenRole, contract.gainedRole) || grant.chosenRoleId !== "clockmaker" || grant.grantedAtTaskId !== contract.grantedAtTaskId ||
-      grant.grantedAtOpportunityId !== contract.grantedAtOpportunityId || insertion.insertedByOpportunityId !== contract.grantedAtOpportunityId ||
-      insertion.insertedByPlayerId !== contract.sourcePlayerId || insertion.sourceCharacterStateRevision !== contract.insertionCharacterStateRevision ||
+      grant.grantedAtOpportunityId !== contract.grantedAtOpportunityId ||
       grant.sourceCharacterStateRevision !== contract.insertionCharacterStateRevision) return fail("Gained Clockmaker source must bind one exact grant, insertion, task, and source");
   const current = input.currentCharacterState.entries.filter((entry) => entry.playerId === contract.sourcePlayerId && entry.seatNumber === contract.sourceSeatNumber);
   if (current.length !== 1 || current[0] === undefined || !sameRoleSetupSnapshot(current[0].role, contract.sourceRole)) return fail("Gained Clockmaker source must remain the bounded current Philosopher");
@@ -452,7 +494,7 @@ export const validateClockmakerInformationDeliveredPayloadShape = (value: unknow
   const demon = delivery.nativeDemonReferences[0];
   const [firstMinion, secondMinion] = delivery.nativeMinionReferences;
   if (delivery.sourceContract.kind === "BASE_CLOCKMAKER" && !/^first-night-v1:CLOCKMAKER_INFORMATION:seat-(0[1-9]|1[0-2])$/.test(delivery.taskId) ||
-      delivery.sourceContract.kind === "PHILOSOPHER_GAINED_CLOCKMAKER" && !/^first-night-v1:PHILOSOPHER_GAINED:CLOCKMAKER_INFORMATION:seat-(0[1-9]|1[0-2]):from-clockmaker$/.test(delivery.taskId)) {
+      delivery.sourceContract.kind === "PHILOSOPHER_GAINED_CLOCKMAKER" && !/^first-night-v[12]:PHILOSOPHER_GAINED:CLOCKMAKER_INFORMATION:seat-(0[1-9]|1[0-2]):from-clockmaker$/.test(delivery.taskId)) {
     return fail("Clockmaker source kind and task ID grammar must agree");
   }
   if (demon.role.characterType !== "DEMON" || firstMinion.role.characterType !== "MINION" || secondMinion.role.characterType !== "MINION" ||
@@ -682,10 +724,7 @@ export const validateStoredClockmakerInformationDelivered = (input: {
         !sameRoleSetupSnapshot(grant.sourceRole, contract.sourceRole) || !sameRoleSetupSnapshot(grant.chosenRole, contract.gainedRole) || grant.chosenRoleId !== "clockmaker" ||
         grant.chosenRoleCatalogSignature !== input.setup.roleCatalogSnapshot.canonicalSignature ||
         grant.grantedAtTaskId !== contract.grantedAtTaskId || grant.grantedAtOpportunityId !== contract.grantedAtOpportunityId ||
-        insertion.insertedByPlayerId !== contract.sourcePlayerId || insertion.insertedByOpportunityId !== contract.grantedAtOpportunityId ||
-        insertion.sourceCharacterStateRevision !== contract.insertionCharacterStateRevision || insertion.orderKey.baseOrder !== 100 || insertion.orderKey.insertionOrder !== 1 ||
-        insertion.source.kind !== "PHILOSOPHER_GAINED_ABILITY" || insertion.source.playerId !== contract.sourcePlayerId ||
-        !sameRoleSetupSnapshot(insertion.source.sourceRole, contract.sourceRole) || !sameRoleSetupSnapshot(insertion.chosenRole, contract.gainedRole)) {
+        !matchesGainedClockmakerInsertion(insertion, task, contract)) {
       return fail("Stored gained Clockmaker delivery requires one exact grant and insertion chain");
     }
   }

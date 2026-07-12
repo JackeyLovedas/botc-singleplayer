@@ -7,6 +7,7 @@ import {
   hasClosedPhilosopherOpportunityForSettlement
 } from "./first-night-action-opportunity.js";
 import type {
+  FirstNightTaskPlanVersion,
   FirstNightTaskPlan,
   FirstNightTaskProgress,
   FirstNightTaskType,
@@ -17,6 +18,8 @@ import type {
   ScheduledTaskSettlementPolicy
 } from "./first-night-task-plan.js";
 import {
+  CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
+  LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
   SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION,
   cloneFirstNightTaskPlan,
   compareFirstNightTaskOrder,
@@ -170,8 +173,43 @@ export type FirstNightTaskInsertedPayload = InsertedFirstNightTask & {
   readonly nightNumber: 1;
 };
 
+export const PHILOSOPHER_GAINED_FIRST_NIGHT_SCHEDULING_VERSION =
+  "philosopher-gained-first-night-scheduling-v2" as const;
+export const PHILOSOPHER_GAINED_TASK_TIE_BREAK_POLICY =
+  "BASE_THEN_GAINED_BY_SOURCE_SEAT_THEN_TASK_ID_CODE_UNIT" as const;
+
+export type FirstNightTaskInsertedV2Payload = {
+  readonly rulesBaselineVersion: string;
+  readonly nightNumber: 1;
+  readonly schedulingVersion: typeof PHILOSOPHER_GAINED_FIRST_NIGHT_SCHEDULING_VERSION;
+  readonly taskPlanVersion: typeof CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION;
+  readonly taskCatalogVersion: string;
+  readonly taskCatalogSignatureAlgorithm: string;
+  readonly taskCatalogSignature: string;
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: FirstNightTaskType;
+  readonly taskClass: ScheduledTaskClass;
+  readonly targetRoleId: RoleId;
+  readonly targetCatalogBaseOrder: number;
+  readonly effectiveBaseOrder: number;
+  readonly tieBreakPolicy: typeof PHILOSOPHER_GAINED_TASK_TIE_BREAK_POLICY;
+  readonly tieBreakSourceSeatNumber: SeatNumber;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly sourceRole: RoleSetupSnapshot;
+  readonly chosenRole: RoleSetupSnapshot;
+  readonly philosopherOpportunityId: ActionOpportunityId;
+  readonly grantId: GrantedAbilityId;
+  readonly sourceCharacterStateRevision: number;
+  readonly status: "PENDING";
+  readonly settlementPolicy: ScheduledTaskSettlementPolicy;
+  readonly insertionReason: FirstNightTaskInsertionReason;
+};
+
+export type AnyFirstNightTaskInsertedPayload = FirstNightTaskInsertedPayload | FirstNightTaskInsertedV2Payload;
+
 export type FirstNightTaskInsertion = {
-  readonly insertions: readonly FirstNightTaskInsertedPayload[];
+  readonly insertions: readonly AnyFirstNightTaskInsertedPayload[];
 };
 
 export type PhilosopherAbilityChoiceSet = {
@@ -281,6 +319,33 @@ const FIRST_NIGHT_TASK_INSERTED_PAYLOAD_KEYS = [
   "taskPlanVersion",
   "taskType"
 ] as const;
+const FIRST_NIGHT_TASK_INSERTED_V2_PAYLOAD_KEYS = [
+  "chosenRole",
+  "effectiveBaseOrder",
+  "grantId",
+  "insertionReason",
+  "nightNumber",
+  "philosopherOpportunityId",
+  "rulesBaselineVersion",
+  "schedulingVersion",
+  "settlementPolicy",
+  "sourceCharacterStateRevision",
+  "sourcePlayerId",
+  "sourceRole",
+  "sourceSeatNumber",
+  "status",
+  "targetCatalogBaseOrder",
+  "targetRoleId",
+  "taskCatalogSignature",
+  "taskCatalogSignatureAlgorithm",
+  "taskCatalogVersion",
+  "taskClass",
+  "taskId",
+  "taskPlanVersion",
+  "taskType",
+  "tieBreakPolicy",
+  "tieBreakSourceSeatNumber"
+] as const;
 const ORDER_KEY_KEYS = ["baseOrder", "insertionOrder"] as const;
 
 export const PHILOSOPHER_GAINED_TASK_BY_ROLE_ID: Readonly<Partial<Record<string, FirstNightTaskType>>> = {
@@ -364,7 +429,7 @@ const cloneImpairment = (impairment: AbilityImpairment): AbilityImpairment => {
   };
 };
 
-const cloneInsertion = (insertion: FirstNightTaskInsertedPayload): FirstNightTaskInsertedPayload => ({
+const cloneLegacyInsertion = (insertion: FirstNightTaskInsertedPayload): FirstNightTaskInsertedPayload => ({
   rulesBaselineVersion: insertion.rulesBaselineVersion,
   nightNumber: insertion.nightNumber,
   taskPlanVersion: insertion.taskPlanVersion,
@@ -392,6 +457,40 @@ const cloneInsertion = (insertion: FirstNightTaskInsertedPayload): FirstNightTas
   sourceCharacterStateRevision: insertion.sourceCharacterStateRevision,
   chosenRole: cloneRoleSetupSnapshot(insertion.chosenRole)
 });
+
+const cloneV2Insertion = (insertion: FirstNightTaskInsertedV2Payload): FirstNightTaskInsertedV2Payload => ({
+  rulesBaselineVersion: insertion.rulesBaselineVersion,
+  nightNumber: insertion.nightNumber,
+  schedulingVersion: insertion.schedulingVersion,
+  taskPlanVersion: insertion.taskPlanVersion,
+  taskCatalogVersion: insertion.taskCatalogVersion,
+  taskCatalogSignatureAlgorithm: insertion.taskCatalogSignatureAlgorithm,
+  taskCatalogSignature: insertion.taskCatalogSignature,
+  taskId: insertion.taskId,
+  taskType: insertion.taskType,
+  taskClass: insertion.taskClass,
+  targetRoleId: insertion.targetRoleId,
+  targetCatalogBaseOrder: insertion.targetCatalogBaseOrder,
+  effectiveBaseOrder: insertion.effectiveBaseOrder,
+  tieBreakPolicy: insertion.tieBreakPolicy,
+  tieBreakSourceSeatNumber: insertion.tieBreakSourceSeatNumber,
+  sourcePlayerId: insertion.sourcePlayerId,
+  sourceSeatNumber: insertion.sourceSeatNumber,
+  sourceRole: cloneRoleSetupSnapshot(insertion.sourceRole),
+  chosenRole: cloneRoleSetupSnapshot(insertion.chosenRole),
+  philosopherOpportunityId: insertion.philosopherOpportunityId,
+  grantId: insertion.grantId,
+  sourceCharacterStateRevision: insertion.sourceCharacterStateRevision,
+  status: insertion.status,
+  settlementPolicy: insertion.settlementPolicy,
+  insertionReason: insertion.insertionReason
+});
+
+const isV2Insertion = (insertion: AnyFirstNightTaskInsertedPayload): insertion is FirstNightTaskInsertedV2Payload =>
+  "schedulingVersion" in insertion;
+
+const cloneInsertion = (insertion: AnyFirstNightTaskInsertedPayload): AnyFirstNightTaskInsertedPayload =>
+  isV2Insertion(insertion) ? cloneV2Insertion(insertion) : cloneLegacyInsertion(insertion);
 
 export const clonePhilosopherAbilityChoiceSet = (
   state: PhilosopherAbilityChoiceSet | undefined
@@ -441,6 +540,15 @@ export const formatPhilosopherGainedFirstNightTaskId = (input: {
 }): ScheduledTaskId =>
   scheduledTaskId(
     `first-night-v1:PHILOSOPHER_GAINED:${input.taskType}:seat-${String(input.sourceSeatNumber).padStart(2, "0")}:from-${input.chosenRoleId}`
+  );
+
+export const formatPhilosopherGainedFirstNightTaskIdV2 = (input: {
+  readonly taskType: FirstNightTaskType;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly chosenRoleId: RoleId;
+}): ScheduledTaskId =>
+  scheduledTaskId(
+    `first-night-v2:PHILOSOPHER_GAINED:${input.taskType}:seat-${String(input.sourceSeatNumber).padStart(2, "0")}:from-${input.chosenRoleId}`
   );
 
 const findCatalogRole = (
@@ -689,6 +797,9 @@ export const createFirstNightTaskInsertedPayload = (input: {
   readonly choice: PhilosopherAbilityChosenPayload;
   readonly firstNightTaskPlan: FirstNightTaskPlan;
 }): FirstNightTaskInsertedPayload | undefined => {
+  if (input.firstNightTaskPlan.taskPlanVersion !== LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION) {
+    throw new DomainError("InvalidFirstNightTaskInsertedPayload", "Legacy insertion requires first-night-task-plan-v1");
+  }
   const insertedTaskType = firstNightTaskTypeForPhilosopherChoice(input.choice.chosenRoleId);
   if (insertedTaskType === undefined) {
     return undefined;
@@ -734,6 +845,79 @@ export const createFirstNightTaskInsertedPayload = (input: {
     insertedByOpportunityId: input.choice.opportunityId,
     sourceCharacterStateRevision: input.choice.sourceCharacterStateRevision,
     chosenRole: cloneRoleSetupSnapshot(input.choice.chosenRole)
+  };
+};
+
+export const createFirstNightTaskInsertedV2Payload = (input: {
+  readonly rulesBaselineVersion: string;
+  readonly choice: PhilosopherAbilityChosenPayload;
+  readonly grant: PhilosopherGrantedAbility;
+  readonly firstNightTaskPlan: FirstNightTaskPlan;
+}): FirstNightTaskInsertedV2Payload | undefined => {
+  if (input.firstNightTaskPlan.taskPlanVersion !== CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION) {
+    throw new DomainError("InvalidFirstNightTaskInsertedV2Payload", "V2 insertion requires first-night-task-plan-v2");
+  }
+
+  const insertedTaskType = firstNightTaskTypeForPhilosopherChoice(input.choice.chosenRoleId);
+  if (insertedTaskType === undefined) {
+    return undefined;
+  }
+
+  const definition = input.firstNightTaskPlan.taskCatalogSnapshot.definitions.find(
+    (candidate) => candidate.taskType === insertedTaskType
+  );
+  if (
+    definition === undefined ||
+    definition.sourceKind !== "ROLE" ||
+    definition.roleId !== input.choice.chosenRoleId
+  ) {
+    throw new DomainError("InvalidFirstNightTaskInsertedV2Payload", "V2 inserted task must match a role task catalog definition");
+  }
+
+  if (
+    input.grant.grantId !== formatPhilosopherGrantId({
+      sourceSeatNumber: input.choice.sourceSeatNumber,
+      chosenRoleId: input.choice.chosenRoleId
+    }) ||
+    input.grant.grantedAtOpportunityId !== input.choice.opportunityId ||
+    input.grant.sourcePlayerId !== input.choice.sourcePlayerId ||
+    input.grant.sourceSeatNumber !== input.choice.sourceSeatNumber ||
+    input.grant.sourceCharacterStateRevision !== input.choice.sourceCharacterStateRevision ||
+    input.grant.chosenRoleId !== input.choice.chosenRoleId
+  ) {
+    throw new DomainError("InvalidFirstNightTaskInsertedV2Payload", "V2 insertion grant must match the Philosopher choice");
+  }
+
+  return {
+    rulesBaselineVersion: input.rulesBaselineVersion,
+    nightNumber: 1,
+    schedulingVersion: PHILOSOPHER_GAINED_FIRST_NIGHT_SCHEDULING_VERSION,
+    taskPlanVersion: CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
+    taskCatalogVersion: input.firstNightTaskPlan.taskCatalogVersion,
+    taskCatalogSignatureAlgorithm: input.firstNightTaskPlan.taskCatalogSignatureAlgorithm,
+    taskCatalogSignature: input.firstNightTaskPlan.taskCatalogSignature,
+    taskId: formatPhilosopherGainedFirstNightTaskIdV2({
+      taskType: insertedTaskType,
+      sourceSeatNumber: input.choice.sourceSeatNumber,
+      chosenRoleId: input.choice.chosenRoleId
+    }),
+    taskType: insertedTaskType,
+    taskClass: definition.taskClass,
+    targetRoleId: definition.roleId,
+    targetCatalogBaseOrder: definition.baseOrder,
+    effectiveBaseOrder: definition.baseOrder,
+    tieBreakPolicy: PHILOSOPHER_GAINED_TASK_TIE_BREAK_POLICY,
+    tieBreakSourceSeatNumber: input.choice.sourceSeatNumber,
+    sourcePlayerId: input.choice.sourcePlayerId,
+    sourceSeatNumber: input.choice.sourceSeatNumber,
+    sourceRole: cloneRoleSetupSnapshot(input.choice.sourceRole),
+    chosenRole: cloneRoleSetupSnapshot(input.choice.chosenRole),
+    philosopherOpportunityId: input.choice.opportunityId,
+    grantId: input.grant.grantId,
+    sourceCharacterStateRevision: input.choice.sourceCharacterStateRevision,
+    status: "PENDING",
+    settlementPolicy: definition.settlementPolicy,
+    insertionReason: "PHILOSOPHER_GAINED_ABILITY"
   };
 };
 
@@ -1045,6 +1229,10 @@ export const validateFirstNightTaskInsertedPayload = (
     readonly insertions: FirstNightTaskInsertion | undefined;
   }
 ): ValidationResult => {
+  if (input.firstNightTaskPlan.taskPlanVersion !== LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION) {
+    return fail("FirstNightTaskInserted requires first-night-task-plan-v1");
+  }
+
   if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, FIRST_NIGHT_TASK_INSERTED_PAYLOAD_KEYS)) {
     return fail("FirstNightTaskInserted payload must have exact runtime shape");
   }
@@ -1135,6 +1323,147 @@ export const validateFirstNightTaskInsertedPayload = (
   return { valid: true };
 };
 
+export const validateFirstNightTaskInsertedV2Payload = (
+  payload: unknown,
+  input: {
+    readonly firstNightTaskPlan: FirstNightTaskPlan;
+    readonly grants: GrantedAbilitySet | undefined;
+    readonly insertions: FirstNightTaskInsertion | undefined;
+  }
+): ValidationResult => {
+  if (input.firstNightTaskPlan.taskPlanVersion !== CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION) {
+    return fail("FirstNightTaskInsertedV2 requires first-night-task-plan-v2");
+  }
+
+  if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, FIRST_NIGHT_TASK_INSERTED_V2_PAYLOAD_KEYS)) {
+    return fail("FirstNightTaskInsertedV2 payload must have exact runtime shape");
+  }
+
+  if (
+    typeof payload.rulesBaselineVersion !== "string" ||
+    payload.nightNumber !== 1 ||
+    payload.schedulingVersion !== PHILOSOPHER_GAINED_FIRST_NIGHT_SCHEDULING_VERSION ||
+    payload.taskPlanVersion !== CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION ||
+    typeof payload.taskCatalogVersion !== "string" ||
+    typeof payload.taskCatalogSignatureAlgorithm !== "string" ||
+    typeof payload.taskCatalogSignature !== "string" ||
+    typeof payload.taskId !== "string" ||
+    payload.taskId.trim().length === 0 ||
+    typeof payload.taskType !== "string" ||
+    typeof payload.taskClass !== "string" ||
+    typeof payload.targetRoleId !== "string" ||
+    payload.targetRoleId.trim().length === 0 ||
+    typeof payload.targetCatalogBaseOrder !== "number" ||
+    !Number.isInteger(payload.targetCatalogBaseOrder) ||
+    payload.targetCatalogBaseOrder < 0 ||
+    typeof payload.effectiveBaseOrder !== "number" ||
+    !Number.isInteger(payload.effectiveBaseOrder) ||
+    payload.effectiveBaseOrder < 0 ||
+    payload.tieBreakPolicy !== PHILOSOPHER_GAINED_TASK_TIE_BREAK_POLICY ||
+    typeof payload.tieBreakSourceSeatNumber !== "number" ||
+    !Number.isInteger(payload.tieBreakSourceSeatNumber) ||
+    payload.tieBreakSourceSeatNumber < 1 ||
+    payload.tieBreakSourceSeatNumber > 12 ||
+    typeof payload.sourcePlayerId !== "string" ||
+    payload.sourcePlayerId.trim().length === 0 ||
+    typeof payload.sourceSeatNumber !== "number" ||
+    !Number.isInteger(payload.sourceSeatNumber) ||
+    payload.sourceSeatNumber < 1 ||
+    payload.sourceSeatNumber > 12 ||
+    !hasExactRoleSetupSnapshotShape(payload.sourceRole) ||
+    !hasExactRoleSetupSnapshotShape(payload.chosenRole) ||
+    typeof payload.philosopherOpportunityId !== "string" ||
+    payload.philosopherOpportunityId.trim().length === 0 ||
+    typeof payload.grantId !== "string" ||
+    payload.grantId.trim().length === 0 ||
+    typeof payload.sourceCharacterStateRevision !== "number" ||
+    !Number.isInteger(payload.sourceCharacterStateRevision) ||
+    payload.sourceCharacterStateRevision <= 0 ||
+    payload.status !== "PENDING" ||
+    typeof payload.settlementPolicy !== "string" ||
+    payload.insertionReason !== "PHILOSOPHER_GAINED_ABILITY"
+  ) {
+    return fail("FirstNightTaskInsertedV2 fields must use supported primitive values");
+  }
+
+  if (
+    payload.taskCatalogVersion !== input.firstNightTaskPlan.taskCatalogVersion ||
+    payload.taskCatalogSignatureAlgorithm !== input.firstNightTaskPlan.taskCatalogSignatureAlgorithm ||
+    payload.taskCatalogSignature !== input.firstNightTaskPlan.taskCatalogSignature
+  ) {
+    return fail("FirstNightTaskInsertedV2 catalog metadata must match the active plan snapshot");
+  }
+
+  const existingInsertions = input.insertions?.insertions ?? [];
+  if (existingInsertions.some((insertion) => !isV2Insertion(insertion))) {
+    return fail("FirstNightTaskInsertedV2 cannot mix with legacy insertion facts");
+  }
+  if (existingInsertions.some((insertion) => insertion.taskId === payload.taskId)) {
+    return fail("FirstNightTaskInsertedV2 cannot duplicate a scheduled task id");
+  }
+  if (input.firstNightTaskPlan.tasks.some((task) => task.taskId === payload.taskId)) {
+    return fail("FirstNightTaskInsertedV2 cannot duplicate an existing scheduled task id");
+  }
+
+  const grants = input.grants?.abilities.filter((candidate) => candidate.grantId === payload.grantId) ?? [];
+  const grant = grants[0];
+  if (grants.length !== 1 || grant === undefined) {
+    return fail("FirstNightTaskInsertedV2 requires exactly one matching PhilosopherAbilityGranted fact");
+  }
+
+  const expected = createFirstNightTaskInsertedV2Payload({
+    rulesBaselineVersion: payload.rulesBaselineVersion,
+    choice: {
+      rulesBaselineVersion: payload.rulesBaselineVersion,
+      nightNumber: 1,
+      taskId: grant.grantedAtTaskId,
+      taskType: "PHILOSOPHER_ACTION",
+      opportunityId: grant.grantedAtOpportunityId,
+      decisionKind: "CHOOSE_GOOD_CHARACTER",
+      sourcePlayerId: grant.sourcePlayerId,
+      sourceSeatNumber: grant.sourceSeatNumber,
+      sourceRole: grant.sourceRole,
+      sourceCharacterStateRevision: grant.sourceCharacterStateRevision,
+      chosenRole: grant.chosenRole,
+      chosenRoleId: grant.chosenRoleId,
+      roleCatalogSignature: grant.chosenRoleCatalogSignature
+    },
+    grant,
+    firstNightTaskPlan: input.firstNightTaskPlan
+  });
+  const candidate = payload as unknown as FirstNightTaskInsertedV2Payload;
+  if (
+    expected === undefined ||
+    candidate.schedulingVersion !== expected.schedulingVersion ||
+    candidate.taskPlanVersion !== expected.taskPlanVersion ||
+    candidate.taskCatalogVersion !== expected.taskCatalogVersion ||
+    candidate.taskCatalogSignatureAlgorithm !== expected.taskCatalogSignatureAlgorithm ||
+    candidate.taskCatalogSignature !== expected.taskCatalogSignature ||
+    candidate.taskId !== expected.taskId ||
+    candidate.taskType !== expected.taskType ||
+    candidate.taskClass !== expected.taskClass ||
+    candidate.targetRoleId !== expected.targetRoleId ||
+    candidate.targetCatalogBaseOrder !== expected.targetCatalogBaseOrder ||
+    candidate.effectiveBaseOrder !== expected.effectiveBaseOrder ||
+    candidate.tieBreakPolicy !== expected.tieBreakPolicy ||
+    candidate.tieBreakSourceSeatNumber !== expected.tieBreakSourceSeatNumber ||
+    candidate.sourcePlayerId !== expected.sourcePlayerId ||
+    candidate.sourceSeatNumber !== expected.sourceSeatNumber ||
+    !sameRoleSetupSnapshot(candidate.sourceRole, expected.sourceRole) ||
+    !sameRoleSetupSnapshot(candidate.chosenRole, expected.chosenRole) ||
+    candidate.philosopherOpportunityId !== expected.philosopherOpportunityId ||
+    candidate.grantId !== expected.grantId ||
+    candidate.sourceCharacterStateRevision !== expected.sourceCharacterStateRevision ||
+    candidate.status !== expected.status ||
+    candidate.settlementPolicy !== expected.settlementPolicy ||
+    candidate.insertionReason !== expected.insertionReason
+  ) {
+    return fail("FirstNightTaskInsertedV2 must match the deterministic catalog-bound insertion");
+  }
+
+  return { valid: true };
+};
+
 export const appendPhilosopherAbilityChoice = (
   state: PhilosopherAbilityChoiceSet | undefined,
   payload: PhilosopherAbilityChosenPayload
@@ -1158,29 +1487,29 @@ export const appendAbilityImpairment = (
 
 export const appendFirstNightTaskInsertion = (
   state: FirstNightTaskInsertion | undefined,
-  payload: FirstNightTaskInsertedPayload
+  payload: AnyFirstNightTaskInsertedPayload
 ): FirstNightTaskInsertion => ({
   insertions: [...cloneFirstNightTaskInsertion(state).insertions, cloneInsertion(payload)]
 });
 
 export const scheduledTaskFromFirstNightTaskInsertedPayload = (
-  payload: FirstNightTaskInsertedPayload
+  payload: AnyFirstNightTaskInsertedPayload
 ): ScheduledTask => ({
   taskId: payload.taskId,
   taskType: payload.taskType,
   taskClass: payload.taskClass,
   orderKey: {
-    baseOrder: payload.orderKey.baseOrder,
-    insertionOrder: payload.orderKey.insertionOrder
+    baseOrder: isV2Insertion(payload) ? payload.effectiveBaseOrder : payload.orderKey.baseOrder,
+    insertionOrder: isV2Insertion(payload) ? payload.tieBreakSourceSeatNumber : payload.orderKey.insertionOrder
   },
   source: {
-    kind: payload.source.kind,
-    playerId: payload.source.playerId,
-    seatNumber: payload.source.seatNumber,
-    sourceRole: cloneRoleSetupSnapshot(payload.source.sourceRole),
-    chosenRole: cloneRoleSetupSnapshot(payload.source.chosenRole),
-    opportunityId: payload.source.opportunityId,
-    sourceCharacterStateRevision: payload.source.sourceCharacterStateRevision
+    kind: "PHILOSOPHER_GAINED_ABILITY",
+    playerId: isV2Insertion(payload) ? payload.sourcePlayerId : payload.source.playerId,
+    seatNumber: isV2Insertion(payload) ? payload.sourceSeatNumber : payload.source.seatNumber,
+    sourceRole: cloneRoleSetupSnapshot(isV2Insertion(payload) ? payload.sourceRole : payload.source.sourceRole),
+    chosenRole: cloneRoleSetupSnapshot(isV2Insertion(payload) ? payload.chosenRole : payload.source.chosenRole),
+    opportunityId: isV2Insertion(payload) ? payload.philosopherOpportunityId : payload.source.opportunityId,
+    sourceCharacterStateRevision: payload.sourceCharacterStateRevision
   },
   status: payload.status,
   settlementPolicy: payload.settlementPolicy
@@ -1188,8 +1517,14 @@ export const scheduledTaskFromFirstNightTaskInsertedPayload = (
 
 export const applyFirstNightTaskInsertionToPlan = (
   plan: FirstNightTaskPlan,
-  payload: FirstNightTaskInsertedPayload
+  payload: AnyFirstNightTaskInsertedPayload
 ): FirstNightTaskPlan => {
+  const payloadVersion: FirstNightTaskPlanVersion = isV2Insertion(payload)
+    ? CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION
+    : LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION;
+  if (plan.taskPlanVersion !== payloadVersion) {
+    throw new DomainError("InvalidFirstNightTaskInsertedPayload", "Insertion generation must match the active first-night task plan");
+  }
   const clonedPlan = cloneFirstNightTaskPlan(plan);
   const insertedTask = scheduledTaskFromFirstNightTaskInsertedPayload(payload);
 

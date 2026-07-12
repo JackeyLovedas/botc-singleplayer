@@ -200,14 +200,14 @@ const makeServiceWithoutFirstNightTaskPlanner = (
 };
 
 const expectAcceptedResult: (result: CommandResult) => asserts result is FullEventCommandAccepted = (result) => {
-  expect(result.status).toBe("accepted");
+  expect(result.status, JSON.stringify(result)).toBe("accepted");
   expect("events" in result).toBe(true);
 };
 
 const expectEventSummaryAcceptedResult: (
   result: CommandResult
 ) => asserts result is EventSummaryCommandAccepted = (result) => {
-  expect(result.status).toBe("accepted");
+  expect(result.status, JSON.stringify(result)).toBe("accepted");
   expect("eventTypes" in result).toBe(true);
   expect("events" in result).toBe(false);
 };
@@ -239,22 +239,93 @@ const reachOpenPhilosopherActionOpportunity = async (service: GameApplicationSer
   await service.execute(openFirstNightRoleActionOpportunityCommand());
 };
 
-const philosopherGainedSnakeCharmerTaskId = scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer");
+const philosopherGainedSnakeCharmerTaskId = scheduledTaskId("first-night-v2:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer");
 const philosopherGainedSnakeCharmerOpportunityId = actionOpportunityId(
   "first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer:opportunity-01"
 );
 
-const reachOpenPhilosopherGainedSnakeCharmerOpportunity = async (service: GameApplicationService): Promise<void> => {
+const advancePastSystemInformation = async (
+  service: GameApplicationService,
+  store: MemoryCommandCommitStore,
+  prefix: string
+): Promise<void> => {
+  for (const taskType of ["MINION_INFO", "DEMON_INFO"] as const) {
+    const state = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const next = state?.firstNightTaskPlan?.tasks[state.firstNightTaskProgress?.settlements.length ?? 0];
+    if (state === undefined || next?.taskType !== taskType) {
+      throw new Error(`Expected ${taskType} while advancing V2 task order`);
+    }
+    const result = await service.execute(settleFirstNightSystemTaskCommand({
+      commandId: commandId(`${prefix}-${taskType.toLowerCase()}`),
+      expectedGameVersion: state.gameVersion,
+      payload: { commandType: "SettleFirstNightSystemTask", taskId: next.taskId }
+    }));
+    expectAcceptedResult(result);
+  }
+};
+
+const reachNextPhilosopherGainedSnakeCharmerTask = async (
+  service: GameApplicationService,
+  store: MemoryCommandCommitStore,
+  prefix: string
+): Promise<GameState> => {
+  await advancePastSystemInformation(service, store, prefix);
+  const beforeBase = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+  const baseTask = beforeBase?.firstNightTaskPlan?.tasks[beforeBase.firstNightTaskProgress?.settlements.length ?? 0];
+  if (beforeBase === undefined || baseTask?.taskType !== "SNAKE_CHARMER_ACTION" || baseTask.source.kind !== "ROLE") {
+    throw new Error("Expected base Snake Charmer before Philosopher-gained Snake Charmer");
+  }
+  const opened = await service.execute(openFirstNightRoleActionOpportunityCommand({
+    commandId: commandId(`${prefix}-open-base-snake`),
+    expectedGameVersion: beforeBase.gameVersion,
+    payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: baseTask.taskId }
+  }));
+  expectAcceptedResult(opened);
+  const openState = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+  const opportunity = openState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === baseTask.taskId);
+  const target = openState?.currentCharacterState?.entries.find(
+    (entry) => entry.playerId !== opportunity?.sourcePlayerId && entry.role.characterType !== "DEMON"
+  );
+  if (openState === undefined || opportunity === undefined || target === undefined) {
+    throw new Error("Expected base Snake Charmer source and non-Demon target");
+  }
+  const settled = await service.execute(submitSnakeCharmerActionCommand({
+    commandId: commandId(`${prefix}-settle-base-snake`),
+    expectedGameVersion: openState.gameVersion,
+    actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+    payload: {
+      commandType: "SubmitSnakeCharmerAction",
+      taskId: baseTask.taskId,
+      opportunityId: opportunity.opportunityId,
+      decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId }
+    }
+  }));
+  expectAcceptedResult(settled);
+  const ready = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+  const next = ready?.firstNightTaskPlan?.tasks[ready.firstNightTaskProgress?.settlements.length ?? 0];
+  if (ready === undefined || next?.taskId !== philosopherGainedSnakeCharmerTaskId) {
+    throw new Error("Expected Philosopher-gained Snake Charmer after the base task");
+  }
+  return ready;
+};
+
+const reachOpenPhilosopherGainedSnakeCharmerOpportunity = async (
+  service: GameApplicationService,
+  store: MemoryCommandCommitStore
+): Promise<void> => {
   await reachOpenPhilosopherActionOpportunity(service);
-  await service.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-charmer-for-action") }));
-  await service.execute(openFirstNightRoleActionOpportunityCommand({
+  const choice = await service.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-charmer-for-action") }));
+  expectAcceptedResult(choice);
+  const ready = await reachNextPhilosopherGainedSnakeCharmerTask(service, store, "advance-gained-snake");
+  const opened = await service.execute(openFirstNightRoleActionOpportunityCommand({
     commandId: commandId("open-snake-charmer-for-action"),
-    expectedGameVersion: 9,
+    expectedGameVersion: ready.gameVersion,
     payload: {
       commandType: "OpenFirstNightRoleActionOpportunity",
       taskId: philosopherGainedSnakeCharmerTaskId
     }
   }));
+  expectAcceptedResult(opened);
 };
 
 const choosePhilosopherRoleCommand = (
@@ -625,6 +696,112 @@ const advanceToNextClockmaker = async (
   throw new Error("Clockmaker advance exceeded bounded steps");
 };
 
+const advanceToScheduledTask = async (
+  service: GameApplicationService,
+  store: MemoryCommandCommitStore,
+  targetTaskId: ReturnType<typeof scheduledTaskId>,
+  idPrefix: string
+): Promise<GameState> => {
+  for (let step = 0; step < 24; step += 1) {
+    const state = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const next = state?.firstNightTaskPlan?.tasks[state.firstNightTaskProgress?.settlements.length ?? 0];
+    if (state === undefined || next === undefined) throw new Error("Expected next task while advancing V2 schedule");
+    if (next.taskId === targetTaskId) return state;
+    if (next.taskType === "MINION_INFO" || next.taskType === "DEMON_INFO") {
+      const result = await service.execute(settleFirstNightSystemTaskCommand({
+        commandId: commandId(`${idPrefix}-system-${step}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "SettleFirstNightSystemTask", taskId: next.taskId }
+      }));
+      expectAcceptedResult(result);
+      continue;
+    }
+    if (next.taskType === "SNAKE_CHARMER_ACTION" || next.taskType === "WITCH_ACTION" || next.taskType === "DREAMER_ACTION" || next.taskType === "SEAMSTRESS_ACTION") {
+      const opened = await service.execute(openFirstNightRoleActionOpportunityCommand({
+        commandId: commandId(`${idPrefix}-open-${step}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: next.taskId }
+      }));
+      expectAcceptedResult(opened);
+      const openState = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+      const opportunity = openState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === next.taskId);
+      if (openState === undefined || opportunity === undefined) throw new Error("Expected opened role opportunity while advancing V2 schedule");
+      if (next.taskType === "SEAMSTRESS_ACTION") {
+        const result = await service.execute(submitSeamstressActionCommand({
+          commandId: commandId(`${idPrefix}-seamstress-${step}`), expectedGameVersion: openState.gameVersion,
+          actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+          payload: { commandType: "SubmitSeamstressAction", taskId: next.taskId, opportunityId: opportunity.opportunityId, decision: { kind: "DEFER" } }
+        }));
+        expectEventSummaryAcceptedResult(result);
+        continue;
+      }
+      const target = openState.currentCharacterState?.entries.find((entry) =>
+        entry.playerId !== opportunity.sourcePlayerId && (next.taskType !== "SNAKE_CHARMER_ACTION" || entry.role.characterType !== "DEMON")
+      );
+      if (target === undefined) throw new Error("Expected role-action target while advancing V2 schedule");
+      const result = next.taskType === "SNAKE_CHARMER_ACTION"
+        ? await service.execute(submitSnakeCharmerActionCommand({
+            commandId: commandId(`${idPrefix}-snake-${step}`), expectedGameVersion: openState.gameVersion,
+            actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+            payload: { commandType: "SubmitSnakeCharmerAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
+              decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+          }))
+        : next.taskType === "WITCH_ACTION"
+          ? await service.execute(submitWitchActionCommand({
+              commandId: commandId(`${idPrefix}-witch-${step}`), expectedGameVersion: openState.gameVersion,
+              actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+              payload: { commandType: "SubmitWitchAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
+                decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+            }))
+          : await service.execute(submitDreamerActionCommand({
+              commandId: commandId(`${idPrefix}-dreamer-${step}`), expectedGameVersion: openState.gameVersion,
+              actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+              payload: { commandType: "SubmitDreamerAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
+                decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+            }));
+      expectAcceptedResult(result);
+      continue;
+    }
+    if (next.taskType === "EVIL_TWIN_SETUP") {
+      const result = await service.execute(settleEvilTwinSetupCommand({
+        commandId: commandId(`${idPrefix}-evil-twin-${step}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "SettleEvilTwinSetup", taskId: next.taskId }
+      }));
+      expectAcceptedResult(result);
+      continue;
+    }
+    if (next.taskType === "CLOCKMAKER_INFORMATION") {
+      const result = await service.execute(settleClockmakerCommand(state, next.taskId, {
+        commandId: commandId(`${idPrefix}-clockmaker-${step}`)
+      }));
+      expectEventSummaryAcceptedResult(result);
+      continue;
+    }
+    if (next.taskType === "CERENOVUS_ACTION") {
+      const opened = await service.execute(openFirstNightRoleActionOpportunityCommand({
+        commandId: commandId(`${idPrefix}-open-cerenovus-${step}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: next.taskId }
+      }));
+      expectAcceptedResult(opened);
+      const openState = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+      const opportunity = openState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === next.taskId);
+      const target = openState?.roster?.entries.find((entry) => entry.playerId !== opportunity?.sourcePlayerId);
+      if (openState === undefined || opportunity === undefined || target === undefined) {
+        throw new Error("Expected Cerenovus source and target while advancing V2 schedule");
+      }
+      const result = await service.execute({
+        commandId: commandId(`${idPrefix}-cerenovus-${step}`), gameId: ids.game, expectedGameVersion: openState.gameVersion,
+        actor: { kind: "ai", playerId: opportunity.sourcePlayerId }, issuedAt: "2026-07-12T00:00:00.000Z",
+        correlationId: correlationId(`${idPrefix}-cerenovus-${step}`),
+        payload: { commandType: "SubmitCerenovusAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
+          decision: { kind: "CHOOSE_PLAYER_AND_CHARACTER", targetPlayerId: target.playerId, chosenRoleId: roleId("dreamer") } }
+      });
+      expectEventSummaryAcceptedResult(result);
+      continue;
+    }
+    throw new Error(`Unsupported V2 advancement task ${next.taskType}`);
+  }
+  throw new Error("V2 schedule advancement exceeded bounded steps");
+};
+
 const reachGainedClockmakerTask = async (
   service: GameApplicationService,
   store: MemoryCommandCommitStore,
@@ -642,6 +819,15 @@ const reachGainedClockmakerTask = async (
   await service.execute(submitPhilosopherActionCommand({ commandId: commandId("choose-clockmaker"), expectedGameVersion: opened.gameVersion, actor: systemActor,
     payload: { commandType: "SubmitPhilosopherAction", taskId: philosopherTask.taskId, opportunityId: opportunity.opportunityId,
       decision: { kind: "CHOOSE_GOOD_CHARACTER", roleId: roleId("clockmaker") } } }));
+  const firstClockmaker = await advanceToNextClockmaker(service, store, false, "advance-gained-clockmaker");
+  if (firstClockmaker.task.source.kind === "ROLE") {
+    const baseResult = await service.execute(settleClockmakerCommand(
+      firstClockmaker.state,
+      firstClockmaker.task.taskId,
+      { commandId: commandId("settle-base-before-gained-clockmaker") }
+    ));
+    expectEventSummaryAcceptedResult(baseResult);
+  }
   const gained = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
   const task = gained?.firstNightTaskPlan?.tasks[gained.firstNightTaskProgress?.settlements.length ?? 0];
   if (gained === undefined || task?.taskType !== "CLOCKMAKER_INFORMATION" || task.source.kind !== "PHILOSOPHER_GAINED_ABILITY") throw new Error("Expected gained Clockmaker task");
@@ -792,57 +978,21 @@ const reachOpenDrunkBaseSnakeCharmerOpportunity = async (
   service: GameApplicationService,
   commandStore: MemoryCommandCommitStore
 ) => {
-  await reachOpenPhilosopherGainedSnakeCharmerOpportunity(service);
-  const insertedState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
-  const insertedTarget = insertedState?.currentCharacterState?.entries.find((entry) =>
-    entry.role.characterType !== "DEMON" &&
-    entry.playerId !== insertedState.firstNightActionOpportunities?.opportunities.find((opportunity) =>
-      opportunity.opportunityId === philosopherGainedSnakeCharmerOpportunityId
-    )?.sourcePlayerId
-  );
-  if (insertedTarget === undefined) {
-    throw new Error("Expected inserted Snake Charmer non-Demon target");
-  }
-
-  await service.execute(submitSnakeCharmerActionCommand({
-    commandId: commandId("settle-inserted-snake-before-drunk-base"),
-    expectedGameVersion: 10,
-    payload: {
-      commandType: "SubmitSnakeCharmerAction",
-      taskId: philosopherGainedSnakeCharmerTaskId,
-      opportunityId: philosopherGainedSnakeCharmerOpportunityId,
-      decision: {
-        kind: "CHOOSE_PLAYER",
-        targetPlayerId: insertedTarget.playerId
-      }
-    }
+  await reachOpenPhilosopherActionOpportunity(service);
+  const choice = await service.execute(choosePhilosopherRoleCommand("snake_charmer", {
+    commandId: commandId("choose-snake-charmer-before-drunk-base")
   }));
-  await service.execute(settleFirstNightSystemTaskCommand({
-    commandId: commandId("settle-minion-before-drunk-base-snake"),
-    expectedGameVersion: 11
-  }));
-  await service.execute(settleFirstNightSystemTaskCommand({
-    commandId: commandId("settle-demon-before-drunk-base-snake"),
-    expectedGameVersion: 12,
-    payload: {
-      commandType: "SettleFirstNightSystemTask",
-      taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
-    }
-  }));
-
+  expectAcceptedResult(choice);
+  await advancePastSystemInformation(service, commandStore, "advance-drunk-base-snake");
   const beforeOpenState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
-  const baseTask = beforeOpenState?.firstNightTaskPlan?.tasks.find((task) =>
-    task.taskType === "SNAKE_CHARMER_ACTION" &&
-    task.source.kind === "ROLE" &&
-    task.source.role.roleId === "snake_charmer"
-  );
-  if (baseTask === undefined) {
+  const baseTask = beforeOpenState?.firstNightTaskPlan?.tasks[beforeOpenState.firstNightTaskProgress?.settlements.length ?? 0];
+  if (beforeOpenState === undefined || baseTask?.taskType !== "SNAKE_CHARMER_ACTION" || baseTask.source.kind !== "ROLE") {
     throw new Error("Expected base Snake Charmer task");
   }
 
   const openResult = await service.execute(openFirstNightRoleActionOpportunityCommand({
     commandId: commandId("open-drunk-base-snake-action"),
-    expectedGameVersion: 13,
+    expectedGameVersion: beforeOpenState.gameVersion,
     payload: {
       commandType: "OpenFirstNightRoleActionOpportunity",
       taskId: baseTask.taskId
@@ -2654,7 +2804,7 @@ describe("GameApplicationService", () => {
     expect(state?.phase).toBe("FIRST_NIGHT");
     expect(state?.nightNumber).toBe(1);
     expect(state?.dayNumber).toBe(0);
-    expect(state?.firstNightTaskPlan?.taskPlanVersion).toBe("first-night-task-plan-v1");
+    expect(state?.firstNightTaskPlan?.taskPlanVersion).toBe("first-night-task-plan-v2");
     expect(state?.firstNightTaskPlan?.tasks.every((task) => task.status === "PENDING")).toBe(true);
     expect(commandStore.getGameVersion(command.gameId)).toBe(7);
   });
@@ -3395,7 +3545,7 @@ describe("GameApplicationService", () => {
       "PhilosopherAbilityChosen",
       "PhilosopherAbilityGranted",
       "AbilityImpairmentApplied",
-      "FirstNightTaskInserted",
+      "FirstNightTaskInsertedV2",
       "ScheduledTaskSettled"
     ]);
     expect((await commandStore.findCommandReceipt(choose.gameId, choose.commandId))?.result.status).toBe("accepted");
@@ -3529,7 +3679,7 @@ describe("GameApplicationService", () => {
     expectAcceptedResult(minionResult);
   });
 
-  it("records drunkenness for an in-play good role and inserts gained first-night tasks before MINION_INFO", async () => {
+  it("records drunkenness and schedules the gained task at its catalog position after system information", async () => {
     const { service, commandStore } = makeService();
     await reachOpenPhilosopherActionOpportunity(service);
 
@@ -3542,7 +3692,7 @@ describe("GameApplicationService", () => {
       "PhilosopherAbilityChosen",
       "PhilosopherAbilityGranted",
       "AbilityImpairmentApplied",
-      "FirstNightTaskInserted",
+      "FirstNightTaskInsertedV2",
       "ScheduledTaskSettled"
     ]);
     expect(state?.abilityImpairments?.impairments[0]).toMatchObject({
@@ -3553,23 +3703,28 @@ describe("GameApplicationService", () => {
       sourceCharacterStateRevision: 1
     });
     expect(state?.firstNightTaskInsertions?.insertions[0]).toMatchObject({
-      taskId: "first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer",
+      schedulingVersion: "philosopher-gained-first-night-scheduling-v2",
+      taskPlanVersion: "first-night-task-plan-v2",
+      taskId: "first-night-v2:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer",
       taskType: "SNAKE_CHARMER_ACTION",
       taskClass: "ROLE_ACTION",
-      orderKey: {
-        baseOrder: 100,
-        insertionOrder: 1
-      },
+      targetCatalogBaseOrder: 400,
+      effectiveBaseOrder: 400,
+      tieBreakPolicy: "BASE_THEN_GAINED_BY_SOURCE_SEAT_THEN_TASK_ID_CODE_UNIT",
+      tieBreakSourceSeatNumber: 10,
       status: "PENDING",
       settlementPolicy: "REEVALUATE_SOURCE_AT_SETTLEMENT",
       insertionReason: "PHILOSOPHER_GAINED_ABILITY",
-      insertedByOpportunityId: "first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"
+      philosopherOpportunityId: "first-night-v1:PHILOSOPHER_ACTION:seat-10:opportunity-01"
     });
-    expect(state?.firstNightTaskPlan?.tasks.slice(0, 3).map((task) => task.taskType)).toStrictEqual([
+    expect(state?.firstNightTaskPlan?.tasks.slice(0, 4).map((task) => task.taskType)).toStrictEqual([
       "PHILOSOPHER_ACTION",
-      "SNAKE_CHARMER_ACTION",
-      "MINION_INFO"
+      "MINION_INFO",
+      "DEMON_INFO",
+      "SNAKE_CHARMER_ACTION"
     ]);
+    const snakeTasks = state?.firstNightTaskPlan?.tasks.filter((task) => task.taskType === "SNAKE_CHARMER_ACTION") ?? [];
+    expect(snakeTasks.map((task) => task.source.kind)).toStrictEqual(["ROLE", "PHILOSOPHER_GAINED_ABILITY"]);
     expect(state?.firstNightTaskPlan?.taskCatalogSnapshot.definitions).toHaveLength(testFirstNightTaskCatalog.definitions.length);
     expect(state?.firstNightTaskProgress?.settlements).toHaveLength(1);
 
@@ -3577,21 +3732,19 @@ describe("GameApplicationService", () => {
       commandId: commandId("blocked-minion-after-inserted-snake"),
       expectedGameVersion: 9
     }));
-    expect(minionResult).toMatchObject({
-      status: "rejected",
-      code: "NextTaskRequiresRoleExecution",
-      currentGameVersion: 9
-    });
+    expectAcceptedResult(minionResult);
   });
 
   it("opens a deterministic Philosopher gained Snake Charmer opportunity with safe visibility", async () => {
     const { service, commandStore } = makeService();
     await reachOpenPhilosopherActionOpportunity(service);
-    await service.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-before-open") }));
+    const choice = await service.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-before-open") }));
+    expectAcceptedResult(choice);
+    const ready = await reachNextPhilosopherGainedSnakeCharmerTask(service, commandStore, "safe-visibility");
 
     const command = openFirstNightRoleActionOpportunityCommand({
       commandId: commandId("open-philosopher-gained-snake-charmer"),
-      expectedGameVersion: 9,
+      expectedGameVersion: ready.gameVersion,
       payload: {
         commandType: "OpenFirstNightRoleActionOpportunity",
         taskId: philosopherGainedSnakeCharmerTaskId
@@ -3602,11 +3755,10 @@ describe("GameApplicationService", () => {
     const state = rebuildOptionalGameState(events);
 
     expectAcceptedResult(result);
-    expect(result).toMatchObject({ status: "accepted", gameVersion: 10, idempotent: false });
+    expect(result).toMatchObject({ status: "accepted", gameVersion: ready.gameVersion + 1, idempotent: false });
     expect(result.events).toHaveLength(1);
     expect(result.events[0]).toMatchObject({
-      eventSequence: 19,
-      gameVersion: 10,
+      gameVersion: ready.gameVersion + 1,
       eventType: "FirstNightActionOpportunityCreated",
       payload: {
         opportunityId: philosopherGainedSnakeCharmerOpportunityId,
@@ -3628,16 +3780,23 @@ describe("GameApplicationService", () => {
     });
     expect(result.events[0]?.payload).not.toHaveProperty("targetRoleId");
     expect(result.events[0]?.payload).not.toHaveProperty("isDemon");
-    expect(state?.firstNightActionOpportunities?.opportunities[1]).toMatchObject({
+    expect(state?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === philosopherGainedSnakeCharmerOpportunityId
+    )).toMatchObject({
       opportunityId: philosopherGainedSnakeCharmerOpportunityId,
       opportunityKind: "SNAKE_CHARMER_FIRST_NIGHT_ACTION",
       opportunityStatus: "OPEN"
     });
-    expect(state?.firstNightTaskProgress?.settlements).toHaveLength(1);
+    expect(state?.firstNightTaskProgress?.settlements.map((entry) => entry.taskType)).toStrictEqual([
+      "PHILOSOPHER_ACTION",
+      "MINION_INFO",
+      "DEMON_INFO",
+      "SNAKE_CHARMER_ACTION"
+    ]);
 
     const duplicate = openFirstNightRoleActionOpportunityCommand({
       commandId: commandId("duplicate-open-philosopher-gained-snake"),
-      expectedGameVersion: 10,
+      expectedGameVersion: state?.gameVersion ?? 0,
       payload: {
         commandType: "OpenFirstNightRoleActionOpportunity",
         taskId: philosopherGainedSnakeCharmerTaskId
@@ -3646,7 +3805,7 @@ describe("GameApplicationService", () => {
     await expect(service.execute(duplicate)).resolves.toMatchObject({
       status: "rejected",
       code: "ActionOpportunityAlreadyOpen",
-      currentGameVersion: 10
+      currentGameVersion: state?.gameVersion
     });
     expect((await commandStore.findCommandReceipt(duplicate.gameId, duplicate.commandId))?.result.status).toBe("rejected");
   });
@@ -3655,25 +3814,29 @@ describe("GameApplicationService", () => {
     const storytellerStore = new MemoryCommandCommitStore();
     const { service: storytellerService } = makeService(storytellerStore);
     await reachOpenPhilosopherActionOpportunity(storytellerService);
-    await storytellerService.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-storyteller-open") }));
+    const storytellerChoice = await storytellerService.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-storyteller-open") }));
+    expectAcceptedResult(storytellerChoice);
+    const storytellerReady = await reachNextPhilosopherGainedSnakeCharmerTask(storytellerService, storytellerStore, "storyteller-open");
     await expect(storytellerService.execute(openFirstNightRoleActionOpportunityCommand({
       actor: storytellerActor,
       commandId: commandId("storyteller-open-philosopher-gained-snake"),
-      expectedGameVersion: 9,
+      expectedGameVersion: storytellerReady.gameVersion,
       payload: {
         commandType: "OpenFirstNightRoleActionOpportunity",
         taskId: philosopherGainedSnakeCharmerTaskId
       }
-    }))).resolves.toMatchObject({ status: "accepted", gameVersion: 10 });
+    }))).resolves.toMatchObject({ status: "accepted", gameVersion: storytellerReady.gameVersion + 1 });
 
     const actorStore = new MemoryCommandCommitStore();
     const { service: actorService } = makeService(actorStore);
     await reachOpenPhilosopherActionOpportunity(actorService);
-    await actorService.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-actor-open") }));
+    const actorChoice = await actorService.execute(choosePhilosopherRoleCommand("snake_charmer", { commandId: commandId("choose-snake-actor-open") }));
+    expectAcceptedResult(actorChoice);
+    const actorReady = await reachNextPhilosopherGainedSnakeCharmerTask(actorService, actorStore, "actor-open");
     const humanCommand = openFirstNightRoleActionOpportunityCommand({
       actor: humanActor,
       commandId: commandId("human-open-philosopher-gained-snake"),
-      expectedGameVersion: 9,
+      expectedGameVersion: actorReady.gameVersion,
       payload: {
         commandType: "OpenFirstNightRoleActionOpportunity",
         taskId: philosopherGainedSnakeCharmerTaskId
@@ -3682,7 +3845,7 @@ describe("GameApplicationService", () => {
     const aiCommand = openFirstNightRoleActionOpportunityCommand({
       actor: aiActor,
       commandId: commandId("ai-open-philosopher-gained-snake"),
-      expectedGameVersion: 9,
+      expectedGameVersion: actorReady.gameVersion,
       payload: {
         commandType: "OpenFirstNightRoleActionOpportunity",
         taskId: philosopherGainedSnakeCharmerTaskId
@@ -3700,10 +3863,11 @@ describe("GameApplicationService", () => {
     const { service: dreamerService } = makeService(dreamerStore);
     await reachOpenPhilosopherActionOpportunity(dreamerService);
     await dreamerService.execute(choosePhilosopherRoleCommand("dreamer", { commandId: commandId("choose-dreamer-before-open") }));
-    const dreamerTaskId = scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-10:from-dreamer");
+    const dreamerTaskId = scheduledTaskId("first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-10:from-dreamer");
+    const dreamerReady = await advanceToScheduledTask(dreamerService, dreamerStore, dreamerTaskId, "advance-gained-dreamer");
     await expect(dreamerService.execute(openFirstNightRoleActionOpportunityCommand({
       commandId: commandId("open-gained-dreamer-unsupported"),
-      expectedGameVersion: 9,
+      expectedGameVersion: dreamerReady.gameVersion,
       payload: {
         commandType: "OpenFirstNightRoleActionOpportunity",
         taskId: dreamerTaskId
@@ -3711,7 +3875,7 @@ describe("GameApplicationService", () => {
     }))).resolves.toMatchObject({
       status: "rejected",
       code: "UnsupportedRoleActionOpportunity",
-      currentGameVersion: 9
+      currentGameVersion: dreamerReady.gameVersion
     });
 
     const baseSnakeStore = new MemoryCommandCommitStore();
@@ -3782,7 +3946,7 @@ describe("GameApplicationService", () => {
 
     const result = await service.execute(submitSnakeCharmerActionCommand({
       commandId: commandId("base-snake-non-demon-no-swap"),
-      expectedGameVersion: 10,
+      expectedGameVersion: beforeState?.gameVersion ?? 0,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: baseTask.taskId,
@@ -3828,7 +3992,7 @@ describe("GameApplicationService", () => {
 
     const result = await service.execute(submitSnakeCharmerActionCommand({
       commandId: commandId("base-snake-demon-hit-swap"),
-      expectedGameVersion: 10,
+      expectedGameVersion: beforeState.gameVersion,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: baseTask.taskId,
@@ -3882,7 +4046,7 @@ describe("GameApplicationService", () => {
 
     const result = await service.execute(submitSnakeCharmerActionCommand({
       commandId: commandId("drunk-base-snake-demon-ineffective"),
-      expectedGameVersion: 14,
+      expectedGameVersion: beforeState.gameVersion,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: baseTask.taskId,
@@ -3939,17 +4103,22 @@ describe("GameApplicationService", () => {
 
   it("settles Philosopher gained Snake Charmer non-Demon targets without leaking target role facts", async () => {
     const { service, commandStore } = makeService();
-    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(service);
+    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(service, commandStore);
     const beforeEvents = await commandStore.loadDomainEvents(ids.game);
     const beforeState = rebuildOptionalGameState(beforeEvents);
-    const target = beforeState?.currentCharacterState?.entries.find((entry) => entry.role.characterType !== "DEMON");
+    const sourceOpportunity = beforeState?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === philosopherGainedSnakeCharmerOpportunityId
+    );
+    const target = beforeState?.currentCharacterState?.entries.find((entry) =>
+      entry.role.characterType !== "DEMON" && entry.playerId !== sourceOpportunity?.sourcePlayerId
+    );
     if (target === undefined) {
       throw new Error("Expected non-Demon target");
     }
 
     const result = await service.execute(submitSnakeCharmerActionCommand({
       commandId: commandId("snake-charmer-non-demon-no-swap"),
-      expectedGameVersion: 10,
+      expectedGameVersion: beforeState?.gameVersion ?? 0,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: philosopherGainedSnakeCharmerTaskId,
@@ -3964,14 +4133,18 @@ describe("GameApplicationService", () => {
     const state = rebuildOptionalGameState(events);
 
     expectAcceptedResult(result);
-    expect(result).toMatchObject({ status: "accepted", gameVersion: 11, idempotent: false });
+    expect(result).toMatchObject({ status: "accepted", gameVersion: (beforeState?.gameVersion ?? 0) + 1, idempotent: false });
     expect(result.events.map((event) => event.eventType)).toStrictEqual([
       "SnakeCharmerTargetChosen",
       "SnakeCharmerNoSwapResolved",
       "ScheduledTaskSettled"
     ]);
-    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([20, 21, 22]);
-    expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([11]));
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([
+      result.events[0]!.eventSequence,
+      result.events[0]!.eventSequence + 1,
+      result.events[0]!.eventSequence + 2
+    ]);
+    expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([result.gameVersion]));
     expect(result.events[0]?.payload).toMatchObject({
       taskId: philosopherGainedSnakeCharmerTaskId,
       taskType: "SNAKE_CHARMER_ACTION",
@@ -4010,35 +4183,18 @@ describe("GameApplicationService", () => {
     expect(state?.firstNightActionOpportunities?.opportunities.find((opportunity) =>
       opportunity.opportunityId === philosopherGainedSnakeCharmerOpportunityId
     )?.opportunityStatus).toBe("CLOSED");
-    expect(state?.firstNightTaskProgress?.settlements.map((settlement) => settlement.outcomeType)).toStrictEqual([
-      "PHILOSOPHER_ABILITY_CHOSEN",
-      "SNAKE_CHARMER_NON_DEMON_NO_SWAP"
-    ]);
+    expect(state?.firstNightTaskProgress?.settlements.at(-1)?.outcomeType).toBe("SNAKE_CHARMER_NON_DEMON_NO_SWAP");
     expect(state?.firstNightTaskPlan && state.firstNightTaskProgress
       ? state.firstNightTaskPlan.tasks[state.firstNightTaskProgress.settlements.length]?.taskType
-      : undefined).toBe("MINION_INFO");
+      : undefined).not.toBe("MINION_INFO");
     expect(state?.currentCharacterState).toStrictEqual(beforeState?.currentCharacterState);
     expect(state?.assignment).toStrictEqual(beforeState?.assignment);
 
-    const minionResult = await service.execute(settleFirstNightSystemTaskCommand({
-      commandId: commandId("settle-minion-after-snake-no-swap"),
-      expectedGameVersion: 11
-    }));
-    expectAcceptedResult(minionResult);
-    const demonResult = await service.execute(settleFirstNightSystemTaskCommand({
-      commandId: commandId("settle-demon-after-snake-no-swap"),
-      expectedGameVersion: 12,
-      payload: {
-        commandType: "SettleFirstNightSystemTask",
-        taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
-      }
-    }));
-    expectAcceptedResult(demonResult);
   });
 
   it("settles Snake Charmer Demon targets by swapping current character state and poisoning the old Demon", async () => {
     const { service, commandStore } = makeService();
-    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(service);
+    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(service, commandStore);
     const beforeEvents = await commandStore.loadDomainEvents(ids.game);
     const beforeState = rebuildOptionalGameState(beforeEvents);
     const sourceBefore = beforeState?.currentCharacterState?.entries.find((entry) => entry.role.roleId === "philosopher");
@@ -4049,7 +4205,7 @@ describe("GameApplicationService", () => {
 
     const result = await service.execute(submitSnakeCharmerActionCommand({
       commandId: commandId("snake-charmer-demon-hit-swap"),
-      expectedGameVersion: 10,
+      expectedGameVersion: beforeState?.gameVersion ?? 0,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: philosopherGainedSnakeCharmerTaskId,
@@ -4064,15 +4220,20 @@ describe("GameApplicationService", () => {
     const afterState = rebuildOptionalGameState(afterEvents);
 
     expectAcceptedResult(result);
-    expect(result).toMatchObject({ status: "accepted", gameVersion: 11, idempotent: false });
+    expect(result).toMatchObject({ status: "accepted", gameVersion: (beforeState?.gameVersion ?? 0) + 1, idempotent: false });
     expect(result.events.map((event) => event.eventType)).toStrictEqual([
       "SnakeCharmerTargetChosen",
       "SnakeCharmerDemonSwapApplied",
       "AbilityImpairmentApplied",
       "ScheduledTaskSettled"
     ]);
-    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([20, 21, 22, 23]);
-    expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([11]));
+    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([
+      result.events[0]!.eventSequence,
+      result.events[0]!.eventSequence + 1,
+      result.events[0]!.eventSequence + 2,
+      result.events[0]!.eventSequence + 3
+    ]);
+    expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([result.gameVersion]));
     const targetChosenEvent = result.events[0];
     const swapEvent = result.events[1];
     const poisonEvent = result.events[2];
@@ -4150,10 +4311,7 @@ describe("GameApplicationService", () => {
     expect(afterState?.firstNightActionOpportunities?.opportunities.find((opportunity) =>
       opportunity.opportunityId === philosopherGainedSnakeCharmerOpportunityId
     )?.opportunityStatus).toBe("CLOSED");
-    expect(afterState?.firstNightTaskProgress?.settlements.map((settlement) => settlement.outcomeType)).toStrictEqual([
-      "PHILOSOPHER_ABILITY_CHOSEN",
-      "SNAKE_CHARMER_DEMON_HIT_SWAP"
-    ]);
+    expect(afterState?.firstNightTaskProgress?.settlements.at(-1)?.outcomeType).toBe("SNAKE_CHARMER_DEMON_HIT_SWAP");
     expect(afterState?.currentCharacterState?.revision).toBe(2);
     expect(afterState?.currentCharacterState?.entries.find((entry) => entry.playerId === sourceBefore.playerId)).toMatchObject({
       playerId: sourceBefore.playerId,
@@ -4181,64 +4339,26 @@ describe("GameApplicationService", () => {
       sourcePlayerId: sourceBefore.playerId
     }));
 
-    const minionResult = await service.execute(settleFirstNightSystemTaskCommand({
-      commandId: commandId("settle-minion-after-snake-demon-hit"),
-      expectedGameVersion: 11
-    }));
-    expectAcceptedResult(minionResult);
-    const minionInfoEvent = minionResult.events[0];
-    if (minionInfoEvent?.eventType !== "MinionInformationDelivered") {
-      throw new Error("Expected MINION_INFO delivery after Snake Charmer swap");
-    }
-    expect(minionInfoEvent.payload.resolvedEvilTeam.characterStateRevision).toBe(2);
-    expect(minionInfoEvent.payload.resolvedEvilTeam.demon).toStrictEqual({
-      playerId: sourceBefore.playerId,
-      seatNumber: sourceBefore.seatNumber
-    });
-    expect(minionInfoEvent.payload.entries.filter((entry) => entry.kind === "DEMON_IDENTITY").map((entry) => entry.demon)).toStrictEqual([
-      { playerId: sourceBefore.playerId, seatNumber: sourceBefore.seatNumber },
-      { playerId: sourceBefore.playerId, seatNumber: sourceBefore.seatNumber }
-    ]);
-
-    const demonResult = await service.execute(settleFirstNightSystemTaskCommand({
-      commandId: commandId("settle-demon-after-snake-demon-hit"),
-      expectedGameVersion: 12,
-      payload: {
-        commandType: "SettleFirstNightSystemTask",
-        taskId: scheduledTaskId("first-night-v1:DEMON_INFO:system")
-      }
-    }));
-    expectAcceptedResult(demonResult);
-    const demonInfoEvent = demonResult.events[0];
-    if (demonInfoEvent?.eventType !== "DemonInformationDelivered") {
-      throw new Error("Expected DEMON_INFO delivery after Snake Charmer swap");
-    }
-    expect(demonInfoEvent.payload.resolvedEvilTeam.characterStateRevision).toBe(2);
-    expect(demonInfoEvent.payload.resolvedEvilTeam.demon).toStrictEqual({
-      playerId: sourceBefore.playerId,
-      seatNumber: sourceBefore.seatNumber
-    });
-    expect(demonInfoEvent.payload.entries).toHaveLength(2);
-    expect(demonInfoEvent.payload.entries.every((entry) => entry.recipientPlayerId === sourceBefore.playerId)).toBe(true);
-    expect(demonInfoEvent.payload.entries.some((entry) => entry.recipientPlayerId === demon.playerId)).toBe(false);
   });
 
   it("enforces Snake Charmer submit actor and payload boundaries", async () => {
     const aiStore = new MemoryCommandCommitStore();
     const { service: aiService } = makeService(aiStore);
-    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(aiService);
+    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(aiService, aiStore);
     const aiState = rebuildOptionalGameState(await aiStore.loadDomainEvents(ids.game));
     const sourceOpportunity = aiState?.firstNightActionOpportunities?.opportunities.find((opportunity) =>
       opportunity.opportunityId === philosopherGainedSnakeCharmerOpportunityId
     );
-    const nonDemon = aiState?.currentCharacterState?.entries.find((entry) => entry.role.characterType !== "DEMON");
+    const nonDemon = aiState?.currentCharacterState?.entries.find((entry) =>
+      entry.role.characterType !== "DEMON" && entry.playerId !== sourceOpportunity?.sourcePlayerId
+    );
     if (sourceOpportunity === undefined || nonDemon === undefined) {
       throw new Error("Expected Snake Charmer opportunity and non-Demon target");
     }
     await expect(aiService.execute(submitSnakeCharmerActionCommand({
       actor: { kind: "ai", playerId: sourceOpportunity.sourcePlayerId },
       commandId: commandId("source-ai-submit-snake"),
-      expectedGameVersion: 10,
+      expectedGameVersion: aiState?.gameVersion ?? 0,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: philosopherGainedSnakeCharmerTaskId,
@@ -4248,29 +4368,37 @@ describe("GameApplicationService", () => {
           targetPlayerId: nonDemon.playerId
         }
       }
-    }))).resolves.toMatchObject({ status: "accepted", gameVersion: 11 });
+    }))).resolves.toMatchObject({ status: "accepted", gameVersion: (aiState?.gameVersion ?? 0) + 1 });
 
     const mismatchStore = new MemoryCommandCommitStore();
     const { service: mismatchService } = makeService(mismatchStore);
-    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(mismatchService);
+    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(mismatchService, mismatchStore);
+    const mismatchState = rebuildOptionalGameState(await mismatchStore.loadDomainEvents(ids.game));
     const mismatchCommand = submitSnakeCharmerActionCommand({
       actor: humanActor,
       commandId: commandId("wrong-human-submit-snake"),
-      expectedGameVersion: 10
+      expectedGameVersion: mismatchState?.gameVersion ?? 0,
+      payload: {
+        commandType: "SubmitSnakeCharmerAction",
+        taskId: philosopherGainedSnakeCharmerTaskId,
+        opportunityId: philosopherGainedSnakeCharmerOpportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: playerId("player-ai-1") }
+      }
     });
     await expect(mismatchService.execute(mismatchCommand)).resolves.toMatchObject({
       status: "rejected",
       code: "ActorPlayerMismatch",
-      currentGameVersion: 10
+      currentGameVersion: mismatchState?.gameVersion
     });
     expect((await mismatchStore.findCommandReceipt(mismatchCommand.gameId, mismatchCommand.commandId))?.result.status).toBe("rejected");
 
     const invalidStore = new MemoryCommandCommitStore();
     const { service: invalidService } = makeService(invalidStore);
-    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(invalidService);
+    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(invalidService, invalidStore);
+    const invalidState = rebuildOptionalGameState(await invalidStore.loadDomainEvents(ids.game));
     const extraDecision = submitSnakeCharmerActionCommand({
       commandId: commandId("extra-snake-decision-field"),
-      expectedGameVersion: 10,
+      expectedGameVersion: invalidState?.gameVersion ?? 0,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: philosopherGainedSnakeCharmerTaskId,
@@ -4285,12 +4413,12 @@ describe("GameApplicationService", () => {
     await expect(invalidService.execute(extraDecision)).resolves.toMatchObject({
       status: "rejected",
       code: "InvalidSnakeCharmerTarget",
-      currentGameVersion: 10
+      currentGameVersion: invalidState?.gameVersion
     });
 
     const unknownTarget = submitSnakeCharmerActionCommand({
       commandId: commandId("unknown-snake-target"),
-      expectedGameVersion: 10,
+      expectedGameVersion: invalidState?.gameVersion ?? 0,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: philosopherGainedSnakeCharmerTaskId,
@@ -4304,17 +4432,18 @@ describe("GameApplicationService", () => {
     await expect(invalidService.execute(unknownTarget)).resolves.toMatchObject({
       status: "rejected",
       code: "InvalidSnakeCharmerTarget",
-      currentGameVersion: 10
+      currentGameVersion: invalidState?.gameVersion
     });
   });
 
   it("rejects missing, wrong, and closed Snake Charmer opportunities deterministically", async () => {
     const missingStore = new MemoryCommandCommitStore();
     const { service: missingService } = makeService(missingStore);
-    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(missingService);
+    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(missingService, missingStore);
+    const missingState = rebuildOptionalGameState(await missingStore.loadDomainEvents(ids.game));
     await expect(missingService.execute(submitSnakeCharmerActionCommand({
       commandId: commandId("missing-snake-opportunity"),
-      expectedGameVersion: 10,
+      expectedGameVersion: missingState?.gameVersion ?? 0,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: philosopherGainedSnakeCharmerTaskId,
@@ -4324,14 +4453,15 @@ describe("GameApplicationService", () => {
           targetPlayerId: playerId("player-ai-1")
         }
       }
-    }))).resolves.toMatchObject({ status: "rejected", code: "ActionOpportunityNotFound", currentGameVersion: 10 });
+    }))).resolves.toMatchObject({ status: "rejected", code: "ActionOpportunityNotFound", currentGameVersion: missingState?.gameVersion });
 
     const wrongTaskStore = new MemoryCommandCommitStore();
     const { service: wrongTaskService } = makeService(wrongTaskStore);
-    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(wrongTaskService);
+    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(wrongTaskService, wrongTaskStore);
+    const wrongTaskState = rebuildOptionalGameState(await wrongTaskStore.loadDomainEvents(ids.game));
     await expect(wrongTaskService.execute(submitSnakeCharmerActionCommand({
       commandId: commandId("wrong-snake-task-id"),
-      expectedGameVersion: 10,
+      expectedGameVersion: wrongTaskState?.gameVersion ?? 0,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: scheduledTaskId("first-night-v1:MINION_INFO:system"),
@@ -4341,19 +4471,24 @@ describe("GameApplicationService", () => {
           targetPlayerId: playerId("player-ai-1")
         }
       }
-    }))).resolves.toMatchObject({ status: "rejected", code: "ScheduledTaskNotNext", currentGameVersion: 10 });
+    }))).resolves.toMatchObject({ status: "rejected", code: "ScheduledTaskNotNext", currentGameVersion: wrongTaskState?.gameVersion });
 
     const closedStore = new MemoryCommandCommitStore();
     const { service: closedService } = makeService(closedStore);
-    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(closedService);
+    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(closedService, closedStore);
     const closedState = rebuildOptionalGameState(await closedStore.loadDomainEvents(ids.game));
-    const nonDemon = closedState?.currentCharacterState?.entries.find((entry) => entry.role.characterType !== "DEMON");
+    const closedOpportunity = closedState?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === philosopherGainedSnakeCharmerOpportunityId
+    );
+    const nonDemon = closedState?.currentCharacterState?.entries.find((entry) =>
+      entry.role.characterType !== "DEMON" && entry.playerId !== closedOpportunity?.sourcePlayerId
+    );
     if (nonDemon === undefined) {
       throw new Error("Expected non-Demon target");
     }
     await closedService.execute(submitSnakeCharmerActionCommand({
       commandId: commandId("close-snake-opportunity"),
-      expectedGameVersion: 10,
+      expectedGameVersion: closedState?.gameVersion ?? 0,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: philosopherGainedSnakeCharmerTaskId,
@@ -4366,7 +4501,7 @@ describe("GameApplicationService", () => {
     }));
     await expect(closedService.execute(submitSnakeCharmerActionCommand({
       commandId: commandId("submit-closed-snake-opportunity"),
-      expectedGameVersion: 11,
+      expectedGameVersion: (closedState?.gameVersion ?? 0) + 1,
       payload: {
         commandType: "SubmitSnakeCharmerAction",
         taskId: philosopherGainedSnakeCharmerTaskId,
@@ -4376,19 +4511,23 @@ describe("GameApplicationService", () => {
           targetPlayerId: nonDemon.playerId
         }
       }
-    }))).resolves.toMatchObject({ status: "rejected", code: "ActionOpportunityAlreadyClosed", currentGameVersion: 11 });
+    }))).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActionOpportunityAlreadyClosed",
+      currentGameVersion: (closedState?.gameVersion ?? 0) + 1
+    });
   });
 
   it("inserts each supported Philosopher gained first-night task deterministically", async () => {
     const cases = [
-      ["clockmaker", "CLOCKMAKER_INFORMATION"],
-      ["dreamer", "DREAMER_ACTION"],
-      ["snake_charmer", "SNAKE_CHARMER_ACTION"],
-      ["seamstress", "SEAMSTRESS_ACTION"],
-      ["mathematician", "MATHEMATICIAN_INFORMATION"]
+      ["snake_charmer", "SNAKE_CHARMER_ACTION", 400, "DEMON_INFO", "EVIL_TWIN_SETUP"],
+      ["clockmaker", "CLOCKMAKER_INFORMATION", 800, "CERENOVUS_ACTION", "DREAMER_ACTION"],
+      ["dreamer", "DREAMER_ACTION", 900, "CLOCKMAKER_INFORMATION", "SEAMSTRESS_ACTION"],
+      ["seamstress", "SEAMSTRESS_ACTION", 1000, "DREAMER_ACTION", "MATHEMATICIAN_INFORMATION"],
+      ["mathematician", "MATHEMATICIAN_INFORMATION", 1100, "SEAMSTRESS_ACTION", undefined]
     ] as const;
 
-    for (const [chosenRole, taskType] of cases) {
+    for (const [chosenRole, taskType, baseOrder, precedingType, followingType] of cases) {
       const store = new MemoryCommandCommitStore();
       const { service } = makeService(store);
       await reachOpenPhilosopherActionOpportunity(service);
@@ -4400,10 +4539,47 @@ describe("GameApplicationService", () => {
 
       expectAcceptedResult(result);
       expect(state?.firstNightTaskInsertions?.insertions[0]).toMatchObject({
-        taskId: `first-night-v1:PHILOSOPHER_GAINED:${taskType}:seat-10:from-${chosenRole}`,
-        taskType
+        taskId: `first-night-v2:PHILOSOPHER_GAINED:${taskType}:seat-10:from-${chosenRole}`,
+        taskType,
+        targetCatalogBaseOrder: baseOrder,
+        effectiveBaseOrder: baseOrder,
+        tieBreakSourceSeatNumber: 10
       });
+      const tasks = state?.firstNightTaskPlan?.tasks ?? [];
+      const gainedIndex = tasks.findIndex((task) => task.taskId === `first-night-v2:PHILOSOPHER_GAINED:${taskType}:seat-10:from-${chosenRole}`);
+      const precedingOrder = state?.firstNightTaskPlan?.taskCatalogSnapshot.definitions.find((entry) => entry.taskType === precedingType)?.baseOrder;
+      const followingOrder = followingType === undefined
+        ? undefined
+        : state?.firstNightTaskPlan?.taskCatalogSnapshot.definitions.find((entry) => entry.taskType === followingType)?.baseOrder;
+      expect(tasks[gainedIndex]?.orderKey).toStrictEqual({ baseOrder, insertionOrder: 10 });
+      expect(precedingOrder).toBeLessThan(baseOrder);
+      if (followingOrder === undefined) expect(baseOrder).toBe(1100);
+      else expect(baseOrder).toBeLessThan(followingOrder);
+      expect(tasks[state?.firstNightTaskProgress?.settlements.length ?? 0]?.taskType).toBe("MINION_INFO");
     }
+  });
+
+  it("fails mapped Philosopher choices closed on an accepted legacy V1 plan without writing", async () => {
+    const legacyPlanner: FirstNightTaskPlannerPort = {
+      generate: (input) => {
+        const result = testFirstNightTaskPlanner.generate(input);
+        return result.status === "failure"
+          ? result
+          : { ...result, taskPlan: { ...result.taskPlan, taskPlanVersion: "first-night-task-plan-v1" } };
+      }
+    };
+    const store = new MemoryCommandCommitStore();
+    const { service } = makeService(store, testSetupGenerator, new FixedIdGenerator(), new FixedClock(),
+      testAssignmentGenerator, testInitialPrivateKnowledgeBuilder, legacyPlanner);
+    await reachOpenPhilosopherActionOpportunity(service);
+    const before = await store.loadDomainEvents(ids.game);
+    const command = choosePhilosopherRoleCommand("clockmaker", { commandId: commandId("legacy-plan-mapped-choice") });
+    await expect(service.execute(command)).resolves.toMatchObject({
+      status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action", retryable: true,
+      currentGameVersion: 8
+    });
+    expect(await store.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(await store.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
   });
 
   it("allows source player, Storyteller, and System to choose a good character but rejects non-source actors", async () => {
@@ -6001,17 +6177,18 @@ describe("GameApplicationService", () => {
     await gainedService.execute(choosePhilosopherRoleCommand("seamstress", {
       commandId: commandId("choose-seamstress-before-unsupported-open")
     }));
-    const gainedTaskId = scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:SEAMSTRESS_ACTION:seat-10:from-seamstress");
+    const gainedTaskId = scheduledTaskId("first-night-v2:PHILOSOPHER_GAINED:SEAMSTRESS_ACTION:seat-10:from-seamstress");
+    const gainedReady = await advanceToScheduledTask(gainedService, gainedStore, gainedTaskId, "advance-gained-seamstress");
     const gainedResult = await gainedService.execute(openFirstNightRoleActionOpportunityCommand({
       commandId: commandId("open-gained-seamstress-unsupported"),
-      expectedGameVersion: 9,
+      expectedGameVersion: gainedReady.gameVersion,
       payload: {
         commandType: "OpenFirstNightRoleActionOpportunity",
         taskId: gainedTaskId
       }
     }));
     expectAcceptedResult(gainedResult);
-    expect(gainedResult).toMatchObject({ status: "accepted", gameVersion: 10 });
+    expect(gainedResult).toMatchObject({ status: "accepted", gameVersion: gainedReady.gameVersion + 1 });
     const gainedState = rebuildOptionalGameState(await gainedStore.loadDomainEvents(ids.game));
     const gainedOpportunity = gainedState?.firstNightActionOpportunities?.opportunities.find((candidate) =>
       candidate.taskId === gainedTaskId
@@ -6912,7 +7089,7 @@ describe("GameApplicationService", () => {
     expect(commandStore.acceptedCount).toBe(2);
   });
 
-  it("inserts gained Clockmaker after Philosopher and before Minion information", async () => {
+  it("inserts gained Clockmaker at its catalog position after Cerenovus and before Dreamer", async () => {
     const store = new MemoryCommandCommitStore();
     const { service } = makeService(store);
     await reachOpenPhilosopherActionOpportunity(service);
@@ -6921,12 +7098,17 @@ describe("GameApplicationService", () => {
       commandId: commandId("choose-clockmaker-order")
     }));
     const state = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
-    const taskTypes = state?.firstNightTaskPlan?.tasks.map((task) => task.taskType);
+    const tasks = state?.firstNightTaskPlan?.tasks ?? [];
+    const gainedIndex = tasks.findIndex((task) => task.taskId === "first-night-v2:PHILOSOPHER_GAINED:CLOCKMAKER_INFORMATION:seat-10:from-clockmaker");
+    const cerenovusIndex = tasks.findIndex((task) => task.taskType === "CERENOVUS_ACTION");
+    const dreamerIndex = tasks.findIndex((task) => task.taskType === "DREAMER_ACTION");
 
     expectAcceptedResult(result);
-    expect(taskTypes).toBeDefined();
-    expect(taskTypes?.indexOf("PHILOSOPHER_ACTION")).toBeLessThan(taskTypes?.indexOf("CLOCKMAKER_INFORMATION") ?? -1);
-    expect(taskTypes?.indexOf("CLOCKMAKER_INFORMATION")).toBeLessThan(taskTypes?.indexOf("MINION_INFO") ?? -1);
+    expect(gainedIndex).toBeGreaterThan(cerenovusIndex);
+    expect(gainedIndex).toBeLessThan(dreamerIndex);
+    expect(tasks[gainedIndex]?.orderKey).toStrictEqual({ baseOrder: 800, insertionOrder: 10 });
+    expect(tasks[1]?.taskType).toBe("MINION_INFO");
+    expect(tasks[2]?.taskType).toBe("DEMON_INFO");
   });
 
   describe("Clockmaker first-night information application", () => {
@@ -7001,21 +7183,17 @@ describe("GameApplicationService", () => {
       const { service, commandStore } = makeService();
       const gained = await reachGainedClockmakerTask(service, commandStore, roles);
       const gainedCommand = settleClockmakerCommand(gained.state, gained.task.taskId, { commandId: commandId(`gained-clockmaker-${_name}`) });
-      await expect(service.execute(gainedCommand))
-        .resolves.toMatchObject({ status: "accepted", eventCount: 2 });
+      const gainedResult = await service.execute(gainedCommand);
+      expectEventSummaryAcceptedResult(gainedResult);
+      expect(gainedResult.eventCount).toBe(2);
       await expect(service.execute(gainedCommand)).resolves.toMatchObject({ status: "accepted", idempotent: true });
-      const base = await advanceToNextClockmaker(service, commandStore, false, `after-gained-${_name}`);
-      const baseCommand = settleClockmakerCommand(base.state, base.task.taskId, { commandId: commandId(`drunk-base-clockmaker-${_name}`) });
-      await expect(service.execute(baseCommand))
-        .resolves.toMatchObject({ status: "accepted", eventCount: 2 });
-      await expect(service.execute(baseCommand)).resolves.toMatchObject({ status: "accepted", idempotent: true });
       const rebuilt = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
       const deliveries = rebuilt?.clockmakerInformation?.deliveries ?? [];
       expect(deliveries).toHaveLength(2);
-      expect(deliveries[0]?.sourceContract.kind).toBe("PHILOSOPHER_GAINED_CLOCKMAKER");
-      expect(deliveries[0]?.sourceEffectiveness.kind).toBe("EFFECTIVE");
-      expect(deliveries[1]?.sourceContract.kind).toBe("BASE_CLOCKMAKER");
-      expect(deliveries[1]?.sourceEffectiveness.kind).toBe("KNOWN_DRUNK");
+      expect(deliveries[0]?.sourceContract.kind).toBe("BASE_CLOCKMAKER");
+      expect(deliveries[0]?.sourceEffectiveness.kind).toBe("KNOWN_DRUNK");
+      expect(deliveries[1]?.sourceContract.kind).toBe("PHILOSOPHER_GAINED_CLOCKMAKER");
+      expect(deliveries[1]?.sourceEffectiveness.kind).toBe("EFFECTIVE");
       expect(deliveries.every((entry) => entry.vortoxConstraint.kind === (withVortox ? "VORTOX_FALSE_REQUIRED" : "NONE"))).toBe(true);
       for (const entry of deliveries) {
         if (withVortox) expect(entry.selectedDistance).not.toBe(entry.ruleCorrectDistance);

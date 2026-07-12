@@ -691,3 +691,11 @@ Acceptance:
 - Stop if projection leakage is detected.
 - Stop if a slice needs UI or AI to pass.
 - Stop before adding broad role ability coverage.
+
+## Philosopher-Gained First-Night Scheduling V2
+
+New first-night plans use `first-night-task-plan-v2`. A mapped Philosopher choice records `FirstNightTaskInsertedV2` and a distinct `first-night-v2:PHILOSOPHER_GAINED:*` task ID. The event binds the active catalog signature and target role definition; its effective base order is the target task's catalog base order.
+
+At one catalog position, base tasks use insertion order `0`; gained tasks use their source seat number. The existing explicit stable task-ID comparator is the final tie-break. Therefore base runs before gained, and gained tasks are deterministic without locale or incidental iteration order.
+
+`FirstNightTaskInserted` and `first-night-task-plan-v1` remain accepted historical contracts. V1 ordering is not recalculated, V1/V2 generations cannot mix, and new mapped choices fail closed on an active V1 plan. This scheduling contract does not implement gained Dreamer or Mathematician execution semantics.

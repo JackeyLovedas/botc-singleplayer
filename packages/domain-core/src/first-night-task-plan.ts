@@ -23,7 +23,13 @@ import type { GeneratedSetup, RoleSetupSnapshot } from "./setup-types.js";
 import { compareStableId, sameRoleSetupSnapshot } from "./setup-types.js";
 
 export const SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION = "snv-first-night-task-catalog-v1" as const;
-export const SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION = "first-night-task-plan-v1" as const;
+export const LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION = "first-night-task-plan-v1" as const;
+export const CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION = "first-night-task-plan-v2" as const;
+// Compatibility alias for unconverted accepted-history fixtures. New planners use CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION.
+export const SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION = LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION;
+export type FirstNightTaskPlanVersion =
+  | typeof LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION
+  | typeof CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION;
 export const SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM = "canonical-first-night-task-catalog-v1" as const;
 export const SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE = "canonical-first-night-task-catalog-v1:20514c1a" as const;
 
@@ -155,7 +161,7 @@ export type FirstNightTaskCatalogSnapshot = {
 
 export type FirstNightTaskPlan = {
   readonly nightNumber: 1;
-  readonly taskPlanVersion: typeof SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION;
+  readonly taskPlanVersion: FirstNightTaskPlanVersion;
   readonly taskCatalogVersion: typeof SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION;
   readonly taskCatalogSignatureAlgorithm: typeof SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM;
   readonly taskCatalogSignature: string;
@@ -1142,7 +1148,8 @@ const scheduledTasksEqual = (left: ScheduledTask, right: ScheduledTask): boolean
 
 const validateRuntimeInsertedTask = (
   task: ScheduledTask,
-  catalog: FirstNightTaskCatalogSnapshot
+  catalog: FirstNightTaskCatalogSnapshot,
+  taskPlanVersion: FirstNightTaskPlanVersion
 ): FirstNightTaskPlanValidationResult => {
   if (task.source.kind !== "PHILOSOPHER_GAINED_ABILITY") {
     return fail("runtime inserted first-night task must use PHILOSOPHER_GAINED_ABILITY source");
@@ -1157,15 +1164,22 @@ const validateRuntimeInsertedTask = (
     task.source.sourceRole.roleId !== ("philosopher" as RoleId) ||
     task.source.chosenRole.roleId !== expectedRoleId ||
     task.taskClass !== definition.taskClass ||
-    task.orderKey.baseOrder !== 100 ||
-    task.orderKey.insertionOrder !== 1 ||
     task.status !== "PENDING" ||
     task.settlementPolicy !== definition.settlementPolicy
   ) {
     return fail("runtime inserted first-night task must match its philosopher gained role definition");
   }
 
-  const expectedId = `first-night-v1:PHILOSOPHER_GAINED:${task.taskType}:seat-${String(task.source.seatNumber).padStart(2, "0")}:from-${task.source.chosenRole.roleId}`;
+  const legacy = taskPlanVersion === LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION;
+  if (
+    legacy
+      ? task.orderKey.baseOrder !== 100 || task.orderKey.insertionOrder !== 1
+      : task.orderKey.baseOrder !== definition.baseOrder || task.orderKey.insertionOrder !== task.source.seatNumber
+  ) {
+    return fail("runtime inserted first-night task order must match its task plan generation");
+  }
+
+  const expectedId = `first-night-${legacy ? "v1" : "v2"}:PHILOSOPHER_GAINED:${task.taskType}:seat-${String(task.source.seatNumber).padStart(2, "0")}:from-${task.source.chosenRole.roleId}`;
   if (task.taskId !== expectedId) {
     return fail("runtime inserted first-night task id must match the deterministic philosopher gained format");
   }
@@ -1187,7 +1201,8 @@ export const validateFirstNightTaskPlanRuntimeState = (
   if (
     typeof value.rulesBaselineVersion !== "string" ||
     value.nightNumber !== 1 ||
-    value.taskPlanVersion !== SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION ||
+    value.taskPlanVersion !== LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION &&
+      value.taskPlanVersion !== CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION ||
     value.taskCatalogVersion !== SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION ||
     value.taskCatalogSignatureAlgorithm !== SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM ||
     typeof value.taskCatalogSignature !== "string" ||
@@ -1243,7 +1258,11 @@ export const validateFirstNightTaskPlanRuntimeState = (
   const runtimeInsertedTasks = parsedPlanTasks.tasks.filter((task) => task.source.kind === "PHILOSOPHER_GAINED_ABILITY");
   const baseTasks = parsedPlanTasks.tasks.filter((task) => task.source.kind !== "PHILOSOPHER_GAINED_ABILITY");
 
-  if (runtimeInsertedTasks.length > 1 || parsedInsertedTasks.tasks.length > 1) {
+  const taskPlanVersion = value.taskPlanVersion;
+  if (
+    taskPlanVersion === LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION &&
+    (runtimeInsertedTasks.length > 1 || parsedInsertedTasks.tasks.length > 1)
+  ) {
     return fail("runtime first-night task plan supports at most one philosopher gained inserted task");
   }
 
@@ -1268,31 +1287,36 @@ export const validateFirstNightTaskPlanRuntimeState = (
     return baseValidation;
   }
 
-  const [runtimeInsertedTask] = runtimeInsertedTasks;
-  const [expectedInsertedTask] = parsedInsertedTasks.tasks;
-  if (runtimeInsertedTask === undefined || expectedInsertedTask === undefined) {
-    return { valid: true };
+  const insertedFactsByTaskId = new Map(parsedInsertedTasks.tasks.map((task) => [task.taskId, task]));
+  for (const runtimeInsertedTask of runtimeInsertedTasks) {
+    const expectedInsertedTask = insertedFactsByTaskId.get(runtimeInsertedTask.taskId);
+    if (expectedInsertedTask === undefined) {
+      return fail("runtime inserted first-night task must come from a matching insertion event");
+    }
+
+    const insertedValidation = validateRuntimeInsertedTask(runtimeInsertedTask, catalog, taskPlanVersion);
+    if (!insertedValidation.valid) {
+      return insertedValidation;
+    }
+
+    if (!scheduledTasksEqual(runtimeInsertedTask, expectedInsertedTask)) {
+      return fail("runtime inserted first-night task must exactly match its insertion event");
+    }
   }
 
-  const insertedValidation = validateRuntimeInsertedTask(runtimeInsertedTask, catalog);
-  if (!insertedValidation.valid) {
-    return insertedValidation;
-  }
-
-  if (!scheduledTasksEqual(runtimeInsertedTask, expectedInsertedTask)) {
-    return fail("runtime inserted first-night task must exactly match the FirstNightTaskInserted event");
-  }
-
-  const philosopherIndex = parsedPlanTasks.tasks.findIndex((task) => task.taskType === "PHILOSOPHER_ACTION");
-  const minionInfoIndex = parsedPlanTasks.tasks.findIndex((task) => task.taskType === "MINION_INFO");
-  const insertedIndex = parsedPlanTasks.tasks.findIndex((task) => task.taskId === runtimeInsertedTask.taskId);
-  if (
-    philosopherIndex < 0 ||
-    minionInfoIndex < 0 ||
-    insertedIndex <= philosopherIndex ||
-    insertedIndex >= minionInfoIndex
-  ) {
-    return fail("runtime inserted first-night task must be after PHILOSOPHER_ACTION and before MINION_INFO");
+  if (taskPlanVersion === LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION && runtimeInsertedTasks[0] !== undefined) {
+    const runtimeInsertedTask = runtimeInsertedTasks[0];
+    const philosopherIndex = parsedPlanTasks.tasks.findIndex((task) => task.taskType === "PHILOSOPHER_ACTION");
+    const minionInfoIndex = parsedPlanTasks.tasks.findIndex((task) => task.taskType === "MINION_INFO");
+    const insertedIndex = parsedPlanTasks.tasks.findIndex((task) => task.taskId === runtimeInsertedTask.taskId);
+    if (
+      philosopherIndex < 0 ||
+      minionInfoIndex < 0 ||
+      insertedIndex <= philosopherIndex ||
+      insertedIndex >= minionInfoIndex
+    ) {
+      return fail("legacy runtime inserted first-night task must be after PHILOSOPHER_ACTION and before MINION_INFO");
+    }
   }
 
   return { valid: true };
@@ -1309,7 +1333,8 @@ export const validateFirstNightTaskPlanCreatedPayload = (
   if (
     typeof value.rulesBaselineVersion !== "string" ||
     value.nightNumber !== 1 ||
-    value.taskPlanVersion !== SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION ||
+    value.taskPlanVersion !== LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION &&
+      value.taskPlanVersion !== CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION ||
     value.taskCatalogVersion !== SUPPORTED_FIRST_NIGHT_TASK_CATALOG_VERSION ||
     value.taskCatalogSignatureAlgorithm !== SUPPORTED_FIRST_NIGHT_TASK_CATALOG_SIGNATURE_ALGORITHM ||
     typeof value.taskCatalogSignature !== "string" ||

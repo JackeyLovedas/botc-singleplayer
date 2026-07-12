@@ -18,7 +18,7 @@ import {
   cloneFirstNightTaskCatalogSnapshot,
   createPhilosopherDeferredScheduledTaskSettlement,
   createAbilityImpairmentAppliedPayload,
-  createFirstNightTaskInsertedPayload,
+  createFirstNightTaskInsertedV2Payload,
   createPhilosopherAbilityChosenPayload,
   createPhilosopherAbilityChosenScheduledTaskSettlement,
   createPhilosopherAbilityGrantedPayload,
@@ -63,6 +63,8 @@ import {
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
   getNextUnsettledFirstNightTask,
+  firstNightTaskTypeForPhilosopherChoice,
+  LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
   isFirstNightTaskSettled,
   isSupportedFirstNightRoleActionTask,
   isSeamstressActionOpportunityV2,
@@ -101,7 +103,7 @@ import type {
   EventId,
   FirstNightActionOpportunityCreatedPayload,
   AbilityImpairmentAppliedPayload,
-  FirstNightTaskInsertedPayload,
+  FirstNightTaskInsertedV2Payload,
   EvilTwinInformationDeliveredPayload,
   EvilTwinPairEstablishedPayload,
   GeneratedCharacterAssignment,
@@ -2018,8 +2020,14 @@ export class GameApplicationService {
       grant.grantedAtOpportunityId === gainedSource.opportunityId && grant.sourceCharacterStateRevision === gainedSource.sourceCharacterStateRevision &&
       grant.chosenRoleId === "clockmaker" && sameRoleSetupSnapshot(grant.sourceRole, gainedSource.sourceRole) && sameRoleSetupSnapshot(grant.chosenRole, gainedSource.chosenRole)
     ) ?? [];
-    const insertions = state.firstNightTaskInsertions?.insertions.filter((entry) => entry.taskId === task.taskId &&
-      entry.insertedByOpportunityId === gainedSource.opportunityId && entry.insertedByPlayerId === gainedSource.playerId) ?? [];
+    const insertions = state.firstNightTaskInsertions?.insertions.filter((entry) =>
+      entry.taskId === task.taskId &&
+      ("schedulingVersion" in entry
+        ? entry.philosopherOpportunityId === gainedSource.opportunityId &&
+          entry.sourcePlayerId === gainedSource.playerId &&
+          entry.grantId === grants[0]?.grantId
+        : entry.insertedByOpportunityId === gainedSource.opportunityId && entry.insertedByPlayerId === gainedSource.playerId)
+    ) ?? [];
     if (grants.length !== 1 || grants[0] === undefined || insertions.length !== 1 || insertions[0] === undefined) return undefined;
     return {
       kind: "PHILOSOPHER_GAINED_CLOCKMAKER", taskId: task.taskId, sourcePlayerId: gainedSource.playerId, sourceSeatNumber: gainedSource.seatNumber,
@@ -2082,6 +2090,20 @@ export class GameApplicationService {
             );
           }
         }
+      }
+      if (
+        command.payload.commandType === "SubmitPhilosopherAction" &&
+        command.payload.decision.kind === "CHOOSE_GOOD_CHARACTER" &&
+        state?.firstNightTaskPlan?.taskPlanVersion === LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION &&
+        firstNightTaskTypeForPhilosopherChoice(command.payload.decision.roleId) !== undefined
+      ) {
+        return failed(
+          command.gameId,
+          "ApplicationNotConfigured",
+          "Mapped Philosopher choices cannot insert tasks into a legacy first-night plan",
+          "first-night-role-action",
+          currentGameVersion
+        );
       }
 
       const generatedSetup = this.generateSetupOrReject(command, state, currentGameVersion);
@@ -2991,16 +3013,17 @@ export class GameApplicationService {
             });
           }
 
-          const insertionPayload = createFirstNightTaskInsertedPayload({
+          const insertionPayload = createFirstNightTaskInsertedV2Payload({
             rulesBaselineVersion: RULES_BASELINE_VERSION,
             choice: choicePayload,
+            grant: grantPayload,
             firstNightTaskPlan: state.firstNightTaskPlan
           });
           if (insertionPayload !== undefined) {
             optionalEvents.push({
               ...common(firstEventSequence + 2 + optionalEvents.length),
-              eventType: "FirstNightTaskInserted" as const,
-              payload: insertionPayload satisfies FirstNightTaskInsertedPayload
+              eventType: "FirstNightTaskInsertedV2" as const,
+              payload: insertionPayload satisfies FirstNightTaskInsertedV2Payload
             });
           }
 

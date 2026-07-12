@@ -49,6 +49,7 @@ export type DomainErrorCode =
   | "InvalidPhilosopherAbilityGrantedPayload"
   | "InvalidAbilityImpairmentAppliedPayload"
   | "InvalidFirstNightTaskInsertedPayload"
+  | "InvalidFirstNightTaskInsertedV2Payload"
   | "InvalidSnakeCharmerTargetChosenPayload"
   | "InvalidSnakeCharmerNoSwapResolvedPayload"
   | "InvalidSnakeCharmerIneffectiveResolvedPayload"

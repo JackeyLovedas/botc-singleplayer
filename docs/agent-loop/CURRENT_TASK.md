@@ -4,7 +4,7 @@
 
 - Candidate role: `philosopher`.
 - Candidate scope: `PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2`.
-- Current branch: `main`.
+- Current branch: `phase-3/philosopher-gained-task-scheduling-v2`.
 - Current PR: none.
 - Current slice: `2B17.2`.
 - Recovery anchor: `823c256af6e367a28ea383be81ca26b9b61ad314`.
@@ -34,4 +34,4 @@ Slice 2B18 remains historical `HUMAN_BLOCKED` with terminal `RULE_CONFLICT`. Its
 
 ## Current Gate
 
-The exact architect design passed independent rule-design review. After this authorization commit has successful exact-head CI, implementation is authorized only on the sole `phase-3/philosopher-gained-task-scheduling-v2` feature branch and only within the reviewed Slice 2B17.2 scope. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.
+The reviewed V2 implementation is locally complete on the sole feature branch. All local required gates pass: 28 files / 904 tests; coverage 86.04% statements/lines, 80.17% branches, 97.88% functions. Publish one PR, freeze its exact final feature HEAD after push/PR CI, and request the complete independent final review. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.

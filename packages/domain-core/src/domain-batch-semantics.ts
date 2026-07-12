@@ -2,7 +2,11 @@ import { DomainError } from "./errors.js";
 import type { AnyDomainEventEnvelope, DomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
 import { validateCerenovusActionOpportunityShape } from "./first-night-action-opportunity.js";
-import { getNextUnsettledFirstNightTask } from "./first-night-task-plan.js";
+import {
+  CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
+  LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
+  getNextUnsettledFirstNightTask
+} from "./first-night-task-plan.js";
 import {
   evilTwinInformationEntriesEqual,
   expectedEvilTwinInformationEntries
@@ -478,7 +482,7 @@ const validateIntegratedPhilosopherAbilityChoiceBatch = (
       continue;
     }
 
-    if (event.eventType === "FirstNightTaskInserted" && !seenInsertion) {
+    if ((event.eventType === "FirstNightTaskInserted" || event.eventType === "FirstNightTaskInsertedV2") && !seenInsertion) {
       seenInsertion = true;
       continue;
     }
@@ -491,6 +495,9 @@ const validateIntegratedPhilosopherAbilityChoiceBatch = (
   const settlement = settlementEvent.payload;
   const chosenRoleCurrentlyInPlay = currentCharacterState.entries.some((entry) => entry.role.roleId === choice.chosenRoleId);
   const chosenRoleRequiresInsertion = firstNightTaskTypeForPhilosopherChoice(choice.chosenRoleId) !== undefined;
+  const insertionEvent = middle.find(
+    (event) => event.eventType === "FirstNightTaskInserted" || event.eventType === "FirstNightTaskInsertedV2"
+  );
 
   if (chosenRoleCurrentlyInPlay !== seenImpairment) {
     reject("Philosopher ability choice batch must include impairment exactly when the chosen role is currently in play");
@@ -498,6 +505,20 @@ const validateIntegratedPhilosopherAbilityChoiceBatch = (
 
   if (chosenRoleRequiresInsertion !== seenInsertion) {
     reject("Philosopher ability choice batch must include a gained task insertion exactly when the chosen role has a mapped first-night task");
+  }
+
+  const activeTaskPlan = state.firstNightTaskPlan;
+  if (
+    insertionEvent !== undefined &&
+    (activeTaskPlan === undefined
+      ? true
+      : activeTaskPlan.taskPlanVersion === LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION
+      ? insertionEvent.eventType !== "FirstNightTaskInserted"
+      : activeTaskPlan.taskPlanVersion === CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION
+        ? insertionEvent.eventType !== "FirstNightTaskInsertedV2"
+        : true)
+  ) {
+    reject("Philosopher ability choice insertion generation must match the active task plan version");
   }
 
   if (
@@ -536,6 +557,22 @@ const validateIntegratedPhilosopherAbilityChoiceBatch = (
         !sameRoleSnapshot(event.payload.chosenRole, choice.chosenRole)
       ) {
         reject("FirstNightTaskInserted must match the Philosopher ability choice source and chosen role");
+      }
+    }
+
+
+    if (event.eventType === "FirstNightTaskInsertedV2") {
+      if (
+        event.payload.sourcePlayerId !== choice.sourcePlayerId ||
+        event.payload.sourceSeatNumber !== choice.sourceSeatNumber ||
+        event.payload.tieBreakSourceSeatNumber !== choice.sourceSeatNumber ||
+        event.payload.philosopherOpportunityId !== choice.opportunityId ||
+        event.payload.grantId !== grant.grantId ||
+        event.payload.sourceCharacterStateRevision !== choice.sourceCharacterStateRevision ||
+        !sameRoleSnapshot(event.payload.sourceRole, choice.sourceRole) ||
+        !sameRoleSnapshot(event.payload.chosenRole, choice.chosenRole)
+      ) {
+        reject("FirstNightTaskInsertedV2 must match the Philosopher ability choice and grant");
       }
     }
   }
