@@ -15,13 +15,13 @@
 
 ## Active Slice 2B18A Boundary
 
-Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=false`, and `implementationAuthorized=false`; design round is `1 / 2` and repair round is `0 / 2`. The recovery anchor is `b228dd53851a9bd947a41e39187db20735069402`, whose exact main CI run `29180118996` succeeded.
+Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=false`, and `implementationAuthorized=false`; design round is `2 / 2` and repair round is `0 / 2`. The recovery anchor is `b228dd53851a9bd947a41e39187db20735069402`, whose exact main CI run `29180118996` succeeded.
 
 The approved product contracts define the exclusive `FirstNightInitialized` lower boundary and inclusive pre-resolution upper boundary, source-player plus ability-instance self-exclusion, the fixed dense numeric domain `0..11` with deterministic smallest-false product policy, and accepted V2 temporal ordering for duplicate holders. These are simulator policies and must remain distinct from official source claims.
 
 The independent resolved evidence is `docs/rules/evidence/2B18-resolved.md`, SHA-256 `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`, terminal `RULE_READY`, `PARTIAL`, with no unresolved rule conflicts. Its verbatim handoff was independently matched at 26,320 UTF-8 bytes, 454 LF bytes, and a trailing LF. All five original conflicts are resolved within the bounded product scope.
 
-The architect design is `docs/implementation/phase-3-slice-2b18a-design.md`, SHA-256 `caf7dc9d7d30867f596070f419afaf150f5d9be83028cdad99c783cd8b097ada`, terminal `READY_FOR_RULE_DESIGN_REVIEW`, with coverage fixed at `PARTIAL`. It has not yet passed independent rule-design review.
+Round-1 independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-1.md`, SHA-256 `b5641d7207d488233ec5e2730f948a921cc9d3c0080cf7f182595bf151ddfb4c`, terminal `RULE_DESIGN_FIX_REQUIRED`. The complete round-2 architect revision is `docs/implementation/phase-3-slice-2b18a-design.md`, SHA-256 `62a83e4f7161d8bf5bd9adda6c24e353edf7e0b6b4d752846e426c0f55e8cb59`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`, with coverage fixed at `PARTIAL`. It has not yet passed the fresh round-2 independent review.
 
 This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No production code, tests, branch, or PR exists at this design gate.
 

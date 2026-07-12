@@ -1,79 +1,441 @@
 # Phase 3 Slice 2B18A Design — First-Night Ability Outcome Ledger Foundation
 
+## designMetadata
+
+- `sliceId`: `2B18A`
+- `designRound`: `2/2`
+- `rulesBaselineVersion`: `Phase One v2.1`
+- `resolvedEvidence`: `docs/rules/evidence/2B18-resolved.md`
+- `resolvedEvidenceSha256`: `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`
+- `terminalRuleVerdict`: `RULE_READY`
+- `coverageStatus`: `PARTIAL`
+
 ## ruleOverrides
-权威证据`docs/rules/evidence/2B18-resolved.md` hash `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`，`RULE_READY`。四个override仅为固定12人模拟策略：FIRST-NIGHT-WINDOW-V1、OWN-ABILITY-EXCLUSION-V1、NUMERIC-DOMAIN-V1、DUPLICATE-HOLDER-TEMPORAL-V1。resolver exact input必须携带四个完整literal，错误版本为非法输入。
+
+以下是固定12人单机模拟策略，不是官方规则原文：
+
+- `BOTC-SIM-MATHEMATICIAN-FIRST-NIGHT-WINDOW-V1`
+- `BOTC-SIM-MATHEMATICIAN-OWN-ABILITY-EXCLUSION-V1`
+- `BOTC-SIM-MATHEMATICIAN-NUMERIC-DOMAIN-V1`
+- `BOTC-SIM-MATHEMATICIAN-DUPLICATE-HOLDER-TEMPORAL-V1`
+
+使用exact-shape对象承载四个literal；缺失、额外或错误值必须拒绝。
 
 ## resolvedConflictMapping
-scheduling采用2B17.2 V2；window以FirstNightInitialized sequence exclusive起，resolution前最后sequence inclusive止；own ability仅相同player+instance；numeric 0..11；duplicate base先、gained按seat/taskId，later见earlier、earlier不见future且不重算。
+
+- scheduling：采用2B17.2 V2顺序；2B17.3保持其语义。
+- first-night window：`FirstNightInitialized.eventSequence`为exclusive下界；resolution开始前`lastEventSequence`为inclusive上界。
+- own ability：仅排除相同source player与相同ability instance。
+- numeric domain：固定12人无Traveller，真实计数为`0..11`。
+- duplicate holder：base先，gained按source seat及taskId code-unit；later可见earlier，earlier不可见future，不重算历史结果。
 
 ## firstNightWindowModel
-版本：ledger `first-night-ability-outcome-ledger-v1`，audit `first-night-ability-outcome-audit-v1`，window `first-night-ability-outcome-window-v1`。WindowAnchor exact字段：windowVersion,gameId,nightNumber=1,rulesBaselineVersion,firstNightInitializedEventId,startEventSequence,startBoundary=EXCLUSIVE；snapshot再加endEventSequence,endBoundary=INCLUSIVE。FirstNightInitialized应用时从完整envelope保存anchor；resolver只取start<source<=end，上界为resolution前state.lastEventSequence；无dawn/day/second-night。
+
+```ts
+export const FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION =
+  "first-night-ability-outcome-ledger-v1" as const;
+export const FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION =
+  "first-night-ability-outcome-audit-v1" as const;
+export const FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION =
+  "first-night-ability-outcome-window-v1" as const;
+
+export type FirstNightAbilityOutcomeWindowAnchor = {
+  readonly windowVersion:
+    typeof FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION;
+  readonly gameId: GameId;
+  readonly nightNumber: 1;
+  readonly rulesBaselineVersion: string;
+  readonly firstNightInitializedEventId: EventId;
+  readonly startEventSequence: number;
+  readonly startBoundary: "EXCLUSIVE";
+};
+
+export type FirstNightAbilityOutcomeWindowSnapshot =
+  FirstNightAbilityOutcomeWindowAnchor & {
+    readonly endEventSequence: number;
+    readonly endBoundary: "INCLUSIVE";
+  };
+```
+
+`FirstNightInitialized`应用时从完整event envelope保存eventId、gameId、eventSequence。窗口只接受：
+
+```text
+startEventSequence < fact.sourceEventSequence <= endEventSequence
+```
+
+本Slice不建立通用dawn、day、second-night或rolling reset。
 
 ## derivedLedgerArchitecture
-新增`packages/domain-core/src/first-night-ability-outcome-ledger.ts`和GameState optional ledger。Ledger exact字段ledgerVersion,auditModelVersion,windowAnchor,facts。derived canonical state，不新增/修改event,payload,command,receipt,batch。applier先现有验证，再用pre-event state+完整envelope派生fact；rebuild确定性，后续状态不重算。
-派生terminal events：PhilosopherActionDeferred/AbilityGranted；Snake NoSwap/Ineffective/DemonSwap；EvilTwinInformationDelivered；WitchDeathPendingMarked/IneffectiveResolved；CerenovusMadnessInstructionDelivered；Clockmaker/Dreamer/SeamstressInformationDelivered。setup/assignment/bootstrap/planning/insertion/opportunity/choice/impairment/system info/ScheduledTaskSettled/task存在/no-event均不产fact。
+
+新增：
+
+```text
+packages/domain-core/src/first-night-ability-outcome-ledger.ts
+```
+
+并由`packages/domain-core/src/index.ts`显式导出所有公开constants、types、validators、builders、resolver；禁止消费者深路径导入。
+
+```ts
+export type FirstNightAbilityOutcomeLedger = {
+  readonly ledgerVersion:
+    typeof FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION;
+  readonly auditModelVersion:
+    typeof FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION;
+  readonly windowAnchor: FirstNightAbilityOutcomeWindowAnchor;
+  readonly facts: readonly FirstNightAbilityOutcomeFact[];
+};
+```
+
+`GameState`增加可选字段：
+
+```ts
+readonly firstNightAbilityOutcomeLedger?: FirstNightAbilityOutcomeLedger;
+```
+
+`FirstNightInitialized`创建空ledger。ledger是derived canonical state，不新增domain event，不修改accepted payload、command、receipt或atomic batch。
+
+`event-applier.ts`只使用一个统一入口：
+
+```ts
+deriveFirstNightAbilityOutcomeFact({
+  stateBefore: state,
+  event
+}): FirstNightAbilityOutcomeFact | undefined
+```
+
+每个现有case必须按固定顺序：
+
+1. 执行该事件全部现有validation；
+2. 基于未应用事件的`stateBefore`及完整envelope调用统一derive入口；
+3. 计算该case原有`nextStateWithoutLedger`；
+4. 若有fact，将其append到`stateBefore.firstNightAbilityOutcomeLedger`；
+5. 返回`nextStateWithoutLedger`加新ledger。
+
+不得在event-applier各case复制adapter逻辑或版本常量。`sourceEventId`、`sourceBatchId`、`sourceEventSequence`必须来自完整envelope；历史revision来自validated pre-event state/payload。
+
+仅以下terminal事件产fact：Philosopher defer/grant；Snake Charmer三种terminal；Evil Twin information；Witch effective/ineffective terminal；Cerenovus instruction；Clockmaker、Dreamer、Seamstress information。setup、bootstrap、planning、choice、marker-only、impairment、system information、settlement及无事件fail-closed路径不产fact。
 
 ## auditFactIdentity
-新增branded FirstNightAbilityOutcomeFactId=`first-night-ability-outcome-fact-v1:<sourceEventId>`，validator重算。AbilityInstance exact discriminated union：BASE_ROLE_TASK；PHILOSOPHER_GAINED_TASK_V1（opportunity+revision）；PHILOSOPHER_GAINED_TASK_V2（opportunity+grant+revision+schedulingVersion）；EXPLICIT_DOMAIN_INSTANCE（现有abilityInstanceId+roleTenureId）。生成instance ID分别为base-task:<taskId>、gained-v1:<taskId>:opportunity:<id>、gained-v2:<taskId>:grant:<id>。V1/V2与task/insertion/grant/player/seat/role/revision交叉验证；Seamstress/Cerenovus保留现有instance ID。
-EvidenceReference exact union支持SOURCE_EVENT,TASK,ACTION_OPPORTUNITY,ABILITY_IMPAIRMENT,ROLE_TENURE,CHARACTER_STATE,PLAYER_ROLE_AT_REVISION,DOMAIN_RECORD；固定kind rank/code-unit排序。
+
+新增brand `FirstNightAbilityOutcomeFactId`，固定ID：
+
+```text
+first-night-ability-outcome-fact-v1:<sourceEventId>
+```
+
+```ts
+export type FirstNightAbilityInstanceProvenance =
+ | {
+     readonly provenanceVersion:
+       "first-night-ability-instance-provenance-v1";
+     readonly kind: "BASE_ROLE_TASK";
+     readonly abilityInstanceId: AbilityInstanceId;
+     readonly abilityRoleId: RoleId;
+     readonly taskId: ScheduledTaskId;
+     readonly sourcePlayerId: PlayerId;
+     readonly sourceSeatNumber: SeatNumber;
+   }
+ | {
+     readonly provenanceVersion:
+       "first-night-ability-instance-provenance-v1";
+     readonly kind: "PHILOSOPHER_GAINED_TASK_V1";
+     readonly abilityInstanceId: AbilityInstanceId;
+     readonly abilityRoleId: RoleId;
+     readonly taskId: ScheduledTaskId;
+     readonly sourcePlayerId: PlayerId;
+     readonly sourceSeatNumber: SeatNumber;
+     readonly philosopherOpportunityId: ActionOpportunityId;
+     readonly grantId: GrantedAbilityId;
+     readonly sourceCharacterStateRevision: number;
+   }
+ | {
+     readonly provenanceVersion:
+       "first-night-ability-instance-provenance-v1";
+     readonly kind: "PHILOSOPHER_GAINED_TASK_V2";
+     readonly abilityInstanceId: AbilityInstanceId;
+     readonly abilityRoleId: RoleId;
+     readonly taskId: ScheduledTaskId;
+     readonly sourcePlayerId: PlayerId;
+     readonly sourceSeatNumber: SeatNumber;
+     readonly philosopherOpportunityId: ActionOpportunityId;
+     readonly grantId: GrantedAbilityId;
+     readonly sourceCharacterStateRevision: number;
+     readonly schedulingVersion:
+       "philosopher-gained-first-night-scheduling-v2";
+   }
+ | {
+     readonly provenanceVersion:
+       "first-night-ability-instance-provenance-v1";
+     readonly kind: "EXPLICIT_DOMAIN_INSTANCE";
+     readonly abilityInstanceId: AbilityInstanceId;
+     readonly abilityRoleId: RoleId;
+     readonly taskId: ScheduledTaskId;
+     readonly sourcePlayerId: PlayerId;
+     readonly sourceSeatNumber: SeatNumber;
+     readonly sourceRoleTenureId: RoleTenureId;
+   };
+```
+
+V1 insertion没有直接grantId时，builder必须从同一player、seat、opportunity、chosen role、task source及revision找到唯一grant；零个或多个均拒绝。V2必须使用insertion内grantId并验证完整grant链。
+
+生成ID：
+
+```text
+first-night-ability-instance-v1:base-task:<taskId>
+first-night-ability-instance-v1:philosopher-gained-v1:<taskId>:grant:<grantId>
+first-night-ability-instance-v1:philosopher-gained-v2:<taskId>:grant:<grantId>
+```
+
+Seamstress、Cerenovus保留现有explicit instance ID。
+
+`evidenceReferences`为exact discriminated union，支持`SOURCE_EVENT`、`TASK`、`ACTION_OPPORTUNITY`、`ABILITY_IMPAIRMENT`、`ROLE_TENURE`、`CHARACTER_STATE`、`PLAYER_ROLE_AT_REVISION`及带recordType/recordId的`DOMAIN_RECORD`；按固定kind rank和code-unit排序。
 
 ## outcomeStatuses
-Status=NORMAL|ABNORMAL|UNRESOLVED|PENDING_TRIGGER。Cause=NO_OTHER_CHARACTER_ABILITY|SOURCE_DRUNKENNESS|SOURCE_POISONING|VORTOX_FALSE_INFORMATION|DREAMER_VORTOX_CONSTRAINT_UNRECORDED|CAUSE_NOT_PROVEN。
-Fact exact最低字段：auditFactId,auditModelVersion,windowVersion,sourcePlayerId/sourceSeatNumber,abilityRoleId/abilityTaskId,abilityInstance,sourceEventId/sourceBatchId/sourceEventSequence,evaluatedCharacterStateRevision,outcomeStatus,causeKind,causedByAnotherCharacterAbility,evidenceReferences,detectedAtEventSequence。detected==source sequence；ABNORMAL必须causedByAnother=true；UNRESOLVED/PENDING不得转NORMAL。
+
+```ts
+export type AbilityOutcomeStatus =
+  "NORMAL" | "ABNORMAL" | "UNRESOLVED" | "PENDING_TRIGGER";
+
+export type AbilityOutcomeCause =
+  "NO_OTHER_CHARACTER_ABILITY" |
+  "SOURCE_DRUNKENNESS" |
+  "SOURCE_POISONING" |
+  "VORTOX_FALSE_INFORMATION" |
+  "DREAMER_VORTOX_CONSTRAINT_UNRECORDED" |
+  "CAUSE_NOT_PROVEN";
+```
+
+```ts
+export type FirstNightAbilityOutcomeFact = {
+  readonly auditFactId: FirstNightAbilityOutcomeFactId;
+  readonly auditModelVersion:
+    typeof FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION;
+  readonly windowVersion:
+    typeof FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly abilityRoleId: RoleId;
+  readonly abilityTaskId: ScheduledTaskId;
+  readonly abilityInstance: FirstNightAbilityInstanceProvenance;
+  readonly sourceEventId: EventId;
+  readonly sourceBatchId: BatchId;
+  readonly sourceEventSequence: number;
+  readonly evaluatedCharacterStateRevision: number;
+  readonly outcomeStatus: AbilityOutcomeStatus;
+  readonly causeKind: AbilityOutcomeCause;
+  readonly causedByAnotherCharacterAbility: boolean;
+  readonly evidenceReferences:
+    readonly AbilityOutcomeEvidenceReference[];
+  readonly detectedAtEventSequence: number;
+};
+```
+
+`detectedAtEventSequence===sourceEventSequence`。`ABNORMAL`必须有other-character cause。`UNRESOLVED/PENDING_TRIGGER`不得转换为`NORMAL`。
 
 ## perRoleAuditAdapters
-Philosopher DEFER/grant NORMAL；duplicate DRUNK不改变其fact也不直接生成受影响玩家异常。Snake effective nonDemon no-swap NORMAL、effective Demon swap NORMAL、impaired nonDemon NORMAL、impaired Demon no-swap ABNORMAL、历史target不足UNRESOLVED；swap用payload before/after，其他在terminal时固化pre-event role。EvilTwin在完整pair+mutual delivery生成一个NORMAL，不伪造未支持事实。Witch有效pending marker NORMAL；Ineffective=PENDING_TRIGGER并保留cause，不预测日后触发。Cerenovus完整effective chain在instruction delivery NORMAL；impaired无event无fact。Clockmaker只读stored correct/selected/effectiveness/Vortox/revision：相等NORMAL；证明impairment/Vortox导致不等ABNORMAL；原因不证UNRESOLVED。Dreamer固化target历史角色：pair含truth且结构正确NORMAL；impaired且不含truth ABNORMAL；impaired仍正常则NORMAL；effective/ambiguous Vortox因payload不足UNRESOLVED。Seamstress只比stored correct与delivered：相等NORMAL含impaired；证明impairment/Vortox不等ABNORMAL；原因不证UNRESOLVED。Math无delivery fact。
+
+- Philosopher：DEFER=`NORMAL`；grant=`NORMAL`；duplicate DRUNK marker不改变Philosopher fact，也不直接为受影响玩家产异常。
+- Snake Charmer：effective non-Demon/no swap=`NORMAL`；effective Demon/swap=`NORMAL`；impaired non-Demon/no swap=`NORMAL`；impaired Demon/no swap=`ABNORMAL`；历史target role不足=`UNRESOLVED`。swap使用payload before/after，禁止读后来状态。
+- Evil Twin：完整pair+mutual information在`EvilTwinInformationDelivered`产一个`NORMAL`；胜负、死亡、both-alive不产fact。
+- Witch：有效pending marker=`NORMAL`；ineffective=`PENDING_TRIGGER`并保留DRUNK/POISONED cause。
+- Cerenovus：完整effective choice-marker-instruction链=`NORMAL`；impaired fail-closed无事件、无fact。
+- Clockmaker：只比较stored truth/selected/cause/revision。相等=`NORMAL`；已证明impairment/Vortox导致不等=`ABNORMAL`；不等但原因不可证=`UNRESOLVED`。
+- Dreamer：terminal时固化target历史role。正常pair=`NORMAL`；impaired且pair异常=`ABNORMAL`；impaired但pair仍正常=`NORMAL`；effective或无法可靠证明Vortox状态时=`UNRESOLVED`。
+- Seamstress：只比较stored `ruleCorrectAnswer`和`deliveredAnswer`。相等=`NORMAL`；已证明impairment/Vortox导致不等=`ABNORMAL`；原因不可证=`UNRESOLVED`。
+- Mathematician：本Slice不产delivery fact。
 
 ## pendingTriggerBoundary
-当前仅impaired Witch=PENDING_TRIGGER，保留ledger并列入ignoredPending，不计、不阻塞、不提前ABNORMAL；有效marker NORMAL。
+
+当前仅impaired Witch产生`PENDING_TRIGGER`。它进入`ignoredPendingFacts`，不计数、不阻塞，不提前升级。有效Witch marker为`NORMAL`。
 
 ## unresolvedBoundary
-UNRESOLVED仅合法身份下证据不足且可能改变count；非法shape/identity/cross-link/duplicate/window直接DomainError。玩家已有qualifying ABNORMAL时，同玩家UNRESOLVED列redundantUnresolvedFacts而不阻塞。
+
+`UNRESOLVED`仅表示身份与历史有效，但证据不足且可能改变计数。非法shape、身份、cross-link、window或duplicate直接DomainError。
+
+resolver流水线必须严格为：
+
+1. validate全部输入；
+2. 按window选择并分离future；
+3. 排除exact own instance；
+4. 从剩余fact选取qualifying `ABNORMAL && causedByAnotherCharacterAbility`；
+5. 仅对这些retained qualifying abnormal按player去重；
+6. 仅当某unresolved玩家已存在于该retained abnormal player set时，才将其标为`redundantUnresolvedFacts`；其余unresolved阻塞。
+
+不得让future abnormal、own abnormal、NORMAL、PENDING或被过滤fact使unresolved冗余。fact原始顺序不得改变判断。
 
 ## playerDeduplication
-facts按incident，count按sourcePlayerId去重；players按roster seat再playerId code-unit。
+
+fact按事件记录，计数按`sourcePlayerId`去重。同玩家多个qualifying abnormal只计1。玩家按roster seat，再按playerId code-unit排序。
 
 ## ownAbilityExclusion
-仅`fact.sourcePlayerId===resolverSource && sameCanonicalDataValue(fact.abilityInstance,resolvingInstance)`排除；不得按roleId全局排除、不得排另一玩家earlier Math或当前玩家其他instance。
+
+仅当以下同时满足才排除：
+
+```ts
+fact.sourcePlayerId === context.sourcePlayerId &&
+sameCanonicalDataValue(
+  fact.abilityInstance,
+  context.abilityInstance
+)
+```
+
+不得按roleId全局排除，不得排除其他玩家的earlier Mathematician或当前玩家其他ability instance。
 
 ## duplicateHolderTemporalPolicy
-sourceSequence>end列excludedFutureFacts；later可读earlier完成fact，earlier不读future，不重算；本Slicepure fixtures证明。
+
+base Math先于gained Math；gained按source seat再按taskId code-unit。later通过更大的validated upper bound读取earlier事实；earlier不读取future；历史结果不重算。
+
+## ResolvingMathematicianContext
+
+新增pure-derived、非event、非GameState持久字段：
+
+```ts
+export const RESOLVING_MATHEMATICIAN_CONTEXT_VERSION =
+  "resolving-mathematician-context-v1" as const;
+
+export type ResolvingMathematicianContext = {
+  readonly contextVersion:
+    typeof RESOLVING_MATHEMATICIAN_CONTEXT_VERSION;
+  readonly gameId: GameId;
+  readonly rulesBaselineVersion: string;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly abilityRoleId: "mathematician";
+  readonly taskId: ScheduledTaskId;
+  readonly resolutionCharacterStateRevision: number;
+  readonly abilityInstance: FirstNightAbilityInstanceProvenance;
+  readonly window: FirstNightAbilityOutcomeWindowSnapshot;
+  readonly roster: PlayerRoster;
+  readonly rosterSize: 12;
+  readonly applicableOverrides: MathematicianAuditOverrideVersions;
+};
+```
+
+唯一builder：
+
+```ts
+buildResolvingMathematicianContext(
+  stateBeforeResolution: GameState
+): ResolvingMathematicianContext
+```
+
+它必须验证：
+
+- game、rules baseline、first-night ledger anchor、first-night plan、progress、roster及current character state均存在且exact；
+- anchor game/baseline与state一致；
+- `window.endEventSequence===state.lastEventSequence`；
+- 当前next unsettled pending task唯一存在、未settled、taskType为`MATHEMATICIAN_INFORMATION`；
+- base路径：task source为`ROLE`、role为mathematician、source player/seat与canonical roster/current state一致；
+- gained路径：唯一匹配V1或V2 insertion；唯一grant；唯一Philosopher opportunity；task/player/seat/chosen role/opportunity/grant/revision/plan version/scheduling version完整一致；
+- 不允许base伪装gained、gained伪装base或V1/V2混合；
+- 输出canonical source、seat、instance、window、roster和override versions。
+
+同时提供`validateResolvingMathematicianContextShape(value)`。builder和validator必须返回clone，不保留调用者可变引用。
 
 ## pureCountResolver
-返回RESOLVED或UNRESOLVED exact union。共同含windowSnapshot,evaluatedThrough,qualifyingAbnormalFacts,distinctAbnormalPlayerIds,excludedOwnAbilityFacts,excludedFutureFacts,ignoredNormalFacts,ignoredPendingFacts,redundantUnresolvedFacts。RESOLVED含trueCount；UNRESOLVED含unresolvedFactIds/Players/Reasons/Tasks/currentPartialCount且不得trueCount。
-输入ledger,resolver source/exact instance,window,canonical12-player roster,rosterSize12,四override versions。只统计window内ABNORMAL&&causedByAnother，按player去重、自身instance排除。PENDING不计不阻塞；count-relevant unresolved返回UNRESOLVED。0..11，超过11抛canonical contradiction不截断。
+
+```ts
+resolveFirstNightMathematicianTrueCount(input: {
+  readonly ledger: FirstNightAbilityOutcomeLedger;
+  readonly context: ResolvingMathematicianContext;
+}): MathematicianCountResolution
+```
+
+resolver不得再接受裸source、裸instance、裸window、裸roster或裸override。它必须重新验证ledger与context、确认context anchor等于ledger anchor，再执行固定流水线。
+
+`RESOLVED`包含window、evaluatedThrough、qualifying facts、distinct players、own/future/normal/pending/redundant列表及`trueCount`。
+
+`UNRESOLVED`包含同样审计列表，加`unresolvedFactIds`、players、causes、tasks及`currentPartialCount`，不得包含`trueCount`。计数必须为`0..11`；超过11拒绝，不截断。
 
 ## runtimeShapeValidation
-实现fact/ledger/window/instance/evidence validate/clone/equality/append。所有入口isCanonicalDataValue，数组isDenseCanonicalArray，再plain record+exact keys；复用sameCanonicalDataValue/compareStableId。拒绝sparse,extra,symbol,getter,Proxy/revoked,cycle,非标准prototype,-0/非safe int。逐字段clone，无JSON roundtrip。
+
+实现ledger、fact、window、instance、evidence、context的validate/clone/equality/append。入口先用`isCanonicalDataValue`，数组用`isDenseCanonicalArray`，再用`isPlainRecord`和`hasExactEnumerableKeys`；比较复用`sameCanonicalDataValue`与`compareStableId`。
+
+所有hostile Proxy、revoked Proxy、getter/accessor、symbol、cycle、sparse、extra field、非标准prototype、负零、非safe integer必须转换为指定DomainError，不得泄漏TypeError。
+
+## domainErrorContract
+
+在`errors.ts`冻结新增`DomainErrorCode`：
+
+- `InvalidFirstNightAbilityOutcomeLedger`
+- `InvalidFirstNightAbilityOutcomeFact`
+- `InvalidFirstNightAbilityOutcomeWindow`
+- `InvalidFirstNightAbilityInstance`
+- `InvalidFirstNightAbilityOutcomeEvidence`
+- `InvalidResolvingMathematicianContext`
+- `DuplicateFirstNightAbilityOutcomeFactConflict`
+- `InvalidMathematicianCountResolutionInput`
+
+触发边界：
+
+- 对应shape/semantic validator使用其专属`Invalid...`；
+- 相同fact ID但内容不同使用`Duplicate...Conflict`；
+- context builder的缺状态、非next、已settled、伪造链、upper mismatch、V1/V2混合均用`InvalidResolvingMathematicianContext`；
+- resolver的ledger/context交叉不一致、非法roster/domain、超过11使用`InvalidMathematicianCountResolutionInput`；
+- helper内部所有未知异常必须在公共边界转换为对应DomainError，原`DomainError`可原样传播。
 
 ## canonicalComparison
-facts按sourceEventSequence再auditFactId code-unit。同ID canonical equal幂等，不同内容抛DuplicateFirstNightAbilityOutcomeFactConflict。禁locale/Intl/raw JSON semantic/random/time UUID。
+
+facts按source sequence后auditFactId code-unit排序。相同ID且canonical equal时append幂等；不同内容抛duplicate conflict。禁止locale、随机、时间ID、UUID及raw JSON语义比较。
 
 ## replayDeterminism
-只依赖envelope、accepted payload、该sequence pre-state与固定版本；同stream rebuild/Windows/Ubuntu canonical equal；key插入顺序无影响。
+
+fact只来自envelope、accepted payload、pre-event canonical state及固定literal。相同stream在Windows/Ubuntu得到canonical equal ledger；key插入顺序不得影响结果。
 
 ## stateRebuild
-FirstNightInitialized创建空ledger+anchor；列出的terminal追加。accepted stream无需迁移event。缺完整初始化envelope的legacy snapshot无法补anchor，snapshot migration out-of-scope，post-init缺anchor fail closed。
+
+`FirstNightInitialized`创建anchor和空facts；统一derive入口在terminal事件应用时追加。accepted stream无需迁移或改payload。缺完整初始化envelope的旧snapshot不得补造anchor；snapshot migration不在本Slice。
 
 ## privateProjectionBoundary
-不改PlayerPrivateKnowledgeView，不泄漏ledger/fact/cause/window/count/evidence到player/AI。用sentinel ledger直接验证；resolver不由projection调用。
+
+不得修改`PlayerPrivateKnowledgeView`，不得向player/AI projection泄漏ledger、fact、window、context、cause、evidence或count。context只在未来settlement边界即时pure derive，不持久化、不投影。
 
 ## acceptedEventCompatibility
-DomainEventPayloadByType/payload/event version/commands/IDs/batches/settlements/receipts/V1 replay/V2 scheduling全部不变；ledger非event。MATHEMATICIAN_INFORMATION继续ApplicationNotConfigured retryable、无receipt/event/settlement/version。
+
+`DomainEventPayloadByType`、所有payload、event version、command、ID、batch、settlement、receipt、V1 replay、V2 scheduling完全不变。
+
+`MATHEMATICIAN_INFORMATION`继续`ApplicationNotConfigured / retryable=true`，不写receipt、不产事件、不settle、不增version。
 
 ## failureBoundary
-非法shape/anchor/roster/source-seat/task-instance/provenance/duplicate/sequence/>11抛DomainError；仅合法身份证据不足返回semantic UNRESOLVED；无terminal event无fact。
+
+非法ledger/fact/window/instance/evidence/context、伪造task链、非next、已settled、upper mismatch、duplicate冲突或超过11均fail closed。只有合法身份下的规则证据不足返回semantic `UNRESOLVED`。无terminal事件则无fact。
 
 ## testPlan
-新增ledger test并扩展rebuild/application/projection/角色测试。映射68项：1-10 ledger determinism/ID/order/duplicate/exact/sparse/extra/hostile/leak；11-16 anchor/lower/upper/self future/setup/system；17-20 Philosopher；21-25 Snake；26-31 Twin/Witch/Cerenovus；32-36 Clockmaker；37-40 Dreamer；41-45 Seamstress；46-56 count/dedup/status/self/otherMath/time/0..11；57-60 Math failclosed/no delivery/unsettled/accepted payload；61-66角色全回归；67全门禁；68双平台CI。
+
+原68项全部保留，并增加/明确：
+
+- 1–10 ledger determinism、ID、排序、duplicate、exact/sparse/extra/hostile及projection。
+- 11–16 anchor和window、self future、setup/bootstrap/system无fact。
+- 17–45逐角色全部指定分类及历史不重算。
+- 46–56 player dedup、状态过滤、own instance、duplicate temporal及0..11。
+- 57–60 Math仍fail closed、无delivery、无settlement/version、payload不变。
+- 61–68角色回归、full gates、Windows/Ubuntu。
+
+Context伪造测试必须覆盖：base伪造、gained伪造、seat、task、grant、opportunity、revision、plan/scheduling version、non-next、already-settled、upper不等于last sequence、V1/V2 mixed generation。
+
+UNRESOLVED流水线至少六类：
+
+1. future unresolved不阻塞；
+2. own-instance unresolved不阻塞；
+3. retained abnormal同玩家使unresolved冗余；
+4. unresolved在数组中早于abnormal仍冗余；
+5. own-excluded abnormal不能使同玩家unresolved冗余；
+6. future abnormal不能使同玩家in-window unresolved冗余。
+
+另测所有公共helper对Proxy/getter/revoked Proxy只抛冻结的DomainError code，不抛TypeError。
 
 ## explicitOutOfScope
-Math settlement/delivery/private number/candidate/Vortox output/resolved event；dawn/day/later-night；nomination/execution/death/Witch trigger/Cerenovus execution/Twin胜负；continuous poison/registration/Traveller/Pit-Hag/Barber/AI/UI/Electron/SQLite/phase/snapshot migration；2B18B/2B19。
+
+Mathematician settlement/delivery/private number、candidate selection、Vortox Math output、Math resolved event、general dawn/day/later night、nomination、execution、death、Witch trigger、Cerenovus execution、Evil Twin胜负/死亡、continuous poison、registration、Traveller、Pit-Hag、Barber、AI、UI、Electron、SQLite、phase transition、snapshot migration、2B18B、2B19。
 
 ## completionCriteria
-RULE_READY+独立RULE_DESIGN_PASS；全部types/adapters/resolver/hostile/replay/leak tests；accepted payload/batch零变化；Math task仍fail closed且无数字；full+Windows/Ubuntu gates；coverage不高于PARTIAL；未开始2B18B/2B19。
+
+必须满足RULE_READY、独立`RULE_DESIGN_PASS`、统一derive入口、validated context-only resolver、固定DomainError合同、全部adapter/hostile/replay/context/pipeline/projection测试、accepted payload/batch零变化、Math仍fail closed、无数字交付、full local及Windows/Ubuntu exact-head CI通过。角色覆盖不得高于`PARTIAL`，不得开始2B18B或2B19。
 
 ## coverageStatus
-`PARTIAL`。仅第一夜ledger与pure true-count基础，Math delivery/candidate/projection/settlement/later night和多交互仍缺，禁止COMPLETE。
 
-READY_FOR_RULE_DESIGN_REVIEW
+`PARTIAL`
+
+本Slice仅建立第一夜审计账本、validated resolution context及纯true-count基础。Mathematician交付、候选选择、私有投影、settlement、后续夜晚及多项交互仍未实现。
+
+READY_FOR_RULE_DESIGN_REVIEW_ROUND_2

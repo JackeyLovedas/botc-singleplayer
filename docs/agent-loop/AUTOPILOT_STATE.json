@@ -8,7 +8,7 @@
   "currentReviewHeadAuthority": null,
   "exactHeadCIAuthority": "GitHub CI on the exact emitted main RULE_READY evidence commit",
   "repairRound": 0,
-  "designRound": 1,
+  "designRound": 2,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": null,
   "maxSlices": 1,
@@ -16,8 +16,11 @@
   "candidateRole": "mathematician",
   "candidateScope": "FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION",
   "currentDesignPath": "docs/implementation/phase-3-slice-2b18a-design.md",
-  "currentDesignHash": "caf7dc9d7d30867f596070f419afaf150f5d9be83028cdad99c783cd8b097ada",
-  "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW",
+  "currentDesignHash": "62a83e4f7161d8bf5bd9adda6c24e353edf7e0b6b4d752846e426c0f55e8cb59",
+  "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_2",
+  "designReviewRound1Path": "docs/implementation/phase-3-slice-2b18a-design-review-round-1.md",
+  "designReviewRound1Hash": "b5641d7207d488233ec5e2730f948a921cc9d3c0080cf7f182595bf151ddfb4c",
+  "designReviewRound1Verdict": "RULE_DESIGN_FIX_REQUIRED",
   "designReviewRound2Hash": null,
   "ruleReady": true,
   "ruleDesignPass": false,
@@ -33,7 +36,7 @@
   "ruleSemanticsChanged": true,
   "unresolvedConflicts": [],
   "remainingBlockers": [
-    "Independent rule-design review must return RULE_DESIGN_PASS before implementation"
+    "Round-2 independent rule-design review must return RULE_DESIGN_PASS before implementation"
   ],
   "ruleCoverageStatus": "PARTIAL",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
@@ -386,7 +389,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Materialized the complete authoritative compact architect design for Slice 2B18A at design round 1; the design is ready only for independent rule-design review.",
+  "lastAction": "Archived the complete round-1 RULE_DESIGN_FIX_REQUIRED report and replaced the design with the complete architect round-2 revision; implementation remains unauthorized.",
   "lastError": null,
-  "nextAction": "Push the design/control commit and require exact-head main CI, then run independent rule-design review against the sources, evidence, nightsheet, coverage matrix, and exact design. Do not implement before RULE_DESIGN_PASS; do not settle or deliver Mathematician information or start Slice 2B18B/2B19."
+  "nextAction": "Push the round-2 design/control commit and require exact-head main CI, then run a fresh independent round-2 rule-design review against the sources, evidence, nightsheet, coverage matrix, and exact design. Do not implement before RULE_DESIGN_PASS; do not settle or deliver Mathematician information or start Slice 2B18B/2B19."
 }
