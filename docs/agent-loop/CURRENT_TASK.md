@@ -5,7 +5,7 @@
 - Name: `First-Night Ability Outcome Ledger Foundation`.
 - Status: `RUNNING` on `main`; no feature branch or PR exists.
 - Recovery anchor: `b228dd53851a9bd947a41e39187db20735069402`; exact prior main CI `29180118996` was `SUCCESS`.
-- Limits: `maxSlices=1`, `maxRepairRounds=2`, `maxDesignRounds=2`; repair round `0 / 2`, design round `0 / 2`.
+- Limits: `maxSlices=1`, `maxRepairRounds=2`, `maxDesignRounds=2`; repair round `0 / 2`, design round `1 / 2`.
 - Candidate scope: `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`.
 - Authorization gates: `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`.
 - Four explicit user-approved simulator contracts were appended independently to `docs/rules/USER_OVERRIDES.md`: `BOTC-SIM-MATHEMATICIAN-FIRST-NIGHT-WINDOW-V1`, `BOTC-SIM-MATHEMATICIAN-OWN-ABILITY-EXCLUSION-V1`, `BOTC-SIM-MATHEMATICIAN-NUMERIC-DOMAIN-V1`, and `BOTC-SIM-MATHEMATICIAN-DUPLICATE-HOLDER-TEMPORAL-V1`.
@@ -14,7 +14,9 @@
 - Complete resolved rule evidence is `docs/rules/evidence/2B18-resolved.md`, SHA-256 `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`, terminal `RULE_READY`, coverage `PARTIAL`, and `unresolvedConflicts=[]`.
 - The sole writer materialized the independent report verbatim; the independent integrity round-trip matched 26,320 UTF-8 bytes, 454 LF bytes, a trailing LF, first/last lines, and the complete SHA-256.
 - All five original blockers are resolved for the bounded product scope: scheduling by accepted Slice 2B17.2, and the other four through the explicit approved simulator contracts.
-- No design, production code, tests, feature branch, or PR has been created at this rule gate.
+- Architect design is `docs/implementation/phase-3-slice-2b18a-design.md`, SHA-256 `caf7dc9d7d30867f596070f419afaf150f5d9be83028cdad99c783cd8b097ada`, terminal `READY_FOR_RULE_DESIGN_REVIEW`, coverage `PARTIAL`.
+- The authoritative compact design was materialized with 9,462 UTF-8 bytes, 79 LF bytes, one trailing LF, and exact title/terminal lines.
+- No production code, tests, feature branch, or PR has been created at this design gate.
 
 ## Strict Scope Boundary
 
@@ -47,4 +49,4 @@ The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte 
 
 ## Current Gate
 
-Commit and push only the resolved evidence/control documents and verify GitHub CI on the exact emitted main SHA. Then permit only read-only architect design and an independent rule-design review. Do not create a feature branch, production change, test, or PR until `RULE_DESIGN_PASS` authorizes implementation.
+Commit and push only the design/control documents and verify GitHub CI on the exact emitted main SHA. Then run an independent rule-design review. Do not create a feature branch, production change, test, or PR until `RULE_DESIGN_PASS` authorizes implementation.
