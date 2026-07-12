@@ -3,7 +3,7 @@
 ## Active Slice 2B18A
 
 - Name: `First-Night Ability Outcome Ledger Foundation`.
-- Status: `RUNNING` on `main`; no feature branch or PR exists.
+- Status: `HUMAN_BLOCKED` on `main`; no feature branch or PR exists.
 - Recovery anchor: `b228dd53851a9bd947a41e39187db20735069402`; exact prior main CI `29180118996` was `SUCCESS`.
 - Limits: `maxSlices=1`, `maxRepairRounds=2`, historical `maxDesignRounds=3`; repair round `0 / 2`, authorized contract-completion design round `3.1`.
 - User continuation authorization: `DESIGN_ROUND_3_1_CONTRACT_COMPLETION`.
@@ -26,19 +26,19 @@
 - It reviewed exact HEAD `952199ff005182eb44a31de66837ba8f9e576d8d`; CI `29185767026` was `SUCCESS`, worktree clean, open PR count `0`.
 - Design 3.1 contract completion is `docs/implementation/phase-3-slice-2b18a-design-round-3-1.md`, SHA-256 `97456a3769d29b616af31c1e83dc5b1717809ffbe5a56ab0d86decd800c9710c`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_1`, coverage `PARTIAL`.
 - Architect integrity verification returned `MATCH`: 44,929 UTF-8 bytes, 1,292 LF bytes, trailing LF, exact first/last lines and valid code-fence parity.
+- Fresh Design 3.1 review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-1.md`, SHA-256 `0a4269be1b19a303fab1eb08e0bcd0c9212aed5ec4c2e068c3eb2e9502a99444`, terminal `RULE_DESIGN_FIX_REQUIRED`.
+- It reviewed exact HEAD `5a40c04ec50224ce05b43588a54ac0d5253a5ffd`; CI `29187068406` was `SUCCESS`, worktree clean, open PR count zero.
 - No production code, tests, feature branch, or PR has been created at this design gate.
 
 ## Authorized Design Round 3.1 Contract Completion
 
-The prior three behavior-level blockers are closed by the round-3 design and fresh review:
+The prior behavioral and five contract-group blockers are closed. Fresh Design 3.1 review found the remaining canonical evidence-contract gaps:
 
-1. The public resolver is state-bound and does not accept caller-supplied context or ledger.
-2. `WitchDeathPendingMarked` is explicitly frozen as the terminal allowlist exception.
-3. Dreamer/Vortox historical classification uses an explicit three-state matrix.
+1. `AbilityOutcomeEvidenceReference` lacks exact per-variant semantic cross-link requirements.
+2. `DOMAIN_RECORD` lacks an exact `recordType` to canonical `recordId` source mapping.
+3. `PLAYER_ROLE_AT_REVISION` lacks a frozen compound primary identity definition.
 
-One blocking design-completeness issue remains: the round-3 file declares itself the sole implementation authority but does not completely define `InternalResolvingMathematicianContext`, `AbilityOutcomeEvidenceReference`, `MathematicianCountResolution`, base/V1/V2 canonical ability-instance IDs, or the four-override exact-shape carrier. The user authorized round `3.1` solely to complete those contracts without changing behavior.
-
-Immutable hashes: original evidence `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`; resolved evidence `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`; round-3 design `08d23c8cdef156edd7a90f7f1ee8725ae7b6d29c3809d967343221c1d37eebe8`; round-3 review `5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b`.
+The current authorization explicitly permits no second Design 3.1 completion. Continuing requires new user authority; implementation remains prohibited.
 
 ## Strict Scope Boundary
 
@@ -71,4 +71,4 @@ The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte 
 
 ## Current Gate
 
-Commit and push only Design 3.1 plus accumulated recovery controls, require exact-head main CI success, then run a new independent rule-design review. Do not change frozen behavior/history/evidence, create production changes/tests/branch/PR, or start 2B18B/2B19.
+Commit and push only the complete Design 3.1 review plus blocking controls, require exact-head main CI success, then stop. Do not perform another completion pass, change Design/history/evidence, create production changes/tests/branch/PR, or start 2B18B/2B19.
