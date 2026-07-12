@@ -1,5 +1,5 @@
 {
-  "status": "RUNNING",
+  "status": "HUMAN_BLOCKED",
   "currentPR": 23,
   "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/23",
   "currentBranch": "phase-3/first-night-ability-outcome-ledger",
@@ -45,7 +45,7 @@
   "designReviewRound3Verdict": "RULE_DESIGN_FIX_REQUIRED",
   "ruleReady": true,
   "ruleDesignPass": true,
-  "implementationAuthorized": true,
+  "implementationAuthorized": false,
   "compatibilityDesignVerdict": null,
   "designReviewPath": "docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md",
   "designReviewHash": "8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525",
@@ -61,7 +61,14 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [],
+  "remainingBlockers": [
+    "Canonical firstNightTaskInsertions-to-plan and complete base/V1/V2 accepted chain validation remains incomplete.",
+    "V1/V2 generation mixing and task/grant/ability-role segment binding remains incomplete.",
+    "Caller-supplied resolver state can still contain a forged standalone ledger not proven from accepted history.",
+    "Standalone role cause/evidence semantic cross-links remain incomplete.",
+    "Count validator does not recompute each correct ledger category against window/source/instance/roster.",
+    "Direct adversarial traceability and claim narrowing remain incomplete."
+  ],
   "ruleCoverageStatus": "PARTIAL",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "approvedOverrideIds": [
@@ -458,7 +465,7 @@
     }
   },
   "slice2B18AImplementation": {
-    "status": "REPAIRING_READY_TO_PUBLISH_ROUND_2",
+    "status": "HUMAN_BLOCKED_MAX_REPAIR_ROUNDS_EXHAUSTED",
     "branch": "phase-3/first-night-ability-outcome-ledger",
     "authorizationHead": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
     "authorizationCI": 29193210219,
@@ -485,6 +492,24 @@
       "findingCount": 16,
       "remainingBlockerCount": 6
     },
+    "finalReviewRound3": {
+      "reviewedHead": "faf3b44714b62f7723ecb319e6d244a324215088",
+      "productHeadPushCI": 29195691651,
+      "productHeadPullRequestCI": 29195693110,
+      "report": "docs/implementation/phase-3-slice-2b18a-final-review-round-3.md",
+      "reportSha256": "04fcb8068fa1f4d62923f53881b66f3f574e2291652a4a5c2b9728fed0e7dde6",
+      "integrityVerdict": "MATCH",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "remainingBlockers": [
+        "Validate runtime inserted tasks against the canonical firstNightTaskInsertions records rather than the plan's own filtered tasks, and enforce the complete accepted base/V1/V2 task-insertion-grant-opportunity chain.",
+        "Reject V1/V2 generation mixing and bind task/grant role segments, plan generation, and abilityRoleId in canonical ability-instance provenance validation.",
+        "Close the caller-supplied state boundary by binding ledger facts, roster identities, anchor identity, and semantic evidence to canonical accepted state/history, or narrow the public contract so forged standalone ledgers cannot be treated as canonical.",
+        "Enforce Clockmaker, Dreamer, Seamstress, Cerenovus, and impairment cause/evidence semantic cross-links in the validator path consumed by the public resolver.",
+        "Make count-result validation recompute and verify each fact's correct category from the ledger, window, resolving source/instance, and roster—not merely exact-once membership.",
+        "Add direct adversarial regression tests for these remaining contracts and narrow the PR body and role coverage matrix to guarantees actually enforced and tested."
+      ]
+    },
     "designAuthority": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
     "designSha256": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
     "coverageStatus": "PARTIAL",
@@ -496,7 +521,7 @@
       "lint": "PASS"
     }
   },
-  "lastAction": "Completed final repair round 2 implementation and local gates with narrowed standalone-validator claims and canonical replay-boundary provenance.",
+  "lastAction": "Archived the complete final repair-2 review with reverse MATCH and entered HUMAN_BLOCKED because repair round 2 of 2 is exhausted with both verdicts still FIX_REQUIRED.",
   "lastError": null,
-  "nextAction": "Run final diff and scope checks, commit and push repair round 2, update PR traceability, then require exact-head push and PR CI without requesting review or merge."
+  "nextAction": "Preserve open frozen PR #23 and await explicit new user authority or rescope; do not repair, review, comment pass, merge, tag, or start 2B18B/2B19."
 }

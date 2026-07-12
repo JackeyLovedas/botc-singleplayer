@@ -3,7 +3,7 @@
 ## Active Slice 2B18A
 
 - Name: `First-Night Ability Outcome Ledger Foundation`.
-- Status: `REPAIRING` on `phase-3/first-night-ability-outcome-ledger`; final-review repair round `2 / 2` for PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23).
+- Status: `HUMAN_BLOCKED` on frozen `phase-3/first-night-ability-outcome-ledger`; final-review repair round `2 / 2` is exhausted for open PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23).
 - Limits: `maxSlices=1`, `maxRepairRounds=2`, historical `maxDesignRounds=3`; repair round `2 / 2`, final authorized design round `3.2`.
 - User continuation authorization: `DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION`.
 - `behaviorDesignFrozen=true`; `finalDesignCompletionRound=true`; scope is evidence-contract simplification only.
@@ -36,6 +36,8 @@
 - Repair round 1 closes those implementation groups with direct Snake Charmer and Dreamer/Vortox regressions, complete canonical context/evidence/provenance/window/count validation, replay-boundary validation, projection sentinels, and corrected PARTIAL traceability. Local gates: typecheck/lint pass, `29 / 942` full tests pass, coverage `86.27%` statements/lines, `80.32%` branches, `97.44%` functions.
 - Final-review round 2 is archived verbatim at `docs/implementation/phase-3-slice-2b18a-final-review-round-2.md`, SHA-256 `9d0cba21d7c5e5776794bfba99087d83d7d3968dcd468a57d6b07754dd8e15be`, reviewer integrity `MATCH`. Verdicts remain `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`, with six blocker groups; final repair round is `2 / 2`.
 - Final repair local gates pass: ledger `17/17`, full `29 / 940`, coverage `86.30%` statements/lines, `80.22%` branches, `97.45%` functions, typecheck/lint pass. Canonical-source claims are limited to replay-boundary pre-event derivation; standalone validators are documented as structural/semantic.
+- Final repair-2 review is archived verbatim at `docs/implementation/phase-3-slice-2b18a-final-review-round-3.md`, SHA-256 `04fcb8068fa1f4d62923f53881b66f3f574e2291652a4a5c2b9728fed0e7dde6`, reverse `MATCH`. It reviewed product HEAD `faf3b44714b62f7723ecb319e6d244a324215088` with push/PR CI `29195691651 / 29195693110` successful and returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED` with six remaining blocker groups.
+- `implementationAuthorized=false`. No pass comments, merge, tag, repair round 3, 2B18B, or 2B19 is authorized. PR #23 remains open and frozen for preservation; continuation requires explicit new user authority or rescope.
 
 ## Authorized Final Design Round 3.2
 

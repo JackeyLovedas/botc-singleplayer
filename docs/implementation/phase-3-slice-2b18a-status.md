@@ -1,5 +1,7 @@
 # Phase 3 Slice 2B18A Implementation Status
 
+> Status: `HUMAN_BLOCKED`. Product HEAD `faf3b44714b62f7723ecb319e6d244a324215088` passed CI but failed final code and rule review after repair round `2 / 2`. PR #23 remains open and frozen; this file describes implemented behavior, not accepted/merge-ready behavior.
+
 ## Scope
 
 Implemented only the reviewed `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION` from `docs/implementation/phase-3-slice-2b18a-design-round-3-2.md` (`615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865`). Rule evidence is `docs/rules/evidence/2B18-resolved.md` (`RULE_READY`, `PARTIAL`). The independent design verdict is `RULE_DESIGN_PASS` with no blockers.
@@ -34,4 +36,12 @@ Implemented only the reviewed `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION` fr
 - Full: `29 files / 940 tests passed`.
 - Coverage: `86.30%` statements/lines, `80.22%` branches, `97.45%` functions.
 - `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:coverage`, and affected-file lint passed.
-- Final diff/forbidden scans and exact-head GitHub CI are required before handoff.
+- Product HEAD push/PR CI `29195691651 / 29195693110` passed, but CI does not override the final `FIX_REQUIRED` verdicts.
+
+## Unresolved Final-Review Blockers
+
+- Complete canonical insertion/task/grant/opportunity chain validation and V1/V2 generation binding.
+- Close the hostile caller-supplied ledger/state boundary used by the public resolver.
+- Complete standalone role cause/evidence cross-links and correct per-fact count classification validation.
+- Add the missing direct adversarial tests and narrow any remaining claims accordingly.
+- Final verdicts remain `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; no merge or pass claim is authorized.
