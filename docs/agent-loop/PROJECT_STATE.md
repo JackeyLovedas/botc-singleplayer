@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `REPAIRING_READY_TO_PUBLISH` on `phase-3/first-night-ability-outcome-ledger`; PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) is in final-review repair round `1 / 2`.
+- Current control state: `REPAIRING` on `phase-3/first-night-ability-outcome-ledger`; PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) is in final-review repair round `2 / 2`.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -15,7 +15,9 @@
 
 ## Active Slice 2B18A Boundary
 
-Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=true`, and `implementationAuthorized=true`; final authorized design round is `3.2` and repair round is `1 / 2`. The reviewed design HEAD is `3dc10b4f030be7dd1c314c7a8981b24424bbd02b`, whose exact main CI run `29192916263` succeeded. Repair-round local gates pass at `29 / 942` tests with `86.27%` statements/lines, `80.32%` branches, and `97.44%` functions.
+Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=true`, and `implementationAuthorized=true`; final authorized design round is `3.2` and repair round is `2 / 2`. The reviewed design HEAD is `3dc10b4f030be7dd1c314c7a8981b24424bbd02b`, whose exact main CI run `29192916263` succeeded. Repair-round-1 local gates passed at `29 / 942` tests with `86.27%` statements/lines, `80.32%` branches, and `97.44%` functions; round 2 is the final repair.
+
+Final repair-round-2 local gates pass at `29 / 940` tests with `86.30%` statements/lines, `80.22%` branches, and `97.45%` functions. Canonical-source equality is enforced at the replay append boundary; standalone evidence/fact validators remain closed structural/semantic validation and do not claim independent event-store proof.
 
 The approved product contracts define the exclusive `FirstNightInitialized` lower boundary and inclusive pre-resolution upper boundary, source-player plus ability-instance self-exclusion, the fixed dense numeric domain `0..11` with deterministic smallest-false product policy, and accepted V2 temporal ordering for duplicate holders. These are simulator policies and must remain distinct from official source claims.
 

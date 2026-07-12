@@ -12,6 +12,7 @@ Implemented only the reviewed `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION` fr
 - Terminal pre-state adapters for Philosopher, Snake Charmer, Evil Twin, Witch, Cerenovus, Clockmaker, Dreamer, and Seamstress, including historical role/tenure/evidence links, the ineffective Snake Charmer target-role quadrant, and the Dreamer/Vortox proven-versus-unproven matrix.
 - Public state-only `resolveFirstNightMathematicianTrueCountFromState(stateBeforeResolution: unknown)` constructs a validated module-private canonical context, with own-instance exclusion, exclusive/inclusive window filtering, pending exclusion, same-player unresolved redundancy, player deduplication, stable ordering, and fixed `0..11` product domain.
 - GameState/rebuild integration and package-root public contracts. Ledger, evidence, context, and count do not enter player or AI projections.
+- Canonical-source equality is enforced when the replay adapter derives and appends a fact from its pre-event state and terminal envelope. Standalone evidence/fact validators enforce closed structure and semantic cross-links but do not claim independent event-store provenance.
 
 ## Explicitly Unsupported
 
@@ -29,8 +30,8 @@ Implemented only the reviewed `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION` fr
 
 ## Validation
 
-- Focused: dedicated ledger `19/19`, rebuild `182/182`, projection `77/77`, and gained-Mathematician application regression passed.
-- Full: `29 files / 942 tests passed`.
-- Coverage: `86.27%` statements/lines, `80.32%` branches, `97.44%` functions.
+- Focused: dedicated ledger `17/17`, rebuild `182/182`, projection `77/77`, and canonical gained-Mathematician resolver/application regression passed.
+- Full: `29 files / 940 tests passed`.
+- Coverage: `86.30%` statements/lines, `80.22%` branches, `97.45%` functions.
 - `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:coverage`, and affected-file lint passed.
 - Final diff/forbidden scans and exact-head GitHub CI are required before handoff.

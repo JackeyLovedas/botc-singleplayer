@@ -12,6 +12,7 @@ import {
   isSeamstressActionOpportunityV2,
   playerId,
   rebuildOptionalGameState,
+  resolveFirstNightMathematicianTrueCountFromState,
   roleId,
   scheduledTaskId,
   validateDomainBatchSemantics,
@@ -4644,6 +4645,14 @@ describe("GameApplicationService", () => {
     expect(ready.firstNightAbilityOutcomeLedger?.facts.some((fact) =>
       fact.evidenceReferences.some((evidence) => evidence.kind === "PHILOSOPHER_GRANT" && evidence.chosenRoleId === "mathematician")
     )).toBe(true);
+    expect(resolveFirstNightMathematicianTrueCountFromState(ready)).toMatchObject({ status: "RESOLVED" });
+    const taskIndex=ready.firstNightTaskPlan!.tasks.findIndex((task)=>task.taskId===gainedTask.taskId);
+    const wrongStatus={...ready,firstNightTaskPlan:{...ready.firstNightTaskPlan!,tasks:ready.firstNightTaskPlan!.tasks.map((task,index)=>index===taskIndex?{...task,status:"SETTLED"}:task)}} as unknown as GameState;
+    expect(()=>resolveFirstNightMathematicianTrueCountFromState(wrongStatus)).toThrowError(DomainError);
+    const missingGrant={...ready,philosopherGrantedAbilities:{abilities:ready.philosopherGrantedAbilities!.abilities.filter((grant)=>grant.chosenRoleId!=="mathematician")}} as GameState;
+    expect(()=>resolveFirstNightMathematicianTrueCountFromState(missingGrant)).toThrowError(DomainError);
+    const wrongCatalog={...ready,firstNightTaskPlan:{...ready.firstNightTaskPlan!,taskCatalogSignature:"forged"}} as GameState;
+    expect(()=>resolveFirstNightMathematicianTrueCountFromState(wrongCatalog)).toThrowError(DomainError);
     const beforeEvents = await store.loadDomainEvents(ids.game);
     const beforeReceiptCount = store.getReceiptCount();
 

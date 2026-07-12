@@ -7,7 +7,7 @@
   "reviewedHead": "3dc10b4f030be7dd1c314c7a8981b24424bbd02b",
   "currentReviewHeadAuthority": "Complete fresh independent Design 3.2 review on exact main HEAD 3dc10b4f030be7dd1c314c7a8981b24424bbd02b",
   "exactHeadCIAuthority": "Reviewed main HEAD 3dc10b4f030be7dd1c314c7a8981b24424bbd02b with GitHub CI run 29192916263: SUCCESS",
-  "repairRound": 1,
+  "repairRound": 2,
   "designRound": 3.2,
   "maxDesignRounds": 3,
   "userContinuationAuthorization": "DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION",
@@ -458,7 +458,7 @@
     }
   },
   "slice2B18AImplementation": {
-    "status": "REPAIRING_READY_TO_PUBLISH_ROUND_1",
+    "status": "REPAIRING_READY_TO_PUBLISH_ROUND_2",
     "branch": "phase-3/first-night-ability-outcome-ledger",
     "authorizationHead": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
     "authorizationCI": 29193210219,
@@ -475,18 +475,28 @@
       "findingCount": 16,
       "remainingBlockerCount": 11
     },
+    "finalReviewRound2": {
+      "reviewedHead": "aade6cf2cbf1dba70f346c7c016aa6143423a395",
+      "report": "docs/implementation/phase-3-slice-2b18a-final-review-round-2.md",
+      "reportSha256": "9d0cba21d7c5e5776794bfba99087d83d7d3968dcd468a57d6b07754dd8e15be",
+      "integrityVerdict": "MATCH",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "findingCount": 16,
+      "remainingBlockerCount": 6
+    },
     "designAuthority": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
     "designSha256": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
     "coverageStatus": "PARTIAL",
     "localValidation": {
-      "focused": "ledger 19/19; rebuild 182/182; projection 77/77; gained-Mathematician application regression passed",
-      "full": "29 files / 942 tests passed",
-      "coverage": "86.27% statements/lines; 80.32% branches; 97.44% functions",
+      "focused": "ledger 17/17; rebuild 182/182; projection 77/77; canonical gained-Mathematician resolver/application regression passed",
+      "full": "29 files / 940 tests passed",
+      "coverage": "86.30% statements/lines; 80.22% branches; 97.45% functions",
       "typecheck": "PASS",
       "lint": "PASS"
     }
   },
-  "lastAction": "Completed repair round 1 changes and local gates for all final-review round-1 blocker groups; corrected traceability and retained PARTIAL coverage.",
+  "lastAction": "Completed final repair round 2 implementation and local gates with narrowed standalone-validator claims and canonical replay-boundary provenance.",
   "lastError": null,
-  "nextAction": "Commit and push repair round 1 to the same PR branch, update the PR body, then require exact-head push and pull-request CI before any fresh final review."
+  "nextAction": "Run final diff and scope checks, commit and push repair round 2, update PR traceability, then require exact-head push and PR CI without requesting review or merge."
 }
