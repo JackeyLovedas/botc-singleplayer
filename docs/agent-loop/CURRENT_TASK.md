@@ -1,6 +1,23 @@
 # Current Task
 
-## Completed Slice 2B17.3
+## Active Slice 2B18A
+
+- Name: `First-Night Ability Outcome Ledger Foundation`.
+- Status: `RUNNING` on `main`; no feature branch or PR exists.
+- Recovery anchor: `b228dd53851a9bd947a41e39187db20735069402`; exact prior main CI `29180118996` was `SUCCESS`.
+- Limits: `maxSlices=1`, `maxRepairRounds=2`, `maxDesignRounds=2`; repair round `0 / 2`, design round `0 / 2`.
+- Candidate scope: `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`.
+- Authorization gates: `ruleReady=false`, `ruleDesignPass=false`, `implementationAuthorized=false`.
+- Four explicit user-approved simulator contracts were appended independently to `docs/rules/USER_OVERRIDES.md`: `BOTC-SIM-MATHEMATICIAN-FIRST-NIGHT-WINDOW-V1`, `BOTC-SIM-MATHEMATICIAN-OWN-ABILITY-EXCLUSION-V1`, `BOTC-SIM-MATHEMATICIAN-NUMERIC-DOMAIN-V1`, and `BOTC-SIM-MATHEMATICIAN-DUPLICATE-HOLDER-TEMPORAL-V1`.
+- The approvals are fixed 12-player deterministic single-player product policies, not representations of official multi-holder or first-night dawn rulings.
+- The immutable original conflict evidence `docs/rules/evidence/2B18.md` remains at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`.
+- No resolved evidence, design, production code, tests, feature branch, or PR has been created at this startup gate.
+
+## Strict Scope Boundary
+
+Slice 2B18A may establish only the first-night ability outcome ledger foundation and a pure true-count resolver after all rule and design gates pass. It must not settle `MATHEMATICIAN_INFORMATION`, generate `MathematicianInformationDelivered`, or deliver a private Mathematician number. Slice 2B18B and Slice 2B19 are prohibited.
+
+## Preserved Accepted Slice 2B17.3
 
 - Name: `Legacy Philosopher No-Insertion Choice Compatibility`.
 - Status: `COMPLETED` on `main`; current PR and slice are `null`.
@@ -21,12 +38,10 @@
 
 Legacy V1 choices with no first-night task mapping must grant and settle without attempting a V2 insertion. Legacy V1 choices with a mapped first-night task must retain the accepted fail-closed behavior. Current V2 behavior and scheduling remain unchanged.
 
-## Preserved Slice 2B18 Block
+## Preserved Slice 2B18 Conflict History
 
-The immutable evidence `docs/rules/evidence/2B18.md` remains at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`. Slice 2B18 remains `HUMAN_BLOCKED` with four unresolved conflicts: `firstNightWindowDefinition`, `ownAbilityExclusion`, `candidateNumberDomain`, and `duplicateMathematicianRule`.
-
-Do not resume Slice 2B18 and do not start Slice 2B19.
+The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte identity. The user has now supplied four explicit product policies addressing the previously unresolved first-night window, own-instance exclusion, numeric domain, and duplicate-holder temporal behavior. Those approvals do not themselves manufacture `RULE_READY`; fresh independent research and `docs/rules/evidence/2B18-resolved.md` are still mandatory.
 
 ## Current Gate
 
-Commit and push this post-merge documentation-only closeout, then verify GitHub CI on the exact emitted closeout SHA. Stop afterward; do not resume Slice 2B18 or begin Slice 2B19.
+Commit and push only the override/control startup documents and verify GitHub CI on the exact emitted main SHA. Then run the independent rule-truth gate. Do not create a design, feature branch, production change, test, or PR until the required verdicts authorize them.

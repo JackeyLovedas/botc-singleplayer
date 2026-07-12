@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `COMPLETED` on `main`; no active PR or slice.
+- Current control state: `RUNNING` on `main` for Slice 2B18A; no active PR or feature branch.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -11,7 +11,15 @@
 - Accepted tag: `phase-3-slice-2b17-2-philosopher-gained-task-scheduling-v2`.
 - Philosopher remains `PARTIAL`; Mathematician remains `SKELETON`; no role is `COMPLETE`.
 - Slice 2B17.3 is a bounded compatibility hotfix for legacy Philosopher no-insertion choices. It requires no fresh external rule research and does not change rule semantics.
-- Slice 2B18 remains `HUMAN_BLOCKED` on four conflicts; Slice 2B19 is prohibited and was not started.
+- The four prior Slice 2B18 Mathematician gaps now have explicit user-approved deterministic simulator policies, pending fresh independent rule research and resolved evidence. Slice 2B18B and Slice 2B19 are prohibited and were not started.
+
+## Active Slice 2B18A Boundary
+
+Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Startup gates are `ruleReady=false`, `ruleDesignPass=false`, and `implementationAuthorized=false`; design and repair rounds are both `0 / 2`. The recovery anchor is `b228dd53851a9bd947a41e39187db20735069402`, whose exact main CI run `29180118996` succeeded.
+
+The approved product contracts define the exclusive `FirstNightInitialized` lower boundary and inclusive pre-resolution upper boundary, source-player plus ability-instance self-exclusion, the fixed dense numeric domain `0..11` with deterministic smallest-false product policy, and accepted V2 temporal ordering for duplicate holders. These are simulator policies and must remain distinct from official source claims.
+
+This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No resolved evidence, design, production code, tests, branch, or PR exists at the startup gate.
 
 ## Slice 2B17.3 Accepted Boundary
 
@@ -37,8 +45,6 @@ Local product gates passed 28 files / 907 tests with 86.06% statement/line, 80.2
 - `mergeCommitCI`: exact merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`; main push `29177743946`, accepted-tag push `29177757002`, both `SUCCESS`.
 - `closeoutCommitCI`: GitHub checks attached to the exact emitted docs-only closeout commit; pending until that commit is pushed and independently observed.
 
-## Preserved Slice 2B18 Block
+## Preserved Slice 2B18 Conflict History
 
-Slice 2B17.2 resolves only original conflict 5, the deterministic scheduling prerequisite. The original `docs/rules/evidence/2B18.md` remains unchanged at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`. Four conflicts remain: first-night window definition, own-ability exclusion, candidate number domain, and duplicate Mathematician behavior.
-
-Slice 2B18 remains unauthorized and requires a future explicit user rescope or approved rule interpretation. Do not automatically resume it. Slice 2B19 was not started.
+Slice 2B17.2 resolved original conflict 5, the deterministic scheduling prerequisite. The original `docs/rules/evidence/2B18.md` remains unchanged at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`. Its four remaining conflicts are immutable historical findings; the four new `APPROVED` records are the user's explicit resolution policies. Fresh research must independently determine whether `2B18-resolved.md` can return `RULE_READY`; implementation remains unauthorized until that and `RULE_DESIGN_PASS` both occur.
