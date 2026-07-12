@@ -4,12 +4,12 @@
 
 - Phase 3 controlled vertical slices.
 - Active controlled candidate: Slice 2B17.2 Philosopher-gained first-night scheduling V2, scope `PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2`.
-- Current control state: `RUNNING` on `phase-3/philosopher-gained-task-scheduling-v2`; the reviewed Slice 2B17.2 implementation is locally complete and awaiting publication, exact-head CI, and independent final review.
+- Current control state: `RUNNING` on `phase-3/philosopher-gained-task-scheduling-v2`; PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) is open and awaiting exact-head CI and independent final review.
 - Accepted: 2B13 through 2B17.1.
 - Slice 2B17.1 merged through PR [#20](https://github.com/JackeyLovedas/botc-singleplayer/pull/20) at merge SHA `19923f4aa62c86cc2db995587d65b586fd365b8a`.
 - Final reviewed feature HEAD: `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`.
 - Final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `ruleSemanticsChanged=false`, no blockers; repair round `1 / 2`.
-- Current branch: `phase-3/philosopher-gained-task-scheduling-v2`; current slice `2B17.2`; PR publication pending.
+- Current branch: `phase-3/philosopher-gained-task-scheduling-v2`; current slice `2B17.2`; current PR #21.
 - Clockmaker remains `PARTIAL`.
 - Slice 2B19 is prohibited.
 

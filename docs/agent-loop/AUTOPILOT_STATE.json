@@ -1,7 +1,7 @@
 {
   "status": "RUNNING",
-  "currentPR": null,
-  "currentPRUrl": null,
+  "currentPR": 21,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/21",
   "currentBranch": "phase-3/philosopher-gained-task-scheduling-v2",
   "currentSlice": "2B17.2",
   "reviewedHead": null,
@@ -53,10 +53,10 @@
     "implementationAuthorized": false
   },
   "slice2B17_2Implementation": {
-    "status": "READY_TO_PUBLISH",
+    "status": "PUBLISHED_PENDING_EXACT_HEAD_CI_AND_FINAL_REVIEW",
     "branch": "phase-3/philosopher-gained-task-scheduling-v2",
-    "head": null,
-    "pr": null,
+    "head": "4958b52638781c77bcd9c20eb44b00add6f25a91",
+    "pr": 21,
     "ruleSemanticsChanged": false,
     "v1ReplayPreserved": true,
     "newCommandsGenerateV2Only": true,

@@ -5,7 +5,7 @@
 - Candidate role: `philosopher`.
 - Candidate scope: `PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2`.
 - Current branch: `phase-3/philosopher-gained-task-scheduling-v2`.
-- Current PR: none.
+- Current PR: [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21).
 - Current slice: `2B17.2`.
 - Recovery anchor: `823c256af6e367a28ea383be81ca26b9b61ad314`.
 - Prior exact-head CI: `29156186840`, `SUCCESS`.
@@ -34,4 +34,4 @@ Slice 2B18 remains historical `HUMAN_BLOCKED` with terminal `RULE_CONFLICT`. Its
 
 ## Current Gate
 
-The reviewed V2 implementation is locally complete on the sole feature branch. All local required gates pass: 28 files / 904 tests; coverage 86.04% statements/lines, 80.17% branches, 97.88% functions. Publish one PR, freeze its exact final feature HEAD after push/PR CI, and request the complete independent final review. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.
+The reviewed V2 implementation is published in PR #21. All local required gates pass: 28 files / 904 tests; coverage 86.04% statements/lines, 80.17% branches, 97.88% functions. Freeze the exact final feature HEAD only after its push/PR CI succeeds, then request the complete independent final review. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.
