@@ -35,3 +35,5 @@ Slice 2B18 remains historical `HUMAN_BLOCKED` with terminal `RULE_CONFLICT`. Its
 ## Current Gate
 
 The first complete independent review of historical HEAD `ebf364ddbd7e6258f88cef2ad80cc174c5887c3a` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`. Repair round 1 closes its five bounded blocker classes: new planner V1 rejection with accepted-history V1 replay preserved, both mixed-generation replay directions, direct gained-Mathematician fail-closed progression, permutation-invariant gained ordering, and corrected traceability/control state. Focused gates pass 3 files / 388 tests; all local required gates pass 28 files / 907 tests with 86.06% statements/lines, 80.21% branches, and 97.88% functions. Publish the attributed repair to the existing PR #21 branch, correct the PR body, and freeze only after fresh push/PR CI succeeds. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.
+
+Repair implementation commit: `e6afb1f7b14bfc047a6b93d48c18c39bb1e20de7`. The final feature HEAD additionally includes only this tracking update.
