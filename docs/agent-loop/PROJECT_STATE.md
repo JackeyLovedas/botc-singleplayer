@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `RUNNING` on `main`; Design 3.2 has `RULE_DESIGN_PASS` and bounded Slice 2B18A implementation is authorized, with no active PR or feature branch yet.
+- Current control state: `RUNNING` on `phase-3/first-night-ability-outcome-ledger`; Design 3.2 implementation is locally green, with no PR yet.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -43,7 +43,7 @@ Design 3.2 is `docs/implementation/phase-3-slice-2b18a-design-round-3-2.md`, SHA
 
 Fresh independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md`, SHA-256 `8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525`, terminal `RULE_DESIGN_PASS`, `remainingBlockers=[]`. It reviewed exact HEAD `3dc10b4f030be7dd1c314c7a8981b24424bbd02b` with CI `29192916263` `SUCCESS`; the materialized report independently matched 11,698 UTF-8 bytes, 212 LF bytes and trailing LF. Design 3.2 is now the sole implementation authority, with frozen behavior and no Design 3.3.
 
-This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No production code, tests, branch, or PR exists yet; only the bounded Design 3.2 implementation is authorized.
+The bounded implementation now provides the derived ledger, closed evidence contracts, terminal adapters, deterministic rebuild, and state-only true-count foundation. Full local validation is `29 files / 935 tests`; coverage is `86.20%` statements/lines, `80.29%` branches, and `96.96%` functions. It does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing application Mathematician task boundary remains fail-closed.
 
 ## Slice 2B17.3 Accepted Boundary
 

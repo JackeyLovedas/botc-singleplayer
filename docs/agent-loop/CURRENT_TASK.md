@@ -3,7 +3,7 @@
 ## Active Slice 2B18A
 
 - Name: `First-Night Ability Outcome Ledger Foundation`.
-- Status: `RUNNING` on `main`; no feature branch or PR exists.
+- Status: `RUNNING` on `phase-3/first-night-ability-outcome-ledger`; implementation is locally green and no PR exists yet.
 - Limits: `maxSlices=1`, `maxRepairRounds=2`, historical `maxDesignRounds=3`; repair round `0 / 2`, final authorized design round `3.2`.
 - User continuation authorization: `DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION`.
 - `behaviorDesignFrozen=true`; `finalDesignCompletionRound=true`; scope is evidence-contract simplification only.
@@ -32,7 +32,7 @@
 - Fresh Design 3.2 review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md`, SHA-256 `8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525`, terminal `RULE_DESIGN_PASS`, with `remainingBlockers=[]`.
 - The reviewer examined exact HEAD `3dc10b4f030be7dd1c314c7a8981b24424bbd02b`; exact-head CI `29192916263` was `SUCCESS`, worktree clean, open PR count zero. Reviewer reverse materialization verification returned `MATCH` for 11,698 UTF-8 bytes, 212 LF bytes and trailing LF.
 - Design 3.2 is the sole implementation authority; behavior remains frozen and this remains the final design-completion round.
-- No production code, tests, feature branch, or PR has been created at this design gate.
+- Bounded implementation is complete locally: `29 files / 935 tests`, coverage `86.20%` statements/lines, `80.29%` branches, `96.96%` functions; typecheck and lint pass. No PR exists yet.
 
 ## Authorized Final Design Round 3.2
 
@@ -75,4 +75,4 @@ The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte 
 
 ## Current Gate
 
-Commit and push this exact docs-only review gate and require exact-head main CI success. Then create the sole bounded feature branch and implement only Slice 2B18A from Design 3.2. Do not change behavior/history/evidence, implement Mathematician delivery/settlement/private number, or begin 2B18B/2B19.
+Run final diff/forbidden scans, commit and push the sole feature branch, create the exact-title PR with complete rule evidence and traceability, then require exact-head push and PR CI. Do not merge, request final review yet, implement Mathematician delivery/settlement/private number, or begin 2B18B/2B19.

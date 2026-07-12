@@ -457,7 +457,23 @@
       "round3_1Review": "0a4269be1b19a303fab1eb08e0bcd0c9212aed5ec4c2e068c3eb2e9502a99444"
     }
   },
-  "lastAction": "Materialized the complete fresh Design 3.2 review verbatim with reverse integrity MATCH; RULE_DESIGN_PASS authorizes bounded Slice 2B18A implementation from Design 3.2 only.",
+  "slice2B18AImplementation": {
+    "status": "READY_TO_PUBLISH",
+    "branch": "phase-3/first-night-ability-outcome-ledger",
+    "authorizationHead": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
+    "authorizationCI": 29193210219,
+    "designAuthority": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
+    "designSha256": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
+    "coverageStatus": "PARTIAL",
+    "localValidation": {
+      "focused": "3 files / 403 tests passed",
+      "full": "29 files / 935 tests passed",
+      "coverage": "86.20% statements/lines; 80.29% branches; 96.96% functions",
+      "typecheck": "PASS",
+      "lint": "PASS"
+    }
+  },
+  "lastAction": "Implemented the bounded Design 3.2 outcome-ledger and state-only true-count foundation on the sole feature branch; all local full gates pass and coverage remains PARTIAL.",
   "lastError": null,
-  "nextAction": "Commit and push this docs-only review gate, require exact-head main CI success, then create the sole bounded feature branch and implement only Slice 2B18A from Design 3.2. Do not implement delivery/settlement/private number or start Slice 2B18B/2B19."
+  "nextAction": "Run final diff and forbidden scans, commit and push the feature branch, create the exact-title PR with complete rule traceability, then require exact-head push and PR CI before final review. Do not merge or begin 2B18B/2B19."
 }
