@@ -3,7 +3,7 @@
 ## Active Slice 2B17.3
 
 - Name: `Legacy Philosopher No-Insertion Choice Compatibility`.
-- Status: `RUNNING` on `phase-3/philosopher-legacy-no-insertion-compatibility`; current PR is `null`.
+- Status: `RUNNING` on `phase-3/philosopher-legacy-no-insertion-compatibility`; current PR is [#22](https://github.com/JackeyLovedas/botc-singleplayer/pull/22).
 - Recovery anchor: `dbd8594326333f5e775de3f39c3625346cb80739`; prior exact-main CI `29178027479` was `SUCCESS`.
 - Limits: `maxSlices=1`, `maxRepairRounds=2`; repair round `0 / 2`, design round `1 / 2`.
 - Candidate scope: `LEGACY_PHILOSOPHER_NO_INSERTION_CHOICE_COMPATIBILITY`.
@@ -26,4 +26,4 @@ Do not resume Slice 2B18 and do not start Slice 2B19.
 
 The reviewed compatibility repair and direct regressions are locally complete. Focused validation passed 2 files / 222 tests; full and coverage passed 28 files / 923 tests at 86.09% statements/lines, 80.27% branches, and 97.88% functions. Typecheck, lint, diff check, and forbidden-pattern scan pass.
 
-Commit with `fix: preserve legacy Philosopher no-insertion choices`, push the sole feature branch, create the exact-title PR with all required sections, then require exact-head push and pull-request CI before independent final review.
+Implementation commit `d564b1d49e919ab9dcc365560a8f4745fa39dc3f` is pushed and PR #22 has the exact required title and body sections. Push this PR-tracking state, then require exact-head push and pull-request CI, update the live PR CI section, and verify clean matching local/remote/PR heads before independent final review.

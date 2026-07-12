@@ -2,7 +2,11 @@
 
 ## Status
 
-`READY_TO_PUBLISH`
+`PUBLISHED_AWAITING_EXACT_HEAD_CI`
+
+- Implementation commit: `d564b1d49e919ab9dcc365560a8f4745fa39dc3f`.
+- PR: [#22](https://github.com/JackeyLovedas/botc-singleplayer/pull/22).
+- Final feature HEAD and exact-head push/PR CI remain pending the PR-tracking commit.
 
 ## Implemented Boundary
 

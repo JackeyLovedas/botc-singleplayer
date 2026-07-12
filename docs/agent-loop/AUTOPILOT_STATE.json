@@ -1,7 +1,7 @@
 {
   "status": "RUNNING",
-  "currentPR": null,
-  "currentPRUrl": null,
+  "currentPR": 22,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/22",
   "currentBranch": "phase-3/philosopher-legacy-no-insertion-compatibility",
   "currentSlice": "2B17.3",
   "reviewedHead": null,
@@ -146,8 +146,11 @@
     }
   },
   "slice2B17_3Implementation": {
-    "status": "READY_TO_PUBLISH",
+    "status": "PUBLISHED_AWAITING_EXACT_HEAD_CI",
     "branch": "phase-3/philosopher-legacy-no-insertion-compatibility",
+    "implementationCommit": "d564b1d49e919ab9dcc365560a8f4745fa39dc3f",
+    "pr": 22,
+    "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/22",
     "ruleSemanticsChanged": false,
     "productionFiles": [
       "packages/domain-core/src/philosopher-ability.ts"
@@ -316,7 +319,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Implemented the reviewed Slice 2B17.3 builder-order compatibility fix and direct V1/V2 regression suite; all focused and full local gates pass with ruleSemanticsChanged=false.",
+  "lastAction": "Committed and pushed the reviewed Slice 2B17.3 implementation at d564b1d49e919ab9dcc365560a8f4745fa39dc3f and opened the unique exact-title PR #22 with every required body section.",
   "lastError": null,
-  "nextAction": "Commit the reviewed implementation with the exact required message, push the sole feature branch, create the unique PR with the required body, and freeze only after exact-head push and PR CI succeed."
+  "nextAction": "Push this PR-tracking commit, require both push and pull-request CI on its exact HEAD, update the live PR CI section, verify local/remote/PR equality and clean scope, then freeze for independent final review."
 }
