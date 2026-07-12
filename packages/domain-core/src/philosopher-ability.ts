@@ -854,13 +854,13 @@ export const createFirstNightTaskInsertedV2Payload = (input: {
   readonly grant: PhilosopherGrantedAbility;
   readonly firstNightTaskPlan: FirstNightTaskPlan;
 }): FirstNightTaskInsertedV2Payload | undefined => {
-  if (input.firstNightTaskPlan.taskPlanVersion !== CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION) {
-    throw new DomainError("InvalidFirstNightTaskInsertedV2Payload", "V2 insertion requires first-night-task-plan-v2");
-  }
-
   const insertedTaskType = firstNightTaskTypeForPhilosopherChoice(input.choice.chosenRoleId);
   if (insertedTaskType === undefined) {
     return undefined;
+  }
+
+  if (input.firstNightTaskPlan.taskPlanVersion !== CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION) {
+    throw new DomainError("InvalidFirstNightTaskInsertedV2Payload", "V2 insertion requires first-night-task-plan-v2");
   }
 
   const definition = input.firstNightTaskPlan.taskCatalogSnapshot.definitions.find(

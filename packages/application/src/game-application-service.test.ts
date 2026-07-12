@@ -345,6 +345,52 @@ const choosePhilosopherRoleCommand = (
   ...overrides
 });
 
+const convertStoredFirstNightPlanToAcceptedV1 = async (
+  store: MemoryCommandCommitStore
+): Promise<readonly AnyDomainEventEnvelope[]> => {
+  const events = await store.loadDomainEvents(ids.game);
+  const planCreated = events.find((event) => event.eventType === "FirstNightTaskPlanCreated");
+  if (planCreated === undefined) {
+    throw new Error("Expected a stored first-night task plan");
+  }
+  (planCreated.payload as { taskPlanVersion: "first-night-task-plan-v1" | "first-night-task-plan-v2" }).taskPlanVersion =
+    "first-night-task-plan-v1";
+  validateDomainEventStream(events);
+  return events;
+};
+
+const reachOpenExactPhilosopherOpportunity = async (
+  service: GameApplicationService,
+  store: MemoryCommandCommitStore
+) => {
+  await reachNoPhilosopherFirstNightTaskPlan(service, philosopherClockmakerExactRoleIds);
+  const planned = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+  const task = planned?.firstNightTaskPlan?.tasks.find((entry) => entry.taskType === "PHILOSOPHER_ACTION");
+  if (planned === undefined || task === undefined) throw new Error("Expected exact Philosopher task");
+  const opened = await service.execute(openFirstNightRoleActionOpportunityCommand({
+    commandId: commandId("open-exact-philosopher"), expectedGameVersion: planned.gameVersion,
+    payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: task.taskId }
+  }));
+  expectAcceptedResult(opened);
+  const state = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+  const opportunity = state?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === task.taskId);
+  if (state === undefined || opportunity === undefined) throw new Error("Expected exact Philosopher opportunity");
+  return { state, task, opportunity };
+};
+
+const chooseExactPhilosopherRole = (
+  chosenRoleId: string,
+  context: Awaited<ReturnType<typeof reachOpenExactPhilosopherOpportunity>>,
+  commandIdValue: string
+) => submitPhilosopherActionCommand({
+  commandId: commandId(commandIdValue), expectedGameVersion: context.state.gameVersion, actor: systemActor,
+  payload: {
+    commandType: "SubmitPhilosopherAction", taskId: context.task.taskId,
+    opportunityId: context.opportunity.opportunityId,
+    decision: { kind: "CHOOSE_GOOD_CHARACTER", roleId: roleId(chosenRoleId) }
+  }
+});
+
 const noPhilosopherExactRoleIds = [
   "dreamer",
   "snake_charmer",
@@ -1025,17 +1071,6 @@ class FakeLengthCommandStore extends MemoryCommandCommitStore {
         yield* events;
       }
     } as unknown as readonly AnyDomainEventEnvelope[];
-  }
-}
-
-class SeededReadOnlyCommandStore extends MemoryCommandCommitStore {
-  public constructor(private readonly seededEvents: readonly AnyDomainEventEnvelope[]) {
-    super();
-  }
-
-  public override loadDomainEvents(gameIdValue: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
-    void gameIdValue;
-    return Promise.resolve([...this.seededEvents]);
   }
 }
 
@@ -4654,26 +4689,100 @@ describe("GameApplicationService", () => {
     expect(await store.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
   });
 
-  it("keeps mapped Philosopher choices fail-closed when replaying accepted V1 history", async () => {
-    const sourceStore = new MemoryCommandCommitStore();
-    const { service: sourceService } = makeService(sourceStore);
-    await reachOpenPhilosopherActionOpportunity(sourceService);
-    const acceptedV2History = await sourceStore.loadDomainEvents(ids.game);
-    const acceptedV1History = acceptedV2History.map((event) => event.eventType === "FirstNightTaskPlanCreated"
-      ? { ...event, payload: { ...event.payload, taskPlanVersion: "first-night-task-plan-v1" as const } }
-      : event
-    );
-    expect(() => validateDomainEventStream(acceptedV1History)).not.toThrow();
-
-    const store = new SeededReadOnlyCommandStore(acceptedV1History);
+  it("continues a writable accepted V1 history for a no-insertion Artist choice", async () => {
+    const store = new MemoryCommandCommitStore();
     const { service } = makeService(store);
-    const command = choosePhilosopherRoleCommand("clockmaker", { commandId: commandId("legacy-history-mapped-choice") });
+    const context = await reachOpenExactPhilosopherOpportunity(service, store);
+    const acceptedV1History = await convertStoredFirstNightPlanToAcceptedV1(store);
+    const beforeState = rebuildOptionalGameState(acceptedV1History);
+    if (beforeState === undefined) throw new Error("Expected accepted V1 state");
+    const command = chooseExactPhilosopherRole("artist", { ...context, state: beforeState }, "legacy-history-no-insertion-artist");
+    const result = await service.execute(command);
+    expectAcceptedResult(result);
+    expect(result.gameVersion).toBe(beforeState.gameVersion + 1);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "PhilosopherAbilityChosen", "PhilosopherAbilityGranted", "ScheduledTaskSettled"
+    ]);
+    expect(() => validateDomainBatchSemantics(beforeState, result.events)).not.toThrow();
+    const afterEvents = await store.loadDomainEvents(ids.game);
+    expect(afterEvents.filter((event) =>
+      event.eventType === "FirstNightTaskInserted" || event.eventType === "FirstNightTaskInsertedV2"
+    )).toHaveLength(0);
+    expect(afterEvents.filter((event) => event.eventType === "AbilityImpairmentApplied")).toHaveLength(0);
+    expect(() => validateDomainEventStream(afterEvents)).not.toThrow();
+    const afterState = rebuildOptionalGameState(afterEvents);
+    expect(afterState?.gameVersion).toBe(beforeState.gameVersion + 1);
+    expect(afterState?.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("CLOSED");
+    expect(afterState?.firstNightTaskProgress?.settlements[0]).toMatchObject({
+      taskType: "PHILOSOPHER_ACTION", outcomeType: "PHILOSOPHER_ABILITY_CHOSEN"
+    });
+    expect(afterState?.firstNightTaskPlan?.tasks[afterState.firstNightTaskProgress?.settlements.length ?? 0]?.taskType)
+      .toBe("MINION_INFO");
+    expect((await store.findCommandReceipt(command.gameId, command.commandId))?.result.status).toBe("accepted");
+    const eventCount = afterEvents.length;
+    const retry = await service.execute(command);
+    expect(retry).toStrictEqual({ ...result, idempotent: true });
+    expect(await store.loadDomainEvents(ids.game)).toHaveLength(eventCount);
+    expect(store.acceptedCount).toBe(9);
+  });
+
+  it("continues accepted V1 duplicate no-insertion grants with DRUNK and unchanged projection boundaries", async () => {
+    const store = new MemoryCommandCommitStore();
+    const { service } = makeService(store);
+    const context = await reachOpenExactPhilosopherOpportunity(service, store);
+    const acceptedV1History = await convertStoredFirstNightPlanToAcceptedV1(store);
+    const beforeState = rebuildOptionalGameState(acceptedV1History);
+    if (beforeState === undefined) throw new Error("Expected accepted V1 duplicate state");
+    const result = await service.execute(chooseExactPhilosopherRole(
+      "town_crier", { ...context, state: beforeState }, "legacy-history-duplicate-town-crier"
+    ));
+    expectAcceptedResult(result);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "PhilosopherAbilityChosen", "PhilosopherAbilityGranted", "AbilityImpairmentApplied", "ScheduledTaskSettled"
+    ]);
+    const acceptedEvents = await store.loadDomainEvents(ids.game);
+    const acceptedState = rebuildOptionalGameState(acceptedEvents);
+    expect(acceptedState?.abilityImpairments?.impairments).toHaveLength(1);
+    expect(acceptedState?.abilityImpairments?.impairments[0]).toMatchObject({
+      kind: "DRUNK", sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE", chosenRoleId: "town_crier"
+    });
+    expect(acceptedState?.firstNightTaskInsertions?.insertions).toBeUndefined();
+    expect(() => validateDomainEventStream(acceptedEvents)).not.toThrow();
+    const holder = acceptedState?.currentCharacterState?.entries.find((entry) => entry.role.roleId === roleId("town_crier"));
+    if (acceptedState === undefined || holder === undefined) throw new Error("Expected Town Crier holder");
+    for (const view of [
+      buildPlayerPrivateKnowledgeView(acceptedState, holder.playerId),
+      buildAiPrivateKnowledgeView(acceptedState, holder.playerId)
+    ]) {
+      expect(view).not.toHaveProperty("firstNightTaskInsertions");
+      expect(view).not.toHaveProperty("philosopherGrantedAbilities");
+      expect(view).not.toHaveProperty("abilityImpairments");
+    }
+  });
+
+  it.each(["snake_charmer", "clockmaker", "dreamer", "seamstress", "mathematician"])(
+    "keeps mapped legacy V1 Philosopher choice %s fail closed without writing",
+    async (chosenRole) => {
+    const store = new MemoryCommandCommitStore();
+    const { service } = makeService(store);
+    const context = await reachOpenExactPhilosopherOpportunity(service, store);
+    const acceptedV1History = await convertStoredFirstNightPlanToAcceptedV1(store);
+    const beforeState = rebuildOptionalGameState(acceptedV1History);
+    if (beforeState === undefined) throw new Error("Expected accepted V1 mapped state");
+    const beforeReceiptCount = store.getReceiptCount();
+    const command = chooseExactPhilosopherRole(
+      chosenRole, { ...context, state: beforeState }, `legacy-history-mapped-${chosenRole}`
+    );
     await expect(service.execute(command)).resolves.toMatchObject({
       status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action", retryable: true,
-      currentGameVersion: 8
+      currentGameVersion: beforeState.gameVersion
     });
     expect(await store.loadDomainEvents(ids.game)).toStrictEqual(acceptedV1History);
     expect(await store.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(store.getReceiptCount()).toBe(beforeReceiptCount);
+    const afterState = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    expect(afterState?.gameVersion).toBe(beforeState.gameVersion);
+    expect(afterState?.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("OPEN");
   });
 
   it("allows source player, Storyteller, and System to choose a good character but rejects non-source actors", async () => {
