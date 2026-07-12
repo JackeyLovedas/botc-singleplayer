@@ -3,7 +3,7 @@
 ## Active Slice 2B18A
 
 - Name: `First-Night Ability Outcome Ledger Foundation`.
-- Status: `RUNNING` on `main`; no feature branch or PR exists.
+- Status: `HUMAN_BLOCKED` on `main`; no feature branch or PR exists.
 - Recovery anchor: `b228dd53851a9bd947a41e39187db20735069402`; exact prior main CI `29180118996` was `SUCCESS`.
 - Limits: `maxSlices=1`, `maxRepairRounds=2`, `maxDesignRounds=3`; repair round `0 / 2`, design round `3 / 3`.
 - User continuation authorization: `USER_AUTHORIZED_DESIGN_ROUND_3_FOR_THREE_REVIEW_BLOCKERS`.
@@ -21,17 +21,21 @@
 - Round-2 independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-2.md`, SHA-256 `004d80f4b806ccd108736223f32f86577864a0c355ef27cac2015d671ac6e730`, terminal `RULE_DESIGN_FIX_REQUIRED`.
 - The round-2 reviewer examined exact HEAD `f2929b016b5bf3d052bed670f79d0751f3f0e1a2`; exact-head CI run `29185053326` was `SUCCESS` and the worktree was clean.
 - Round-3 design is `docs/implementation/phase-3-slice-2b18a-design-round-3.md`, SHA-256 `08d23c8cdef156edd7a90f7f1ee8725ae7b6d29c3809d967343221c1d37eebe8`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3`, coverage `PARTIAL`.
+- Fresh round-3 review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3.md`, SHA-256 `5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b`, terminal `RULE_DESIGN_FIX_REQUIRED`.
+- It reviewed exact HEAD `952199ff005182eb44a31de66837ba8f9e576d8d`; CI `29185767026` was `SUCCESS`, worktree clean, open PR count `0`.
 - No production code, tests, feature branch, or PR has been created at this design gate.
 
 ## Authorized Design Round 3
 
-The prior `designRound=2/2` ended without `RULE_DESIGN_PASS`. The user explicitly authorized one additional design round, now `3/3`, limited to these same three blockers:
+The prior three behavior-level blockers are closed by the round-3 design and fresh review:
 
-1. The public resolver cannot prove that its supplied context is bound to the current canonical pre-resolution state.
-2. `WitchDeathPendingMarked` is not explicitly frozen as the terminal exception to the marker-only no-fact rule.
-3. The Dreamer/Vortox historical classification wording remains ambiguous.
+1. The public resolver is state-bound and does not accept caller-supplied context or ledger.
+2. `WitchDeathPendingMarked` is explicitly frozen as the terminal allowlist exception.
+3. Dreamer/Vortox historical classification uses an explicit three-state matrix.
 
-Historical hashes remain fixed: original evidence `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`; resolved evidence `7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e`; round-2 design `62a83e4f7161d8bf5bd9adda6c24e353edf7e0b6b4d752846e426c0f55e8cb59`; round-2 review `004d80f4b806ccd108736223f32f86577864a0c355ef27cac2015d671ac6e730`.
+One blocking design-completeness issue remains: the round-3 file declares itself the sole implementation authority but does not completely define `InternalResolvingMathematicianContext`, `AbilityOutcomeEvidenceReference`, `MathematicianCountResolution`, base/V1/V2 canonical ability-instance IDs, or the four-override exact-shape carrier. Implementation would require inventing those security-critical contracts or improperly falling back to the superseded round-2 authority.
+
+Design round `3/3` is exhausted. Continuing requires new explicit user authorization; no fourth round may be inferred.
 
 ## Strict Scope Boundary
 
@@ -64,4 +68,4 @@ The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte 
 
 ## Current Gate
 
-Commit and push only the round-3 design plus accumulated recovery controls, require exact-head main CI success, then run independent round-3 review. Do not create production changes/tests/branch/PR or start 2B18B/2B19.
+Commit and push only the complete round-3 review and blocking controls, require exact-head main CI success, then stop. Do not create a fourth design round, production changes/tests/branch/PR, or start 2B18B/2B19 without new user authorization.
