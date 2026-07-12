@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B17.2 Implementation Status
 
-Status: `REPAIR_ROUND_1_READY_TO_PUBLISH`
+Status: `REPAIR_ROUND_1_PUBLISHED_AWAITING_FINAL_GATES`
 
 This slice implements only the reviewed Philosopher-gained first-night scheduling V2 contract. It does not implement Mathematician information or resolve any of the four preserved Slice 2B18 rule conflicts.
 

@@ -6,7 +6,7 @@
   "currentSlice": "2B17.2",
   "reviewedHead": null,
   "currentReviewHeadAuthority": null,
-  "exactHeadCIAuthority": null,
+  "exactHeadCIAuthority": "GitHub push and pull_request checks attached to the current PR HEAD; both must be SUCCESS before independent review",
   "repairRound": 1,
   "designRound": 1,
   "maxDesignRounds": 2,
@@ -49,11 +49,11 @@
       "candidateNumberDomain",
       "duplicateMathematicianRule"
     ],
-    "schedulingPrerequisiteStatus": "REPAIR_ROUND_1_PENDING_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+    "schedulingPrerequisiteStatus": "REPAIR_ROUND_1_PUBLISHED_AWAITING_FINAL_GATES",
     "implementationAuthorized": false
   },
   "slice2B17_2Implementation": {
-    "status": "REPAIR_ROUND_1_READY_TO_PUBLISH",
+    "status": "REPAIR_ROUND_1_PUBLISHED_AWAITING_FINAL_GATES",
     "branch": "phase-3/philosopher-gained-task-scheduling-v2",
     "repairImplementationHead": "e6afb1f7b14bfc047a6b93d48c18c39bb1e20de7",
     "pr": 21,
@@ -233,7 +233,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Completed Slice 2B17.2 repair round 1 locally after CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED on historical HEAD ebf364dd; focused and full gates are green.",
+  "lastAction": "Published Slice 2B17.2 repair round 1 to PR #21 after CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED on historical HEAD ebf364dd; corrected PR traceability and local gates are green.",
   "lastError": null,
-  "nextAction": "Commit and push repair round 1 on the existing PR #21 branch, correct the PR traceability, freeze the new exact HEAD after push/PR CI succeeds, then request a fresh complete independent final review. Do not resume 2B18 production or start Slice 2B19."
+  "nextAction": "Require successful push and pull_request CI on the current PR HEAD, verify local == remote == PR with a clean worktree, freeze the branch, then request a fresh complete independent final review. Do not resume 2B18 production or start Slice 2B19."
 }
