@@ -1,23 +1,28 @@
 {
-  "status": "HUMAN_BLOCKED",
+  "status": "RUNNING",
   "currentPR": null,
   "currentPRUrl": null,
   "currentBranch": "main",
   "currentSlice": "2B18A",
   "reviewedHead": "952199ff005182eb44a31de66837ba8f9e576d8d",
   "currentReviewHeadAuthority": "Complete fresh independent round-3 design review on exact main HEAD 952199ff005182eb44a31de66837ba8f9e576d8d",
-  "exactHeadCIAuthority": "GitHub CI run 29185767026 on reviewed main HEAD 952199ff005182eb44a31de66837ba8f9e576d8d: SUCCESS",
+  "exactHeadCIAuthority": "GitHub CI on the exact emitted Design 3.1 main commit",
   "repairRound": 0,
-  "designRound": 3,
+  "designRound": 3.1,
   "maxDesignRounds": 3,
-  "userContinuationAuthorization": "USER_AUTHORIZED_DESIGN_ROUND_3_FOR_THREE_REVIEW_BLOCKERS",
+  "userContinuationAuthorization": "DESIGN_ROUND_3_1_CONTRACT_COMPLETION",
+  "behaviorDesignFrozen": true,
+  "designRound3_1Scope": "CONTRACT_COMPLETION_ONLY",
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "candidateRole": "mathematician",
   "candidateScope": "FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION",
-  "currentDesignPath": "docs/implementation/phase-3-slice-2b18a-design-round-3.md",
-  "currentDesignHash": "08d23c8cdef156edd7a90f7f1ee8725ae7b6d29c3809d967343221c1d37eebe8",
-  "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_3",
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b18a-design-round-3-1.md",
+  "currentDesignHash": "97456a3769d29b616af31c1e83dc5b1717809ffbe5a56ab0d86decd800c9710c",
+  "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_1",
+  "designRound3_1Path": "docs/implementation/phase-3-slice-2b18a-design-round-3-1.md",
+  "designRound3_1Hash": "97456a3769d29b616af31c1e83dc5b1717809ffbe5a56ab0d86decd800c9710c",
+  "designRound3_1IntegrityVerdict": "MATCH",
   "designReviewRound1Path": "docs/implementation/phase-3-slice-2b18a-design-review-round-1.md",
   "designReviewRound1Hash": "b5641d7207d488233ec5e2730f948a921cc9d3c0080cf7f182595bf151ddfb4c",
   "designReviewRound1Verdict": "RULE_DESIGN_FIX_REQUIRED",
@@ -390,7 +395,7 @@
     }
   },
   "recoveryAnchor": {
-    "sha": "2d3afc65d44655cad10dd7137c49e783ce911b91",
+    "sha": "37ae6407e8090a1892bbbc3c369ed9146d1477f7",
     "branch": "main",
     "worktree": "CLEAN"
   },
@@ -413,7 +418,21 @@
       "round2DesignReview": "004d80f4b806ccd108736223f32f86577864a0c355ef27cac2015d671ac6e730"
     }
   },
-  "lastAction": "Archived the complete fresh round-3 RULE_DESIGN_FIX_REQUIRED report and stopped because the explicitly authorized maximum design round 3/3 is exhausted.",
-  "lastError": "HUMAN_BLOCKED: round-3 sole design authority is not independently executable because complete security-critical type, identity, result, evidence-reference, and override exact-shape contracts are missing.",
-  "nextAction": "Await explicit new user authorization before any further design round or rescope. Do not create a fourth design round, modify design/evidence, implement production code/tests, create a feature branch/PR, settle or deliver Mathematician information, or start Slice 2B18B/2B19."
+  "designRound3_1Recovery": {
+    "authorization": "DESIGN_ROUND_3_1_CONTRACT_COMPLETION",
+    "recoveryHead": "37ae6407e8090a1892bbbc3c369ed9146d1477f7",
+    "recoveryCI": 29186059369,
+    "recoveryCIStatus": "SUCCESS",
+    "worktree": "CLEAN",
+    "openPRCount": 0,
+    "immutableHashes": {
+      "originalRuleEvidence": "9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a",
+      "resolvedRuleEvidence": "7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e",
+      "round3Design": "08d23c8cdef156edd7a90f7f1ee8725ae7b6d29c3809d967343221c1d37eebe8",
+      "round3DesignReview": "5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b"
+    }
+  },
+  "lastAction": "Materialized the complete Design 3.1 contract-completion authority with architect integrity MATCH while preserving frozen round-3 behavior.",
+  "lastError": null,
+  "nextAction": "Push the Design 3.1 and control commit, require exact-head main CI success, then run a new independent rule-design review. Do not change frozen behavior/history/evidence, implement production code/tests, create a feature branch/PR, or start Slice 2B18B/2B19."
 }

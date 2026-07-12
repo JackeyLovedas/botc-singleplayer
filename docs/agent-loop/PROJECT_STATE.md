@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `HUMAN_BLOCKED` on `main` for Slice 2B18A after the explicitly authorized design round `3/3`; no active PR or feature branch.
+- Current control state: `RUNNING` on `main` for Slice 2B18A under explicit `DESIGN_ROUND_3_1_CONTRACT_COMPLETION`; no active PR or feature branch.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -29,7 +29,11 @@ The user explicitly authorized `USER_AUTHORIZED_DESIGN_ROUND_3_FOR_THREE_REVIEW_
 
 The complete third-round design is `docs/implementation/phase-3-slice-2b18a-design-round-3.md`, SHA-256 `08d23c8cdef156edd7a90f7f1ee8725ae7b6d29c3809d967343221c1d37eebe8`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3`, coverage `PARTIAL`. It is a separate design authority and does not overwrite the round-2 historical file.
 
-Fresh independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3.md`, SHA-256 `5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b`, terminal `RULE_DESIGN_FIX_REQUIRED`. Exact reviewed HEAD was `952199ff005182eb44a31de66837ba8f9e576d8d`; CI `29185767026` succeeded. The original three behavioral blockers are closed, but the sole round-3 authority still omits the complete internal context, evidence-reference, count-result, canonical ability-instance ID, and override exact-shape contracts. Because design round `3/3` is exhausted, the project is `HUMAN_BLOCKED` pending new explicit user authorization; no fourth round, implementation, 2B18B, or 2B19 may begin automatically.
+Fresh independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3.md`, SHA-256 `5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b`, terminal `RULE_DESIGN_FIX_REQUIRED`. Exact reviewed HEAD was `952199ff005182eb44a31de66837ba8f9e576d8d`; CI `29185767026` succeeded. The original three behavioral blockers are closed, but the sole round-3 authority still omits the complete internal context, evidence-reference, count-result, canonical ability-instance ID, and override exact-shape contracts.
+
+The user explicitly authorized design round `3.1` for contract completion only. `behaviorDesignFrozen=true`; `ruleReady=true`, `ruleDesignPass=false`, and `implementationAuthorized=false`. Recovery main is `37ae6407e8090a1892bbbc3c369ed9146d1477f7`, CI `29186059369` `SUCCESS`, worktree clean, open PR count zero.
+
+Design 3.1 is `docs/implementation/phase-3-slice-2b18a-design-round-3-1.md`, SHA-256 `97456a3769d29b616af31c1e83dc5b1717809ffbe5a56ab0d86decd800c9710c`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3_1`, coverage `PARTIAL`. It completes the internal context, evidence reference, count result, canonical instance ID, override exact-shape, validation and export contracts without changing frozen behavior. Architect integrity verification returned `MATCH`. No production code, test, branch, or PR has been created.
 
 This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No production code, tests, branch, or PR exists at this design gate.
 
