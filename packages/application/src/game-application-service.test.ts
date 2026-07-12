@@ -1028,6 +1028,17 @@ class FakeLengthCommandStore extends MemoryCommandCommitStore {
   }
 }
 
+class SeededReadOnlyCommandStore extends MemoryCommandCommitStore {
+  public constructor(private readonly seededEvents: readonly AnyDomainEventEnvelope[]) {
+    super();
+  }
+
+  public override loadDomainEvents(gameIdValue: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
+    void gameIdValue;
+    return Promise.resolve([...this.seededEvents]);
+  }
+}
+
 class ThrowingCanonicalStreamCommandStore extends MemoryCommandCommitStore {
   public override async loadDomainEvents(gameIdValue: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
     const events = await super.loadDomainEvents(gameIdValue);
@@ -4559,7 +4570,68 @@ describe("GameApplicationService", () => {
     }
   });
 
-  it("fails mapped Philosopher choices closed on an accepted legacy V1 plan without writing", async () => {
+  it("advances gained Mathematician to its catalog position and fails execution closed without information state", async () => {
+    const store = new MemoryCommandCommitStore();
+    const { service } = makeService(store);
+    await reachNoPhilosopherFirstNightTaskPlan(service, philosopherClockmakerExactRoleIds);
+    const planned = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const philosopherTask = planned?.firstNightTaskPlan?.tasks.find((task) => task.taskType === "PHILOSOPHER_ACTION");
+    if (planned === undefined || philosopherTask === undefined) throw new Error("Expected Philosopher task for gained Mathematician fixture");
+    const openedResult = await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-philosopher-for-mathematician"), expectedGameVersion: planned.gameVersion,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: philosopherTask.taskId }
+    }));
+    expectAcceptedResult(openedResult);
+    const opened = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const opportunity = opened?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === philosopherTask.taskId);
+    if (opened === undefined || opportunity === undefined) throw new Error("Expected Philosopher opportunity for gained Mathematician fixture");
+    const choiceResult = await service.execute(submitPhilosopherActionCommand({
+      commandId: commandId("choose-mathematician-for-fail-closed"), expectedGameVersion: opened.gameVersion,
+      actor: systemActor,
+      payload: { commandType: "SubmitPhilosopherAction", taskId: philosopherTask.taskId, opportunityId: opportunity.opportunityId,
+        decision: { kind: "CHOOSE_GOOD_CHARACTER", roleId: roleId("mathematician") } }
+    }));
+    expectAcceptedResult(choiceResult);
+    const inserted = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const gainedTask = inserted?.firstNightTaskPlan?.tasks.find((task) =>
+      task.taskType === "MATHEMATICIAN_INFORMATION" && task.source.kind === "PHILOSOPHER_GAINED_ABILITY"
+    );
+    if (gainedTask === undefined) throw new Error("Expected gained Mathematician task");
+
+    const ready = await advanceToScheduledTask(service, store, gainedTask.taskId, "advance-gained-mathematician");
+    expect(ready.firstNightTaskPlan?.tasks[ready.firstNightTaskProgress?.settlements.length ?? 0]?.taskId).toBe(gainedTask.taskId);
+    expect(gainedTask.orderKey).toStrictEqual({ baseOrder: 1100, insertionOrder: opportunity.sourceSeatNumber });
+    const beforeEvents = await store.loadDomainEvents(ids.game);
+    const beforeReceiptCount = store.getReceiptCount();
+
+    const openAttempt = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("open-unimplemented-gained-mathematician"), expectedGameVersion: ready.gameVersion,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: gainedTask.taskId }
+    });
+    await expect(service.execute(openAttempt)).resolves.toMatchObject({
+      status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-information",
+      retryable: true, currentGameVersion: ready.gameVersion
+    });
+    const settlementAttempt = settleFirstNightSystemTaskCommand({
+      commandId: commandId("settle-unimplemented-gained-mathematician"), expectedGameVersion: ready.gameVersion,
+      payload: { commandType: "SettleFirstNightSystemTask", taskId: gainedTask.taskId }
+    });
+    await expect(service.execute(settlementAttempt)).resolves.toMatchObject({
+      status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-information",
+      retryable: true, currentGameVersion: ready.gameVersion
+    });
+    expect(await store.loadDomainEvents(ids.game)).toStrictEqual(beforeEvents);
+    expect(store.getReceiptCount()).toBe(beforeReceiptCount);
+    expect(await store.findCommandReceipt(openAttempt.gameId, openAttempt.commandId)).toBeUndefined();
+    expect(await store.findCommandReceipt(settlementAttempt.gameId, settlementAttempt.commandId)).toBeUndefined();
+    const after = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    expect(after?.gameVersion).toBe(ready.gameVersion);
+    expect(after?.firstNightTaskProgress?.settlements.some((entry) => entry.taskId === gainedTask.taskId)).toBe(false);
+    expect((after as unknown as Record<string, unknown>).mathematicianInformation).toBeUndefined();
+    expect(beforeEvents.some((event) => event.eventType.includes("Mathematician"))).toBe(false);
+  });
+
+  it("rejects an injected legacy V1 planner result at the planning boundary without writing", async () => {
     const legacyPlanner: FirstNightTaskPlannerPort = {
       generate: (input) => {
         const result = testFirstNightTaskPlanner.generate(input);
@@ -4571,14 +4643,36 @@ describe("GameApplicationService", () => {
     const store = new MemoryCommandCommitStore();
     const { service } = makeService(store, testSetupGenerator, new FixedIdGenerator(), new FixedClock(),
       testAssignmentGenerator, testInitialPrivateKnowledgeBuilder, legacyPlanner);
-    await reachOpenPhilosopherActionOpportunity(service);
+    await reachFirstNightKnowledge(service);
     const before = await store.loadDomainEvents(ids.game);
-    const command = choosePhilosopherRoleCommand("clockmaker", { commandId: commandId("legacy-plan-mapped-choice") });
+    const command = planFirstNightTasksCommand({ commandId: commandId("reject-injected-legacy-plan") });
+    await expect(service.execute(command)).resolves.toMatchObject({
+      status: "failed", code: "DependencyExecutionFailed", failureStage: "first-night-task-planning", retryable: true,
+      currentGameVersion: 6
+    });
+    expect(await store.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(await store.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+  });
+
+  it("keeps mapped Philosopher choices fail-closed when replaying accepted V1 history", async () => {
+    const sourceStore = new MemoryCommandCommitStore();
+    const { service: sourceService } = makeService(sourceStore);
+    await reachOpenPhilosopherActionOpportunity(sourceService);
+    const acceptedV2History = await sourceStore.loadDomainEvents(ids.game);
+    const acceptedV1History = acceptedV2History.map((event) => event.eventType === "FirstNightTaskPlanCreated"
+      ? { ...event, payload: { ...event.payload, taskPlanVersion: "first-night-task-plan-v1" as const } }
+      : event
+    );
+    expect(() => validateDomainEventStream(acceptedV1History)).not.toThrow();
+
+    const store = new SeededReadOnlyCommandStore(acceptedV1History);
+    const { service } = makeService(store);
+    const command = choosePhilosopherRoleCommand("clockmaker", { commandId: commandId("legacy-history-mapped-choice") });
     await expect(service.execute(command)).resolves.toMatchObject({
       status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action", retryable: true,
       currentGameVersion: 8
     });
-    expect(await store.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(await store.loadDomainEvents(ids.game)).toStrictEqual(acceptedV1History);
     expect(await store.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
   });
 

@@ -15,7 +15,7 @@
 - Evidence SHA-256: `ced6042dcfcbb2e14d86ef97c15b4c8bae2a263bd8aa30332a16b54683143eab`.
 - Design: `docs/implementation/phase-3-slice-2b17-2-design.md`.
 - Design SHA-256: `773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed`.
-- Design round: `1 / 2`; repair round: `0 / 2`; `maxSlices=1`.
+- Design round: `1 / 2`; repair round: `1 / 2`; `maxSlices=1`.
 - Approved simulator override: `BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1`.
 - Design readiness: `READY_FOR_RULE_DESIGN_REVIEW`; this is not implementation authorization.
 - Independent design review: `docs/implementation/phase-3-slice-2b17-2-design-review.md`.
@@ -34,4 +34,4 @@ Slice 2B18 remains historical `HUMAN_BLOCKED` with terminal `RULE_CONFLICT`. Its
 
 ## Current Gate
 
-The reviewed V2 implementation is published in PR #21. All local required gates pass: 28 files / 904 tests; coverage 86.04% statements/lines, 80.17% branches, 97.88% functions. Freeze the exact final feature HEAD only after its push/PR CI succeeds, then request the complete independent final review. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.
+The first complete independent review of historical HEAD `ebf364ddbd7e6258f88cef2ad80cc174c5887c3a` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`. Repair round 1 closes its five bounded blocker classes: new planner V1 rejection with accepted-history V1 replay preserved, both mixed-generation replay directions, direct gained-Mathematician fail-closed progression, permutation-invariant gained ordering, and corrected traceability/control state. Focused gates pass 3 files / 388 tests; all local required gates pass 28 files / 907 tests with 86.06% statements/lines, 80.21% branches, and 97.88% functions. Publish the attributed repair to the existing PR #21 branch, correct the PR body, and freeze only after fresh push/PR CI succeeds. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.

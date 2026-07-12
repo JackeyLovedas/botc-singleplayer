@@ -83,12 +83,23 @@ describe("Philosopher gained first-night task ordering", () => {
     const input = [
       gained("first-night-v2:z-seat-02", 2), gained("first-night-v2:a-seat-10", 10), base, gained("first-night-v2:a-seat-02", 2)
     ];
-    expect([...input].sort(compareFirstNightTaskOrder).map((task) => task.taskId)).toStrictEqual([
+    const expected = [
       base.taskId,
       scheduledTaskId("first-night-v2:a-seat-02"),
       scheduledTaskId("first-night-v2:z-seat-02"),
       scheduledTaskId("first-night-v2:a-seat-10")
-    ]);
+    ];
+    const permutations = <T>(values: readonly T[]): readonly (readonly T[])[] =>
+      values.length <= 1
+        ? [values]
+        : values.flatMap((value, index) =>
+            permutations(values.filter((_, candidateIndex) => candidateIndex !== index)).map((tail) => [value, ...tail])
+          );
+    const normalizedOrders = permutations(input).map((candidate) =>
+      [...candidate].sort(compareFirstNightTaskOrder).map((task) => task.taskId)
+    );
+    expect(normalizedOrders).toHaveLength(24);
+    expect(normalizedOrders.every((order) => order.every((id, index) => id === expected[index]))).toBe(true);
   });
 
   it("creates and validates the exact catalog-bound V2 insertion contract", () => {

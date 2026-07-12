@@ -4,7 +4,7 @@
 
 - Phase 3 controlled vertical slices.
 - Active controlled candidate: Slice 2B17.2 Philosopher-gained first-night scheduling V2, scope `PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2`.
-- Current control state: `RUNNING` on `phase-3/philosopher-gained-task-scheduling-v2`; PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) is open and awaiting exact-head CI and independent final review.
+- Current control state: `RUNNING`, repair round `1 / 2`, on `phase-3/philosopher-gained-task-scheduling-v2`; PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) is open and awaiting a repaired exact HEAD, fresh CI, and fresh independent final review.
 - Accepted: 2B13 through 2B17.1.
 - Slice 2B17.1 merged through PR [#20](https://github.com/JackeyLovedas/botc-singleplayer/pull/20) at merge SHA `19923f4aa62c86cc2db995587d65b586fd365b8a`.
 - Final reviewed feature HEAD: `9caaa07a9f3f50bdf8564e48bf50345fed976a4c`.
@@ -33,6 +33,6 @@ Slice 2B17.2 evidence is `docs/rules/evidence/2B17-2.md`, SHA-256 `ced6042dcfcbb
 
 The exact round-1 architect design is `docs/implementation/phase-3-slice-2b17-2-design.md`, SHA-256 `773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed`. Its complete independent review is `docs/implementation/phase-3-slice-2b17-2-design-review.md`, SHA-256 `5a4862b8a6538b1609171f9ba2e7ce2292c0aadedcefb225ea65c7abd28e3742`, with `RULE_DESIGN_PASS`, no Slice 2B17.2 blocker, and implementation authorization limited to the exact reviewed scope.
 
-The implementation uses `FirstNightTaskInsertedV2`, `first-night-task-plan-v2`, and distinct `first-night-v2:PHILOSOPHER_GAINED:*` IDs. It schedules five mapped gained roles at signed catalog positions, preserves exact V1 replay, rejects generation mixing, and retains existing role outcomes/projections. Local gates pass with 28 files / 904 tests and 86.04% statement/line, 80.17% branch, and 97.88% function coverage.
+The implementation uses `FirstNightTaskInsertedV2`, `first-night-task-plan-v2`, and distinct `first-night-v2:PHILOSOPHER_GAINED:*` IDs. It schedules five mapped gained roles at signed catalog positions, preserves exact V1 replay, rejects generation mixing, and retains existing role outcomes/projections. The first independent review of historical HEAD `ebf364ddbd7e6258f88cef2ad80cc174c5887c3a` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; repair round 1 adds direct planning-boundary, mixed-generation, gained-Mathematician, and permutation regressions without expanding role semantics. Local gates pass with 28 files / 907 tests and 86.06% statement/line, 80.21% branch, and 97.88% function coverage.
 
 Slice 2B18 remains historical `HUMAN_BLOCKED`. Its immutable evidence is `docs/rules/evidence/2B18.md` (SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`). Four conflicts remain: first-night window start, own-ability exclusion, false-number domain, and duplicate-holder behavior. Slice 2B19 was not started.

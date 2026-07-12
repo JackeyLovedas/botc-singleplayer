@@ -7,7 +7,7 @@
   "reviewedHead": null,
   "currentReviewHeadAuthority": null,
   "exactHeadCIAuthority": null,
-  "repairRound": 0,
+  "repairRound": 1,
   "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": null,
@@ -49,26 +49,39 @@
       "candidateNumberDomain",
       "duplicateMathematicianRule"
     ],
-    "schedulingPrerequisiteStatus": "IMPLEMENTED_PENDING_PR_CI_AND_FINAL_REVIEW",
+    "schedulingPrerequisiteStatus": "REPAIR_ROUND_1_PENDING_EXACT_HEAD_CI_AND_FINAL_REVIEW",
     "implementationAuthorized": false
   },
   "slice2B17_2Implementation": {
-    "status": "PUBLISHED_PENDING_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+    "status": "REPAIR_ROUND_1_READY_TO_PUBLISH",
     "branch": "phase-3/philosopher-gained-task-scheduling-v2",
-    "head": "4958b52638781c77bcd9c20eb44b00add6f25a91",
+    "head": "WORKTREE_PENDING_REPAIR_COMMIT",
     "pr": 21,
     "ruleSemanticsChanged": false,
     "v1ReplayPreserved": true,
     "newCommandsGenerateV2Only": true,
     "localValidation": {
-      "focused": "8 files / 534 tests passed; final targeted 3 files / 213 tests passed",
-      "full": "28 files / 904 tests passed",
-      "coverage": "86.04% statements/lines; 80.17% branches; 97.88% functions",
+      "focused": "3 files / 388 tests passed",
+      "full": "28 files / 907 tests passed",
+      "coverage": "86.06% statements/lines; 80.21% branches; 97.88% functions",
       "typecheck": "PASS",
       "lint": "PASS",
       "diffCheck": "PASS",
       "forbiddenScan": "PASS"
     }
+  },
+  "slice2B17_2FinalReviewRound1": {
+    "reviewedHead": "ebf364ddbd7e6258f88cef2ad80cc174c5887c3a",
+    "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+    "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+    "remainingBlockers": [
+      "Reject planner-produced V1 at the application planning boundary while preserving accepted V1 replay fixtures",
+      "Add direct mixed-generation rebuild coverage in both directions",
+      "Add direct gained-Mathematician next-task fail-closed application coverage",
+      "Prove canonical gained-task ordering across input permutations",
+      "Correct PR traceability and repair-round control state"
+    ],
+    "status": "HISTORICAL_INVALIDATED_BY_REPAIR_ROUND_1"
   },
   "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1"],
   "slice2B17ProductImplementation": {
@@ -220,7 +233,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Materialized the complete independent Slice 2B17.2 design review with RULE_DESIGN_PASS; the exact reviewed scheduling V2 implementation scope is authorized after this gate commit passes exact-head CI.",
+  "lastAction": "Completed Slice 2B17.2 repair round 1 locally after CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED on historical HEAD ebf364dd; focused and full gates are green.",
   "lastError": null,
-  "nextAction": "Commit and push this implementation-authorization gate on main, require exact-head CI success, then create the sole phase-3/philosopher-gained-task-scheduling-v2 feature branch. Do not resume 2B18 production or start Slice 2B19."
+  "nextAction": "Commit and push repair round 1 on the existing PR #21 branch, correct the PR traceability, freeze the new exact HEAD after push/PR CI succeeds, then request a fresh complete independent final review. Do not resume 2B18 production or start Slice 2B19."
 }

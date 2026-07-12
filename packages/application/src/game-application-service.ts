@@ -64,6 +64,7 @@ import {
   findFirstNightActionOpportunityForTask,
   getNextUnsettledFirstNightTask,
   firstNightTaskTypeForPhilosopherChoice,
+  CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
   LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
   isFirstNightTaskSettled,
   isSupportedFirstNightRoleActionTask,
@@ -314,6 +315,10 @@ const validateFirstNightTaskPlannerRuntimeResultShape = (value: unknown): FirstN
       return invalidPlannerResult(
         "First-night task planner returned a malformed success result: taskPlan must be a non-null plain object"
       );
+    }
+
+    if (taskPlan.taskPlanVersion !== CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION) {
+      return invalidPlannerResult("First-night task planner must generate first-night-task-plan-v2");
     }
 
     return { valid: true, result: value as unknown as FirstNightTaskPlanningResult };
@@ -593,6 +598,24 @@ export class GameApplicationService {
           `Expected version ${command.expectedGameVersion} but current version is ${currentGameVersion}`,
           currentGameVersion
         )
+      );
+    }
+
+    const nextFirstNightTask = state?.firstNightTaskPlan === undefined
+      ? undefined
+      : getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+    if (
+      (command.payload.commandType === "OpenFirstNightRoleActionOpportunity" ||
+        command.payload.commandType === "SettleFirstNightSystemTask") &&
+      nextFirstNightTask?.taskId === command.payload.taskId &&
+      nextFirstNightTask.taskType === "MATHEMATICIAN_INFORMATION"
+    ) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "Mathematician first-night information settlement is not implemented",
+        "first-night-role-information",
+        currentGameVersion
       );
     }
 
@@ -2105,7 +2128,6 @@ export class GameApplicationService {
           currentGameVersion
         );
       }
-
       const generatedSetup = this.generateSetupOrReject(command, state, currentGameVersion);
       if (generatedSetup !== undefined && "code" in generatedSetup) {
         return generatedSetup;
