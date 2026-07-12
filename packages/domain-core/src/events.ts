@@ -12,6 +12,7 @@ import type {
 import type {
   AbilityImpairmentAppliedPayload,
   FirstNightTaskInsertedPayload,
+  FirstNightTaskInsertedV2Payload,
   PhilosopherAbilityChosenPayload,
   PhilosopherAbilityGrantedPayload
 } from "./philosopher-ability.js";
@@ -63,6 +64,7 @@ export type {
 export type {
   AbilityImpairmentAppliedPayload,
   FirstNightTaskInsertedPayload,
+  FirstNightTaskInsertedV2Payload,
   PhilosopherAbilityChosenPayload,
   PhilosopherAbilityGrantedPayload
 } from "./philosopher-ability.js";
@@ -204,6 +206,7 @@ export type DomainEventPayloadByType = {
   readonly PhilosopherAbilityGranted: PhilosopherAbilityGrantedPayload;
   readonly AbilityImpairmentApplied: AbilityImpairmentAppliedPayload;
   readonly FirstNightTaskInserted: FirstNightTaskInsertedPayload;
+  readonly FirstNightTaskInsertedV2: FirstNightTaskInsertedV2Payload;
   readonly SnakeCharmerTargetChosen: SnakeCharmerTargetChosenPayload;
   readonly SnakeCharmerDemonSwapApplied: SnakeCharmerDemonSwapAppliedPayload;
   readonly SnakeCharmerNoSwapResolved: SnakeCharmerNoSwapResolvedPayload;

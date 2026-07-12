@@ -1,6 +1,6 @@
 import {
   INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE,
-  SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
+  CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   cloneFirstNightTaskCatalogSnapshot,
   cloneFirstNightTaskPlan,
@@ -158,7 +158,7 @@ export class FirstNightTaskPlanner {
     const orderedTasks = [...tasks].sort(compareFirstNightTaskOrder);
     const taskPlan: FirstNightTaskPlan = {
       nightNumber: 1,
-      taskPlanVersion: SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
+      taskPlanVersion: CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
       taskCatalogVersion: catalog.taskCatalogVersion,
       taskCatalogSignatureAlgorithm: catalog.taskCatalogSignatureAlgorithm,
       taskCatalogSignature: catalog.taskCatalogSignature,

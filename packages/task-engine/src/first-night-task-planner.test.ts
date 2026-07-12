@@ -100,6 +100,8 @@ describe("FirstNightTaskPlanner", () => {
   it("creates the golden first-night task plan in canonical order", () => {
     const plan = generatePlan();
 
+    expect(plan.taskPlanVersion).toBe("first-night-task-plan-v2");
+
     expect(plan.tasks.map((task) => [task.taskType, task.source.kind, task.source.kind === "ROLE" ? task.source.seatNumber : "system"])).toStrictEqual([
       ["PHILOSOPHER_ACTION", "ROLE", 5],
       ["MINION_INFO", "SYSTEM", "system"],

@@ -496,6 +496,22 @@ That means:
 
 The model still does not execute broad inserted role tasks, create general role ability effects, implement drunk or poison duration expiry, implement Evil Twin victory rules, implement Witch nomination-triggered death, implement general Vortox behavior outside the represented Seamstress constraint, implement Storyteller free false-role/answer choice, or make AI decisions. The visible role-action schemas currently supported are the narrow Philosopher first-night DEFER and GOOD-character choice opportunity, Snake Charmer target-selection opportunities for base and Philosopher-gained sources, the base Witch target-selection opportunity, the base Dreamer target-selection opportunity, legacy base Seamstress defer-only opportunities, and capability-gated V2 Seamstress target selection for base and Philosopher-granted sources.
 
+### Versioned Philosopher-Gained Scheduling
+
+The current planner emits a V2 task plan. A Philosopher-granted first-night task is inserted at the chosen role's signed catalog position, not immediately after the Philosopher action:
+
+```text
+PhilosopherAbilityChosen
+-> PhilosopherAbilityGranted
+-> [AbilityImpairmentApplied]
+-> [FirstNightTaskInsertedV2]
+-> ScheduledTaskSettled(PHILOSOPHER_ACTION)
+-> MINION_INFO / DEMON_INFO / intervening role tasks
+-> gained task at its catalog position
+```
+
+V1 insertion events remain historical facts with their original immediate-insertion order. Replay selects behavior from the explicit plan/event generation and rejects mixed generations; current catalog data never silently rewrites historical task order.
+
 ## ActionOpportunity Flow
 
 ```text

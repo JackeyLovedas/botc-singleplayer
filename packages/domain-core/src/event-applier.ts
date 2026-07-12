@@ -105,6 +105,7 @@ import {
   scheduledTaskFromFirstNightTaskInsertedPayload,
   validateAbilityImpairmentAppliedPayload,
   validateFirstNightTaskInsertedPayload,
+  validateFirstNightTaskInsertedV2Payload,
   validatePhilosopherAbilityChosenPayload,
   validatePhilosopherAbilityGrantedPayload
 } from "./philosopher-ability.js";
@@ -163,6 +164,7 @@ import {
 } from "./seamstress.js";
 import {
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
+  hasExactEnumerableKeys,
   isPlainRecord,
   validateFirstNightInitializedPayloadShape,
   validateInitialOwnCharacterKnowledgePayload
@@ -704,6 +706,50 @@ const validateFirstNightTaskPlanRuntimeStateForState = (
     throw new DomainError(input.errorCode, "Runtime first-night task plan validation requires setup, roster, assignment, first-night, private knowledge, and task plan");
   }
 
+  const rawInsertions = input.insertions;
+  if (
+    rawInsertions !== undefined &&
+    (!isPlainRecord(rawInsertions) ||
+      !hasExactEnumerableKeys(rawInsertions, ["insertions"] as const) ||
+      !Array.isArray(rawInsertions.insertions))
+  ) {
+    throw new DomainError(input.errorCode, "First-night task insertion state must have exact runtime shape");
+  }
+
+  const insertionPayloads = rawInsertions?.insertions ?? [];
+  for (let index = 0; index < insertionPayloads.length; index += 1) {
+    if (!Object.hasOwn(insertionPayloads, index)) {
+      throw new DomainError(input.errorCode, "First-night task insertion state must not contain sparse holes");
+    }
+  }
+
+  const validatedInsertions: NonNullable<GameState["firstNightTaskInsertions"]>["insertions"][number][] = [];
+  const insertionValidationPlan = {
+    ...input.plan,
+    tasks: input.plan.tasks.filter((task) => task.source.kind !== "PHILOSOPHER_GAINED_ABILITY")
+  };
+  for (const insertion of insertionPayloads) {
+    if (!isPlainRecord(insertion)) {
+      throw new DomainError(input.errorCode, "First-night task insertion fact must be a plain record");
+    }
+    const prior = validatedInsertions.length === 0 ? undefined : { insertions: validatedInsertions };
+    const insertionValidation = Object.hasOwn(insertion, "schedulingVersion")
+      ? validateFirstNightTaskInsertedV2Payload(insertion, {
+          firstNightTaskPlan: insertionValidationPlan,
+          grants: state.philosopherGrantedAbilities,
+          insertions: prior
+        })
+      : validateFirstNightTaskInsertedPayload(insertion, {
+          firstNightTaskPlan: insertionValidationPlan,
+          grants: state.philosopherGrantedAbilities,
+          insertions: prior
+        });
+    if (!insertionValidation.valid) {
+      throw new DomainError(input.errorCode, insertionValidation.reason);
+    }
+    validatedInsertions.push(insertion);
+  }
+
   const validation = validateFirstNightTaskPlanRuntimeState(input.plan, {
     sourceFacts: {
       setup: state.setup,
@@ -712,7 +758,7 @@ const validateFirstNightTaskPlanRuntimeStateForState = (
       firstNight: state.firstNight,
       initialPrivateKnowledge: state.initialPrivateKnowledge
     },
-    insertedTasks: input.insertions?.insertions.map(scheduledTaskFromFirstNightTaskInsertedPayload) ?? []
+    insertedTasks: validatedInsertions.map(scheduledTaskFromFirstNightTaskInsertedPayload)
   });
   if (!validation.valid) {
     throw new DomainError(input.errorCode, validation.reason);
@@ -1056,6 +1102,24 @@ const validateFirstNightTaskInsertedPayloadForState = (
   });
   if (!validation.valid) {
     throw new DomainError("InvalidFirstNightTaskInsertedPayload", validation.reason);
+  }
+};
+
+const validateFirstNightTaskInsertedV2PayloadForState = (
+  state: GameState,
+  payload: DomainEventEnvelope<"FirstNightTaskInsertedV2">["payload"]
+): void => {
+  if (state.firstNightTaskPlan === undefined) {
+    throw new DomainError("InvalidFirstNightTaskInsertedV2Payload", "FirstNightTaskInsertedV2 requires first-night task plan");
+  }
+
+  const validation = validateFirstNightTaskInsertedV2Payload(payload, {
+    firstNightTaskPlan: state.firstNightTaskPlan,
+    grants: state.philosopherGrantedAbilities,
+    insertions: state.firstNightTaskInsertions
+  });
+  if (!validation.valid) {
+    throw new DomainError("InvalidFirstNightTaskInsertedV2Payload", validation.reason);
   }
 };
 
@@ -1736,6 +1800,8 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidAbilityImpairmentAppliedPayload";
     case "FirstNightTaskInserted":
       return "InvalidFirstNightTaskInsertedPayload";
+    case "FirstNightTaskInsertedV2":
+      return "InvalidFirstNightTaskInsertedV2Payload";
     case "SnakeCharmerTargetChosen":
       return "InvalidSnakeCharmerTargetChosenPayload";
     case "SnakeCharmerDemonSwapApplied":
@@ -2261,6 +2327,43 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
         plan: nextFirstNightTaskPlan,
         insertions: nextFirstNightTaskInsertions,
         errorCode: "InvalidFirstNightTaskInsertedPayload"
+      });
+
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightTaskPlan: nextFirstNightTaskPlan,
+        firstNightTaskInsertions: nextFirstNightTaskInsertions
+      };
+    }
+
+    case "FirstNightTaskInsertedV2": {
+      if (state === undefined) {
+        throw new DomainError("MissingGameCreated", "FirstNightTaskInsertedV2 requires an existing game");
+      }
+
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError(
+          "InvalidFirstNightTaskInsertedV2Payload",
+          "FirstNightTaskInsertedV2 payload rules baseline must match game state"
+        );
+      }
+
+      validateFirstNightTaskInsertedV2PayloadForState(state, event.payload);
+      if (state.firstNightTaskPlan === undefined) {
+        throw new DomainError("InvalidFirstNightTaskInsertedV2Payload", "FirstNightTaskInsertedV2 requires first-night task plan");
+      }
+
+      const nextFirstNightTaskPlan = {
+        ...applyFirstNightTaskInsertionToPlan(state.firstNightTaskPlan, event.payload),
+        rulesBaselineVersion: state.firstNightTaskPlan.rulesBaselineVersion
+      };
+      const nextFirstNightTaskInsertions = appendFirstNightTaskInsertion(state.firstNightTaskInsertions, event.payload);
+      validateFirstNightTaskPlanRuntimeStateForState(state, {
+        plan: nextFirstNightTaskPlan,
+        insertions: nextFirstNightTaskInsertions,
+        errorCode: "InvalidFirstNightTaskInsertedV2Payload"
       });
 
       return {

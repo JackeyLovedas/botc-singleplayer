@@ -145,7 +145,7 @@ export const validateSettleClockmakerInformationCommandPayload = (value: unknown
   | { readonly valid: true; readonly payload: SettleClockmakerInformationCommandPayload }
   | { readonly valid: false; readonly reason: string } => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["commandType", "taskId"]) || value.commandType !== "SettleClockmakerInformation" ||
-      typeof value.taskId !== "string" || !/^first-night-v1:(?:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2])|PHILOSOPHER_GAINED:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2]):from-clockmaker)$/.test(value.taskId)) {
+      typeof value.taskId !== "string" || !/^(?:first-night-v1:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2])|first-night-v[12]:PHILOSOPHER_GAINED:CLOCKMAKER_INFORMATION:seat-(?:0[1-9]|1[0-2]):from-clockmaker)$/.test(value.taskId)) {
     return { valid: false, reason: "SettleClockmakerInformation must contain only its command type and canonical Clockmaker task ID" };
   }
   return { valid: true, payload: value as unknown as SettleClockmakerInformationCommandPayload };

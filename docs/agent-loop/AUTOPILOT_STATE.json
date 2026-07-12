@@ -1,13 +1,13 @@
 {
   "status": "RUNNING",
-  "currentPR": null,
-  "currentPRUrl": null,
-  "currentBranch": "main",
+  "currentPR": 21,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/21",
+  "currentBranch": "phase-3/philosopher-gained-task-scheduling-v2",
   "currentSlice": "2B17.2",
   "reviewedHead": null,
   "currentReviewHeadAuthority": null,
-  "exactHeadCIAuthority": null,
-  "repairRound": 0,
+  "exactHeadCIAuthority": "GitHub push and pull_request checks attached to the current PR HEAD; both must be SUCCESS before independent review",
+  "repairRound": 2,
   "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": null,
@@ -49,8 +49,48 @@
       "candidateNumberDomain",
       "duplicateMathematicianRule"
     ],
-    "schedulingPrerequisiteStatus": "RULE_READY_PENDING_DESIGN_AND_IMPLEMENTATION",
+    "schedulingPrerequisiteStatus": "REPAIR_ROUND_2_PROVENANCE_FIX_PENDING_PUBLISH",
     "implementationAuthorized": false
+  },
+  "slice2B17_2Implementation": {
+    "status": "REPAIR_ROUND_2_PROVENANCE_FIX_PENDING_PUBLISH",
+    "branch": "phase-3/philosopher-gained-task-scheduling-v2",
+    "repairImplementationHead": "e6afb1f54813e3469470e2165577bc424c901fad",
+    "pr": 21,
+    "ruleSemanticsChanged": false,
+    "v1ReplayPreserved": true,
+    "newCommandsGenerateV2Only": true,
+    "localValidation": {
+      "focused": "3 files / 388 tests passed",
+      "full": "28 files / 907 tests passed",
+      "coverage": "86.06% statements/lines; 80.21% branches; 97.88% functions",
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "diffCheck": "PASS",
+      "forbiddenScan": "PASS"
+    }
+  },
+  "slice2B17_2FinalReviewRound1": {
+    "reviewedHead": "ebf364ddbd7e6258f88cef2ad80cc174c5887c3a",
+    "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+    "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+    "remainingBlockers": [
+      "Reject planner-produced V1 at the application planning boundary while preserving accepted V1 replay fixtures",
+      "Add direct mixed-generation rebuild coverage in both directions",
+      "Add direct gained-Mathematician next-task fail-closed application coverage",
+      "Prove canonical gained-task ordering across input permutations",
+      "Correct PR traceability and repair-round control state"
+    ],
+    "status": "HISTORICAL_INVALIDATED_BY_REPAIR_ROUND_1"
+  },
+  "slice2B17_2FinalReviewRound2": {
+    "reviewedHead": "33d956c3c88c65db2eded28f4bc050f6ec70f640",
+    "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [
+      "Correct the nonexistent repair implementation SHA in committed provenance documents and the PR body"
+    ],
+    "status": "HISTORICAL_INVALIDATED_BY_PROVENANCE_REPAIR_ROUND_2"
   },
   "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1"],
   "slice2B17ProductImplementation": {
@@ -202,7 +242,7 @@
     "run": 29156186840,
     "status": "SUCCESS"
   },
-  "lastAction": "Materialized the complete independent Slice 2B17.2 design review with RULE_DESIGN_PASS; the exact reviewed scheduling V2 implementation scope is authorized after this gate commit passes exact-head CI.",
+  "lastAction": "Received CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS on historical HEAD 33d956c3 because provenance named a nonexistent repair implementation SHA; repair round 2 corrects documentation only.",
   "lastError": null,
-  "nextAction": "Commit and push this implementation-authorization gate on main, require exact-head CI success, then create the sole phase-3/philosopher-gained-task-scheduling-v2 feature branch. Do not resume 2B18 production or start Slice 2B19."
+  "nextAction": "Publish the provenance-only repair round 2, correct the PR body, require successful push and pull_request CI on the new exact HEAD, verify local == remote == PR with a clean worktree and one open PR, then request a fresh complete independent final review. Do not resume 2B18 production or start Slice 2B19."
 }

@@ -9,6 +9,7 @@ import {
   SUPPORTED_DOMAIN_EVENT_VERSION,
   SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION,
   SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION,
+  CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
   SUPPORTED_FIRST_NIGHT_TEAM_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION,
   SUPPORTED_ROLE_CATALOG_SIGNATURE,
@@ -22,6 +23,7 @@ import {
   compareStableId,
   createAbilityImpairmentAppliedPayload,
   createFirstNightTaskInsertedPayload,
+  createFirstNightTaskInsertedV2Payload,
   createFirstNightRoleActionOpportunity,
   createLegacySeamstressFirstNightActionOpportunity,
   createPhilosopherAbilityChosenPayload,
@@ -5306,6 +5308,71 @@ describe("domain event rebuild", () => {
         snakeChoiceBatch[4] as AnyDomainEventEnvelope
       ]),
       "InvalidFirstNightTaskInsertedPayload"
+    );
+  });
+
+  it("rejects V1 and V2 Philosopher insertion generations in both mixed-plan directions", () => {
+    const snakeChoiceBatch = philosopherAbilityChoiceBatchEvents({
+      chosenRole: roleSnapshotById("snake_charmer"),
+      includeImpairment: true,
+      includeInsertion: true
+    });
+    const choice = snakeChoiceBatch.find((event): event is DomainEventEnvelope<"PhilosopherAbilityChosen"> =>
+      event.eventType === "PhilosopherAbilityChosen"
+    );
+    const grantEvent = snakeChoiceBatch.find((event): event is DomainEventEnvelope<"PhilosopherAbilityGranted"> =>
+      event.eventType === "PhilosopherAbilityGranted"
+    );
+    const legacyInsertion = snakeChoiceBatch.find((event): event is DomainEventEnvelope<"FirstNightTaskInserted"> =>
+      event.eventType === "FirstNightTaskInserted"
+    );
+    if (choice === undefined || grantEvent === undefined || legacyInsertion === undefined) {
+      throw new Error("Expected complete legacy Philosopher insertion batch");
+    }
+    const legacyState = defaultPhilosopherAbilityBatchState();
+    if (legacyState.firstNightTaskPlan === undefined) throw new Error("Expected legacy task plan");
+    const v2Plan = {
+      ...legacyState.firstNightTaskPlan,
+      taskPlanVersion: CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION
+    };
+    const v2InsertionPayload = createFirstNightTaskInsertedV2Payload({
+      rulesBaselineVersion: RULES_BASELINE_VERSION,
+      choice: choice.payload,
+      grant: grantEvent.payload,
+      firstNightTaskPlan: v2Plan
+    });
+    if (v2InsertionPayload === undefined) throw new Error("Expected V2 Philosopher insertion payload");
+    const v2Insertion = philosopherAbilityEventEnvelope(
+      "FirstNightTaskInsertedV2",
+      v2InsertionPayload,
+      legacyInsertion.eventSequence
+    );
+    const batchWithV2Insertion = snakeChoiceBatch.map((event) =>
+      event.eventType === "FirstNightTaskInserted" ? v2Insertion : event
+    );
+
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(),
+        philosopherActionOpportunityCreatedEvent(),
+        ...batchWithV2Insertion
+      ]),
+      "InvalidDomainBatchSemantics"
+    );
+
+    const v2PlanEvent = firstNightTaskPlanCreatedEvent({
+      payload: {
+        ...firstNightTaskPlanCreatedEvent().payload,
+        taskPlanVersion: CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION
+      }
+    });
+    expectDomainCode(
+      () => rebuildGameState([
+        ...firstNightTaskPlanEventStream(v2PlanEvent),
+        philosopherActionOpportunityCreatedEvent(),
+        ...snakeChoiceBatch
+      ]),
+      "InvalidDomainBatchSemantics"
     );
   });
 

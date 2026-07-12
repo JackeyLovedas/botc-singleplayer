@@ -4,8 +4,8 @@
 
 - Candidate role: `philosopher`.
 - Candidate scope: `PHILOSOPHER_GAINED_FIRST_NIGHT_TASK_SCHEDULING_V2`.
-- Current branch: `main`.
-- Current PR: none.
+- Current branch: `phase-3/philosopher-gained-task-scheduling-v2`.
+- Current PR: [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21).
 - Current slice: `2B17.2`.
 - Recovery anchor: `823c256af6e367a28ea383be81ca26b9b61ad314`.
 - Prior exact-head CI: `29156186840`, `SUCCESS`.
@@ -15,7 +15,7 @@
 - Evidence SHA-256: `ced6042dcfcbb2e14d86ef97c15b4c8bae2a263bd8aa30332a16b54683143eab`.
 - Design: `docs/implementation/phase-3-slice-2b17-2-design.md`.
 - Design SHA-256: `773c6df23cf40e83f9c1facd79719e7d992b3aa4cc6946910a78fe7bf5d7f9ed`.
-- Design round: `1 / 2`; repair round: `0 / 2`; `maxSlices=1`.
+- Design round: `1 / 2`; repair round: `2 / 2`; `maxSlices=1`.
 - Approved simulator override: `BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1`.
 - Design readiness: `READY_FOR_RULE_DESIGN_REVIEW`; this is not implementation authorization.
 - Independent design review: `docs/implementation/phase-3-slice-2b17-2-design-review.md`.
@@ -34,4 +34,6 @@ Slice 2B18 remains historical `HUMAN_BLOCKED` with terminal `RULE_CONFLICT`. Its
 
 ## Current Gate
 
-The exact architect design passed independent rule-design review. After this authorization commit has successful exact-head CI, implementation is authorized only on the sole `phase-3/philosopher-gained-task-scheduling-v2` feature branch and only within the reviewed Slice 2B17.2 scope. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.
+The first complete independent review of historical HEAD `ebf364ddbd7e6258f88cef2ad80cc174c5887c3a` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; repair round 1 closed all five behavioral and traceability blocker classes. The next independent review of historical HEAD `33d956c3c88c65db2eded28f4bc050f6ec70f640` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` solely because three committed provenance records and the PR body named a nonexistent repair implementation SHA. Repair round 2 corrects that SHA only; it does not change production, tests, rules, evidence, or the previously green validation results. After publishing, require fresh push/PR CI on the new exact HEAD, verify all three HEAD authorities match with a clean worktree and one open PR, then freeze for independent review. Slice 2B18 remains independently blocked by its four preserved conflicts; do not resume its production work or start Slice 2B19.
+
+Repair implementation commit: `e6afb1f54813e3469470e2165577bc424c901fad`. Subsequent commits are provenance/control tracking commits and must not be described as the repair implementation commit.
