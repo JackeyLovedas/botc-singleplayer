@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B18A Implementation Status
 
-> Status: `RUNNING`, ledger-only final repair round `4 / 4` on PR #23 under `USER_AUTHORIZED_2B18A_LEDGER_ONLY_FINAL_REPAIR_ROUND_4`. Only the four retained final-review blocker groups are authorized; merge remains prohibited pending fresh dual-pass review.
+> Status: `HUMAN_BLOCKED`, ledger-only final repair round `4 / 4` exhausted on PR #23 under `USER_AUTHORIZED_2B18A_LEDGER_ONLY_FINAL_REPAIR_ROUND_4`. The exact-head final review returned dual FIX verdicts; no repair round 5 or merge is authorized.
 
 ## Scope
 
@@ -12,7 +12,7 @@ Shape validation is not accepted-history provenance.
 
 - `FirstNightInitialized` alone creates the derived ledger anchor plus an internal envelope-provenance record. Rebuild requires the anchor and provenance to equal the unique accepted initialization envelope; direct tests reject all ten authorized anchor-tampering cases. No ledger event or accepted payload was added.
 - Accepted terminal replay derives outcome facts from the terminal pre-state, re-derives the expected fact at the append boundary, requires exact canonical equality, rejects duplicate identities, and validates the appended ledger.
-- Base, Philosopher-gained V1, and Philosopher-gained V2 ability-instance IDs use distinct grammars and cross-check generation, task type, embedded seat/role, and grant role segments. Gained action tasks separately bind the closed original Philosopher opportunity and the gained-role action opportunity; gained information tasks bind the original Philosopher opportunity without inventing a role-action opportunity.
+- Base, Philosopher-gained V1, and Philosopher-gained V2 ability-instance IDs use distinct grammars and cross-check generation, task type, embedded seat/role, and grant role segments. Gained action tasks separately bind the closed original Philosopher opportunity and the gained-role action opportunity; however, an in-range gained-role opportunity `sourceCharacterStateRevision` is not required to equal the retained Philosopher task/grant/insertion/original-opportunity/ability-instance revision. Gained information tasks bind the original Philosopher opportunity without inventing a role-action opportunity.
 - Runtime gained tasks are reconstructed from `state.firstNightTaskInsertions` with the accepted generation-specific payload validators and compared exactly with the plan. The plan cannot certify its own inserted tasks.
 - The 16 closed evidence variants, canonical ordering, duplicate/conflict rules, and frozen supported terminal classifications remain. Direct adapter assertions cover base terminals, V1/V2 gained chains, roster binding, Clockmaker, Dreamer, Seamstress, Cerenovus, Snake Charmer, all ten anchor mutations, deterministic rebuild/key order, projection non-leakage, and the fail-closed Mathematician boundary.
 - Public validators are explicitly named as shape validators. Canonical provenance exists only through complete accepted event-stream validation and rebuild; caller-created state or ledger is not a supported game-decision input.
@@ -36,7 +36,7 @@ No renamed or replacement API accepts caller-supplied state, ledger, context, wi
 
 ## Final review blockers
 
-The four repair-round-3 blocker groups are implemented locally and full local gates pass. They remain unaccepted until exact-head Ubuntu/Windows CI and a fresh complete independent review return both pass verdicts with no blocker.
+The independent round-4 review found one consolidated contract gap: exact gained-role terminal action opportunity revision binding is not enforced. R4-22 changes revision `1` to future revision `2` while evaluation remains at `1`; it proves only the existing upper bound and does not prove rejection of an earlier, still in-range revision that differs from the canonical retained Philosopher chain. Direct V1 and V2 in-range stale-revision adversarial cases are absent.
 
 ## Validation
 
@@ -47,10 +47,10 @@ The four repair-round-3 blocker groups are implemented locally and full local ga
 - Combined ledger/rebuild/application: `3 files / 448 tests passed`.
 - Full test: `29 files / 980 tests` pass.
 - Coverage: `86.34%` statements/lines, `81.15%` branches, and `97.56%` functions; gate passes.
-- Exact product-head push CI `29218907974` and PR CI `29218909579` passed for `9c5d693fd4a2f0392a2deef8b4fba9436d0611a2`.
-- Complete final review: `docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-3.md`, SHA-256 `041a420a8d7b43ae4f0f2cd733b9a5d518bf070d78299176f38ea61da379c7b9`, reverse integrity `MATCH`.
-- Prior verdicts remain historical only: `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`. Fresh final review has not run.
+- Exact product-head push CI `29222876582` and PR CI `29222877872` passed for frozen reviewed HEAD `65121bb4c057e125f0304ff826970ae95427fee3`, including Ubuntu and Windows.
+- Complete round-4 final review: `docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-4.md`, SHA-256 `d5a8c728070a34faf931ec2a1c913fb21c6680d62cf125c6dc769237be381ae1`, reverse integrity `MATCH`.
+- Final verdicts: `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`.
 
 ## Coverage status
 
-`PARTIAL / UNACCEPTED`. 2B18A provides only the ledger foundation and directly tested supported terminal adapters while final repair round `4 / 4` awaits exact-head CI and review. It does not implement a Mathematician count, number, delivery, projection, or settlement and does not mark any role `COMPLETE`. No repair round 5, premature audit comments, merge, tag, 2B18B, or 2B19 is authorized.
+`PARTIAL / UNACCEPTED / HUMAN_BLOCKED`. 2B18A provides only the ledger foundation and directly tested supported terminal adapters. Exact gained-opportunity revision equality remains unsupported and unproven. It does not implement a Mathematician count, number, delivery, projection, or settlement and does not mark any role `COMPLETE`. No repair round 5, audit comments, merge, tag, 2B18B, or 2B19 is authorized.
