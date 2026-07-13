@@ -5,44 +5,35 @@ export {
   FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION,
-  FIRST_NIGHT_MATHEMATICIAN_COUNT_RESOLUTION_MODEL_VERSION,
-  MATHEMATICIAN_AUDIT_OVERRIDE_SET_VERSION,
   formatBaseFirstNightAbilityInstanceId,
   formatPhilosopherGainedV1AbilityInstanceId,
   formatPhilosopherGainedV2AbilityInstanceId,
   formatExplicitFirstNightAbilityInstanceId,
   parseFirstNightAbilityInstanceId,
-  validateFirstNightAbilityInstanceProvenance,
+  validateFirstNightAbilityInstanceProvenanceShape,
   cloneFirstNightAbilityInstanceProvenance,
   formatFirstNightAbilityOutcomeFactId,
   parseFirstNightAbilityOutcomeFactId,
-  validateFirstNightAbilityOutcomeWindowAnchor,
-  validateFirstNightAbilityOutcomeWindowSnapshot,
+  validateFirstNightAbilityOutcomeWindowAnchorShape,
   cloneFirstNightAbilityOutcomeWindowAnchor,
-  cloneFirstNightAbilityOutcomeWindowSnapshot,
-  validateAbilityOutcomeEvidenceReference,
+  validateAbilityOutcomeEvidenceReferenceShape,
   cloneAbilityOutcomeEvidenceReference,
   canonicalizeAbilityOutcomeEvidenceReferences,
-  validateFirstNightAbilityOutcomeFact,
+  validateFirstNightAbilityOutcomeFactShape,
   cloneFirstNightAbilityOutcomeFact,
-  validateFirstNightAbilityOutcomeLedger,
-  cloneFirstNightAbilityOutcomeLedger,
-  resolveFirstNightMathematicianTrueCountFromState,
-  validateMathematicianCountResolution,
-  cloneMathematicianCountResolution
+  validateFirstNightAbilityOutcomeLedgerShape,
+  cloneFirstNightAbilityOutcomeLedger
 } from "./first-night-ability-outcome-ledger.js";
 export type {
   OutcomeLedgerValidationResult, FirstNightAbilityInstanceId, FirstNightAbilityOutcomeFactId,
-  FirstNightAbilityOutcomeWindowAnchor, FirstNightAbilityOutcomeWindowSnapshot,
+  FirstNightAbilityOutcomeWindowAnchor,
   FirstNightAbilityInstanceProvenance, TerminalAbilityOutcomeEventType,
   SourceEventEvidence, TaskEvidence, ActionOpportunityEvidence, AbilityImpairmentEvidence,
   RoleTenureEvidence, CharacterStateEvidence, PlayerRoleAtRevisionEvidence, PhilosopherGrantEvidence,
   FirstNightTaskInsertionEvidence, SnakeCharmerResolutionEvidence, EvilTwinPairEvidence,
   WitchPendingMarkerEvidence, CerenovusInstructionEvidence, ClockmakerDeliveryEvidence,
   DreamerDeliveryEvidence, SeamstressDeliveryEvidence, AbilityOutcomeEvidenceReference,
-  AbilityOutcomeStatus, AbilityOutcomeCause, FirstNightAbilityOutcomeFact, FirstNightAbilityOutcomeLedger,
-  MathematicianAuditOverrideVersions, MathematicianCountDistinctPlayer, MathematicianCountUnresolvedFact,
-  MathematicianCountResolved, MathematicianCountUnresolved, MathematicianCountResolution
+  AbilityOutcomeStatus, AbilityOutcomeCause, FirstNightAbilityOutcomeFact, FirstNightAbilityOutcomeLedger
 } from "./first-night-ability-outcome-ledger.js";
 export * from "./command.js";
 export * from "./cerenovus.js";

@@ -3,13 +3,16 @@
 ## Active Slice 2B18A
 
 - Name: `First-Night Ability Outcome Ledger Foundation`.
-- Status: `HUMAN_BLOCKED` on frozen `phase-3/first-night-ability-outcome-ledger`; final-review repair round `2 / 2` is exhausted for open PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23).
-- Limits: `maxSlices=1`, `maxRepairRounds=2`, historical `maxDesignRounds=3`; repair round `2 / 2`, final authorized design round `3.2`.
-- User continuation authorization: `DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION`.
-- `behaviorDesignFrozen=true`; `finalDesignCompletionRound=true`; scope is evidence-contract simplification only.
-- Recovery anchor: `bd74093280bff1ba7b0027552045c7a78e3c44a6`; exact CI `29187357426` was `SUCCESS`; worktree clean; open PR count `0`.
+- Status: `RUNNING` on `phase-3/first-night-ability-outcome-ledger`; open PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) remains open, not merged, and not draft.
+- Limits: `maxSlices=1`, `maxRepairRounds=3`, historical `maxDesignRounds=3`; final repair round `3 / 3`; `scopeMode=LEDGER_ONLY_RESCOPE`.
+- Rescope authorization: `USER_AUTHORIZED_2B18A_LEDGER_ONLY_RESCOPE_AND_FINAL_REPAIR`.
+- `behaviorDesignFrozen=true`; this is a scope reduction, not a rule or behavior redesign.
+- Recovery anchor: branch HEAD `3e822ee004b5dc32dc6fe49383169b45805d03ea`; push/PR CI `29196189667 / 29196191030` were `SUCCESS`; worktree clean. Prior reviewed product HEAD is `faf3b44714b62f7723ecb319e6d244a324215088` with CI `29195691651 / 29195693110` successful. Base main is `89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f` with CI `29193210219` successful.
 - Candidate scope: `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`.
-- Authorization gates: `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`.
+- Authorization gates: `ruleReady=true`, prior Design 3.2 remains immutable history, ledger-only `scopeReviewVerdict=SCOPE_REVIEW_PASS`, and `implementationAuthorized=true` for only the reviewed repair-round-3 scope.
+- Corrected ledger-only scope authority: `docs/implementation/phase-3-slice-2b18a-ledger-only-rescope.md`, SHA-256 `3415944f1a42bcaee8f0a7a990a6d8d148ad0169fea0a9e4697acfbfc9f44b44`, terminal `READY_FOR_SCOPE_REVIEW`.
+- Scope review round 1: `docs/implementation/phase-3-slice-2b18a-ledger-only-scope-review-round-1.md`, SHA-256 `52e987c1709b429e43457bbe2b2008ba9bdd8e615f6d87e349da5a9aefe436cc`, reverse `MATCH`, verdict `SCOPE_REVIEW_FIX_REQUIRED`. Both docs-only blockers are corrected; fresh independent re-review is pending.
+- Scope review round 2: `docs/implementation/phase-3-slice-2b18a-ledger-only-scope-review-round-2.md`, SHA-256 `00177a72d33d9be71e3c281edaea908dd2e98b49509c6aa8d257260fc719967a`, reverse `MATCH`, verdict `SCOPE_REVIEW_PASS`, `remainingBlockers=[]`; it authorizes only the ledger-only repair on the existing branch and PR.
 - Four explicit user-approved simulator contracts were appended independently to `docs/rules/USER_OVERRIDES.md`: `BOTC-SIM-MATHEMATICIAN-FIRST-NIGHT-WINDOW-V1`, `BOTC-SIM-MATHEMATICIAN-OWN-ABILITY-EXCLUSION-V1`, `BOTC-SIM-MATHEMATICIAN-NUMERIC-DOMAIN-V1`, and `BOTC-SIM-MATHEMATICIAN-DUPLICATE-HOLDER-TEMPORAL-V1`.
 - The approvals are fixed 12-player deterministic single-player product policies, not representations of official multi-holder or first-night dawn rulings.
 - The immutable original conflict evidence `docs/rules/evidence/2B18.md` remains at SHA-256 `9f7564f4fe5be6399ec10ebc7475ab07f4e49c5aa5bcdb6752af61a928fdfa1a`.
@@ -31,15 +34,16 @@
 - Architect reverse integrity verification returned `MATCH`: 49,803 UTF-8 bytes, 1,363 LF bytes, trailing LF, exact first/last lines, and 46 balanced code fences.
 - Fresh Design 3.2 review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md`, SHA-256 `8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525`, terminal `RULE_DESIGN_PASS`, with `remainingBlockers=[]`.
 - The reviewer examined exact HEAD `3dc10b4f030be7dd1c314c7a8981b24424bbd02b`; exact-head CI `29192916263` was `SUCCESS`, worktree clean, open PR count zero. Reviewer reverse materialization verification returned `MATCH` for 11,698 UTF-8 bytes, 212 LF bytes and trailing LF.
-- Design 3.2 is the sole implementation authority; behavior remains frozen and this remains the final design-completion round.
+- Design 3.2 remains the immutable authority for retained ledger classifications. The ledger-only rescope document supersedes its resolver, count-result, resolving-context, and count-window-snapshot scope for 2B18A; behavior remains frozen.
 - Final-review round 1 is archived verbatim at `docs/implementation/phase-3-slice-2b18a-final-review-round-1.md`, SHA-256 `4f41ea18c085f329e5631b456816447f14d62319a2f60527d0074d5532f6ef0f`, reviewer integrity `MATCH`. Verdicts are `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`, with 16 findings and 11 remaining blocker groups.
-- Repair round 1 closes those implementation groups with direct Snake Charmer and Dreamer/Vortox regressions, complete canonical context/evidence/provenance/window/count validation, replay-boundary validation, projection sentinels, and corrected PARTIAL traceability. Local gates: typecheck/lint pass, `29 / 942` full tests pass, coverage `86.27%` statements/lines, `80.32%` branches, `97.44%` functions.
+- Historical repair round 1 attempted those implementation groups with direct Snake Charmer and Dreamer/Vortox regressions, context/evidence/provenance/window/count validation, replay-boundary validation, projection sentinels, and PARTIAL traceability. Its resolver/context/count work is not current 2B18A authority. Historical local gates were typecheck/lint pass, `29 / 942` full tests pass, coverage `86.27%` statements/lines, `80.32%` branches, `97.44%` functions.
 - Final-review round 2 is archived verbatim at `docs/implementation/phase-3-slice-2b18a-final-review-round-2.md`, SHA-256 `9d0cba21d7c5e5776794bfba99087d83d7d3968dcd468a57d6b07754dd8e15be`, reviewer integrity `MATCH`. Verdicts remain `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`, with six blocker groups; final repair round is `2 / 2`.
 - Final repair local gates pass: ledger `17/17`, full `29 / 940`, coverage `86.30%` statements/lines, `80.22%` branches, `97.45%` functions, typecheck/lint pass. Canonical-source claims are limited to replay-boundary pre-event derivation; standalone validators are documented as structural/semantic.
 - Final repair-2 review is archived verbatim at `docs/implementation/phase-3-slice-2b18a-final-review-round-3.md`, SHA-256 `04fcb8068fa1f4d62923f53881b66f3f574e2291652a4a5c2b9728fed0e7dde6`, reverse `MATCH`. It reviewed product HEAD `faf3b44714b62f7723ecb319e6d244a324215088` with push/PR CI `29195691651 / 29195693110` successful and returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED` with six remaining blocker groups.
-- `implementationAuthorized=false`. No pass comments, merge, tag, repair round 3, 2B18B, or 2B19 is authorized. PR #23 remains open and frozen for preservation; continuation requires explicit new user authority or rescope.
+- The prior six blockers were: incomplete canonical insertion/plan/grant/opportunity chaining; incomplete V1/V2 generation and role-segment binding; unsupported accepted-history claims for caller-supplied state/ledger; incomplete role and impairment semantic cross-links; count validation without ledger recomputation; and missing adversarial regressions with overbroad PR/coverage claims.
+- The user now authorizes only a ledger-only rescope and final repair round `3 / 3`. The public true-count resolver, count-result contract, number selection, delivery, private projection, and settlement are deferred to 2B18B. Production and test edits remain blocked until an independent `SCOPE_REVIEW_PASS`.
 
-## Authorized Final Design Round 3.2
+## Historical Final Design Round 3.2
 
 The prior behavioral and five contract-group blockers are closed. Fresh Design 3.1 review found the remaining canonical evidence-contract gaps:
 
@@ -51,7 +55,7 @@ The user explicitly authorized one final Design 3.2 evidence-contract simplifica
 
 ## Strict Scope Boundary
 
-Slice 2B18A may establish only the first-night ability outcome ledger foundation and a pure true-count resolver after all rule and design gates pass. It must not settle `MATHEMATICIAN_INFORMATION`, generate `MathematicianInformationDelivered`, or deliver a private Mathematician number. Slice 2B18B and Slice 2B19 are prohibited.
+Slice 2B18A may establish only the canonical derived first-night ability outcome ledger foundation and its replay anchor. The true-count resolver, count-result family, resolving context, and count-window snapshot are deferred in full to 2B18B. It must not settle `MATHEMATICIAN_INFORMATION`, generate `MathematicianInformationDelivered`, or deliver a private Mathematician number. Slice 2B18B and Slice 2B19 are prohibited and remain unstarted.
 
 ## Preserved Accepted Slice 2B17.3
 
@@ -80,4 +84,6 @@ The immutable evidence retains its original `RULE_CONFLICT` conclusion and byte 
 
 ## Current Gate
 
-Implement every round-1 blocker against frozen Design 3.2: historical Snake and Dreamer/Vortox classification, complete internal context, all evidence/value/cross-link/minimum-set contracts, identity/provenance/window/count/integration invariants, direct hostile and integration regressions, and accurate traceability. Then run all gates and update the same PR. Do not merge, request final review yet, implement delivery/settlement/private number, or begin 2B18B/2B19.
+Fresh round-2 scope review returned `SCOPE_REVIEW_PASS` with no blockers for corrected scope SHA-256 `3415944f1a42bcaee8f0a7a990a6d8d148ad0169fea0a9e4697acfbfc9f44b44`. Implement only ledger anchor/facts/evidence/replay provenance repair on the existing branch and PR; the resolver, count result, internal resolving context, and count-window snapshot remain deferred to 2B18B. Do not merge before final gates or begin 2B18B/2B19.
+
+The repair-round-3 implementation and local gates are complete. Typecheck and lint pass; focused ledger/rebuild/application tests pass `15 / 182 / 209`; full tests pass `29 files / 938`; coverage is `86.22%` statements/lines, `80.28%` branches, and `97.55%` functions. Exact-head CI and a fresh independent final review remain pending.

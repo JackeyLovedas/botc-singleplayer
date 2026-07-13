@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `HUMAN_BLOCKED` on frozen `phase-3/first-night-ability-outcome-ledger`; open PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) exhausted final-review repair round `2 / 2`.
+- Current control state: `RUNNING` on `phase-3/first-night-ability-outcome-ledger`; open PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) is in the user-authorized final repair round `3 / 3` under `scopeMode=LEDGER_ONLY_RESCOPE`.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -15,7 +15,13 @@
 
 ## Active Slice 2B18A Boundary
 
-Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=true`, and `implementationAuthorized=true`; final authorized design round is `3.2` and repair round is `2 / 2`. The reviewed design HEAD is `3dc10b4f030be7dd1c314c7a8981b24424bbd02b`, whose exact main CI run `29192916263` succeeded. Repair-round-1 local gates passed at `29 / 942` tests with `86.27%` statements/lines, `80.32%` branches, and `97.44%` functions; round 2 is the final repair.
+Slice 2B18A is now limited to the canonical derived first-night ability outcome ledger foundation and replay anchor only. The explicit authorization is `USER_AUTHORIZED_2B18A_LEDGER_ONLY_RESCOPE_AND_FINAL_REPAIR`; `behaviorDesignFrozen=true`, `repairRound=3`, and `maxRepairRounds=3`. The public true-count resolver, `MathematicianCountResolution`, internal resolving context, and count-window snapshot are deferred with number-domain execution, impairment output selection, Vortox final false number, delivery, private projection, and settlement to 2B18B. Fresh independent scope review returned `SCOPE_REVIEW_PASS`; `implementationAuthorized=true` only for the reviewed ledger-only repair.
+
+Recovery is anchored at branch HEAD `3e822ee004b5dc32dc6fe49383169b45805d03ea`, prior reviewed product HEAD `faf3b44714b62f7723ecb319e6d244a324215088`, and base main `89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f`. Exact push/PR CI for the recovery HEAD is `29196189667 / 29196191030`; product-head CI is `29195691651 / 29195693110`; base-main CI is `29193210219`; all succeeded. PR #23 remains open and the worktree is clean.
+
+The corrected ledger-only authority is `docs/implementation/phase-3-slice-2b18a-ledger-only-rescope.md`, SHA-256 `3415944f1a42bcaee8f0a7a990a6d8d148ad0169fea0a9e4697acfbfc9f44b44`. Scope review round 1 is archived verbatim at `docs/implementation/phase-3-slice-2b18a-ledger-only-scope-review-round-1.md`, SHA-256 `52e987c1709b429e43457bbe2b2008ba9bdd8e615f6d87e349da5a9aefe436cc`, reverse `MATCH`, verdict `SCOPE_REVIEW_FIX_REQUIRED`. Its two docs-only blockers were corrected. Fresh round-2 review is `docs/implementation/phase-3-slice-2b18a-ledger-only-scope-review-round-2.md`, SHA-256 `00177a72d33d9be71e3c281edaea908dd2e98b49509c6aa8d257260fc719967a`, reverse `MATCH`, verdict `SCOPE_REVIEW_PASS`, blockers `[]`.
+
+The ledger-only repair-round-3 implementation and local gates are complete. It removes every deferred count/resolver/context/snapshot runtime contract, binds retained ledger facts to accepted insertion/task/grant/opportunity and role evidence, and keeps Mathematician information fail closed. Local gates pass: typecheck, lint, focused `15 / 182 / 209`, full `29 files / 938 tests`, coverage `86.22%` statements/lines, `80.28%` branches, `97.55%` functions. Exact-head CI and a fresh independent final review remain pending.
 
 Final repair-round-2 local gates pass at `29 / 940` tests with `86.30%` statements/lines, `80.22%` branches, and `97.45%` functions. Canonical-source equality is enforced at the replay append boundary; standalone evidence/fact validators remain closed structural/semantic validation and do not claim independent event-store proof.
 

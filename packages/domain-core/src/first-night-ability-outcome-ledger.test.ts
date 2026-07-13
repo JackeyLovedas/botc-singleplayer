@@ -2,28 +2,26 @@ import { describe, expect, it } from "vitest";
 import {
   canonicalizeAbilityOutcomeEvidenceReferences,
   cloneFirstNightAbilityOutcomeLedger,
-  cloneMathematicianCountResolution,
   deriveFirstNightAbilityOutcomeFact,
   FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION,
   formatBaseFirstNightAbilityInstanceId,
   formatFirstNightAbilityOutcomeFactId,
+  formatPhilosopherGainedV1AbilityInstanceId,
   formatPhilosopherGainedV2AbilityInstanceId,
   parseFirstNightAbilityInstanceId,
-  resolveFirstNightMathematicianTrueCountFromState,
-  validateAbilityOutcomeEvidenceReference,
-  validateFirstNightAbilityInstanceProvenance,
-  validateFirstNightAbilityOutcomeFact,
-  validateFirstNightAbilityOutcomeLedger,
-  validateFirstNightAbilityOutcomeWindowAnchor,
-  validateMathematicianCountResolution
+  validateAbilityOutcomeEvidenceReferenceShape,
+  validateFirstNightAbilityInstanceProvenanceShape,
+  validateFirstNightAbilityOutcomeFactShape,
+  validateFirstNightAbilityOutcomeLedgerShape,
+  validateFirstNightAbilityOutcomeWindowAnchorShape
 } from "./first-night-ability-outcome-ledger.js";
 import { DomainError } from "./errors.js";
 import { batchId, eventId, gameId, grantedAbilityId, playerId, roleId, scheduledTaskId } from "./ids.js";
 import type { FirstNightAbilityOutcomeFact, FirstNightAbilityOutcomeLedger, SourceEventEvidence } from "./first-night-ability-outcome-ledger.js";
 import type { GameState } from "./game-state.js";
-import { seatNumber, validatePlayerRoster } from "./player-roster.js";
+import { seatNumber } from "./player-roster.js";
 
 const taskId = scheduledTaskId("first-night-v1:WITCH_ACTION:seat-01");
 const sourceEventId = eventId("event-20");
@@ -81,7 +79,7 @@ const evidenceVariants=()=>[
   {kind:"DREAMER_DELIVERY",taskId:"task",opportunityId:"opp",sourcePlayerId:"p1",targetPlayerId:"p2",deliveredGoodRoleId:"dreamer",deliveredEvilRoleId:"witch",terminalEventId:"event"},
   {kind:"SEAMSTRESS_DELIVERY",taskId:"task",opportunityId:"opp",sourcePlayerId:"p1",firstTargetPlayerId:"p2",secondTargetPlayerId:"p3",ruleCorrectAnswer:"YES",deliveredAnswer:"NO",terminalEventId:"event"}
 ] as const;
-const terminalState=(taskType:"SNAKE_CHARMER_ACTION"|"DREAMER_ACTION",sourceRole:"snakeCharmer"|"dreamer",targetRole:string,targetType:"TOWNSFOLK"|"DEMON"="TOWNSFOLK"):GameState=>{
+const terminalState=(taskType:"SNAKE_CHARMER_ACTION"|"DREAMER_ACTION",sourceRole:"snake_charmer"|"dreamer",targetRole:string,targetType:"TOWNSFOLK"|"DEMON"="TOWNSFOLK"):GameState=>{
   const state=resolvingState([]);const task=scheduledTaskId(`first-night-v1:${taskType}:seat-01`);const sourceEntry=state.currentCharacterState!.entries[0]!;const targetEntry=state.currentCharacterState!.entries[1]!;
   return {...state,currentCharacterState:{revision:1,entries:state.currentCharacterState!.entries.map((entry,index)=>index===0?{...sourceEntry,role:roleSnapshot(sourceRole),currentAlignment:"GOOD" as const}:index===1?{...targetEntry,role:roleSnapshot(targetRole,targetType),currentAlignment:targetType==="DEMON"?"EVIL" as const:"GOOD" as const}:entry)},firstNightTaskPlan:{...state.firstNightTaskPlan!,tasks:[{taskId:task,taskType,taskClass:taskType==="DREAMER_ACTION"?"ROLE_INFORMATION":"ROLE_ACTION",orderKey:{baseOrder:500,insertionOrder:0},source:{kind:"ROLE",playerId:sourceEntry.playerId,seatNumber:sourceEntry.seatNumber,role:roleSnapshot(sourceRole)},status:"PENDING",settlementPolicy:"REEVALUATE_SOURCE_AT_SETTLEMENT"}]},firstNightActionOpportunities:{opportunities:[{opportunityId:"opportunity-1",taskId:task,sourcePlayerId:sourceEntry.playerId,sourceSeatNumber:sourceEntry.seatNumber}]}} as unknown as GameState;
 };
@@ -96,35 +94,46 @@ describe("first-night ability outcome ledger", () => {
     expect(parseFirstNightAbilityInstanceId(formatBaseFirstNightAbilityInstanceId(scheduledTaskId("first-night-v1:WITCH_ACTION:seat-1")))).toMatchObject({valid:false});
     expect(parseFirstNightAbilityInstanceId(formatBaseFirstNightAbilityInstanceId(scheduledTaskId("first-night-v1:WITCH_ACTION:seat-013")))).toMatchObject({valid:false});
     expect(parseFirstNightAbilityInstanceId(formatPhilosopherGainedV2AbilityInstanceId({taskId:gainedTaskId,grantId:grantedAbilityId("philosopher-grant-v1:seat-1:from-witch")}))).toMatchObject({valid:false});
+    const v1TaskId=scheduledTaskId("first-night-v1:PHILOSOPHER_GAINED:WITCH_ACTION:seat-01:from-witch");
+    const grantId=grantedAbilityId("philosopher-grant-v1:seat-01:from-witch");
+    expect(parseFirstNightAbilityInstanceId(formatPhilosopherGainedV1AbilityInstanceId({taskId:v1TaskId,grantId}))).toMatchObject({valid:true,kind:"PHILOSOPHER_GAINED_TASK_V1",generation:"V1",embeddedSeat:1,embeddedRoleId:"witch"});
+    expect(parseFirstNightAbilityInstanceId(formatPhilosopherGainedV1AbilityInstanceId({taskId:gainedTaskId,grantId}))).toMatchObject({valid:false});
+    expect(parseFirstNightAbilityInstanceId(formatPhilosopherGainedV2AbilityInstanceId({taskId:v1TaskId,grantId}))).toMatchObject({valid:false});
   });
 
   it("requires exact provenance variants", () => {
     const provenance = fact().abilityInstance;
-    expect(validateFirstNightAbilityInstanceProvenance(provenance)).toStrictEqual({ valid: true });
-    expect(validateFirstNightAbilityInstanceProvenance({ ...provenance, extra: true })).toMatchObject({ valid: false });
+    expect(validateFirstNightAbilityInstanceProvenanceShape(provenance)).toStrictEqual({ valid: true });
+    expect(validateFirstNightAbilityInstanceProvenanceShape({ ...provenance, extra: true })).toMatchObject({ valid: false });
+    const gainedTaskId=scheduledTaskId("first-night-v2:PHILOSOPHER_GAINED:WITCH_ACTION:seat-01:from-witch");
+    const grantId=grantedAbilityId("philosopher-grant-v1:seat-01:from-witch");
+    const gained={provenanceVersion:"first-night-ability-instance-provenance-v1",kind:"PHILOSOPHER_GAINED_TASK_V2",abilityInstanceId:formatPhilosopherGainedV2AbilityInstanceId({taskId:gainedTaskId,grantId}),abilityRoleId:roleId("witch"),taskId:gainedTaskId,sourcePlayerId:playerId("player-1"),sourceSeatNumber:seatNumber(1),philosopherOpportunityId:"opportunity-1",grantId,sourceCharacterStateRevision:1,schedulingVersion:"philosopher-gained-first-night-scheduling-v2"} as const;
+    expect(validateFirstNightAbilityInstanceProvenanceShape(gained)).toStrictEqual({valid:true});
+    expect(validateFirstNightAbilityInstanceProvenanceShape({...gained,abilityRoleId:roleId("cerenovus")})).toMatchObject({valid:false});
+    expect(validateFirstNightAbilityInstanceProvenanceShape({...gained,sourceSeatNumber:seatNumber(2)})).toMatchObject({valid:false});
   });
 
   it("validates an exact first-night window anchor", () => {
-    expect(validateFirstNightAbilityOutcomeWindowAnchor(ledger().windowAnchor)).toStrictEqual({ valid: true });
-    expect(validateFirstNightAbilityOutcomeWindowAnchor({ ...ledger().windowAnchor, startBoundary: "INCLUSIVE" })).toMatchObject({ valid: false });
+    expect(validateFirstNightAbilityOutcomeWindowAnchorShape(ledger().windowAnchor)).toStrictEqual({ valid: true });
+    expect(validateFirstNightAbilityOutcomeWindowAnchorShape({ ...ledger().windowAnchor, startBoundary: "INCLUSIVE" })).toMatchObject({ valid: false });
   });
 
   it("accepts all closed evidence shapes and rejects extra fields", () => {
     for(const variant of evidenceVariants()){
-      expect(validateAbilityOutcomeEvidenceReference(variant),variant.kind).toStrictEqual({valid:true});
+      expect(validateAbilityOutcomeEvidenceReferenceShape(variant),variant.kind).toStrictEqual({valid:true});
       const keys=Object.keys(variant);const missing={...variant} as Record<string,unknown>;delete missing[keys[0]!];
-      expect(validateAbilityOutcomeEvidenceReference(missing),`${variant.kind} missing`).toMatchObject({valid:false});
-      expect(validateAbilityOutcomeEvidenceReference({...variant,extra:true}),`${variant.kind} extra`).toMatchObject({valid:false});
+      expect(validateAbilityOutcomeEvidenceReferenceShape(missing),`${variant.kind} missing`).toMatchObject({valid:false});
+      expect(validateAbilityOutcomeEvidenceReferenceShape({...variant,extra:true}),`${variant.kind} extra`).toMatchObject({valid:false});
     }
-    expect(validateAbilityOutcomeEvidenceReference({ ...sourceEvidence(), recordId: "open" })).toMatchObject({ valid: false });
-    expect(validateAbilityOutcomeEvidenceReference({ kind: "DOMAIN_RECORD", recordId: "open" })).toMatchObject({ valid: false });
+    expect(validateAbilityOutcomeEvidenceReferenceShape({ ...sourceEvidence(), recordId: "open" })).toMatchObject({ valid: false });
+    expect(validateAbilityOutcomeEvidenceReferenceShape({ kind: "DOMAIN_RECORD", recordId: "open" })).toMatchObject({ valid: false });
   });
 
   it("validates V1/V2 insertion nested exact shapes",()=>{
     const v1=evidenceVariants().find((entry)=>entry.kind==="FIRST_NIGHT_TASK_INSERTION")!;
-    expect(validateAbilityOutcomeEvidenceReference(v1)).toStrictEqual({valid:true});
-    expect(validateAbilityOutcomeEvidenceReference({...v1,generation:{kind:"V2",taskPlanVersion:"first-night-task-plan-v2",grantId:"grant",schedulingVersion:"philosopher-gained-first-night-scheduling-v2"}})).toStrictEqual({valid:true});
-    expect(validateAbilityOutcomeEvidenceReference({...v1,generation:{...v1.generation,grantId:"illegal"}})).toMatchObject({valid:false});
+    expect(validateAbilityOutcomeEvidenceReferenceShape(v1)).toStrictEqual({valid:true});
+    expect(validateAbilityOutcomeEvidenceReferenceShape({...v1,generation:{kind:"V2",taskPlanVersion:"first-night-task-plan-v2",grantId:"grant",schedulingVersion:"philosopher-gained-first-night-scheduling-v2"}})).toStrictEqual({valid:true});
+    expect(validateAbilityOutcomeEvidenceReferenceShape({...v1,generation:{...v1.generation,grantId:"illegal"}})).toMatchObject({valid:false});
   });
 
   it("uses frozen role-specific primary identities",()=>{
@@ -150,8 +159,8 @@ describe("first-night ability outcome ledger", () => {
   });
 
   it("validates facts and ledgers and deep-clones their arrays", () => {
-    expect(validateFirstNightAbilityOutcomeFact(fact())).toStrictEqual({ valid: true });
-    expect(validateFirstNightAbilityOutcomeLedger(ledger())).toStrictEqual({ valid: true });
+    expect(validateFirstNightAbilityOutcomeFactShape(fact())).toStrictEqual({ valid: true });
+    expect(validateFirstNightAbilityOutcomeLedgerShape(ledger())).toStrictEqual({ valid: true });
     const copied = cloneFirstNightAbilityOutcomeLedger(ledger());
     expect(copied).toStrictEqual(ledger());
     expect(copied).not.toBe(ledger());
@@ -163,7 +172,8 @@ describe("first-night ability outcome ledger", () => {
   });
 
   it("rejects duplicate or out-of-order fact identities", () => {
-    expect(validateFirstNightAbilityOutcomeLedger(ledger([fact(), fact()]))).toMatchObject({ valid: false });
+    expect(validateFirstNightAbilityOutcomeLedgerShape(ledger([fact(), fact()]))).toMatchObject({ valid: false });
+    expect(()=>cloneFirstNightAbilityOutcomeLedger({...ledger(),facts:[fact(),fact()]})).toThrowError(DomainError);
   });
 
   it("fails hostile getters, proxies, sparse arrays, cycles, symbols and nonplain values closed", () => {
@@ -173,49 +183,32 @@ describe("first-night ability outcome ledger", () => {
     const sparse: unknown[] = []; sparse.length = 1;
     const cycle: Record<string, unknown> = {}; cycle.self = cycle;
     for (const hostile of [getter, revoked.proxy, sparse, cycle, { kind: Symbol("x") }, new Date()]) {
-      expect(() => validateAbilityOutcomeEvidenceReference(hostile)).not.toThrow();
-      expect(validateAbilityOutcomeEvidenceReference(hostile)).toMatchObject({ valid: false });
+      expect(() => validateAbilityOutcomeEvidenceReferenceShape(hostile)).not.toThrow();
+      expect(validateAbilityOutcomeEvidenceReferenceShape(hostile)).toMatchObject({ valid: false });
     }
     expect(calls).toBe(0);
   });
 
-  it("rejects a self-consistent but noncanonical resolving subgraph", () => {
-    const state = resolvingState([fact("ABNORMAL")]);
-    expect(state.roster!.entries.map((entry)=>entry.playerKind)).toStrictEqual(["HUMAN",...Array.from({length:11},()=>"AI")]);
-    expect(validatePlayerRoster(state.roster!.entries)).toStrictEqual({ valid: true });
-    expect(()=>resolveFirstNightMathematicianTrueCountFromState(state)).toThrowError(DomainError);
-  });
-
-  it("rejects incomplete fabricated resolving state and lower-window facts",()=>{
-    expect(()=>resolveFirstNightMathematicianTrueCountFromState({firstNightAbilityOutcomeLedger:ledger([])})).toThrowError(DomainError);
+  it("rejects facts at the exclusive lower-window boundary",()=>{
     const below=factAt("event-10",10,"NORMAL","NO_OTHER_CHARACTER_ABILITY");
-    expect(validateFirstNightAbilityOutcomeLedger(ledger([below]))).toMatchObject({valid:false});
-  });
-
-  it("validates exact count variants and deeply clones nested arrays",()=>{
-    const canonicalLedger=ledger([factAt("event-20",20,"ABNORMAL","SOURCE_POISONING")]);const result={status:"RESOLVED" as const,resolutionModelVersion:"first-night-mathematician-count-resolution-v1" as const,window:{...canonicalLedger.windowAnchor,endEventSequence:30,endBoundary:"INCLUSIVE" as const},resolvingSourcePlayerId:playerId("math-player"),resolvingAbilityInstanceId:formatBaseFirstNightAbilityInstanceId(scheduledTaskId("first-night-v1:MATHEMATICIAN_INFORMATION:seat-12")),evaluatedThroughEventSequence:30,qualifyingAbnormalFactIds:[formatFirstNightAbilityOutcomeFactId(eventId("event-20"))],distinctAbnormalPlayers:[{playerId:playerId("player-1"),seatNumber:seatNumber(1),supportingFactIds:[formatFirstNightAbilityOutcomeFactId(eventId("event-20"))]}],excludedOwnFactIds:[],ignoredFutureFactIds:[],ignoredNormalFactIds:[],ignoredPendingFactIds:[],redundantUnresolvedFactIds:[],trueCount:1};
-    expect(validateMathematicianCountResolution(result,canonicalLedger)).toStrictEqual({valid:true});
-    expect(validateMathematicianCountResolution({...result,trueCount:2},canonicalLedger)).toMatchObject({valid:false});
-    expect(validateMathematicianCountResolution({...result,extra:true},canonicalLedger)).toMatchObject({valid:false});
-    expect(validateMathematicianCountResolution({...result,distinctAbnormalPlayers:[...result.distinctAbnormalPlayers,{playerId:playerId("player-2"),seatNumber:seatNumber(2),supportingFactIds:result.qualifyingAbnormalFactIds}],trueCount:2},canonicalLedger)).toMatchObject({valid:false});
-    expect(validateMathematicianCountResolution({...result,qualifyingAbnormalFactIds:[],distinctAbnormalPlayers:[],trueCount:0},canonicalLedger)).toMatchObject({valid:false});
-    const cloned=cloneMathematicianCountResolution(result);expect(cloned).toStrictEqual(result);expect(cloned).not.toBe(result);expect(cloned.window).not.toBe(result.window);expect(cloned.distinctAbnormalPlayers).not.toBe(result.distinctAbnormalPlayers);expect(cloned.distinctAbnormalPlayers[0]?.supportingFactIds).not.toBe(result.distinctAbnormalPlayers[0]?.supportingFactIds);
+    expect(validateFirstNightAbilityOutcomeLedgerShape(ledger([below]))).toMatchObject({valid:false});
   });
 
   it("classifies ineffective Snake Charmer from the historical target quadrant",()=>{
-    const derive=(targetRole:string,targetType:"TOWNSFOLK"|"DEMON")=>{const state=terminalState("SNAKE_CHARMER_ACTION","snakeCharmer",targetRole,targetType);const source=state.currentCharacterState!.entries[0]!;const target=state.currentCharacterState!.entries[1]!;const impairmentId="impairment-snake";const withImpairment={...state,abilityImpairments:{impairments:[{impairmentId,kind:"POISONED",sourceKind:"SNAKE_CHARMER_DEMON_HIT",sourcePlayerId:target.playerId,affectedPlayerId:source.playerId,affectedSeatNumber:source.seatNumber,affectedRole:source.role,sourceCharacterStateRevision:1}]}} as unknown as GameState;return deriveFirstNightAbilityOutcomeFact({stateBefore:withImpairment,event:terminalEvent("SnakeCharmerIneffectiveResolved",{taskId:scheduledTaskId("first-night-v1:SNAKE_CHARMER_ACTION:seat-01"),opportunityId:"opportunity-1",sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,sourceImpairmentId:impairmentId,sourceImpairmentKind:"POISONED"}) as never})!;};
-    const nonDemon=derive("clockmaker","TOWNSFOLK");expect(nonDemon).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY",causedByAnotherCharacterAbility:false});expect(validateFirstNightAbilityOutcomeFact(nonDemon)).toStrictEqual({valid:true});
-    const demon=derive("vortox","DEMON");expect(demon).toMatchObject({outcomeStatus:"ABNORMAL",causeKind:"SOURCE_POISONING",causedByAnotherCharacterAbility:true});expect(validateFirstNightAbilityOutcomeFact(demon)).toStrictEqual({valid:true});
-    const missingState=terminalState("SNAKE_CHARMER_ACTION","snakeCharmer","clockmaker");const source=missingState.currentCharacterState!.entries[0]!;const target=missingState.currentCharacterState!.entries[1]!;const missing={...missingState,currentCharacterState:{revision:1,entries:missingState.currentCharacterState!.entries.filter((entry)=>entry.playerId!==target.playerId)},abilityImpairments:{impairments:[{impairmentId:"impairment-snake",kind:"POISONED",sourceKind:"SNAKE_CHARMER_DEMON_HIT",sourcePlayerId:target.playerId,affectedPlayerId:source.playerId,affectedSeatNumber:source.seatNumber,affectedRole:source.role,sourceCharacterStateRevision:1}]}} as unknown as GameState;
-    const unresolved=deriveFirstNightAbilityOutcomeFact({stateBefore:missing,event:terminalEvent("SnakeCharmerIneffectiveResolved",{taskId:scheduledTaskId("first-night-v1:SNAKE_CHARMER_ACTION:seat-01"),opportunityId:"opportunity-1",sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,sourceImpairmentId:"impairment-snake",sourceImpairmentKind:"POISONED"}) as never})!;expect(unresolved).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"CAUSE_NOT_PROVEN",causedByAnotherCharacterAbility:false});expect(validateFirstNightAbilityOutcomeFact(unresolved)).toStrictEqual({valid:true});
+    const derive=(targetRole:string,targetType:"TOWNSFOLK"|"DEMON")=>{const state=terminalState("SNAKE_CHARMER_ACTION","snake_charmer",targetRole,targetType);const source=state.currentCharacterState!.entries[0]!;const target=state.currentCharacterState!.entries[1]!;const impairmentId="impairment-snake";const withImpairment={...state,abilityImpairments:{impairments:[{impairmentId,kind:"POISONED",sourceKind:"SNAKE_CHARMER_DEMON_HIT",sourcePlayerId:target.playerId,affectedPlayerId:source.playerId,affectedSeatNumber:source.seatNumber,affectedRole:source.role,sourceCharacterStateRevision:1}]}} as unknown as GameState;return deriveFirstNightAbilityOutcomeFact({stateBefore:withImpairment,event:terminalEvent("SnakeCharmerIneffectiveResolved",{taskId:scheduledTaskId("first-night-v1:SNAKE_CHARMER_ACTION:seat-01"),opportunityId:"opportunity-1",sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,sourceImpairmentId:impairmentId,sourceImpairmentKind:"POISONED"}) as never})!;};
+    const nonDemon=derive("clockmaker","TOWNSFOLK");expect(nonDemon).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY",causedByAnotherCharacterAbility:false});expect(validateFirstNightAbilityOutcomeFactShape(nonDemon)).toStrictEqual({valid:true});
+    const demon=derive("vortox","DEMON");expect(demon).toMatchObject({outcomeStatus:"ABNORMAL",causeKind:"SOURCE_POISONING",causedByAnotherCharacterAbility:true});expect(validateFirstNightAbilityOutcomeFactShape(demon)).toStrictEqual({valid:true});
+    const wrongImpairmentKind={...demon,evidenceReferences:demon.evidenceReferences.map((entry)=>entry.kind==="ABILITY_IMPAIRMENT"?{...entry,impairmentKind:"DRUNK" as const}:entry)};expect(validateFirstNightAbilityOutcomeFactShape(wrongImpairmentKind)).toMatchObject({valid:false});
+    const missingState=terminalState("SNAKE_CHARMER_ACTION","snake_charmer","clockmaker");const source=missingState.currentCharacterState!.entries[0]!;const target=missingState.currentCharacterState!.entries[1]!;const missing={...missingState,currentCharacterState:{revision:1,entries:missingState.currentCharacterState!.entries.filter((entry)=>entry.playerId!==target.playerId)},abilityImpairments:{impairments:[{impairmentId:"impairment-snake",kind:"POISONED",sourceKind:"SNAKE_CHARMER_DEMON_HIT",sourcePlayerId:target.playerId,affectedPlayerId:source.playerId,affectedSeatNumber:source.seatNumber,affectedRole:source.role,sourceCharacterStateRevision:1}]}} as unknown as GameState;
+    const unresolved=deriveFirstNightAbilityOutcomeFact({stateBefore:missing,event:terminalEvent("SnakeCharmerIneffectiveResolved",{taskId:scheduledTaskId("first-night-v1:SNAKE_CHARMER_ACTION:seat-01"),opportunityId:"opportunity-1",sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,sourceImpairmentId:"impairment-snake",sourceImpairmentKind:"POISONED"}) as never})!;expect(unresolved).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"CAUSE_NOT_PROVEN",causedByAnotherCharacterAbility:false});expect(validateFirstNightAbilityOutcomeFactShape(unresolved)).toStrictEqual({valid:true});
   });
 
   it("classifies Dreamer truth and Vortox applicability without fabricating historical tenure",()=>{
     const eventFor=(state:GameState,goodRole:string,evilRole:string)=>{const source=state.currentCharacterState!.entries[0]!;const target=state.currentCharacterState!.entries[1]!;return deriveFirstNightAbilityOutcomeFact({stateBefore:state,event:terminalEvent("DreamerInformationDelivered",{taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),opportunityId:"opportunity-1",sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,goodRole:roleSnapshot(goodRole),evilRole:roleSnapshot(evilRole,"MINION"),informationReliability:{kind:"EFFECTIVE"}}) as never})!;};
-    const normalState=terminalState("DREAMER_ACTION","dreamer","clockmaker");const normal=eventFor(normalState,"clockmaker","witch");expect(normal).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY"});expect(validateFirstNightAbilityOutcomeFact(normal)).toStrictEqual({valid:true});const forgedNormal={...normal,evidenceReferences:normal.evidenceReferences.map((entry)=>entry.kind==="DREAMER_DELIVERY"?{...entry,deliveredGoodRoleId:roleId("artist")}:entry)};expect(validateFirstNightAbilityOutcomeFact(forgedNormal)).toMatchObject({valid:false});
+    const normalState=terminalState("DREAMER_ACTION","dreamer","clockmaker");const normal=eventFor(normalState,"clockmaker","witch");expect(normal).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY"});expect(validateFirstNightAbilityOutcomeFactShape(normal)).toStrictEqual({valid:true});const forgedNormal={...normal,evidenceReferences:normal.evidenceReferences.map((entry)=>entry.kind==="DREAMER_DELIVERY"?{...entry,deliveredGoodRoleId:roleId("artist")}:entry)};expect(validateFirstNightAbilityOutcomeFactShape(forgedNormal)).toMatchObject({valid:false});
     const vortoxEntry={...normalState.currentCharacterState!.entries[2]!,role:roleSnapshot("vortox","DEMON"),currentAlignment:"EVIL" as const};const currentVortox={...normalState,currentCharacterState:{revision:1,entries:normalState.currentCharacterState!.entries.map((entry,index)=>index===2?vortoxEntry:entry)}} as GameState;
-    const unproven=eventFor(currentVortox,"clockmaker","witch");expect(unproven).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"VORTOX_APPLICABILITY_NOT_PROVEN"});expect(unproven.evidenceReferences).toContainEqual(expect.objectContaining({kind:"PLAYER_ROLE_AT_REVISION",roleId:"vortox"}));expect(validateFirstNightAbilityOutcomeFact(unproven)).toStrictEqual({valid:true});
-    const proven={...currentVortox,seamstressRoleTenureState:{records:[{roleTenureId:"tenure-vortox",playerId:vortoxEntry.playerId,seatNumber:vortoxEntry.seatNumber,roleId:"vortox",acquiredCharacterStateRevision:1}]}} as unknown as GameState;const constrained=eventFor(proven,"clockmaker","witch");expect(constrained).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"DREAMER_VORTOX_CONSTRAINT_UNRECORDED"});expect(constrained.evidenceReferences).toContainEqual(expect.objectContaining({kind:"ROLE_TENURE",roleId:"vortox",statusAtEvaluation:"ACTIVE"}));expect(validateFirstNightAbilityOutcomeFact(constrained)).toStrictEqual({valid:true});
+    const unproven=eventFor(currentVortox,"clockmaker","witch");expect(unproven).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"VORTOX_APPLICABILITY_NOT_PROVEN"});expect(unproven.evidenceReferences).toContainEqual(expect.objectContaining({kind:"PLAYER_ROLE_AT_REVISION",roleId:"vortox"}));expect(validateFirstNightAbilityOutcomeFactShape(unproven)).toStrictEqual({valid:true});
+    const proven={...currentVortox,seamstressRoleTenureState:{records:[{roleTenureId:"tenure-vortox",playerId:vortoxEntry.playerId,seatNumber:vortoxEntry.seatNumber,roleId:"vortox",acquiredCharacterStateRevision:1}]}} as unknown as GameState;const constrained=eventFor(proven,"clockmaker","witch");expect(constrained).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"DREAMER_VORTOX_CONSTRAINT_UNRECORDED"});expect(constrained.evidenceReferences).toContainEqual(expect.objectContaining({kind:"ROLE_TENURE",roleId:"vortox",statusAtEvaluation:"ACTIVE"}));expect(validateFirstNightAbilityOutcomeFactShape(constrained)).toStrictEqual({valid:true});
     expect(()=>eventFor(normalState,"artist","witch")).toThrowError(DomainError);
   });
 });

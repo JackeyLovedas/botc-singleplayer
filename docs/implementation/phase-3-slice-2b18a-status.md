@@ -1,47 +1,49 @@
 # Phase 3 Slice 2B18A Implementation Status
 
-> Status: `HUMAN_BLOCKED`. Product HEAD `faf3b44714b62f7723ecb319e6d244a324215088` passed CI but failed final code and rule review after repair round `2 / 2`. PR #23 remains open and frozen; this file describes implemented behavior, not accepted/merge-ready behavior.
+> Status: `RUNNING`, ledger-only repair round `3 / 3` on PR #23. Scope review returned `SCOPE_REVIEW_PASS`; final code/rule review and merge gates remain pending.
 
 ## Scope
 
-Implemented only the reviewed `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION` from `docs/implementation/phase-3-slice-2b18a-design-round-3-2.md` (`615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865`). Rule evidence is `docs/rules/evidence/2B18-resolved.md` (`RULE_READY`, `PARTIAL`). The independent design verdict is `RULE_DESIGN_PASS` with no blockers.
+2B18A is limited to the canonical derived first-night ability outcome ledger foundation and replay anchor. The authority is `docs/implementation/phase-3-slice-2b18a-ledger-only-rescope.md` at SHA-256 `3415944f1a42bcaee8f0a7a990a6d8d148ad0169fea0a9e4697acfbfc9f44b44`. Rule evidence remains `RULE_READY / PARTIAL`; the four approved Mathematician overrides are unchanged.
+
+Shape validation is not accepted-history provenance.
 
 ## Implemented
 
-- Derived canonical `FirstNightAbilityOutcomeLedger` initialized by `FirstNightInitialized`, with an exclusive lower boundary and state-bound inclusive resolver upper boundary.
-- Canonical fact and ability-instance IDs, formatter round-trip and embedded provenance checks, base and Philosopher-gained V1/V2 provenance, closed 16-variant evidence union, exact nested/value validators, frozen primary identities, canonical ordering, duplicate removal, conflict rejection, field-by-field canonical deep clones, and fail-closed domain errors.
-- One event-applier derivation hook for the frozen terminal allowlist. Intermediate choice, marker, impairment, planning, settlement, and system-information events do not independently create outcome facts.
-- Terminal pre-state adapters for Philosopher, Snake Charmer, Evil Twin, Witch, Cerenovus, Clockmaker, Dreamer, and Seamstress, including historical role/tenure/evidence links, the ineffective Snake Charmer target-role quadrant, and the Dreamer/Vortox proven-versus-unproven matrix.
-- Public state-only `resolveFirstNightMathematicianTrueCountFromState(stateBeforeResolution: unknown)` constructs a validated module-private canonical context, with own-instance exclusion, exclusive/inclusive window filtering, pending exclusion, same-player unresolved redundancy, player deduplication, stable ordering, and fixed `0..11` product domain.
-- GameState/rebuild integration and package-root public contracts. Ledger, evidence, context, and count do not enter player or AI projections.
-- Canonical-source equality is enforced when the replay adapter derives and appends a fact from its pre-event state and terminal envelope. Standalone evidence/fact validators enforce closed structure and semantic cross-links but do not claim independent event-store provenance.
+- `FirstNightInitialized` creates the derived ledger and exact exclusive replay anchor. No ledger event or accepted payload was added.
+- Accepted terminal replay derives outcome facts from the terminal pre-state, re-derives the expected fact at the append boundary, requires exact canonical equality, rejects duplicate identities, and validates the appended ledger.
+- Base, Philosopher-gained V1, and Philosopher-gained V2 ability-instance IDs use distinct grammars and bind task generation/type, embedded seat/role, grant role, chosen role, source revision, opportunity, insertion, and runtime plan.
+- Runtime gained tasks are reconstructed from `state.firstNightTaskInsertions` with the accepted generation-specific payload validators and compared exactly with the plan. The plan cannot certify its own inserted tasks.
+- The 16 closed evidence variants, canonical ordering, duplicate/conflict rules, historical role facts, role tenure, impairment evidence, and supported Philosopher, Snake Charmer, Evil Twin, Witch, Cerenovus, Clockmaker, Dreamer, and Seamstress classifications remain frozen.
+- Public validators are explicitly named as shape validators. Canonical provenance exists only through complete accepted event-stream validation and rebuild; caller-created state or ledger is not a supported game-decision input.
+- Ledger state remains excluded from player, AI, and public projections.
+- `MATHEMATICIAN_INFORMATION` remains fail closed with `ApplicationNotConfigured`, `retryable=true`, no receipt, no event, no settlement, and no game-version increment.
 
-## Explicitly Unsupported
+## Deferred to 2B18B
 
-- `MathematicianInformationDelivered`, `SettleMathematicianInformation`, `MATHEMATICIAN_INFORMATION` settlement, receipt, private number projection, candidate selection, Storyteller final choice, or Vortox final false-number delivery.
-- General dawn/day/later-night windows, nominations, executions, deaths, Witch trigger lifecycle, Cerenovus execution, Evil Twin later lifecycle, continuous poison, registration, Travellers, Pit-Hag, Barber, UI, Electron, SQLite, snapshot migration, Slice 2B18B, and Slice 2B19.
-- The Mathematician remains `PARTIAL`, never `COMPLETE`.
+- Any public or internal Mathematician true-count resolver.
+- `MathematicianCountResolution` and all count classification/result contracts.
+- Resolving context, count-window snapshot, runtime override carrier, own-instance exclusion execution, duplicate-holder counting, candidate number selection, impairment output selection, Vortox final number, private delivery, and task settlement.
 
-## Rule-to-Test Traceability
+No renamed or replacement API accepts caller-supplied state, ledger, context, window, source, instance, or override data to calculate a count. 2B18B and 2B19 have not started.
 
-- Window, ID/provenance round-trip, all 16 evidence variants, V1/V2 nested generation, frozen identities, exact count variants, conflict ordering, and nested clone isolation: `packages/domain-core/src/first-night-ability-outcome-ledger.test.ts`.
-- Hostile Proxy/getter/sparse/cycle/symbol/nonplain fail-closed validation: the same dedicated test file.
-- Canonical-context forgery rejection, lower-window rejection, Snake Charmer historical-target classification, Dreamer/Vortox applicability, count status classification, player deduplication, and unresolved redundancy: the same dedicated test file.
-- Deterministic replay append assertions for effective/impaired Witch and Dreamer: `packages/domain-core/src/rebuild.test.ts`; gained-Mathematician ledger presence and unchanged fail-closed application boundary: `packages/application/src/game-application-service.test.ts`.
-- Projection non-leakage with injected ledger sentinels: `packages/projections/src/private-knowledge-view.test.ts`.
+## Direct evidence
+
+- `packages/domain-core/src/first-night-ability-outcome-ledger.test.ts`: strict BASE/V1/V2 identity grammar, generation/seat/role rejection, all evidence shapes, canonical identities/order, hostile shapes, deep-clone validation, lower anchor boundary, Snake Charmer matrix, Dreamer/Vortox matrix, and impairment cause cross-links.
+- `packages/domain-core/src/rebuild.test.ts`: accepted insertion reconstruction, plan self-certification rejection, replay anchor/facts, terminal adapters, malformed role chains, deterministic rebuild, and later-state preservation.
+- `packages/application/src/game-application-service.test.ts`: package-root count API absence, gained provenance paths, and unchanged fail-closed `MATHEMATICIAN_INFORMATION` behavior.
+- `packages/projections/src/private-knowledge-view.test.ts`: player and AI projection non-leakage.
 
 ## Validation
 
-- Focused: dedicated ledger `17/17`, rebuild `182/182`, projection `77/77`, and canonical gained-Mathematician resolver/application regression passed.
-- Full: `29 files / 940 tests passed`.
-- Coverage: `86.30%` statements/lines, `80.22%` branches, `97.45%` functions.
-- `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:coverage`, and affected-file lint passed.
-- Product HEAD push/PR CI `29195691651 / 29195693110` passed, but CI does not override the final `FIX_REQUIRED` verdicts.
+- Typecheck: pass.
+- Focused ledger and rebuild: `2 files / 197 tests passed`.
+- Focused application: `1 file / 209 tests passed`.
+- Lint: pass.
+- Full test: `29 files / 938 tests passed`.
+- Coverage: `86.22%` statements/lines, `80.28%` branches, `97.55%` functions.
+- Diff and forbidden scans pass. Exact-head CI and a fresh independent final review remain pending.
 
-## Unresolved Final-Review Blockers
+## Coverage status
 
-- Complete canonical insertion/task/grant/opportunity chain validation and V1/V2 generation binding.
-- Close the hostile caller-supplied ledger/state boundary used by the public resolver.
-- Complete standalone role cause/evidence cross-links and correct per-fact count classification validation.
-- Add the missing direct adversarial tests and narrow any remaining claims accordingly.
-- Final verdicts remain `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; no merge or pass claim is authorized.
+`PARTIAL`. 2B18A provides only the ledger foundation and supported terminal adapters. It does not implement a Mathematician count, number, delivery, projection, or settlement and does not mark any role `COMPLETE`.

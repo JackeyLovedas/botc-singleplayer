@@ -39,7 +39,7 @@ Windows 本地《血染钟楼》单机游戏项目。
 
 当前代码覆盖领域事件脊柱、阶段状态机核心、阶段转换策略、命令串行入口、固定种子可复现的 12 人《梦殒春宵》真实配板基础、固定 12 人座位名单、可复现角色分配基础、首夜初始化事实、初始自身角色私有知识生成、玩家/AI 私有知识安全投影、首夜 `ScheduledTask` 计划骨架，`MINION_INFO`/`DEMON_INFO` 有序系统信息结算，Philosopher 首夜能力选择、能力授予事实、重复在场角色醉酒标记、获得能力首夜任务动态插入基础，Philosopher 获得的 Snake Charmer 行动机会、非恶魔目标无交换结算、恶魔命中后的当前角色/阵营交换和旧恶魔中毒标记，基础 Snake Charmer 行动与有效性求值，Evil Twin 配对与双子私有知识，以及 Witch 首夜目标选择、待死亡标记和无效结算。它不包含 Witch 实际死亡、提名触发结算、3 alive 失去能力、AI 决策、完整昼夜可玩流程、UI、Electron 或 SQLite 正式适配器。
 
-当前已接受实现还包括 Dreamer 首夜历史信息交付、Seamstress 基础/Philosopher 获得能力的首夜双目标选择与私有历史投影、Cerenovus 有效路径，以及 Clockmaker 首夜距离信息与严格运行时验证。相关角色覆盖仍为 `PARTIAL`，不代表完整角色实现。Slice 2B18 因四项规则冲突保持 `HUMAN_BLOCKED`，未恢复实现。
+当前已接受实现还包括 Dreamer 首夜历史信息交付、Seamstress 基础/Philosopher 获得能力的首夜双目标选择与私有历史投影、Cerenovus 有效路径，以及 Clockmaker 首夜距离信息与严格运行时验证。相关角色覆盖仍为 `PARTIAL`，不代表完整角色实现。Slice 2B18A 正在 PR #23 中按已通过范围审查的 ledger-only 边界修复；它尚未验收，也不包含数学家计数、数字交付或结算。
 
 重要文档：
 
@@ -119,3 +119,10 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Accepted legacy V1 histories can now grant and settle Philosopher choices with no first-night insertion mapping. Mapped V1 choices remain fail closed; V2 payloads, task IDs, positions, ordering, replay, and projections remain unchanged.
 - Final independent review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `ruleSemanticsChanged=false`, and no blockers. Verbatim final comments are archived in `docs/reviews/`.
 - Philosopher remains `PARTIAL`; Mathematician remains `SKELETON`. Slice 2B18 remains `HUMAN_BLOCKED` on four conflicts, and Slice 2B19 was not started.
+
+## Slice 2B18A Ledger-Only Repair
+
+- PR #23 is limited to the canonical derived first-night ability outcome ledger foundation and supported terminal adapters.
+- The public true-count resolver, count-result contract, resolving context, count-window snapshot, private number delivery, and settlement are deferred to 2B18B and are not part of 2B18A.
+- Shape validation is not accepted-history provenance. Canonical ledger provenance comes only from complete accepted event-stream validation and rebuild.
+- `MATHEMATICIAN_INFORMATION` remains fail closed. Slice 2B18B and Slice 2B19 have not started.

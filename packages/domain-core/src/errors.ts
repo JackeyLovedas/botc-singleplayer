@@ -84,9 +84,7 @@ export type DomainErrorCode =
   | "InvalidFirstNightAbilityOutcomeWindow"
   | "InvalidFirstNightAbilityInstance"
   | "InvalidFirstNightAbilityOutcomeEvidence"
-  | "InvalidResolvingMathematicianContext"
-  | "DuplicateFirstNightAbilityOutcomeFactConflict"
-  | "InvalidMathematicianCountResolutionInput";
+  | "DuplicateFirstNightAbilityOutcomeFactConflict";
 
 export class DomainError extends Error {
   public constructor(
