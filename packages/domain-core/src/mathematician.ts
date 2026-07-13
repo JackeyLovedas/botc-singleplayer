@@ -1,4 +1,4 @@
-import { isCanonicalDataValue, isDenseCanonicalArray } from "./canonical-data.js";
+import { isCanonicalDataValue, isDenseCanonicalArray, sameCanonicalDataValue } from "./canonical-data.js";
 import type {
   FirstNightAbilityInstanceId,
   FirstNightAbilityInstanceProvenance,
@@ -213,6 +213,8 @@ const isCount = (value: unknown): value is MathematicianCount =>
   typeof value === "number" && MATHEMATICIAN_COUNT_DOMAIN.includes(value as MathematicianCount);
 const denseUniqueStrings = (value: unknown): value is readonly string[] =>
   isDenseCanonicalArray(value) && value.every(nonEmpty) && new Set(value).size === value.length;
+const codeUnitOrderedStrings = (value: readonly string[]): boolean =>
+  value.every((entry, index) => index === 0 || value[index - 1]! < entry);
 
 export const formatMathematicianDeliveryId = (taskId: ScheduledTaskId): MathematicianDeliveryId => {
   const parsed = parseMathematicianTaskId(taskId);
@@ -290,7 +292,11 @@ const validSource = (value: unknown): value is MathematicianSourceContract => {
   const abilityInstance = value.abilityInstance as FirstNightAbilityInstanceProvenance;
   const task = parseMathematicianTaskId(value.taskId);
   if (!task.valid || abilityInstance.taskId !== value.taskId || abilityInstance.sourcePlayerId !== value.sourcePlayerId ||
-      abilityInstance.sourceSeatNumber !== value.sourceSeatNumber || abilityInstance.abilityRoleId !== "mathematician") return false;
+      abilityInstance.sourceSeatNumber !== value.sourceSeatNumber || abilityInstance.abilityRoleId !== "mathematician" ||
+      value.sourceRoleTenure.playerId !== value.sourcePlayerId || value.sourceRoleTenure.seatNumber !== value.sourceSeatNumber ||
+      value.sourceRoleTenure.acquiredCharacterStateRevision > value.settlementCharacterStateRevision ||
+      (value.sourceRoleTenure.endedCharacterStateRevision !== null &&
+        value.sourceRoleTenure.endedCharacterStateRevision <= value.settlementCharacterStateRevision)) return false;
   if (value.kind === "BASE_MATHEMATICIAN") {
     return task.generation === "BASE" && abilityInstance.kind === "BASE_ROLE_TASK" &&
       (value.taskPlanVersion === "first-night-task-plan-v1" || value.taskPlanVersion === "first-night-task-plan-v2") &&
@@ -328,9 +334,18 @@ const validVortox = (value: unknown): value is MathematicianVortoxConstraint => 
       !hasExactEnumerableKeys(value, keys) || !positive(value.evaluatedCharacterStateRevision) || !nonEmpty(value.vortoxPlayerId) ||
       !seat(value.vortoxSeatNumber) || !hasExactRoleSetupSnapshotShape(value.vortoxRoleSnapshot) ||
       value.vortoxRoleSnapshot.roleId !== "vortox" || !validTenure(value.vortoxRoleTenure) ||
-      value.vortoxRoleTenure.roleId !== "vortox") return false;
+      value.vortoxRoleTenure.roleId !== "vortox" || value.vortoxRoleTenure.playerId !== value.vortoxPlayerId ||
+      value.vortoxRoleTenure.seatNumber !== value.vortoxSeatNumber ||
+      value.vortoxRoleTenure.acquiredCharacterStateRevision > value.evaluatedCharacterStateRevision ||
+      (value.vortoxRoleTenure.endedCharacterStateRevision !== null &&
+        value.vortoxRoleTenure.endedCharacterStateRevision <= value.evaluatedCharacterStateRevision)) return false;
   return value.kind !== "NONE_CURRENT_VORTOX_KNOWN_IMPAIRED" ||
-    validImpairment(value.impairment) && value.impairment.kind !== undefined && value.impairment.affectedRoleId === "vortox";
+    validImpairment(value.impairment) && value.impairment.kind !== undefined &&
+    value.impairment.affectedPlayerId === value.vortoxPlayerId &&
+    value.impairment.affectedSeatNumber === value.vortoxSeatNumber && value.impairment.affectedRoleId === "vortox" &&
+    sameCanonicalDataValue(value.impairment.affectedRole, value.vortoxRoleSnapshot) &&
+    value.vortoxRoleTenure.acquiredCharacterStateRevision <= value.impairment.appliedCharacterStateRevision &&
+    value.impairment.appliedCharacterStateRevision <= value.evaluatedCharacterStateRevision;
 };
 
 const validWindow = (value: unknown): value is FirstNightMathematicianCountWindow =>
@@ -344,11 +359,14 @@ const validAbnormalPlayers = (value: unknown): value is readonly MathematicianAb
   if (!isDenseCanonicalArray(value)) return false;
   const players = new Set<string>();
   let previousSeat = 0;
+  let previousPlayerId = "";
   for (const entry of value) {
     if (!isPlainRecord(entry) || !hasExactEnumerableKeys(entry, ["playerId", "seatNumber", "supportingFactIds"]) ||
         !nonEmpty(entry.playerId) || !seat(entry.seatNumber) || !denseUniqueStrings(entry.supportingFactIds) ||
-        entry.supportingFactIds.length === 0 || players.has(entry.playerId) || entry.seatNumber < previousSeat) return false;
-    players.add(entry.playerId); previousSeat = entry.seatNumber;
+        !codeUnitOrderedStrings(entry.supportingFactIds) || entry.supportingFactIds.length === 0 ||
+        players.has(entry.playerId) || entry.seatNumber < previousSeat ||
+        (entry.seatNumber === previousSeat && entry.playerId <= previousPlayerId)) return false;
+    players.add(entry.playerId); previousSeat = entry.seatNumber; previousPlayerId = entry.playerId;
   }
   return true;
 };

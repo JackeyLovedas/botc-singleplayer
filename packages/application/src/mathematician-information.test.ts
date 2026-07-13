@@ -8,12 +8,14 @@ import {
   MATHEMATICIAN_INFORMATION_STAGE,
   MATHEMATICIAN_KNOWLEDGE_MODEL_VERSION,
   MATHEMATICIAN_SMALLEST_FALSE_POLICY_VERSION,
+  abilityImpairmentId,
   batchId,
   causationId,
   commandId,
   correlationId,
   createFirstNightTaskInsertedPayload,
   eventId,
+  playerId,
   scheduledTaskId,
   applyDomainEvent,
   validateDomainBatchSemantics,
@@ -38,14 +40,16 @@ import {
   orderValidatedMathematicianGainedTasksForInternalValidation,
   resolveMathematicianCountFromValidatedFactsForInternalValidation,
   resolveMathematicianCandidatesForInternalValidation,
-  resolveMathematicianInformationFromStateForInternalValidation,
   resolveMathematicianInformationDecisionFromAcceptedEventStream,
+  resolveMathematicianSourceEffectivenessForInternalValidation,
   resolveMathematicianVortoxConstraintForInternalValidation,
   replayTrustedMathematicianProjectionStream,
+  validateMathematicianSourceAtSettlementForInternalValidation,
   validateStoredMathematicianInformationDelivered,
   validateProspectiveMathematicianInformationPair
 } from "../../domain-core/src/mathematician-internal.js";
 import {
+  canonicalizeAbilityOutcomeEvidenceReferences,
   classifyMathematicianTerminalOutcomeForInternalValidation,
   deriveFirstNightAbilityOutcomeFact
 } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
@@ -157,7 +161,7 @@ describe("Phase 3 Slice 2B18B Mathematician first-night information", () => {
     const result = resolveMathematicianInformationDecisionFromAcceptedEventStream(fixture.events.slice(0, -2), delivery.taskId);
     expect(result.kind === "READY" ? result.deliveryPayload : undefined).toStrictEqual(delivery);
   });
-  it("[CSI-12] Layer B accepts the exact pair", () => expect(validateProspectiveMathematicianInformationPair({ priorAcceptedEvents: fixture.events.slice(0, -2), deliveryEvent, settlementEvent })).toStrictEqual({ valid: true }));
+  it("[CSI-12] Layer B accepts the exact pair and returns its canonical fingerprint", () => expect(validateProspectiveMathematicianInformationPair({ priorAcceptedEvents: fixture.events.slice(0, -2), deliveryEvent, settlementEvent }).valid).toBe(true));
   it("[RSP-13] binds the window to the preceding event", () => expect(delivery.windowSnapshot.endEventSequence).toBe(deliveryEvent.eventSequence - 1));
   it("[RSP-14] excludes the current delivery from its own fact IDs", () => expect(delivery.qualifyingAbnormalFactIds).not.toContain(formatFirstNightAbilityOutcomeFactId(deliveryEvent.eventId)));
   it("[RSP-15] remains in FIRST_NIGHT", () => expect(finalState.phase).toBe("FIRST_NIGHT"));
@@ -206,6 +210,126 @@ describe("Phase 3 Slice 2B18B Mathematician first-night information", () => {
     const before = structuredClone(prior);
     resolveMathematicianInformationDecisionFromAcceptedEventStream(prior, delivery.taskId);
     expect(prior).toStrictEqual(before);
+  });
+});
+
+describe("2B18B final-review repair round 1 security contracts", () => {
+  it("[R1-CONTEXT-01] uses only the two branded-context builders and shared pure core", () => {
+    const source = readFileSync(new URL("../../domain-core/src/mathematician-internal.ts", import.meta.url), "utf8");
+    expect(source).toContain("const canonicalMathematicianContextBrand: unique symbol");
+    expect(source).toContain("type CanonicalMathematicianContext = {");
+    expect(source).toContain("const buildContextFromAcceptedEventStream = (");
+    expect(source).toContain("const buildContextFromReplayPreEventState = (");
+    expect(source).toContain("const deriveMathematicianResolutionFromCanonicalContext = (");
+    expect(source).not.toContain("export const resolveMathematicianInformationFromStateForInternalValidation");
+    expect("resolveMathematicianInformationFromStateForInternalValidation" in domainCore).toBe(false);
+  });
+
+  it("[R1-LAYER-B-02] returns the exact successful prospective-state fingerprint", () => {
+    const result = validateProspectiveMathematicianInformationPair({
+      priorAcceptedEvents: fixture.events.slice(0, -2), deliveryEvent, settlementEvent
+    });
+    expect(result.valid).toBe(true);
+    if (!result.valid) throw new Error(result.reason);
+    expect(Object.keys(result).sort()).toStrictEqual(["prospectiveStateFingerprint", "valid"]);
+    expect(result.prospectiveStateFingerprint).toStrictEqual({
+      gameId: finalState.gameId,
+      gameVersion: finalState.gameVersion,
+      lastEventSequence: finalState.lastEventSequence,
+      phase: finalState.phase,
+      nextTask: finalState.firstNightTaskPlan?.tasks[finalState.firstNightTaskProgress?.settlements.length ?? 0] ?? null,
+      firstNightAbilityOutcomeLedger: finalState.firstNightAbilityOutcomeLedger,
+      roster: finalState.roster?.entries,
+      currentCharacterState: finalState.currentCharacterState
+    });
+  });
+
+  it("[R1-LAYER-B-03] classifies decision, settlement, batch, and stream failures with closed codes", () => {
+    const prior = fixture.events.slice(0, -2);
+    const badDelivery = structuredClone(deliveryEvent);
+    (badDelivery.payload as unknown as { selectedCount: number }).selectedCount = badDelivery.payload.trueCount === 0 ? 1 : 0;
+    const decisionMismatch = validateProspectiveMathematicianInformationPair({
+      priorAcceptedEvents: prior, deliveryEvent: badDelivery, settlementEvent
+    });
+    expect(decisionMismatch).toMatchObject({ valid: false, code: "EXPECTED_DECISION_MISMATCH" });
+    expect(Object.keys(decisionMismatch).sort()).toStrictEqual(["code", "reason", "valid"]);
+    const badSettlement = structuredClone(settlementEvent);
+    (badSettlement.payload as unknown as { taskId: ReturnType<typeof scheduledTaskId> }).taskId = scheduledTaskId("repair-1-wrong-settlement");
+    expect(validateProspectiveMathematicianInformationPair({ priorAcceptedEvents: prior, deliveryEvent, settlementEvent: badSettlement }))
+      .toMatchObject({ valid: false, code: "EXPECTED_SETTLEMENT_MISMATCH" });
+    const badBatch = structuredClone(settlementEvent);
+    (badBatch as unknown as { batchId: ReturnType<typeof batchId> }).batchId = batchId("repair-1-wrong-batch");
+    expect(validateProspectiveMathematicianInformationPair({ priorAcceptedEvents: prior, deliveryEvent, settlementEvent: badBatch }))
+      .toMatchObject({ valid: false, code: "BATCH_CONTRACT_INVALID" });
+    const duplicateEvent = structuredClone(settlementEvent);
+    (duplicateEvent as unknown as { eventId: ReturnType<typeof eventId> }).eventId = prior[0]!.eventId;
+    expect(validateProspectiveMathematicianInformationPair({ priorAcceptedEvents: prior, deliveryEvent, settlementEvent: duplicateEvent }))
+      .toMatchObject({ valid: false, code: "PROSPECTIVE_STREAM_INVALID" });
+    const source = readFileSync(new URL("../../domain-core/src/mathematician-internal.ts", import.meta.url), "utf8");
+    for (const code of ["EXPECTED_DECISION_MISMATCH", "EXPECTED_SETTLEMENT_MISMATCH", "BATCH_CONTRACT_INVALID", "PROSPECTIVE_STREAM_INVALID", "PROSPECTIVE_REBUILD_MISMATCH"] as const) {
+      expect(source).toContain(`| "${code}"`);
+    }
+  });
+
+  it("[R1-EVIDENCE-04] rejects every malformed Mathematician delivery evidence identity cross-link", () => {
+    const fact = finalState.firstNightAbilityOutcomeLedger!.facts.find((entry) => entry.sourceEventId === deliveryEvent.eventId)!;
+    const variants = [
+      (entry: Record<string, unknown>) => { entry.deliveryId = "mathematician-delivery-v1:not-canonical"; },
+      (entry: Record<string, unknown>) => { entry.taskId = scheduledTaskId("first-night-v1:MATHEMATICIAN_INFORMATION:seat-12"); },
+      (entry: Record<string, unknown>) => { entry.sourcePlayerId = playerId("repair-1-other-source"); },
+      (entry: Record<string, unknown>) => { entry.terminalEventId = eventId("repair-1-other-terminal"); }
+    ];
+    for (const mutate of variants) {
+      const candidate = structuredClone(fact);
+      const evidence = candidate.evidenceReferences.find((entry) => entry.kind === "MATHEMATICIAN_DELIVERY")! as unknown as Record<string, unknown>;
+      mutate(evidence);
+      expect(validateFirstNightAbilityOutcomeFactShape(candidate).valid).toBe(false);
+    }
+  });
+
+  it("[R1-EVIDENCE-05] emits the frozen base Mathematician evidence-slot order", () => {
+    const fact = finalState.firstNightAbilityOutcomeLedger!.facts.find((entry) => entry.sourceEventId === deliveryEvent.eventId)!;
+    expect(fact.evidenceReferences.map((entry) => entry.kind)).toStrictEqual([
+      "SOURCE_EVENT", "TASK", "CHARACTER_STATE", "PLAYER_ROLE_AT_REVISION", "ROLE_TENURE", "MATHEMATICIAN_DELIVERY"
+    ]);
+  });
+
+  it("[R1-EVIDENCE-05B] preserves the existing non-Mathematician rank canonicalizer", () => {
+    const nonMathematician = finalState.firstNightAbilityOutcomeLedger!.facts.find((entry) =>
+      !entry.evidenceReferences.some((evidence) => evidence.kind === "MATHEMATICIAN_DELIVERY") &&
+      entry.evidenceReferences.length > 2
+    );
+    if (nonMathematician === undefined) throw new Error("Expected an earlier non-Mathematician ledger fact");
+    expect(canonicalizeAbilityOutcomeEvidenceReferences([...nonMathematician.evidenceReferences].reverse()))
+      .toStrictEqual(nonMathematician.evidenceReferences);
+  });
+
+  it("[R1-PAYLOAD-06] rejects same-seat player and supporting-fact code-unit disorder", () => {
+    const factA = formatFirstNightAbilityOutcomeFactId(eventId("repair-1-fact-a"));
+    const factB = formatFirstNightAbilityOutcomeFactId(eventId("repair-1-fact-b"));
+    const canonical = {
+      ...structuredClone(delivery),
+      qualifyingAbnormalFactIds: [factA, factB],
+      distinctAbnormalPlayers: [
+        { playerId: playerId("repair-1-player-a"), seatNumber: 1, supportingFactIds: [factA] },
+        { playerId: playerId("repair-1-player-z"), seatNumber: 1, supportingFactIds: [factB] }
+      ],
+      trueCount: 2,
+      legalCandidateCounts: [2],
+      selectedCount: 2
+    };
+    expect(validateMathematicianInformationDeliveredPayloadShape(canonical).valid).toBe(true);
+    const reversedPlayers = structuredClone(canonical);
+    reversedPlayers.distinctAbnormalPlayers.reverse();
+    expect(validateMathematicianInformationDeliveredPayloadShape(reversedPlayers).valid).toBe(false);
+    const reversedFacts = structuredClone(canonical);
+    reversedFacts.distinctAbnormalPlayers = [
+      { playerId: playerId("repair-1-player-a"), seatNumber: 1, supportingFactIds: [factB, factA] }
+    ];
+    reversedFacts.trueCount = 1;
+    reversedFacts.legalCandidateCounts = [1];
+    reversedFacts.selectedCount = 1;
+    expect(validateMathematicianInformationDeliveredPayloadShape(reversedFacts).valid).toBe(false);
   });
 });
 
@@ -335,6 +459,87 @@ describe("2B18B accepted effective Vortox constraint and terminal cause", () => 
       candidate,
       vortoxFixture.events.at(-1)!
     ])).toThrow();
+  });
+  it("[R1-VORTOX-07] records the known-impaired Vortox role, tenure, and represented impairment slots", () => {
+    const state = structuredClone(rebuildGameState(vortoxFixture.events.slice(0, -2)));
+    const vortox = state.currentCharacterState!.entries.find((entry) => entry.role.roleId === "vortox")!;
+    const tenure = state.seamstressRoleTenureState!.records.find((entry) => entry.roleId === "vortox")!;
+    const impairmentId = abilityImpairmentId("repair-1-known-impaired-vortox");
+    const impairment = {
+      impairmentId,
+      kind: "DRUNK" as const,
+      sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE" as const,
+      sourcePlayerId: vortoxDelivery.sourceContract.sourcePlayerId,
+      affectedPlayerId: vortox.playerId,
+      affectedSeatNumber: vortox.seatNumber,
+      affectedRole: structuredClone(vortox.role),
+      chosenRoleId: "vortox" as const,
+      sourceCharacterStateRevision: tenure.acquiredCharacterStateRevision
+    };
+    (state as unknown as { abilityImpairments: { impairments: readonly unknown[] } }).abilityImpairments = { impairments: [impairment] };
+    (state as unknown as { mathematicianImpairmentEventProvenance: { entries: readonly unknown[] } }).mathematicianImpairmentEventProvenance = {
+      entries: [{ impairmentId, eventId: eventId("repair-1-vortox-impairment-event"), eventSequence: state.lastEventSequence,
+        batchId: batchId("repair-1-vortox-impairment-batch") }]
+    };
+    const constraint = resolveMathematicianVortoxConstraintForInternalValidation(state);
+    expect(constraint?.kind).toBe("NONE_CURRENT_VORTOX_KNOWN_IMPAIRED");
+    const candidate = structuredClone(vortoxDeliveryEvent);
+    (candidate.payload as unknown as Record<string, unknown>).vortoxConstraint = constraint;
+    (candidate.payload as unknown as Record<string, unknown>).legalCandidateCounts = [candidate.payload.trueCount];
+    (candidate.payload as unknown as Record<string, unknown>).selectedCount = candidate.payload.trueCount;
+    (candidate.payload as unknown as Record<string, unknown>).informationReliability = "RULE_CORRECT";
+    expect(validateMathematicianInformationDeliveredPayloadShape(candidate.payload).valid).toBe(true);
+    const fact = deriveFirstNightAbilityOutcomeFact({ stateBefore: state, event: candidate });
+    expect(fact?.evidenceReferences.map((entry) => entry.kind)).toStrictEqual([
+      "SOURCE_EVENT", "TASK", "CHARACTER_STATE", "PLAYER_ROLE_AT_REVISION", "ROLE_TENURE",
+      "PLAYER_ROLE_AT_REVISION", "ROLE_TENURE", "ABILITY_IMPAIRMENT", "MATHEMATICIAN_DELIVERY"
+    ]);
+    expect(validateFirstNightAbilityOutcomeFactShape(fact).valid).toBe(true);
+    const mismatched = structuredClone(candidate.payload);
+    if (mismatched.vortoxConstraint.kind !== "NONE_CURRENT_VORTOX_KNOWN_IMPAIRED") {
+      throw new Error("Expected known-impaired Vortox constraint");
+    }
+    (mismatched.vortoxConstraint.impairment as unknown as { affectedPlayerId: ReturnType<typeof playerId> })
+      .affectedPlayerId = playerId("repair-1-wrong-vortox-player");
+    expect(validateMathematicianInformationDeliveredPayloadShape(mismatched).valid).toBe(false);
+  });
+  it("[R1-TENURE-08] rejects a Vortox impairment left from an earlier tenure", () => {
+    const state = structuredClone(rebuildGameState(vortoxFixture.events.slice(0, -2)));
+    const vortox = state.currentCharacterState!.entries.find((entry) => entry.role.roleId === "vortox")!;
+    const tenure = state.seamstressRoleTenureState!.records.find((entry) => entry.roleId === "vortox")!;
+    (state.currentCharacterState as unknown as { revision: number }).revision = 2;
+    (tenure as unknown as { acquiredCharacterStateRevision: number }).acquiredCharacterStateRevision = 2;
+    const impairmentId = abilityImpairmentId("repair-1-stale-vortox-impairment");
+    (state as unknown as { abilityImpairments: { impairments: readonly unknown[] } }).abilityImpairments = { impairments: [{
+      impairmentId, kind: "DRUNK", sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+      sourcePlayerId: vortoxDelivery.sourceContract.sourcePlayerId, affectedPlayerId: vortox.playerId,
+      affectedSeatNumber: vortox.seatNumber, affectedRole: structuredClone(vortox.role), chosenRoleId: "vortox",
+      sourceCharacterStateRevision: 1
+    }] };
+    (state as unknown as { mathematicianImpairmentEventProvenance: { entries: readonly unknown[] } }).mathematicianImpairmentEventProvenance = {
+      entries: [{ impairmentId, eventId: eventId("repair-1-stale-vortox-event"), eventSequence: state.lastEventSequence,
+        batchId: batchId("repair-1-stale-vortox-batch") }]
+    };
+    expect(resolveMathematicianVortoxConstraintForInternalValidation(state)).toBeUndefined();
+  });
+  it("[R1-TENURE-09] rejects a Mathematician source impairment left from an earlier tenure", () => {
+    const state = structuredClone(rebuildGameState(fixture.events.slice(0, -2)));
+    const source = state.currentCharacterState!.entries.find((entry) => entry.playerId === delivery.sourceContract.sourcePlayerId)!;
+    const tenure = state.seamstressRoleTenureState!.records.find((entry) => entry.playerId === source.playerId && entry.roleId === "mathematician")!;
+    (state.currentCharacterState as unknown as { revision: number }).revision = 2;
+    (tenure as unknown as { acquiredCharacterStateRevision: number }).acquiredCharacterStateRevision = 2;
+    const impairmentId = abilityImpairmentId("repair-1-stale-source-impairment");
+    (state as unknown as { abilityImpairments: { impairments: readonly unknown[] } }).abilityImpairments = { impairments: [{
+      impairmentId, kind: "DRUNK", sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+      sourcePlayerId: playerId("repair-1-philosopher-source"), affectedPlayerId: source.playerId,
+      affectedSeatNumber: source.seatNumber, affectedRole: structuredClone(source.role), chosenRoleId: "mathematician",
+      sourceCharacterStateRevision: 1
+    }] };
+    (state as unknown as { mathematicianImpairmentEventProvenance: { entries: readonly unknown[] } }).mathematicianImpairmentEventProvenance = {
+      entries: [{ impairmentId, eventId: eventId("repair-1-stale-source-event"), eventSequence: state.lastEventSequence,
+        batchId: batchId("repair-1-stale-source-batch") }]
+    };
+    expect(resolveMathematicianSourceEffectivenessForInternalValidation(state, delivery.taskId)).toBeUndefined();
   });
 });
 
@@ -631,7 +836,7 @@ describe("2B18B accepted Philosopher-gained V2 chain", () => {
   });
   it("[V2-APP-10] Layer B accepts the exact gained pair", () => expect(validateProspectiveMathematicianInformationPair({
     priorAcceptedEvents: gained.events.slice(0, -2), deliveryEvent: gainedDelivery, settlementEvent: gainedSettlement
-  })).toStrictEqual({ valid: true }));
+  }).valid).toBe(true));
   it("[V2-PROJ-11] full-stream projection reveals only the selected count", () => expect(
     buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(gained.events, gainedDelivery.payload.sourceContract.sourcePlayerId).mathematicianInformation
   ).toStrictEqual({ count: gainedDelivery.payload.selectedCount }));
@@ -722,7 +927,7 @@ describe("2B18B accepted Philosopher-gained V1 chain", () => {
   it("[V1-CSI-08] freezes the canonical V1 ability instance", () => expect(v1Delivery.payload.sourceContract.abilityInstance.kind).toBe("PHILOSOPHER_GAINED_TASK_V1"));
   it("[V1-APP-09] validates the exact prospective pair", () => expect(validateProspectiveMathematicianInformationPair({
     priorAcceptedEvents: priorEvents, deliveryEvent: v1Delivery, settlementEvent: v1Settlement
-  })).toStrictEqual({ valid: true }));
+  }).valid).toBe(true));
   it("[V1-RSP-10] validates the trusted replay checkpoint", () => {
     const replay = replayTrustedMathematicianProjectionStream(acceptedEvents);
     expect(replay.checkpoints).toHaveLength(1);
@@ -746,10 +951,10 @@ describe("2B18B accepted Philosopher-gained V1 chain", () => {
     (philosopherTenure as unknown as { endedCharacterStateRevision: number | null }).endedCharacterStateRevision =
       state.currentCharacterState!.revision;
     const inventory = classifyValidatedMathematicianSupportStateForInternalValidation(state);
-    const resolution = resolveMathematicianInformationFromStateForInternalValidation(state, v1Delivery.payload.taskId);
-    expect({ classification: inventory.valid ? inventory.classification : "INVALID", resolution }).toMatchObject({
+    const sourceEligible = validateMathematicianSourceAtSettlementForInternalValidation(state, v1Delivery.payload.taskId);
+    expect({ classification: inventory.valid ? inventory.classification : "INVALID", sourceEligible }).toStrictEqual({
       classification: "SUPPORTED_V1_GAINED_ONLY",
-      resolution: { kind: "DETERMINISTIC_REJECTION", code: "InformationSourceNoLongerValid" }
+      sourceEligible: false
     });
   });
 });
@@ -856,6 +1061,24 @@ describe("2B18B Option A V1 base-plus-gained receipt-free unsupported matrix", (
       code: "UnsupportedLegacyV1MathematicianReplay",
       message: "Legacy V1 duplicate Mathematician delivery is not replayable"
     });
+  });
+  it("[R1-TARGET-10] validates target existence before the Option A unsupported classification", async () => {
+    const nonexistentTaskId = Array.from({ length: 12 }, (_, index) =>
+      scheduledTaskId(`first-night-v1:MATHEMATICIAN_INFORMATION:seat-${String(index + 1).padStart(2, "0")}`)
+    ).find((candidate) => !state.firstNightTaskPlan!.tasks.some((task) => task.taskId === candidate));
+    if (nonexistentTaskId === undefined) throw new Error("Expected an unused canonical Mathematician task identifier");
+    const isolated = preloadedStore(prior);
+    const service = createMathematicianServiceForStore(isolated.store, uniquePreloadedIds()).service;
+    const missingTarget = {
+      ...fixture.command,
+      commandId: commandId("v1-duplicate-missing-target"),
+      expectedGameVersion: state.gameVersion,
+      payload: { commandType: "SettleMathematicianInformation" as const, taskId: nonexistentTaskId }
+    };
+    const missingResult = await service.execute(missingTarget);
+    expect(missingResult).toMatchObject({ status: "rejected", code: "ScheduledTaskNotFound" });
+    expect(await isolated.store.findCommandReceipt(missingTarget.gameId, missingTarget.commandId)).toBeDefined();
+    expect(await isolated.store.loadDomainEvents(missingTarget.gameId)).toStrictEqual(prior);
   });
   it("[OPTION-A-43] retains unsupported V1 duplicate classification after a later base-holder role change", () => {
     const changed = structuredClone(state);

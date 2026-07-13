@@ -1,6 +1,6 @@
 import { sameCanonicalDataValue } from "./canonical-data.js";
 import { DomainError } from "./errors.js";
-import type { AnyDomainEventEnvelope, DomainEventEnvelope } from "./events.js";
+import type { AnyDomainEventEnvelope, DomainEventEnvelope, FirstNightTaskPlanCreatedPayload } from "./events.js";
 import {
   FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,
@@ -12,13 +12,15 @@ import {
 } from "./first-night-ability-outcome-ledger.js";
 import type {
   FirstNightAbilityInstanceProvenance,
+  FirstNightAbilityOutcomeLedger,
   FirstNightAbilityOutcomeFact,
-  FirstNightAbilityOutcomeFactId
+  FirstNightAbilityOutcomeFactId,
+  FirstNightInitializationEnvelopeProvenance
 } from "./first-night-ability-outcome-ledger.js";
 import { compareFirstNightTaskOrder, getNextUnsettledFirstNightTask, isFirstNightTaskSettled, validateFirstNightTaskPlanRuntimeState } from "./first-night-task-plan.js";
-import type { ScheduledTask, ScheduledTaskSettledPayload } from "./first-night-task-plan.js";
+import type { FirstNightTaskProgress, ScheduledTask, ScheduledTaskSettledPayload } from "./first-night-task-plan.js";
 import type { GameState } from "./game-state.js";
-import type { EventId, PlayerId, ScheduledTaskId } from "./ids.js";
+import type { EventId, GameId, PlayerId, ScheduledTaskId } from "./ids.js";
 import {
   MATHEMATICIAN_COUNT_DOMAIN,
   MATHEMATICIAN_COUNT_RESOLUTION_MODEL_VERSION,
@@ -36,7 +38,9 @@ import type {
   FirstNightMathematicianCountWindow,
   MathematicianAbnormalPlayer,
   MathematicianCount,
+  MathematicianImpairmentEventProvenanceState,
   MathematicianInformationDeliveredPayload,
+  MathematicianInformationState,
   MathematicianRepresentedImpairment,
   MathematicianRoleTenureSnapshot,
   MathematicianSourceContract,
@@ -49,19 +53,24 @@ import { rebuildGameState } from "./rebuild.js";
 import { applyDomainEvent } from "./event-applier.js";
 import { validateDomainBatchSemantics } from "./domain-batch-semantics.js";
 import { isRoleTenureActiveAt } from "./seamstress.js";
-import type { RoleTenureRecord } from "./seamstress.js";
+import type { RoleTenureRecord, RoleTenureState } from "./seamstress.js";
 import { validateDomainEventStream } from "./event-stream-validator.js";
 import { scheduledTaskFromFirstNightTaskInsertedPayload } from "./philosopher-ability.js";
 import type {
   AnyFirstNightTaskInsertedPayload,
   FirstNightTaskInsertedPayload,
   FirstNightTaskInsertedV2Payload,
+  AbilityImpairmentSet,
+  FirstNightTaskInsertion,
+  GrantedAbilitySet,
   PhilosopherAbilityChosenPayload,
+  PhilosopherAbilityChoiceSet,
   PhilosopherAbilityGrantedPayload
 } from "./philosopher-ability.js";
-import type { FirstNightActionOpportunity } from "./first-night-action-opportunity.js";
-import type { PlayerRosterEntry } from "./player-roster.js";
-import type { CurrentCharacterState } from "./current-character-state.js";
+import type { FirstNightActionOpportunity, FirstNightActionOpportunityState } from "./first-night-action-opportunity.js";
+import type { PlayerRoster, PlayerRosterEntry } from "./player-roster.js";
+import type { CurrentCharacterState, CurrentCharacterStateSet } from "./current-character-state.js";
+import type { GamePhase } from "./game-phase.js";
 
 export type MathematicianBlockingUnresolvedFact = {
   readonly auditFactId: FirstNightAbilityOutcomeFactId;
@@ -81,6 +90,50 @@ export type InternalMathematicianResolution =
   | { readonly kind: "VORTOX_CONSTRAINT_UNRESOLVED"; readonly rebuiltState: GameState; readonly reason: "VORTOX_IDENTITY_NOT_UNIQUE" | "VORTOX_TENURE_MISSING_OR_INCONSISTENT" | "VORTOX_EFFECTIVENESS_CONFLICT" | "VORTOX_APPLICABILITY_NOT_PROVEN"; readonly candidatePlayerIds: readonly PlayerId[]; readonly candidateRoleTenureIds: readonly import("./ids.js").RoleTenureId[]; readonly conflictingImpairmentIds: readonly import("./ids.js").AbilityImpairmentId[] }
   | { readonly kind: "CANONICAL_HISTORY_INVALID"; readonly reason: string; readonly offendingEventIds: readonly EventId[] }
   | { readonly kind: "CONSTRUCTION_FAILED"; readonly reason: string };
+
+const canonicalMathematicianContextBrand: unique symbol = Symbol("canonicalMathematicianContextBrand");
+
+type CanonicalMathematicianContext = {
+  readonly contextVersion: "mathematician-canonical-context-v1";
+  readonly gameId: GameId;
+  readonly rulesBaselineVersion: string;
+  readonly phase: "FIRST_NIGHT";
+  readonly dayNumber: 0;
+  readonly nightNumber: 1;
+  readonly evaluatedThroughEventSequence: number;
+  readonly expectedDeliveryEventSequence: number;
+  readonly firstNightInitializationProvenance: FirstNightInitializationEnvelopeProvenance;
+  readonly roster: PlayerRoster;
+  readonly taskPlan: FirstNightTaskPlanCreatedPayload;
+  readonly taskProgress: FirstNightTaskProgress;
+  readonly targetTaskId: ScheduledTaskId;
+  readonly targetTask: ScheduledTask;
+  readonly ledger: FirstNightAbilityOutcomeLedger;
+  readonly currentCharacterState: CurrentCharacterStateSet;
+  readonly roleTenures: RoleTenureState;
+  readonly philosopherChoices: PhilosopherAbilityChoiceSet;
+  readonly grants: GrantedAbilitySet;
+  readonly insertions: FirstNightTaskInsertion;
+  readonly opportunities: FirstNightActionOpportunityState;
+  readonly abilityImpairments: AbilityImpairmentSet;
+  readonly impairmentEventProvenance: MathematicianImpairmentEventProvenanceState;
+  readonly existingDeliveries: MathematicianInformationState;
+  readonly [canonicalMathematicianContextBrand]: true;
+};
+
+type WithoutRebuiltState<T> = T extends { readonly rebuiltState: GameState } ? Omit<T, "rebuiltState"> : T;
+type CanonicalMathematicianDecision = WithoutRebuiltState<InternalMathematicianResolution>;
+
+export type MathematicianPipelineStateFingerprint = {
+  readonly gameId: GameId;
+  readonly gameVersion: number;
+  readonly lastEventSequence: number;
+  readonly phase: GamePhase;
+  readonly nextTask: ScheduledTask | null;
+  readonly firstNightAbilityOutcomeLedger: FirstNightAbilityOutcomeLedger;
+  readonly roster: PlayerRoster;
+  readonly currentCharacterState: CurrentCharacterStateSet;
+};
 
 const compareCodeUnit = (left: string, right: string): number => left === right ? 0 : left < right ? -1 : 1;
 
@@ -159,24 +212,30 @@ type MathematicianInventoryResult =
   | { readonly valid: true; readonly input: ValidatedMathematicianSupportInput; readonly classification: LegacyMathematicianSupportClassification }
   | { readonly valid: false; readonly reason: string };
 
-const buildValidatedMathematicianInventory = (state: GameState): MathematicianInventoryResult => {
+const buildValidatedMathematicianInventory = (
+  state: GameState,
+  trustedCanonicalContext = false
+): MathematicianInventoryResult => {
   const plan = state.firstNightTaskPlan;
-  if (plan === undefined || state.setup === undefined || state.roster === undefined || state.assignment === undefined ||
-      state.firstNight === undefined || state.initialPrivateKnowledge === undefined || state.currentCharacterState === undefined) {
+  if (plan === undefined || state.roster === undefined || state.currentCharacterState === undefined ||
+      (!trustedCanonicalContext && (state.setup === undefined || state.assignment === undefined ||
+        state.firstNight === undefined || state.initialPrivateKnowledge === undefined))) {
     return { valid: false, reason: "Mathematician inventory requires complete first-night source facts" };
   }
   const recordedInsertions = state.firstNightTaskInsertions?.insertions ?? [];
-  const planValidation = validateFirstNightTaskPlanRuntimeState(plan, {
-    sourceFacts: {
-      setup: state.setup,
-      roster: state.roster.entries,
-      assignment: state.assignment.assignments,
-      firstNight: state.firstNight,
-      initialPrivateKnowledge: state.initialPrivateKnowledge
-    },
-    insertedTasks: recordedInsertions.map(scheduledTaskFromFirstNightTaskInsertedPayload)
-  });
-  if (!planValidation.valid) return { valid: false, reason: planValidation.reason };
+  if (!trustedCanonicalContext) {
+    const planValidation = validateFirstNightTaskPlanRuntimeState(plan, {
+      sourceFacts: {
+        setup: state.setup!,
+        roster: state.roster.entries,
+        assignment: state.assignment!.assignments,
+        firstNight: state.firstNight!,
+        initialPrivateKnowledge: state.initialPrivateKnowledge!
+      },
+      insertedTasks: recordedInsertions.map(scheduledTaskFromFirstNightTaskInsertedPayload)
+    });
+    if (!planValidation.valid) return { valid: false, reason: planValidation.reason };
+  }
 
   const mathTasks = plan.tasks.filter((task) => task.taskType === "MATHEMATICIAN_INFORMATION");
   const baseTasks = mathTasks.filter((task) => task.source.kind === "ROLE");
@@ -265,10 +324,10 @@ const buildValidatedMathematicianInventory = (state: GameState): MathematicianIn
       entry.playerId === choice.sourcePlayerId && entry.seatNumber === choice.sourceSeatNumber &&
       entry.role.roleId === "philosopher"
     );
-    const catalogRoles = state.setup.roleCatalogSnapshot.roles.filter((role) =>
+    const catalogRoles = state.setup?.roleCatalogSnapshot.roles.filter((role) =>
       role.roleId === "mathematician" && sameCanonicalDataValue(role, choice.chosenRole)
     );
-    if (rosterEntries.length !== 1 || sourceRoleAtGrant.length !== 1 || catalogRoles.length !== 1 ||
+    if (rosterEntries.length !== 1 || sourceRoleAtGrant.length !== 1 || (!trustedCanonicalContext && catalogRoles?.length !== 1) ||
         choice.sourceCharacterStateRevision > state.currentCharacterState.revision) {
       return { valid: false, reason: "Mathematician gained chain roster, catalog, role, or revision proof is invalid" };
     }
@@ -315,6 +374,135 @@ const buildValidatedMathematicianInventory = (state: GameState): MathematicianIn
   }
   return { valid: true, input, classification: classifyLegacyMathematicianSupport(input) };
 };
+
+class MathematicianTargetValidationError extends Error {
+  public constructor(
+    public readonly code: "ScheduledTaskNotFound" | "UnsupportedMathematicianInformationTask",
+    message: string
+  ) {
+    super(message);
+  }
+}
+
+const requireMathematicianTargetTask = (state: GameState, taskId: ScheduledTaskId): ScheduledTask => {
+  const task = state.firstNightTaskPlan?.tasks.find((entry) => entry.taskId === taskId);
+  if (task === undefined) {
+    throw new MathematicianTargetValidationError("ScheduledTaskNotFound", "Mathematician task was not found");
+  }
+  if (task.taskType !== "MATHEMATICIAN_INFORMATION" || task.taskClass !== "ROLE_INFORMATION" ||
+      (task.source.kind !== "ROLE" && task.source.kind !== "PHILOSOPHER_GAINED_ABILITY")) {
+    throw new MathematicianTargetValidationError(
+      "UnsupportedMathematicianInformationTask",
+      "Task is not a supported Mathematician information task"
+    );
+  }
+  return task;
+};
+
+type CanonicalMathematicianContextFields = Omit<CanonicalMathematicianContext, typeof canonicalMathematicianContextBrand>;
+
+const captureCanonicalMathematicianContextFields = (
+  state: GameState,
+  taskId: ScheduledTaskId
+): CanonicalMathematicianContextFields => {
+  const targetTask = requireMathematicianTargetTask(state, taskId);
+  if (state.phase !== "FIRST_NIGHT" || state.dayNumber !== 0 || state.nightNumber !== 1 ||
+      state.firstNightInitializationProvenance === undefined || state.roster === undefined ||
+      state.firstNightTaskPlan === undefined || state.firstNightTaskProgress === undefined ||
+      state.firstNightAbilityOutcomeLedger === undefined || state.currentCharacterState === undefined ||
+      state.seamstressRoleTenureState === undefined ||
+      !validateFirstNightAbilityOutcomeLedgerShape(state.firstNightAbilityOutcomeLedger).valid) {
+    throw new DomainError(
+      "InvalidMathematicianInformationDeliveredPayload",
+      "Mathematician canonical context requires complete first-night replay state"
+    );
+  }
+  const inventory = buildValidatedMathematicianInventory(state);
+  if (!inventory.valid) {
+    throw new DomainError("InvalidMathematicianInformationDeliveredPayload", inventory.reason);
+  }
+  return {
+    contextVersion: "mathematician-canonical-context-v1",
+    gameId: state.gameId,
+    rulesBaselineVersion: state.rulesBaselineVersion,
+    phase: "FIRST_NIGHT",
+    dayNumber: 0,
+    nightNumber: 1,
+    evaluatedThroughEventSequence: state.lastEventSequence,
+    expectedDeliveryEventSequence: state.lastEventSequence + 1,
+    firstNightInitializationProvenance: structuredClone(state.firstNightInitializationProvenance),
+    roster: structuredClone(state.roster.entries),
+    taskPlan: structuredClone(state.firstNightTaskPlan),
+    taskProgress: structuredClone(state.firstNightTaskProgress),
+    targetTaskId: taskId,
+    targetTask: structuredClone(targetTask),
+    ledger: structuredClone(state.firstNightAbilityOutcomeLedger),
+    currentCharacterState: structuredClone(state.currentCharacterState),
+    roleTenures: structuredClone(state.seamstressRoleTenureState),
+    philosopherChoices: structuredClone(state.philosopherAbilityChoices ?? { choices: [] }),
+    grants: structuredClone(state.philosopherGrantedAbilities ?? { abilities: [] }),
+    insertions: structuredClone(state.firstNightTaskInsertions ?? { insertions: [] }),
+    opportunities: structuredClone(state.firstNightActionOpportunities ?? { opportunities: [] }),
+    abilityImpairments: structuredClone(state.abilityImpairments ?? { impairments: [] }),
+    impairmentEventProvenance: structuredClone(state.mathematicianImpairmentEventProvenance ?? { entries: [] }),
+    existingDeliveries: structuredClone(state.mathematicianInformation ?? { deliveries: [] })
+  };
+};
+
+const buildContextFromAcceptedEventStream = (
+  events: readonly AnyDomainEventEnvelope[],
+  taskId: ScheduledTaskId
+): { readonly context: CanonicalMathematicianContext; readonly rebuiltState: GameState } => {
+  const captured = structuredClone(events);
+  validateDomainEventStream(captured);
+  const rebuiltState = rebuildGameState(captured);
+  const fields = captureCanonicalMathematicianContextFields(rebuiltState, taskId);
+  const context = fields as CanonicalMathematicianContext;
+  Object.defineProperty(context, canonicalMathematicianContextBrand, { value: true, enumerable: false });
+  return { context, rebuiltState };
+};
+
+const buildContextFromReplayPreEventState = (
+  stateBefore: GameState,
+  event: DomainEventEnvelope<"MathematicianInformationDelivered">
+): CanonicalMathematicianContext => {
+  const fields = captureCanonicalMathematicianContextFields(stateBefore, event.payload.taskId);
+  const context = fields as CanonicalMathematicianContext;
+  Object.defineProperty(context, canonicalMathematicianContextBrand, { value: true, enumerable: false });
+  return context;
+};
+
+const stateViewFromCanonicalMathematicianContext = (context: CanonicalMathematicianContext): GameState => ({
+  gameId: context.gameId,
+  gameVersion: 0,
+  lastEventSequence: context.evaluatedThroughEventSequence,
+  phase: context.phase,
+  dayNumber: context.dayNumber,
+  nightNumber: context.nightNumber,
+  created: true,
+  rootSeed: "private-canonical-mathematician-context",
+  rulesBaselineVersion: context.rulesBaselineVersion,
+  playerCounts: {
+    playerCount: context.roster.length,
+    humanPlayerCount: context.roster.filter((entry) => entry.playerKind === "HUMAN").length,
+    aiPlayerCount: context.roster.filter((entry) => entry.playerKind === "AI").length,
+    storytellerCount: 1
+  },
+  roster: { rulesBaselineVersion: context.rulesBaselineVersion, rosterVersion: "fixed-12-player-roster-v1", entries: context.roster },
+  currentCharacterState: context.currentCharacterState,
+  seamstressRoleTenureState: context.roleTenures,
+  firstNightInitializationProvenance: context.firstNightInitializationProvenance,
+  firstNightAbilityOutcomeLedger: context.ledger,
+  firstNightTaskPlan: context.taskPlan,
+  firstNightTaskProgress: context.taskProgress,
+  firstNightActionOpportunities: context.opportunities,
+  philosopherAbilityChoices: context.philosopherChoices,
+  philosopherGrantedAbilities: context.grants,
+  abilityImpairments: context.abilityImpairments,
+  firstNightTaskInsertions: context.insertions,
+  mathematicianInformation: context.existingDeliveries,
+  mathematicianImpairmentEventProvenance: context.impairmentEventProvenance
+} as unknown as GameState);
 
 const abilityInstanceFor = (
   state: GameState,
@@ -424,11 +612,29 @@ const representedImpairment = (state: GameState, impairment: NonNullable<GameSta
   };
 };
 
+const impairmentFallsInsideContinuousTenure = (
+  tenure: MathematicianRoleTenureSnapshot,
+  appliedCharacterStateRevision: number,
+  settlementCharacterStateRevision: number
+): boolean => tenure.acquiredCharacterStateRevision <= appliedCharacterStateRevision &&
+  appliedCharacterStateRevision <= settlementCharacterStateRevision &&
+  (tenure.endedCharacterStateRevision === null || tenure.endedCharacterStateRevision > settlementCharacterStateRevision);
+
 const effectivenessFor = (state: GameState, source: MathematicianSourceContract): MathematicianSourceEffectiveness | undefined => {
-  const relevant = state.abilityImpairments?.impairments.filter((entry) =>
+  const candidates = state.abilityImpairments?.impairments.filter((entry) =>
     entry.affectedPlayerId === source.sourcePlayerId && entry.affectedSeatNumber === source.sourceSeatNumber &&
     entry.affectedRole.roleId === "mathematician" && entry.sourceCharacterStateRevision <= source.settlementCharacterStateRevision
   ) ?? [];
+  if (candidates.some((entry) => !impairmentFallsInsideContinuousTenure(
+    source.sourceRoleTenure,
+    entry.sourceCharacterStateRevision,
+    source.settlementCharacterStateRevision
+  ))) return undefined;
+  const relevant = candidates.filter((entry) => impairmentFallsInsideContinuousTenure(
+    source.sourceRoleTenure,
+    entry.sourceCharacterStateRevision,
+    source.settlementCharacterStateRevision
+  ));
   if (relevant.length === 0) return { kind: "EFFECTIVE", representedImpairments: [] };
   if (relevant.length !== 1 || relevant[0] === undefined) return undefined;
   const represented = representedImpairment(state, relevant[0]);
@@ -448,12 +654,22 @@ export const resolveMathematicianVortoxConstraintForInternalValidation = (
   if (players.length === 0 && tenures.length === 0) return { kind: "NONE_NO_CURRENT_VORTOX", evaluatedCharacterStateRevision: revision };
   if (players.length !== 1 || tenures.length !== 1 || players[0] === undefined || tenures[0] === undefined ||
       players[0].playerId !== tenures[0].playerId || players[0].seatNumber !== tenures[0].seatNumber) return undefined;
-  const impairmentEntries = state.abilityImpairments?.impairments.filter((entry) =>
+  const impairmentCandidates = state.abilityImpairments?.impairments.filter((entry) =>
     entry.affectedPlayerId === players[0]!.playerId && entry.affectedSeatNumber === players[0]!.seatNumber &&
     entry.affectedRole.roleId === "vortox" && entry.sourceCharacterStateRevision <= revision
   ) ?? [];
   const common = { evaluatedCharacterStateRevision: revision, vortoxPlayerId: players[0].playerId, vortoxSeatNumber: players[0].seatNumber,
     vortoxRoleSnapshot: structuredClone(players[0].role), vortoxRoleTenure: tenureSnapshot(tenures[0]) };
+  if (impairmentCandidates.some((entry) => !impairmentFallsInsideContinuousTenure(
+    common.vortoxRoleTenure,
+    entry.sourceCharacterStateRevision,
+    revision
+  ))) return undefined;
+  const impairmentEntries = impairmentCandidates.filter((entry) => impairmentFallsInsideContinuousTenure(
+    common.vortoxRoleTenure,
+    entry.sourceCharacterStateRevision,
+    revision
+  ));
   if (impairmentEntries.length === 0) return { kind: "VORTOX_FALSE_REQUIRED", ...common };
   if (impairmentEntries.length !== 1 || impairmentEntries[0] === undefined) return undefined;
   const impairment = representedImpairment(state, impairmentEntries[0]);
@@ -546,15 +762,15 @@ const buildReady = (
   state: GameState,
   task: ScheduledTask,
   inventory: ValidatedMathematicianSupportInput
-): InternalMathematicianResolution => {
+): CanonicalMathematicianDecision => {
   const source = sourceContractFor(state, task, inventory);
   if (source === undefined) return { kind: "DETERMINISTIC_REJECTION", code: "InformationSourceNoLongerValid", message: "Mathematician information source no longer matches canonical history" };
   const count = resolveCount(state, source);
-  if (count.blocking.length > 0) return { kind: "LEDGER_UNRESOLVED", rebuiltState: state, blockingUnresolvedFacts: count.blocking };
+  if (count.blocking.length > 0) return { kind: "LEDGER_UNRESOLVED", blockingUnresolvedFacts: count.blocking };
   const effectiveness = effectivenessFor(state, source);
-  if (effectiveness === undefined) return { kind: "SOURCE_EFFECTIVENESS_UNRESOLVED", rebuiltState: state, reason: "IMPAIRMENT_SOURCE_CHAIN_INVALID", conflictingImpairmentIds: [] };
+  if (effectiveness === undefined) return { kind: "SOURCE_EFFECTIVENESS_UNRESOLVED", reason: "IMPAIRMENT_SOURCE_CHAIN_INVALID", conflictingImpairmentIds: [] };
   const vortox = resolveMathematicianVortoxConstraintForInternalValidation(state);
-  if (vortox === undefined) return { kind: "VORTOX_CONSTRAINT_UNRESOLVED", rebuiltState: state, reason: "VORTOX_TENURE_MISSING_OR_INCONSISTENT", candidatePlayerIds: [], candidateRoleTenureIds: [], conflictingImpairmentIds: [] };
+  if (vortox === undefined) return { kind: "VORTOX_CONSTRAINT_UNRESOLVED", reason: "VORTOX_TENURE_MISSING_OR_INCONSISTENT", candidatePlayerIds: [], candidateRoleTenureIds: [], conflictingImpairmentIds: [] };
   const candidates = resolveMathematicianCandidatesForInternalValidation(count.trueCount, effectiveness.kind, vortox.kind);
   const initialization = state.firstNightInitializationProvenance!;
   const window: FirstNightMathematicianCountWindow = {
@@ -582,17 +798,18 @@ const buildReady = (
   };
   const shape = validateMathematicianInformationDeliveredPayloadShape(payload);
   if (!shape.valid) return { kind: "CONSTRUCTION_FAILED", reason: shape.reason };
-  return { kind: "READY", rebuiltState: state, deliveryPayload: payload,
+  return { kind: "READY", deliveryPayload: payload,
     settlementPayload: createMathematicianInformationDeliveredScheduledTaskSettlement(payload) };
 };
 
-const resolveFromState = (state: GameState, taskId: ScheduledTaskId): InternalMathematicianResolution => {
-  if (state.firstNightTaskPlan === undefined || state.firstNightTaskProgress === undefined || state.currentCharacterState === undefined ||
-      state.firstNightAbilityOutcomeLedger === undefined || state.firstNightInitializationProvenance === undefined ||
-      !validateFirstNightAbilityOutcomeLedgerShape(state.firstNightAbilityOutcomeLedger).valid) {
-    return { kind: "CANONICAL_HISTORY_INVALID", reason: "Mathematician resolution requires complete canonical first-night state", offendingEventIds: [] };
+const deriveMathematicianResolutionFromCanonicalContext = (
+  context: CanonicalMathematicianContext
+): CanonicalMathematicianDecision => {
+  if (context[canonicalMathematicianContextBrand] !== true) {
+    return { kind: "CANONICAL_HISTORY_INVALID", reason: "Mathematician canonical context brand is missing", offendingEventIds: [] };
   }
-  const inventory = buildValidatedMathematicianInventory(state);
+  const state = stateViewFromCanonicalMathematicianContext(context);
+  const inventory = buildValidatedMathematicianInventory(state, true);
   if (!inventory.valid || inventory.classification === "INVALID_MIXED_GENERATION") {
     return { kind: "CANONICAL_HISTORY_INVALID", reason: inventory.valid ? "Mathematician inventory mixes V1 and V2 generations" : inventory.reason, offendingEventIds: [] };
   }
@@ -602,20 +819,15 @@ const resolveFromState = (state: GameState, taskId: ScheduledTaskId): InternalMa
     if (base === undefined || gained === undefined) {
       return { kind: "CANONICAL_HISTORY_INVALID", reason: "Legacy V1 duplicate classification lacks exact task identities", offendingEventIds: [] };
     }
-    return { kind: "UNSUPPORTED_LEGACY_V1_DUPLICATE_HOLDER_ORDER", rebuiltState: state,
+    return { kind: "UNSUPPORTED_LEGACY_V1_DUPLICATE_HOLDER_ORDER",
       diagnostic: { reason: "LEGACY_V1_DUPLICATE_MATHEMATICIAN_ORDER_UNSUPPORTED", taskPlanVersion: "first-night-task-plan-v1",
         baseTaskId: base.taskId, gainedTaskId: gained.taskId } };
   }
-  const task = state.firstNightTaskPlan.tasks.find((entry) => entry.taskId === taskId);
-  if (task === undefined) return { kind: "DETERMINISTIC_REJECTION", code: "ScheduledTaskNotFound", message: "Mathematician task was not found" };
-  if (task.taskType !== "MATHEMATICIAN_INFORMATION" || task.taskClass !== "ROLE_INFORMATION" ||
-      (task.source.kind !== "ROLE" && task.source.kind !== "PHILOSOPHER_GAINED_ABILITY")) return {
-    kind: "DETERMINISTIC_REJECTION", code: "UnsupportedMathematicianInformationTask", message: "Task is not a supported Mathematician information task"
-  };
-  if (isFirstNightTaskSettled(state.firstNightTaskProgress, task.taskId)) return {
+  const task = context.targetTask;
+  if (isFirstNightTaskSettled(context.taskProgress, task.taskId)) return {
     kind: "DETERMINISTIC_REJECTION", code: "ScheduledTaskAlreadySettled", message: "Mathematician task is already settled"
   };
-  if (getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress)?.taskId !== task.taskId) return {
+  if (getNextUnsettledFirstNightTask(context.taskPlan, context.taskProgress)?.taskId !== task.taskId) return {
     kind: "DETERMINISTIC_REJECTION", code: "ScheduledTaskNotNext", message: "Mathematician task is not the next unsettled task"
   };
   return buildReady(state, task, inventory.input);
@@ -625,12 +837,27 @@ export const classifyValidatedMathematicianSupportStateForInternalValidation = (
   state: GameState
 ): MathematicianInventoryResult => buildValidatedMathematicianInventory(state);
 
-export const resolveMathematicianInformationFromStateForInternalValidation = (
+export const validateMathematicianSourceAtSettlementForInternalValidation = (
   state: GameState,
   taskId: ScheduledTaskId
-): InternalMathematicianResolution => resolveFromState(state, taskId);
+): boolean => {
+  const inventory = buildValidatedMathematicianInventory(state);
+  const task = state.firstNightTaskPlan?.tasks.find((entry) => entry.taskId === taskId);
+  return inventory.valid && task !== undefined && sourceContractFor(state, task, inventory.input) !== undefined;
+};
 
-const mathematicianPipelineStateFingerprint = (state: GameState) => ({
+export const resolveMathematicianSourceEffectivenessForInternalValidation = (
+  state: GameState,
+  taskId: ScheduledTaskId
+): MathematicianSourceEffectiveness | undefined => {
+  const inventory = buildValidatedMathematicianInventory(state);
+  const task = state.firstNightTaskPlan?.tasks.find((entry) => entry.taskId === taskId);
+  if (!inventory.valid || task === undefined) return undefined;
+  const source = sourceContractFor(state, task, inventory.input);
+  return source === undefined ? undefined : effectivenessFor(state, source);
+};
+
+const mathematicianPipelineStateFingerprint = (state: GameState): MathematicianPipelineStateFingerprint => ({
   gameId: state.gameId,
   gameVersion: state.gameVersion,
   lastEventSequence: state.lastEventSequence,
@@ -638,9 +865,9 @@ const mathematicianPipelineStateFingerprint = (state: GameState) => ({
   nextTask: state.firstNightTaskPlan === undefined
     ? null
     : getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress) ?? null,
-  firstNightAbilityOutcomeLedger: state.firstNightAbilityOutcomeLedger,
-  roster: state.roster,
-  currentCharacterState: state.currentCharacterState
+  firstNightAbilityOutcomeLedger: state.firstNightAbilityOutcomeLedger!,
+  roster: state.roster!.entries,
+  currentCharacterState: state.currentCharacterState!
 });
 
 export const mathematicianPipelineStatesMatchForInternalValidation = (
@@ -656,10 +883,26 @@ export const resolveMathematicianInformationDecisionFromAcceptedEventStream = (
   taskId: ScheduledTaskId
 ): InternalMathematicianResolution => {
   try {
-    const captured = structuredClone(events);
-    validateDomainEventStream(captured);
-    return resolveFromState(rebuildGameState(captured), taskId);
+    const { context, rebuiltState } = buildContextFromAcceptedEventStream(events, taskId);
+    const decision = deriveMathematicianResolutionFromCanonicalContext(context);
+    switch (decision.kind) {
+      case "READY":
+        return { ...decision, rebuiltState };
+      case "UNSUPPORTED_LEGACY_V1_DUPLICATE_HOLDER_ORDER":
+        return { ...decision, rebuiltState };
+      case "LEDGER_UNRESOLVED":
+        return { ...decision, rebuiltState };
+      case "SOURCE_EFFECTIVENESS_UNRESOLVED":
+        return { ...decision, rebuiltState };
+      case "VORTOX_CONSTRAINT_UNRESOLVED":
+        return { ...decision, rebuiltState };
+      default:
+        return decision;
+    }
   } catch (error: unknown) {
+    if (error instanceof MathematicianTargetValidationError) {
+      return { kind: "DETERMINISTIC_REJECTION", code: error.code, message: error.message };
+    }
     if (error instanceof DomainError) {
       return { kind: "CANONICAL_HISTORY_INVALID", reason: error.message, offendingEventIds: [] };
     }
@@ -667,24 +910,73 @@ export const resolveMathematicianInformationDecisionFromAcceptedEventStream = (
   }
 };
 
-export type MathematicianProspectivePairValidationResult = { readonly valid: true } | { readonly valid: false; readonly reason: string };
+export type MathematicianProspectivePairValidationResult =
+  | { readonly valid: true; readonly prospectiveStateFingerprint: MathematicianPipelineStateFingerprint }
+  | { readonly valid: false; readonly code:
+      | "EXPECTED_DECISION_MISMATCH"
+      | "EXPECTED_SETTLEMENT_MISMATCH"
+      | "BATCH_CONTRACT_INVALID"
+      | "PROSPECTIVE_STREAM_INVALID"
+      | "PROSPECTIVE_REBUILD_MISMATCH";
+    readonly reason: string };
 export const validateProspectiveMathematicianInformationPair = (input: {
   readonly priorAcceptedEvents: readonly AnyDomainEventEnvelope[];
   readonly deliveryEvent: DomainEventEnvelope<"MathematicianInformationDelivered">;
   readonly settlementEvent: DomainEventEnvelope<"ScheduledTaskSettled">;
 }): MathematicianProspectivePairValidationResult => {
   const decision = resolveMathematicianInformationDecisionFromAcceptedEventStream(input.priorAcceptedEvents, input.deliveryEvent.payload.taskId);
-  if (decision.kind !== "READY") return { valid: false, reason: `Mathematician prospective pair has no READY decision: ${decision.kind}` };
-  if (input.deliveryEvent.eventSequence + 1 !== input.settlementEvent.eventSequence || input.deliveryEvent.batchId !== input.settlementEvent.batchId ||
-      input.deliveryEvent.commandId !== input.settlementEvent.commandId || input.deliveryEvent.gameVersion !== input.settlementEvent.gameVersion ||
-      input.deliveryEvent.createdAt !== input.settlementEvent.createdAt ||
-      !sameCanonicalDataValue(input.deliveryEvent.payload, decision.deliveryPayload) ||
-      !sameCanonicalDataValue(input.settlementEvent.payload, decision.settlementPayload)) {
-    return { valid: false, reason: "Mathematician prospective pair does not equal the canonical complete-stream decision" };
+  if (decision.kind !== "READY" || !sameCanonicalDataValue(input.deliveryEvent.payload, decision.kind === "READY" ? decision.deliveryPayload : undefined)) {
+    return { valid: false, code: "EXPECTED_DECISION_MISMATCH", reason: `Mathematician prospective delivery has no matching READY decision: ${decision.kind}` };
   }
-  try { rebuildGameState([...input.priorAcceptedEvents, input.deliveryEvent, input.settlementEvent]); }
-  catch (error: unknown) { return { valid: false, reason: error instanceof Error ? error.message : "Prospective Mathematician replay failed" }; }
-  return { valid: true };
+  if (!sameCanonicalDataValue(input.settlementEvent.payload, decision.settlementPayload)) {
+    return { valid: false, code: "EXPECTED_SETTLEMENT_MISMATCH", reason: "Mathematician settlement does not equal the canonical complete-stream decision" };
+  }
+  const priorBoundary = decision.rebuiltState.lastEventSequence;
+  if (input.deliveryEvent.eventSequence !== priorBoundary + 1 ||
+      input.settlementEvent.eventSequence !== input.deliveryEvent.eventSequence + 1 ||
+      input.deliveryEvent.eventId === input.settlementEvent.eventId ||
+      input.deliveryEvent.gameId !== input.settlementEvent.gameId ||
+      input.deliveryEvent.batchId !== input.settlementEvent.batchId ||
+      input.deliveryEvent.commandId !== input.settlementEvent.commandId ||
+      input.deliveryEvent.gameVersion !== input.settlementEvent.gameVersion ||
+      input.deliveryEvent.createdAt !== input.settlementEvent.createdAt ||
+      input.deliveryEvent.correlationId !== input.settlementEvent.correlationId ||
+      input.deliveryEvent.causationId !== input.settlementEvent.causationId ||
+      input.deliveryEvent.rulesBaselineVersion !== input.settlementEvent.rulesBaselineVersion ||
+      input.deliveryEvent.payload.deliveryEventSequence !== input.deliveryEvent.eventSequence ||
+      input.deliveryEvent.payload.windowSnapshot.endEventSequence !== priorBoundary ||
+      input.settlementEvent.payload.taskId !== input.deliveryEvent.payload.taskId ||
+      input.settlementEvent.payload.taskType !== "MATHEMATICIAN_INFORMATION" ||
+      input.settlementEvent.payload.outcomeType !== "MATHEMATICIAN_INFORMATION_DELIVERED" ||
+      input.settlementEvent.payload.characterStateRevision !== input.deliveryEvent.payload.settlementCharacterStateRevision) {
+    return { valid: false, code: "BATCH_CONTRACT_INVALID", reason: "Mathematician prospective pair violates the exact two-event batch contract" };
+  }
+  try {
+    validateDomainBatchSemantics(decision.rebuiltState, [input.deliveryEvent, input.settlementEvent]);
+  } catch (error: unknown) {
+    return { valid: false, code: "BATCH_CONTRACT_INVALID", reason: error instanceof Error ? error.message : "Mathematician batch validation failed" };
+  }
+  const prospectiveEvents = [...input.priorAcceptedEvents, input.deliveryEvent, input.settlementEvent];
+  try {
+    validateDomainEventStream(prospectiveEvents);
+  } catch (error: unknown) {
+    return { valid: false, code: "PROSPECTIVE_STREAM_INVALID", reason: error instanceof Error ? error.message : "Prospective Mathematician stream validation failed" };
+  }
+  try {
+    const prospectiveState = rebuildGameState(prospectiveEvents);
+    const predictedAfterDelivery = applyDomainEvent(decision.rebuiltState, input.deliveryEvent);
+    const predictedState = applyDomainEvent(predictedAfterDelivery, input.settlementEvent);
+    const prospectiveStateFingerprint = mathematicianPipelineStateFingerprint(prospectiveState);
+    if (prospectiveState.gameVersion !== decision.rebuiltState.gameVersion + 1 ||
+        prospectiveState.lastEventSequence !== priorBoundary + 2 ||
+        prospectiveState.phase !== "FIRST_NIGHT" ||
+        !sameCanonicalDataValue(prospectiveStateFingerprint, mathematicianPipelineStateFingerprint(predictedState))) {
+      return { valid: false, code: "PROSPECTIVE_REBUILD_MISMATCH", reason: "Prospective Mathematician state does not match the predicted exact pair" };
+    }
+    return { valid: true, prospectiveStateFingerprint };
+  } catch (error: unknown) {
+    return { valid: false, code: "PROSPECTIVE_REBUILD_MISMATCH", reason: error instanceof Error ? error.message : "Prospective Mathematician rebuild failed" };
+  }
 };
 
 const validateIncomingMathematicianInformationDelivered = (input: {
@@ -692,7 +984,8 @@ const validateIncomingMathematicianInformationDelivered = (input: {
   readonly deliveryEvent: DomainEventEnvelope<"MathematicianInformationDelivered">;
 }): { readonly valid: true; readonly canonicalPayload: MathematicianInformationDeliveredPayload } | { readonly valid: false; readonly reason: string } => {
   if (input.stateBefore.lastEventSequence !== input.deliveryEvent.eventSequence - 1) return { valid: false, reason: "Mathematician replay upper boundary is not the pre-event sequence" };
-  const decision = resolveFromState(input.stateBefore, input.deliveryEvent.payload.taskId);
+  const context = buildContextFromReplayPreEventState(input.stateBefore, input.deliveryEvent);
+  const decision = deriveMathematicianResolutionFromCanonicalContext(context);
   if (decision.kind === "UNSUPPORTED_LEGACY_V1_DUPLICATE_HOLDER_ORDER") {
     throw new DomainError("UnsupportedLegacyV1MathematicianReplay", "Legacy V1 duplicate Mathematician delivery is not replayable");
   }
@@ -772,7 +1065,8 @@ export const validateStoredMathematicianInformationDelivered = (input: {
       return { valid: false, reason: "Mathematician checkpoint boundaries are not exact" };
     }
 
-    const decision = resolveFromState(checkpoint.preEventState, checkpoint.deliveryEvent.payload.taskId);
+    const context = buildContextFromReplayPreEventState(checkpoint.preEventState, checkpoint.deliveryEvent);
+    const decision = deriveMathematicianResolutionFromCanonicalContext(context);
     if (decision.kind !== "READY" ||
         !sameCanonicalDataValue(decision.deliveryPayload, checkpoint.deliveryEvent.payload) ||
         !sameCanonicalDataValue(decision.settlementPayload, checkpoint.settlementEvent.payload)) {

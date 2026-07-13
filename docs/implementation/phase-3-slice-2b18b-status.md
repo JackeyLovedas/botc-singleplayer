@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B18B Implementation Status
 
-> Status: `READY_TO_PUBLISH / UNACCEPTED`. Controller pre-publish audit passed the production, test, scope, immutable-authority, and root-export checks. Local implementation exists on `phase-3/mathematician-first-night-information`; no commit, push, PR, product-head CI, or independent final review exists.
+> Status: `REPAIR_ROUND_1_READY_TO_PUBLISH / UNACCEPTED`. PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) is open on `phase-3/mathematician-first-night-information`. Independent final review of frozen head `8b273eec34502906d6c2aa12031c4065ec97725c` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; the bounded repair is locally complete but not yet committed, pushed, or independently re-reviewed.
 
 ## Scope
 
@@ -16,20 +16,28 @@ This slice implements first-night Mathematician count resolution, exact informat
 - Accepted integration fixtures cover base, V1 gained-only, V2 gained-only, and V2 base-plus-gained temporal behavior. Hostile cases cover missing grant/insertion/opportunity, role/revision/seat cross-link tampering, and V1-plan/V2-insertion mixing.
 - Direct semantic seams cover distinct-player deduplication, redundant unresolved facts, non-vacuous own-instance exclusion, missing/conflicting Vortox provenance, stable multiple-gained ordering, poison terminal cause, complete cause matrix, pipeline-state mismatch, and Layer A/B/C call boundaries. These seams remain non-root internal contracts and are exercised by the production paths they freeze.
 
+## Final-review repair round 1
+
+- Complete immutable review report: `docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md`, SHA-256 `6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157`.
+- Replaced the raw caller-state decision seam with the private unique-symbol-branded `CanonicalMathematicianContext`, the two authorized builders, and one shared pure derivation core used by Layers A and C.
+- Added Layer B's exact five-code failure union and successful prospective-state fingerprint.
+- Hardened canonical delivery evidence identity, the Mathematician-specific 13-slot evidence order and matrix, known-impaired Vortox role/tenure/impairment evidence, continuous-tenure applicability, target-before-Option-A validation, and payload identity/order cross-links.
+- Added direct repair regressions `[R1-CONTEXT-01]` through `[R1-TARGET-10]`, plus `[R1-EVIDENCE-05B]` for unchanged non-Mathematician evidence ordering. No rule semantics, Option A classification, V1 ordering, public resolver boundary, or Slice scope changed.
+
 ## Test traceability
 
-The exact 225-item semantic classification is in `docs/implementation/phase-3-slice-2b18b-test-traceability.md`: 224 locally executable IDs are direct/integration covered, and `Original-140` is the sole `EXTERNAL_GATE_PENDING` item for frozen exact-head Ubuntu/Windows equality. The `411`-test Math runner count is supporting evidence, not a substitute for semantic traceability.
+The exact 225-item semantic classification and repair-contract mapping are in `docs/implementation/phase-3-slice-2b18b-test-traceability.md`. The original frozen head completed `Original-140` through push CI `29251259989` and PR CI `29251425251`, both `SUCCESS`. The new repair head does not exist until this worktree is committed, so cross-platform evidence must be rerun for that exact future head. The `422`-test Math runner count is supporting evidence, not a substitute for semantic traceability.
 
 ## Local validation
 
 - Full ESLint: pass.
 - Typecheck: pass.
-- Math suite: `411 / 411` pass.
-- Focused eight-file ledger/batch/rebuild/Philosopher/Clockmaker/application/Math/projection gate: `8 files / 1009 tests` pass.
-- Full test: `30 files / 1397 tests` pass.
-- Coverage: `30 files / 1397 tests` pass; `86.66%` statements/lines, `81.32%` branches, `97.75%` functions.
+- Math suite: `422 / 422` pass.
+- Focused eight-file ledger/batch/rebuild/Philosopher/Clockmaker replay/application/Math/projection gate: `8 files / 1020 tests` pass.
+- Full test: `30 files / 1408 tests` pass.
+- Coverage: `30 files / 1408 tests` pass; `86.78%` statements/lines, `81.52%` branches, `97.78%` functions.
 - `git diff --check`, strict control JSON parse, root-export/internal resolver, caller-state/caller-ledger resolver, nondeterminism, raw JSON semantic comparison, sparse-array, and deleted-test scans: pass. State-shape validator name matches and dense-array-guarded `.every` calls were reviewed as non-resolver/non-sparse false positives.
-- `Original-140` remains `EXTERNAL_GATE_PENDING`; local Windows gates do not claim frozen exact-head Ubuntu/Windows equality.
+- `Original-140` is complete for reviewed head `8b273eec...` through successful exact-head push/PR CI. The future repair commit requires its own push/PR CI and does not inherit that result.
 
 ## Rule coverage
 
