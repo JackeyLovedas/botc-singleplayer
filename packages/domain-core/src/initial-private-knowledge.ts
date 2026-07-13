@@ -15,6 +15,7 @@ import {
   validateRoleSetupSnapshot
 } from "./setup-types.js";
 import type { SeatNumber } from "./player-roster.js";
+import type { PlayerMathematicianInformationView } from "./mathematician.js";
 
 export const SUPPORTED_FIRST_NIGHT_INITIALIZATION_VERSION = "first-night-initialization-v1" as const;
 export const SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION = "initial-own-character-knowledge-v1" as const;
@@ -37,7 +38,8 @@ export type PlayerPrivateKnowledgeStage =
   | "CERENOVUS_INFORMATION"
   | "CLOCKMAKER_INFORMATION"
   | "DREAMER_INFORMATION"
-  | "SEAMSTRESS_INFORMATION";
+  | "SEAMSTRESS_INFORMATION"
+  | "MATHEMATICIAN_INFORMATION";
 
 export type FirstNightSession = {
   readonly initializationVersion: SupportedFirstNightInitializationVersion;
@@ -107,6 +109,7 @@ export type PlayerPrivateKnowledgeView = {
   readonly dreamerInformation?: PlayerDreamerInformationView;
   readonly clockmakerInformation?: PlayerClockmakerInformationView;
   readonly seamstressInformation?: readonly PlayerSeamstressInformationView[];
+  readonly mathematicianInformation?: PlayerMathematicianInformationView;
   readonly demonBluffs: readonly RoleSetupSnapshot[];
   readonly ownCharacterKnowledgeModelVersion: SupportedInitialKnowledgeModelVersion;
   readonly teamKnowledgeModelVersion?: string;
@@ -115,6 +118,7 @@ export type PlayerPrivateKnowledgeView = {
   readonly dreamerKnowledgeModelVersion?: string;
   readonly clockmakerKnowledgeModelVersion?: "clockmaker-information-v1";
   readonly seamstressKnowledgeModelVersion?: "seamstress-private-knowledge-v1";
+  readonly mathematicianKnowledgeModelVersion?: "mathematician-knowledge-v1";
   readonly deliveredKnowledgeStages: readonly PlayerPrivateKnowledgeStage[];
 };
 
@@ -131,7 +135,6 @@ export type PlayerDreamerInformationView = {
 };
 
 export type PlayerClockmakerInformationView = { readonly distance: 0 | 1 | 2 | 3 | 4 | 5 | 6 };
-
 export type PlayerSeamstressInformationView = {
   readonly targets: readonly [KnownPlayerReference, KnownPlayerReference];
   readonly deliveredAnswer: "YES" | "NO";
@@ -287,7 +290,8 @@ const PLAYER_PRIVATE_KNOWLEDGE_STAGE_ORDER = [
   "CERENOVUS_INFORMATION",
   "CLOCKMAKER_INFORMATION",
   "DREAMER_INFORMATION",
-  "SEAMSTRESS_INFORMATION"
+  "SEAMSTRESS_INFORMATION",
+  "MATHEMATICIAN_INFORMATION"
 ] as const;
 const SUPPORTED_PRIVATE_VIEW_TEAM_KNOWLEDGE_MODEL_VERSION = "first-night-team-knowledge-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION = "evil-twin-knowledge-model-v1" as const;
@@ -295,6 +299,7 @@ const SUPPORTED_PRIVATE_VIEW_CERENOVUS_KNOWLEDGE_MODEL_VERSION = "cerenovus-madn
 const SUPPORTED_PRIVATE_VIEW_DREAMER_KNOWLEDGE_MODEL_VERSION = "dreamer-information-model-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_CLOCKMAKER_KNOWLEDGE_MODEL_VERSION = "clockmaker-information-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_SEAMSTRESS_KNOWLEDGE_MODEL_VERSION = "seamstress-private-knowledge-v1" as const;
+const SUPPORTED_PRIVATE_VIEW_MATHEMATICIAN_KNOWLEDGE_MODEL_VERSION = "mathematician-knowledge-v1" as const;
 
 export const hasExactRoleSetupSnapshotShape = (value: unknown): value is RoleSetupSnapshot => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ROLE_SETUP_SNAPSHOT_KEYS)) {
@@ -426,7 +431,9 @@ const validatePrivateKnowledgeViewStages = (
   hasDreamerKnowledgeModelVersion: boolean,
   hasDreamerInformation: boolean,
   hasSeamstressKnowledgeModelVersion: boolean,
-  hasSeamstressInformation: boolean
+  hasSeamstressInformation: boolean,
+  hasMathematicianKnowledgeModelVersion: boolean,
+  hasMathematicianInformation: boolean
 ): InitialPrivateKnowledgeValidationResult => {
   if (!Array.isArray(stages) || !isDenseArray(stages)) {
     return fail("PlayerPrivateKnowledgeView deliveredKnowledgeStages must be a dense array");
@@ -490,6 +497,11 @@ const validatePrivateKnowledgeViewStages = (
     return fail("PlayerPrivateKnowledgeView Seamstress information and model version must be present exactly when Seamstress information is delivered");
   }
 
+  const hasMathematicianStage = stageValues.some((stage) => stage === "MATHEMATICIAN_INFORMATION");
+  if (hasMathematicianKnowledgeModelVersion !== hasMathematicianStage || hasMathematicianInformation !== hasMathematicianStage) {
+    return fail("PlayerPrivateKnowledgeView Mathematician information and model version must be present exactly when Mathematician information is delivered");
+  }
+
   return { valid: true };
 };
 
@@ -510,6 +522,10 @@ const hasExactDreamerInformationViewShape = (value: unknown): value is PlayerDre
 const hasExactClockmakerInformationViewShape = (value: unknown): value is PlayerClockmakerInformationView =>
   isPlainRecord(value) && hasExactEnumerableKeys(value, ["distance"]) && typeof value.distance === "number" &&
   Number.isSafeInteger(value.distance) && value.distance >= 0 && value.distance <= 6;
+
+const hasExactMathematicianInformationViewShape = (value: unknown): value is PlayerMathematicianInformationView =>
+  isPlainRecord(value) && hasExactEnumerableKeys(value, ["count"]) && typeof value.count === "number" &&
+  Number.isSafeInteger(value.count) && value.count >= 0 && value.count <= 11;
 
 const hasExactCerenovusMadnessInstructionViewShape = (value: unknown): value is PlayerCerenovusMadnessInstructionView => {
   return isPlainRecord(value) &&
@@ -558,6 +574,8 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     ...(Object.hasOwn(value, "clockmakerKnowledgeModelVersion") ? ["clockmakerKnowledgeModelVersion"] : []),
     ...(Object.hasOwn(value, "seamstressInformation") ? ["seamstressInformation"] : []),
     ...(Object.hasOwn(value, "seamstressKnowledgeModelVersion") ? ["seamstressKnowledgeModelVersion"] : [])
+    ,...(Object.hasOwn(value, "mathematicianInformation") ? ["mathematicianInformation"] : [])
+    ,...(Object.hasOwn(value, "mathematicianKnowledgeModelVersion") ? ["mathematicianKnowledgeModelVersion"] : [])
   ];
   if (!hasExactEnumerableKeys(value, [...PLAYER_PRIVATE_KNOWLEDGE_VIEW_BASE_KEYS, ...optionalKeys])) {
     return fail("PlayerPrivateKnowledgeView must have exact runtime shape");
@@ -592,6 +610,10 @@ export const validatePlayerPrivateKnowledgeViewShape = (
 
   if (Object.hasOwn(value, "clockmakerInformation") && !hasExactClockmakerInformationViewShape(value.clockmakerInformation)) {
     return fail("PlayerPrivateKnowledgeView clockmakerInformation must have exact runtime shape");
+  }
+
+  if (Object.hasOwn(value, "mathematicianInformation") && !hasExactMathematicianInformationViewShape(value.mathematicianInformation)) {
+    return fail("PlayerPrivateKnowledgeView mathematicianInformation must have exact runtime shape");
   }
 
   if (Object.hasOwn(value, "cerenovusMadnessInstruction") && !hasExactCerenovusMadnessInstructionViewShape(value.cerenovusMadnessInstruction)) {
@@ -690,6 +712,12 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     return fail("PlayerPrivateKnowledgeView seamstressKnowledgeModelVersion must be supported");
   }
 
+  const hasMathematicianKnowledgeModelVersion = Object.hasOwn(value, "mathematicianKnowledgeModelVersion");
+  if (hasMathematicianKnowledgeModelVersion &&
+      value.mathematicianKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_MATHEMATICIAN_KNOWLEDGE_MODEL_VERSION) {
+    return fail("PlayerPrivateKnowledgeView mathematicianKnowledgeModelVersion must be supported");
+  }
+
   return validatePrivateKnowledgeViewStages(
     value.deliveredKnowledgeStages,
     hasTeamKnowledgeModelVersion,
@@ -702,7 +730,9 @@ export const validatePlayerPrivateKnowledgeViewShape = (
     hasDreamerKnowledgeModelVersion,
     Object.hasOwn(value, "dreamerInformation"),
     hasSeamstressKnowledgeModelVersion,
-    Object.hasOwn(value, "seamstressInformation")
+    Object.hasOwn(value, "seamstressInformation"),
+    hasMathematicianKnowledgeModelVersion,
+    Object.hasOwn(value, "mathematicianInformation")
   );
 };
 

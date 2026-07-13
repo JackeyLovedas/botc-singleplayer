@@ -1,5 +1,6 @@
 export * from "./character-assignment.js";
 export * from "./clockmaker.js";
+export * from "./mathematician.js";
 export * from "./canonical-data.js";
 export {
   FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,
@@ -33,6 +34,7 @@ export type {
   FirstNightTaskInsertionEvidence, SnakeCharmerResolutionEvidence, EvilTwinPairEvidence,
   WitchPendingMarkerEvidence, CerenovusInstructionEvidence, ClockmakerDeliveryEvidence,
   DreamerDeliveryEvidence, SeamstressDeliveryEvidence, AbilityOutcomeEvidenceReference,
+  MathematicianDeliveryEvidence,
   AbilityOutcomeStatus, AbilityOutcomeCause, FirstNightAbilityOutcomeFact, FirstNightAbilityOutcomeLedger
 } from "./first-night-ability-outcome-ledger.js";
 export * from "./command.js";

@@ -113,7 +113,8 @@ export type ScheduledTaskSettlementOutcomeType =
   | "CLOCKMAKER_INFORMATION_DELIVERED"
   | "DREAMER_INFORMATION_DELIVERED"
   | "SEAMSTRESS_INFORMATION_DELIVERED"
-  | "SEAMSTRESS_DEFERRED";
+  | "SEAMSTRESS_DEFERRED"
+  | "MATHEMATICIAN_INFORMATION_DELIVERED";
 
 export type ScheduledTaskSettlement = {
   readonly taskId: ScheduledTaskId;
@@ -377,7 +378,8 @@ export const isScheduledTaskSettlementOutcomeType = (value: unknown): value is S
   value === "CLOCKMAKER_INFORMATION_DELIVERED" ||
   value === "DREAMER_INFORMATION_DELIVERED" ||
   value === "SEAMSTRESS_DEFERRED" ||
-  value === "SEAMSTRESS_INFORMATION_DELIVERED";
+  value === "SEAMSTRESS_INFORMATION_DELIVERED" ||
+  value === "MATHEMATICIAN_INFORMATION_DELIVERED";
 
 export const compareFirstNightTaskOrder = (left: ScheduledTask, right: ScheduledTask): number => {
   const base = left.orderKey.baseOrder - right.orderKey.baseOrder;

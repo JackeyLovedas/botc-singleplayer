@@ -63,6 +63,8 @@ export type DomainErrorCode =
   | "InvalidDreamerTargetChosenPayload"
   | "InvalidDreamerInformationDeliveredPayload"
   | "InvalidClockmakerInformationDeliveredPayload"
+  | "InvalidMathematicianInformationDeliveredPayload"
+  | "UnsupportedLegacyV1MathematicianReplay"
   | "InvalidEvilTwinPairEstablishedPayload"
   | "DuplicateEvilTwinPairEstablished"
   | "InvalidEvilTwinInformationDeliveredPayload"

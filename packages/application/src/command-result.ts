@@ -59,6 +59,8 @@ export type CommandRejectionCode =
   | "InvalidSeamstressTarget"
   | "InvalidClockmakerInformationCommand"
   | "UnsupportedClockmakerInformationTask"
+  | "InvalidMathematicianInformationCommand"
+  | "UnsupportedMathematicianInformationTask"
   | "InformationSourceNoLongerValid"
   | "UnsupportedSeamstressActionDecision"
   | "AbilityUseEntitlementAlreadySpent"

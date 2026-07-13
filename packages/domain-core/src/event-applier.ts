@@ -22,6 +22,7 @@ import type {
   CerenovusMadnessInstructionDeliveredPayload,
   CerenovusMadnessMarkedPayload,
   ClockmakerInformationDeliveredPayload,
+  MathematicianInformationDeliveredPayload,
   SeamstressAbilitySpentPayload,
   SeamstressInformationDeliveredPayload,
   SeamstressTargetsChosenPayload,
@@ -36,6 +37,13 @@ import {
   isClockmakerInformationSetShape,
   validateClockmakerInformationAgainstCanonicalState
 } from "./clockmaker.js";
+import {
+  appendMathematicianImpairmentEventProvenance,
+  hasMathematicianInformationForSettlement,
+  isMathematicianInformationStateShape,
+  validateMathematicianInformationDeliveredPayloadShape
+} from "./mathematician.js";
+import { applyMathematicianInformationDeliveredReplayAdapter } from "./mathematician-internal.js";
 import {
   appendCerenovusChoice,
   appendCerenovusInstruction,
@@ -1515,6 +1523,29 @@ const validateClockmakerInformationDeliveredPayloadForState = (
   if (!validation.valid) throw new DomainError("InvalidClockmakerInformationDeliveredPayload", validation.reason);
 };
 
+const validateMathematicianInformationDeliveredPayloadForState = (
+  state: GameState,
+  payload: MathematicianInformationDeliveredPayload
+): void => {
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 ||
+      state.firstNightTaskPlan === undefined || state.firstNightTaskProgress === undefined ||
+      state.firstNightAbilityOutcomeLedger === undefined || state.firstNightInitializationProvenance === undefined ||
+      state.currentCharacterState === undefined || state.roster === undefined || state.seamstressRoleTenureState === undefined) {
+    throw new DomainError("InvalidMathematicianInformationDeliveredPayload", "Mathematician information requires complete first-night canonical state");
+  }
+  const shape = validateMathematicianInformationDeliveredPayloadShape(payload);
+  if (!shape.valid) throw new DomainError("InvalidMathematicianInformationDeliveredPayload", shape.reason);
+  if (payload.deliveryEventSequence !== state.lastEventSequence + 1 || payload.windowSnapshot.endEventSequence !== state.lastEventSequence ||
+      payload.windowSnapshot.gameId !== state.gameId || payload.windowSnapshot.firstNightInitializedEventId !== state.firstNightInitializationProvenance.eventId ||
+      payload.windowSnapshot.startEventSequence !== state.firstNightInitializationProvenance.eventSequence ||
+      payload.settlementCharacterStateRevision !== state.currentCharacterState.revision) {
+    throw new DomainError("InvalidMathematicianInformationDeliveredPayload", "Mathematician delivery window and revision must match the replay pre-event state");
+  }
+  if (state.mathematicianInformation !== undefined && !isMathematicianInformationStateShape(state.mathematicianInformation)) {
+    throw new DomainError("InvalidMathematicianInformationDeliveredPayload", "Stored Mathematician information is not canonical");
+  }
+};
+
 const validateCerenovusChoiceRecordedPayloadForState = (state: GameState, payload: CerenovusChoiceRecordedPayload): void => {
   if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 || state.setup === undefined ||
       state.roster === undefined || state.currentCharacterState === undefined || state.firstNightTaskPlan === undefined ||
@@ -1733,6 +1764,40 @@ const validateScheduledTaskSettledPayloadForState = (
     return;
   }
 
+  if (payload.taskType === "MATHEMATICIAN_INFORMATION") {
+    const deliveries = state.mathematicianInformation?.deliveries.filter((entry) =>
+      entry.taskId === payload.taskId &&
+      entry.settlementCharacterStateRevision === payload.characterStateRevision
+    ) ?? [];
+    const delivery = deliveries.length === 1 ? deliveries[0] : undefined;
+    const matchingFacts = state.firstNightAbilityOutcomeLedger?.facts.filter((fact) =>
+      delivery !== undefined &&
+      fact.abilityRoleId === "mathematician" &&
+      fact.abilityTaskId === delivery.taskId &&
+      fact.sourcePlayerId === delivery.sourceContract.sourcePlayerId &&
+      fact.sourceSeatNumber === delivery.sourceContract.sourceSeatNumber &&
+      fact.sourceEventSequence === delivery.deliveryEventSequence &&
+      fact.evaluatedCharacterStateRevision === delivery.settlementCharacterStateRevision &&
+      fact.abilityInstance.abilityInstanceId === delivery.resolvingAbilityInstanceId &&
+      fact.evidenceReferences.some((evidence) =>
+        evidence.kind === "MATHEMATICIAN_DELIVERY" &&
+        evidence.deliveryId === delivery.deliveryId &&
+        evidence.taskId === delivery.taskId &&
+        evidence.sourcePlayerId === delivery.sourceContract.sourcePlayerId &&
+        evidence.trueCount === delivery.trueCount &&
+        evidence.selectedCount === delivery.selectedCount &&
+        evidence.terminalEventId === fact.sourceEventId
+      )
+    ) ?? [];
+    if (payload.outcomeType !== "MATHEMATICIAN_INFORMATION_DELIVERED" ||
+        !hasMathematicianInformationForSettlement(state.mathematicianInformation, payload) ||
+        deliveries.length !== 1 ||
+        matchingFacts.length !== 1) {
+      throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match one delivered Mathematician information fact");
+    }
+    return;
+  }
+
   if (payload.taskType === "DREAMER_ACTION") {
     if (
       payload.outcomeType !== "DREAMER_INFORMATION_DELIVERED" ||
@@ -1829,6 +1894,8 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidDreamerInformationDeliveredPayload";
     case "ClockmakerInformationDelivered":
       return "InvalidClockmakerInformationDeliveredPayload";
+    case "MathematicianInformationDelivered":
+      return "InvalidMathematicianInformationDeliveredPayload";
     case "EvilTwinPairEstablished":
       return "InvalidEvilTwinPairEstablishedPayload";
     case "EvilTwinInformationDelivered":
@@ -2294,11 +2361,16 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
 
       validateAbilityImpairmentAppliedPayloadForState(state, event.payload);
 
+      const mathematicianImpairmentEventProvenance = appendMathematicianImpairmentEventProvenance(
+        state.mathematicianImpairmentEventProvenance,
+        { impairmentId: event.payload.impairmentId, eventId: event.eventId, eventSequence: event.eventSequence, batchId: event.batchId }
+      );
       return {
         ...state,
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
-        abilityImpairments: appendAbilityImpairment(state.abilityImpairments, event.payload)
+        abilityImpairments: appendAbilityImpairment(state.abilityImpairments, event.payload),
+        mathematicianImpairmentEventProvenance
       };
     }
 
@@ -2614,6 +2686,20 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         clockmakerInformation: appendClockmakerInformationDelivery(state.clockmakerInformation, event.payload)
+      };
+    }
+
+    case "MathematicianInformationDelivered": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "MathematicianInformationDelivered requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidMathematicianInformationDeliveredPayload", "MathematicianInformationDelivered rules baseline must match state");
+      }
+      validateMathematicianInformationDeliveredPayloadForState(state, event.payload);
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        mathematicianInformation: applyMathematicianInformationDeliveredReplayAdapter(state, event)
       };
     }
 
