@@ -193,6 +193,7 @@ import {
   validateRoleSetupSnapshot
 } from "./setup-types.js";
 import type { RoleCountSet, RoleSetupSnapshot } from "./setup-types.js";
+import { applyFirstNightAbilityOutcomeLedger } from "./first-night-ability-outcome-ledger.js";
 
 const countRolesByType = (roles: readonly RoleSetupSnapshot[]): RoleCountSet => ({
   TOWNSFOLK: roles.filter((role) => role.characterType === "TOWNSFOLK").length,
@@ -1887,7 +1888,7 @@ const validateEnvelope = (state: GameState | undefined, event: AnyDomainEventEnv
   }
 };
 
-export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainEventEnvelope): GameState => {
+const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, event: AnyDomainEventEnvelope): GameState => {
   validateEnvelope(state, event);
 
   switch (event.eventType) {
@@ -2877,3 +2878,6 @@ export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainE
       return assertNever(event);
   }
 };
+
+export const applyDomainEvent = (state: GameState | undefined, event: AnyDomainEventEnvelope): GameState =>
+  applyFirstNightAbilityOutcomeLedger(state, event, applyDomainEventWithoutOutcomeLedger(state, event));

@@ -1,6 +1,40 @@
 export * from "./character-assignment.js";
 export * from "./clockmaker.js";
 export * from "./canonical-data.js";
+export {
+  FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,
+  FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION,
+  FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION,
+  formatBaseFirstNightAbilityInstanceId,
+  formatPhilosopherGainedV1AbilityInstanceId,
+  formatPhilosopherGainedV2AbilityInstanceId,
+  formatExplicitFirstNightAbilityInstanceId,
+  parseFirstNightAbilityInstanceId,
+  validateFirstNightAbilityInstanceProvenanceShape,
+  cloneFirstNightAbilityInstanceProvenance,
+  formatFirstNightAbilityOutcomeFactId,
+  parseFirstNightAbilityOutcomeFactId,
+  validateFirstNightAbilityOutcomeWindowAnchorShape,
+  cloneFirstNightAbilityOutcomeWindowAnchor,
+  validateAbilityOutcomeEvidenceReferenceShape,
+  cloneAbilityOutcomeEvidenceReference,
+  canonicalizeAbilityOutcomeEvidenceReferences,
+  validateFirstNightAbilityOutcomeFactShape,
+  cloneFirstNightAbilityOutcomeFact,
+  validateFirstNightAbilityOutcomeLedgerShape,
+  cloneFirstNightAbilityOutcomeLedger
+} from "./first-night-ability-outcome-ledger.js";
+export type {
+  OutcomeLedgerValidationResult, FirstNightAbilityInstanceId, FirstNightAbilityOutcomeFactId,
+  FirstNightAbilityOutcomeWindowAnchor,
+  FirstNightAbilityInstanceProvenance, TerminalAbilityOutcomeEventType,
+  SourceEventEvidence, TaskEvidence, ActionOpportunityEvidence, AbilityImpairmentEvidence,
+  RoleTenureEvidence, CharacterStateEvidence, PlayerRoleAtRevisionEvidence, PhilosopherGrantEvidence,
+  FirstNightTaskInsertionEvidence, SnakeCharmerResolutionEvidence, EvilTwinPairEvidence,
+  WitchPendingMarkerEvidence, CerenovusInstructionEvidence, ClockmakerDeliveryEvidence,
+  DreamerDeliveryEvidence, SeamstressDeliveryEvidence, AbilityOutcomeEvidenceReference,
+  AbilityOutcomeStatus, AbilityOutcomeCause, FirstNightAbilityOutcomeFact, FirstNightAbilityOutcomeLedger
+} from "./first-night-ability-outcome-ledger.js";
 export * from "./command.js";
 export * from "./cerenovus.js";
 export * from "./current-character-state.js";

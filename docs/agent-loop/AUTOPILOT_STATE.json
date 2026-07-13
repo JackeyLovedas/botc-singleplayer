@@ -1,21 +1,23 @@
 {
   "status": "RUNNING",
-  "currentPR": null,
-  "currentPRUrl": null,
-  "currentBranch": "main",
+  "currentPR": 23,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/23",
+  "currentBranch": "phase-3/first-night-ability-outcome-ledger",
   "currentSlice": "2B18A",
-  "reviewedHead": "3dc10b4f030be7dd1c314c7a8981b24424bbd02b",
-  "currentReviewHeadAuthority": "Complete fresh independent Design 3.2 review on exact main HEAD 3dc10b4f030be7dd1c314c7a8981b24424bbd02b",
-  "exactHeadCIAuthority": "Reviewed main HEAD 3dc10b4f030be7dd1c314c7a8981b24424bbd02b with GitHub CI run 29192916263: SUCCESS",
-  "repairRound": 0,
+  "reviewedHead": "65121bb4c057e125f0304ff826970ae95427fee3",
+  "currentReviewHeadAuthority": "Complete independent round-4 final review covered exact PR #23 product HEAD 65121bb4c057e125f0304ff826970ae95427fee3 and returned CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED",
+  "exactHeadCIAuthority": "Product HEAD 65121bb4c057e125f0304ff826970ae95427fee3 had successful push CI 29222876582 and pull-request CI 29222877872, including Ubuntu and Windows",
+  "repairRound": 5,
   "designRound": 3.2,
   "maxDesignRounds": 3,
-  "userContinuationAuthorization": "DESIGN_ROUND_3_2_EVIDENCE_CONTRACT_SIMPLIFICATION",
+  "userContinuationAuthorization": "USER_AUTHORIZED_2B18A_GAINED_OPPORTUNITY_REVISION_MICROFIX",
+  "rescopeAuthorization": "USER_AUTHORIZED_2B18A_LEDGER_ONLY_RESCOPE_AND_FINAL_REPAIR",
+  "scopeMode": "LEDGER_ONLY_RESCOPE",
   "behaviorDesignFrozen": true,
   "finalDesignCompletionRound": true,
   "designRound3_2Scope": "EVIDENCE_CONTRACT_SIMPLIFICATION_ONLY",
   "maxSlices": 1,
-  "maxRepairRounds": 2,
+  "maxRepairRounds": 5,
   "candidateRole": "mathematician",
   "candidateScope": "FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION",
   "currentDesignPath": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
@@ -54,14 +56,16 @@
   "ruleResearchVerdict": "RULE_READY",
   "ruleEvidencePath": "docs/rules/evidence/2B18-resolved.md",
   "ruleEvidenceSha256": "7df3eb026e3db36ff7e29610207749d613646caaa2470c69fbe9afb2edc4811e",
-  "ruleSemanticsChanged": true,
+  "ruleSemanticsChanged": false,
   "unresolvedConflicts": [],
   "closedRound2BehaviorBlockers": [
     "Public resolver canonical-state binding behavior and trust boundary",
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [],
+  "remainingBlockers": [
+    "Exact-head push and pull-request CI plus one fresh complete independent dual review are pending for the final repair-round-5 feature HEAD."
+  ],
   "ruleCoverageStatus": "PARTIAL",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "approvedOverrideIds": [
@@ -457,7 +461,194 @@
       "round3_1Review": "0a4269be1b19a303fab1eb08e0bcd0c9212aed5ec4c2e068c3eb2e9502a99444"
     }
   },
-  "lastAction": "Materialized the complete fresh Design 3.2 review verbatim with reverse integrity MATCH; RULE_DESIGN_PASS authorizes bounded Slice 2B18A implementation from Design 3.2 only.",
+  "slice2B18AImplementation": {
+    "status": "RUNNING_FINAL_REPAIR_ROUND_5_LOCAL_GATES_PASS",
+    "branch": "phase-3/first-night-ability-outcome-ledger",
+    "authorizationHead": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
+    "authorizationCI": 29193210219,
+    "implementationCommit": "65121bb4c057e125f0304ff826970ae95427fee3",
+    "productReviewedHead": "65121bb4c057e125f0304ff826970ae95427fee3",
+    "productHeadPushCI": {
+      "run": 29222876582,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29222876582",
+      "status": "SUCCESS"
+    },
+    "productHeadPullRequestCI": {
+      "run": 29222877872,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29222877872",
+      "status": "SUCCESS"
+    },
+    "pr": 23,
+    "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/23",
+    "finalReviewRound1": {
+      "reviewedHead": "245e32f85e3a553c6d5302aa0b4bd434b0a3490c",
+      "report": "docs/implementation/phase-3-slice-2b18a-final-review-round-1.md",
+      "reportSha256": "4f41ea18c085f329e5631b456816447f14d62319a2f60527d0074d5532f6ef0f",
+      "integrityVerdict": "MATCH",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "findingCount": 16,
+      "remainingBlockerCount": 11
+    },
+    "finalReviewRound2": {
+      "reviewedHead": "aade6cf2cbf1dba70f346c7c016aa6143423a395",
+      "report": "docs/implementation/phase-3-slice-2b18a-final-review-round-2.md",
+      "reportSha256": "9d0cba21d7c5e5776794bfba99087d83d7d3968dcd468a57d6b07754dd8e15be",
+      "integrityVerdict": "MATCH",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "findingCount": 16,
+      "remainingBlockerCount": 6
+    },
+    "finalReviewRound3": {
+      "reviewedHead": "faf3b44714b62f7723ecb319e6d244a324215088",
+      "productHeadPushCI": 29195691651,
+      "productHeadPullRequestCI": 29195693110,
+      "report": "docs/implementation/phase-3-slice-2b18a-final-review-round-3.md",
+      "reportSha256": "04fcb8068fa1f4d62923f53881b66f3f574e2291652a4a5c2b9728fed0e7dde6",
+      "integrityVerdict": "MATCH",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "remainingBlockers": [
+        "Validate runtime inserted tasks against the canonical firstNightTaskInsertions records rather than the plan's own filtered tasks, and enforce the complete accepted base/V1/V2 task-insertion-grant-opportunity chain.",
+        "Reject V1/V2 generation mixing and bind task/grant role segments, plan generation, and abilityRoleId in canonical ability-instance provenance validation.",
+        "Close the caller-supplied state boundary by binding ledger facts, roster identities, anchor identity, and semantic evidence to canonical accepted state/history, or narrow the public contract so forged standalone ledgers cannot be treated as canonical.",
+        "Enforce Clockmaker, Dreamer, Seamstress, Cerenovus, and impairment cause/evidence semantic cross-links in the validator path consumed by the public resolver.",
+        "Make count-result validation recompute and verify each fact's correct category from the ledger, window, resolving source/instance, and roster—not merely exact-once membership.",
+        "Add direct adversarial regression tests for these remaining contracts and narrow the PR body and role coverage matrix to guarantees actually enforced and tested."
+      ]
+    },
+    "ledgerOnlyFinalReviewRepairRound3": {
+      "reviewedHead": "9c5d693fd4a2f0392a2deef8b4fba9436d0611a2",
+      "productHeadPushCI": 29218907974,
+      "productHeadPullRequestCI": 29218909579,
+      "productHeadCIStatus": "SUCCESS",
+      "report": "docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-3.md",
+      "reportSha256": "041a420a8d7b43ae4f0f2cd733b9a5d518bf070d78299176f38ea61da379c7b9",
+      "integrityVerdict": "MATCH",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "findingCount": 16,
+      "remainingBlockerCount": 4,
+      "remainingBlockers": [
+        "Complete or accurately narrow the retained task–insertion–grant–opportunity contract: specifically bind the original Philosopher opportunity’s task/kind/status/source contract, and directly prove rejection of a mismatched opportunity task and the other required V1/V2 subgraph corruptions.",
+        "Enforce and directly test the required canonical anchor-tampering boundary, including altered `firstNightInitializedEventId` and altered start sequence, without representing standalone shape validation as provenance.",
+        "Add the missing direct adversarial ledger tests required by the approved rescope, especially base/V1/V2 accepted chains, insertion/grant/opportunity failures, roster/anchor binding, Clockmaker, Dreamer impairment mismatch, Seamstress, Cerenovus, later-state immutability, and cross-platform canonical-ledger equivalence.",
+        "Correct the PR body, implementation status, and coverage-matrix traceability claims so they describe only contracts actually enforced and directly tested."
+      ]
+    },
+    "ledgerOnlyFinalReviewRepairRound4": {
+      "reviewedHead": "65121bb4c057e125f0304ff826970ae95427fee3",
+      "productHeadPushCI": 29222876582,
+      "productHeadPullRequestCI": 29222877872,
+      "productHeadCIStatus": "SUCCESS",
+      "report": "docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-4.md",
+      "reportSha256": "d5a8c728070a34faf931ec2a1c913fb21c6680d62cf125c6dc769237be381ae1",
+      "integrityVerdict": "MATCH",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "remainingBlockers": [
+        "Require exact gained-role terminal action opportunity revision equality with the canonical task/grant/insertion/original-Philosopher-chain/ability-instance revision while preserving explicitly supported task-specific historical semantics.",
+        "Add direct V1 and V2 in-range stale revision adversarial ledger tests; existing R4-22 proves only a future-revision upper bound failure.",
+        "Narrow complete opportunity-binding claims unless the exact relationship is implemented under new explicit authority."
+      ]
+    },
+    "gainedOpportunityRevisionMicrofixRound5": {
+      "authorization": "USER_AUTHORIZED_2B18A_GAINED_OPPORTUNITY_REVISION_MICROFIX",
+      "repairRound": 5,
+      "maxRepairRounds": 5,
+      "status": "LOCAL_GATES_PASS_AWAITING_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+      "scopeMode": "LEDGER_ONLY_RESCOPE",
+      "behaviorDesignFrozen": true,
+      "ruleSemanticsChanged": false,
+      "implementedClaims": [
+        "Gained V1/V2 terminal action opportunity sourceCharacterStateRevision equals the canonical Philosopher task, choice, grant, insertion, original-opportunity, and ability-instance revision.",
+        "Canonical gained revision N may be earlier than evaluated revision M.",
+        "Base and EXPLICIT_DOMAIN_INSTANCE action-opportunity semantics remain unchanged."
+      ],
+      "directTests": [
+        "R5-V1-POSITIVE",
+        "R5-V1-STALE",
+        "R5-V1-LATER",
+        "R5-V2-POSITIVE",
+        "R5-V2-STALE",
+        "R5-V2-LATER",
+        "R4-22 future-revision regression"
+      ],
+      "remainingBlockers": [
+        "Exact-head CI and fresh independent dual review are pending."
+      ]
+    },
+    "designAuthority": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
+    "designSha256": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
+    "coverageStatus": "PARTIAL",
+    "localValidation": {
+      "focused": "ledger 46/46; rebuild 196/196; application 212/212 passed",
+      "full": "29 files / 986 tests passed",
+      "coverage": "86.35% statements/lines; 81.21% branches; 97.57% functions",
+      "typecheck": "PASS",
+      "lint": "PASS"
+    },
+    "repairRound3Scope": "LEDGER_ONLY_RESCOPE",
+    "publicCountResolverRemoved": true,
+    "mathematicianCountResolutionRemoved": true,
+    "resolvingContextRemoved": true,
+    "countWindowSnapshotRemoved": true,
+    "mathematicianInformationStillFailClosed": true
+  },
+  "slice2B18ALedgerOnlyRescope": {
+    "authorization": "USER_AUTHORIZED_2B18A_LEDGER_ONLY_RESCOPE_AND_FINAL_REPAIR",
+    "scopeMode": "LEDGER_ONLY_RESCOPE",
+    "behaviorDesignFrozen": true,
+    "recoveryBranch": "phase-3/first-night-ability-outcome-ledger",
+    "recoveryHead": "3e822ee004b5dc32dc6fe49383169b45805d03ea",
+    "recoveryHeadPushCI": 29196189667,
+    "recoveryHeadPullRequestCI": 29196191030,
+    "recoveryCIStatus": "SUCCESS",
+    "priorReviewedProductHead": "faf3b44714b62f7723ecb319e6d244a324215088",
+    "priorProductHeadPushCI": 29195691651,
+    "priorProductHeadPullRequestCI": 29195693110,
+    "baseMain": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
+    "baseMainCI": 29193210219,
+    "pr": 23,
+    "prState": "OPEN",
+    "worktree": "CLEAN",
+    "scopeDocument": "docs/implementation/phase-3-slice-2b18a-ledger-only-rescope.md",
+    "scopeDocumentSha256": "3415944f1a42bcaee8f0a7a990a6d8d148ad0169fea0a9e4697acfbfc9f44b44",
+    "scopeReviewRound1": "docs/implementation/phase-3-slice-2b18a-ledger-only-scope-review-round-1.md",
+    "scopeReviewRound1Sha256": "52e987c1709b429e43457bbe2b2008ba9bdd8e615f6d87e349da5a9aefe436cc",
+    "scopeReviewRound1IntegrityVerdict": "MATCH",
+    "scopeReviewVerdict": "SCOPE_REVIEW_PASS",
+    "scopeReviewRound1Blockers": [
+      "Remove FirstNightAbilityOutcomeWindowSnapshot and its keys, validator, and clone from the retained 2B18A public contract and list them with the deferred resolver/result family.",
+      "Remove stale CURRENT_TASK authorization for the pure resolver and internal context/window/count invariants."
+    ],
+    "scopeReviewRound2": "docs/implementation/phase-3-slice-2b18a-ledger-only-scope-review-round-2.md",
+    "scopeReviewRound2Sha256": "00177a72d33d9be71e3c281edaea908dd2e98b49509c6aa8d257260fc719967a",
+    "scopeReviewRound2IntegrityVerdict": "MATCH",
+    "scopeReviewRound2Verdict": "SCOPE_REVIEW_PASS",
+    "scopeReviewRound2RemainingBlockers": [],
+    "implementationAuthorized": true,
+    "previousSixBlockers": [
+      "Canonical firstNightTaskInsertions-to-plan, grant, and opportunity chain is incomplete.",
+      "V1/V2 generation and task/grant/role-segment binding is incomplete.",
+      "Caller-supplied state or ledger cannot prove accepted-history provenance.",
+      "Clockmaker, Dreamer, Seamstress, Cerenovus, and impairment semantic cross-links are incomplete.",
+      "Count-result validation does not recompute classifications from the ledger.",
+      "Direct adversarial regressions are missing and PR/coverage claims are too broad."
+    ],
+    "deferredByRescope": [
+      "canonical true-count resolver",
+      "MathematicianCountResolution",
+      "candidate number domain execution",
+      "source impairment output selection",
+      "Vortox final false number",
+      "Mathematician information delivery",
+      "private projection",
+      "task settlement"
+    ]
+  },
+  "lastAction": "Implemented the user-authorized final gained-opportunity revision microfix and passed typecheck, lint, focused 46/196/212 tests, full 29/986 tests, and coverage gates without changing BOTC semantics or ledger-only scope.",
   "lastError": null,
-  "nextAction": "Commit and push this docs-only review gate, require exact-head main CI success, then create the sole bounded feature branch and implement only Slice 2B18A from Design 3.2. Do not implement delivery/settlement/private number or start Slice 2B18B/2B19."
+  "nextAction": "Controller precommit inspection, then commit and push the final repair-round-5 feature HEAD; require exact-head CI and one fresh complete independent dual review. No repair round 6, 2B18B, or 2B19."
 }

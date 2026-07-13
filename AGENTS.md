@@ -112,6 +112,7 @@ reviewedHead=<exact SHA>
 - Delivered knowledge is a historical fact: validate stored facts before projection and never recompute them from newer character state.
 - Evaluate ability effectiveness at settlement; keep truth, reliability, registration, constraints, and simulation reason separate.
 - Use exact runtime payload validation, replay validation, atomic batch semantics, and prospective validation for every new event flow.
+- Shape validation is not accepted-history provenance.
 - Canonical IDs and ordering must not use `Date.now`, `Math.random`, random UUIDs, `localeCompare`, `Intl.Collator`, or environment locale.
 - Distinguish `ScheduledTask`, `ActionOpportunity`, `EventSubscription`, and `ContinuousRule`.
 - Record random candidate sets/seeds and Storyteller legal candidates/final choices.

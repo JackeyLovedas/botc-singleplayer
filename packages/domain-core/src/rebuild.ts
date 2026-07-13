@@ -46,6 +46,20 @@ export const rebuildGameState = (events: readonly AnyDomainEventEnvelope[]): Gam
     throw new DomainError("EmptyEventStream", "Cannot rebuild game state from an empty domain event stream");
   }
 
+  const initializationEvents = eventList.filter((event) => event.eventType === "FirstNightInitialized");
+  if (initializationEvents.length > 0 || state.firstNightAbilityOutcomeLedger !== undefined || state.firstNightInitializationProvenance !== undefined) {
+    const initialization = initializationEvents[0];
+    const anchor = state.firstNightAbilityOutcomeLedger?.windowAnchor;
+    const provenance = state.firstNightInitializationProvenance;
+    if (initializationEvents.length !== 1 || initialization === undefined || anchor === undefined || provenance === undefined ||
+        anchor.firstNightInitializedEventId !== initialization.eventId || anchor.startEventSequence !== initialization.eventSequence ||
+        anchor.gameId !== initialization.gameId || anchor.rulesBaselineVersion !== initialization.rulesBaselineVersion ||
+        provenance.eventId !== initialization.eventId || provenance.eventSequence !== initialization.eventSequence ||
+        provenance.gameId !== initialization.gameId || provenance.rulesBaselineVersion !== initialization.rulesBaselineVersion) {
+      throw new DomainError("InvalidFirstNightAbilityOutcomeLedger", "Rebuilt ledger anchor must equal the unique FirstNightInitialized event envelope");
+    }
+  }
+
   return state;
 };
 

@@ -40,6 +40,7 @@ export const validateDomainEventStream = (events: readonly AnyDomainEventEnvelop
   const commandBatches = new Map<CommandId, BatchId>();
   let currentBatch: BatchMetadata | undefined;
   let previousBatchVersion = 0;
+  let firstNightInitializedEventId: EventId | undefined;
 
   for (const [index, event] of events.entries()) {
     if (event.eventVersion !== SUPPORTED_DOMAIN_EVENT_VERSION) {
@@ -66,6 +67,13 @@ export const validateDomainEventStream = (events: readonly AnyDomainEventEnvelop
       throw new DomainError("DuplicateEventId", "Domain event ids must be unique within a stream");
     }
     eventIds.add(event.eventId);
+
+    if (event.eventType === "FirstNightInitialized") {
+      if (firstNightInitializedEventId !== undefined) {
+        throw new DomainError("DuplicateFirstNightInitialized", "A domain event stream may contain exactly one FirstNightInitialized event");
+      }
+      firstNightInitializedEventId = event.eventId;
+    }
 
     if (currentBatch === undefined || event.batchId !== currentBatch.batchId) {
       if (currentBatch !== undefined) {

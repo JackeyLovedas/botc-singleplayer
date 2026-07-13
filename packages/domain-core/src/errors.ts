@@ -78,7 +78,13 @@ export type DomainErrorCode =
   | "InvalidPhaseTransitionReason"
   | "InvalidPhaseCounter"
   | "MissingTransitionPrerequisite"
-  | "PhaseTransitionNotIntegrated";
+  | "PhaseTransitionNotIntegrated"
+  | "InvalidFirstNightAbilityOutcomeLedger"
+  | "InvalidFirstNightAbilityOutcomeFact"
+  | "InvalidFirstNightAbilityOutcomeWindow"
+  | "InvalidFirstNightAbilityInstance"
+  | "InvalidFirstNightAbilityOutcomeEvidence"
+  | "DuplicateFirstNightAbilityOutcomeFactConflict";
 
 export class DomainError extends Error {
   public constructor(

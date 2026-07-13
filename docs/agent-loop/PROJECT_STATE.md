@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `RUNNING` on `main`; Design 3.2 has `RULE_DESIGN_PASS` and bounded Slice 2B18A implementation is authorized, with no active PR or feature branch yet.
+- Current control state: `RUNNING` on `phase-3/first-night-ability-outcome-ledger`; open PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) is in final microfix round `5 / 5` under `scopeMode=LEDGER_ONLY_RESCOPE`.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -15,7 +15,23 @@
 
 ## Active Slice 2B18A Boundary
 
-Slice 2B18A is limited to `FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION`. Current gates are `ruleReady=true`, `ruleDesignPass=true`, and `implementationAuthorized=true`; final authorized design round is `3.2` and repair round is `0 / 2`. The reviewed design HEAD is `3dc10b4f030be7dd1c314c7a8981b24424bbd02b`, whose exact main CI run `29192916263` succeeded.
+Slice 2B18A is limited to the derived first-night ability outcome ledger foundation and replay anchor only. The continuation authorization is `USER_AUTHORIZED_2B18A_GAINED_OPPORTUNITY_REVISION_MICROFIX`; `behaviorDesignFrozen=true`, `repairRound=5`, and `maxRepairRounds=5`. The public true-count resolver and its result contract, internal resolving context, and count-window snapshot remain deleted/deferred with number-domain execution, impairment output selection, Vortox final false number, delivery, private projection, and settlement. `implementationAuthorized=true`; repair round 6 is prohibited.
+
+The frozen reviewed product HEAD is `65121bb4c057e125f0304ff826970ae95427fee3` against base main `89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f`. Exact product-head push/PR CI `29222876582 / 29222877872` succeeded, including Ubuntu and Windows. PR #23 remains open and unmerged.
+
+The corrected ledger-only authority is `docs/implementation/phase-3-slice-2b18a-ledger-only-rescope.md`, SHA-256 `3415944f1a42bcaee8f0a7a990a6d8d148ad0169fea0a9e4697acfbfc9f44b44`. Scope review round 1 is archived verbatim at `docs/implementation/phase-3-slice-2b18a-ledger-only-scope-review-round-1.md`, SHA-256 `52e987c1709b429e43457bbe2b2008ba9bdd8e615f6d87e349da5a9aefe436cc`, reverse `MATCH`, verdict `SCOPE_REVIEW_FIX_REQUIRED`. Its two docs-only blockers were corrected. Fresh round-2 review is `docs/implementation/phase-3-slice-2b18a-ledger-only-scope-review-round-2.md`, SHA-256 `00177a72d33d9be71e3c281edaea908dd2e98b49509c6aa8d257260fc719967a`, reverse `MATCH`, verdict `SCOPE_REVIEW_PASS`, blockers `[]`.
+
+The ledger-only repair-round-3 implementation and local gates completed. It removes the deferred count/resolver/context/snapshot runtime contracts, reconstructs gained tasks from recorded insertion facts, strengthens structural BASE/V1/V2 identities, and keeps Mathematician information fail closed. It does not independently enforce or directly test the complete task-insertion-grant-opportunity subgraph, does not reject all required anchor identity/sequence tampering, and does not supply the full 59-case direct adversarial ledger coverage. Local gates passed: typecheck, lint, focused `15 / 182 / 209`, full `29 files / 938 tests`, coverage `86.22%` statements/lines, `80.28%` branches, `97.55%` functions.
+
+The complete independent ledger-only final review is archived verbatim at `docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-3.md`, SHA-256 `041a420a8d7b43ae4f0f2cd733b9a5d518bf070d78299176f38ea61da379c7b9`. It reviewed exact product HEAD `9c5d693fd4a2f0392a2deef8b4fba9436d0611a2` and successful CI `29218907974 / 29218909579`, then returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED` with four blockers. Round 4 closed all but the exact gained-opportunity revision relationship; its blocked state is superseded only by the explicit final Round 5 microfix authorization.
+
+Round 4 local implementation closed initialization-envelope provenance, roster/identity checks, supported terminal coverage, and most gained-opportunity chain checks. Final Round 5 now binds a terminal gained V1/V2 action opportunity to the already validated Philosopher task/choice/grant/insertion/original-opportunity/ability-instance revision before evidence generation and in standalone cross-links. It deliberately allows canonical gained revision `N` to be earlier than evaluated revision `M`. Direct V1/V2 `N=2 < M=3` positives, stale `1`, later `3`, and retained future-revision negatives pass. Base and `EXPLICIT_DOMAIN_INSTANCE` paths, including Seamstress V2, remain unchanged.
+
+The complete independent round-4 final review is archived verbatim at `docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-4.md`, SHA-256 `d5a8c728070a34faf931ec2a1c913fb21c6680d62cf125c6dc769237be381ae1`. It reviewed exact product HEAD `65121bb4c057e125f0304ff826970ae95427fee3` and successful CI `29222876582 / 29222877872`, then returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`. Final Round 5 local gates pass: typecheck, lint, focused ledger/rebuild/application `46/196/212`, full `29 files / 986 tests`, and coverage `86.35%` statements/lines, `81.21%` branches, `97.57%` functions. Exact-head CI and fresh independent dual review are pending; no audit comments, merge, tag, 2B18B, or 2B19 is authorized until they pass, and no repair round 6 exists.
+
+Final repair-round-2 local gates pass at `29 / 940` tests with `86.30%` statements/lines, `80.22%` branches, and `97.45%` functions. Canonical-source equality is enforced at the replay append boundary; standalone evidence/fact validators remain closed structural/semantic validation and do not claim independent event-store proof.
+
+The complete final repair-2 review at `docs/implementation/phase-3-slice-2b18a-final-review-round-3.md` reviewed product HEAD `faf3b44714b62f7723ecb319e6d244a324215088` and successful exact-head CI `29195691651 / 29195693110`. It returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; six canonical-chain, hostile-state, semantic-classification, count, and direct-test blocker groups remain. `implementationAuthorized=false`; no further repair, pass audit comment, merge, tag, 2B18B, or 2B19 is permitted without explicit new user authority or rescope.
 
 The approved product contracts define the exclusive `FirstNightInitialized` lower boundary and inclusive pre-resolution upper boundary, source-player plus ability-instance self-exclusion, the fixed dense numeric domain `0..11` with deterministic smallest-false product policy, and accepted V2 temporal ordering for duplicate holders. These are simulator policies and must remain distinct from official source claims.
 
@@ -43,7 +59,9 @@ Design 3.2 is `docs/implementation/phase-3-slice-2b18a-design-round-3-2.md`, SHA
 
 Fresh independent review is `docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md`, SHA-256 `8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525`, terminal `RULE_DESIGN_PASS`, `remainingBlockers=[]`. It reviewed exact HEAD `3dc10b4f030be7dd1c314c7a8981b24424bbd02b` with CI `29192916263` `SUCCESS`; the materialized report independently matched 11,698 UTF-8 bytes, 212 LF bytes and trailing LF. Design 3.2 is now the sole implementation authority, with frozen behavior and no Design 3.3.
 
-This slice does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing Mathematician task boundary remains fail-closed. No production code, tests, branch, or PR exists yet; only the bounded Design 3.2 implementation is authorized.
+The bounded implementation now provides the derived ledger, closed evidence contracts, terminal adapters, deterministic rebuild, and state-only true-count foundation. Full local validation is `29 files / 935 tests`; coverage is `86.20%` statements/lines, `80.29%` branches, and `96.96%` functions. It does not implement `SettleMathematicianInformation`, `MathematicianInformationDelivered`, private number delivery, `MATHEMATICIAN_INFORMATION` settlement, or final Vortox false-number delivery. The existing application Mathematician task boundary remains fail-closed.
+
+Final-review round 1 on frozen HEAD `245e32f85e3a553c6d5302aa0b4bd434b0a3490c` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`. The complete report is `docs/implementation/phase-3-slice-2b18a-final-review-round-1.md`, SHA-256 `4f41ea18c085f329e5631b456816447f14d62319a2f60527d0074d5532f6ef0f`, reverse integrity `MATCH`. All 16 findings and 11 blocker groups must be repaired without changing accepted contracts or expanding scope.
 
 ## Slice 2B17.3 Accepted Boundary
 

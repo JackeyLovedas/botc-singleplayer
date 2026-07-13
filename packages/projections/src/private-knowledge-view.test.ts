@@ -1272,6 +1272,10 @@ describe("private knowledge projections", () => {
           }
         }]
       },
+    firstNightAbilityOutcomeLedger: {
+      ledgerVersion: "first-night-ability-outcome-ledger-v1",
+      facts: [{ auditFactId: "secret-outcome-ledger-fact", evidenceReferences: ["secret-outcome-evidence"] }]
+    } as never,
     philosopherAbilityChoices: {
       choices: [{
         eventType: "PhilosopherAbilityChosen",
@@ -1402,6 +1406,9 @@ describe("private knowledge projections", () => {
       expect(serialized).not.toContain("canDefer");
       expect(serialized).not.toContain("supportedDecisionKinds");
       expect(serialized).not.toContain("futureUnsupportedDecisionKinds");
+      expect(serialized).not.toContain("firstNightAbilityOutcomeLedger");
+      expect(serialized).not.toContain("secret-outcome-ledger-fact");
+      expect(serialized).not.toContain("secret-outcome-evidence");
       expect(serialized).not.toContain("DEFER");
       expect(serialized).not.toContain("CHOOSE_GOOD_CHARACTER");
       expect(serialized).not.toContain("CHOOSE_PLAYER");

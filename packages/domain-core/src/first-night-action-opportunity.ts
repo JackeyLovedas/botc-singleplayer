@@ -789,6 +789,30 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
   return false;
 };
 
+export const validateFirstNightActionOpportunityStateShape = (
+  value: unknown
+): ValidationResult => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["opportunities"]) ||
+      !Array.isArray(value.opportunities) || !isDenseArray(value.opportunities)) {
+    return fail("First-night action opportunity state must have one dense opportunities array");
+  }
+
+  const opportunityIds = new Set<string>();
+  const opportunities = value.opportunities as unknown[];
+  for (let index = 0; index < value.opportunities.length; index += 1) {
+    const opportunity = opportunities[index];
+    if (!hasExactFirstNightActionOpportunityShape(opportunity)) {
+      return fail("First-night action opportunity state contains a noncanonical opportunity");
+    }
+    if (opportunityIds.has(opportunity.opportunityId)) {
+      return fail("First-night action opportunity identities must be unique");
+    }
+    opportunityIds.add(opportunity.opportunityId);
+  }
+
+  return { valid: true };
+};
+
 export const validateSeamstressActionOpportunityV2Shape = (
   value: unknown
 ): ValidationResult => {
