@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B18A Implementation Status
 
-> Status: `HUMAN_BLOCKED`, ledger-only repair round `3 / 3` exhausted on PR #23. Final review returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; merge is prohibited.
+> Status: `RUNNING`, ledger-only final repair round `4 / 4` on PR #23 under `USER_AUTHORIZED_2B18A_LEDGER_ONLY_FINAL_REPAIR_ROUND_4`. Only the four retained final-review blocker groups are authorized; merge remains prohibited pending fresh dual-pass review.
 
 ## Scope
 
@@ -10,11 +10,11 @@ Shape validation is not accepted-history provenance.
 
 ## Implemented
 
-- `FirstNightInitialized` creates the derived ledger anchor and lower sequence boundary. No ledger event or accepted payload was added. The retained ledger alone does not re-prove an altered initialization event ID or every altered start-sequence case.
+- `FirstNightInitialized` alone creates the derived ledger anchor plus an internal envelope-provenance record. Rebuild requires the anchor and provenance to equal the unique accepted initialization envelope; direct tests reject all ten authorized anchor-tampering cases. No ledger event or accepted payload was added.
 - Accepted terminal replay derives outcome facts from the terminal pre-state, re-derives the expected fact at the append boundary, requires exact canonical equality, rejects duplicate identities, and validates the appended ledger.
-- Base, Philosopher-gained V1, and Philosopher-gained V2 ability-instance IDs use distinct grammars and structurally cross-check generation, task type, embedded seat/role, and grant role segments. The ledger adapter does not independently enforce the complete original Philosopher opportunity task/kind/status/source contract.
+- Base, Philosopher-gained V1, and Philosopher-gained V2 ability-instance IDs use distinct grammars and cross-check generation, task type, embedded seat/role, and grant role segments. Gained action tasks separately bind the closed original Philosopher opportunity and the gained-role action opportunity; gained information tasks bind the original Philosopher opportunity without inventing a role-action opportunity.
 - Runtime gained tasks are reconstructed from `state.firstNightTaskInsertions` with the accepted generation-specific payload validators and compared exactly with the plan. The plan cannot certify its own inserted tasks.
-- The 16 closed evidence variants, canonical ordering, duplicate/conflict rules, and frozen supported terminal classifications remain. Direct ledger-adapter tests cover structural evidence, selected ID mixing, ordering/conflicts, hostile values, lower anchor boundary, the Snake Charmer matrix, and part of the Dreamer/Vortox matrix; they do not directly prove every role chain required by the rescope.
+- The 16 closed evidence variants, canonical ordering, duplicate/conflict rules, and frozen supported terminal classifications remain. Direct adapter assertions cover base terminals, V1/V2 gained chains, roster binding, Clockmaker, Dreamer, Seamstress, Cerenovus, Snake Charmer, all ten anchor mutations, deterministic rebuild/key order, projection non-leakage, and the fail-closed Mathematician boundary.
 - Public validators are explicitly named as shape validators. Canonical provenance exists only through complete accepted event-stream validation and rebuild; caller-created state or ledger is not a supported game-decision input.
 - Ledger state remains excluded from player, AI, and public projections.
 - `MATHEMATICIAN_INFORMATION` remains fail closed with `ApplicationNotConfigured`, `retryable=true`, no receipt, no event, no settlement, and no game-version increment.
@@ -29,30 +29,28 @@ No renamed or replacement API accepts caller-supplied state, ledger, context, wi
 
 ## Direct evidence actually executed
 
-- `packages/domain-core/src/first-night-ability-outcome-ledger.test.ts`: structural shapes, selected V1/V2 ID mixing, canonical evidence ordering/conflicts, hostile values, lower anchor boundary, the Snake Charmer matrix, and part of the Dreamer/Vortox matrix.
-- `packages/domain-core/src/rebuild.test.ts`: three added terminal ledger assertions for Witch and Dreamer happy paths. Existing role/replay tests validate underlying accepted payloads but do not replace the missing direct ledger-adapter cases.
-- `packages/application/src/game-application-service.test.ts`: package-root resolver/count API absence and unchanged fail-closed `MATHEMATICIAN_INFORMATION` behavior.
+- `packages/domain-core/src/first-night-ability-outcome-ledger.test.ts`, describe `Round 4 direct ledger adapter anchor, opportunity, roster, and replay matrix`: base tampering, roster, Dreamer `R4-51..59`, and anchor `R4-A1..A10`; the same file retains the direct Snake historical quadrant.
+- `packages/domain-core/src/rebuild.test.ts`, describe `Round 4 direct gained V1 ledger adapter matrix`: accepted V1 plus `R4-14..23`; accepted base Witch, Evil Twin, and V1 Snake rebuild tests assert emitted facts.
+- `packages/application/src/game-application-service.test.ts`: accepted V2 Snake plus `R4-25..37`; Clockmaker `R4-45..50`; Seamstress `R4-60..66`; Cerenovus `R4-67..75`; accepted base Snake, Dreamer, Clockmaker, Seamstress, and Cerenovus facts; repeated/key-reordered rebuild; package-root API absence; unchanged fail-closed `MATHEMATICIAN_INFORMATION`.
 - `packages/projections/src/private-knowledge-view.test.ts`: player and AI projection non-leakage.
 
 ## Final review blockers
 
-1. The original Philosopher opportunity's task/kind/status/source contract and other required V1/V2 subgraph corruptions are not fully bound and directly tested by the ledger adapter.
-2. Required anchor tampering, including altered `firstNightInitializedEventId` and altered start sequence, is not fully rejected and directly tested.
-3. The approved rescope's direct adversarial ledger coverage remains substantially incomplete, including role-chain, roster, later-state, and cross-platform equivalence cases.
-4. PR, status, and coverage-matrix traceability must remain narrowed to only enforced and directly executed contracts.
+The four repair-round-3 blocker groups are implemented locally and full local gates pass. They remain unaccepted until exact-head Ubuntu/Windows CI and a fresh complete independent review return both pass verdicts with no blocker.
 
 ## Validation
 
 - Typecheck: pass.
-- Focused ledger and rebuild: `2 files / 197 tests passed`.
+- Focused ledger and rebuild: `2 files / 239 tests passed`.
 - Focused application: `1 file / 209 tests passed`.
 - Lint: pass.
-- Full test: `29 files / 938 tests passed`.
-- Coverage: `86.22%` statements/lines, `80.28%` branches, `97.55%` functions.
+- Combined ledger/rebuild/application: `3 files / 448 tests passed`.
+- Full test: `29 files / 980 tests` pass.
+- Coverage: `86.34%` statements/lines, `81.15%` branches, and `97.56%` functions; gate passes.
 - Exact product-head push CI `29218907974` and PR CI `29218909579` passed for `9c5d693fd4a2f0392a2deef8b4fba9436d0611a2`.
 - Complete final review: `docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-3.md`, SHA-256 `041a420a8d7b43ae4f0f2cd733b9a5d518bf070d78299176f38ea61da379c7b9`, reverse integrity `MATCH`.
-- Verdicts: `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; four blockers remain.
+- Prior verdicts remain historical only: `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`. Fresh final review has not run.
 
 ## Coverage status
 
-`PARTIAL / UNACCEPTED`. 2B18A provides only an incomplete ledger foundation and supported terminal adapters. It does not implement a Mathematician count, number, delivery, projection, or settlement and does not mark any role `COMPLETE`. No repair round 4, audit comments, merge, tag, 2B18B, or 2B19 is authorized.
+`PARTIAL / UNACCEPTED`. 2B18A provides only the ledger foundation and directly tested supported terminal adapters while final repair round `4 / 4` awaits exact-head CI and review. It does not implement a Mathematician count, number, delivery, projection, or settlement and does not mark any role `COMPLETE`. No repair round 5, premature audit comments, merge, tag, 2B18B, or 2B19 is authorized.

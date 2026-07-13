@@ -50,7 +50,10 @@ import type {
   SetupGeneratedPayload
 } from "./events.js";
 import type { GamePhase } from "./game-phase.js";
-import type { FirstNightAbilityOutcomeLedger } from "./first-night-ability-outcome-ledger.js";
+import type {
+  FirstNightAbilityOutcomeLedger,
+  FirstNightInitializationEnvelopeProvenance
+} from "./first-night-ability-outcome-ledger.js";
 
 export type GameState = {
   readonly gameId: GameId;
@@ -72,6 +75,7 @@ export type GameState = {
   readonly seamstressRoleTenureState?: RoleTenureState;
   readonly seamstressAbilityState?: SeamstressAbilityState;
   readonly firstNight?: FirstNightInitializedPayload;
+  readonly firstNightInitializationProvenance?: FirstNightInitializationEnvelopeProvenance;
   readonly firstNightAbilityOutcomeLedger?: FirstNightAbilityOutcomeLedger;
   readonly initialPrivateKnowledge?: InitialPrivateKnowledgeEstablishedPayload;
   readonly firstNightTaskPlan?: FirstNightTaskPlanCreatedPayload;

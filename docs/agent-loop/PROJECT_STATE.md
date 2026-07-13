@@ -3,7 +3,7 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `HUMAN_BLOCKED` on `phase-3/first-night-ability-outcome-ledger`; open PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) exhausted final repair round `3 / 3` under `scopeMode=LEDGER_ONLY_RESCOPE` without the required dual final-review pass.
+- Current control state: `RUNNING` on `phase-3/first-night-ability-outcome-ledger`; open PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) is in explicitly authorized final repair round `4 / 4` under `scopeMode=LEDGER_ONLY_RESCOPE`.
 - Accepted slices: 2B13 through 2B17.3.
 - Slice 2B17.2 merged through PR [#21](https://github.com/JackeyLovedas/botc-singleplayer/pull/21) at merge SHA `44248dc8172b59a994ceba13e91e1bc32cbe561a`.
 - Final reviewed feature HEAD: `880c4c363dcde292493f2fbc6ebde20a0dfc09c9`.
@@ -15,7 +15,7 @@
 
 ## Active Slice 2B18A Boundary
 
-Slice 2B18A is limited to the derived first-night ability outcome ledger foundation and replay anchor only. The explicit authorization was `USER_AUTHORIZED_2B18A_LEDGER_ONLY_RESCOPE_AND_FINAL_REPAIR`; `behaviorDesignFrozen=true`, `repairRound=3`, and `maxRepairRounds=3`. The public true-count resolver, `MathematicianCountResolution`, internal resolving context, and count-window snapshot remain deferred with number-domain execution, impairment output selection, Vortox final false number, delivery, private projection, and settlement. Scope review returned `SCOPE_REVIEW_PASS`, but final review returned two fix-required verdicts; `implementationAuthorized=false`.
+Slice 2B18A is limited to the derived first-night ability outcome ledger foundation and replay anchor only. The continuation authorization is `USER_AUTHORIZED_2B18A_LEDGER_ONLY_FINAL_REPAIR_ROUND_4`; `behaviorDesignFrozen=true`, `repairRound=4`, and `maxRepairRounds=4`. The public true-count resolver, `MathematicianCountResolution`, internal resolving context, and count-window snapshot remain deleted/deferred with number-domain execution, impairment output selection, Vortox final false number, delivery, private projection, and settlement. `implementationAuthorized=true` only for the four retained ledger blockers; repair round 5 is prohibited.
 
 The frozen product HEAD is `9c5d693fd4a2f0392a2deef8b4fba9436d0611a2` against base main `89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f`. Exact product-head push/PR CI `29218907974 / 29218909579` succeeded. PR #23 remains open and unmerged.
 
@@ -23,7 +23,9 @@ The corrected ledger-only authority is `docs/implementation/phase-3-slice-2b18a-
 
 The ledger-only repair-round-3 implementation and local gates completed. It removes the deferred count/resolver/context/snapshot runtime contracts, reconstructs gained tasks from recorded insertion facts, strengthens structural BASE/V1/V2 identities, and keeps Mathematician information fail closed. It does not independently enforce or directly test the complete task-insertion-grant-opportunity subgraph, does not reject all required anchor identity/sequence tampering, and does not supply the full 59-case direct adversarial ledger coverage. Local gates passed: typecheck, lint, focused `15 / 182 / 209`, full `29 files / 938 tests`, coverage `86.22%` statements/lines, `80.28%` branches, `97.55%` functions.
 
-The complete independent ledger-only final review is archived verbatim at `docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-3.md`, SHA-256 `041a420a8d7b43ae4f0f2cd733b9a5d518bf070d78299176f38ea61da379c7b9`. It reviewed exact product HEAD `9c5d693fd4a2f0392a2deef8b4fba9436d0611a2` and successful CI `29218907974 / 29218909579`, then returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED` with four blockers. No repair round 4, audit comments, merge, tag, 2B18B, or 2B19 is authorized.
+The complete independent ledger-only final review is archived verbatim at `docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-3.md`, SHA-256 `041a420a8d7b43ae4f0f2cd733b9a5d518bf070d78299176f38ea61da379c7b9`. It reviewed exact product HEAD `9c5d693fd4a2f0392a2deef8b4fba9436d0611a2` and successful CI `29218907974 / 29218909579`, then returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED` with four blockers. That HUMAN_BLOCKED state is now superseded only by the explicit Round 4 authorization; no repair round 5, premature audit comments, merge, tag, 2B18B, or 2B19 is authorized.
+
+Round 4 local implementation closes the four authorized blocker groups in code and direct tests: full gained-opportunity binding, unique initialization-envelope provenance, the numbered direct adversarial matrix, and narrowed status/coverage claims. Typecheck and full lint pass; focused suites pass at ledger `46/46`, rebuild `193/193`, and application `209/209`; the full suite passes at `29 files / 980 tests`; coverage passes at `86.34%` statements/lines, `81.15%` branches, and `97.56%` functions. These are local implementation evidence only; exact-head CI and fresh independent dual-pass review remain required before acceptance or merge.
 
 Final repair-round-2 local gates pass at `29 / 940` tests with `86.30%` statements/lines, `80.22%` branches, and `97.45%` functions. Canonical-source equality is enforced at the replay append boundary; standalone evidence/fact validators remain closed structural/semantic validation and do not claim independent event-store proof.
 

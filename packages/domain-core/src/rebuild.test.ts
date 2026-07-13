@@ -72,6 +72,7 @@ import {
   validateInitialCurrentCharacterStateSet,
   validateDomainEventStream
 } from "@botc/domain-core";
+import { deriveFirstNightAbilityOutcomeFact } from "./first-night-ability-outcome-ledger.js";
 import type {
   AnyDomainEventEnvelope,
   AbilityImpairmentSet,
@@ -3720,7 +3721,7 @@ describe("domain event rebuild", () => {
     expect(state.firstNightTaskProgress?.settlements).toBeUndefined();
   });
 
-  it("rebuilds Philosopher DEFER followed by scheduled task settlement", () => {
+  it("[R4-T01] emits a PhilosopherActionDeferred ledger SOURCE_EVENT fact", () => {
     const state = rebuildGameState([
       ...firstNightTaskPlanEventStream(),
       philosopherActionOpportunityCreatedEvent(),
@@ -3729,6 +3730,8 @@ describe("domain event rebuild", () => {
     ]);
 
     expect(state.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)?.evidenceReferences.find((entry) => entry.kind === "SOURCE_EVENT"))
+      .toMatchObject({ kind: "SOURCE_EVENT", eventType: "PhilosopherActionDeferred" });
     expect(state.firstNightTaskProgress?.settlements).toStrictEqual([
       {
         taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
@@ -3743,7 +3746,7 @@ describe("domain event rebuild", () => {
     expect(state.lastEventSequence).toBe(14);
   });
 
-  it("rebuilds Philosopher ability choice grant without impairment or insertion for an absent GOOD role", () => {
+  it("[R4-T02] emits a PhilosopherAbilityGranted ledger SOURCE_EVENT fact", () => {
     const chosenRole = absentNonInsertingGoodRole();
     const state = rebuildGameState([
       ...firstNightTaskPlanEventStream(),
@@ -3765,6 +3768,8 @@ describe("domain event rebuild", () => {
     expect(state.abilityImpairments?.impairments).toBeUndefined();
     expect(state.firstNightTaskInsertions?.insertions).toBeUndefined();
     expect(state.firstNightActionOpportunities?.opportunities[0]?.opportunityStatus).toBe("CLOSED");
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)?.evidenceReferences.find((entry) => entry.kind === "SOURCE_EVENT"))
+      .toMatchObject({ kind: "SOURCE_EVENT", eventType: "PhilosopherAbilityGranted" });
     expect(state.firstNightTaskProgress?.settlements).toStrictEqual([
       {
         taskId: scheduledTaskId("first-night-v1:PHILOSOPHER_ACTION:seat-10"),
@@ -3931,7 +3936,7 @@ describe("domain event rebuild", () => {
     expect(validateFirstNightTaskProgress(state.firstNightTaskPlan, state.firstNightTaskProgress)).toStrictEqual({ valid: true });
   });
 
-  it("rebuilds Philosopher gained Snake Charmer non-Demon no-swap settlement", () => {
+  it("[R4-T03] emits a SnakeCharmerNoSwapResolved ledger SOURCE_EVENT fact", () => {
     const before = rebuildGameState(openSnakeCharmerStream());
     const state = rebuildGameState([
       ...openSnakeCharmerStream(),
@@ -3962,6 +3967,11 @@ describe("domain event rebuild", () => {
     expect(state.assignment).toStrictEqual(before.assignment);
     expect(state.lastEventSequence).toBe(21);
     expect(state.gameVersion).toBe(11);
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)).toMatchObject({
+      abilityRoleId:"snake_charmer",abilityInstance:{kind:"PHILOSOPHER_GAINED_TASK_V1"},outcomeStatus:"NORMAL"
+    });
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)?.evidenceReferences.find((entry) => entry.kind === "SOURCE_EVENT"))
+      .toMatchObject({ kind: "SOURCE_EVENT", eventType: "SnakeCharmerNoSwapResolved" });
   });
 
   it("rebuilds Evil Twin setup pair, mutual knowledge, and scheduled settlement", () => {
@@ -4005,6 +4015,9 @@ describe("domain event rebuild", () => {
     expect(state.firstNightTaskPlan).toStrictEqual(before.firstNightTaskPlan);
     expect(state.lastEventSequence).toBe(22);
     expect(state.gameVersion).toBe(12);
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)).toMatchObject({
+      abilityRoleId:"evil_twin",abilityInstance:{kind:"BASE_ROLE_TASK"},outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY"
+    });
   });
 
   it("rejects malformed Evil Twin setup replay batches", () => {
@@ -4170,7 +4183,7 @@ describe("domain event rebuild", () => {
     );
   });
 
-  it("rebuilds effective Witch target choice and pending death marker without hidden state mutation", () => {
+  it("[R4-T06] emits a WitchDeathPendingMarked ledger SOURCE_EVENT fact", () => {
     const before = rebuildGameState(openWitchActionStream());
     const [targetChosen, pendingDeath, settlement] = witchDeathPendingBatchEvents();
     const state = rebuildGameState([
@@ -4189,6 +4202,8 @@ describe("domain event rebuild", () => {
       causeKind: "NO_OTHER_CHARACTER_ABILITY",
       abilityRoleId: "witch"
     });
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)?.evidenceReferences.find((entry) => entry.kind === "SOURCE_EVENT"))
+      .toMatchObject({ kind: "SOURCE_EVENT", eventType: "WitchDeathPendingMarked" });
     expect(pendingDeath.payload).toMatchObject({
       taskId: targetChosen.payload.taskId,
       taskType: "WITCH_ACTION",
@@ -4221,7 +4236,7 @@ describe("domain event rebuild", () => {
     expect(state.gameVersion).toBe(14);
   });
 
-  it("applies impaired Witch target choice as ineffective without marking pending death", () => {
+  it("[R4-T07] emits a WitchIneffectiveResolved ledger SOURCE_EVENT fact", () => {
     const before = impairedWitchState("POISONED");
     const [targetChosen, ineffective, settlement] = witchIneffectiveBatchEvents("POISONED");
     const state = applyDomainEventBatch(before, [
@@ -4248,6 +4263,8 @@ describe("domain event rebuild", () => {
       causeKind: "SOURCE_POISONING",
       abilityRoleId: "witch"
     });
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)?.evidenceReferences.find((entry) => entry.kind === "SOURCE_EVENT"))
+      .toMatchObject({ kind: "SOURCE_EVENT", eventType: "WitchIneffectiveResolved" });
     expect(state.firstNightActionOpportunities?.opportunities.find((opportunity) =>
       opportunity.opportunityId === targetChosen.payload.opportunityId
     )?.opportunityStatus).toBe("CLOSED");
@@ -4392,7 +4409,7 @@ describe("domain event rebuild", () => {
     );
   });
 
-  it("rebuilds effective Dreamer target choice and delivered information without hidden state mutation", () => {
+  it("[R4-T09] emits a DreamerInformationDelivered ledger SOURCE_EVENT fact", () => {
     const before = rebuildGameState(openDreamerActionStream());
     const [targetChosen, information, settlement] = dreamerInformationBatchEvents("GOOD");
     const state = rebuildGameState([
@@ -4410,6 +4427,8 @@ describe("domain event rebuild", () => {
       causeKind: "NO_OTHER_CHARACTER_ABILITY",
       abilityRoleId: "dreamer"
     });
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)?.evidenceReferences.find((entry) => entry.kind === "SOURCE_EVENT"))
+      .toMatchObject({ kind: "SOURCE_EVENT", eventType: "DreamerInformationDelivered" });
     expect(information.payload).toMatchObject({
       taskId: targetChosen.payload.taskId,
       taskType: "DREAMER_ACTION",
@@ -4869,7 +4888,7 @@ describe("domain event rebuild", () => {
     );
   });
 
-  it("rebuilds Philosopher gained Snake Charmer Demon-hit swap and poison marker", () => {
+  it("[R4-T04] emits a SnakeCharmerDemonSwapApplied ledger SOURCE_EVENT fact", () => {
     const before = rebuildGameState(openSnakeCharmerStream());
     const [targetChosen, swap, poison, settlement] = snakeCharmerDemonHitBatchEvents();
     const state = rebuildGameState([
@@ -4917,9 +4936,11 @@ describe("domain event rebuild", () => {
     expect(state.firstNightTaskPlan?.tasks[state.firstNightTaskProgress?.settlements.length ?? -1]?.taskType).toBe("MINION_INFO");
     expect(state.lastEventSequence).toBe(22);
     expect(state.gameVersion).toBe(11);
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)?.evidenceReferences.find((entry) => entry.kind === "SOURCE_EVENT"))
+      .toMatchObject({ kind: "SOURCE_EVENT", eventType: "SnakeCharmerDemonSwapApplied" });
   });
 
-  it("applies poisoned base Snake Charmer ineffective settlement without state mutation", () => {
+  it("[R4-T05] emits a SnakeCharmerIneffectiveResolved ledger SOURCE_EVENT fact", () => {
     const before = poisonedBaseSnakeCharmerState();
     const [targetChosen, ineffective, settlement] = baseSnakeCharmerIneffectiveBatchEvents();
     const state = applyDomainEventBatch(before, [
@@ -4952,6 +4973,8 @@ describe("domain event rebuild", () => {
     expect(state.currentCharacterState).toStrictEqual(before.currentCharacterState);
     expect(state.assignment).toStrictEqual(before.assignment);
     expect(state.snakeCharmerDemonSwaps).toBeUndefined();
+    expect(state.firstNightAbilityOutcomeLedger?.facts.at(-1)?.evidenceReferences.find((entry) => entry.kind === "SOURCE_EVENT"))
+      .toMatchObject({ kind: "SOURCE_EVENT", eventType: "SnakeCharmerIneffectiveResolved" });
   });
 
   it("rejects mechanical Snake Charmer resolution when the source is impaired", () => {
@@ -5731,5 +5754,74 @@ describe("domain event rebuild", () => {
 
     void rejectedDomainEvents;
     expect(infrastructureEvents[0]?.category).toBe("infrastructure");
+  });
+
+  describe("Round 4 direct gained V1 ledger adapter matrix", () => {
+    const fixture = () => {
+      const events = snakeCharmerNoSwapBatchEvents();
+      const stateBefore = applyDomainEvent(rebuildGameState(openSnakeCharmerStream()), events[0]);
+      return { stateBefore, terminal: events[1] };
+    };
+    const derive = (state: GameState, terminal: DomainEventEnvelope<"SnakeCharmerNoSwapResolved">) =>
+      deriveFirstNightAbilityOutcomeFact({ stateBefore: state, event: terminal });
+    const record = (value: unknown): Record<string, unknown> => value as Record<string, unknown>;
+    const records = (value: unknown): Record<string, unknown>[] => value as Record<string, unknown>[];
+    const insertions = (draft: Record<string, unknown>) => records(record(draft.firstNightTaskInsertions).insertions);
+    const grants = (draft: Record<string, unknown>) => records(record(draft.philosopherGrantedAbilities).abilities);
+    const tasks = (draft: Record<string, unknown>) => records(record(draft.firstNightTaskPlan).tasks);
+    const opportunities = (draft: Record<string, unknown>) => records(record(draft.firstNightActionOpportunities).opportunities);
+    const mutateState = (mutate: (draft: Record<string, unknown>) => void): { stateBefore: GameState; terminal: DomainEventEnvelope<"SnakeCharmerNoSwapResolved"> } => {
+      const { stateBefore, terminal } = fixture();
+      const draft = structuredClone(stateBefore) as unknown as Record<string, unknown>;
+      mutate(draft);
+      return { stateBefore: draft as unknown as GameState, terminal };
+    };
+
+    it("[R4-13] derives the complete accepted gained V1 Snake Charmer chain", () => {
+      const { stateBefore, terminal } = fixture();
+      const result = derive(stateBefore, terminal);
+      expect(result?.abilityInstance).toMatchObject({ kind: "PHILOSOPHER_GAINED_TASK_V1" });
+      expect(result?.evidenceReferences.filter((entry) => entry.kind === "ACTION_OPPORTUNITY")).toHaveLength(2);
+    });
+    it("[R4-14] rejects a missing V1 insertion", () => {
+      const value = mutateState((draft) => { draft.firstNightTaskInsertions = undefined; });
+      expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
+    });
+    it("[R4-15] rejects duplicate V1 insertions", () => {
+      const value = mutateState((draft) => { const values=insertions(draft);values.push(structuredClone(values[0]!)); });
+      expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
+    });
+    it("[R4-16] rejects a V1 runtime task identity rewritten to V2", () => {
+      const value = mutateState((draft) => { const task=tasks(draft).find((entry)=>record(entry.source).kind==="PHILOSOPHER_GAINED_ABILITY")!;task.taskId=String(task.taskId).replace("first-night-v1:","first-night-v2:"); });
+      expect(() => derive(value.stateBefore, { ...value.terminal, payload: { ...value.terminal.payload, taskId: scheduledTaskId(String(value.terminal.payload.taskId).replace("first-night-v1:", "first-night-v2:")) } })).toThrowError(DomainError);
+    });
+    it("[R4-17] rejects a V1 insertion rewritten with V2 fields", () => {
+      const value = mutateState((draft) => { const insertion=insertions(draft)[0]!; insertion.schedulingVersion="philosopher-gained-first-night-scheduling-v2"; insertion.grantId=grants(draft)[0]!.grantId; });
+      expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
+    });
+    it("[R4-18] rejects a grant identity mismatch", () => {
+      const value = mutateState((draft) => { grants(draft)[0]!.grantId="philosopher-grant-v1:seat-10:from-dreamer"; });
+      expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
+    });
+    it("[R4-19] rejects a grant chosen-role mismatch", () => {
+      const value = mutateState((draft) => { grants(draft)[0]!.chosenRoleId="dreamer"; });
+      expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
+    });
+    it("[R4-20] rejects an original Philosopher opportunity task mismatch", () => {
+      const value = mutateState((draft) => { const opportunity=opportunities(draft).find((entry)=>entry.opportunityKind==="PHILOSOPHER_FIRST_NIGHT_ACTION")!; opportunity.taskId="first-night-v1:DREAMER_ACTION:seat-10"; });
+      expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
+    });
+    it("[R4-21] rejects a gained-role action opportunity mismatch", () => {
+      const value = mutateState((draft) => { const opportunity=opportunities(draft).find((entry)=>entry.opportunityKind==="SNAKE_CHARMER_FIRST_NIGHT_ACTION")!; opportunity.taskId="first-night-v1:SNAKE_CHARMER_ACTION:seat-10"; });
+      expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
+    });
+    it("[R4-22] rejects a gained-role opportunity source revision mismatch", () => {
+      const value = mutateState((draft) => { const opportunity=opportunities(draft).find((entry)=>entry.opportunityKind==="SNAKE_CHARMER_FIRST_NIGHT_ACTION")!; opportunity.sourceCharacterStateRevision=Number(opportunity.sourceCharacterStateRevision)+1; });
+      expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
+    });
+    it("[R4-23] rejects a gained-role opportunity source seat mismatch", () => {
+      const value = mutateState((draft) => { const opportunity=opportunities(draft).find((entry)=>entry.opportunityKind==="SNAKE_CHARMER_FIRST_NIGHT_ACTION")!; opportunity.sourceSeatNumber = 9; });
+      expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
+    });
   });
 });

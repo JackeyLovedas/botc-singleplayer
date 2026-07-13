@@ -10,11 +10,24 @@ import {
   validateFirstNightTaskInsertedV2Payload
 } from "./philosopher-ability.js";
 import { validateCerenovusInstructionAgainstChain } from "./cerenovus.js";
+import {
+  parseFirstNightActionOpportunityId,
+  validateFirstNightActionOpportunityStateShape
+} from "./first-night-action-opportunity.js";
+import type {
+  ActionOpportunityKind,
+  ActionOpportunityStatus,
+  FirstNightActionOpportunity
+} from "./first-night-action-opportunity.js";
+import { hasExactRoleSetupSnapshotShape } from "./initial-private-knowledge.js";
 import type {
   AbilityImpairmentId, AbilityInstanceId, ActionOpportunityId, BatchId, EventId, GameId,
   GrantedAbilityId, PlayerId, RoleId, RoleTenureId, ScheduledTaskId
 } from "./ids.js";
+import { validatePlayerRoster } from "./player-roster.js";
 import type { SeatNumber } from "./player-roster.js";
+import type { RoleSetupSnapshot } from "./setup-types.js";
+import { sameRoleSetupSnapshot } from "./setup-types.js";
 
 export const FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION = "first-night-ability-outcome-ledger-v1" as const;
 export const FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION = "first-night-ability-outcome-audit-v1" as const;
@@ -34,6 +47,14 @@ export type FirstNightAbilityOutcomeWindowAnchor = {
   readonly startBoundary: "EXCLUSIVE";
 };
 
+export type FirstNightInitializationEnvelopeProvenance = {
+  readonly provenanceVersion: "first-night-initialization-envelope-provenance-v1";
+  readonly gameId: GameId;
+  readonly rulesBaselineVersion: string;
+  readonly eventId: EventId;
+  readonly eventSequence: number;
+};
+
 type ProvenanceBase = { readonly provenanceVersion: "first-night-ability-instance-provenance-v1"; readonly abilityInstanceId: FirstNightAbilityInstanceId; readonly abilityRoleId: RoleId; readonly taskId: ScheduledTaskId; readonly sourcePlayerId: PlayerId; readonly sourceSeatNumber: SeatNumber };
 export type FirstNightAbilityInstanceProvenance =
   | ProvenanceBase & { readonly kind: "BASE_ROLE_TASK" }
@@ -50,7 +71,20 @@ export type TerminalAbilityOutcomeEventType =
 
 export type SourceEventEvidence = { readonly kind: "SOURCE_EVENT"; readonly eventId: EventId; readonly eventType: TerminalAbilityOutcomeEventType; readonly eventSequence: number; readonly batchId: BatchId };
 export type TaskEvidence = { readonly kind: "TASK"; readonly taskId: ScheduledTaskId; readonly taskType: FirstNightTaskType };
-export type ActionOpportunityEvidence = { readonly kind: "ACTION_OPPORTUNITY"; readonly opportunityId: ActionOpportunityId; readonly taskId: ScheduledTaskId; readonly sourcePlayerId: PlayerId; readonly sourceSeatNumber: SeatNumber };
+export type ActionOpportunityEvidence = {
+  readonly kind: "ACTION_OPPORTUNITY";
+  readonly opportunityVersion: "first-night-action-opportunity-v1";
+  readonly nightNumber: 1;
+  readonly opportunityId: ActionOpportunityId;
+  readonly opportunityKind: ActionOpportunityKind;
+  readonly opportunityStatus: ActionOpportunityStatus;
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: FirstNightTaskType;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly sourceRole: RoleSetupSnapshot;
+  readonly sourceCharacterStateRevision: number;
+};
 export type AbilityImpairmentEvidence = { readonly kind: "ABILITY_IMPAIRMENT"; readonly impairmentId: AbilityImpairmentId; readonly impairmentKind: "DRUNK" | "POISONED"; readonly affectedPlayerId: PlayerId; readonly affectedSeatNumber: SeatNumber; readonly affectedRoleId: RoleId; readonly sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE" | "SNAKE_CHARMER_DEMON_HIT"; readonly appliedCharacterStateRevision: number };
 export type RoleTenureEvidence = { readonly kind: "ROLE_TENURE"; readonly roleTenureId: RoleTenureId; readonly playerId: PlayerId; readonly seatNumber: SeatNumber; readonly roleId: RoleId; readonly acquiredCharacterStateRevision: number; readonly statusAtEvaluation: "ACTIVE" | "INACTIVE" };
 export type CharacterStateEvidence = { readonly kind: "CHARACTER_STATE"; readonly characterStateRevision: number };
@@ -80,6 +114,10 @@ export type FirstNightAbilityOutcomeLedger = { readonly ledgerVersion: typeof FI
 
 const fail = (reason: string): OutcomeLedgerValidationResult => ({ valid: false, reason });
 const nonEmpty = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
+const canonicalIdentifier = (v: unknown): v is string => nonEmpty(v) && v.trim() === v && ![...v].some((character) => {
+  const code = character.charCodeAt(0);
+  return code <= 31 || code === 127;
+});
 const positive = (v: unknown): v is number => typeof v === "number" && Number.isSafeInteger(v) && v > 0;
 const plain = (v: unknown): v is Record<string, unknown> => {
   if (!isCanonicalDataValue(v) || v === null || typeof v !== "object" || Array.isArray(v)) return false;
@@ -150,15 +188,21 @@ export const parseFirstNightAbilityOutcomeFactId = (value: unknown): { readonly 
 };
 
 const WINDOW_ANCHOR_KEYS = ["windowVersion", "gameId", "nightNumber", "rulesBaselineVersion", "firstNightInitializedEventId", "startEventSequence", "startBoundary"];
-export const validateFirstNightAbilityOutcomeWindowAnchorShape = (value: unknown): OutcomeLedgerValidationResult => plain(value) && exact(value, WINDOW_ANCHOR_KEYS) && value.windowVersion === FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION && nonEmpty(value.gameId) && value.nightNumber === 1 && nonEmpty(value.rulesBaselineVersion) && nonEmpty(value.firstNightInitializedEventId) && positive(value.startEventSequence) && value.startBoundary === "EXCLUSIVE" ? { valid: true } : fail("Invalid first-night outcome window anchor");
+export const validateFirstNightAbilityOutcomeWindowAnchorShape = (value: unknown): OutcomeLedgerValidationResult => plain(value) && exact(value, WINDOW_ANCHOR_KEYS) && value.windowVersion === FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION && canonicalIdentifier(value.gameId) && value.nightNumber === 1 && nonEmpty(value.rulesBaselineVersion) && canonicalIdentifier(value.firstNightInitializedEventId) && positive(value.startEventSequence) && value.startBoundary === "EXCLUSIVE" ? { valid: true } : fail("Invalid first-night outcome window anchor");
 export const cloneFirstNightAbilityOutcomeWindowAnchor = (value: FirstNightAbilityOutcomeWindowAnchor): FirstNightAbilityOutcomeWindowAnchor => {
   const validation = validateFirstNightAbilityOutcomeWindowAnchorShape(value);
   if (!validation.valid) throw new DomainError("InvalidFirstNightAbilityOutcomeWindow", validation.reason);
   return clone(value);
 };
 
+const validateFirstNightInitializationEnvelopeProvenance=(value:unknown):OutcomeLedgerValidationResult=>
+  plain(value)&&exact(value,["provenanceVersion","gameId","rulesBaselineVersion","eventId","eventSequence"])&&
+  value.provenanceVersion==="first-night-initialization-envelope-provenance-v1"&&canonicalIdentifier(value.gameId)&&
+  nonEmpty(value.rulesBaselineVersion)&&canonicalIdentifier(value.eventId)&&positive(value.eventSequence)
+    ?{valid:true}:fail("Invalid first-night initialization envelope provenance");
+
 const evidenceKeys: Record<AbilityOutcomeEvidenceReference["kind"], readonly string[]> = {
-  SOURCE_EVENT: ["kind","eventId","eventType","eventSequence","batchId"], TASK: ["kind","taskId","taskType"], ACTION_OPPORTUNITY: ["kind","opportunityId","taskId","sourcePlayerId","sourceSeatNumber"],
+  SOURCE_EVENT: ["kind","eventId","eventType","eventSequence","batchId"], TASK: ["kind","taskId","taskType"], ACTION_OPPORTUNITY: ["kind","opportunityVersion","nightNumber","opportunityId","opportunityKind","opportunityStatus","taskId","taskType","sourcePlayerId","sourceSeatNumber","sourceRole","sourceCharacterStateRevision"],
   ABILITY_IMPAIRMENT: ["kind","impairmentId","impairmentKind","affectedPlayerId","affectedSeatNumber","affectedRoleId","sourceKind","appliedCharacterStateRevision"], ROLE_TENURE: ["kind","roleTenureId","playerId","seatNumber","roleId","acquiredCharacterStateRevision","statusAtEvaluation"], CHARACTER_STATE: ["kind","characterStateRevision"], PLAYER_ROLE_AT_REVISION: ["kind","playerId","seatNumber","roleId","characterType","defaultAlignment","characterStateRevision"], PHILOSOPHER_GRANT: ["kind","grantId","philosopherOpportunityId","sourcePlayerId","sourceSeatNumber","chosenRoleId","sourceCharacterStateRevision"], FIRST_NIGHT_TASK_INSERTION: ["kind","taskId","philosopherOpportunityId","sourcePlayerId","sourceSeatNumber","chosenRoleId","generation"], SNAKE_CHARMER_RESOLUTION: ["kind","resolutionKind","taskId","opportunityId","targetPlayerId","targetSeatNumber","targetRoleIdAtResolution","resolutionEventId"], EVIL_TWIN_PAIR: ["kind","pairId","evilTwinPlayerId","goodTwinPlayerId","establishedTaskId","informationDeliveryEventId"], WITCH_PENDING_MARKER: ["kind","pendingDeathId","sourcePlayerId","targetPlayerId","taskId","opportunityId","terminalEventId"], CERENOVUS_INSTRUCTION: ["kind","deliveryId","choiceId","markerId","sourcePlayerId","targetPlayerId","chosenRoleId","taskId","terminalEventId"], CLOCKMAKER_DELIVERY: ["kind","deliveryId","taskId","sourcePlayerId","ruleCorrectDistance","selectedDistance","terminalEventId"], DREAMER_DELIVERY: ["kind","taskId","opportunityId","sourcePlayerId","targetPlayerId","deliveredGoodRoleId","deliveredEvilRoleId","terminalEventId"], SEAMSTRESS_DELIVERY: ["kind","taskId","opportunityId","sourcePlayerId","firstTargetPlayerId","secondTargetPlayerId","ruleCorrectAnswer","deliveredAnswer","terminalEventId"]
 };
 const ranks = Object.fromEntries(Object.keys(evidenceKeys).map((key, i) => [key, i])) as Record<string, number>;
@@ -180,7 +224,15 @@ export const validateAbilityOutcomeEvidenceReferenceShape = (value: unknown): Ou
     switch(e.kind){
       case "SOURCE_EVENT":valid=id(e.eventId)&&terminalTypes.has(e.eventType)&&positive(e.eventSequence)&&id(e.batchId);break;
       case "TASK":valid=id(e.taskId)&&Object.hasOwn(roleForTask,e.taskType);break;
-      case "ACTION_OPPORTUNITY":valid=id(e.opportunityId)&&id(e.taskId)&&id(e.sourcePlayerId)&&seat(e.sourceSeatNumber);break;
+      case "ACTION_OPPORTUNITY": {
+        const parsedOpportunity = parseFirstNightActionOpportunityId(e.opportunityId);
+        valid=e.opportunityVersion==="first-night-action-opportunity-v1"&&e.nightNumber===1&&parsedOpportunity.valid&&
+          ["PHILOSOPHER_FIRST_NIGHT_ACTION","SNAKE_CHARMER_FIRST_NIGHT_ACTION","WITCH_FIRST_NIGHT_ACTION","CERENOVUS_FIRST_NIGHT_ACTION","DREAMER_FIRST_NIGHT_ACTION","SEAMSTRESS_FIRST_NIGHT_ACTION"].includes(e.opportunityKind)&&
+          ["OPEN","CLOSED"].includes(e.opportunityStatus)&&id(e.taskId)&&Object.hasOwn(roleForTask,e.taskType)&&
+          id(e.sourcePlayerId)&&seat(e.sourceSeatNumber)&&hasExactRoleSetupSnapshotShape(e.sourceRole)&&positive(e.sourceCharacterStateRevision)&&
+          parsedOpportunity.taskType===e.taskType&&parsedOpportunity.seatNumber===e.sourceSeatNumber;
+        break;
+      }
       case "ABILITY_IMPAIRMENT":valid=id(e.impairmentId)&&["DRUNK","POISONED"].includes(e.impairmentKind)&&id(e.affectedPlayerId)&&seat(e.affectedSeatNumber)&&id(e.affectedRoleId)&&["PHILOSOPHER_CHOSEN_DUPLICATE","SNAKE_CHARMER_DEMON_HIT"].includes(e.sourceKind)&&positive(e.appliedCharacterStateRevision);break;
       case "ROLE_TENURE":valid=id(e.roleTenureId)&&id(e.playerId)&&seat(e.seatNumber)&&id(e.roleId)&&positive(e.acquiredCharacterStateRevision)&&["ACTIVE","INACTIVE"].includes(e.statusAtEvaluation);break;
       case "CHARACTER_STATE":valid=positive(e.characterStateRevision);break;
@@ -224,7 +276,13 @@ export const validateFirstNightAbilityOutcomeFactShape = (value: unknown): Outco
     if(sources.length!==1||tasks.length!==1||sourceEvent?.eventId!==fact.sourceEventId||sourceEvent.eventSequence!==fact.sourceEventSequence||sourceEvent.batchId!==fact.sourceBatchId||tasks[0]?.taskId!==fact.abilityTaskId||tasks[0].taskType!==terminalTaskTypes[sourceEvent.eventType]||fact.abilityInstance.taskId!==fact.abilityTaskId||fact.abilityInstance.sourcePlayerId!==fact.sourcePlayerId||fact.abilityInstance.sourceSeatNumber!==fact.sourceSeatNumber||fact.abilityInstance.abilityRoleId!==fact.abilityRoleId)return fail("Fact source/task/instance cross-link is invalid");
     const kinds=(kind:AbilityOutcomeEvidenceReference["kind"]):AbilityOutcomeEvidenceReference[]=>canonical.filter((entry)=>entry.kind===kind);const character=kinds("CHARACTER_STATE");const roles=kinds("PLAYER_ROLE_AT_REVISION") as PlayerRoleAtRevisionEvidence[];const opportunities=kinds("ACTION_OPPORTUNITY") as ActionOpportunityEvidence[];
     const sourceRole=roles.find((role)=>role.playerId===fact.sourcePlayerId&&role.seatNumber===fact.sourceSeatNumber&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);if(character.length!==1||(character[0] as CharacterStateEvidence).characterStateRevision!==fact.evaluatedCharacterStateRevision||sourceRole===undefined||(fact.abilityInstance.kind!=="PHILOSOPHER_GAINED_TASK_V1"&&fact.abilityInstance.kind!=="PHILOSOPHER_GAINED_TASK_V2"&&sourceRole.roleId!==fact.abilityRoleId))return fail("Fact historical source evidence is incomplete");
-    const requireOpportunity=():boolean=>opportunities.length===1&&opportunities[0]?.taskId===fact.abilityTaskId&&opportunities[0].sourcePlayerId===fact.sourcePlayerId&&opportunities[0].sourceSeatNumber===fact.sourceSeatNumber;
+    const terminalOpportunity=opportunities.find((entry)=>entry.taskId===fact.abilityTaskId);
+    const expectedOpportunitySourceRoleId:RoleId=(fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V1"||fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V2")?"philosopher" as RoleId:fact.abilityRoleId;
+    const requireOpportunity=():boolean=>terminalOpportunity!==undefined&&opportunities.filter((entry)=>entry.taskId===fact.abilityTaskId).length===1&&
+      terminalOpportunity.taskType===tasks[0]?.taskType&&terminalOpportunity.opportunityKind===opportunityKindForTask(tasks[0].taskType)&&
+      terminalOpportunity.opportunityStatus===expectedPreTerminalOpportunityStatus(sourceEvent.eventType)&&terminalOpportunity.sourcePlayerId===fact.sourcePlayerId&&
+      terminalOpportunity.sourceSeatNumber===fact.sourceSeatNumber&&terminalOpportunity.sourceRole.roleId===expectedOpportunitySourceRoleId&&
+      terminalOpportunity.sourceCharacterStateRevision<=fact.evaluatedCharacterStateRevision;
     const exactKinds=(allowed:readonly AbilityOutcomeEvidenceReference["kind"][]):boolean=>{for(let index=0;index<canonical.length;index+=1){const entry=canonical[index];if(entry===undefined||!allowed.includes(entry.kind))return false;}return true;};let setValid=false;
     switch(sourceEvent.eventType){
       case "PhilosopherActionDeferred":setValid=requireOpportunity()&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION"]);break;
@@ -235,13 +293,13 @@ export const validateFirstNightAbilityOutcomeFactShape = (value: unknown): Outco
       case "WitchDeathPendingMarked":setValid=requireOpportunity()&&roles.length>=1&&kinds("WITCH_PENDING_MARKER").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","WITCH_PENDING_MARKER"]);break;
       case "WitchIneffectiveResolved":setValid=requireOpportunity()&&roles.length>=1&&kinds("ABILITY_IMPAIRMENT").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ABILITY_IMPAIRMENT"]);break;
       case "CerenovusMadnessInstructionDelivered":setValid=requireOpportunity()&&roles.length>=1&&kinds("ROLE_TENURE").length===1&&kinds("CERENOVUS_INSTRUCTION").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ROLE_TENURE","CERENOVUS_INSTRUCTION"]);break;
-      case "ClockmakerInformationDelivered":setValid=kinds("CLOCKMAKER_DELIVERY").length===1&&exactKinds(["SOURCE_EVENT","TASK","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ABILITY_IMPAIRMENT","ROLE_TENURE","CLOCKMAKER_DELIVERY","PHILOSOPHER_GRANT","FIRST_NIGHT_TASK_INSERTION"]);break;
+      case "ClockmakerInformationDelivered":setValid=kinds("CLOCKMAKER_DELIVERY").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ABILITY_IMPAIRMENT","ROLE_TENURE","CLOCKMAKER_DELIVERY","PHILOSOPHER_GRANT","FIRST_NIGHT_TASK_INSERTION"]);break;
       case "DreamerInformationDelivered":setValid=requireOpportunity()&&roles.length>=1&&kinds("DREAMER_DELIVERY").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ABILITY_IMPAIRMENT","ROLE_TENURE","DREAMER_DELIVERY"]);break;
       case "SeamstressInformationDelivered":setValid=requireOpportunity()&&roles.length>=2&&kinds("ROLE_TENURE").length>=1&&kinds("SEAMSTRESS_DELIVERY").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ABILITY_IMPAIRMENT","ROLE_TENURE","SEAMSTRESS_DELIVERY","PHILOSOPHER_GRANT","FIRST_NIGHT_TASK_INSERTION"]);break;
     }
-    const gained=fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V1"||fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V2";if(gained&&(kinds("PHILOSOPHER_GRANT").length!==1||kinds("FIRST_NIGHT_TASK_INSERTION").length!==1))setValid=false;if(fact.abilityInstance.kind==="EXPLICIT_DOMAIN_INSTANCE"){const tenureId=fact.abilityInstance.sourceRoleTenureId;if(!kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleTenureId===tenureId))setValid=false;}
-    if(gained){const grant=kinds("PHILOSOPHER_GRANT")[0] as PhilosopherGrantEvidence|undefined;const insertion=kinds("FIRST_NIGHT_TASK_INSERTION")[0] as FirstNightTaskInsertionEvidence|undefined;const provenance=fact.abilityInstance;if(grant===undefined||insertion===undefined||grant.grantId!==provenance.grantId||grant.philosopherOpportunityId!==provenance.philosopherOpportunityId||grant.chosenRoleId!==fact.abilityRoleId||grant.sourceCharacterStateRevision!==provenance.sourceCharacterStateRevision||insertion.taskId!==fact.abilityTaskId||insertion.philosopherOpportunityId!==grant.philosopherOpportunityId||insertion.sourcePlayerId!==grant.sourcePlayerId||insertion.sourceSeatNumber!==grant.sourceSeatNumber||insertion.chosenRoleId!==grant.chosenRoleId||(provenance.kind==="PHILOSOPHER_GAINED_TASK_V2"&&(insertion.generation.kind!=="V2"||insertion.generation.grantId!==provenance.grantId))||(provenance.kind==="PHILOSOPHER_GAINED_TASK_V1"&&insertion.generation.kind!=="V1"))setValid=false;}
-    const hasRole=(playerIdValue:PlayerId):boolean=>roles.some((role)=>role.playerId===playerIdValue&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);const roleOf=(playerIdValue:PlayerId):PlayerRoleAtRevisionEvidence|undefined=>roles.find((role)=>role.playerId===playerIdValue&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);const opportunity=opportunities[0];for(const entry of canonical){if(entry.kind==="ABILITY_IMPAIRMENT"&&(entry.affectedPlayerId!==fact.sourcePlayerId||entry.affectedSeatNumber!==fact.sourceSeatNumber||entry.affectedRoleId!==sourceRole.roleId||entry.appliedCharacterStateRevision>fact.evaluatedCharacterStateRevision))setValid=false;if(entry.kind==="ROLE_TENURE"&&(entry.acquiredCharacterStateRevision>fact.evaluatedCharacterStateRevision||!hasRole(entry.playerId)))setValid=false;if(entry.kind==="SNAKE_CHARMER_RESOLUTION"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.resolutionEventId!==fact.sourceEventId||roleOf(entry.targetPlayerId)?.seatNumber!==entry.targetSeatNumber||roleOf(entry.targetPlayerId)?.roleId!==entry.targetRoleIdAtResolution))setValid=false;if(entry.kind==="WITCH_PENDING_MARKER"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="CERENOVUS_INSTRUCTION"&&(entry.taskId!==fact.abilityTaskId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="CLOCKMAKER_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId))setValid=false;if(entry.kind==="DREAMER_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="SEAMSTRESS_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.firstTargetPlayerId)||!hasRole(entry.secondTargetPlayerId)))setValid=false;if(entry.kind==="EVIL_TWIN_PAIR"&&(entry.establishedTaskId!==fact.abilityTaskId||entry.informationDeliveryEventId!==fact.sourceEventId||!hasRole(entry.evilTwinPlayerId)||!hasRole(entry.goodTwinPlayerId)))setValid=false;}
+    const gained=fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V1"||fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V2";const expectedGainedOpportunityCount=opportunityKindForTask(tasks[0].taskType)===undefined?1:2;if(gained&&(kinds("PHILOSOPHER_GRANT").length!==1||kinds("FIRST_NIGHT_TASK_INSERTION").length!==1||opportunities.length!==expectedGainedOpportunityCount))setValid=false;if(!gained&&sourceEvent.eventType!=="PhilosopherAbilityGranted"&&(kinds("PHILOSOPHER_GRANT").length!==0||kinds("FIRST_NIGHT_TASK_INSERTION").length!==0))setValid=false;if(fact.abilityInstance.kind==="EXPLICIT_DOMAIN_INSTANCE"){const tenureId=fact.abilityInstance.sourceRoleTenureId;if(!kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleTenureId===tenureId))setValid=false;}
+    if(gained){const grant=kinds("PHILOSOPHER_GRANT")[0] as PhilosopherGrantEvidence|undefined;const insertion=kinds("FIRST_NIGHT_TASK_INSERTION")[0] as FirstNightTaskInsertionEvidence|undefined;const provenance=fact.abilityInstance;const philosopherOpportunity=opportunities.find((entry)=>entry.opportunityId===provenance.philosopherOpportunityId);if(grant===undefined||insertion===undefined||philosopherOpportunity===undefined||philosopherOpportunity===terminalOpportunity||philosopherOpportunity.opportunityKind!=="PHILOSOPHER_FIRST_NIGHT_ACTION"||philosopherOpportunity.opportunityStatus!=="CLOSED"||philosopherOpportunity.taskType!=="PHILOSOPHER_ACTION"||philosopherOpportunity.sourceRole.roleId!=="philosopher"||philosopherOpportunity.sourcePlayerId!==grant.sourcePlayerId||philosopherOpportunity.sourceSeatNumber!==grant.sourceSeatNumber||philosopherOpportunity.sourceCharacterStateRevision!==grant.sourceCharacterStateRevision||grant.grantId!==provenance.grantId||grant.philosopherOpportunityId!==provenance.philosopherOpportunityId||grant.chosenRoleId!==fact.abilityRoleId||grant.sourceCharacterStateRevision!==provenance.sourceCharacterStateRevision||insertion.taskId!==fact.abilityTaskId||insertion.philosopherOpportunityId!==grant.philosopherOpportunityId||insertion.sourcePlayerId!==grant.sourcePlayerId||insertion.sourceSeatNumber!==grant.sourceSeatNumber||insertion.chosenRoleId!==grant.chosenRoleId||(provenance.kind==="PHILOSOPHER_GAINED_TASK_V2"&&(insertion.generation.kind!=="V2"||insertion.generation.grantId!==provenance.grantId))||(provenance.kind==="PHILOSOPHER_GAINED_TASK_V1"&&insertion.generation.kind!=="V1"))setValid=false;}
+    const hasRole=(playerIdValue:PlayerId):boolean=>roles.some((role)=>role.playerId===playerIdValue&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);const roleOf=(playerIdValue:PlayerId):PlayerRoleAtRevisionEvidence|undefined=>roles.find((role)=>role.playerId===playerIdValue&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);const opportunity=terminalOpportunity;for(const entry of canonical){if(entry.kind==="ABILITY_IMPAIRMENT"&&(entry.affectedPlayerId!==fact.sourcePlayerId||entry.affectedSeatNumber!==fact.sourceSeatNumber||entry.affectedRoleId!==sourceRole.roleId||entry.appliedCharacterStateRevision>fact.evaluatedCharacterStateRevision))setValid=false;if(entry.kind==="ROLE_TENURE"&&(entry.acquiredCharacterStateRevision>fact.evaluatedCharacterStateRevision||!hasRole(entry.playerId)))setValid=false;if(entry.kind==="SNAKE_CHARMER_RESOLUTION"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.resolutionEventId!==fact.sourceEventId||roleOf(entry.targetPlayerId)?.seatNumber!==entry.targetSeatNumber||roleOf(entry.targetPlayerId)?.roleId!==entry.targetRoleIdAtResolution))setValid=false;if(entry.kind==="WITCH_PENDING_MARKER"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="CERENOVUS_INSTRUCTION"&&(entry.taskId!==fact.abilityTaskId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="CLOCKMAKER_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId))setValid=false;if(entry.kind==="DREAMER_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="SEAMSTRESS_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.firstTargetPlayerId)||!hasRole(entry.secondTargetPlayerId)))setValid=false;if(entry.kind==="EVIL_TWIN_PAIR"&&(entry.establishedTaskId!==fact.abilityTaskId||entry.informationDeliveryEventId!==fact.sourceEventId||!hasRole(entry.evilTwinPlayerId)||!hasRole(entry.goodTwinPlayerId)))setValid=false;}
     if(fact.causeKind==="VORTOX_FALSE_INFORMATION"&&(!roles.some((role)=>role.roleId==="vortox")||!kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleId==="vortox"&&(entry as RoleTenureEvidence).statusAtEvaluation==="ACTIVE")))setValid=false;
     if(fact.causeKind==="DREAMER_VORTOX_CONSTRAINT_UNRECORDED"&&(!roles.some((role)=>role.roleId==="vortox")||!kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleId==="vortox"&&(entry as RoleTenureEvidence).statusAtEvaluation==="ACTIVE")))setValid=false;
     if(fact.causeKind==="VORTOX_APPLICABILITY_NOT_PROVEN"&&(!roles.some((role)=>role.roleId==="vortox")||kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleId==="vortox"&&(entry as RoleTenureEvidence).statusAtEvaluation==="ACTIVE")))setValid=false;
@@ -284,7 +342,8 @@ const sourceFor = (state: GameState, task: ScheduledTask, payload: Record<string
 };
 const roleEvidenceFor=(state:GameState,playerIdValue:PlayerId,revision:number):PlayerRoleAtRevisionEvidence=>{
   const matches=state.currentCharacterState?.entries.filter((candidate)=>candidate.playerId===playerIdValue)??[];const entry=matches[0];
-  if(matches.length!==1||entry===undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Player role evidence requires one current character entry");
+  const rosterMatches=entry===undefined?[]:state.roster?.entries.filter((candidate)=>candidate.playerId===entry.playerId&&candidate.seatNumber===entry.seatNumber)??[];
+  if(matches.length!==1||entry===undefined||rosterMatches.length!==1)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Player role evidence requires one roster-bound current character entry");
   return {kind:"PLAYER_ROLE_AT_REVISION",playerId:entry.playerId,seatNumber:entry.seatNumber,roleId:entry.role.roleId,characterType:entry.role.characterType,defaultAlignment:entry.role.defaultAlignment,characterStateRevision:revision};
 };
 const tenureEvidenceFor=(state:GameState,tenureId:RoleTenureId,revision:number):RoleTenureEvidence=>{
@@ -294,10 +353,39 @@ type HistoricalVortoxApplicability={readonly kind:"NONE"}|{readonly kind:"PROVEN
 const historicalVortoxApplicability=(state:GameState,revision:number):HistoricalVortoxApplicability=>{
   const current=state.currentCharacterState?.entries.filter((entry)=>entry.role.roleId==="vortox")??[];if(current.length===0)return {kind:"NONE"};if(current.length!==1)return {kind:"UNRESOLVED"};const entry=current[0]!;const tenures=state.seamstressRoleTenureState?.records.filter((record)=>record.roleId==="vortox"&&record.playerId===entry.playerId&&record.seatNumber===entry.seatNumber&&record.acquiredCharacterStateRevision<=revision&&(record.endedCharacterStateRevision===undefined||record.endedCharacterStateRevision>revision))??[];return tenures.length===1&&tenures[0]!==undefined?{kind:"PROVEN",playerId:entry.playerId,seatNumber:entry.seatNumber,tenureId:tenures[0].roleTenureId}:{kind:"UNRESOLVED",playerId:entry.playerId};
 };
-const opportunityEvidenceFor=(state:GameState,opportunityIdValue:unknown,task:ScheduledTask,source:{playerId:PlayerId;seatNumber:SeatNumber}):ActionOpportunityEvidence=>{
-  const matches=state.firstNightActionOpportunities?.opportunities.filter((candidate)=>candidate.opportunityId===opportunityIdValue)??[];const opportunity=matches[0];
-  if(matches.length!==1||opportunity===undefined||opportunity.taskId!==task.taskId||opportunity.sourcePlayerId!==source.playerId||opportunity.sourceSeatNumber!==source.seatNumber)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Terminal outcome requires one matching action opportunity");
-  return {kind:"ACTION_OPPORTUNITY",opportunityId:opportunity.opportunityId,taskId:task.taskId,sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber};
+const opportunityKindForTask=(taskType:FirstNightTaskType):ActionOpportunityKind|undefined=>{
+  switch(taskType){
+    case "PHILOSOPHER_ACTION":return "PHILOSOPHER_FIRST_NIGHT_ACTION";
+    case "SNAKE_CHARMER_ACTION":return "SNAKE_CHARMER_FIRST_NIGHT_ACTION";
+    case "WITCH_ACTION":return "WITCH_FIRST_NIGHT_ACTION";
+    case "CERENOVUS_ACTION":return "CERENOVUS_FIRST_NIGHT_ACTION";
+    case "DREAMER_ACTION":return "DREAMER_FIRST_NIGHT_ACTION";
+    case "SEAMSTRESS_ACTION":return "SEAMSTRESS_FIRST_NIGHT_ACTION";
+    default:return undefined;
+  }
+};
+const expectedPreTerminalOpportunityStatus=(eventType:TerminalAbilityOutcomeEventType):ActionOpportunityStatus=>
+  eventType==="PhilosopherAbilityGranted"||eventType==="CerenovusMadnessInstructionDelivered"?"CLOSED":"OPEN";
+const opportunityEvidenceFrom=(opportunity:FirstNightActionOpportunity):ActionOpportunityEvidence=>({
+  kind:"ACTION_OPPORTUNITY",opportunityVersion:"first-night-action-opportunity-v1",nightNumber:1,
+  opportunityId:opportunity.opportunityId,opportunityKind:opportunity.opportunityKind,opportunityStatus:opportunity.opportunityStatus,
+  taskId:opportunity.taskId,taskType:opportunity.taskType,sourcePlayerId:opportunity.sourcePlayerId,sourceSeatNumber:opportunity.sourceSeatNumber,
+  sourceRole:clone(opportunity.sourceRole),sourceCharacterStateRevision:opportunity.sourceCharacterStateRevision
+});
+const opportunityEvidenceFor=(state:GameState,opportunityIdValue:unknown,task:ScheduledTask,source:{playerId:PlayerId;seatNumber:SeatNumber;roleId:RoleId},eventType:TerminalAbilityOutcomeEventType):ActionOpportunityEvidence=>{
+  const opportunityStateValidation=validateFirstNightActionOpportunityStateShape(state.firstNightActionOpportunities);
+  if(!opportunityStateValidation.valid)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence",opportunityStateValidation.reason);
+  const matches=state.firstNightActionOpportunities!.opportunities.filter((candidate)=>candidate.opportunityId===opportunityIdValue);const opportunity=matches[0];
+  const expectedKind=opportunityKindForTask(task.taskType);const parsed=opportunity===undefined?undefined:parseFirstNightActionOpportunityId(opportunity.opportunityId);
+  const expectedRole=task.source.kind==="ROLE"?task.source.role:task.source.kind==="PHILOSOPHER_GAINED_ABILITY"?task.source.sourceRole:undefined;
+  if(matches.length!==1||opportunity===undefined||expectedKind===undefined||expectedRole===undefined||!parsed?.valid||
+    opportunity.opportunityStatus!==expectedPreTerminalOpportunityStatus(eventType)||opportunity.opportunityKind!==expectedKind||
+    opportunity.taskId!==task.taskId||opportunity.taskType!==task.taskType||parsed.taskType!==task.taskType||parsed.seatNumber!==source.seatNumber||
+    opportunity.sourcePlayerId!==source.playerId||opportunity.sourceSeatNumber!==source.seatNumber||!sameRoleSetupSnapshot(opportunity.sourceRole,expectedRole)||
+    opportunity.sourceCharacterStateRevision<1||
+    (state.currentCharacterState!==undefined&&opportunity.sourceCharacterStateRevision>state.currentCharacterState.revision))
+    throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Terminal outcome requires one exact accepted action opportunity");
+  return opportunityEvidenceFrom(opportunity);
 };
 const impairmentEvidenceFor=(state:GameState,impairmentIdValue:unknown,source:{playerId:PlayerId;seatNumber:SeatNumber;roleId:RoleId}):AbilityImpairmentEvidence=>{
   const matches=state.abilityImpairments?.impairments.filter((candidate)=>candidate.impairmentId===impairmentIdValue)??[];const impairment=matches[0];
@@ -326,23 +414,50 @@ const canonicalInsertedTasks=(state:GameState):ReadonlyMap<ScheduledTaskId,{read
   if(!planValidation.valid||runtime.length!==rebuilt.size||runtime.some((task)=>{const expected=rebuilt.get(task.taskId);return expected===undefined||!sameCanonicalDataValue(expected.task,task);} ))throw new DomainError("InvalidFirstNightAbilityInstance",planValidation.valid?"Runtime gained tasks must equal accepted insertion facts":planValidation.reason);
   return rebuilt;
 };
+const PHILOSOPHER_CHOICE_KEYS=["rulesBaselineVersion","nightNumber","taskId","taskType","opportunityId","decisionKind","sourcePlayerId","sourceSeatNumber","sourceRole","sourceCharacterStateRevision","chosenRole","chosenRoleId","roleCatalogSignature"] as const;
+const PHILOSOPHER_GRANT_KEYS=["grantId","sourcePlayerId","sourceSeatNumber","sourceRole","sourceCharacterStateRevision","chosenRole","chosenRoleId","chosenRoleCatalogSignature","grantedAtTaskId","grantedAtOpportunityId"] as const;
 const instanceFor=(task:ScheduledTask,source:{playerId:PlayerId;seatNumber:SeatNumber;roleId:RoleId},state:GameState):FirstNightAbilityInstanceProvenance=>{
   if(task.source.kind==="PHILOSOPHER_GAINED_ABILITY") {
-    const gainedSource=task.source;const accepted=canonicalInsertedTasks(state).get(task.taskId);const insertion=accepted?.insertion as unknown as Record<string,unknown>|undefined;const grants=state.philosopherGrantedAbilities?.abilities.filter((entry)=>entry.grantedAtOpportunityId===gainedSource.opportunityId&&entry.chosenRoleId===gainedSource.chosenRole.roleId)??[];const grant=grants[0];const opportunities=state.firstNightActionOpportunities?.opportunities.filter((entry)=>entry.opportunityId===gainedSource.opportunityId)??[];const opportunity=opportunities[0];
+    const opportunityStateValidation=validateFirstNightActionOpportunityStateShape(state.firstNightActionOpportunities);
+    if(!opportunityStateValidation.valid)throw new DomainError("InvalidFirstNightAbilityInstance",opportunityStateValidation.reason);
+    const gainedSource=task.source;const accepted=canonicalInsertedTasks(state).get(task.taskId);const insertion=accepted?.insertion as unknown as Record<string,unknown>|undefined;
+    const grants=state.philosopherGrantedAbilities?.abilities.filter((entry)=>entry.grantedAtOpportunityId===gainedSource.opportunityId&&entry.chosenRoleId===gainedSource.chosenRole.roleId)??[];const grant=grants[0];
+    const choices=state.philosopherAbilityChoices?.choices.filter((entry)=>entry.opportunityId===gainedSource.opportunityId)??[];const choice=choices[0];
+    const opportunities=state.firstNightActionOpportunities!.opportunities.filter((entry)=>entry.opportunityId===gainedSource.opportunityId);const opportunity=opportunities[0];
     const parsedTask=parseCanonicalFirstNightTaskId(task.taskId);const parsedGrant=grant===undefined?undefined:parseCanonicalGrantId(grant.grantId);const v2=state.firstNightTaskPlan?.taskPlanVersion==="first-night-task-plan-v2";const insertionSource=insertion?.source as Record<string,unknown>|undefined;const insertionMatches=insertion!==undefined&&insertion.taskId===task.taskId&&(insertion.sourcePlayerId??insertionSource?.playerId)===source.playerId&&(insertion.sourceSeatNumber??insertionSource?.seatNumber)===source.seatNumber&&insertion.sourceCharacterStateRevision===gainedSource.sourceCharacterStateRevision&&((insertion.chosenRole as Record<string,unknown>|undefined)?.roleId===source.roleId||insertion.targetRoleId===source.roleId)&&(insertion.philosopherOpportunityId??insertionSource?.opportunityId)===gainedSource.opportunityId;
-    if(accepted!==undefined&&grants.length===1&&opportunities.length===1&&grant!==undefined&&opportunity!==undefined&&parsedTask?.generation===(v2?"V2":"V1")&&parsedTask.embeddedSeat===source.seatNumber&&parsedTask.embeddedRoleId===source.roleId&&parsedGrant?.embeddedSeat===source.seatNumber&&parsedGrant.embeddedRoleId===source.roleId&&insertionMatches&&grant.sourcePlayerId===source.playerId&&grant.sourceSeatNumber===source.seatNumber&&grant.sourceCharacterStateRevision===gainedSource.sourceCharacterStateRevision&&opportunity.sourcePlayerId===source.playerId&&opportunity.sourceSeatNumber===source.seatNumber&&opportunity.sourceCharacterStateRevision===gainedSource.sourceCharacterStateRevision&&((v2&&insertion.schedulingVersion==="philosopher-gained-first-night-scheduling-v2"&&insertion.grantId===grant.grantId)||(!v2&&insertion.schedulingVersion===undefined&&insertion.grantId===undefined))){
+    const choiceShape=choice!==undefined&&plain(choice)&&exact(choice,PHILOSOPHER_CHOICE_KEYS)&&choice.rulesBaselineVersion===state.rulesBaselineVersion&&choice.nightNumber===1&&choice.taskType==="PHILOSOPHER_ACTION"&&choice.decisionKind==="CHOOSE_GOOD_CHARACTER"&&hasExactRoleSetupSnapshotShape(choice.sourceRole)&&hasExactRoleSetupSnapshotShape(choice.chosenRole)&&choice.chosenRoleId===choice.chosenRole.roleId&&choice.roleCatalogSignature===state.setup?.roleCatalogSignature;
+    const grantShape=grant!==undefined&&plain(grant)&&exact(grant,PHILOSOPHER_GRANT_KEYS)&&hasExactRoleSetupSnapshotShape(grant.sourceRole)&&hasExactRoleSetupSnapshotShape(grant.chosenRole)&&grant.chosenRoleId===grant.chosenRole.roleId&&grant.chosenRoleCatalogSignature===state.setup?.roleCatalogSignature;
+    const parsedOpportunity=opportunity===undefined?undefined:parseFirstNightActionOpportunityId(opportunity.opportunityId);
+    const originalChainMatches=isDenseCanonicalArray(state.philosopherAbilityChoices?.choices)&&isDenseCanonicalArray(state.philosopherGrantedAbilities?.abilities)&&choice!==undefined&&grant!==undefined&&opportunity!==undefined&&choiceShape&&grantShape&&
+      opportunity.opportunityKind==="PHILOSOPHER_FIRST_NIGHT_ACTION"&&opportunity.opportunityStatus==="CLOSED"&&opportunity.taskType==="PHILOSOPHER_ACTION"&&
+      opportunity.taskId===choice.taskId&&grant.grantedAtTaskId===choice.taskId&&grant.grantedAtOpportunityId===choice.opportunityId&&
+      parsedOpportunity?.valid===true&&parsedOpportunity.taskType==="PHILOSOPHER_ACTION"&&parsedOpportunity.seatNumber===source.seatNumber&&
+      choice.sourcePlayerId===source.playerId&&choice.sourceSeatNumber===source.seatNumber&&choice.sourceCharacterStateRevision===gainedSource.sourceCharacterStateRevision&&
+      opportunity.sourcePlayerId===choice.sourcePlayerId&&opportunity.sourceSeatNumber===choice.sourceSeatNumber&&opportunity.sourceCharacterStateRevision===choice.sourceCharacterStateRevision&&
+      choice.sourceRole.roleId==="philosopher"&&sameRoleSetupSnapshot(opportunity.sourceRole,choice.sourceRole)&&sameRoleSetupSnapshot(choice.sourceRole,gainedSource.sourceRole)&&
+      choice.chosenRoleId===source.roleId&&sameRoleSetupSnapshot(choice.chosenRole,gainedSource.chosenRole)&&sameRoleSetupSnapshot(grant.chosenRole,gainedSource.chosenRole)&&
+      grant.sourcePlayerId===choice.sourcePlayerId&&grant.sourceSeatNumber===choice.sourceSeatNumber&&grant.sourceCharacterStateRevision===choice.sourceCharacterStateRevision&&sameRoleSetupSnapshot(grant.sourceRole,choice.sourceRole);
+    if(accepted===undefined||grants.length!==1||choices.length!==1||opportunities.length!==1||grant===undefined||choice===undefined||opportunity===undefined)
+      throw new DomainError("InvalidFirstNightAbilityInstance","Gained task requires unique accepted insertion, grant, choice, and Philosopher opportunity records");
+    if(!originalChainMatches)throw new DomainError("InvalidFirstNightAbilityInstance","Gained task original Philosopher opportunity, choice, and grant contract is inconsistent");
+    if(parsedTask?.generation!==(v2?"V2":"V1")||parsedTask.embeddedSeat!==source.seatNumber||parsedTask.embeddedRoleId!==source.roleId||parsedGrant?.embeddedSeat!==source.seatNumber||parsedGrant.embeddedRoleId!==source.roleId)
+      throw new DomainError("InvalidFirstNightAbilityInstance","Gained task and grant identifiers must bind generation, role, and seat");
+    if(!insertionMatches||!((v2&&insertion.schedulingVersion==="philosopher-gained-first-night-scheduling-v2"&&insertion.grantId===grant.grantId)||(!v2&&insertion.schedulingVersion===undefined&&insertion.grantId===undefined)))
+      throw new DomainError("InvalidFirstNightAbilityInstance","Gained task insertion must bind the accepted generation, grant, role, seat, source, and revision");
+    {
       const grantId=grant.grantId;
       const common={provenanceVersion:"first-night-ability-instance-provenance-v1" as const,abilityRoleId:source.roleId,taskId:task.taskId,sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,philosopherOpportunityId:gainedSource.opportunityId,grantId,sourceCharacterStateRevision:gainedSource.sourceCharacterStateRevision};
       if(v2)return {...common,kind:"PHILOSOPHER_GAINED_TASK_V2",abilityInstanceId:formatPhilosopherGainedV2AbilityInstanceId({taskId:task.taskId,grantId}),schedulingVersion:"philosopher-gained-first-night-scheduling-v2"};
       return {...common,kind:"PHILOSOPHER_GAINED_TASK_V1",abilityInstanceId:formatPhilosopherGainedV1AbilityInstanceId({taskId:task.taskId,grantId})};
     }
-    throw new DomainError("InvalidFirstNightAbilityInstance","Gained task requires one accepted generation-consistent task, insertion, grant, and opportunity chain");
   }
   const parsed=parseCanonicalFirstNightTaskId(task.taskId);if(task.source.kind!=="ROLE"||parsed?.generation!=="BASE"||parsed.embeddedSeat!==source.seatNumber||parsed.taskType!==task.taskType||roleForTask[task.taskType]!==source.roleId)throw new DomainError("InvalidFirstNightAbilityInstance","Base task provenance must use one canonical role task without grant or insertion");
   return {provenanceVersion:"first-night-ability-instance-provenance-v1",kind:"BASE_ROLE_TASK",abilityInstanceId:formatBaseFirstNightAbilityInstanceId(task.taskId),abilityRoleId:source.roleId,taskId:task.taskId,sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber};
 };
 export const deriveFirstNightAbilityOutcomeFact=(input:{readonly stateBefore:GameState;readonly event:AnyDomainEventEnvelope}):FirstNightAbilityOutcomeFact|undefined=>{
-  if(!terminalTypes.has(input.event.eventType as TerminalAbilityOutcomeEventType))return undefined; const p=input.event.payload as unknown as Record<string,unknown>; const task=taskFor(input.stateBefore,p.taskId); if(task===undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Terminal outcome requires one canonical task"); const source=sourceFor(input.stateBefore,task,p); if(source===undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Terminal outcome requires a role source"); let instance=instanceFor(task,source,input.stateBefore);const revision=input.stateBefore.currentCharacterState?.revision??1;
+  if(!terminalTypes.has(input.event.eventType as TerminalAbilityOutcomeEventType))return undefined;
+  if(input.stateBefore.roster===undefined||!validatePlayerRoster(input.stateBefore.roster.entries).valid)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Outcome derivation requires one exact canonical roster");
+  const p=input.event.payload as unknown as Record<string,unknown>; const task=taskFor(input.stateBefore,p.taskId); if(task===undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Terminal outcome requires one canonical task"); const source=sourceFor(input.stateBefore,task,p); if(source===undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Terminal outcome requires a role source"); let instance=instanceFor(task,source,input.stateBefore);const revision=input.stateBefore.currentCharacterState?.revision??1;
   if(input.event.eventType==="CerenovusMadnessInstructionDelivered"||input.event.eventType==="SeamstressInformationDelivered"){const opportunity=input.stateBefore.firstNightActionOpportunities?.opportunities.find((entry)=>entry.opportunityId===p.opportunityId) as unknown as Record<string,unknown>|undefined;const tenureId=p.sourceRoleTenureId??opportunity?.sourceRoleTenureId;const existingId=p.abilityInstanceId??opportunity?.sourceAbilityInstanceId;if(nonEmpty(tenureId)&&nonEmpty(existingId))instance={provenanceVersion:"first-night-ability-instance-provenance-v1",kind:"EXPLICIT_DOMAIN_INSTANCE",abilityInstanceId:formatExplicitFirstNightAbilityInstanceId({roleId:source.roleId,existingInstanceId:existingId as AbilityInstanceId}),abilityRoleId:source.roleId,taskId:task.taskId,sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,sourceRoleTenureId:tenureId as RoleTenureId,existingInstanceId:existingId as AbilityInstanceId};}
   let status:AbilityOutcomeStatus="NORMAL",cause:AbilityOutcomeCause="NO_OTHER_CHARACTER_ABILITY",caused=false;
   if(input.event.eventType==="WitchIneffectiveResolved"){status="PENDING_TRIGGER";cause=p.sourceImpairmentKind==="POISONED"?"SOURCE_POISONING":"SOURCE_DRUNKENNESS";caused=true;}
@@ -350,12 +465,17 @@ export const deriveFirstNightAbilityOutcomeFact=(input:{readonly stateBefore:Gam
   else if(input.event.eventType==="ClockmakerInformationDelivered"&&p.informationReliability==="DETERMINISTIC_FALSE_WITH_KNOWN_DRUNKENNESS"){status="ABNORMAL";cause="SOURCE_DRUNKENNESS";caused=true;}
   else if(input.event.eventType==="ClockmakerInformationDelivered"&&p.informationReliability==="VORTOX_CONSTRAINED_FALSE"){status="ABNORMAL";cause="VORTOX_FALSE_INFORMATION";caused=true;}
   else if(input.event.eventType==="SeamstressInformationDelivered"&&p.informationReliability==="VORTOX_CONSTRAINED_FALSE"){status="ABNORMAL";cause="VORTOX_FALSE_INFORMATION";caused=true;}
+  else if(input.event.eventType==="SeamstressInformationDelivered"&&plain(p.comparison)&&p.deliveredAnswer!==p.comparison.ruleCorrectAnswer){
+    const represented=plain(p.sourceEffectiveness)&&isDenseCanonicalArray(p.sourceEffectiveness.representedImpairments)?p.sourceEffectiveness.representedImpairments:[];
+    const first=represented[0];if(represented.length===0||!plain(first)||!(["DRUNK","POISONED"] as const).includes(first.impairmentKind as "DRUNK"|"POISONED"))throw new DomainError("InvalidFirstNightAbilityOutcomeFact","False Seamstress information requires a represented source impairment or Vortox constraint");
+    status="ABNORMAL";cause=first.impairmentKind==="POISONED"?"SOURCE_POISONING":"SOURCE_DRUNKENNESS";caused=true;
+  }
   else if(input.event.eventType==="DreamerInformationDelivered"&&plain(p.informationReliability)){
     const target=input.stateBefore.currentCharacterState?.entries.find((entry)=>entry.playerId===p.targetPlayerId&&entry.seatNumber===p.targetSeatNumber);const good=p.goodRole as Record<string,unknown>;const evil=p.evilRole as Record<string,unknown>;const containsTruth=target!==undefined&&(target.role.roleId===good.roleId||target.role.roleId===evil.roleId);const vortox=historicalVortoxApplicability(input.stateBefore,revision);
     if(vortox.kind==="PROVEN"){status="UNRESOLVED";cause="DREAMER_VORTOX_CONSTRAINT_UNRECORDED";}else if(vortox.kind==="UNRESOLVED"){status="UNRESOLVED";cause="VORTOX_APPLICABILITY_NOT_PROVEN";}else if(target===undefined){status="UNRESOLVED";cause="CAUSE_NOT_PROVEN";}else if(p.informationReliability.kind==="EFFECTIVE"&&!containsTruth)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Effective Dreamer false pair without Vortox is invalid");else if(p.informationReliability.kind==="SOURCE_IMPAIRED"&&!containsTruth){status="ABNORMAL";cause=p.informationReliability.sourceImpairmentKind==="POISONED"?"SOURCE_POISONING":"SOURCE_DRUNKENNESS";caused=true;}
   }
   const evidence:AbilityOutcomeEvidenceReference[]=[{kind:"SOURCE_EVENT",eventId:input.event.eventId,eventType:input.event.eventType as TerminalAbilityOutcomeEventType,eventSequence:input.event.eventSequence,batchId:input.event.batchId},{kind:"TASK",taskId:task.taskId,taskType:task.taskType},{kind:"CHARACTER_STATE",characterStateRevision:revision},roleEvidenceFor(input.stateBefore,source.playerId,revision)];
-  if(p.opportunityId!==undefined)evidence.push(opportunityEvidenceFor(input.stateBefore,p.opportunityId,task,source));
+  if(p.opportunityId!==undefined)evidence.push(opportunityEvidenceFor(input.stateBefore,p.opportunityId,task,source,input.event.eventType as TerminalAbilityOutcomeEventType));
   if(instance.kind==="EXPLICIT_DOMAIN_INSTANCE")evidence.push(tenureEvidenceFor(input.stateBefore,instance.sourceRoleTenureId,revision));
   if(input.event.eventType==="PhilosopherAbilityGranted")evidence.push({kind:"PHILOSOPHER_GRANT",grantId:p.grantId as GrantedAbilityId,philosopherOpportunityId:p.opportunityId as ActionOpportunityId,sourcePlayerId:p.sourcePlayerId as PlayerId,sourceSeatNumber:p.sourceSeatNumber as SeatNumber,chosenRoleId:p.chosenRoleId as RoleId,sourceCharacterStateRevision:p.sourceCharacterStateRevision as number});
   if(p.sourceImpairmentId!==undefined)evidence.push(impairmentEvidenceFor(input.stateBefore,p.sourceImpairmentId,source));
@@ -367,7 +487,9 @@ export const deriveFirstNightAbilityOutcomeFact=(input:{readonly stateBefore:Gam
   if(instance.kind==="PHILOSOPHER_GAINED_TASK_V1"||instance.kind==="PHILOSOPHER_GAINED_TASK_V2"){
     const grant=input.stateBefore.philosopherGrantedAbilities?.abilities.find((candidate)=>candidate.grantId===instance.grantId);
     const insertion=input.stateBefore.firstNightTaskInsertions?.insertions.find((candidate)=>candidate.taskId===task.taskId) as unknown as Record<string,unknown>|undefined;
-    if(grant===undefined||insertion===undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Gained instance requires grant and insertion evidence");
+    const philosopherOpportunities=input.stateBefore.firstNightActionOpportunities?.opportunities.filter((candidate)=>candidate.opportunityId===instance.philosopherOpportunityId)??[];
+    if(grant===undefined||insertion===undefined||philosopherOpportunities.length!==1||philosopherOpportunities[0]===undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Gained instance requires grant, insertion, and original Philosopher opportunity evidence");
+    evidence.push(opportunityEvidenceFrom(philosopherOpportunities[0]));
     evidence.push({kind:"PHILOSOPHER_GRANT",grantId:grant.grantId,philosopherOpportunityId:grant.grantedAtOpportunityId,sourcePlayerId:grant.sourcePlayerId,sourceSeatNumber:grant.sourceSeatNumber,chosenRoleId:grant.chosenRoleId,sourceCharacterStateRevision:grant.sourceCharacterStateRevision});
     evidence.push({kind:"FIRST_NIGHT_TASK_INSERTION",taskId:task.taskId,philosopherOpportunityId:grant.grantedAtOpportunityId,sourcePlayerId:grant.sourcePlayerId,sourceSeatNumber:grant.sourceSeatNumber,chosenRoleId:grant.chosenRoleId,generation:instance.kind==="PHILOSOPHER_GAINED_TASK_V2"?{kind:"V2",taskPlanVersion:"first-night-task-plan-v2",grantId:grant.grantId,schedulingVersion:"philosopher-gained-first-night-scheduling-v2"}:{kind:"V1",taskPlanVersion:"first-night-task-plan-v1"}});
   }
@@ -395,13 +517,22 @@ const validateFactAgainstCanonicalSource=(stateBefore:GameState,event:AnyDomainE
 };
 export const applyFirstNightAbilityOutcomeLedger=(stateBefore:GameState|undefined,event:AnyDomainEventEnvelope,next:GameState):GameState=>{
   if(event.eventType==="FirstNightInitialized"){
+    if(stateBefore===undefined||stateBefore.firstNightAbilityOutcomeLedger!==undefined||stateBefore.firstNightInitializationProvenance!==undefined)
+      throw new DomainError("InvalidFirstNightAbilityOutcomeLedger","FirstNightInitialized must be the unique event-created ledger anchor source");
+    const provenance:FirstNightInitializationEnvelopeProvenance={provenanceVersion:"first-night-initialization-envelope-provenance-v1",gameId:event.gameId,rulesBaselineVersion:event.rulesBaselineVersion,eventId:event.eventId,eventSequence:event.eventSequence};
     const created:FirstNightAbilityOutcomeLedger={ledgerVersion:FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,auditModelVersion:FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION,windowAnchor:{windowVersion:FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION,gameId:event.gameId,nightNumber:1,rulesBaselineVersion:event.rulesBaselineVersion,firstNightInitializedEventId:event.eventId,startEventSequence:event.eventSequence,startBoundary:"EXCLUSIVE"},facts:[]};
-    if(!validateFirstNightAbilityOutcomeLedgerShape(created).valid)throw new DomainError("InvalidFirstNightAbilityOutcomeLedger","Derived first-night ledger anchor is invalid");return {...next,firstNightAbilityOutcomeLedger:created};
+    if(!validateFirstNightInitializationEnvelopeProvenance(provenance).valid||!validateFirstNightAbilityOutcomeLedgerShape(created).valid)throw new DomainError("InvalidFirstNightAbilityOutcomeLedger","Derived first-night ledger anchor is invalid");return {...next,firstNightInitializationProvenance:provenance,firstNightAbilityOutcomeLedger:created};
   }
-  if(stateBefore===undefined||stateBefore.firstNightAbilityOutcomeLedger===undefined)return next;
+  if(stateBefore===undefined)return next;
+  if(stateBefore.firstNightAbilityOutcomeLedger===undefined){if(stateBefore.firstNightInitializationProvenance!==undefined||next.firstNightAbilityOutcomeLedger!==undefined||next.firstNightInitializationProvenance!==undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeLedger","Ledger and initialization provenance must be created together by FirstNightInitialized");return next;}
   const existingValidation=validateFirstNightAbilityOutcomeLedgerShape(stateBefore.firstNightAbilityOutcomeLedger);if(!existingValidation.valid)throw new DomainError("InvalidFirstNightAbilityOutcomeLedger",existingValidation.reason);
-  const anchor=stateBefore.firstNightAbilityOutcomeLedger.windowAnchor;if(anchor.gameId!==stateBefore.gameId||anchor.gameId!==event.gameId||anchor.rulesBaselineVersion!==stateBefore.rulesBaselineVersion||anchor.rulesBaselineVersion!==event.rulesBaselineVersion||event.eventSequence<=anchor.startEventSequence)throw new DomainError("InvalidFirstNightAbilityOutcomeLedger","Ledger anchor must match canonical replay identity and exclusive boundary");
+  const provenanceValidation=validateFirstNightInitializationEnvelopeProvenance(stateBefore.firstNightInitializationProvenance);if(!provenanceValidation.valid)throw new DomainError("InvalidFirstNightAbilityOutcomeLedger",provenanceValidation.reason);
+  const provenance=stateBefore.firstNightInitializationProvenance!;const anchor=stateBefore.firstNightAbilityOutcomeLedger.windowAnchor;
+  if(anchor.gameId!==stateBefore.gameId||anchor.gameId!==event.gameId||anchor.rulesBaselineVersion!==stateBefore.rulesBaselineVersion||anchor.rulesBaselineVersion!==event.rulesBaselineVersion||
+    anchor.gameId!==provenance.gameId||anchor.rulesBaselineVersion!==provenance.rulesBaselineVersion||anchor.firstNightInitializedEventId!==provenance.eventId||anchor.startEventSequence!==provenance.eventSequence||
+    event.eventSequence<=anchor.startEventSequence||!sameCanonicalDataValue(next.firstNightAbilityOutcomeLedger,stateBefore.firstNightAbilityOutcomeLedger)||!sameCanonicalDataValue(next.firstNightInitializationProvenance,provenance))
+    throw new DomainError("InvalidFirstNightAbilityOutcomeLedger","Ledger anchor must match its unique initialization envelope provenance and remain immutable");
   const fact=deriveFirstNightAbilityOutcomeFact({stateBefore,event});if(fact===undefined)return next;const factValidation=validateFactAgainstCanonicalSource(stateBefore,event,fact);if(!factValidation.valid)throw new DomainError("InvalidFirstNightAbilityOutcomeFact",factValidation.reason);
   const duplicate=stateBefore.firstNightAbilityOutcomeLedger.facts.find((entry)=>entry.auditFactId===fact.auditFactId);if(duplicate!==undefined)throw new DomainError(sameCanonicalDataValue(duplicate,fact)?"DuplicateFirstNightAbilityOutcomeFactConflict":"DuplicateFirstNightAbilityOutcomeFactConflict","Outcome fact identity already exists");
-  const appended:FirstNightAbilityOutcomeLedger={...stateBefore.firstNightAbilityOutcomeLedger,facts:[...stateBefore.firstNightAbilityOutcomeLedger.facts,fact]};const ledgerValidation=validateFirstNightAbilityOutcomeLedgerShape(appended);if(!ledgerValidation.valid)throw new DomainError("InvalidFirstNightAbilityOutcomeLedger",ledgerValidation.reason);return {...next,firstNightAbilityOutcomeLedger:appended};
+  const appended:FirstNightAbilityOutcomeLedger={...stateBefore.firstNightAbilityOutcomeLedger,facts:[...stateBefore.firstNightAbilityOutcomeLedger.facts,fact]};const ledgerValidation=validateFirstNightAbilityOutcomeLedgerShape(appended);if(!ledgerValidation.valid)throw new DomainError("InvalidFirstNightAbilityOutcomeLedger",ledgerValidation.reason);return {...next,firstNightInitializationProvenance:provenance,firstNightAbilityOutcomeLedger:appended};
 };

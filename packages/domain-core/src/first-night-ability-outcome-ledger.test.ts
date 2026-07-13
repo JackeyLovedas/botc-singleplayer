@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canonicalizeAbilityOutcomeEvidenceReferences,
   cloneFirstNightAbilityOutcomeLedger,
+  applyFirstNightAbilityOutcomeLedger,
   deriveFirstNightAbilityOutcomeFact,
   FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,
@@ -24,6 +25,8 @@ import type { GameState } from "./game-state.js";
 import { seatNumber } from "./player-roster.js";
 
 const taskId = scheduledTaskId("first-night-v1:WITCH_ACTION:seat-01");
+const opportunityIdFor=(taskType:"SNAKE_CHARMER_ACTION"|"WITCH_ACTION"|"DREAMER_ACTION")=>`first-night-v1:${taskType}:seat-01:opportunity-01`;
+const witchOpportunityId=opportunityIdFor("WITCH_ACTION");
 const sourceEventId = eventId("event-20");
 const sourceEvidence = (): SourceEventEvidence => ({
   kind: "SOURCE_EVENT", eventId: sourceEventId, eventType: "WitchDeathPendingMarked",
@@ -39,11 +42,11 @@ const fact = (status: FirstNightAbilityOutcomeFact["outcomeStatus"] = "NORMAL"):
   outcomeStatus: status, causeKind: status === "ABNORMAL" ? "SOURCE_POISONING" : "NO_OTHER_CHARACTER_ABILITY",
   causedByAnotherCharacterAbility: status === "ABNORMAL", evidenceReferences: canonicalizeAbilityOutcomeEvidenceReferences([
     sourceEvidence(), { kind: "TASK", taskId, taskType: "WITCH_ACTION" },
-    { kind: "ACTION_OPPORTUNITY", opportunityId: "opportunity-1", taskId, sourcePlayerId: "player-1", sourceSeatNumber: 1 },
+    { kind: "ACTION_OPPORTUNITY", opportunityVersion:"first-night-action-opportunity-v1",nightNumber:1,opportunityId:witchOpportunityId,opportunityKind:"WITCH_FIRST_NIGHT_ACTION",opportunityStatus:"OPEN",taskId,taskType:"WITCH_ACTION",sourcePlayerId:"player-1",sourceSeatNumber:1,sourceRole:roleSnapshot("witch","MINION"),sourceCharacterStateRevision:1 },
     { kind: "CHARACTER_STATE", characterStateRevision: 1 },
     { kind: "PLAYER_ROLE_AT_REVISION", playerId: "player-1", seatNumber: 1, roleId: "witch", characterType: "MINION", defaultAlignment: "EVIL", characterStateRevision: 1 },
     { kind: "PLAYER_ROLE_AT_REVISION", playerId: "player-2", seatNumber: 2, roleId: "dreamer", characterType: "TOWNSFOLK", defaultAlignment: "GOOD", characterStateRevision: 1 },
-    { kind: "WITCH_PENDING_MARKER", pendingDeathId: "pending-1", sourcePlayerId: "player-1", targetPlayerId: "player-2", taskId, opportunityId: "opportunity-1", terminalEventId: sourceEventId }
+    { kind: "WITCH_PENDING_MARKER", pendingDeathId: "pending-1", sourcePlayerId: "player-1", targetPlayerId: "player-2", taskId, opportunityId: witchOpportunityId, terminalEventId: sourceEventId }
   ]), detectedAtEventSequence: 20
 });
 const ledger = (facts: readonly FirstNightAbilityOutcomeFact[] = [fact()]): FirstNightAbilityOutcomeLedger => ({
@@ -64,7 +67,7 @@ const resolvingState=(facts:readonly FirstNightAbilityOutcomeFact[]):GameState=>
 const evidenceVariants=()=>[
   sourceEvidence(),
   {kind:"TASK",taskId:"task",taskType:"WITCH_ACTION"},
-  {kind:"ACTION_OPPORTUNITY",opportunityId:"opp",taskId:"task",sourcePlayerId:"p1",sourceSeatNumber:1},
+  {kind:"ACTION_OPPORTUNITY",opportunityVersion:"first-night-action-opportunity-v1",nightNumber:1,opportunityId:witchOpportunityId,opportunityKind:"WITCH_FIRST_NIGHT_ACTION",opportunityStatus:"OPEN",taskId,taskType:"WITCH_ACTION",sourcePlayerId:"p1",sourceSeatNumber:1,sourceRole:roleSnapshot("witch","MINION"),sourceCharacterStateRevision:1},
   {kind:"ABILITY_IMPAIRMENT",impairmentId:"imp",impairmentKind:"DRUNK",affectedPlayerId:"p1",affectedSeatNumber:1,affectedRoleId:"witch",sourceKind:"PHILOSOPHER_CHOSEN_DUPLICATE",appliedCharacterStateRevision:1},
   {kind:"ROLE_TENURE",roleTenureId:"tenure",playerId:"p1",seatNumber:1,roleId:"vortox",acquiredCharacterStateRevision:1,statusAtEvaluation:"ACTIVE"},
   {kind:"CHARACTER_STATE",characterStateRevision:1},
@@ -81,9 +84,27 @@ const evidenceVariants=()=>[
 ] as const;
 const terminalState=(taskType:"SNAKE_CHARMER_ACTION"|"DREAMER_ACTION",sourceRole:"snake_charmer"|"dreamer",targetRole:string,targetType:"TOWNSFOLK"|"DEMON"="TOWNSFOLK"):GameState=>{
   const state=resolvingState([]);const task=scheduledTaskId(`first-night-v1:${taskType}:seat-01`);const sourceEntry=state.currentCharacterState!.entries[0]!;const targetEntry=state.currentCharacterState!.entries[1]!;
-  return {...state,currentCharacterState:{revision:1,entries:state.currentCharacterState!.entries.map((entry,index)=>index===0?{...sourceEntry,role:roleSnapshot(sourceRole),currentAlignment:"GOOD" as const}:index===1?{...targetEntry,role:roleSnapshot(targetRole,targetType),currentAlignment:targetType==="DEMON"?"EVIL" as const:"GOOD" as const}:entry)},firstNightTaskPlan:{...state.firstNightTaskPlan!,tasks:[{taskId:task,taskType,taskClass:taskType==="DREAMER_ACTION"?"ROLE_INFORMATION":"ROLE_ACTION",orderKey:{baseOrder:500,insertionOrder:0},source:{kind:"ROLE",playerId:sourceEntry.playerId,seatNumber:sourceEntry.seatNumber,role:roleSnapshot(sourceRole)},status:"PENDING",settlementPolicy:"REEVALUATE_SOURCE_AT_SETTLEMENT"}]},firstNightActionOpportunities:{opportunities:[{opportunityId:"opportunity-1",taskId:task,sourcePlayerId:sourceEntry.playerId,sourceSeatNumber:sourceEntry.seatNumber}]}} as unknown as GameState;
+  const sourceSnapshot=roleSnapshot(sourceRole);const opportunityKind=taskType==="DREAMER_ACTION"?"DREAMER_FIRST_NIGHT_ACTION" as const:"SNAKE_CHARMER_FIRST_NIGHT_ACTION" as const;const visibility=taskType==="DREAMER_ACTION"?{canChooseTarget:true as const,supportedDecisionKinds:["CHOOSE_PLAYER"] as const,targetSchema:"OTHER_NON_TRAVELLER_PLAYER" as const}:{canChooseTarget:true as const,supportedDecisionKinds:["CHOOSE_PLAYER"] as const,targetSchema:"ANY_LIVING_PLAYER" as const};
+  return {...state,currentCharacterState:{revision:1,entries:state.currentCharacterState!.entries.map((entry,index)=>index===0?{...sourceEntry,role:sourceSnapshot,currentAlignment:"GOOD" as const}:index===1?{...targetEntry,role:roleSnapshot(targetRole,targetType),currentAlignment:targetType==="DEMON"?"EVIL" as const:"GOOD" as const}:entry)},firstNightTaskPlan:{...state.firstNightTaskPlan!,tasks:[{taskId:task,taskType,taskClass:taskType==="DREAMER_ACTION"?"ROLE_INFORMATION":"ROLE_ACTION",orderKey:{baseOrder:500,insertionOrder:0},source:{kind:"ROLE",playerId:sourceEntry.playerId,seatNumber:sourceEntry.seatNumber,role:sourceSnapshot},status:"PENDING",settlementPolicy:"REEVALUATE_SOURCE_AT_SETTLEMENT"}]},firstNightActionOpportunities:{opportunities:[{nightNumber:1,opportunityId:opportunityIdFor(taskType),opportunityKind,opportunityStatus:"OPEN",taskId:task,taskType,sourcePlayerId:sourceEntry.playerId,sourceSeatNumber:sourceEntry.seatNumber,sourceRole:sourceSnapshot,sourceCharacterStateRevision:1,visibility}]}} as unknown as GameState;
 };
 const terminalEvent=(eventType:string,payload:Record<string,unknown>)=>({eventId:eventId(`event-${eventType}`),eventType,eventSequence:20,batchId:batchId("batch-terminal"),gameId:gameId("game-1"),gameVersion:20,payload});
+
+const initializedLedgerState=()=>{
+  const source=resolvingState([]);
+  const pre={...source,firstNightAbilityOutcomeLedger:undefined,firstNightInitializationProvenance:undefined} as unknown as GameState;
+  const initialization={...terminalEvent("FirstNightInitialized",{}),eventId:eventId("event-first-night-initialized"),eventSequence:10,rulesBaselineVersion:"Phase One v2.1"} as unknown as Parameters<typeof applyFirstNightAbilityOutcomeLedger>[1];
+  const anchored=applyFirstNightAbilityOutcomeLedger(pre,initialization,pre);
+  return {pre,initialization,anchored};
+};
+const nonTerminalAfter=(overrides:Record<string,unknown>={})=>({...terminalEvent("PhaseTransitioned",{}),eventId:eventId("event-after-anchor"),eventSequence:11,rulesBaselineVersion:"Phase One v2.1",...overrides}) as never;
+const replaceOpportunity=(state:GameState,mutate:(value:NonNullable<GameState["firstNightActionOpportunities"]>["opportunities"][number])=>unknown):GameState=>({
+  ...state,
+  firstNightActionOpportunities:{opportunities:state.firstNightActionOpportunities!.opportunities.map((entry,index)=>index===0?mutate(entry) as never:entry)}
+});
+const deriveDreamer=(state=terminalState("DREAMER_ACTION","dreamer","clockmaker"))=>{
+  const source=state.currentCharacterState!.entries[0]!;const target=state.currentCharacterState!.entries[1]!;
+  return deriveFirstNightAbilityOutcomeFact({stateBefore:state,event:terminalEvent("DreamerInformationDelivered",{taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),opportunityId:opportunityIdFor("DREAMER_ACTION"),sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,goodRole:roleSnapshot("clockmaker"),evilRole:roleSnapshot("witch","MINION"),informationReliability:{kind:"EFFECTIVE"}}) as never});
+};
 
 describe("first-night ability outcome ledger", () => {
   it("round-trips base and gained V2 canonical ability instance identities", () => {
@@ -195,20 +216,95 @@ describe("first-night ability outcome ledger", () => {
   });
 
   it("classifies ineffective Snake Charmer from the historical target quadrant",()=>{
-    const derive=(targetRole:string,targetType:"TOWNSFOLK"|"DEMON")=>{const state=terminalState("SNAKE_CHARMER_ACTION","snake_charmer",targetRole,targetType);const source=state.currentCharacterState!.entries[0]!;const target=state.currentCharacterState!.entries[1]!;const impairmentId="impairment-snake";const withImpairment={...state,abilityImpairments:{impairments:[{impairmentId,kind:"POISONED",sourceKind:"SNAKE_CHARMER_DEMON_HIT",sourcePlayerId:target.playerId,affectedPlayerId:source.playerId,affectedSeatNumber:source.seatNumber,affectedRole:source.role,sourceCharacterStateRevision:1}]}} as unknown as GameState;return deriveFirstNightAbilityOutcomeFact({stateBefore:withImpairment,event:terminalEvent("SnakeCharmerIneffectiveResolved",{taskId:scheduledTaskId("first-night-v1:SNAKE_CHARMER_ACTION:seat-01"),opportunityId:"opportunity-1",sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,sourceImpairmentId:impairmentId,sourceImpairmentKind:"POISONED"}) as never})!;};
+    const derive=(targetRole:string,targetType:"TOWNSFOLK"|"DEMON")=>{const state=terminalState("SNAKE_CHARMER_ACTION","snake_charmer",targetRole,targetType);const source=state.currentCharacterState!.entries[0]!;const target=state.currentCharacterState!.entries[1]!;const impairmentId="impairment-snake";const withImpairment={...state,abilityImpairments:{impairments:[{impairmentId,kind:"POISONED",sourceKind:"SNAKE_CHARMER_DEMON_HIT",sourcePlayerId:target.playerId,affectedPlayerId:source.playerId,affectedSeatNumber:source.seatNumber,affectedRole:source.role,sourceCharacterStateRevision:1}]}} as unknown as GameState;return deriveFirstNightAbilityOutcomeFact({stateBefore:withImpairment,event:terminalEvent("SnakeCharmerIneffectiveResolved",{taskId:scheduledTaskId("first-night-v1:SNAKE_CHARMER_ACTION:seat-01"),opportunityId:opportunityIdFor("SNAKE_CHARMER_ACTION"),sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,sourceImpairmentId:impairmentId,sourceImpairmentKind:"POISONED"}) as never})!;};
     const nonDemon=derive("clockmaker","TOWNSFOLK");expect(nonDemon).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY",causedByAnotherCharacterAbility:false});expect(validateFirstNightAbilityOutcomeFactShape(nonDemon)).toStrictEqual({valid:true});
     const demon=derive("vortox","DEMON");expect(demon).toMatchObject({outcomeStatus:"ABNORMAL",causeKind:"SOURCE_POISONING",causedByAnotherCharacterAbility:true});expect(validateFirstNightAbilityOutcomeFactShape(demon)).toStrictEqual({valid:true});
     const wrongImpairmentKind={...demon,evidenceReferences:demon.evidenceReferences.map((entry)=>entry.kind==="ABILITY_IMPAIRMENT"?{...entry,impairmentKind:"DRUNK" as const}:entry)};expect(validateFirstNightAbilityOutcomeFactShape(wrongImpairmentKind)).toMatchObject({valid:false});
     const missingState=terminalState("SNAKE_CHARMER_ACTION","snake_charmer","clockmaker");const source=missingState.currentCharacterState!.entries[0]!;const target=missingState.currentCharacterState!.entries[1]!;const missing={...missingState,currentCharacterState:{revision:1,entries:missingState.currentCharacterState!.entries.filter((entry)=>entry.playerId!==target.playerId)},abilityImpairments:{impairments:[{impairmentId:"impairment-snake",kind:"POISONED",sourceKind:"SNAKE_CHARMER_DEMON_HIT",sourcePlayerId:target.playerId,affectedPlayerId:source.playerId,affectedSeatNumber:source.seatNumber,affectedRole:source.role,sourceCharacterStateRevision:1}]}} as unknown as GameState;
-    const unresolved=deriveFirstNightAbilityOutcomeFact({stateBefore:missing,event:terminalEvent("SnakeCharmerIneffectiveResolved",{taskId:scheduledTaskId("first-night-v1:SNAKE_CHARMER_ACTION:seat-01"),opportunityId:"opportunity-1",sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,sourceImpairmentId:"impairment-snake",sourceImpairmentKind:"POISONED"}) as never})!;expect(unresolved).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"CAUSE_NOT_PROVEN",causedByAnotherCharacterAbility:false});expect(validateFirstNightAbilityOutcomeFactShape(unresolved)).toStrictEqual({valid:true});
+    const unresolved=deriveFirstNightAbilityOutcomeFact({stateBefore:missing,event:terminalEvent("SnakeCharmerIneffectiveResolved",{taskId:scheduledTaskId("first-night-v1:SNAKE_CHARMER_ACTION:seat-01"),opportunityId:opportunityIdFor("SNAKE_CHARMER_ACTION"),sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,sourceImpairmentId:"impairment-snake",sourceImpairmentKind:"POISONED"}) as never})!;expect(unresolved).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"CAUSE_NOT_PROVEN",causedByAnotherCharacterAbility:false});expect(validateFirstNightAbilityOutcomeFactShape(unresolved)).toStrictEqual({valid:true});
   });
 
   it("classifies Dreamer truth and Vortox applicability without fabricating historical tenure",()=>{
-    const eventFor=(state:GameState,goodRole:string,evilRole:string)=>{const source=state.currentCharacterState!.entries[0]!;const target=state.currentCharacterState!.entries[1]!;return deriveFirstNightAbilityOutcomeFact({stateBefore:state,event:terminalEvent("DreamerInformationDelivered",{taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),opportunityId:"opportunity-1",sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,goodRole:roleSnapshot(goodRole),evilRole:roleSnapshot(evilRole,"MINION"),informationReliability:{kind:"EFFECTIVE"}}) as never})!;};
+    const eventFor=(state:GameState,goodRole:string,evilRole:string)=>{const source=state.currentCharacterState!.entries[0]!;const target=state.currentCharacterState!.entries[1]!;return deriveFirstNightAbilityOutcomeFact({stateBefore:state,event:terminalEvent("DreamerInformationDelivered",{taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),opportunityId:opportunityIdFor("DREAMER_ACTION"),sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,goodRole:roleSnapshot(goodRole),evilRole:roleSnapshot(evilRole,"MINION"),informationReliability:{kind:"EFFECTIVE"}}) as never})!;};
     const normalState=terminalState("DREAMER_ACTION","dreamer","clockmaker");const normal=eventFor(normalState,"clockmaker","witch");expect(normal).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY"});expect(validateFirstNightAbilityOutcomeFactShape(normal)).toStrictEqual({valid:true});const forgedNormal={...normal,evidenceReferences:normal.evidenceReferences.map((entry)=>entry.kind==="DREAMER_DELIVERY"?{...entry,deliveredGoodRoleId:roleId("artist")}:entry)};expect(validateFirstNightAbilityOutcomeFactShape(forgedNormal)).toMatchObject({valid:false});
     const vortoxEntry={...normalState.currentCharacterState!.entries[2]!,role:roleSnapshot("vortox","DEMON"),currentAlignment:"EVIL" as const};const currentVortox={...normalState,currentCharacterState:{revision:1,entries:normalState.currentCharacterState!.entries.map((entry,index)=>index===2?vortoxEntry:entry)}} as GameState;
     const unproven=eventFor(currentVortox,"clockmaker","witch");expect(unproven).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"VORTOX_APPLICABILITY_NOT_PROVEN"});expect(unproven.evidenceReferences).toContainEqual(expect.objectContaining({kind:"PLAYER_ROLE_AT_REVISION",roleId:"vortox"}));expect(validateFirstNightAbilityOutcomeFactShape(unproven)).toStrictEqual({valid:true});
     const proven={...currentVortox,seamstressRoleTenureState:{records:[{roleTenureId:"tenure-vortox",playerId:vortoxEntry.playerId,seatNumber:vortoxEntry.seatNumber,roleId:"vortox",acquiredCharacterStateRevision:1}]}} as unknown as GameState;const constrained=eventFor(proven,"clockmaker","witch");expect(constrained).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"DREAMER_VORTOX_CONSTRAINT_UNRECORDED"});expect(constrained.evidenceReferences).toContainEqual(expect.objectContaining({kind:"ROLE_TENURE",roleId:"vortox",statusAtEvaluation:"ACTIVE"}));expect(validateFirstNightAbilityOutcomeFactShape(constrained)).toStrictEqual({valid:true});
     expect(()=>eventFor(normalState,"artist","witch")).toThrowError(DomainError);
+  });
+
+  describe("Round 4 direct ledger adapter anchor, opportunity, roster, and replay matrix",()=>{
+    it("[R4-08] rejects a base source player mismatch at the ledger adapter",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");
+      expect(()=>deriveDreamer(replaceOpportunity(state,(entry)=>({...entry,sourcePlayerId:playerId("player-2")})))).toThrowError(DomainError);
+    });
+    it("[R4-09] rejects a base source seat mismatch at the ledger adapter",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");
+      expect(()=>deriveDreamer(replaceOpportunity(state,(entry)=>({...entry,sourceSeatNumber:seatNumber(2)})))).toThrowError(DomainError);
+    });
+    it("[R4-10] rejects a base source role mismatch at the ledger adapter",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");
+      expect(()=>deriveDreamer(replaceOpportunity(state,(entry)=>({...entry,sourceRole:roleSnapshot("artist")})))).toThrowError(DomainError);
+    });
+    it("[R4-11] rejects a base task identity mismatch at the ledger adapter",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");
+      expect(()=>deriveDreamer(replaceOpportunity(state,(entry)=>({...entry,taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-02")})))).toThrowError(DomainError);
+    });
+    it("[R4-12] rejects a mismatched action-opportunity identity and embedded seat",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");
+      expect(()=>deriveDreamer(replaceOpportunity(state,(entry)=>({...entry,opportunityId:"first-night-v1:DREAMER_ACTION:seat-02:opportunity-01"})))).toThrowError(DomainError);
+    });
+    it("[R4-38] rejects a source player absent from the canonical roster",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");
+      expect(()=>deriveDreamer({...state,roster:{...state.roster!,entries:state.roster!.entries.slice(1)}})).toThrowError(DomainError);
+    });
+    it("[R4-39] rejects a source roster seat mismatch",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");const entries=state.roster!.entries.map((entry,index)=>index===0?{...entry,seatNumber:seatNumber(12)}:entry);
+      expect(()=>deriveDreamer({...state,roster:{...state.roster!,entries}})).toThrowError(DomainError);
+    });
+    it("[R4-40] rejects a target player absent from the canonical roster",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");const target=state.currentCharacterState!.entries[1]!;
+      expect(()=>deriveDreamer({...state,roster:{...state.roster!,entries:state.roster!.entries.filter((entry)=>entry.playerId!==target.playerId)}})).toThrowError(DomainError);
+    });
+    it("[R4-41] rejects a target roster seat mismatch",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");const target=state.currentCharacterState!.entries[1]!;const entries=state.roster!.entries.map((entry)=>entry.playerId===target.playerId?{...entry,seatNumber:seatNumber(12)}:entry);
+      expect(()=>deriveDreamer({...state,roster:{...state.roster!,entries}})).toThrowError(DomainError);
+    });
+    it("[R4-42] rejects duplicate roster seats",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");const entries=state.roster!.entries.map((entry,index)=>index===1?{...entry,seatNumber:seatNumber(1)}:entry);
+      expect(()=>deriveDreamer({...state,roster:{...state.roster!,entries}})).toThrowError(DomainError);
+    });
+    it("[R4-43] rejects duplicate roster players",()=>{
+      const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");const entries=state.roster!.entries.map((entry,index)=>index===1?{...entry,playerId:playerId("player-1")}:entry);
+      expect(()=>deriveDreamer({...state,roster:{...state.roster!,entries}})).toThrowError(DomainError);
+    });
+    it("[R4-44] accepts the canonical same player and seat binding",()=>{expect(deriveDreamer()).toMatchObject({sourcePlayerId:"player-1",sourceSeatNumber:1});});
+
+    const impairedDreamer=(kind:"DRUNK"|"POISONED",containsTruth:boolean,stateOverride?:GameState)=>{
+      const base=stateOverride??terminalState("DREAMER_ACTION","dreamer","clockmaker");const source=base.currentCharacterState!.entries[0]!;const target=base.currentCharacterState!.entries[1]!;const impairmentId=`impairment-dreamer-${kind.toLowerCase()}`;
+      const state={...base,abilityImpairments:{impairments:[{impairmentId,kind,sourceKind:"PHILOSOPHER_CHOSEN_DUPLICATE",sourcePlayerId:source.playerId,affectedPlayerId:source.playerId,affectedSeatNumber:source.seatNumber,affectedRole:source.role,sourceCharacterStateRevision:1}]}} as unknown as GameState;
+      const event=terminalEvent("DreamerInformationDelivered",{taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),opportunityId:opportunityIdFor("DREAMER_ACTION"),sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,goodRole:roleSnapshot(containsTruth?"clockmaker":"artist"),evilRole:roleSnapshot("witch","MINION"),informationReliability:{kind:"SOURCE_IMPAIRED",sourceImpairmentId:impairmentId,sourceImpairmentKind:kind}}) as never;
+      return {state,event,fact:deriveFirstNightAbilityOutcomeFact({stateBefore:state,event})!};
+    };
+    it("[R4-51] derives effective truthful Dreamer as NORMAL",()=>{expect(deriveDreamer()).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY"});});
+    it("[R4-52] keeps impaired truthful Dreamer information NORMAL",()=>{expect(impairedDreamer("DRUNK",true).fact).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY"});});
+    it("[R4-53] derives DRUNK false Dreamer information as ABNORMAL",()=>{expect(impairedDreamer("DRUNK",false).fact).toMatchObject({outcomeStatus:"ABNORMAL",causeKind:"SOURCE_DRUNKENNESS"});});
+    it("[R4-54] derives POISONED false Dreamer information as ABNORMAL",()=>{expect(impairedDreamer("POISONED",false).fact).toMatchObject({outcomeStatus:"ABNORMAL",causeKind:"SOURCE_POISONING"});});
+    it("[R4-55] rejects a Dreamer impairment identity absent from state",()=>{const value=impairedDreamer("DRUNK",false);expect(()=>deriveFirstNightAbilityOutcomeFact({stateBefore:{...value.state,abilityImpairments:{impairments:[]}},event:value.event})).toThrowError(DomainError);});
+    it("[R4-56] rejects Dreamer impairment-kind evidence conflict",()=>{const value=impairedDreamer("DRUNK",false);const state={...value.state,abilityImpairments:{impairments:value.state.abilityImpairments!.impairments.map((entry)=>({...entry,kind:"POISONED" as const}))}} as unknown as GameState;const derived=deriveFirstNightAbilityOutcomeFact({stateBefore:state,event:value.event})!;expect(validateFirstNightAbilityOutcomeFactShape(derived)).toMatchObject({valid:false});});
+    it("[R4-57] rejects effective Dreamer information whose pair omits target history",()=>{const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");const source=state.currentCharacterState!.entries[0]!;const target=state.currentCharacterState!.entries[1]!;expect(()=>deriveFirstNightAbilityOutcomeFact({stateBefore:state,event:terminalEvent("DreamerInformationDelivered",{taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),opportunityId:opportunityIdFor("DREAMER_ACTION"),sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,goodRole:roleSnapshot("artist"),evilRole:roleSnapshot("witch","MINION"),informationReliability:{kind:"EFFECTIVE"}}) as never})).toThrowError(DomainError);});
+    it("[R4-58] keeps proven Vortox Dreamer evidence UNRESOLVED",()=>{const state=terminalState("DREAMER_ACTION","dreamer","clockmaker");const vortox={...state.currentCharacterState!.entries[2]!,role:roleSnapshot("vortox","DEMON"),currentAlignment:"EVIL" as const};const proven={...state,currentCharacterState:{revision:1,entries:state.currentCharacterState!.entries.map((entry,index)=>index===2?vortox:entry)},seamstressRoleTenureState:{records:[{roleTenureId:"tenure-vortox",playerId:vortox.playerId,seatNumber:vortox.seatNumber,roleId:"vortox",acquiredCharacterStateRevision:1}]}} as unknown as GameState;const source=proven.currentCharacterState!.entries[0]!;const target=proven.currentCharacterState!.entries[1]!;const fact=deriveFirstNightAbilityOutcomeFact({stateBefore:proven,event:terminalEvent("DreamerInformationDelivered",{taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),opportunityId:opportunityIdFor("DREAMER_ACTION"),sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,goodRole:roleSnapshot("artist"),evilRole:roleSnapshot("witch","MINION"),informationReliability:{kind:"EFFECTIVE"}}) as never})!;expect(fact).toMatchObject({outcomeStatus:"UNRESOLVED",causeKind:"DREAMER_VORTOX_CONSTRAINT_UNRECORDED"});});
+    it("[R4-59] rejects conflicting Vortox tenure evidence in a Dreamer fact",()=>{const base=deriveDreamer()!;const forged={...base,outcomeStatus:"UNRESOLVED" as const,causeKind:"DREAMER_VORTOX_CONSTRAINT_UNRECORDED" as const,evidenceReferences:[...base.evidenceReferences,{kind:"ROLE_TENURE" as const,roleTenureId:"tenure-vortox",playerId:"player-3",seatNumber:3,roleId:"vortox",acquiredCharacterStateRevision:1,statusAtEvaluation:"ACTIVE" as const}]};expect(validateFirstNightAbilityOutcomeFactShape(forged)).toMatchObject({valid:false});});
+
+    it("[R4-A1] rejects another legal initialization event ID in the anchor",()=>{const {anchored}=initializedLedgerState();const tampered={...anchored,firstNightAbilityOutcomeLedger:{...anchored.firstNightAbilityOutcomeLedger!,windowAnchor:{...anchored.firstNightAbilityOutcomeLedger!.windowAnchor,firstNightInitializedEventId:eventId("event-other-initialization")}}};expect(()=>applyFirstNightAbilityOutcomeLedger(tampered,nonTerminalAfter(),tampered)).toThrowError(DomainError);});
+    it("[R4-A2] rejects an incremented initialization sequence",()=>{const {anchored}=initializedLedgerState();const tampered={...anchored,firstNightAbilityOutcomeLedger:{...anchored.firstNightAbilityOutcomeLedger!,windowAnchor:{...anchored.firstNightAbilityOutcomeLedger!.windowAnchor,startEventSequence:11}}};expect(()=>applyFirstNightAbilityOutcomeLedger(tampered,nonTerminalAfter({eventSequence:12}),tampered)).toThrowError(DomainError);});
+    it("[R4-A3] rejects a decremented initialization sequence",()=>{const {anchored}=initializedLedgerState();const tampered={...anchored,firstNightAbilityOutcomeLedger:{...anchored.firstNightAbilityOutcomeLedger!,windowAnchor:{...anchored.firstNightAbilityOutcomeLedger!.windowAnchor,startEventSequence:9}}};expect(()=>applyFirstNightAbilityOutcomeLedger(tampered,nonTerminalAfter(),tampered)).toThrowError(DomainError);});
+    it("[R4-A4] rejects another legal game identity in the anchor",()=>{const {anchored}=initializedLedgerState();const tampered={...anchored,firstNightAbilityOutcomeLedger:{...anchored.firstNightAbilityOutcomeLedger!,windowAnchor:{...anchored.firstNightAbilityOutcomeLedger!.windowAnchor,gameId:gameId("game-other")}}};expect(()=>applyFirstNightAbilityOutcomeLedger(tampered,nonTerminalAfter(),tampered)).toThrowError(DomainError);});
+    it("[R4-A5] rejects another nonempty rules baseline in the anchor",()=>{const {anchored}=initializedLedgerState();const tampered={...anchored,firstNightAbilityOutcomeLedger:{...anchored.firstNightAbilityOutcomeLedger!,windowAnchor:{...anchored.firstNightAbilityOutcomeLedger!.windowAnchor,rulesBaselineVersion:"other-baseline"}}};expect(()=>applyFirstNightAbilityOutcomeLedger(tampered,nonTerminalAfter(),tampered)).toThrowError(DomainError);});
+    it("[R4-A6] rejects changed envelope provenance with an unchanged ledger anchor",()=>{const {anchored}=initializedLedgerState();const tampered={...anchored,firstNightInitializationProvenance:{...anchored.firstNightInitializationProvenance!,eventId:eventId("event-other-initialization")}};expect(()=>applyFirstNightAbilityOutcomeLedger(tampered,nonTerminalAfter(),tampered)).toThrowError(DomainError);});
+    it("[R4-A7] rejects a changed anchor with unchanged envelope provenance",()=>{const {anchored}=initializedLedgerState();const tampered={...anchored,firstNightAbilityOutcomeLedger:{...anchored.firstNightAbilityOutcomeLedger!,windowAnchor:{...anchored.firstNightAbilityOutcomeLedger!.windowAnchor,firstNightInitializedEventId:eventId("event-other-initialization")}}};expect(()=>applyFirstNightAbilityOutcomeLedger(tampered,nonTerminalAfter(),tampered)).toThrowError(DomainError);});
+    it("[R4-A8] rejects a ledger that exists before FirstNightInitialized",()=>{const {pre,initialization}=initializedLedgerState();const tampered={...pre,firstNightAbilityOutcomeLedger:ledger([])};expect(()=>applyFirstNightAbilityOutcomeLedger(tampered,initialization,tampered)).toThrowError(DomainError);});
+    it("[R4-A9] rejects duplicate FirstNightInitialized application",()=>{const {anchored}=initializedLedgerState();const duplicate={...terminalEvent("FirstNightInitialized",{}),eventId:eventId("event-duplicate"),eventSequence:11,rulesBaselineVersion:"Phase One v2.1"} as never;expect(()=>applyFirstNightAbilityOutcomeLedger(anchored,duplicate,anchored)).toThrowError(DomainError);});
+    it("[R4-A10] rejects a later event attempting to replace the anchor",()=>{const {anchored}=initializedLedgerState();const replacement={...anchored,firstNightAbilityOutcomeLedger:{...anchored.firstNightAbilityOutcomeLedger!,windowAnchor:{...anchored.firstNightAbilityOutcomeLedger!.windowAnchor,startEventSequence:9}}};expect(()=>applyFirstNightAbilityOutcomeLedger(anchored,nonTerminalAfter(),replacement)).toThrowError(DomainError);});
   });
 });
