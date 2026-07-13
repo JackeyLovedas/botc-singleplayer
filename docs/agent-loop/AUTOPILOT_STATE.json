@@ -1,5 +1,5 @@
 {
-  "status": "HUMAN_BLOCKED",
+  "status": "RUNNING",
   "currentPR": 23,
   "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/23",
   "currentBranch": "phase-3/first-night-ability-outcome-ledger",
@@ -7,17 +7,17 @@
   "reviewedHead": "65121bb4c057e125f0304ff826970ae95427fee3",
   "currentReviewHeadAuthority": "Complete independent round-4 final review covered exact PR #23 product HEAD 65121bb4c057e125f0304ff826970ae95427fee3 and returned CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED",
   "exactHeadCIAuthority": "Product HEAD 65121bb4c057e125f0304ff826970ae95427fee3 had successful push CI 29222876582 and pull-request CI 29222877872, including Ubuntu and Windows",
-  "repairRound": 4,
+  "repairRound": 5,
   "designRound": 3.2,
   "maxDesignRounds": 3,
-  "userContinuationAuthorization": "USER_AUTHORIZED_2B18A_LEDGER_ONLY_FINAL_REPAIR_ROUND_4",
+  "userContinuationAuthorization": "USER_AUTHORIZED_2B18A_GAINED_OPPORTUNITY_REVISION_MICROFIX",
   "rescopeAuthorization": "USER_AUTHORIZED_2B18A_LEDGER_ONLY_RESCOPE_AND_FINAL_REPAIR",
   "scopeMode": "LEDGER_ONLY_RESCOPE",
   "behaviorDesignFrozen": true,
   "finalDesignCompletionRound": true,
   "designRound3_2Scope": "EVIDENCE_CONTRACT_SIMPLIFICATION_ONLY",
   "maxSlices": 1,
-  "maxRepairRounds": 4,
+  "maxRepairRounds": 5,
   "candidateRole": "mathematician",
   "candidateScope": "FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_FOUNDATION",
   "currentDesignPath": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
@@ -47,7 +47,7 @@
   "designReviewRound3Verdict": "RULE_DESIGN_FIX_REQUIRED",
   "ruleReady": true,
   "ruleDesignPass": true,
-  "implementationAuthorized": false,
+  "implementationAuthorized": true,
   "compatibilityDesignVerdict": null,
   "designReviewPath": "docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md",
   "designReviewHash": "8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525",
@@ -64,7 +64,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "Gained-role terminal action opportunity sourceCharacterStateRevision is not required to equal the retained Philosopher task/grant/insertion/original-opportunity/ability-instance revision; existing R4-22 proves only the future-revision upper bound, not an in-range stale mismatch."
+    "Exact-head push and pull-request CI plus one fresh complete independent dual review are pending for the final repair-round-5 feature HEAD."
   ],
   "ruleCoverageStatus": "PARTIAL",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
@@ -462,7 +462,7 @@
     }
   },
   "slice2B18AImplementation": {
-    "status": "HUMAN_BLOCKED_FINAL_REVIEW_REPAIR_ROUND_4",
+    "status": "RUNNING_FINAL_REPAIR_ROUND_5_LOCAL_GATES_PASS",
     "branch": "phase-3/first-night-ability-outcome-ledger",
     "authorizationHead": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
     "authorizationCI": 29193210219,
@@ -553,13 +553,39 @@
         "Narrow complete opportunity-binding claims unless the exact relationship is implemented under new explicit authority."
       ]
     },
+    "gainedOpportunityRevisionMicrofixRound5": {
+      "authorization": "USER_AUTHORIZED_2B18A_GAINED_OPPORTUNITY_REVISION_MICROFIX",
+      "repairRound": 5,
+      "maxRepairRounds": 5,
+      "status": "LOCAL_GATES_PASS_AWAITING_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+      "scopeMode": "LEDGER_ONLY_RESCOPE",
+      "behaviorDesignFrozen": true,
+      "ruleSemanticsChanged": false,
+      "implementedClaims": [
+        "Gained V1/V2 terminal action opportunity sourceCharacterStateRevision equals the canonical Philosopher task, choice, grant, insertion, original-opportunity, and ability-instance revision.",
+        "Canonical gained revision N may be earlier than evaluated revision M.",
+        "Base and EXPLICIT_DOMAIN_INSTANCE action-opportunity semantics remain unchanged."
+      ],
+      "directTests": [
+        "R5-V1-POSITIVE",
+        "R5-V1-STALE",
+        "R5-V1-LATER",
+        "R5-V2-POSITIVE",
+        "R5-V2-STALE",
+        "R5-V2-LATER",
+        "R4-22 future-revision regression"
+      ],
+      "remainingBlockers": [
+        "Exact-head CI and fresh independent dual review are pending."
+      ]
+    },
     "designAuthority": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
     "designSha256": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
     "coverageStatus": "PARTIAL",
     "localValidation": {
-      "focused": "ledger 46/46; rebuild 193/193; application 209/209 passed",
-      "full": "29 files / 980 tests passed",
-      "coverage": "86.34% statements/lines; 81.15% branches; 97.56% functions",
+      "focused": "ledger 46/46; rebuild 196/196; application 212/212 passed",
+      "full": "29 files / 986 tests passed",
+      "coverage": "86.35% statements/lines; 81.21% branches; 97.57% functions",
       "typecheck": "PASS",
       "lint": "PASS"
     },
@@ -602,7 +628,7 @@
     "scopeReviewRound2IntegrityVerdict": "MATCH",
     "scopeReviewRound2Verdict": "SCOPE_REVIEW_PASS",
     "scopeReviewRound2RemainingBlockers": [],
-    "implementationAuthorized": false,
+    "implementationAuthorized": true,
     "previousSixBlockers": [
       "Canonical firstNightTaskInsertions-to-plan, grant, and opportunity chain is incomplete.",
       "V1/V2 generation and task/grant/role-segment binding is incomplete.",
@@ -622,7 +648,7 @@
       "task settlement"
     ]
   },
-  "lastAction": "Archived the complete independent round-4 final review for exact product HEAD 65121bb4c057e125f0304ff826970ae95427fee3 and entered docs-only HUMAN_BLOCKED closeout after both verdicts required fixes.",
-  "lastError": "Final review returned CODE_REVIEW_FIX_REQUIRED and RULE_REVIEW_FIX_REQUIRED because exact gained-role terminal opportunity revision binding and direct in-range stale-revision tests remain absent.",
-  "nextAction": "Stop. No repair round 5, audit comments, merge, tag, 2B18B, or 2B19 is authorized; explicit new user authority is required."
+  "lastAction": "Implemented the user-authorized final gained-opportunity revision microfix and passed typecheck, lint, focused 46/196/212 tests, full 29/986 tests, and coverage gates without changing BOTC semantics or ledger-only scope.",
+  "lastError": null,
+  "nextAction": "Controller precommit inspection, then commit and push the final repair-round-5 feature HEAD; require exact-head CI and one fresh complete independent dual review. No repair round 6, 2B18B, or 2B19."
 }

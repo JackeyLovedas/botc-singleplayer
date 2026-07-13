@@ -4153,6 +4153,111 @@ describe("GameApplicationService", () => {
     expect(afterState?.firstNightTaskProgress?.settlements.map((settlement) => settlement.outcomeType)).toContain("SNAKE_CHARMER_INEFFECTIVE");
   });
 
+  const gainedV2LedgerAdapterFixture = async () => {
+    const { service, commandStore } = makeService();
+    await reachOpenPhilosopherGainedSnakeCharmerOpportunity(service, commandStore);
+    const stateBefore = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const sourceOpportunity = stateBefore?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === philosopherGainedSnakeCharmerOpportunityId
+    );
+    const target = stateBefore?.currentCharacterState?.entries.find((entry) =>
+      entry.role.characterType !== "DEMON" && entry.playerId !== sourceOpportunity?.sourcePlayerId
+    );
+    if (stateBefore === undefined || target === undefined) throw new Error("Expected gained V2 ledger adapter fixture");
+    const result = await service.execute(submitSnakeCharmerActionCommand({
+      commandId: commandId("snake-charmer-v2-ledger-fixture"),
+      expectedGameVersion: stateBefore.gameVersion,
+      payload: {
+        commandType: "SubmitSnakeCharmerAction",
+        taskId: philosopherGainedSnakeCharmerTaskId,
+        opportunityId: philosopherGainedSnakeCharmerOpportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId }
+      }
+    }));
+    expectAcceptedResult(result);
+    const terminal = result.events.find((event) => event.eventType === "SnakeCharmerNoSwapResolved");
+    if (terminal?.eventType !== "SnakeCharmerNoSwapResolved") throw new Error("Expected gained V2 terminal event");
+    return { stateBefore, terminal };
+  };
+  const historicalGainedV2RevisionFixture = async () => {
+    const value = await gainedV2LedgerAdapterFixture();
+    const draft = structuredClone(value.stateBefore) as unknown as Record<string, unknown>;
+    const record = (candidate: unknown): Record<string, unknown> => candidate as Record<string, unknown>;
+    const records = (candidate: unknown): Record<string, unknown>[] => candidate as Record<string, unknown>[];
+    record(draft.currentCharacterState).revision = 3;
+    const gainedTask = records(record(draft.firstNightTaskPlan).tasks).find((entry) =>
+      entry.taskId === philosopherGainedSnakeCharmerTaskId
+    )!;
+    record(gainedTask.source).sourceCharacterStateRevision = 2;
+    records(record(draft.philosopherAbilityChoices).choices)[0]!.sourceCharacterStateRevision = 2;
+    records(record(draft.philosopherGrantedAbilities).abilities)[0]!.sourceCharacterStateRevision = 2;
+    records(record(draft.firstNightTaskInsertions).insertions)[0]!.sourceCharacterStateRevision = 2;
+    for (const opportunity of records(record(draft.firstNightActionOpportunities).opportunities)) {
+      opportunity.sourceCharacterStateRevision = 2;
+    }
+    return {
+      stateBefore: draft as unknown as GameState,
+      terminal: {
+        ...value.terminal,
+        payload: { ...value.terminal.payload, sourceCharacterStateRevision: 2 }
+      }
+    };
+  };
+  const expectHistoricalGainedV2RevisionMismatchRejected = async (terminalRevision: 1 | 3) => {
+    const baseline = await historicalGainedV2RevisionFixture();
+    const baselineFact = deriveFirstNightAbilityOutcomeFact({ stateBefore: baseline.stateBefore, event: baseline.terminal })!;
+    expect(baselineFact).toMatchObject({
+      evaluatedCharacterStateRevision: 3,
+      abilityInstance: { kind: "PHILOSOPHER_GAINED_TASK_V2", sourceCharacterStateRevision: 2 }
+    });
+    const forgedFact = {
+      ...baselineFact,
+      evidenceReferences: baselineFact.evidenceReferences.map((entry) =>
+        entry.kind === "ACTION_OPPORTUNITY" && entry.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+          ? { ...entry, sourceCharacterStateRevision: terminalRevision }
+          : entry
+      )
+    };
+    expect(validateFirstNightAbilityOutcomeFactShape(forgedFact)).toMatchObject({ valid: false });
+    const tampered = structuredClone(baseline.stateBefore);
+    const terminalOpportunity = tampered.firstNightActionOpportunities!.opportunities.find((entry) =>
+      entry.opportunityId === philosopherGainedSnakeCharmerOpportunityId
+    )!;
+    (terminalOpportunity as unknown as Record<string, unknown>).sourceCharacterStateRevision = terminalRevision;
+    expect(terminalOpportunity.sourceCharacterStateRevision).toBeGreaterThan(0);
+    expect(terminalOpportunity.sourceCharacterStateRevision).toBeLessThanOrEqual(tampered.currentCharacterState!.revision);
+    const restored = structuredClone(tampered);
+    (restored.firstNightActionOpportunities!.opportunities.find((entry) =>
+      entry.opportunityId === philosopherGainedSnakeCharmerOpportunityId
+    )! as unknown as Record<string, unknown>).sourceCharacterStateRevision = 2;
+    expect(restored).toStrictEqual(baseline.stateBefore);
+    expect(() => deriveFirstNightAbilityOutcomeFact({ stateBefore: tampered, event: baseline.terminal })).toThrowError(
+      "Gained terminal opportunity revision must equal canonical Philosopher grant revision"
+    );
+  };
+
+  it("[R5-V2-POSITIVE] accepts canonical gained revision N=2 with evaluated revision M=3", async () => {
+    const value = await historicalGainedV2RevisionFixture();
+    const result = deriveFirstNightAbilityOutcomeFact({ stateBefore: value.stateBefore, event: value.terminal });
+    expect(result).toMatchObject({
+      evaluatedCharacterStateRevision: 3,
+      abilityInstance: { kind: "PHILOSOPHER_GAINED_TASK_V2", sourceCharacterStateRevision: 2 }
+    });
+    expect(result?.evidenceReferences).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "PHILOSOPHER_GRANT", sourceCharacterStateRevision: 2 }),
+      expect.objectContaining({ kind: "ACTION_OPPORTUNITY", opportunityKind: "PHILOSOPHER_FIRST_NIGHT_ACTION", sourceCharacterStateRevision: 2 }),
+      expect.objectContaining({ kind: "ACTION_OPPORTUNITY", opportunityKind: "SNAKE_CHARMER_FIRST_NIGHT_ACTION", sourceCharacterStateRevision: 2 })
+    ]));
+  });
+
+  it("[R5-V2-STALE] rejects an in-range stale gained V2 terminal opportunity revision", async () => {
+    await expectHistoricalGainedV2RevisionMismatchRejected(1);
+  });
+
+  it("[R5-V2-LATER] rejects a later in-range gained V2 terminal opportunity revision", async () => {
+    await expectHistoricalGainedV2RevisionMismatchRejected(3);
+  });
+
   it("settles Philosopher gained Snake Charmer non-Demon targets without leaking target role facts", async () => {
     const { service, commandStore } = makeService();
     await reachOpenPhilosopherGainedSnakeCharmerOpportunity(service, commandStore);

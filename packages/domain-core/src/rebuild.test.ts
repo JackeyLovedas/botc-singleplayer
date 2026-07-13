@@ -72,7 +72,10 @@ import {
   validateInitialCurrentCharacterStateSet,
   validateDomainEventStream
 } from "@botc/domain-core";
-import { deriveFirstNightAbilityOutcomeFact } from "./first-night-ability-outcome-ledger.js";
+import {
+  deriveFirstNightAbilityOutcomeFact,
+  validateFirstNightAbilityOutcomeFactShape
+} from "./first-night-ability-outcome-ledger.js";
 import type {
   AnyDomainEventEnvelope,
   AbilityImpairmentSet,
@@ -5776,12 +5779,83 @@ describe("domain event rebuild", () => {
       mutate(draft);
       return { stateBefore: draft as unknown as GameState, terminal };
     };
+    const historicalRevisionFixture = () => {
+      const value = mutateState((draft) => {
+        record(draft.currentCharacterState).revision = 3;
+        const gainedTask = tasks(draft).find((entry) => record(entry.source).kind === "PHILOSOPHER_GAINED_ABILITY")!;
+        record(gainedTask.source).sourceCharacterStateRevision = 2;
+        records(record(draft.philosopherAbilityChoices).choices)[0]!.sourceCharacterStateRevision = 2;
+        grants(draft)[0]!.sourceCharacterStateRevision = 2;
+        const insertion = insertions(draft)[0]!;
+        insertion.sourceCharacterStateRevision = 2;
+        record(insertion.source).sourceCharacterStateRevision = 2;
+        for (const opportunity of opportunities(draft)) opportunity.sourceCharacterStateRevision = 2;
+      });
+      return {
+        stateBefore: value.stateBefore,
+        terminal: {
+          ...value.terminal,
+          payload: { ...value.terminal.payload, sourceCharacterStateRevision: 2 }
+        } as DomainEventEnvelope<"SnakeCharmerNoSwapResolved">
+      };
+    };
+    const expectHistoricalRevisionMismatchRejected = (terminalRevision: 1 | 3) => {
+      const baseline = historicalRevisionFixture();
+      const baselineFact = derive(baseline.stateBefore, baseline.terminal)!;
+      expect(baselineFact).toMatchObject({
+        evaluatedCharacterStateRevision: 3,
+        abilityInstance: { kind: "PHILOSOPHER_GAINED_TASK_V1", sourceCharacterStateRevision: 2 }
+      });
+      const forgedFact = {
+        ...baselineFact,
+        evidenceReferences: baselineFact.evidenceReferences.map((entry) =>
+          entry.kind === "ACTION_OPPORTUNITY" && entry.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+            ? { ...entry, sourceCharacterStateRevision: terminalRevision }
+            : entry
+        )
+      };
+      expect(validateFirstNightAbilityOutcomeFactShape(forgedFact)).toMatchObject({ valid: false });
+      const tampered = structuredClone(baseline.stateBefore);
+      const terminalOpportunity = tampered.firstNightActionOpportunities!.opportunities.find((entry) =>
+        entry.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+      )!;
+      record(terminalOpportunity).sourceCharacterStateRevision = terminalRevision;
+      expect(terminalOpportunity.sourceCharacterStateRevision).toBeGreaterThan(0);
+      expect(terminalOpportunity.sourceCharacterStateRevision).toBeLessThanOrEqual(tampered.currentCharacterState!.revision);
+      const restored = structuredClone(tampered);
+      record(restored.firstNightActionOpportunities!.opportunities.find((entry) =>
+        entry.opportunityKind === "SNAKE_CHARMER_FIRST_NIGHT_ACTION"
+      )!).sourceCharacterStateRevision = 2;
+      expect(restored).toStrictEqual(baseline.stateBefore);
+      expect(() => derive(tampered, baseline.terminal)).toThrowError(
+        "Gained terminal opportunity revision must equal canonical Philosopher grant revision"
+      );
+    };
 
     it("[R4-13] derives the complete accepted gained V1 Snake Charmer chain", () => {
       const { stateBefore, terminal } = fixture();
       const result = derive(stateBefore, terminal);
       expect(result?.abilityInstance).toMatchObject({ kind: "PHILOSOPHER_GAINED_TASK_V1" });
       expect(result?.evidenceReferences.filter((entry) => entry.kind === "ACTION_OPPORTUNITY")).toHaveLength(2);
+    });
+    it("[R5-V1-POSITIVE] accepts canonical gained revision N=2 with evaluated revision M=3", () => {
+      const value = historicalRevisionFixture();
+      const result = derive(value.stateBefore, value.terminal);
+      expect(result).toMatchObject({
+        evaluatedCharacterStateRevision: 3,
+        abilityInstance: { kind: "PHILOSOPHER_GAINED_TASK_V1", sourceCharacterStateRevision: 2 }
+      });
+      expect(result?.evidenceReferences).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: "PHILOSOPHER_GRANT", sourceCharacterStateRevision: 2 }),
+        expect.objectContaining({ kind: "ACTION_OPPORTUNITY", opportunityKind: "PHILOSOPHER_FIRST_NIGHT_ACTION", sourceCharacterStateRevision: 2 }),
+        expect.objectContaining({ kind: "ACTION_OPPORTUNITY", opportunityKind: "SNAKE_CHARMER_FIRST_NIGHT_ACTION", sourceCharacterStateRevision: 2 })
+      ]));
+    });
+    it("[R5-V1-STALE] rejects an in-range stale gained V1 terminal opportunity revision", () => {
+      expectHistoricalRevisionMismatchRejected(1);
+    });
+    it("[R5-V1-LATER] rejects a later in-range gained V1 terminal opportunity revision", () => {
+      expectHistoricalRevisionMismatchRejected(3);
     });
     it("[R4-14] rejects a missing V1 insertion", () => {
       const value = mutateState((draft) => { draft.firstNightTaskInsertions = undefined; });
@@ -5815,7 +5889,7 @@ describe("domain event rebuild", () => {
       const value = mutateState((draft) => { const opportunity=opportunities(draft).find((entry)=>entry.opportunityKind==="SNAKE_CHARMER_FIRST_NIGHT_ACTION")!; opportunity.taskId="first-night-v1:SNAKE_CHARMER_ACTION:seat-10"; });
       expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
     });
-    it("[R4-22] rejects a gained-role opportunity source revision mismatch", () => {
+    it("[R4-22] rejects a future gained-role opportunity revision", () => {
       const value = mutateState((draft) => { const opportunity=opportunities(draft).find((entry)=>entry.opportunityKind==="SNAKE_CHARMER_FIRST_NIGHT_ACTION")!; opportunity.sourceCharacterStateRevision=Number(opportunity.sourceCharacterStateRevision)+1; });
       expect(() => derive(value.stateBefore, value.terminal)).toThrowError(DomainError);
     });
