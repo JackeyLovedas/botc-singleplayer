@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B18B Implementation Status
 
-> Status: `REPAIR_ROUND_1_READY_TO_PUBLISH / UNACCEPTED`. PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) is open on `phase-3/mathematician-first-night-information`. Independent final review of frozen head `8b273eec34502906d6c2aa12031c4065ec97725c` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; the bounded repair is locally complete but not yet committed, pushed, or independently re-reviewed.
+> Status: `REPAIR_ROUND_1_PUBLISHED_CI_PENDING / UNACCEPTED`. PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) is open on `phase-3/mathematician-first-night-information`. Independent final review of frozen head `8b273eec34502906d6c2aa12031c4065ec97725c` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; repair implementation commit `dc9994546c6a95576872d313ec4e46ba3db1a999` is pushed, and current PR-head CI plus independent re-review remain pending.
 
 ## Scope
 
@@ -26,7 +26,7 @@ This slice implements first-night Mathematician count resolution, exact informat
 
 ## Test traceability
 
-The exact 225-item semantic classification and repair-contract mapping are in `docs/implementation/phase-3-slice-2b18b-test-traceability.md`. The original frozen head completed `Original-140` through push CI `29251259989` and PR CI `29251425251`, both `SUCCESS`. The new repair head does not exist until this worktree is committed, so cross-platform evidence must be rerun for that exact future head. The `422`-test Math runner count is supporting evidence, not a substitute for semantic traceability.
+The exact 225-item semantic classification and repair-contract mapping are in `docs/implementation/phase-3-slice-2b18b-test-traceability.md`. The original frozen head completed `Original-140` through push CI `29251259989` and PR CI `29251425251`, both `SUCCESS`. Repair implementation commit `dc999454...` started push CI `29255137488` and PR CI `29255140399`; this docs-only synchronization makes the authoritative candidate the current GitHub PR head, which must receive its own successful checks before review. The `422`-test Math runner count is supporting evidence, not a substitute for semantic traceability.
 
 ## Local validation
 
@@ -37,7 +37,7 @@ The exact 225-item semantic classification and repair-contract mapping are in `d
 - Full test: `30 files / 1408 tests` pass.
 - Coverage: `30 files / 1408 tests` pass; `86.78%` statements/lines, `81.52%` branches, `97.78%` functions.
 - `git diff --check`, strict control JSON parse, root-export/internal resolver, caller-state/caller-ledger resolver, nondeterminism, raw JSON semantic comparison, sparse-array, and deleted-test scans: pass. State-shape validator name matches and dense-array-guarded `.every` calls were reviewed as non-resolver/non-sparse false positives.
-- `Original-140` is complete for reviewed head `8b273eec...` through successful exact-head push/PR CI. The future repair commit requires its own push/PR CI and does not inherit that result.
+- `Original-140` is complete for reviewed head `8b273eec...` through successful exact-head push/PR CI. The current GitHub PR head requires its own push/PR CI and does not inherit that result.
 
 ## Rule coverage
 

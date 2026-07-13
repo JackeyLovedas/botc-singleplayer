@@ -1,12 +1,13 @@
 {
-  "status": "REPAIR_ROUND_1_READY_TO_PUBLISH",
+  "status": "REPAIR_ROUND_1_PUBLISHED_CI_PENDING",
   "currentPR": 24,
   "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/24",
   "currentBranch": "phase-3/mathematician-first-night-information",
   "currentSlice": "2B18B",
   "reviewedHead": "8b273eec34502906d6c2aa12031c4065ec97725c",
-  "currentReviewHeadAuthority": "Independent final review of PR #24 head 8b273eec34502906d6c2aa12031c4065ec97725c returned CODE_REVIEW_FIX_REQUIRED and RULE_REVIEW_FIX_REQUIRED; repair round 1 is locally complete and uncommitted.",
-  "exactHeadCIAuthority": "Prior reviewed head 8b273eec34502906d6c2aa12031c4065ec97725c passed push CI 29251259989 and pull-request CI 29251425251. The future repair head requires fresh exact-head CI.",
+  "currentReviewHeadAuthority": "Independent final review of PR #24 head 8b273eec34502906d6c2aa12031c4065ec97725c returned CODE_REVIEW_FIX_REQUIRED and RULE_REVIEW_FIX_REQUIRED. Repair implementation commit dc9994546c6a95576872d313ec4e46ba3db1a999 is pushed; no new independent verdict exists.",
+  "exactHeadCIAuthority": "Prior reviewed head 8b273eec34502906d6c2aa12031c4065ec97725c passed push CI 29251259989 and pull-request CI 29251425251. Repair implementation commit dc9994546c6a95576872d313ec4e46ba3db1a999 started runs 29255137488 and 29255140399. Final authority is the current GitHub PR head after this docs-only synchronization and its own fresh exact-head CI.",
+  "currentFeatureHead": "READ_FROM_GITHUB_PR_24_AT_REVIEW_TIME",
   "repairRound": 1,
   "designRound": 3,
   "maxDesignRounds": 3,
@@ -61,16 +62,19 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": true,
-  "implementationStatus": "REPAIR_ROUND_1_READY_TO_PUBLISH_UNACCEPTED",
+  "implementationStatus": "REPAIR_ROUND_1_PUBLISHED_CI_PENDING_UNACCEPTED",
   "implementationBranch": "phase-3/mathematician-first-night-information",
-  "implementationCommit": "8b273eec34502906d6c2aa12031c4065ec97725c",
-  "repairCandidateCommit": null,
+  "implementationCommit": "dc9994546c6a95576872d313ec4e46ba3db1a999",
+  "repairCandidateCommit": "dc9994546c6a95576872d313ec4e46ba3db1a999",
   "finalReviewRepairRound1Path": "docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md",
   "finalReviewRepairRound1Hash": "6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157",
   "finalReviewRepairRound1CodeVerdict": "CODE_REVIEW_FIX_REQUIRED",
   "finalReviewRepairRound1RuleVerdict": "RULE_REVIEW_FIX_REQUIRED",
   "priorProductHeadPushCI": 29251259989,
   "priorProductHeadPullRequestCI": 29251425251,
+  "repairImplementationPushCI": 29255137488,
+  "repairImplementationPullRequestCI": 29255140399,
+  "repairImplementationCIStatusAtDocsSync": "IN_PROGRESS",
   "implementationLocalValidation": {
     "typecheck": "PASS",
     "targetedLint": "PASS",
@@ -84,7 +88,7 @@
   },
   "implementationTraceabilityPath": "docs/implementation/phase-3-slice-2b18b-test-traceability.md",
   "implementationTraceabilityStatus": "224_LOCAL_DIRECT_OR_INTEGRATION_0_LOCAL_GAPS",
-  "implementationExternalGate": "ORIGINAL_140_PASSED_FOR_PRIOR_HEAD_8B273EEC_REPAIR_HEAD_EXACT_CI_PENDING",
+  "implementationExternalGate": "ORIGINAL_140_PASSED_FOR_PRIOR_HEAD_8B273EEC_CURRENT_PR_HEAD_EXACT_CI_PENDING",
   "controllerPrePublishAudit": {
     "status": "SUPERSEDED_BY_FINAL_REVIEW_FIX_REQUIRED",
     "scope": "PRODUCTION_TEST_SCOPE_IMMUTABLE_AUTHORITY_ROOT_EXPORT",
@@ -108,8 +112,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "Commit and push repair round 1 to existing PR #24.",
-    "Require fresh exact-head push and pull-request CI for the repair commit.",
+    "Require fresh exact-head push and pull-request CI for the current GitHub PR head.",
     "Require one new complete independent final review with both pass verdicts and no blockers."
   ],
   "ruleCoverageStatus": "PARTIAL",
@@ -779,5 +782,5 @@
   "startedAt": "2026-07-13T06:57:55.960Z",
   "lastAction": "Controller pre-publish audit passed production, tests, scope, immutable-authority, and root-export checks after all 224 local authority IDs and complete local gates passed.",
   "lastError": null,
-  "nextAction": "Run final diff/control checks, create one attributed repair commit, push normally to existing PR #24, update the PR body, and require fresh exact-head push/PR CI before independent final review. Do not merge or start 2B19."
+  "nextAction": "Wait for both CI workflows on the current GitHub PR head, verify exact-head success, update and re-read the PR body, then request one new complete independent final review. Do not merge or start 2B19."
 }

@@ -2,7 +2,7 @@
 
 ## Active rule-ready candidate slice
 
-- Control status: `REPAIR_ROUND_1_READY_TO_PUBLISH / UNACCEPTED`.
+- Control status: `REPAIR_ROUND_1_PUBLISHED_CI_PENDING / UNACCEPTED`.
 - Current branch: `phase-3/mathematician-first-night-information`.
 - Current PR: [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24), open and non-draft.
 - Current slice: `2B18B`.
@@ -31,10 +31,10 @@
 - Round 3 freezes three noninterchangeable trust layers, a per-event replay adapter, exact terminal-event union closure, and 225 mandatory numbered tests.
 - Completed slices now include `2B18A`.
 - Published implementation head `8b273eec34502906d6c2aa12031c4065ec97725c` completed exact-head push CI `29251259989` and PR CI `29251425251`, both `SUCCESS`. Independent final review returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`. The complete immutable report is `docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md`, SHA-256 `6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157`.
-- Repair round is `1 / 2`. The sole writer has locally closed all ten reviewed blocker groups without changing rule semantics, Option A, V1 order, public resolver boundaries, or scope. The repair remains uncommitted and has no new exact-head CI or independent verdict.
-- Final repair local gates pass: Math `422 / 422`; focused `8 files / 1020 tests`; full and coverage `30 files / 1408 tests`; coverage `86.78%` statements/lines, `81.52%` branches, `97.78%` functions; typecheck and full lint pass. All 224 locally executable authority IDs and the repair-contract regressions are covered. `Original-140` passed for the old frozen head but must be rerun for the future repair head.
+- Repair round is `1 / 2`. The sole writer closed all ten reviewed blocker groups without changing rule semantics, Option A, V1 order, public resolver boundaries, or scope. Repair implementation commit `dc9994546c6a95576872d313ec4e46ba3db1a999` is pushed to PR #24; no new independent verdict exists.
+- Final repair local gates pass: Math `422 / 422`; focused `8 files / 1020 tests`; full and coverage `30 files / 1408 tests`; coverage `86.78%` statements/lines, `81.52%` branches, `97.78%` functions; typecheck and full lint pass. All 224 locally executable authority IDs and the repair-contract regressions are covered. `Original-140` passed for the old frozen head but must be rerun for the current GitHub PR head. Initial `dc999454...` push/PR runs are `29255137488 / 29255140399`; this docs-only synchronization requires fresh runs for the resulting current PR head.
 - Exact semantic traceability is `docs/implementation/phase-3-slice-2b18b-test-traceability.md`; runner count remains supporting evidence only and does not replace exact authority mapping.
-- Next action is final diff/control validation, then one attributed repair commit and normal push to the existing PR #24. Require fresh exact-head push/PR CI before a new independent final review. Do not create another branch, merge, or start 2B19.
+- Next action is to wait for both CI workflows on the current GitHub PR head, verify exact-head success, finalize the PR body externally, then request one new complete independent final review. Do not create another branch, merge, or start 2B19.
 - Slice 2B19 has not started and remains prohibited.
 
 ## Accepted Slice 2B18A
@@ -54,7 +54,7 @@
 - Accepted: canonical derived first-night ability outcome ledger foundation, initialization-envelope replay provenance, supported terminal adapters, BASE/V1/V2 identities, and exact gained V1/V2 terminal action-opportunity revision binding to the Philosopher task/choice/grant/insertion/original-opportunity/ability-instance chain.
 - Accepted historical behavior: canonical gained revision `N` may precede evaluated revision `M`; direct V1/V2 positives use `N=2 < M=3`, and stale, later, and future mismatches are rejected.
 - Local unaccepted implementation now includes the internal complete-stream decision, exact count/candidate selection, delivery, terminal fact, settlement, trusted replay, and accepted-stream private count projection. No public caller-state or caller-ledger truth resolver exists.
-- Remaining completion work is repair commit/push to existing PR #24, fresh frozen exact-head cross-platform CI, and a new complete independent review; accepted main remains the 2B18A boundary until merge.
+- Remaining completion work is fresh frozen exact-head cross-platform CI for the current PR head and a new complete independent review; accepted main remains the 2B18A boundary until merge.
 - Mathematician remains `PARTIAL`; no role is `COMPLETE`.
 
 ## CI provenance

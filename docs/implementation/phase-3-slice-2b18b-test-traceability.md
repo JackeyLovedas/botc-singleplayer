@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B18B Test Traceability
 
-> Status: final-review repair round 1 local semantic coverage and all local gates are complete. `Original-140` passed on the prior frozen head; the future repair head still requires its own exact-head Ubuntu/Windows CI and independent final code/rule review.
+> Status: final-review repair round 1 is published and local semantic coverage/all local gates are complete. `Original-140` passed on the prior frozen head; the current GitHub PR head still requires its own exact-head Ubuntu/Windows CI and independent final code/rule review.
 
 Authority: `docs/implementation/phase-3-slice-2b18b-design-round-3.md` (`066be05f5ee8c0fccb83b00fd8471e439e7e6d2c8c8366af8c86aebceac0a792`). Repair authority: the ten blocker groups in `docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md` (`6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157`). Primary suite: `packages/application/src/mathematician-information.test.ts` (`422 / 422` at this checkpoint).
 
@@ -8,12 +8,12 @@ Authority: `docs/implementation/phase-3-slice-2b18b-design-round-3.md` (`066be05
 
 | Authority set | Total | Local DIRECT/INTEGRATION | External gate | Uncovered |
 |---|---:|---:|---:|---:|
-| Original | 140 | 139 | 1 (`Original-140`, prior head passed; repair head pending) | 0 |
+| Original | 140 | 139 | 1 (`Original-140`, prior head passed; current PR-head CI pending) | 0 |
 | Option A | 45 | 45 | 0 | 0 |
 | Round 3 | 40 | 40 | 0 | 0 |
 | Total | 225 | 224 | 1 | 0 |
 
-`Original-140` passed for prior frozen head `8b273eec34502906d6c2aa12031c4065ec97725c` through exact-head push CI `29251259989` and PR CI `29251425251`, both `SUCCESS`. It is not inherited by the not-yet-created repair head; that future head requires fresh exact-head CI. All other authority IDs have a named direct assertion or accepted-stream/application/replay integration assertion. Runner count is supporting evidence only and is not substituted for this semantic mapping.
+`Original-140` passed for prior frozen head `8b273eec34502906d6c2aa12031c4065ec97725c` through exact-head push CI `29251259989` and PR CI `29251425251`, both `SUCCESS`. Repair implementation commit `dc9994546c6a95576872d313ec4e46ba3db1a999` is pushed; its initial push/PR runs are `29255137488 / 29255140399`. Because this docs-only synchronization changes the branch again, final authority is always the current GitHub PR head and its own fresh exact-head checks. All other authority IDs have a named direct assertion or accepted-stream/application/replay integration assertion. Runner count is supporting evidence only and is not substituted for this semantic mapping.
 
 ## Final-review repair round 1 mapping
 
@@ -57,7 +57,7 @@ The repair changes no authority count: it closes implementation/test gaps identi
 - `112–115`: Vortox fact cause, effective-false rejection, missing evidence rejection, and `[VORTOX-115]` Vortox truth rejection.
 - `116–131`: temporal fact visibility, exact source/AI/other-viewer projection non-leakage, stored tamper rejection, and later role/ledger non-recomputation.
 - `132–139`: accepted 2B18A, Clockmaker, Dreamer, Seamstress, Cerenovus, Snake Charmer, Philosopher V1/V2, and projection regression suites.
-- `140`: `PASSED_PRIOR_HEAD`; push/PR CI `29251259989 / 29251425251` proved frozen-head Ubuntu/Windows equality for `8b273eec...`. Fresh CI remains required for the future repair head.
+- `140`: `PASSED_PRIOR_HEAD`; push/PR CI `29251259989 / 29251425251` proved frozen-head Ubuntu/Windows equality for `8b273eec...`. Fresh CI remains required for the current PR head.
 
 ## Option A 1–45
 
@@ -91,4 +91,4 @@ The repair changes no authority count: it closes implementation/test gaps identi
 
 ## Completion boundary
 
-Local semantic and repair-contract gaps: `0`. External gate: fresh exact-head CI for the future repair commit; `Original-140` is already complete only for the prior reviewed head. Coverage status remains `PARTIAL`; this traceability does not implement other-night behavior, general poison production, Travellers, free Storyteller choice, broader character/alignment/death interactions, or general dawn reset. The prior verdicts remain `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; no new pass verdict, merge authorization, or acceptance is claimed here.
+Local semantic and repair-contract gaps: `0`. External gate: fresh exact-head CI for the current GitHub PR head; `Original-140` is already complete only for the prior reviewed head. Coverage status remains `PARTIAL`; this traceability does not implement other-night behavior, general poison production, Travellers, free Storyteller choice, broader character/alignment/death interactions, or general dawn reset. The prior verdicts remain `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; no new pass verdict, merge authorization, or acceptance is claimed here.
