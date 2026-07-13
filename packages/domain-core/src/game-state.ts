@@ -32,6 +32,7 @@ import type {
   SeamstressTargetChoiceSet
 } from "./seamstress.js";
 import type { ClockmakerInformationSet } from "./clockmaker.js";
+import type { MathematicianImpairmentEventProvenanceState, MathematicianInformationState } from "./mathematician.js";
 import type {
   EvilTwinInformationDeliveredPayload,
   EvilTwinPairSet
@@ -97,6 +98,8 @@ export type GameState = {
   readonly dreamerTargetChoices?: DreamerTargetChoiceSet;
   readonly dreamerInformation?: DreamerInformationSet;
   readonly clockmakerInformation?: ClockmakerInformationSet;
+  readonly mathematicianInformation?: MathematicianInformationState;
+  readonly mathematicianImpairmentEventProvenance?: MathematicianImpairmentEventProvenanceState;
   readonly seamstressTargetChoices?: SeamstressTargetChoiceSet;
   readonly seamstressAbilitySpends?: SeamstressAbilitySpendSet;
   readonly seamstressInformation?: SeamstressInformationSet;

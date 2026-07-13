@@ -42,7 +42,12 @@ import {
   isSeamstressActionOpportunityV2,
   sameRoleSetupSnapshot,
   validateSeamstressActionOpportunityV2Shape
+  ,MATHEMATICIAN_KNOWLEDGE_MODEL_VERSION
+  ,MATHEMATICIAN_INFORMATION_STAGE
+  ,validateMathematicianInformationDeliveredPayloadShape
+  ,formatFirstNightAbilityOutcomeFactId
 } from "@botc/domain-core";
+import { replayTrustedMathematicianProjectionStream } from "../../domain-core/src/mathematician-internal.js";
 import type {
   GameState,
   InitialPrivateKnowledgeEstablishedPayload,
@@ -58,6 +63,8 @@ import type {
   CerenovusMadnessMarkedPayload,
   SeamstressInformationDeliveredPayload,
   ClockmakerInformationDeliveredPayload
+  ,MathematicianInformationDeliveredPayload
+  ,AnyDomainEventEnvelope
 } from "@botc/domain-core";
 
 type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishedPayload & {
@@ -193,7 +200,7 @@ const requireDeliveredEvilTwinInformationIsSettled = (state: GameState): void =>
   const pair = state.evilTwinPairs?.pairs[0];
   if (pair !== undefined) {
     const settlement = findSettlement(state, pair.taskId, pair.taskType);
-    const pairValidation = validateStoredEvilTwinPairEstablished(pair, {
+    const pairValidation = validateStoredEvilTwinPairEstablished({ rulesBaselineVersion: state.rulesBaselineVersion, ...pair }, {
       firstNightTaskPlan: state.firstNightTaskPlan,
       settlement
     });
@@ -500,10 +507,46 @@ const requireDeliveredClockmakerInformationIsSettled = (
   return validated;
 };
 
+const requireDeliveredMathematicianInformationIsSettled = (
+  state: GameState
+): readonly MathematicianInformationDeliveredPayload[] => {
+  const settlements = storedFirstNightSettlements(state).filter((entry) =>
+    isPlainRecord(entry) && entry.outcomeType === "MATHEMATICIAN_INFORMATION_DELIVERED"
+  );
+  const information = state.mathematicianInformation;
+  if (information === undefined && settlements.length === 0) return [];
+  if (information === undefined || !isDenseCanonicalArray(information.deliveries) ||
+      state.firstNightAbilityOutcomeLedger === undefined) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Mathematician projection requires delivery, settlement, and outcome ledger state");
+  }
+  if (information.deliveries.length !== settlements.length) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Mathematician deliveries and settlements must form one-to-one chains");
+  }
+  const ids = new Set<string>(); const tasks = new Set<string>(); const instances = new Set<string>();
+  for (const delivery of information.deliveries) {
+    const shape = validateMathematicianInformationDeliveredPayloadShape(delivery);
+    const settlement = settlements.find((candidate) => isPlainRecord(candidate) && candidate.taskId === delivery.taskId);
+    const fact = state.firstNightAbilityOutcomeLedger.facts.find((candidate) =>
+      candidate.sourceEventSequence === delivery.deliveryEventSequence && candidate.abilityTaskId === delivery.taskId &&
+      candidate.abilityInstance.abilityInstanceId === delivery.resolvingAbilityInstanceId
+    );
+    if (!shape.valid || !isPlainRecord(settlement) || settlement.taskType !== "MATHEMATICIAN_INFORMATION" ||
+        settlement.outcomeType !== "MATHEMATICIAN_INFORMATION_DELIVERED" ||
+        settlement.characterStateRevision !== delivery.settlementCharacterStateRevision || fact === undefined ||
+        fact.auditFactId !== formatFirstNightAbilityOutcomeFactId(fact.sourceEventId) ||
+        ids.has(delivery.deliveryId) || tasks.has(delivery.taskId) || instances.has(delivery.resolvingAbilityInstanceId)) {
+      throw new DomainError("PrivateKnowledgeUnavailable", shape.valid ? "Mathematician stored delivery/fact/settlement chain is invalid" : shape.reason);
+    }
+    ids.add(delivery.deliveryId); tasks.add(delivery.taskId); instances.add(delivery.resolvingAbilityInstanceId);
+  }
+  return information.deliveries;
+};
+
 const deliveredStagesForViewer = (
   state: GameState,
   viewerPlayerId: PlayerId,
-  clockmakerDeliveries: readonly ClockmakerInformationDeliveredPayload[]
+  clockmakerDeliveries: readonly ClockmakerInformationDeliveredPayload[],
+  mathematicianDeliveries: readonly MathematicianInformationDeliveredPayload[]
 ): readonly PlayerPrivateKnowledgeStage[] => {
   const stages: PlayerPrivateKnowledgeStage[] = [INITIAL_OWN_CHARACTER_KNOWLEDGE_STAGE];
   if (state.minionInformation?.entries.some((entry) => entry.recipientPlayerId === viewerPlayerId) === true) {
@@ -534,13 +577,22 @@ const deliveredStagesForViewer = (
     stages.push(SEAMSTRESS_INFORMATION_STAGE);
   }
 
+  if (mathematicianDeliveries.some((delivery) => delivery.sourceContract.sourcePlayerId === viewerPlayerId)) {
+    stages.push(MATHEMATICIAN_INFORMATION_STAGE);
+  }
+
   return stages;
 };
 
-export const buildPlayerPrivateKnowledgeView = (
+const buildPlayerPrivateKnowledgeViewInternal = (
   state: GameState,
-  viewerPlayerId: PlayerId
+  viewerPlayerId: PlayerId,
+  allowMathematicianHistory: boolean
 ): PlayerPrivateKnowledgeView => {
+  if (!allowMathematicianHistory && (state.mathematicianInformation !== undefined ||
+      state.firstNightTaskProgress?.settlements.some((entry) => entry.outcomeType === "MATHEMATICIAN_INFORMATION_DELIVERED") === true)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate Mathematician history; use the accepted-event-stream builder");
+  }
   const privateKnowledge = requireInitialPrivateKnowledge(state);
   const rosterEntry = state.roster?.entries.find((entry) => entry.playerId === viewerPlayerId);
   if (rosterEntry === undefined) {
@@ -557,6 +609,7 @@ export const buildPlayerPrivateKnowledgeView = (
   requireDeliveredEvilTwinInformationIsSettled(state);
   const cerenovusInstructions = requireDeliveredCerenovusMadnessInstructionsAreSettled(state);
   const clockmakerDeliveries = requireDeliveredClockmakerInformationIsSettled(state);
+  const mathematicianDeliveries = allowMathematicianHistory ? requireDeliveredMathematicianInformationIsSettled(state) : [];
   requireDeliveredDreamerInformationIsSettled(state);
   requireDeliveredSeamstressInformationIsSettled(state);
   const knownDemon = deliveredTeamEntries.find((entry) => entry.kind === "DEMON_IDENTITY");
@@ -572,11 +625,16 @@ export const buildPlayerPrivateKnowledgeView = (
   const viewerClockmakerDeliveries = clockmakerDeliveries.filter((delivery) => delivery.sourceContract.sourcePlayerId === viewerPlayerId);
   if (viewerClockmakerDeliveries.length > 1) throw new DomainError("PrivateKnowledgeUnavailable", "Viewer has multiple Clockmaker deliveries in the supported first-night history");
   const clockmakerDelivery = viewerClockmakerDeliveries[0];
+  const viewerMathematicianDeliveries = mathematicianDeliveries.filter((delivery) =>
+    delivery.sourceContract.sourcePlayerId === viewerPlayerId
+  );
+  if (viewerMathematicianDeliveries.length > 1) throw new DomainError("PrivateKnowledgeUnavailable", "Viewer has multiple Mathematician deliveries in the supported first-night history");
+  const mathematicianDelivery = viewerMathematicianDeliveries[0];
   const seamstressDeliveries = state.seamstressInformation?.deliveries.filter((delivery) =>
     delivery.sourcePlayerId === viewerPlayerId
   ) ?? [];
 
-  const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId, clockmakerDeliveries);
+  const deliveredKnowledgeStages = deliveredStagesForViewer(state, viewerPlayerId, clockmakerDeliveries, mathematicianDeliveries);
   const hasTeamKnowledge = deliveredKnowledgeStages.some((stage) =>
     stage === MINION_INFORMATION_KNOWLEDGE_STAGE ||
     stage === DEMON_INFORMATION_KNOWLEDGE_STAGE
@@ -624,6 +682,12 @@ export const buildPlayerPrivateKnowledgeView = (
           clockmakerInformation: { distance: clockmakerDelivery.selectedDistance },
           clockmakerKnowledgeModelVersion: CLOCKMAKER_INFORMATION_MODEL_VERSION
         }),
+    ...(mathematicianDelivery === undefined
+      ? {}
+      : {
+          mathematicianInformation: { count: mathematicianDelivery.selectedCount },
+          mathematicianKnowledgeModelVersion: MATHEMATICIAN_KNOWLEDGE_MODEL_VERSION
+        }),
     ...(seamstressDeliveries.length === 0
       ? {}
       : {
@@ -650,7 +714,26 @@ export const buildPlayerPrivateKnowledgeView = (
   return view;
 };
 
+export const buildPlayerPrivateKnowledgeView = (
+  state: GameState,
+  viewerPlayerId: PlayerId
+): PlayerPrivateKnowledgeView => buildPlayerPrivateKnowledgeViewInternal(state, viewerPlayerId, false);
+
+export const buildPlayerPrivateKnowledgeViewFromAcceptedEventStream = (
+  events: readonly AnyDomainEventEnvelope[],
+  viewerPlayerId: PlayerId
+): PlayerPrivateKnowledgeView => buildPlayerPrivateKnowledgeViewInternal(
+  replayTrustedMathematicianProjectionStream(events).finalState,
+  viewerPlayerId,
+  true
+);
+
 export const buildAiPrivateKnowledgeView = (
   state: GameState,
   viewerPlayerId: PlayerId
 ): PlayerPrivateKnowledgeView => buildPlayerPrivateKnowledgeView(state, viewerPlayerId);
+
+export const buildAiPrivateKnowledgeViewFromAcceptedEventStream = (
+  events: readonly AnyDomainEventEnvelope[],
+  viewerPlayerId: PlayerId
+): PlayerPrivateKnowledgeView => buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(events, viewerPlayerId);

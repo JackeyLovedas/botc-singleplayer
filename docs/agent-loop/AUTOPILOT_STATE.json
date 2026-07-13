@@ -1,13 +1,14 @@
 {
-  "status": "RUNNING",
-  "currentPR": null,
-  "currentPRUrl": null,
-  "currentBranch": "main",
+  "status": "REPAIR_ROUND_1_PUBLISHED_CI_PENDING",
+  "currentPR": 24,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/24",
+  "currentBranch": "phase-3/mathematician-first-night-information",
   "currentSlice": "2B18B",
-  "reviewedHead": "0c5cac5d2db26d70a7983bf3790637c9f2ac252d",
-  "currentReviewHeadAuthority": "Independent Round 3 rule-design review of exact main HEAD 0c5cac5d2db26d70a7983bf3790637c9f2ac252d.",
-  "exactHeadCIAuthority": "GitHub Actions run 29243702315 completed successfully for exact headSha 0c5cac5d2db26d70a7983bf3790637c9f2ac252d.",
-  "repairRound": 0,
+  "reviewedHead": "8b273eec34502906d6c2aa12031c4065ec97725c",
+  "currentReviewHeadAuthority": "Independent final review of PR #24 head 8b273eec34502906d6c2aa12031c4065ec97725c returned CODE_REVIEW_FIX_REQUIRED and RULE_REVIEW_FIX_REQUIRED. Repair implementation commit dc9994546c6a95576872d313ec4e46ba3db1a999 is pushed; no new independent verdict exists.",
+  "exactHeadCIAuthority": "Prior reviewed head 8b273eec34502906d6c2aa12031c4065ec97725c passed push CI 29251259989 and pull-request CI 29251425251. Repair implementation commit dc9994546c6a95576872d313ec4e46ba3db1a999 started runs 29255137488 and 29255140399. Final authority is the current GitHub PR head after this docs-only synchronization and its own fresh exact-head CI.",
+  "currentFeatureHead": "READ_FROM_GITHUB_PR_24_AT_REVIEW_TIME",
+  "repairRound": 1,
   "designRound": 3,
   "maxDesignRounds": 3,
   "userContinuationAuthorization": "USER_AUTHORIZED_2B18B_DESIGN_ROUND_3_REPLAY_ADAPTER",
@@ -61,6 +62,39 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": true,
+  "implementationStatus": "REPAIR_ROUND_1_PUBLISHED_CI_PENDING_UNACCEPTED",
+  "implementationBranch": "phase-3/mathematician-first-night-information",
+  "implementationCommit": "dc9994546c6a95576872d313ec4e46ba3db1a999",
+  "repairCandidateCommit": "dc9994546c6a95576872d313ec4e46ba3db1a999",
+  "finalReviewRepairRound1Path": "docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md",
+  "finalReviewRepairRound1Hash": "6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157",
+  "finalReviewRepairRound1CodeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+  "finalReviewRepairRound1RuleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+  "priorProductHeadPushCI": 29251259989,
+  "priorProductHeadPullRequestCI": 29251425251,
+  "repairImplementationPushCI": 29255137488,
+  "repairImplementationPullRequestCI": 29255140399,
+  "repairImplementationCIStatusAtDocsSync": "IN_PROGRESS",
+  "implementationLocalValidation": {
+    "typecheck": "PASS",
+    "targetedLint": "PASS",
+    "mathematicianSuite": "422 / 422 tests passed",
+    "focused": "8 files / 1020 tests passed",
+    "fullLint": "PASS",
+    "fullTest": "30 files / 1408 tests passed",
+    "coverage": "30 files / 1408 tests passed; 86.78% statements/lines; 81.52% branches; 97.78% functions",
+    "diffCheck": "PASS",
+    "forbiddenScans": "PASS"
+  },
+  "implementationTraceabilityPath": "docs/implementation/phase-3-slice-2b18b-test-traceability.md",
+  "implementationTraceabilityStatus": "224_LOCAL_DIRECT_OR_INTEGRATION_0_LOCAL_GAPS",
+  "implementationExternalGate": "ORIGINAL_140_PASSED_FOR_PRIOR_HEAD_8B273EEC_CURRENT_PR_HEAD_EXACT_CI_PENDING",
+  "controllerPrePublishAudit": {
+    "status": "SUPERSEDED_BY_FINAL_REVIEW_FIX_REQUIRED",
+    "scope": "PRODUCTION_TEST_SCOPE_IMMUTABLE_AUTHORITY_ROOT_EXPORT",
+    "localAuthorityCoverage": "224_LOCAL_DIRECT_OR_INTEGRATION_0_LOCAL_GAPS",
+    "localGates": "Prior pre-publish audit only; repair-round-1 local gates are Math 422/422, focused 8 files/1020, full and coverage 30 files/1408, 86.78% statements/lines, 81.52% branches, 97.78% functions"
+  },
   "compatibilityDesignVerdict": null,
   "designReviewPath": "docs/implementation/phase-3-slice-2b18b-design-review-round-3.md",
   "designReviewHash": "a05dc0fcb3959863448620b7b064bef38db95987b92708475f77eaf34e308808",
@@ -77,7 +111,10 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [],
+  "remainingBlockers": [
+    "Require fresh exact-head push and pull-request CI for the current GitHub PR head.",
+    "Require one new complete independent final review with both pass verdicts and no blockers."
+  ],
   "ruleCoverageStatus": "PARTIAL",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "approvedOverrideIds": [
@@ -743,7 +780,7 @@
     "implementationAuthorized": true
   },
   "startedAt": "2026-07-13T06:57:55.960Z",
-  "lastAction": "Archived the complete independent Round 3 rule-design review verbatim; it returned RULE_DESIGN_PASS, closed both historical Round 2 blockers, and authorized bounded implementation.",
+  "lastAction": "Controller pre-publish audit passed production, tests, scope, immutable-authority, and root-export checks after all 224 local authority IDs and complete local gates passed.",
   "lastError": null,
-  "nextAction": "The sole writer may create one 2B18B feature branch and implement the reviewed Round 3 authority with all 225 mandatory tests. Do not start 2B19."
+  "nextAction": "Wait for both CI workflows on the current GitHub PR head, verify exact-head success, update and re-read the PR body, then request one new complete independent final review. Do not merge or start 2B19."
 }

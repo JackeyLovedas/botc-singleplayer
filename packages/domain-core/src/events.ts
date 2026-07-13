@@ -43,6 +43,7 @@ import type {
   SeamstressTargetsChosenPayload
 } from "./seamstress.js";
 import type { ClockmakerInformationDeliveredPayload } from "./clockmaker.js";
+import type { MathematicianInformationDeliveredPayload } from "./mathematician.js";
 import type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
@@ -95,6 +96,7 @@ export type {
   SeamstressTargetsChosenPayload
 } from "./seamstress.js";
 export type { ClockmakerInformationDeliveredPayload } from "./clockmaker.js";
+export type { MathematicianInformationDeliveredPayload } from "./mathematician.js";
 export type {
   DemonInformationDeliveredPayload,
   MinionInformationDeliveredPayload
@@ -220,6 +222,7 @@ export type DomainEventPayloadByType = {
   readonly DreamerTargetChosen: DreamerTargetChosenPayload;
   readonly DreamerInformationDelivered: DreamerInformationDeliveredPayload;
   readonly ClockmakerInformationDelivered: ClockmakerInformationDeliveredPayload;
+  readonly MathematicianInformationDelivered: MathematicianInformationDeliveredPayload;
   readonly EvilTwinPairEstablished: EvilTwinPairEstablishedPayload;
   readonly EvilTwinInformationDelivered: EvilTwinInformationDeliveredPayload;
   readonly MinionInformationDelivered: MinionInformationDeliveredPayload;

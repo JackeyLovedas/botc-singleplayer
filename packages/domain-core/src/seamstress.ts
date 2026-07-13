@@ -62,7 +62,7 @@ export type SeamstressResolutionCapabilityDeclaredPayload = {
   readonly deliveryPolicyVersion: typeof SEAMSTRESS_DELIVERY_POLICY_VERSION;
 };
 
-export type SeamstressRelevantRoleId = "cerenovus" | "philosopher" | "seamstress" | "vortox";
+export type SeamstressRelevantRoleId = "cerenovus" | "mathematician" | "philosopher" | "seamstress" | "vortox";
 
 export type RoleTenureStartFact =
   | {
@@ -164,7 +164,7 @@ const isDenseArray = (value: readonly unknown[]): boolean => {
 };
 const seatText = (seatNumber: SeatNumber): string => String(seatNumber).padStart(2, "0");
 const isRelevantRoleId = (value: unknown): value is SeamstressRelevantRoleId =>
-  value === "cerenovus" || value === "philosopher" || value === "seamstress" || value === "vortox";
+  value === "cerenovus" || value === "mathematician" || value === "philosopher" || value === "seamstress" || value === "vortox";
 
 const CAPABILITY_KEYS = [
   "alignmentModel",
@@ -232,7 +232,7 @@ export type ParseRoleTenureIdResult =
 
 export const parseRoleTenureId = (value: unknown): ParseRoleTenureIdResult => {
   if (typeof value !== "string") return { valid: false, reason: "RoleTenureId must be a string" };
-  const match = /^role-tenure-v1:seat-(0[1-9]|1[0-2]):role-(cerenovus|philosopher|seamstress|vortox):acquired-revision-([1-9][0-9]*)$/.exec(value);
+  const match = /^role-tenure-v1:seat-(0[1-9]|1[0-2]):role-(cerenovus|mathematician|philosopher|seamstress|vortox):acquired-revision-([1-9][0-9]*)$/.exec(value);
   if (match === null) return { valid: false, reason: "RoleTenureId does not match the canonical grammar" };
   const parsed = {
     seatNumber: Number(match[1]) as SeatNumber,

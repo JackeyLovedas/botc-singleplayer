@@ -28,6 +28,7 @@ import { validatePlayerRoster } from "./player-roster.js";
 import type { SeatNumber } from "./player-roster.js";
 import type { RoleSetupSnapshot } from "./setup-types.js";
 import { sameRoleSetupSnapshot } from "./setup-types.js";
+import type { MathematicianCount, MathematicianDeliveryId } from "./mathematician.js";
 
 export const FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION = "first-night-ability-outcome-ledger-v1" as const;
 export const FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION = "first-night-ability-outcome-audit-v1" as const;
@@ -67,7 +68,8 @@ export type TerminalAbilityOutcomeEventType =
   | "SnakeCharmerNoSwapResolved" | "SnakeCharmerIneffectiveResolved" | "SnakeCharmerDemonSwapApplied"
   | "EvilTwinInformationDelivered" | "WitchDeathPendingMarked" | "WitchIneffectiveResolved"
   | "CerenovusMadnessInstructionDelivered" | "ClockmakerInformationDelivered"
-  | "DreamerInformationDelivered" | "SeamstressInformationDelivered";
+  | "DreamerInformationDelivered" | "SeamstressInformationDelivered"
+  | "MathematicianInformationDelivered";
 
 export type SourceEventEvidence = { readonly kind: "SOURCE_EVENT"; readonly eventId: EventId; readonly eventType: TerminalAbilityOutcomeEventType; readonly eventSequence: number; readonly batchId: BatchId };
 export type TaskEvidence = { readonly kind: "TASK"; readonly taskId: ScheduledTaskId; readonly taskType: FirstNightTaskType };
@@ -98,7 +100,8 @@ export type CerenovusInstructionEvidence = { readonly kind: "CERENOVUS_INSTRUCTI
 export type ClockmakerDeliveryEvidence = { readonly kind: "CLOCKMAKER_DELIVERY"; readonly deliveryId: string; readonly taskId: ScheduledTaskId; readonly sourcePlayerId: PlayerId; readonly ruleCorrectDistance: number; readonly selectedDistance: number; readonly terminalEventId: EventId };
 export type DreamerDeliveryEvidence = { readonly kind: "DREAMER_DELIVERY"; readonly taskId: ScheduledTaskId; readonly opportunityId: ActionOpportunityId; readonly sourcePlayerId: PlayerId; readonly targetPlayerId: PlayerId; readonly deliveredGoodRoleId: RoleId; readonly deliveredEvilRoleId: RoleId; readonly terminalEventId: EventId };
 export type SeamstressDeliveryEvidence = { readonly kind: "SEAMSTRESS_DELIVERY"; readonly taskId: ScheduledTaskId; readonly opportunityId: ActionOpportunityId; readonly sourcePlayerId: PlayerId; readonly firstTargetPlayerId: PlayerId; readonly secondTargetPlayerId: PlayerId; readonly ruleCorrectAnswer: "YES" | "NO"; readonly deliveredAnswer: "YES" | "NO"; readonly terminalEventId: EventId };
-export type AbilityOutcomeEvidenceReference = SourceEventEvidence | TaskEvidence | ActionOpportunityEvidence | AbilityImpairmentEvidence | RoleTenureEvidence | CharacterStateEvidence | PlayerRoleAtRevisionEvidence | PhilosopherGrantEvidence | FirstNightTaskInsertionEvidence | SnakeCharmerResolutionEvidence | EvilTwinPairEvidence | WitchPendingMarkerEvidence | CerenovusInstructionEvidence | ClockmakerDeliveryEvidence | DreamerDeliveryEvidence | SeamstressDeliveryEvidence;
+export type MathematicianDeliveryEvidence = { readonly kind: "MATHEMATICIAN_DELIVERY"; readonly deliveryId: MathematicianDeliveryId; readonly taskId: ScheduledTaskId; readonly sourcePlayerId: PlayerId; readonly trueCount: MathematicianCount; readonly selectedCount: MathematicianCount; readonly terminalEventId: EventId };
+export type AbilityOutcomeEvidenceReference = SourceEventEvidence | TaskEvidence | ActionOpportunityEvidence | AbilityImpairmentEvidence | RoleTenureEvidence | CharacterStateEvidence | PlayerRoleAtRevisionEvidence | PhilosopherGrantEvidence | FirstNightTaskInsertionEvidence | SnakeCharmerResolutionEvidence | EvilTwinPairEvidence | WitchPendingMarkerEvidence | CerenovusInstructionEvidence | ClockmakerDeliveryEvidence | DreamerDeliveryEvidence | SeamstressDeliveryEvidence | MathematicianDeliveryEvidence;
 
 export type AbilityOutcomeStatus = "NORMAL" | "ABNORMAL" | "UNRESOLVED" | "PENDING_TRIGGER";
 export type AbilityOutcomeCause = "NO_OTHER_CHARACTER_ABILITY" | "SOURCE_DRUNKENNESS" | "SOURCE_POISONING" | "VORTOX_FALSE_INFORMATION" | "DREAMER_VORTOX_CONSTRAINT_UNRECORDED" | "VORTOX_APPLICABILITY_NOT_PROVEN" | "CAUSE_NOT_PROVEN";
@@ -203,7 +206,7 @@ const validateFirstNightInitializationEnvelopeProvenance=(value:unknown):Outcome
 
 const evidenceKeys: Record<AbilityOutcomeEvidenceReference["kind"], readonly string[]> = {
   SOURCE_EVENT: ["kind","eventId","eventType","eventSequence","batchId"], TASK: ["kind","taskId","taskType"], ACTION_OPPORTUNITY: ["kind","opportunityVersion","nightNumber","opportunityId","opportunityKind","opportunityStatus","taskId","taskType","sourcePlayerId","sourceSeatNumber","sourceRole","sourceCharacterStateRevision"],
-  ABILITY_IMPAIRMENT: ["kind","impairmentId","impairmentKind","affectedPlayerId","affectedSeatNumber","affectedRoleId","sourceKind","appliedCharacterStateRevision"], ROLE_TENURE: ["kind","roleTenureId","playerId","seatNumber","roleId","acquiredCharacterStateRevision","statusAtEvaluation"], CHARACTER_STATE: ["kind","characterStateRevision"], PLAYER_ROLE_AT_REVISION: ["kind","playerId","seatNumber","roleId","characterType","defaultAlignment","characterStateRevision"], PHILOSOPHER_GRANT: ["kind","grantId","philosopherOpportunityId","sourcePlayerId","sourceSeatNumber","chosenRoleId","sourceCharacterStateRevision"], FIRST_NIGHT_TASK_INSERTION: ["kind","taskId","philosopherOpportunityId","sourcePlayerId","sourceSeatNumber","chosenRoleId","generation"], SNAKE_CHARMER_RESOLUTION: ["kind","resolutionKind","taskId","opportunityId","targetPlayerId","targetSeatNumber","targetRoleIdAtResolution","resolutionEventId"], EVIL_TWIN_PAIR: ["kind","pairId","evilTwinPlayerId","goodTwinPlayerId","establishedTaskId","informationDeliveryEventId"], WITCH_PENDING_MARKER: ["kind","pendingDeathId","sourcePlayerId","targetPlayerId","taskId","opportunityId","terminalEventId"], CERENOVUS_INSTRUCTION: ["kind","deliveryId","choiceId","markerId","sourcePlayerId","targetPlayerId","chosenRoleId","taskId","terminalEventId"], CLOCKMAKER_DELIVERY: ["kind","deliveryId","taskId","sourcePlayerId","ruleCorrectDistance","selectedDistance","terminalEventId"], DREAMER_DELIVERY: ["kind","taskId","opportunityId","sourcePlayerId","targetPlayerId","deliveredGoodRoleId","deliveredEvilRoleId","terminalEventId"], SEAMSTRESS_DELIVERY: ["kind","taskId","opportunityId","sourcePlayerId","firstTargetPlayerId","secondTargetPlayerId","ruleCorrectAnswer","deliveredAnswer","terminalEventId"]
+  ABILITY_IMPAIRMENT: ["kind","impairmentId","impairmentKind","affectedPlayerId","affectedSeatNumber","affectedRoleId","sourceKind","appliedCharacterStateRevision"], ROLE_TENURE: ["kind","roleTenureId","playerId","seatNumber","roleId","acquiredCharacterStateRevision","statusAtEvaluation"], CHARACTER_STATE: ["kind","characterStateRevision"], PLAYER_ROLE_AT_REVISION: ["kind","playerId","seatNumber","roleId","characterType","defaultAlignment","characterStateRevision"], PHILOSOPHER_GRANT: ["kind","grantId","philosopherOpportunityId","sourcePlayerId","sourceSeatNumber","chosenRoleId","sourceCharacterStateRevision"], FIRST_NIGHT_TASK_INSERTION: ["kind","taskId","philosopherOpportunityId","sourcePlayerId","sourceSeatNumber","chosenRoleId","generation"], SNAKE_CHARMER_RESOLUTION: ["kind","resolutionKind","taskId","opportunityId","targetPlayerId","targetSeatNumber","targetRoleIdAtResolution","resolutionEventId"], EVIL_TWIN_PAIR: ["kind","pairId","evilTwinPlayerId","goodTwinPlayerId","establishedTaskId","informationDeliveryEventId"], WITCH_PENDING_MARKER: ["kind","pendingDeathId","sourcePlayerId","targetPlayerId","taskId","opportunityId","terminalEventId"], CERENOVUS_INSTRUCTION: ["kind","deliveryId","choiceId","markerId","sourcePlayerId","targetPlayerId","chosenRoleId","taskId","terminalEventId"], CLOCKMAKER_DELIVERY: ["kind","deliveryId","taskId","sourcePlayerId","ruleCorrectDistance","selectedDistance","terminalEventId"], DREAMER_DELIVERY: ["kind","taskId","opportunityId","sourcePlayerId","targetPlayerId","deliveredGoodRoleId","deliveredEvilRoleId","terminalEventId"], SEAMSTRESS_DELIVERY: ["kind","taskId","opportunityId","sourcePlayerId","firstTargetPlayerId","secondTargetPlayerId","ruleCorrectAnswer","deliveredAnswer","terminalEventId"], MATHEMATICIAN_DELIVERY: ["kind","deliveryId","taskId","sourcePlayerId","trueCount","selectedCount","terminalEventId"]
 };
 const ranks = Object.fromEntries(Object.keys(evidenceKeys).map((key, i) => [key, i])) as Record<string, number>;
 const primary = (e: AbilityOutcomeEvidenceReference): string => {
@@ -213,8 +216,28 @@ const primary = (e: AbilityOutcomeEvidenceReference): string => {
     case "PLAYER_ROLE_AT_REVISION":return `${e.playerId}@revision-${e.characterStateRevision}`;case "PHILOSOPHER_GRANT":return e.grantId;
     case "FIRST_NIGHT_TASK_INSERTION":return `${e.generation.kind}:${e.taskId}`;case "SNAKE_CHARMER_RESOLUTION":return e.resolutionEventId;
     case "EVIL_TWIN_PAIR":return e.pairId;case "WITCH_PENDING_MARKER":return e.pendingDeathId;case "CERENOVUS_INSTRUCTION":return e.deliveryId;
-    case "CLOCKMAKER_DELIVERY":return e.deliveryId;case "DREAMER_DELIVERY":return e.terminalEventId;case "SEAMSTRESS_DELIVERY":return e.terminalEventId;
+    case "CLOCKMAKER_DELIVERY":return e.deliveryId;case "DREAMER_DELIVERY":return e.terminalEventId;case "SEAMSTRESS_DELIVERY":return e.terminalEventId;case "MATHEMATICIAN_DELIVERY":return e.deliveryId;
   }
+};
+type ParsedMathematicianEvidenceIdentity =
+  | { readonly valid: true; readonly taskId: ScheduledTaskId; readonly generation: "BASE" | "V1" | "V2" }
+  | { readonly valid: false };
+const parseMathematicianEvidenceIdentity = (
+  deliveryIdValue: unknown,
+  taskIdValue: unknown
+): ParsedMathematicianEvidenceIdentity => {
+  if (!nonEmpty(deliveryIdValue) || !nonEmpty(taskIdValue) ||
+      deliveryIdValue !== `mathematician-delivery-v1:${taskIdValue}`) return { valid: false };
+  if (/^first-night-v1:MATHEMATICIAN_INFORMATION:seat-(0[1-9]|1[0-2])$/.test(taskIdValue)) {
+    return { valid: true, taskId: taskIdValue as ScheduledTaskId, generation: "BASE" };
+  }
+  if (/^first-night-v1:PHILOSOPHER_GAINED:MATHEMATICIAN_INFORMATION:seat-(0[1-9]|1[0-2]):from-mathematician$/.test(taskIdValue)) {
+    return { valid: true, taskId: taskIdValue as ScheduledTaskId, generation: "V1" };
+  }
+  if (/^first-night-v2:PHILOSOPHER_GAINED:MATHEMATICIAN_INFORMATION:seat-(0[1-9]|1[0-2]):from-mathematician$/.test(taskIdValue)) {
+    return { valid: true, taskId: taskIdValue as ScheduledTaskId, generation: "V2" };
+  }
+  return { valid: false };
 };
 export const validateAbilityOutcomeEvidenceReferenceShape = (value: unknown): OutcomeLedgerValidationResult => {
   try {
@@ -246,6 +269,11 @@ export const validateAbilityOutcomeEvidenceReferenceShape = (value: unknown): Ou
       case "CLOCKMAKER_DELIVERY":valid=id(e.deliveryId)&&id(e.taskId)&&id(e.sourcePlayerId)&&typeof e.ruleCorrectDistance==="number"&&Number.isSafeInteger(e.ruleCorrectDistance)&&typeof e.selectedDistance==="number"&&Number.isSafeInteger(e.selectedDistance)&&id(e.terminalEventId);break;
       case "DREAMER_DELIVERY":valid=id(e.taskId)&&id(e.opportunityId)&&id(e.sourcePlayerId)&&id(e.targetPlayerId)&&id(e.deliveredGoodRoleId)&&id(e.deliveredEvilRoleId)&&e.deliveredGoodRoleId!==e.deliveredEvilRoleId&&id(e.terminalEventId);break;
       case "SEAMSTRESS_DELIVERY":valid=id(e.taskId)&&id(e.opportunityId)&&id(e.sourcePlayerId)&&id(e.firstTargetPlayerId)&&id(e.secondTargetPlayerId)&&e.firstTargetPlayerId!==e.secondTargetPlayerId&&["YES","NO"].includes(e.ruleCorrectAnswer)&&["YES","NO"].includes(e.deliveredAnswer)&&id(e.terminalEventId);break;
+      case "MATHEMATICIAN_DELIVERY": {
+        const parsed = parseMathematicianEvidenceIdentity(e.deliveryId, e.taskId);
+        valid=parsed.valid&&id(e.sourcePlayerId)&&typeof e.trueCount==="number"&&Number.isSafeInteger(e.trueCount)&&e.trueCount>=0&&e.trueCount<=11&&typeof e.selectedCount==="number"&&Number.isSafeInteger(e.selectedCount)&&e.selectedCount>=0&&e.selectedCount<=11&&id(e.terminalEventId);
+        break;
+      }
     }
     return valid?{valid:true}:fail("Evidence reference fields are not canonical");
   } catch { return fail("Evidence reference must fail closed"); }
@@ -255,9 +283,52 @@ export const cloneAbilityOutcomeEvidenceReference = (value: AbilityOutcomeEviden
   if (!validation.valid) throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence", validation.reason);
   return clone(value);
 };
+const mathematicianEvidenceSlot = (
+  evidence: AbilityOutcomeEvidenceReference,
+  delivery: MathematicianDeliveryEvidence
+): number => {
+  switch (evidence.kind) {
+    case "SOURCE_EVENT": return 1;
+    case "TASK": return 2;
+    case "ACTION_OPPORTUNITY": return 3;
+    case "CHARACTER_STATE": return 4;
+    case "PLAYER_ROLE_AT_REVISION":
+      if (evidence.playerId === delivery.sourcePlayerId) return 5;
+      if (evidence.roleId === "vortox") return 10;
+      break;
+    case "ROLE_TENURE":
+      if (evidence.playerId === delivery.sourcePlayerId) return 6;
+      if (evidence.roleId === "vortox") return 11;
+      break;
+    case "PHILOSOPHER_GRANT": return 7;
+    case "FIRST_NIGHT_TASK_INSERTION": return 8;
+    case "ABILITY_IMPAIRMENT":
+      if (evidence.affectedPlayerId === delivery.sourcePlayerId && evidence.affectedRoleId === "mathematician") return 9;
+      if (evidence.affectedRoleId === "vortox") return 12;
+      break;
+    case "MATHEMATICIAN_DELIVERY": return 13;
+    default:
+      break;
+  }
+  throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence", "Mathematician evidence does not fit the frozen 13-slot matrix");
+};
 export const canonicalizeAbilityOutcomeEvidenceReferences = (values: unknown): readonly AbilityOutcomeEvidenceReference[] => {
   if (!isDenseCanonicalArray(values)) throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence", "Evidence must be a dense canonical array");
-  const sorted = values.map((v) => { const result = validateAbilityOutcomeEvidenceReferenceShape(v); if (!result.valid) throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence", result.reason); return clone(v as AbilityOutcomeEvidenceReference); }).sort((a,b) => (ranks[a.kind]!-ranks[b.kind]!) || (primary(a)<primary(b)?-1:primary(a)>primary(b)?1:0));
+  const captured = values.map((v) => { const result = validateAbilityOutcomeEvidenceReferenceShape(v); if (!result.valid) throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence", result.reason); return clone(v as AbilityOutcomeEvidenceReference); });
+  const deliveries = captured.filter((entry): entry is MathematicianDeliveryEvidence => entry.kind === "MATHEMATICIAN_DELIVERY");
+  const sorted = deliveries.length === 0
+    ? captured.sort((a,b) => (ranks[a.kind]!-ranks[b.kind]!) || (primary(a)<primary(b)?-1:primary(a)>primary(b)?1:0))
+    : (() => {
+        if (deliveries.length !== 1) throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence", "Mathematician evidence requires one delivery identity");
+        const delivery = deliveries[0]!;
+        const slotted = captured.map((entry) => ({ entry, slot: mathematicianEvidenceSlot(entry, delivery) }));
+        const seenSlots = new Set<number>();
+        for (const item of slotted) {
+          if (seenSlots.has(item.slot)) throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence", "Mathematician evidence slots cannot repeat");
+          seenSlots.add(item.slot);
+        }
+        return slotted.sort((left, right) => left.slot - right.slot).map((item) => item.entry);
+      })();
   const out: AbilityOutcomeEvidenceReference[]=[];
   for (const e of sorted) { const prior=out.at(-1); if (prior?.kind===e.kind && primary(prior)===primary(e)) { if (!sameCanonicalDataValue(prior,e)) throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Conflicting evidence primary identity"); } else out.push(e); }
   return out;
@@ -272,7 +343,7 @@ export const validateFirstNightAbilityOutcomeFactShape = (value: unknown): Outco
     const canonical=canonicalizeAbilityOutcomeEvidenceReferences(value.evidenceReferences);if(!sameCanonicalDataValue(canonical,value.evidenceReferences))return fail("Evidence must already be canonical");
     const sources=canonical.filter((entry)=>entry.kind==="SOURCE_EVENT");const tasks=canonical.filter((entry)=>entry.kind==="TASK");
     const fact=value as unknown as FirstNightAbilityOutcomeFact;const sourceEvent=sources[0];
-    const terminalTaskTypes:Record<TerminalAbilityOutcomeEventType,FirstNightTaskType>={PhilosopherActionDeferred:"PHILOSOPHER_ACTION",PhilosopherAbilityGranted:"PHILOSOPHER_ACTION",SnakeCharmerNoSwapResolved:"SNAKE_CHARMER_ACTION",SnakeCharmerIneffectiveResolved:"SNAKE_CHARMER_ACTION",SnakeCharmerDemonSwapApplied:"SNAKE_CHARMER_ACTION",EvilTwinInformationDelivered:"EVIL_TWIN_SETUP",WitchDeathPendingMarked:"WITCH_ACTION",WitchIneffectiveResolved:"WITCH_ACTION",CerenovusMadnessInstructionDelivered:"CERENOVUS_ACTION",ClockmakerInformationDelivered:"CLOCKMAKER_INFORMATION",DreamerInformationDelivered:"DREAMER_ACTION",SeamstressInformationDelivered:"SEAMSTRESS_ACTION"};
+    const terminalTaskTypes:Record<TerminalAbilityOutcomeEventType,FirstNightTaskType>={PhilosopherActionDeferred:"PHILOSOPHER_ACTION",PhilosopherAbilityGranted:"PHILOSOPHER_ACTION",SnakeCharmerNoSwapResolved:"SNAKE_CHARMER_ACTION",SnakeCharmerIneffectiveResolved:"SNAKE_CHARMER_ACTION",SnakeCharmerDemonSwapApplied:"SNAKE_CHARMER_ACTION",EvilTwinInformationDelivered:"EVIL_TWIN_SETUP",WitchDeathPendingMarked:"WITCH_ACTION",WitchIneffectiveResolved:"WITCH_ACTION",CerenovusMadnessInstructionDelivered:"CERENOVUS_ACTION",ClockmakerInformationDelivered:"CLOCKMAKER_INFORMATION",DreamerInformationDelivered:"DREAMER_ACTION",SeamstressInformationDelivered:"SEAMSTRESS_ACTION",MathematicianInformationDelivered:"MATHEMATICIAN_INFORMATION"};
     if(sources.length!==1||tasks.length!==1||sourceEvent?.eventId!==fact.sourceEventId||sourceEvent.eventSequence!==fact.sourceEventSequence||sourceEvent.batchId!==fact.sourceBatchId||tasks[0]?.taskId!==fact.abilityTaskId||tasks[0].taskType!==terminalTaskTypes[sourceEvent.eventType]||fact.abilityInstance.taskId!==fact.abilityTaskId||fact.abilityInstance.sourcePlayerId!==fact.sourcePlayerId||fact.abilityInstance.sourceSeatNumber!==fact.sourceSeatNumber||fact.abilityInstance.abilityRoleId!==fact.abilityRoleId)return fail("Fact source/task/instance cross-link is invalid");
     const kinds=(kind:AbilityOutcomeEvidenceReference["kind"]):AbilityOutcomeEvidenceReference[]=>canonical.filter((entry)=>entry.kind===kind);const character=kinds("CHARACTER_STATE");const roles=kinds("PLAYER_ROLE_AT_REVISION") as PlayerRoleAtRevisionEvidence[];const opportunities=kinds("ACTION_OPPORTUNITY") as ActionOpportunityEvidence[];
     const sourceRole=roles.find((role)=>role.playerId===fact.sourcePlayerId&&role.seatNumber===fact.sourceSeatNumber&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);if(character.length!==1||(character[0] as CharacterStateEvidence).characterStateRevision!==fact.evaluatedCharacterStateRevision||sourceRole===undefined||(fact.abilityInstance.kind!=="PHILOSOPHER_GAINED_TASK_V1"&&fact.abilityInstance.kind!=="PHILOSOPHER_GAINED_TASK_V2"&&sourceRole.roleId!==fact.abilityRoleId))return fail("Fact historical source evidence is incomplete");
@@ -296,17 +367,46 @@ export const validateFirstNightAbilityOutcomeFactShape = (value: unknown): Outco
       case "ClockmakerInformationDelivered":setValid=kinds("CLOCKMAKER_DELIVERY").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ABILITY_IMPAIRMENT","ROLE_TENURE","CLOCKMAKER_DELIVERY","PHILOSOPHER_GRANT","FIRST_NIGHT_TASK_INSERTION"]);break;
       case "DreamerInformationDelivered":setValid=requireOpportunity()&&roles.length>=1&&kinds("DREAMER_DELIVERY").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ABILITY_IMPAIRMENT","ROLE_TENURE","DREAMER_DELIVERY"]);break;
       case "SeamstressInformationDelivered":setValid=requireOpportunity()&&roles.length>=2&&kinds("ROLE_TENURE").length>=1&&kinds("SEAMSTRESS_DELIVERY").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ABILITY_IMPAIRMENT","ROLE_TENURE","SEAMSTRESS_DELIVERY","PHILOSOPHER_GRANT","FIRST_NIGHT_TASK_INSERTION"]);break;
+      case "MathematicianInformationDelivered":setValid=kinds("MATHEMATICIAN_DELIVERY").length===1&&exactKinds(["SOURCE_EVENT","TASK","ACTION_OPPORTUNITY","CHARACTER_STATE","PLAYER_ROLE_AT_REVISION","ABILITY_IMPAIRMENT","ROLE_TENURE","MATHEMATICIAN_DELIVERY","PHILOSOPHER_GRANT","FIRST_NIGHT_TASK_INSERTION"]);break;
     }
     const gained=fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V1"||fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V2";const expectedGainedOpportunityCount=opportunityKindForTask(tasks[0].taskType)===undefined?1:2;if(gained&&(kinds("PHILOSOPHER_GRANT").length!==1||kinds("FIRST_NIGHT_TASK_INSERTION").length!==1||opportunities.length!==expectedGainedOpportunityCount))setValid=false;if(!gained&&sourceEvent.eventType!=="PhilosopherAbilityGranted"&&(kinds("PHILOSOPHER_GRANT").length!==0||kinds("FIRST_NIGHT_TASK_INSERTION").length!==0))setValid=false;if(fact.abilityInstance.kind==="EXPLICIT_DOMAIN_INSTANCE"){const tenureId=fact.abilityInstance.sourceRoleTenureId;if(!kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleTenureId===tenureId))setValid=false;}
     if(gained){const grant=kinds("PHILOSOPHER_GRANT")[0] as PhilosopherGrantEvidence|undefined;const insertion=kinds("FIRST_NIGHT_TASK_INSERTION")[0] as FirstNightTaskInsertionEvidence|undefined;const provenance=fact.abilityInstance;const philosopherOpportunity=opportunities.find((entry)=>entry.opportunityId===provenance.philosopherOpportunityId);if(grant===undefined||insertion===undefined||philosopherOpportunity===undefined||philosopherOpportunity===terminalOpportunity||philosopherOpportunity.opportunityKind!=="PHILOSOPHER_FIRST_NIGHT_ACTION"||philosopherOpportunity.opportunityStatus!=="CLOSED"||philosopherOpportunity.taskType!=="PHILOSOPHER_ACTION"||philosopherOpportunity.sourceRole.roleId!=="philosopher"||philosopherOpportunity.sourcePlayerId!==grant.sourcePlayerId||philosopherOpportunity.sourceSeatNumber!==grant.sourceSeatNumber||philosopherOpportunity.sourceCharacterStateRevision!==grant.sourceCharacterStateRevision||(terminalOpportunity!==undefined&&terminalOpportunity.sourceCharacterStateRevision!==provenance.sourceCharacterStateRevision)||grant.grantId!==provenance.grantId||grant.philosopherOpportunityId!==provenance.philosopherOpportunityId||grant.chosenRoleId!==fact.abilityRoleId||grant.sourceCharacterStateRevision!==provenance.sourceCharacterStateRevision||insertion.taskId!==fact.abilityTaskId||insertion.philosopherOpportunityId!==grant.philosopherOpportunityId||insertion.sourcePlayerId!==grant.sourcePlayerId||insertion.sourceSeatNumber!==grant.sourceSeatNumber||insertion.chosenRoleId!==grant.chosenRoleId||(provenance.kind==="PHILOSOPHER_GAINED_TASK_V2"&&(insertion.generation.kind!=="V2"||insertion.generation.grantId!==provenance.grantId))||(provenance.kind==="PHILOSOPHER_GAINED_TASK_V1"&&insertion.generation.kind!=="V1"))setValid=false;}
-    const hasRole=(playerIdValue:PlayerId):boolean=>roles.some((role)=>role.playerId===playerIdValue&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);const roleOf=(playerIdValue:PlayerId):PlayerRoleAtRevisionEvidence|undefined=>roles.find((role)=>role.playerId===playerIdValue&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);const opportunity=terminalOpportunity;for(const entry of canonical){if(entry.kind==="ABILITY_IMPAIRMENT"&&(entry.affectedPlayerId!==fact.sourcePlayerId||entry.affectedSeatNumber!==fact.sourceSeatNumber||entry.affectedRoleId!==sourceRole.roleId||entry.appliedCharacterStateRevision>fact.evaluatedCharacterStateRevision))setValid=false;if(entry.kind==="ROLE_TENURE"&&(entry.acquiredCharacterStateRevision>fact.evaluatedCharacterStateRevision||!hasRole(entry.playerId)))setValid=false;if(entry.kind==="SNAKE_CHARMER_RESOLUTION"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.resolutionEventId!==fact.sourceEventId||roleOf(entry.targetPlayerId)?.seatNumber!==entry.targetSeatNumber||roleOf(entry.targetPlayerId)?.roleId!==entry.targetRoleIdAtResolution))setValid=false;if(entry.kind==="WITCH_PENDING_MARKER"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="CERENOVUS_INSTRUCTION"&&(entry.taskId!==fact.abilityTaskId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="CLOCKMAKER_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId))setValid=false;if(entry.kind==="DREAMER_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="SEAMSTRESS_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.firstTargetPlayerId)||!hasRole(entry.secondTargetPlayerId)))setValid=false;if(entry.kind==="EVIL_TWIN_PAIR"&&(entry.establishedTaskId!==fact.abilityTaskId||entry.informationDeliveryEventId!==fact.sourceEventId||!hasRole(entry.evilTwinPlayerId)||!hasRole(entry.goodTwinPlayerId)))setValid=false;}
+    const hasRole=(playerIdValue:PlayerId):boolean=>roles.some((role)=>role.playerId===playerIdValue&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);const roleOf=(playerIdValue:PlayerId):PlayerRoleAtRevisionEvidence|undefined=>roles.find((role)=>role.playerId===playerIdValue&&role.characterStateRevision===fact.evaluatedCharacterStateRevision);const opportunity=terminalOpportunity;for(const entry of canonical){if(entry.kind==="ABILITY_IMPAIRMENT"){if(sourceEvent.eventType==="MathematicianInformationDelivered"){if(entry.appliedCharacterStateRevision>fact.evaluatedCharacterStateRevision||entry.affectedPlayerId!==fact.sourcePlayerId&&entry.affectedRoleId!=="vortox"||entry.affectedPlayerId===fact.sourcePlayerId&&(entry.affectedSeatNumber!==fact.sourceSeatNumber||entry.affectedRoleId!=="mathematician"&&entry.affectedRoleId!==sourceRole.roleId))setValid=false;}else if(entry.affectedPlayerId!==fact.sourcePlayerId||entry.affectedSeatNumber!==fact.sourceSeatNumber||entry.affectedRoleId!==sourceRole.roleId||entry.appliedCharacterStateRevision>fact.evaluatedCharacterStateRevision)setValid=false;}if(entry.kind==="ROLE_TENURE"&&(entry.acquiredCharacterStateRevision>fact.evaluatedCharacterStateRevision||!hasRole(entry.playerId)))setValid=false;if(entry.kind==="SNAKE_CHARMER_RESOLUTION"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.resolutionEventId!==fact.sourceEventId||roleOf(entry.targetPlayerId)?.seatNumber!==entry.targetSeatNumber||roleOf(entry.targetPlayerId)?.roleId!==entry.targetRoleIdAtResolution))setValid=false;if(entry.kind==="WITCH_PENDING_MARKER"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="CERENOVUS_INSTRUCTION"&&(entry.taskId!==fact.abilityTaskId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="CLOCKMAKER_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId))setValid=false;if(entry.kind==="MATHEMATICIAN_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId))setValid=false;if(entry.kind==="DREAMER_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.targetPlayerId)))setValid=false;if(entry.kind==="SEAMSTRESS_DELIVERY"&&(entry.taskId!==fact.abilityTaskId||entry.opportunityId!==opportunity?.opportunityId||entry.sourcePlayerId!==fact.sourcePlayerId||entry.terminalEventId!==fact.sourceEventId||!hasRole(entry.firstTargetPlayerId)||!hasRole(entry.secondTargetPlayerId)))setValid=false;if(entry.kind==="EVIL_TWIN_PAIR"&&(entry.establishedTaskId!==fact.abilityTaskId||entry.informationDeliveryEventId!==fact.sourceEventId||!hasRole(entry.evilTwinPlayerId)||!hasRole(entry.goodTwinPlayerId)))setValid=false;}
     if(fact.causeKind==="VORTOX_FALSE_INFORMATION"&&(!roles.some((role)=>role.roleId==="vortox")||!kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleId==="vortox"&&(entry as RoleTenureEvidence).statusAtEvaluation==="ACTIVE")))setValid=false;
     if(fact.causeKind==="DREAMER_VORTOX_CONSTRAINT_UNRECORDED"&&(!roles.some((role)=>role.roleId==="vortox")||!kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleId==="vortox"&&(entry as RoleTenureEvidence).statusAtEvaluation==="ACTIVE")))setValid=false;
     if(fact.causeKind==="VORTOX_APPLICABILITY_NOT_PROVEN"&&(!roles.some((role)=>role.roleId==="vortox")||kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleId==="vortox"&&(entry as RoleTenureEvidence).statusAtEvaluation==="ACTIVE")))setValid=false;
-    const impairmentEvidence=kinds("ABILITY_IMPAIRMENT") as AbilityImpairmentEvidence[];if(fact.causeKind==="SOURCE_DRUNKENNESS"&&(impairmentEvidence.length!==1||impairmentEvidence[0]?.impairmentKind!=="DRUNK"))setValid=false;if(fact.causeKind==="SOURCE_POISONING"&&(impairmentEvidence.length!==1||impairmentEvidence[0]?.impairmentKind!=="POISONED"))setValid=false;
+    const impairmentEvidence=kinds("ABILITY_IMPAIRMENT") as AbilityImpairmentEvidence[];const sourceImpairmentEvidence=sourceEvent.eventType==="MathematicianInformationDelivered"?impairmentEvidence.filter((entry)=>entry.affectedPlayerId===fact.sourcePlayerId&&entry.affectedSeatNumber===fact.sourceSeatNumber):impairmentEvidence;if(fact.causeKind==="SOURCE_DRUNKENNESS"&&(sourceImpairmentEvidence.length!==1||sourceImpairmentEvidence[0]?.impairmentKind!=="DRUNK"))setValid=false;if(fact.causeKind==="SOURCE_POISONING"&&(sourceImpairmentEvidence.length!==1||sourceImpairmentEvidence[0]?.impairmentKind!=="POISONED"))setValid=false;
     const clockmaker=kinds("CLOCKMAKER_DELIVERY")[0] as ClockmakerDeliveryEvidence|undefined;if(clockmaker!==undefined){const correct=clockmaker.ruleCorrectDistance===clockmaker.selectedDistance;if((correct&&fact.outcomeStatus!=="NORMAL")||(!correct&&fact.outcomeStatus!=="ABNORMAL")||(fact.outcomeStatus==="NORMAL"&&fact.causeKind!=="NO_OTHER_CHARACTER_ABILITY"))setValid=false;}
     const dreamer=kinds("DREAMER_DELIVERY")[0] as DreamerDeliveryEvidence|undefined;if(dreamer!==undefined){const targetRole=roleOf(dreamer.targetPlayerId);const containsTruth=targetRole!==undefined&&(targetRole.roleId===dreamer.deliveredGoodRoleId||targetRole.roleId===dreamer.deliveredEvilRoleId);if(fact.outcomeStatus==="NORMAL"&&!containsTruth)setValid=false;if(fact.outcomeStatus==="ABNORMAL"&&(containsTruth||!kinds("ABILITY_IMPAIRMENT").length))setValid=false;if(fact.outcomeStatus==="UNRESOLVED"&&!["DREAMER_VORTOX_CONSTRAINT_UNRECORDED","VORTOX_APPLICABILITY_NOT_PROVEN","CAUSE_NOT_PROVEN"].includes(fact.causeKind))setValid=false;}
     const seamstress=kinds("SEAMSTRESS_DELIVERY")[0] as SeamstressDeliveryEvidence|undefined;if(seamstress!==undefined){const correct=seamstress.ruleCorrectAnswer===seamstress.deliveredAnswer;if((correct&&fact.outcomeStatus!=="NORMAL")||(!correct&&fact.outcomeStatus!=="ABNORMAL"))setValid=false;}
+    const mathematician=kinds("MATHEMATICIAN_DELIVERY")[0] as MathematicianDeliveryEvidence|undefined;if(mathematician!==undefined){
+      const correct=mathematician.trueCount===mathematician.selectedCount;
+      if((correct&&(fact.outcomeStatus!=="NORMAL"||fact.causeKind!=="NO_OTHER_CHARACTER_ABILITY"||fact.causedByAnotherCharacterAbility))||(!correct&&(fact.outcomeStatus!=="ABNORMAL"||!fact.causedByAnotherCharacterAbility||!(fact.causeKind==="SOURCE_DRUNKENNESS"||fact.causeKind==="SOURCE_POISONING"||fact.causeKind==="VORTOX_FALSE_INFORMATION"))))setValid=false;
+      const parsed=parseMathematicianEvidenceIdentity(mathematician.deliveryId,mathematician.taskId);
+      const tenures=kinds("ROLE_TENURE") as RoleTenureEvidence[];
+      const sourceRoles=roles.filter((entry)=>entry.playerId===fact.sourcePlayerId&&entry.seatNumber===fact.sourceSeatNumber);
+      const sourceTenures=tenures.filter((entry)=>entry.playerId===fact.sourcePlayerId&&entry.seatNumber===fact.sourceSeatNumber);
+      const sourceImpairments=impairmentEvidence.filter((entry)=>entry.affectedPlayerId===fact.sourcePlayerId&&entry.affectedSeatNumber===fact.sourceSeatNumber&&entry.affectedRoleId==="mathematician");
+      const vortoxRoles=roles.filter((entry)=>entry.roleId==="vortox"&&entry.playerId!==fact.sourcePlayerId);
+      const vortoxTenures=tenures.filter((entry)=>entry.roleId==="vortox"&&entry.playerId!==fact.sourcePlayerId);
+      const vortoxImpairments=impairmentEvidence.filter((entry)=>entry.affectedRoleId==="vortox"&&entry.affectedPlayerId!==fact.sourcePlayerId);
+      const expectedGeneration=fact.abilityInstance.kind==="BASE_ROLE_TASK"?"BASE":fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V1"?"V1":fact.abilityInstance.kind==="PHILOSOPHER_GAINED_TASK_V2"?"V2":undefined;
+      const expectedSourceRoleId:RoleId=expectedGeneration==="BASE"?"mathematician" as RoleId:"philosopher" as RoleId;
+      if(!parsed.valid||parsed.generation!==expectedGeneration||mathematician.taskId!==fact.abilityTaskId||mathematician.sourcePlayerId!==fact.sourcePlayerId||mathematician.terminalEventId!==fact.sourceEventId||sourceRoles.length!==1||sourceRoles[0]?.roleId!==expectedSourceRoleId||sourceTenures.length!==1||sourceTenures[0]?.roleId!==expectedSourceRoleId||sourceTenures[0].statusAtEvaluation!=="ACTIVE")setValid=false;
+      if(expectedGeneration==="BASE"&&(opportunities.length!==0||kinds("PHILOSOPHER_GRANT").length!==0||kinds("FIRST_NIGHT_TASK_INSERTION").length!==0))setValid=false;
+      if(expectedGeneration==="V1"&&(opportunities.length!==1||kinds("PHILOSOPHER_GRANT").length!==1||(kinds("FIRST_NIGHT_TASK_INSERTION")[0] as FirstNightTaskInsertionEvidence|undefined)?.generation.kind!=="V1"))setValid=false;
+      if(expectedGeneration==="V2"&&(opportunities.length!==1||kinds("PHILOSOPHER_GRANT").length!==1||(kinds("FIRST_NIGHT_TASK_INSERTION")[0] as FirstNightTaskInsertionEvidence|undefined)?.generation.kind!=="V2"))setValid=false;
+      if(fact.causeKind==="NO_OTHER_CHARACTER_ABILITY"&&sourceImpairments.length!==0)setValid=false;
+      if((fact.causeKind==="SOURCE_DRUNKENNESS"||fact.causeKind==="SOURCE_POISONING")&&sourceImpairments.length!==1)setValid=false;
+      if(fact.causeKind==="VORTOX_FALSE_INFORMATION"){
+        if(vortoxRoles.length!==1||vortoxTenures.length!==1||vortoxImpairments.length!==0)setValid=false;
+      }else if(vortoxRoles.length+vortoxTenures.length+vortoxImpairments.length>0){
+        if(vortoxRoles.length!==1||vortoxTenures.length!==1||vortoxImpairments.length!==1)setValid=false;
+      }
+      const vortoxRole=vortoxRoles[0];const vortoxTenure=vortoxTenures[0];const vortoxImpairment=vortoxImpairments[0];
+      if(vortoxRole!==undefined&&vortoxTenure!==undefined&&(vortoxRole.playerId!==vortoxTenure.playerId||vortoxRole.seatNumber!==vortoxTenure.seatNumber||vortoxTenure.statusAtEvaluation!=="ACTIVE"))setValid=false;
+      if(vortoxRole!==undefined&&vortoxImpairment!==undefined&&(vortoxRole.playerId!==vortoxImpairment.affectedPlayerId||vortoxRole.seatNumber!==vortoxImpairment.affectedSeatNumber))setValid=false;
+    }
     if(!setValid)return fail("Terminal minimum or conditional evidence set is invalid");
     return {valid:true};
   } catch { return fail("Outcome fact must fail closed"); }
@@ -325,7 +425,7 @@ export const cloneFirstNightAbilityOutcomeLedger=(v:FirstNightAbilityOutcomeLedg
   return clone(v);
 };
 
-const terminalTypes = new Set<TerminalAbilityOutcomeEventType>(["PhilosopherActionDeferred","PhilosopherAbilityGranted","SnakeCharmerNoSwapResolved","SnakeCharmerIneffectiveResolved","SnakeCharmerDemonSwapApplied","EvilTwinInformationDelivered","WitchDeathPendingMarked","WitchIneffectiveResolved","CerenovusMadnessInstructionDelivered","ClockmakerInformationDelivered","DreamerInformationDelivered","SeamstressInformationDelivered"]);
+const terminalTypes = new Set<TerminalAbilityOutcomeEventType>(["PhilosopherActionDeferred","PhilosopherAbilityGranted","SnakeCharmerNoSwapResolved","SnakeCharmerIneffectiveResolved","SnakeCharmerDemonSwapApplied","EvilTwinInformationDelivered","WitchDeathPendingMarked","WitchIneffectiveResolved","CerenovusMadnessInstructionDelivered","ClockmakerInformationDelivered","DreamerInformationDelivered","SeamstressInformationDelivered","MathematicianInformationDelivered"]);
 const roleForTask: Record<FirstNightTaskType, RoleId> = {PHILOSOPHER_ACTION:"philosopher" as RoleId,MINION_INFO:"" as RoleId,DEMON_INFO:"" as RoleId,SNAKE_CHARMER_ACTION:"snake_charmer" as RoleId,EVIL_TWIN_SETUP:"evil_twin" as RoleId,WITCH_ACTION:"witch" as RoleId,CERENOVUS_ACTION:"cerenovus" as RoleId,CLOCKMAKER_INFORMATION:"clockmaker" as RoleId,DREAMER_ACTION:"dreamer" as RoleId,SEAMSTRESS_ACTION:"seamstress" as RoleId,MATHEMATICIAN_INFORMATION:"mathematician" as RoleId};
 const taskFor = (state: GameState, id: unknown): ScheduledTask | undefined => {const matches=state.firstNightTaskPlan?.tasks.filter((task)=>task.taskId===id)??[];return matches.length===1?matches[0]:undefined;};
 const sourceFor = (state: GameState, task: ScheduledTask, payload: Record<string,unknown>): {playerId:PlayerId;seatNumber:SeatNumber;roleId:RoleId}|undefined => {
@@ -467,6 +567,30 @@ const instanceFor=(task:ScheduledTask,source:{playerId:PlayerId;seatNumber:SeatN
   const parsed=parseCanonicalFirstNightTaskId(task.taskId);if(task.source.kind!=="ROLE"||parsed?.generation!=="BASE"||parsed.embeddedSeat!==source.seatNumber||parsed.taskType!==task.taskType||roleForTask[task.taskType]!==source.roleId)throw new DomainError("InvalidFirstNightAbilityInstance","Base task provenance must use one canonical role task without grant or insertion");
   return {provenanceVersion:"first-night-ability-instance-provenance-v1",kind:"BASE_ROLE_TASK",abilityInstanceId:formatBaseFirstNightAbilityInstanceId(task.taskId),abilityRoleId:source.roleId,taskId:task.taskId,sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber};
 };
+export const classifyMathematicianTerminalOutcomeForInternalValidation=(
+  trueCount:unknown,
+  selectedCount:unknown,
+  informationReliability:unknown
+):{readonly outcomeStatus:AbilityOutcomeStatus;readonly causeKind:AbilityOutcomeCause;readonly causedByAnotherCharacterAbility:boolean}=>{
+  const correct=trueCount===selectedCount;
+  if(informationReliability==="RULE_CORRECT"){
+    if(!correct)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Effective Mathematician information must equal the true count");
+    return {outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY",causedByAnotherCharacterAbility:false};
+  }
+  if(informationReliability==="DETERMINISTIC_FALSE_WITH_KNOWN_DRUNKENNESS"){
+    if(correct)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Drunk Mathematician information must be false");
+    return {outcomeStatus:"ABNORMAL",causeKind:"SOURCE_DRUNKENNESS",causedByAnotherCharacterAbility:true};
+  }
+  if(informationReliability==="DETERMINISTIC_FALSE_WITH_KNOWN_POISONING"){
+    if(correct)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Poisoned Mathematician information must be false");
+    return {outcomeStatus:"ABNORMAL",causeKind:"SOURCE_POISONING",causedByAnotherCharacterAbility:true};
+  }
+  if(informationReliability==="VORTOX_CONSTRAINED_FALSE"){
+    if(correct)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Vortox-constrained Mathematician information must be false");
+    return {outcomeStatus:"ABNORMAL",causeKind:"VORTOX_FALSE_INFORMATION",causedByAnotherCharacterAbility:true};
+  }
+  throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Mathematician information reliability is invalid");
+};
 export const deriveFirstNightAbilityOutcomeFact=(input:{readonly stateBefore:GameState;readonly event:AnyDomainEventEnvelope}):FirstNightAbilityOutcomeFact|undefined=>{
   if(!terminalTypes.has(input.event.eventType as TerminalAbilityOutcomeEventType))return undefined;
   if(input.stateBefore.roster===undefined||!validatePlayerRoster(input.stateBefore.roster.entries).valid)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Outcome derivation requires one exact canonical roster");
@@ -477,6 +601,10 @@ export const deriveFirstNightAbilityOutcomeFact=(input:{readonly stateBefore:Gam
   else if(input.event.eventType==="SnakeCharmerIneffectiveResolved"){const target=input.stateBefore.currentCharacterState?.entries.find((entry)=>entry.playerId===p.targetPlayerId&&entry.seatNumber===p.targetSeatNumber);if(target===undefined){status="UNRESOLVED";cause="CAUSE_NOT_PROVEN";}else if(target.role.characterType==="DEMON"){status="ABNORMAL";cause=p.sourceImpairmentKind==="POISONED"?"SOURCE_POISONING":"SOURCE_DRUNKENNESS";caused=true;}}
   else if(input.event.eventType==="ClockmakerInformationDelivered"&&p.informationReliability==="DETERMINISTIC_FALSE_WITH_KNOWN_DRUNKENNESS"){status="ABNORMAL";cause="SOURCE_DRUNKENNESS";caused=true;}
   else if(input.event.eventType==="ClockmakerInformationDelivered"&&p.informationReliability==="VORTOX_CONSTRAINED_FALSE"){status="ABNORMAL";cause="VORTOX_FALSE_INFORMATION";caused=true;}
+  else if(input.event.eventType==="MathematicianInformationDelivered"){
+    const classification=classifyMathematicianTerminalOutcomeForInternalValidation(p.trueCount,p.selectedCount,p.informationReliability);
+    status=classification.outcomeStatus;cause=classification.causeKind;caused=classification.causedByAnotherCharacterAbility;
+  }
   else if(input.event.eventType==="SeamstressInformationDelivered"&&p.informationReliability==="VORTOX_CONSTRAINED_FALSE"){status="ABNORMAL";cause="VORTOX_FALSE_INFORMATION";caused=true;}
   else if(input.event.eventType==="SeamstressInformationDelivered"&&plain(p.comparison)&&p.deliveredAnswer!==p.comparison.ruleCorrectAnswer){
     const represented=plain(p.sourceEffectiveness)&&isDenseCanonicalArray(p.sourceEffectiveness.representedImpairments)?p.sourceEffectiveness.representedImpairments:[];
@@ -490,13 +618,24 @@ export const deriveFirstNightAbilityOutcomeFact=(input:{readonly stateBefore:Gam
   const evidence:AbilityOutcomeEvidenceReference[]=[{kind:"SOURCE_EVENT",eventId:input.event.eventId,eventType:input.event.eventType as TerminalAbilityOutcomeEventType,eventSequence:input.event.eventSequence,batchId:input.event.batchId},{kind:"TASK",taskId:task.taskId,taskType:task.taskType},{kind:"CHARACTER_STATE",characterStateRevision:revision},roleEvidenceFor(input.stateBefore,source.playerId,revision)];
   if(p.opportunityId!==undefined)evidence.push(opportunityEvidenceFor(input.stateBefore,p.opportunityId,task,source,input.event.eventType as TerminalAbilityOutcomeEventType,instance));
   if(instance.kind==="EXPLICIT_DOMAIN_INSTANCE")evidence.push(tenureEvidenceFor(input.stateBefore,instance.sourceRoleTenureId,revision));
+  if(input.event.eventType==="MathematicianInformationDelivered"){
+    const sourceContract=p.sourceContract;
+    if(!plain(sourceContract)||!plain(sourceContract.sourceRoleTenure)||!nonEmpty(sourceContract.sourceRoleTenure.roleTenureId))throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Mathematician source requires one carried active tenure");
+    evidence.push(tenureEvidenceFor(input.stateBefore,sourceContract.sourceRoleTenure.roleTenureId as RoleTenureId,revision));
+  }
   if(input.event.eventType==="PhilosopherAbilityGranted")evidence.push({kind:"PHILOSOPHER_GRANT",grantId:p.grantId as GrantedAbilityId,philosopherOpportunityId:p.opportunityId as ActionOpportunityId,sourcePlayerId:p.sourcePlayerId as PlayerId,sourceSeatNumber:p.sourceSeatNumber as SeatNumber,chosenRoleId:p.chosenRoleId as RoleId,sourceCharacterStateRevision:p.sourceCharacterStateRevision as number});
   if(p.sourceImpairmentId!==undefined)evidence.push(impairmentEvidenceFor(input.stateBefore,p.sourceImpairmentId,source));
   if(input.event.eventType==="ClockmakerInformationDelivered"&&plain(p.sourceEffectiveness)&&isDenseCanonicalArray(p.sourceEffectiveness.representedImpairmentIds))for(const id of p.sourceEffectiveness.representedImpairmentIds)evidence.push(impairmentEvidenceFor(input.stateBefore,id,source));
   if(input.event.eventType==="SeamstressInformationDelivered"&&plain(p.sourceEffectiveness)&&isDenseCanonicalArray(p.sourceEffectiveness.representedImpairments))for(const represented of p.sourceEffectiveness.representedImpairments)if(plain(represented))evidence.push(impairmentEvidenceFor(input.stateBefore,represented.impairmentId,source));
+  if(input.event.eventType==="MathematicianInformationDelivered"&&plain(p.sourceEffectiveness)&&isDenseCanonicalArray(p.sourceEffectiveness.representedImpairments))for(const represented of p.sourceEffectiveness.representedImpairments)if(plain(represented))evidence.push(impairmentEvidenceFor(input.stateBefore,represented.impairmentId,source));
   if(input.event.eventType==="DreamerInformationDelivered"&&plain(p.informationReliability)&&p.informationReliability.kind==="SOURCE_IMPAIRED")evidence.push(impairmentEvidenceFor(input.stateBefore,p.informationReliability.sourceImpairmentId,source));
   if(input.event.eventType==="DreamerInformationDelivered"){const vortox=historicalVortoxApplicability(input.stateBefore,revision);if(vortox.kind==="PROVEN")evidence.push(roleEvidenceFor(input.stateBefore,vortox.playerId,revision),tenureEvidenceFor(input.stateBefore,vortox.tenureId,revision));else if(vortox.kind==="UNRESOLVED"&&vortox.playerId!==undefined)evidence.push(roleEvidenceFor(input.stateBefore,vortox.playerId,revision));}
   if((input.event.eventType==="ClockmakerInformationDelivered"||input.event.eventType==="SeamstressInformationDelivered")){const constraint=(input.event.eventType==="ClockmakerInformationDelivered"?p.vortoxConstraint:p.deliveryConstraint);if(plain(constraint)&&constraint.kind==="VORTOX_FALSE_REQUIRED")evidence.push(roleEvidenceFor(input.stateBefore,constraint.vortoxPlayerId as PlayerId,revision),tenureEvidenceFor(input.stateBefore,constraint.vortoxRoleTenureId as RoleTenureId,revision));}
+  if(input.event.eventType==="MathematicianInformationDelivered"&&plain(p.vortoxConstraint)&&(p.vortoxConstraint.kind==="VORTOX_FALSE_REQUIRED"||p.vortoxConstraint.kind==="NONE_CURRENT_VORTOX_KNOWN_IMPAIRED")&&plain(p.vortoxConstraint.vortoxRoleTenure)){
+    const vortoxSource={playerId:p.vortoxConstraint.vortoxPlayerId as PlayerId,seatNumber:p.vortoxConstraint.vortoxSeatNumber as SeatNumber,roleId:"vortox" as RoleId};
+    evidence.push(roleEvidenceFor(input.stateBefore,vortoxSource.playerId,revision),tenureEvidenceFor(input.stateBefore,p.vortoxConstraint.vortoxRoleTenure.roleTenureId as RoleTenureId,revision));
+    if(p.vortoxConstraint.kind==="NONE_CURRENT_VORTOX_KNOWN_IMPAIRED"&&plain(p.vortoxConstraint.impairment))evidence.push(impairmentEvidenceFor(input.stateBefore,p.vortoxConstraint.impairment.impairmentId,vortoxSource));
+  }
   if(instance.kind==="PHILOSOPHER_GAINED_TASK_V1"||instance.kind==="PHILOSOPHER_GAINED_TASK_V2"){
     const grant=input.stateBefore.philosopherGrantedAbilities?.abilities.find((candidate)=>candidate.grantId===instance.grantId);
     const insertion=input.stateBefore.firstNightTaskInsertions?.insertions.find((candidate)=>candidate.taskId===task.taskId) as unknown as Record<string,unknown>|undefined;
@@ -517,6 +656,7 @@ export const deriveFirstNightAbilityOutcomeFact=(input:{readonly stateBefore:Gam
   else if(input.event.eventType==="CerenovusMadnessInstructionDelivered"){
     const choices=input.stateBefore.cerenovusChoices?.choices.filter((candidate)=>candidate.choiceId===p.choiceId)??[];const markers=input.stateBefore.cerenovusMadnessMarkers?.markers.filter((candidate)=>candidate.markerId===p.markerId)??[];const choice=choices[0];const marker=markers[0];const chain=choice===undefined||marker===undefined?undefined:validateCerenovusInstructionAgainstChain(choice,marker,input.event.payload);if(choices.length!==1||markers.length!==1||choice===undefined||marker===undefined||chain?.valid!==true||choice.taskId!==task.taskId||choice.sourcePlayerId!==source.playerId||choice.sourceSeatNumber!==source.seatNumber||choice.targetPlayerId!==p.recipientPlayerId||choice.targetSeatNumber!==p.recipientSeatNumber||choice.chosenGoodRoleId!==p.madAboutRoleId||marker.choiceId!==choice.choiceId)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Cerenovus instruction requires one canonical choice-marker-delivery chain");evidence.push(roleEvidenceFor(input.stateBefore,p.recipientPlayerId as PlayerId,revision),{kind:"CERENOVUS_INSTRUCTION",deliveryId:p.deliveryId as string,choiceId:p.choiceId as string,markerId:p.markerId as string,sourcePlayerId:source.playerId,targetPlayerId:p.recipientPlayerId as PlayerId,chosenRoleId:p.madAboutRoleId as RoleId,taskId:task.taskId,terminalEventId:input.event.eventId});
   } else if(input.event.eventType==="ClockmakerInformationDelivered") evidence.push({kind:"CLOCKMAKER_DELIVERY",deliveryId:p.deliveryId as string,taskId:task.taskId,sourcePlayerId:source.playerId,ruleCorrectDistance:p.ruleCorrectDistance as number,selectedDistance:p.selectedDistance as number,terminalEventId:input.event.eventId});
+  else if(input.event.eventType==="MathematicianInformationDelivered") evidence.push({kind:"MATHEMATICIAN_DELIVERY",deliveryId:p.deliveryId as MathematicianDeliveryId,taskId:task.taskId,sourcePlayerId:source.playerId,trueCount:p.trueCount as MathematicianCount,selectedCount:p.selectedCount as MathematicianCount,terminalEventId:input.event.eventId});
   else if(input.event.eventType==="DreamerInformationDelivered") evidence.push(roleEvidenceFor(input.stateBefore,p.targetPlayerId as PlayerId,revision),{kind:"DREAMER_DELIVERY",taskId:task.taskId,opportunityId:p.opportunityId as ActionOpportunityId,sourcePlayerId:source.playerId,targetPlayerId:p.targetPlayerId as PlayerId,deliveredGoodRoleId:(p.goodRole as Record<string,unknown>).roleId as RoleId,deliveredEvilRoleId:(p.evilRole as Record<string,unknown>).roleId as RoleId,terminalEventId:input.event.eventId});
   else if(input.event.eventType==="SeamstressInformationDelivered"){
     const targets=p.targetPlayerIds as readonly [PlayerId,PlayerId];const comparison=p.comparison as Record<string,unknown>;evidence.push(roleEvidenceFor(input.stateBefore,targets[0],revision),roleEvidenceFor(input.stateBefore,targets[1],revision),{kind:"SEAMSTRESS_DELIVERY",taskId:task.taskId,opportunityId:p.opportunityId as ActionOpportunityId,sourcePlayerId:source.playerId,firstTargetPlayerId:targets[0],secondTargetPlayerId:targets[1],ruleCorrectAnswer:comparison.ruleCorrectAnswer as "YES"|"NO",deliveredAnswer:p.deliveredAnswer as "YES"|"NO",terminalEventId:input.event.eventId});

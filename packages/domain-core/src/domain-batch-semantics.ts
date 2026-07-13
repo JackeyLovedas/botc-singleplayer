@@ -44,6 +44,7 @@ import {
   isRoleTenureContinuousAcross
 } from "./seamstress.js";
 import { validateClockmakerInformationAgainstCanonicalState } from "./clockmaker.js";
+import { validateMathematicianInformationDeliveredPayloadShape } from "./mathematician.js";
 import { sameRoleSetupSnapshot, SUPPORTED_SCRIPT_ID } from "./setup-types.js";
 
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
@@ -1272,6 +1273,41 @@ const validateIntegratedClockmakerInformationBatch = (
   }
 };
 
+const validateIntegratedMathematicianInformationBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) reject("Mathematician information batch requires an existing state");
+  const state = currentState as GameState;
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 ||
+      state.firstNightTaskPlan === undefined || state.firstNightTaskProgress === undefined ||
+      state.currentCharacterState === undefined || state.firstNightAbilityOutcomeLedger === undefined) {
+    reject("Mathematician information batch requires complete first-night canonical state");
+  }
+  if (events.length !== 2) reject("Mathematician information batch must contain exactly two events");
+  assertSharedBatchMetadataForAll(events);
+  const [first, second] = events;
+  if (first?.eventType !== "MathematicianInformationDelivered" || second?.eventType !== "ScheduledTaskSettled") {
+    reject("Mathematician information batch must be InformationDelivered then ScheduledTaskSettled");
+  }
+  const delivery = first as DomainEventEnvelope<"MathematicianInformationDelivered">;
+  const settlement = second as DomainEventEnvelope<"ScheduledTaskSettled">;
+  const shape = validateMathematicianInformationDeliveredPayloadShape(delivery.payload);
+  if (!shape.valid) reject(shape.reason);
+  if (delivery.gameId !== state.gameId || settlement.gameId !== state.gameId || delivery.correlationId !== settlement.correlationId ||
+      delivery.causationId !== settlement.causationId || delivery.createdAt !== settlement.createdAt || delivery.eventId === settlement.eventId ||
+      delivery.eventSequence !== state.lastEventSequence + 1 || settlement.eventSequence !== delivery.eventSequence + 1 ||
+      delivery.payload.deliveryEventSequence !== delivery.eventSequence || delivery.payload.windowSnapshot.endEventSequence !== state.lastEventSequence) {
+    reject("Mathematician batch envelopes and count window must bind the exact pre-event boundary");
+  }
+  if (settlement.payload.rulesBaselineVersion !== delivery.payload.rulesBaselineVersion ||
+      settlement.payload.taskId !== delivery.payload.taskId || settlement.payload.taskType !== "MATHEMATICIAN_INFORMATION" ||
+      settlement.payload.outcomeType !== "MATHEMATICIAN_INFORMATION_DELIVERED" || settlement.payload.nightNumber !== 1 ||
+      settlement.payload.characterStateRevision !== delivery.payload.settlementCharacterStateRevision) {
+    reject("ScheduledTaskSettled must exactly link the Mathematician delivery");
+  }
+};
+
 const validateIntegratedEvilTwinSetupBatch = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -1430,6 +1466,11 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "ClockmakerInformationDelivered") {
     validateIntegratedClockmakerInformationBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (first.eventType === "MathematicianInformationDelivered") {
+    validateIntegratedMathematicianInformationBatch(currentState, batchEvents);
     return;
   }
 

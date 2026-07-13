@@ -154,6 +154,25 @@ export const validateSettleClockmakerInformationCommandPayload = (value: unknown
 export const canActorSettleClockmakerInformation = (actor: CommandActor): actor is SystemActor | StorytellerActor =>
   actor.kind === "system" || actor.kind === "storyteller";
 
+export type SettleMathematicianInformationCommandPayload = {
+  readonly commandType: "SettleMathematicianInformation";
+  readonly taskId: ScheduledTaskId;
+};
+
+export const validateSettleMathematicianInformationCommandPayload = (value: unknown):
+  | { readonly valid: true; readonly payload: SettleMathematicianInformationCommandPayload }
+  | { readonly valid: false; readonly reason: string } => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["commandType", "taskId"]) ||
+      value.commandType !== "SettleMathematicianInformation" || typeof value.taskId !== "string" ||
+      !/^(?:first-night-v1:MATHEMATICIAN_INFORMATION:seat-(?:0[1-9]|1[0-2])|first-night-v[12]:PHILOSOPHER_GAINED:MATHEMATICIAN_INFORMATION:seat-(?:0[1-9]|1[0-2]):from-mathematician)$/.test(value.taskId)) {
+    return { valid: false, reason: "SettleMathematicianInformation must contain only its command type and canonical Mathematician task ID" };
+  }
+  return { valid: true, payload: value as unknown as SettleMathematicianInformationCommandPayload };
+};
+
+export const canActorSettleMathematicianInformation = (actor: CommandActor): actor is SystemActor | StorytellerActor =>
+  actor.kind === "system" || actor.kind === "storyteller";
+
 export type SupportedCommandPayload =
   | CreateGameCommandPayload
   | SelectScriptCommandPayload
@@ -171,7 +190,8 @@ export type SupportedCommandPayload =
   | SubmitCerenovusActionCommandPayload
   | SubmitDreamerActionCommandPayload
   | SubmitSeamstressActionCommandPayload
-  | SettleClockmakerInformationCommandPayload;
+  | SettleClockmakerInformationCommandPayload
+  | SettleMathematicianInformationCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
@@ -189,6 +209,7 @@ export type SubmitCerenovusActionCommand = CommandEnvelope<SubmitCerenovusAction
 export type SubmitDreamerActionCommand = CommandEnvelope<SubmitDreamerActionCommandPayload>;
 export type SubmitSeamstressActionCommand = CommandEnvelope<SubmitSeamstressActionCommandPayload>;
 export type SettleClockmakerInformationCommand = CommandEnvelope<SettleClockmakerInformationCommandPayload>;
+export type SettleMathematicianInformationCommand = CommandEnvelope<SettleMathematicianInformationCommandPayload>;
 export type SupportedCommandEnvelope =
   | CreateGameCommand
   | SelectScriptCommand
@@ -206,4 +227,5 @@ export type SupportedCommandEnvelope =
   | SubmitCerenovusActionCommand
   | SubmitDreamerActionCommand
   | SubmitSeamstressActionCommand
-  | SettleClockmakerInformationCommand;
+  | SettleClockmakerInformationCommand
+  | SettleMathematicianInformationCommand;

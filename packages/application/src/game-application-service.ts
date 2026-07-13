@@ -87,6 +87,8 @@ import {
   validateSeamstressActionDecisionForOpportunity,
   canActorSettleClockmakerInformation,
   validateSettleClockmakerInformationCommandPayload,
+  canActorSettleMathematicianInformation,
+  validateSettleMathematicianInformationCommandPayload,
   resolveClockmakerNativeReferences,
   resolveClockmakerSourceEffectiveness,
   resolveClockmakerVortoxConstraint,
@@ -151,12 +153,19 @@ import type {
   CerenovusMadnessMarkedPayload,
   ClockmakerInformationDeliveredPayload,
   ClockmakerSourceContract,
+  MathematicianInformationDeliveredPayload,
   SetupGeneratedPayload,
   SetupGenerationConstraints,
   SetupGenerationFailure,
   ScriptSelectedPayload,
   SupportedCommandEnvelope
 } from "@botc/domain-core";
+import {
+  mathematicianPipelineStatesMatchForInternalValidation,
+  resolveMathematicianInformationDecisionFromAcceptedEventStream,
+  validateProspectiveMathematicianInformationPair
+} from "../../domain-core/src/mathematician-internal.js";
+import type { InternalMathematicianResolution } from "../../domain-core/src/mathematician-internal.js";
 import { accepted, acceptedWithEventSummary, failed, markIdempotent, rejected } from "./command-result.js";
 import {
   captureSupportedCommand,
@@ -624,7 +633,43 @@ export class GameApplicationService {
       return this.recordRejected(command, commandFingerprint, rejected(command.gameId, validation.code, validation.message, currentGameVersion));
     }
 
-    const batch = this.createBatchOrReject(command, state, currentGameVersion);
+    let mathematicianDecision: Extract<InternalMathematicianResolution, { readonly kind: "READY" }> | undefined;
+    if (command.payload.commandType === "SettleMathematicianInformation") {
+      let decision: InternalMathematicianResolution;
+      try {
+        decision = resolveMathematicianInformationDecisionFromAcceptedEventStream(events, command.payload.taskId);
+      } catch (error: unknown) {
+        return failed(
+          command.gameId,
+          "DependencyExecutionFailed",
+          errorMessage(error, "Unknown Mathematician resolution dependency failure"),
+          "first-night-role-information",
+          currentGameVersion
+        );
+      }
+      if ("rebuiltState" in decision && state !== undefined &&
+          !mathematicianPipelineStatesMatchForInternalValidation(state, decision.rebuiltState)) {
+        return failed(
+          command.gameId,
+          "CanonicalStateRebuildFailed",
+          "Mathematician Layer A rebuilt state differs from the application pipeline state",
+          "first-night-role-information",
+          currentGameVersion
+        );
+      }
+      if (decision.kind === "DETERMINISTIC_REJECTION") {
+        return this.recordRejected(command, commandFingerprint, rejected(command.gameId, decision.code, decision.message, currentGameVersion));
+      }
+      if (decision.kind === "UNSUPPORTED_LEGACY_V1_DUPLICATE_HOLDER_ORDER") {
+        return failed(command.gameId, "ApplicationNotConfigured", "Legacy V1 duplicate Mathematician settlement is not supported", "first-night-role-information", currentGameVersion);
+      }
+      if (decision.kind !== "READY") {
+        return failed(command.gameId, "DependencyExecutionFailed", `Mathematician resolution failed closed: ${decision.kind}`, "first-night-role-information", currentGameVersion);
+      }
+      mathematicianDecision = decision;
+    }
+
+    const batch = this.createBatchOrReject(command, state, currentGameVersion, mathematicianDecision);
     if ("status" in batch) {
       return batch;
     }
@@ -645,7 +690,7 @@ export class GameApplicationService {
       return this.recordRejected(command, commandFingerprint, rejected(command.gameId, batch.code, batch.message, currentGameVersion));
     }
 
-    const prospective = this.validateProspectiveBatch(command, state, batch);
+    const prospective = this.validateProspectiveBatch(command, state, batch, events);
     if (prospective !== undefined) {
       if ("status" in prospective) {
         return prospective;
@@ -656,7 +701,8 @@ export class GameApplicationService {
 
     const result = command.payload.commandType === "SubmitSeamstressAction" ||
       command.payload.commandType === "SubmitCerenovusAction" ||
-      command.payload.commandType === "SettleClockmakerInformation"
+      command.payload.commandType === "SettleClockmakerInformation" ||
+      command.payload.commandType === "SettleMathematicianInformation"
       ? acceptedWithEventSummary(command.gameId, batch.committedGameVersion, batch.events)
       : accepted(command.gameId, batch.committedGameVersion, batch.events);
     const receipt: FingerprintedCommandReceipt<typeof result> = {
@@ -1060,6 +1106,28 @@ export class GameApplicationService {
         if (source.length !== 1 || source[0] === undefined || !sameRoleSetupSnapshot(source[0].role, sourceRole) ||
             (taskSource.kind === "ROLE" ? sourceRole.roleId !== "clockmaker" : sourceRole.roleId !== "philosopher")) {
           return { code: "InformationSourceNoLongerValid", message: "Clockmaker information source no longer matches its bounded current character" };
+        }
+        return undefined;
+      }
+
+      case "SettleMathematicianInformation": {
+        if (!canActorSettleMathematicianInformation(command.actor)) {
+          return { code: "ActorNotAllowed", message: `${command.actor.kind} actors cannot execute SettleMathematicianInformation` };
+        }
+        const payloadValidation = validateSettleMathematicianInformationCommandPayload(command.payload);
+        if (!payloadValidation.valid) return { code: "InvalidMathematicianInformationCommand", message: payloadValidation.reason };
+        if (state === undefined) return { code: "GameNotCreated", message: "SettleMathematicianInformation requires an existing game" };
+        if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0) {
+          return { code: "CommandNotAllowedInPhase", message: "SettleMathematicianInformation requires first night before day one" };
+        }
+        if (state.firstNight === undefined) return { code: "FirstNightNotInitialized", message: "Mathematician settlement requires first-night initialization" };
+        if (state.initialPrivateKnowledge === undefined) return { code: "InitialPrivateKnowledgeNotEstablished", message: "Mathematician settlement requires initial private knowledge" };
+        if (state.firstNightTaskPlan === undefined || state.firstNightTaskProgress === undefined) {
+          return { code: "FirstNightTaskPlanNotCreated", message: "Mathematician settlement requires a first-night task plan and progress" };
+        }
+        if (state.currentCharacterState === undefined || state.roster === undefined || state.seamstressRoleTenureState === undefined ||
+            state.firstNightAbilityOutcomeLedger === undefined || state.firstNightInitializationProvenance === undefined) {
+          return { code: "CharacterAssignmentNotCreated", message: "Mathematician settlement requires complete canonical character and outcome state" };
         }
         return undefined;
       }
@@ -2063,7 +2131,8 @@ export class GameApplicationService {
   private createBatchOrReject(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
-    currentGameVersion: number
+    currentGameVersion: number,
+    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>
   ): DomainEventBatch | CommandExecutionFailed | { readonly code: GeneralCommandRejectionCode; readonly message: string } | {
     readonly code: "SetupGenerationFailed";
     readonly message: string;
@@ -2161,7 +2230,8 @@ export class GameApplicationService {
         generatedAssignment,
         initialPrivateKnowledge,
         firstNightTaskPlan,
-        firstNightSystemInformation
+        firstNightSystemInformation,
+        mathematicianDecision
       );
     } catch (error: unknown) {
       if (error instanceof EventMetadataGenerationError) {
@@ -2180,7 +2250,8 @@ export class GameApplicationService {
           command.payload.commandType === "SubmitCerenovusAction" ||
           command.payload.commandType === "SubmitDreamerAction" ||
           command.payload.commandType === "SubmitSeamstressAction" ||
-          command.payload.commandType === "SettleClockmakerInformation"
+          command.payload.commandType === "SettleClockmakerInformation" ||
+          command.payload.commandType === "SettleMathematicianInformation"
         ) {
           const failureStage = command.payload.commandType === "PlanFirstNightTasks"
             ? "first-night-task-planning"
@@ -2188,7 +2259,7 @@ export class GameApplicationService {
               ? "first-night-system-information"
               : command.payload.commandType === "SettleEvilTwinSetup"
                 ? "first-night-role-setup"
-              : command.payload.commandType === "SettleClockmakerInformation"
+              : command.payload.commandType === "SettleClockmakerInformation" || command.payload.commandType === "SettleMathematicianInformation"
                 ? "first-night-role-information"
                 : "first-night-role-action";
           return failed(
@@ -2617,7 +2688,8 @@ export class GameApplicationService {
     generatedAssignment: GeneratedCharacterAssignment | undefined,
     initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
     firstNightTaskPlan: FirstNightTaskPlan | undefined,
-    firstNightSystemInformation: FirstNightSystemInformationResolution | undefined
+    firstNightSystemInformation: FirstNightSystemInformationResolution | undefined,
+    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.createBatchId();
@@ -2632,7 +2704,8 @@ export class GameApplicationService {
       generatedAssignment,
       initialPrivateKnowledge,
       firstNightTaskPlan,
-      firstNightSystemInformation
+      firstNightSystemInformation,
+      mathematicianDecision
     );
 
     return {
@@ -2655,7 +2728,8 @@ export class GameApplicationService {
     generatedAssignment: GeneratedCharacterAssignment | undefined,
     initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
     firstNightTaskPlan: FirstNightTaskPlan | undefined,
-    firstNightSystemInformation: FirstNightSystemInformationResolution | undefined
+    firstNightSystemInformation: FirstNightSystemInformationResolution | undefined,
+    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>
   ): readonly AnyDomainEventEnvelope[] {
     const common = (eventSequence: number) => this.createEventMetadata(command, eventBatchId, eventSequence, gameVersion);
 
@@ -3628,6 +3702,27 @@ export class GameApplicationService {
         ];
       }
 
+      case "SettleMathematicianInformation": {
+        if (state === undefined || mathematicianDecision === undefined) {
+          throw new DomainError("InvalidDomainBatchSemantics", "Mathematician event creation requires one complete accepted-stream READY decision");
+        }
+        const firstMetadata = common(firstEventSequence);
+        const secondMetadata = common(firstEventSequence + 1);
+        return [
+          {
+            ...firstMetadata,
+            eventType: "MathematicianInformationDelivered",
+            payload: mathematicianDecision.deliveryPayload satisfies MathematicianInformationDeliveredPayload
+          },
+          {
+            ...secondMetadata,
+            createdAt: firstMetadata.createdAt,
+            eventType: "ScheduledTaskSettled",
+            payload: mathematicianDecision.settlementPayload satisfies ScheduledTaskSettledPayload
+          }
+        ];
+      }
+
       case "SettleEvilTwinSetup": {
         if (
           state === undefined ||
@@ -3764,9 +3859,24 @@ export class GameApplicationService {
   private validateProspectiveBatch(
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
-    batch: DomainEventBatch
+    batch: DomainEventBatch,
+    priorAcceptedEvents: readonly AnyDomainEventEnvelope[]
   ): CommandExecutionFailed | { readonly code: "DomainValidationFailed"; readonly message: string } | undefined {
     try {
+      if (command.payload.commandType === "SettleMathematicianInformation") {
+        const deliveryEvent = batch.events[0];
+        const settlementEvent = batch.events[1];
+        if (batch.events.length !== 2 || deliveryEvent?.eventType !== "MathematicianInformationDelivered" ||
+            settlementEvent?.eventType !== "ScheduledTaskSettled") {
+          throw new DomainError("InvalidDomainBatchSemantics", "Mathematician success must be exactly delivery then settlement");
+        }
+        const validation = validateProspectiveMathematicianInformationPair({
+          priorAcceptedEvents,
+          deliveryEvent,
+          settlementEvent
+        });
+        if (!validation.valid) throw new DomainError("InvalidDomainBatchSemantics", validation.reason);
+      }
       validateDomainBatchSemantics(state, batch.events);
       applyDomainEventBatch(state, batch.events);
       return undefined;
@@ -3813,6 +3923,10 @@ export class GameApplicationService {
 
       if (command.payload.commandType === "SettleClockmakerInformation") {
         return failed(batch.gameId, "DependencyExecutionFailed", error.message, "first-night-role-information", batch.expectedGameVersion);
+      }
+
+      if (command.payload.commandType === "SettleMathematicianInformation") {
+        return failed(batch.gameId, "DependencyExecutionFailed", error.message, "prospective-validation", batch.expectedGameVersion);
       }
 
       if (
