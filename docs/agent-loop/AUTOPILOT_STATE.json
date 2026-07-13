@@ -1,12 +1,12 @@
 {
-  "status": "RUNNING",
-  "currentPR": 23,
-  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/23",
-  "currentBranch": "phase-3/first-night-ability-outcome-ledger",
-  "currentSlice": "2B18A",
-  "reviewedHead": "65121bb4c057e125f0304ff826970ae95427fee3",
-  "currentReviewHeadAuthority": "Complete independent round-4 final review covered exact PR #23 product HEAD 65121bb4c057e125f0304ff826970ae95427fee3 and returned CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED",
-  "exactHeadCIAuthority": "Product HEAD 65121bb4c057e125f0304ff826970ae95427fee3 had successful push CI 29222876582 and pull-request CI 29222877872, including Ubuntu and Windows",
+  "status": "COMPLETED",
+  "currentPR": null,
+  "currentPRUrl": null,
+  "currentBranch": "main",
+  "currentSlice": null,
+  "reviewedHead": "671622b9f368a6201840ea0cb3d5b8254065bff8",
+  "currentReviewHeadAuthority": "Complete independent final review covered exact frozen PR #23 product HEAD 671622b9f368a6201840ea0cb3d5b8254065bff8 and returned CODE_REVIEW_PASS / RULE_REVIEW_PASS with remainingBlockers=[]",
+  "exactHeadCIAuthority": "Frozen product HEAD 671622b9f368a6201840ea0cb3d5b8254065bff8 had successful push CI 29226220051 and pull-request CI 29226221291; merge SHA 00a12062e2dc7a99ef01b2fbddc3a5dc4d666fa6 had successful main push CI 29227191271 and accepted-tag push CI 29227406815",
   "repairRound": 5,
   "designRound": 3.2,
   "maxDesignRounds": 3,
@@ -47,7 +47,7 @@
   "designReviewRound3Verdict": "RULE_DESIGN_FIX_REQUIRED",
   "ruleReady": true,
   "ruleDesignPass": true,
-  "implementationAuthorized": true,
+  "implementationAuthorized": false,
   "compatibilityDesignVerdict": null,
   "designReviewPath": "docs/implementation/phase-3-slice-2b18a-design-review-round-3-2.md",
   "designReviewHash": "8c4935ae4a63e4ea5262474b6b56e53e8ebdb729526987b704f05075f261f525",
@@ -63,9 +63,7 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [
-    "Exact-head push and pull-request CI plus one fresh complete independent dual review are pending for the final repair-round-5 feature HEAD."
-  ],
+  "remainingBlockers": [],
   "ruleCoverageStatus": "PARTIAL",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "approvedOverrideIds": [
@@ -267,7 +265,42 @@
       "status": "PENDING_LIVE_AUTHORITY"
     }
   },
-  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2", "2B17.3"],
+  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2", "2B17.3", "2B18A"],
+  "productHeadCI": {
+    "commitSha": "671622b9f368a6201840ea0cb3d5b8254065bff8",
+    "push": {
+      "run": 29226220051,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29226220051",
+      "status": "SUCCESS"
+    },
+    "pullRequest": {
+      "run": 29226221291,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29226221291",
+      "status": "SUCCESS"
+    },
+    "scope": "Frozen feature product HEAD only"
+  },
+  "mergeCommitCI": {
+    "commitSha": "00a12062e2dc7a99ef01b2fbddc3a5dc4d666fa6",
+    "mainPush": {
+      "run": 29227191271,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29227191271",
+      "status": "SUCCESS"
+    },
+    "acceptedTagPush": {
+      "tag": "phase-3-slice-2b18a-first-night-ability-outcome-ledger",
+      "run": 29227406815,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29227406815",
+      "status": "SUCCESS"
+    },
+    "scope": "Exact merge SHA only"
+  },
+  "closeoutCommitCI": {
+    "commitSha": null,
+    "run": null,
+    "status": "PENDING_EXACT_CLOSEOUT_COMMIT_PUSH",
+    "scope": "This docs-only closeout cannot self-reference its future commit SHA or GitHub run. Only a GitHub run for the exact pushed closeout commit is authoritative; no product-head or merge-commit CI status is inherited."
+  },
   "slice2B17ProductImplementation": {
     "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
     "commit": "feat: add Clockmaker first-night information",
@@ -462,20 +495,20 @@
     }
   },
   "slice2B18AImplementation": {
-    "status": "RUNNING_FINAL_REPAIR_ROUND_5_LOCAL_GATES_PASS",
+    "status": "COMPLETED",
     "branch": "phase-3/first-night-ability-outcome-ledger",
     "authorizationHead": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
     "authorizationCI": 29193210219,
-    "implementationCommit": "65121bb4c057e125f0304ff826970ae95427fee3",
-    "productReviewedHead": "65121bb4c057e125f0304ff826970ae95427fee3",
+    "implementationCommit": "671622b9f368a6201840ea0cb3d5b8254065bff8",
+    "productReviewedHead": "671622b9f368a6201840ea0cb3d5b8254065bff8",
     "productHeadPushCI": {
-      "run": 29222876582,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29222876582",
+      "run": 29226220051,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29226220051",
       "status": "SUCCESS"
     },
     "productHeadPullRequestCI": {
-      "run": 29222877872,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29222877872",
+      "run": 29226221291,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29226221291",
       "status": "SUCCESS"
     },
     "pr": 23,
@@ -557,7 +590,7 @@
       "authorization": "USER_AUTHORIZED_2B18A_GAINED_OPPORTUNITY_REVISION_MICROFIX",
       "repairRound": 5,
       "maxRepairRounds": 5,
-      "status": "LOCAL_GATES_PASS_AWAITING_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+      "status": "COMPLETED",
       "scopeMode": "LEDGER_ONLY_RESCOPE",
       "behaviorDesignFrozen": true,
       "ruleSemanticsChanged": false,
@@ -575,9 +608,12 @@
         "R5-V2-LATER",
         "R4-22 future-revision regression"
       ],
-      "remainingBlockers": [
-        "Exact-head CI and fresh independent dual review are pending."
-      ]
+      "productHeadPushCI": 29226220051,
+      "productHeadPullRequestCI": 29226221291,
+      "reviewedHead": "671622b9f368a6201840ea0cb3d5b8254065bff8",
+      "codeVerdict": "CODE_REVIEW_PASS",
+      "ruleVerdict": "RULE_REVIEW_PASS",
+      "remainingBlockers": []
     },
     "designAuthority": "docs/implementation/phase-3-slice-2b18a-design-round-3-2.md",
     "designSha256": "615f4cb303cbcb6884f37cf6f46eb6733e1df631c68a9a3fa9085da26134d865",
@@ -611,7 +647,7 @@
     "baseMain": "89143b56ba7cb2e8c6aa6a2ce97c7a5dbe82794f",
     "baseMainCI": 29193210219,
     "pr": 23,
-    "prState": "OPEN",
+    "prState": "MERGED",
     "worktree": "CLEAN",
     "scopeDocument": "docs/implementation/phase-3-slice-2b18a-ledger-only-rescope.md",
     "scopeDocumentSha256": "3415944f1a42bcaee8f0a7a990a6d8d148ad0169fea0a9e4697acfbfc9f44b44",
@@ -628,7 +664,7 @@
     "scopeReviewRound2IntegrityVerdict": "MATCH",
     "scopeReviewRound2Verdict": "SCOPE_REVIEW_PASS",
     "scopeReviewRound2RemainingBlockers": [],
-    "implementationAuthorized": true,
+    "implementationAuthorized": false,
     "previousSixBlockers": [
       "Canonical firstNightTaskInsertions-to-plan, grant, and opportunity chain is incomplete.",
       "V1/V2 generation and task/grant/role-segment binding is incomplete.",
@@ -648,7 +684,25 @@
       "task settlement"
     ]
   },
-  "lastAction": "Implemented the user-authorized final gained-opportunity revision microfix and passed typecheck, lint, focused 46/196/212 tests, full 29/986 tests, and coverage gates without changing BOTC semantics or ledger-only scope.",
+  "slice2B18AAcceptance": {
+    "status": "COMPLETED",
+    "pr": 23,
+    "prState": "MERGED",
+    "mergedAt": "2026-07-13T05:47:40Z",
+    "frozenFeatureHead": "671622b9f368a6201840ea0cb3d5b8254065bff8",
+    "mergeSha": "00a12062e2dc7a99ef01b2fbddc3a5dc4d666fa6",
+    "acceptedTag": "phase-3-slice-2b18a-first-night-ability-outcome-ledger",
+    "codeVerdict": "CODE_REVIEW_PASS",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [],
+    "codeReviewArchive": "docs/reviews/pr-23-code-review-final.md",
+    "codeReviewCommentSha256": "eb5b5ad26848a78a51ec59467dc2e56170601b9fbdd6c5932e561f1262b6ef6e",
+    "ruleReviewArchive": "docs/reviews/pr-23-rule-review-final.md",
+    "ruleReviewCommentSha256": "44baa6bfbc07d88db188d6882be9fc65cd8005831f2599b929b72f425fa01f32",
+    "coverageStatus": "PARTIAL",
+    "acceptedBoundary": "Derived first-night ability outcome ledger foundation and exact gained V1/V2 terminal-opportunity revision binding only; no Mathematician true-count resolver, number, delivery, private count projection, or settlement."
+  },
+  "lastAction": "Archived the exact final PR #23 code/rule review comments and completed the post-merge docs-only closeout for accepted Slice 2B18A.",
   "lastError": null,
-  "nextAction": "Controller precommit inspection, then commit and push the final repair-round-5 feature HEAD; require exact-head CI and one fresh complete independent dual review. No repair round 6, 2B18B, or 2B19."
+  "nextAction": "Stop with no active slice. Do not start 2B18B or 2B19 without a new governed user authorization. After the docs-only closeout is committed and pushed, record only CI for that exact closeout SHA; do not inherit prior CI."
 }

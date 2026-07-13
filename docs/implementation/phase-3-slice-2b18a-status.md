@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B18A Implementation Status
 
-> Status: `RUNNING`, ledger-only gained-opportunity revision microfix round `5 / 5` on PR #23 under `USER_AUTHORIZED_2B18A_GAINED_OPPORTUNITY_REVISION_MICROFIX`. The bounded implementation and local gates pass; exact-head CI and fresh independent dual review are pending.
+> Status: `COMPLETED`. The ledger-only Slice 2B18A implementation merged through PR #23 after exact-head CI and independent `CODE_REVIEW_PASS / RULE_REVIEW_PASS`; no blockers remain.
 
 ## Scope
 
@@ -47,10 +47,19 @@ The rule does not require the canonical gained revision to equal the later evalu
 - Focused ledger/rebuild/application: `46 / 196 / 212 tests passed`.
 - Full test: `29 files / 986 tests` pass.
 - Coverage: `86.35%` statements/lines, `81.21%` branches, and `97.57%` functions; gate passes.
-- Exact product-head push CI `29222876582` and PR CI `29222877872` passed for frozen reviewed HEAD `65121bb4c057e125f0304ff826970ae95427fee3`, including Ubuntu and Windows.
-- Complete round-4 final review: `docs/implementation/phase-3-slice-2b18a-ledger-only-final-review-repair-round-4.md`, SHA-256 `d5a8c728070a34faf931ec2a1c913fb21c6680d62cf125c6dc769237be381ae1`, reverse integrity `MATCH`.
-- Final verdicts: `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`.
+- Frozen product HEAD `671622b9f368a6201840ea0cb3d5b8254065bff8`: push CI `29226220051` and PR CI `29226221291` passed.
+- Merge SHA `00a12062e2dc7a99ef01b2fbddc3a5dc4d666fa6`: main push CI `29227191271` and accepted-tag push CI `29227406815` passed.
+- Final review comments are archived verbatim in `docs/reviews/pr-23-code-review-final.md` and `docs/reviews/pr-23-rule-review-final.md`; their exact GitHub body hashes are `eb5b5ad26848a78a51ec59467dc2e56170601b9fbdd6c5932e561f1262b6ef6e` and `44baa6bfbc07d88db188d6882be9fc65cd8005831f2599b929b72f425fa01f32`.
+- Final verdicts: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`; `remainingBlockers=[]`.
 
 ## Coverage status
 
-`PARTIAL / UNACCEPTED / RUNNING`. 2B18A provides only the ledger foundation and directly tested supported terminal adapters. Exact gained V1/V2 terminal-opportunity revision equality is implemented and traced to `[R5-V1-POSITIVE]`, `[R5-V1-STALE]`, `[R5-V1-LATER]`, `[R5-V2-POSITIVE]`, `[R5-V2-STALE]`, `[R5-V2-LATER]`, and retained future-revision regression `[R4-22]`. It does not implement a Mathematician count, number, delivery, projection, or settlement and does not mark any role `COMPLETE`. Repair round `5 / 5` is final; audit comments, merge, tag, 2B18B, and 2B19 remain prohibited until the exact-head CI and independent dual-review gates pass.
+`PARTIAL / ACCEPTED / COMPLETED`. 2B18A provides only the ledger foundation and directly tested supported terminal adapters. Exact gained V1/V2 terminal-opportunity revision equality is implemented and traced to `[R5-V1-POSITIVE]`, `[R5-V1-STALE]`, `[R5-V1-LATER]`, `[R5-V2-POSITIVE]`, `[R5-V2-STALE]`, `[R5-V2-LATER]`, and retained future-revision regression `[R4-22]`. It does not implement a public true-count resolver, `MathematicianCountResolution`, Mathematician number, delivery, private count projection, or settlement and does not mark any role `COMPLETE`. `MATHEMATICIAN_INFORMATION` remains fail closed and unsettled. Mathematician remains `PARTIAL`; 2B18B and 2B19 have not started.
+
+## Post-merge closeout
+
+- PR #23 merged at `2026-07-13T05:47:40Z`.
+- Accepted tag: `phase-3-slice-2b18a-first-night-ability-outcome-ledger` at the merge SHA.
+- The remote feature branch was deleted. Control returned to clean `main` with no active PR or slice.
+- The future docs-only closeout commit and its GitHub run cannot be self-recorded here. Any closeout CI claim must cite a run for that exact pushed closeout SHA and must not inherit product-head or merge-commit CI.
+- Stop after closeout; no 2B18B or 2B19 work is authorized.
