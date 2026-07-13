@@ -1,78 +1,54 @@
 # Current Task
 
-## Active rule-ready candidate slice
+## No active slice
 
-- Control status: `REPAIR_ROUND_1_PUBLISHED_CI_PENDING / UNACCEPTED`.
-- Current branch: `phase-3/mathematician-first-night-information`.
-- Current PR: [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24), open and non-draft.
-- Current slice: `2B18B`.
-- Candidate role: `mathematician`.
-- Candidate scope: `FIRST_NIGHT_COUNT_RESOLUTION_INFORMATION_DELIVERY_PRIVATE_PROJECTION`.
-- Rule gate: `RULE_READY`; `ruleReady=true`.
-- Current rule evidence: `docs/rules/evidence/2B18B-resolved.md`, SHA-256 `0c4893de8f38dfc05876f89744976a7c54afc6bd41465f2e1198d22b0844a4c8`.
-- Historical conflict evidence remains `docs/rules/evidence/2B18B.md`, SHA-256 `eae53e0eed5d54c5c4a78d31543749787359f61b2e9b7c3f0ceb27069d2471c1`.
-- Authorized resolution: `OPTION_A_LEGACY_V1_GAINED_MATHEMATICIAN_ONLY_WITHOUT_BASE_TASK`.
-- Resolution evidence: `docs/rules/evidence/2B18B-resolved.md`, SHA-256 `0c4893de8f38dfc05876f89744976a7c54afc6bd41465f2e1198d22b0844a4c8`.
-- Resolution kind: `IMPLEMENTATION_SUPPORT_BOUNDARY`; no rule override or simulator-policy change was added.
-- Resolution gate: `RULE_READY`; active `unresolvedConflicts=[]`.
-- Design continuation authorization: `USER_AUTHORIZED_2B18B_DESIGN_ROUND_3_REPLAY_ADAPTER`.
-- Design round: `3 / 3`.
-- Current design: `docs/implementation/phase-3-slice-2b18b-design-round-3.md`, SHA-256 `066be05f5ee8c0fccb83b00fd8471e439e7e6d2c8c8366af8c86aebceac0a792`.
-- Design status: `RULE_DESIGN_PASS`.
-- Round 1 review: `docs/implementation/phase-3-slice-2b18b-design-review-round-1.md`, SHA-256 `cf1e2ac0abbd805be3f0dae1eb8b9b3d30a5bb4c60d9303a4b8d7fad7125e9bf`.
-- Round 1 verdict: `RULE_DESIGN_FIX_REQUIRED`.
-- Round 2 review: `docs/implementation/phase-3-slice-2b18b-design-review-round-2.md`, SHA-256 `28760fb16ba32f120c714428e71af20583a10449cedf37e61e768cd000d7c0c3`.
-- Round 2 verdict: `RULE_DESIGN_FIX_REQUIRED`.
-- Round 3 review: `docs/implementation/phase-3-slice-2b18b-design-review-round-3.md`, SHA-256 `a05dc0fcb3959863448620b7b064bef38db95987b92708475f77eaf34e308808`.
-- Round 3 reviewed HEAD: `0c5cac5d2db26d70a7983bf3790637c9f2ac252d`; exact GitHub Actions run `29243702315` completed `SUCCESS`.
-- Round 3 verdict: `RULE_DESIGN_PASS`; `remainingBlockers=[]`.
-- Design gate: `ruleDesignPass=true`.
-- `implementationAuthorized=true` for the bounded reviewed Round 3 authority only.
-- Round 3 freezes three noninterchangeable trust layers, a per-event replay adapter, exact terminal-event union closure, and 225 mandatory numbered tests.
-- Completed slices now include `2B18A`.
-- Published implementation head `8b273eec34502906d6c2aa12031c4065ec97725c` completed exact-head push CI `29251259989` and PR CI `29251425251`, both `SUCCESS`. Independent final review returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`. The complete immutable report is `docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md`, SHA-256 `6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157`.
-- Repair round is `1 / 2`. The sole writer closed all ten reviewed blocker groups without changing rule semantics, Option A, V1 order, public resolver boundaries, or scope. Repair implementation commit `dc9994546c6a95576872d313ec4e46ba3db1a999` is pushed to PR #24; no new independent verdict exists.
-- Final repair local gates pass: Math `422 / 422`; focused `8 files / 1020 tests`; full and coverage `30 files / 1408 tests`; coverage `86.78%` statements/lines, `81.52%` branches, `97.78%` functions; typecheck and full lint pass. All 224 locally executable authority IDs and the repair-contract regressions are covered. `Original-140` passed for the old frozen head but must be rerun for the current GitHub PR head. Initial `dc999454...` push/PR runs are `29255137488 / 29255140399`; this docs-only synchronization requires fresh runs for the resulting current PR head.
-- Exact semantic traceability is `docs/implementation/phase-3-slice-2b18b-test-traceability.md`; runner count remains supporting evidence only and does not replace exact authority mapping.
-- Next action is to wait for both CI workflows on the current GitHub PR head, verify exact-head success, finalize the PR body externally, then request one new complete independent final review. Do not create another branch, merge, or start 2B19.
-- Slice 2B19 has not started and remains prohibited.
+- Control status: `COMPLETED / ACCEPTED` for Phase 3 Slice `2B18B`.
+- Current branch: `main`.
+- Current PR: none.
+- Current slice: none.
+- `implementationAuthorized=false`.
+- Completed slices: `2B13`, `2B14`, `2B15`, `2B16`, `2B17`, `2B17.1`, `2B17.2`, `2B17.3`, `2B18A`, and `2B18B`.
+- Slice `2B19` has not started and remains prohibited in this closeout.
 
-## Accepted Slice 2B18A
+## Accepted Slice 2B18B
 
-- Name: `First-Night Ability Outcome Ledger Foundation`.
-- Scope mode: `LEDGER_ONLY_RESCOPE`.
-- Final repair: `5 / 5` under `USER_AUTHORIZED_2B18A_GAINED_OPPORTUNITY_REVISION_MICROFIX`; no repair round 6 exists.
-- PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) merged at `2026-07-13T05:47:40Z`.
-- Frozen feature HEAD: `671622b9f368a6201840ea0cb3d5b8254065bff8`.
-- Merge SHA: `00a12062e2dc7a99ef01b2fbddc3a5dc4d666fa6`.
-- Accepted tag: `phase-3-slice-2b18a-first-night-ability-outcome-ledger`.
+- Name: `Mathematician First-Night Information`.
+- Scope: `FIRST_NIGHT_COUNT_RESOLUTION_INFORMATION_DELIVERY_PRIVATE_PROJECTION`.
+- PR: [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24), merged at `2026-07-13T14:18:39Z`.
+- Frozen feature HEAD: `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`.
+- Merge SHA: `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`.
+- Accepted tag: `phase-3-slice-2b18b-mathematician-first-night-information`.
 - Final verdicts: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`; `remainingBlockers=[]`.
-- Final review archives: `docs/reviews/pr-23-code-review-final.md` and `docs/reviews/pr-23-rule-review-final.md`.
+- Final review archives: `docs/reviews/pr-24-code-review-final.md` and `docs/reviews/pr-24-rule-review-final.md`.
+- Exact archived original comment-body SHA-256: code `a30abaf035b4c5fd7f8060a7282b6e77e153ba5529fb4cafabcaa9fb5a366189`; rule `ba3c58d168ec21f0fbab3133d0eb62d8f97a0a68ef210b22d02b5f473cdd92cf`.
+- Rule evidence: `docs/rules/evidence/2B18B-resolved.md`, SHA-256 `0c4893de8f38dfc05876f89744976a7c54afc6bd41465f2e1198d22b0844a4c8`, terminal `RULE_READY`.
+- Historical conflict evidence remains immutable at `docs/rules/evidence/2B18B.md`, SHA-256 `eae53e0eed5d54c5c4a78d31543749787359f61b2e9b7c3f0ceb27069d2471c1`.
+- Design authority: `docs/implementation/phase-3-slice-2b18b-design-round-3.md`, SHA-256 `066be05f5ee8c0fccb83b00fd8471e439e7e6d2c8c8366af8c86aebceac0a792`.
+- Independent design review: `docs/implementation/phase-3-slice-2b18b-design-review-round-3.md`, SHA-256 `a05dc0fcb3959863448620b7b064bef38db95987b92708475f77eaf34e308808`, terminal `RULE_DESIGN_PASS`.
 
 ## Accepted boundary
 
-- Accepted: canonical derived first-night ability outcome ledger foundation, initialization-envelope replay provenance, supported terminal adapters, BASE/V1/V2 identities, and exact gained V1/V2 terminal action-opportunity revision binding to the Philosopher task/choice/grant/insertion/original-opportunity/ability-instance chain.
-- Accepted historical behavior: canonical gained revision `N` may precede evaluated revision `M`; direct V1/V2 positives use `N=2 < M=3`, and stale, later, and future mismatches are rejected.
-- Local unaccepted implementation now includes the internal complete-stream decision, exact count/candidate selection, delivery, terminal fact, settlement, trusted replay, and accepted-stream private count projection. No public caller-state or caller-ledger truth resolver exists.
-- Remaining completion work is fresh frozen exact-head cross-platform CI for the current PR head and a new complete independent review; accepted main remains the 2B18A boundary until merge.
-- Mathematician remains `PARTIAL`; no role is `COMPLETE`.
+- Accepted: first-night distinct-player abnormal-outcome count resolution, exact information delivery and settlement, terminal outcome-ledger fact, trusted replay validation, and accepted-stream private player/AI projection exposing only `{count}`.
+- Accepted sources: BASE, legacy V1 gained-only, V2 gained-only, and V2 base-plus-gained, with canonical source, revision, task, grant, insertion, opportunity, and ability-instance validation.
+- Option A remains a support boundary rather than a rule override: V1 base-only and V1 gained-only settle; V1 base-plus-gained remains replay-compatible but settlement-unsupported and fails closed before either delivery; V2 duplicate holders remain base-first then gained.
+- The four approved Mathematician simulator policies and legacy V1 ordering are unchanged.
+- Mathematician remains `PARTIAL`. Other-night behavior, general poison production, Travellers, free Storyteller number choice, general dawn reset, and broader character/alignment/death lifecycle behavior remain unsupported. No role is `COMPLETE`.
+
+## Repair history
+
+- Repair round remains `1 / 2`; no additional repair round was used.
+- Initial reviewed head `8b273eec34502906d6c2aa12031c4065ec97725c` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`.
+- The immutable report is `docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md`, SHA-256 `6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157`.
+- Repair implementation commit `dc9994546c6a95576872d313ec4e46ba3db1a999` closed the ten reviewed blocker groups without changing rule semantics, Option A, V1 order, public resolver boundaries, or scope.
+- Exact final traceability is `docs/implementation/phase-3-slice-2b18b-test-traceability.md`: 224 locally executable authority IDs plus the frozen exact-head cross-platform gate.
 
 ## CI provenance
 
-- `productHeadCI`: frozen feature HEAD push `29226220051` and pull-request `29226221291`, both `SUCCESS`.
-- `mergeCommitCI`: merge-main push `29227191271` and accepted-tag push `29227406815`, both `SUCCESS` for merge SHA `00a12062e2dc7a99ef01b2fbddc3a5dc4d666fa6`.
-- `closeoutCommitCI`: pending the future exact docs-only closeout commit SHA and its GitHub run. This file cannot self-reference that future SHA or run, and no earlier CI result is inherited.
+- `productHeadCI`: frozen feature HEAD push `29255450083` and pull request `29255453509`, both `SUCCESS` for `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`.
+- `mergeCommitCI`: main run `29257399469` attempt 1 failed on the existing Cerenovus batch-event/clock-position retry test's 5,000 ms timeout; attempt 2 completed `SUCCESS` for `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`.
+- Accepted-tag run `29257432523` completed `SUCCESS` for the same merge SHA.
+- `closeoutCommitCI`: `PENDING` for the future exact docs-only closeout commit SHA and GitHub run. No earlier CI status is inherited.
 
-## Preserved conflict and authorized Option A
+## Next action
 
-Accepted legacy V1 scheduling fixes Philosopher-gained Mathematician before base Mathematician when both coexist, while the approved duplicate-holder temporal override requires base first and gained afterward. Accepted V1 cannot be migrated or reordered; skipping it violates canonical next-task ordering, following it violates base-first, and rejecting it violates this slice's mandatory V1 support.
-
-The original `RULE_CONFLICT` finding above remains immutable history. The user has now selected Option A as a product support boundary:
-
-- V1 base-only remains settlement-supported.
-- V1 gained-only remains settlement-supported at its recorded V1 position.
-- V1 base plus gained remains replay-compatible but is not settlement-supported; it must fail closed before either Mathematician delivery.
-- V2 remains the only supported duplicate-holder settlement generation and retains base-first, gained-later ordering.
-- V1 is neither reordered nor migrated, and gained-first is not granted new rule authority.
-
-The fresh independent rule researcher confirmed all required Option A propositions and returned `RULE_READY`. The original `RULE_CONFLICT` remains immutable historical evidence, while the active unresolved-conflict list is empty. Independent Round 1 design review found eight contract blockers. Round 2 closed six, but its independent review retained two: the Layer A contract could not be called across the existing replay/event-applier shapes, and the closed terminal evidence union omitted `MathematicianInformationDelivered`. The user explicitly authorized Round 3 to adapt the replay architecture without changing behavior. The new authority separates command decision, prospective pair validation, and per-event replay into Layers A/B/C, and directly closes the terminal union. Fresh independent review returned `RULE_DESIGN_PASS` and closed both historical blockers. Bounded 2B18B implementation is authorized; Slice 2B19 remains prohibited.
+Commit and push this docs-only closeout, then wait for GitHub CI on that exact closeout commit. Do not modify the frozen product history, start Slice `2B19`, or infer authorization for another slice.

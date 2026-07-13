@@ -1,12 +1,12 @@
 # Phase 3 Slice 2B18B Implementation Status
 
-> Status: `REPAIR_ROUND_1_PUBLISHED_CI_PENDING / UNACCEPTED`. PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) is open on `phase-3/mathematician-first-night-information`. Independent final review of frozen head `8b273eec34502906d6c2aa12031c4065ec97725c` returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`; repair implementation commit `dc9994546c6a95576872d313ec4e46ba3db1a999` is pushed, and current PR-head CI plus independent re-review remain pending.
+> Status: `COMPLETED / ACCEPTED / MERGED`. PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) merged frozen feature HEAD `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87` as `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c` at `2026-07-13T14:18:39Z`. Independent final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS` with `remainingBlockers=[]`; accepted tag `phase-3-slice-2b18b-mathematician-first-night-information` resolves to the merge SHA.
 
 ## Scope
 
 This slice implements first-night Mathematician count resolution, exact information delivery, settlement, terminal outcome-ledger fact, trusted replay validation, and private count projection under the Round 3 authority and Option A support boundary. It does not change external rules, approved overrides, V1 ordering, or Slice 2B18A history, and it does not begin 2B19.
 
-## Implemented locally
+## Implemented and accepted
 
 - Public exact Math payload/state/view/provenance contracts, deterministic ID parser/formatter, fixed `0..11` domain, smallest-false policy, impairment/Vortox carriers, and exact shape validators.
 - Internal Layer A complete-stream decision, Layer B prospective pair validation, Layer C per-event replay adapter, trusted replay checkpoints, and a separately named stored-chain validator. Internal decision and replay functions are absent from the package root.
@@ -26,7 +26,7 @@ This slice implements first-night Mathematician count resolution, exact informat
 
 ## Test traceability
 
-The exact 225-item semantic classification and repair-contract mapping are in `docs/implementation/phase-3-slice-2b18b-test-traceability.md`. The original frozen head completed `Original-140` through push CI `29251259989` and PR CI `29251425251`, both `SUCCESS`. Repair implementation commit `dc999454...` started push CI `29255137488` and PR CI `29255140399`; this docs-only synchronization makes the authoritative candidate the current GitHub PR head, which must receive its own successful checks before review. The `422`-test Math runner count is supporting evidence, not a substitute for semantic traceability.
+The exact 225-item semantic classification and repair-contract mapping are in `docs/implementation/phase-3-slice-2b18b-test-traceability.md`. The accepted frozen feature HEAD `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87` completed `Original-140` through push CI `29255450083` and pull-request CI `29255453509`, both `SUCCESS`. The `422`-test Math runner count remains supporting evidence, not a substitute for semantic traceability.
 
 ## Local validation
 
@@ -37,11 +37,20 @@ The exact 225-item semantic classification and repair-contract mapping are in `d
 - Full test: `30 files / 1408 tests` pass.
 - Coverage: `30 files / 1408 tests` pass; `86.78%` statements/lines, `81.52%` branches, `97.78%` functions.
 - `git diff --check`, strict control JSON parse, root-export/internal resolver, caller-state/caller-ledger resolver, nondeterminism, raw JSON semantic comparison, sparse-array, and deleted-test scans: pass. State-shape validator name matches and dense-array-guarded `.every` calls were reviewed as non-resolver/non-sparse false positives.
-- `Original-140` is complete for reviewed head `8b273eec...` through successful exact-head push/PR CI. The current GitHub PR head requires its own push/PR CI and does not inherit that result.
+- `Original-140` is complete for the accepted frozen feature HEAD `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87` through successful exact-head push/PR CI `29255450083 / 29255453509`.
 
 ## Rule coverage
 
 `PARTIAL`. Implemented only for first night, fixed twelve-player/no-Traveller scope, represented drunkenness/poisoning evidence, represented Vortox state, approved deterministic selection, Option A, and safe private count projection. Other-night behavior, general poisoning, Travellers, free Storyteller number discretion, broader character/alignment/death interactions, and general dawn reset remain unsupported. No role is `COMPLETE`.
+
+## Acceptance and CI provenance
+
+- Frozen feature HEAD: `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`.
+- Final verdicts: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`; `remainingBlockers=[]`.
+- Final review archives: `docs/reviews/pr-24-code-review-final.md` and `docs/reviews/pr-24-rule-review-final.md`. Their exact original comment-body SHA-256 values are `a30abaf035b4c5fd7f8060a7282b6e77e153ba5529fb4cafabcaa9fb5a366189` and `ba3c58d168ec21f0fbab3133d0eb62d8f97a0a68ef210b22d02b5f473cdd92cf`.
+- `productHeadCI`: push `29255450083` and pull request `29255453509`, both `SUCCESS` for the frozen feature HEAD.
+- `mergeCommitCI`: main run `29257399469` attempt 1 failed because the existing Cerenovus batch-event/clock-position retry test exceeded its 5,000 ms timeout; attempt 2 completed `SUCCESS` for merge SHA `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`. Accepted-tag run `29257432523` also completed `SUCCESS` for that exact merge SHA.
+- `closeoutCommitCI`: `PENDING` for the future exact docs-only closeout commit SHA and run. It inherits no product-head, merge-commit, retry-attempt, or tag-run status.
 
 ## PR declaration material
 
@@ -68,4 +77,4 @@ Use the exact revisions, retrieval dates, URLs, and snapshot hashes recorded in 
 
 ### Rule-to-Test Traceability
 
-Use `docs/implementation/phase-3-slice-2b18b-test-traceability.md`. It records 224 local direct/integration IDs and the single external cross-platform gate without claiming acceptance or `COMPLETE` role coverage.
+Use `docs/implementation/phase-3-slice-2b18b-test-traceability.md`. It records 224 direct/integration IDs and the single external cross-platform gate without claiming `COMPLETE` role coverage.

@@ -1,13 +1,13 @@
 {
-  "status": "REPAIR_ROUND_1_PUBLISHED_CI_PENDING",
-  "currentPR": 24,
-  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/24",
-  "currentBranch": "phase-3/mathematician-first-night-information",
-  "currentSlice": "2B18B",
-  "reviewedHead": "8b273eec34502906d6c2aa12031c4065ec97725c",
-  "currentReviewHeadAuthority": "Independent final review of PR #24 head 8b273eec34502906d6c2aa12031c4065ec97725c returned CODE_REVIEW_FIX_REQUIRED and RULE_REVIEW_FIX_REQUIRED. Repair implementation commit dc9994546c6a95576872d313ec4e46ba3db1a999 is pushed; no new independent verdict exists.",
-  "exactHeadCIAuthority": "Prior reviewed head 8b273eec34502906d6c2aa12031c4065ec97725c passed push CI 29251259989 and pull-request CI 29251425251. Repair implementation commit dc9994546c6a95576872d313ec4e46ba3db1a999 started runs 29255137488 and 29255140399. Final authority is the current GitHub PR head after this docs-only synchronization and its own fresh exact-head CI.",
-  "currentFeatureHead": "READ_FROM_GITHUB_PR_24_AT_REVIEW_TIME",
+  "status": "COMPLETED",
+  "currentPR": null,
+  "currentPRUrl": null,
+  "currentBranch": "main",
+  "currentSlice": null,
+  "reviewedHead": "00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87",
+  "currentReviewHeadAuthority": "Independent final review of frozen PR #24 head 00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87 returned CODE_REVIEW_PASS and RULE_REVIEW_PASS with remainingBlockers=[]. The complete original review was published twice with exact code/rule markers and is archived verbatim after merge.",
+  "exactHeadCIAuthority": "Frozen feature HEAD 00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87 passed push CI 29255450083 and pull-request CI 29255453509. Merge SHA 681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c passed main run 29257399469 attempt 2 after attempt 1 timed out in an existing Cerenovus test; accepted-tag run 29257432523 also passed for the merge SHA. The future docs-only closeout commit inherits none of these statuses.",
+  "currentFeatureHead": null,
   "repairRound": 1,
   "designRound": 3,
   "maxDesignRounds": 3,
@@ -19,11 +19,11 @@
   "designRound3_2Scope": null,
   "maxSlices": 1,
   "maxRepairRounds": 2,
-  "candidateRole": "mathematician",
-  "candidateScope": "FIRST_NIGHT_COUNT_RESOLUTION_INFORMATION_DELIVERY_PRIVATE_PROJECTION",
-  "currentDesignPath": "docs/implementation/phase-3-slice-2b18b-design-round-3.md",
-  "currentDesignHash": "066be05f5ee8c0fccb83b00fd8471e439e7e6d2c8c8366af8c86aebceac0a792",
-  "currentDesignStatus": "RULE_DESIGN_PASS",
+  "candidateRole": null,
+  "candidateScope": null,
+  "currentDesignPath": null,
+  "currentDesignHash": null,
+  "currentDesignStatus": null,
   "slice2B18BDesignRound3Authorization": "USER_AUTHORIZED_2B18B_DESIGN_ROUND_3_REPLAY_ADAPTER",
   "slice2B18BDesignRound3Path": "docs/implementation/phase-3-slice-2b18b-design-round-3.md",
   "slice2B18BDesignRound3Hash": "066be05f5ee8c0fccb83b00fd8471e439e7e6d2c8c8366af8c86aebceac0a792",
@@ -61,15 +61,37 @@
   "designReviewRound3Verdict": "RULE_DESIGN_FIX_REQUIRED",
   "ruleReady": true,
   "ruleDesignPass": true,
-  "implementationAuthorized": true,
-  "implementationStatus": "REPAIR_ROUND_1_PUBLISHED_CI_PENDING_UNACCEPTED",
-  "implementationBranch": "phase-3/mathematician-first-night-information",
+  "implementationAuthorized": false,
+  "implementationStatus": "COMPLETED_ACCEPTED",
+  "implementationBranch": null,
   "implementationCommit": "dc9994546c6a95576872d313ec4e46ba3db1a999",
   "repairCandidateCommit": "dc9994546c6a95576872d313ec4e46ba3db1a999",
   "finalReviewRepairRound1Path": "docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md",
   "finalReviewRepairRound1Hash": "6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157",
   "finalReviewRepairRound1CodeVerdict": "CODE_REVIEW_FIX_REQUIRED",
   "finalReviewRepairRound1RuleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+  "finalReviewAcceptance": {
+    "reviewedPR": 24,
+    "reviewedHead": "00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87",
+    "codeVerdict": "CODE_REVIEW_PASS",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [],
+    "canonicalReportSha256": "3ede0f81d5386f0b10666055b29fe729655b01095de287538c73a910f7c75bdc",
+    "codeReviewComment": {
+      "id": 4958929402,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/24#issuecomment-4958929402",
+      "createdAt": "2026-07-13T14:17:23Z",
+      "bodySha256": "a30abaf035b4c5fd7f8060a7282b6e77e153ba5529fb4cafabcaa9fb5a366189",
+      "archive": "docs/reviews/pr-24-code-review-final.md"
+    },
+    "ruleReviewComment": {
+      "id": 4958931775,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/24#issuecomment-4958931775",
+      "createdAt": "2026-07-13T14:17:37Z",
+      "bodySha256": "ba3c58d168ec21f0fbab3133d0eb62d8f97a0a68ef210b22d02b5f473cdd92cf",
+      "archive": "docs/reviews/pr-24-rule-review-final.md"
+    }
+  },
   "priorProductHeadPushCI": 29251259989,
   "priorProductHeadPullRequestCI": 29251425251,
   "repairImplementationPushCI": 29255137488,
@@ -88,7 +110,7 @@
   },
   "implementationTraceabilityPath": "docs/implementation/phase-3-slice-2b18b-test-traceability.md",
   "implementationTraceabilityStatus": "224_LOCAL_DIRECT_OR_INTEGRATION_0_LOCAL_GAPS",
-  "implementationExternalGate": "ORIGINAL_140_PASSED_FOR_PRIOR_HEAD_8B273EEC_CURRENT_PR_HEAD_EXACT_CI_PENDING",
+  "implementationExternalGate": "ORIGINAL_140_PASSED_FOR_FROZEN_HEAD_00AFA421_PUSH_29255450083_PR_29255453509",
   "controllerPrePublishAudit": {
     "status": "SUPERSEDED_BY_FINAL_REVIEW_FIX_REQUIRED",
     "scope": "PRODUCTION_TEST_SCOPE_IMMUTABLE_AUTHORITY_ROOT_EXPORT",
@@ -111,10 +133,7 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [
-    "Require fresh exact-head push and pull-request CI for the current GitHub PR head.",
-    "Require one new complete independent final review with both pass verdicts and no blockers."
-  ],
+  "remainingBlockers": [],
   "ruleCoverageStatus": "PARTIAL",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "approvedOverrideIds": [
@@ -316,32 +335,39 @@
       "status": "PENDING_LIVE_AUTHORITY"
     }
   },
-  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2", "2B17.3", "2B18A"],
+  "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2", "2B17.3", "2B18A", "2B18B"],
   "productHeadCI": {
-    "commitSha": "671622b9f368a6201840ea0cb3d5b8254065bff8",
+    "commitSha": "00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87",
     "push": {
-      "run": 29226220051,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29226220051",
+      "run": 29255450083,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29255450083",
       "status": "SUCCESS"
     },
     "pullRequest": {
-      "run": 29226221291,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29226221291",
+      "run": 29255453509,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29255453509",
       "status": "SUCCESS"
     },
     "scope": "Frozen feature product HEAD only"
   },
   "mergeCommitCI": {
-    "commitSha": "00a12062e2dc7a99ef01b2fbddc3a5dc4d666fa6",
+    "commitSha": "681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c",
     "mainPush": {
-      "run": 29227191271,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29227191271",
-      "status": "SUCCESS"
+      "run": 29257399469,
+      "attempt1": {
+        "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29257399469/attempts/1",
+        "status": "FAILURE",
+        "reason": "Existing Cerenovus batch-event and clock-metadata retry test exceeded its 5000 ms timeout."
+      },
+      "attempt2": {
+        "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29257399469/attempts/2",
+        "status": "SUCCESS"
+      }
     },
     "acceptedTagPush": {
-      "tag": "phase-3-slice-2b18a-first-night-ability-outcome-ledger",
-      "run": 29227406815,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29227406815",
+      "tag": "phase-3-slice-2b18b-mathematician-first-night-information",
+      "run": 29257432523,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29257432523",
       "status": "SUCCESS"
     },
     "scope": "Exact merge SHA only"
@@ -753,6 +779,26 @@
     "coverageStatus": "PARTIAL",
     "acceptedBoundary": "Derived first-night ability outcome ledger foundation and exact gained V1/V2 terminal-opportunity revision binding only; no Mathematician true-count resolver, number, delivery, private count projection, or settlement."
   },
+  "slice2B18BAcceptance": {
+    "status": "COMPLETED",
+    "pr": 24,
+    "prState": "MERGED",
+    "mergedAt": "2026-07-13T14:18:39Z",
+    "frozenFeatureHead": "00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87",
+    "mergeSha": "681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c",
+    "acceptedTag": "phase-3-slice-2b18b-mathematician-first-night-information",
+    "repairRound": 1,
+    "maxRepairRounds": 2,
+    "codeVerdict": "CODE_REVIEW_PASS",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [],
+    "codeReviewArchive": "docs/reviews/pr-24-code-review-final.md",
+    "codeReviewCommentSha256": "a30abaf035b4c5fd7f8060a7282b6e77e153ba5529fb4cafabcaa9fb5a366189",
+    "ruleReviewArchive": "docs/reviews/pr-24-rule-review-final.md",
+    "ruleReviewCommentSha256": "ba3c58d168ec21f0fbab3133d0eb62d8f97a0a68ef210b22d02b5f473cdd92cf",
+    "coverageStatus": "PARTIAL",
+    "acceptedBoundary": "First-night Mathematician count resolution, exact delivery and settlement, terminal ledger fact, trusted replay, and private count projection under Option A; other-night and broader lifecycle mechanics remain unsupported."
+  },
   "legacyV1Policy": "GAINED_ONLY_OR_BASE_ONLY_SUPPORTED",
   "legacyV1DuplicateHolderPolicy": "FAIL_CLOSED_RETRYABLE",
   "v2DuplicateHolderPolicy": "BASE_FIRST_GAINED_LATER",
@@ -777,10 +823,10 @@
     "approvedSimulatorPoliciesChanged": false,
     "legacyHistoryReinterpreted": false,
     "ruleCoverageStatus": "PARTIAL",
-    "implementationAuthorized": true
+    "implementationAuthorized": false
   },
   "startedAt": "2026-07-13T06:57:55.960Z",
-  "lastAction": "Controller pre-publish audit passed production, tests, scope, immutable-authority, and root-export checks after all 224 local authority IDs and complete local gates passed.",
+  "lastAction": "PR #24 merged frozen head 00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87 as 681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c after exact-head CI and independent CODE_REVIEW_PASS / RULE_REVIEW_PASS. Post-merge docs-only closeout archives the exact GitHub comments and records commit-specific CI provenance.",
   "lastError": null,
-  "nextAction": "Wait for both CI workflows on the current GitHub PR head, verify exact-head success, update and re-read the PR body, then request one new complete independent final review. Do not merge or start 2B19."
+  "nextAction": "Push the attributed docs-only closeout commit, then wait for and verify GitHub CI on that exact closeout SHA. Do not start 2B19."
 }
