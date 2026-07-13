@@ -3,7 +3,11 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `COMPLETED` on `main`; current PR and slice are `null`, `implementationAuthorized=false`, and `remainingBlockers=[]`.
+- Current control state: `RUNNING` on `main` for candidate Slice `2B18B`; current PR is `null`, `implementationAuthorized=false`, and both historical Round 2 blockers remain pending fresh independent Round 3 review.
+- Candidate scope is `FIRST_NIGHT_COUNT_RESOLUTION_INFORMATION_DELIVERY_PRIVATE_PROJECTION` for Mathematician. Fresh independent Option A research returned `RULE_READY`: `ruleReady=true`, `ruleDesignPass=false`, `designRound=3/3`, and `repairRound=0/2`.
+- Rule evidence is `docs/rules/evidence/2B18B.md`, SHA-256 `eae53e0eed5d54c5c4a78d31543749787359f61b2e9b7c3f0ceb27069d2471c1`, coverage `PARTIAL`.
+- User-authorized Option A resolved evidence is `docs/rules/evidence/2B18B-resolved.md`, SHA-256 `0c4893de8f38dfc05876f89744976a7c54afc6bd41465f2e1198d22b0844a4c8`, terminal `RULE_READY`. It is an `IMPLEMENTATION_SUPPORT_BOUNDARY`, not a rule override; active `unresolvedConflicts=[]`.
+- Historical Round 2 design is `docs/implementation/phase-3-slice-2b18b-design.md`, SHA-256 `51b69de1c2dc94377e6e7824e36905a6792a7457a30039fdd9a6e085d21779c5`. The immutable Round 1 and Round 2 reviews remain at SHA-256 `cf1e2ac0abbd805be3f0dae1eb8b9b3d30a5bb4c60d9303a4b8d7fad7125e9bf` and `28760fb16ba32f120c714428e71af20583a10449cedf37e61e768cd000d7c0c3`, both terminal `RULE_DESIGN_FIX_REQUIRED`. Under `USER_AUTHORIZED_2B18B_DESIGN_ROUND_3_REPLAY_ADAPTER`, the new sole authority is `docs/implementation/phase-3-slice-2b18b-design-round-3.md`, SHA-256 `066be05f5ee8c0fccb83b00fd8471e439e7e6d2c8c8366af8c86aebceac0a792`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3`, with 225 mandatory numbered tests. No 2B18B feature branch, production/test change, commit, push, or PR exists; implementation remains prohibited pending fresh independent Round 3 review.
 - Accepted slices: 2B13 through 2B18A.
 - Slice 2B18A merged through PR [#23](https://github.com/JackeyLovedas/botc-singleplayer/pull/23) at merge SHA `00a12062e2dc7a99ef01b2fbddc3a5dc4d666fa6`.
 - Final reviewed feature HEAD: `671622b9f368a6201840ea0cb3d5b8254065bff8`.
@@ -11,7 +15,13 @@
 - Accepted tag: `phase-3-slice-2b18a-first-night-ability-outcome-ledger`.
 - Mathematician remains `PARTIAL`; no role is `COMPLETE`.
 - Slice 2B18A is ledger foundation only. It adds no public true-count resolver, `MathematicianCountResolution`, Mathematician number, delivery, private count projection, or settlement; `MATHEMATICIAN_INFORMATION` remains fail closed.
-- Slice 2B18B and Slice 2B19 were not started and are not authorized by this closeout.
+- Slice 2B18B has now started only as a governed candidate at the rule-truth gate. Slice 2B19 has not started and remains prohibited.
+
+## Slice 2B18B Historical Conflict And Option A Resolution
+
+`2B18B-CONFLICT-001` is a simulator-history conflict that external BOTC sources do not resolve. Accepted legacy V1 validation and construction place Philosopher-gained Mathematician at `baseOrder=100, insertionOrder=1`, after `PHILOSOPHER_ACTION` and before `MINION_INFO`; base `MATHEMATICIAN_INFORMATION` is at `baseOrder=1100`. Therefore base+V1 accepted history makes gained canonical-next before base. The approved duplicate-holder temporal policy requires base before gained, while V1 remains accepted history that cannot be migrated or reordered.
+
+The user selected Option A: V1 base-only and V1 gained-only remain supported, but V1 base plus gained is replay-compatible and settlement-unsupported with a retryable, receipt-free fail-closed result before either Mathematician delivery. V1 order and history remain unchanged, and V2 remains the only supported duplicate-holder settlement generation with base-first ordering. Fresh independent rule research confirmed this transparent support boundary changes no official rule or approved policy and returned `RULE_READY`. The original conflict remains preserved as history. Fresh Round 2 review confirmed six historical blocker groups closed but retained two: its Layer A signature could not be called by all required existing replay/event-applier paths, and its closed `TerminalAbilityOutcomeEventType` omitted `MathematicianInformationDelivered`. User-authorized Round 3 adapts the architecture into separate command-decision, prospective-pair, and per-event replay layers while preserving existing replay signatures, and explicitly closes the terminal literal and evidence mappings. These are design claims pending independent review, not controller-authored pass conclusions. Control is `RUNNING`, no implementation is authorized, and Slice 2B19 remains unstarted.
 
 ## Accepted Slice 2B18A Boundary
 
