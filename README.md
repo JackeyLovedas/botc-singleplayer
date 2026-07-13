@@ -122,7 +122,7 @@ Windows 本地《血染钟楼》单机游戏项目。
 
 ## Slice 2B18A Ledger-Only Repair
 
-- PR #23 is limited to the canonical derived first-night ability outcome ledger foundation and supported terminal adapters.
+- PR #23 is limited to a derived first-night ability outcome ledger foundation and supported terminal adapters. Final repair round 3/3 is `HUMAN_BLOCKED`: complete opportunity-subgraph binding, anchor-tamper enforcement, and required direct adversarial ledger coverage remain incomplete.
 - The public true-count resolver, count-result contract, resolving context, count-window snapshot, private number delivery, and settlement are deferred to 2B18B and are not part of 2B18A.
 - Shape validation is not accepted-history provenance. Canonical ledger provenance comes only from complete accepted event-stream validation and rebuild.
 - `MATHEMATICIAN_INFORMATION` remains fail closed. Slice 2B18B and Slice 2B19 have not started.
