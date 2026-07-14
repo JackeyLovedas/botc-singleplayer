@@ -6,11 +6,11 @@
 - Current control state: `RUNNING`; current slice `2B19`; branch `phase-3/dreamer-v2-completion`; ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25); `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, `reviewedHead=null`, and `behaviorDesignFrozen=true`.
 - Design round remains frozen at `3 / 3`; user-authorized acceptance-closure code repair is `4 / 4`, with no Round 5.
 - Accepted slices remain `2B13` through `2B18B`. Slice `2B19` is not completed and is not in `completedSlices`.
-- Authorized 2B19 production code remains published at implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`; the slice remains `UNACCEPTED`.
+- Authorized 2B19 production code remains published at implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`; repair implementation commit `cc69e6ed9d3afff8b4c09b029b4b52e4a25033fa` is committed locally and pending an authorized push. The slice remains `UNACCEPTED`.
 - Repair-round-1 head `237ba2b207166d9c1127d562882d93f0b2216c3c` passed both Windows deterministic jobs and all `1450/1450` coverage assertions, but push/PR validate runs `29310466573 / 29310469160` failed because the combined Dreamer-and-later coverage shard took `61.067 s` and crossed the fixed 60-second worker boundary.
 - Final repair round 2 splits only that combined shard into Dreamer V2 and later-role-action shards. Production code, assertions, rule evidence, design, traceability, and role coverage remain unchanged.
 - Published PR head `af089791f8733a2c5294e436e13a110345813a2c` passed exact-head push/PR CI `29318121669 / 29318125376`, then received a complete independent `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` report with four acceptance-closure blockers. `USER_AUTHORIZED_2B19_ACCEPTANCE_CLOSURE_ROUND_4` permits only repair `4 / 4` for those blockers.
-- The Round 4 prepublication candidate passes typecheck, lint, full test and coverage (`34 files / 1497 tests`), coverage `87.42%` statements/lines, `82.57%` branches, `97.07%` functions, plus diff and required scans. Its attributed repair commit, publication, fresh exact-head CI, and fresh independent review remain pending; this line makes no external-gate or final-review pass claim.
+- The committed Round 4 repair implementation passes typecheck, lint, full test and coverage (`34 files / 1497 tests`), coverage `87.42%` statements/lines, `82.57%` branches, `97.07%` functions, plus diff and required scans. Its authorized push, fresh exact-head CI, and fresh independent review remain pending; this line makes no external-gate or final-review pass claim.
 - Slice `2B18B` merged through PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) at `2026-07-13T14:18:39Z`.
 - Frozen feature HEAD: `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`; merge SHA: `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`.
 - Accepted tag: `phase-3-slice-2b18b-mathematician-first-night-information`.
@@ -25,7 +25,7 @@
 - `mergeCommitCI`: main run `29257399469` attempt 1 failed on the existing Cerenovus batch-event/clock-position retry test's 5,000 ms timeout; attempt 2 completed `SUCCESS` for merge SHA `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`. Accepted-tag run `29257432523` also completed `SUCCESS` for that exact merge SHA.
 - `closeoutCommitCI`: `PENDING` for the future exact docs-only closeout commit SHA and GitHub run; it inherits no earlier CI status.
 
-## Slice 2B19 Acceptance Closure Repair Round 4 / Local Uncommitted Candidate
+## Slice 2B19 Acceptance Closure Repair Round 4 / Committed Pending Authorized Push
 
 - Rule evidence: `docs/rules/evidence/2B19.md`, SHA-256 `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`, verdict `RULE_READY`, coverage `PARTIAL`.
 - Round 1 design: `docs/implementation/phase-3-slice-2b19-design.md`, SHA-256 `c73e4c85f32dfaf63b2d2df87ad9226bbd95fa6423e3feb52a7c666e8a6a36fd`.
@@ -38,7 +38,7 @@
 - The final local repair realizes that capture as raw/unbranded complete validation -> one canonical structured clone -> complete clone revalidation -> no-shared-reference proof -> private brand last, with exact stored Philosopher, insertion, impairment, tenure, Dreamer, ledger, and boundary cross-links.
 - Independent Round 3 review: `docs/implementation/phase-3-slice-2b19-design-review-round-3.md`, SHA-256 `59f3a80f05720f3f061117038ea01771e256573c22040ae03015f945a756fe10`, verdict `RULE_DESIGN_PASS`, `remainingBlockers=[]`.
 - Both historical Round 2 blockers are closed. Design Round 4 is prohibited.
-- The implementation worktree now contains the bounded V2 base/gained Dreamer pipeline, exact accepted-stream replay/projection validation, represented impairment/Vortox/current-role behavior, V1 compatibility boundary, and a contiguous D19-001 through D19-095 traceability map. D19-074 remains exact-head Windows/Ubuntu CI-only.
+- Repair implementation commit `cc69e6ed9d3afff8b4c09b029b4b52e4a25033fa` contains the bounded V2 base/gained Dreamer pipeline, exact accepted-stream replay/projection validation, represented impairment/Vortox/current-role behavior, V1 compatibility boundary, and a contiguous D19-001 through D19-095 traceability map. D19-074 remains exact-head Windows/Ubuntu CI-only.
 - Ready PR #25 contains feature implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`; the later docs-only live PR head is the final-freeze candidate once its exact-head CI succeeds. No final review verdict exists yet.
 - README is synchronized on the authorized 2B19 feature branch with the accepted 2B18B closeout and the current unaccepted 2B19 implementation boundary.
 - Implementation is authorized only on `phase-3/dreamer-v2-completion` under the reviewed Round 3 authority. Phase 2C remains prohibited.

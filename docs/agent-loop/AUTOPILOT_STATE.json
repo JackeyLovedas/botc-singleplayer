@@ -87,10 +87,11 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": true,
-  "implementationStatus": "ACCEPTANCE_CLOSURE_REPAIR_ROUND_4_LOCAL_GATES_PASS_PREPUBLICATION_UNACCEPTED",
+  "implementationStatus": "ACCEPTANCE_CLOSURE_REPAIR_ROUND_4_COMMITTED_PENDING_AUTHORIZED_PUSH_UNACCEPTED",
   "implementationBranch": "phase-3/dreamer-v2-completion",
   "implementationCommit": "e2e172b3fed1dd05440ba961f6281556875c7e25",
-  "repairCandidateCommit": null,
+  "repairCandidateCommit": "cc69e6ed9d3afff8b4c09b029b4b52e4a25033fa",
+  "repairImplementationCommit": "cc69e6ed9d3afff8b4c09b029b4b52e4a25033fa",
   "failedLiveHeadCI": {
     "headSha": "faf96e7edeb15f1e4c65b9fafcbde2573b4ea5cc",
     "pushRun": 29309341408,
@@ -158,7 +159,7 @@
   "implementationTraceabilityStatus": "D19_001_THROUGH_D19_095_CONTIGUOUS_94_LOCAL_1_CI_ONLY",
   "implementationExternalGate": "D19-074_PENDING_EXACT_HEAD_WINDOWS_UBUNTU_CI",
   "controllerPrePublishAudit": {
-    "status": "ACCEPTANCE_CLOSURE_REPAIR_ROUND_4_LOCAL_GATES_PASS_PREPUBLICATION",
+    "status": "ACCEPTANCE_CLOSURE_REPAIR_ROUND_4_COMMITTED_PENDING_AUTHORIZED_PUSH",
     "scope": "FOUR_AUTHORIZED_ACCEPTANCE_CLOSURE_BLOCKERS_ONLY_NO_RULE_OR_SCOPE_CHANGE",
     "localAuthorityCoverage": "D19_001_THROUGH_D19_095_EXACTLY_ONCE; D19_074_REMAINS_FUTURE_EXACT_HEAD_CI_GATE",
     "localGates": "Typecheck, full lint, full test, coverage, diff, JSON, traceability, source-title, nondeterminism, test-modifier, projection, immutable-authority, and root-export scans pass; full and coverage suites each pass 34 files / 1497 tests"
@@ -899,7 +900,7 @@
     "implementationAuthorized": false
   },
   "startedAt": "2026-07-13T06:57:55.960Z",
-  "lastAction": "Completed the user-authorized Round 4 acceptance-closure prepublication candidate for exactly the four authorized blocker groups. All local gates and scans pass; the candidate remains unaccepted and has no Round 4 published or reviewed HEAD.",
+  "lastAction": "Committed the user-authorized Round 4 acceptance-closure repair implementation at cc69e6ed9d3afff8b4c09b029b4b52e4a25033fa after controller pre-publish audit passed. All local gates and scans pass; the repair awaits an authorized push and remains unaccepted with no Round 4 published or reviewed HEAD.",
   "lastError": null,
-  "nextAction": "The controller may create the separately authorized attributed repair commit and push it to existing PR #25. The resulting live PR head requires fresh exact-head Windows/Ubuntu CI and a new complete independent review before merge; do not start Phase 2C."
+  "nextAction": "The controller may push the committed repair and provenance update to existing PR #25. The resulting live PR head requires fresh exact-head Windows/Ubuntu CI and a new complete independent review before merge; do not start Phase 2C."
 }
