@@ -1,6 +1,6 @@
 import {
   rebuildGameState,
-  rebuildOptionalGameState,
+  rebuildOptionalCompleteAcceptedGameState,
   validateDomainBatchSemantics,
   validateDomainEventStream
 } from "@botc/domain-core";
@@ -59,7 +59,7 @@ export class MemoryCommandCommitStore implements CommandCommitStore {
     try {
       this.validateAcceptedInput(input);
       const existing = this.events.get(input.eventBatch.gameId) ?? [];
-      validateDomainBatchSemantics(rebuildOptionalGameState(existing), input.eventBatch.events);
+      validateDomainBatchSemantics(rebuildOptionalCompleteAcceptedGameState(existing), input.eventBatch.events);
       const stagedEvents = [...existing, ...input.eventBatch.events];
       validateDomainEventStream(stagedEvents);
       rebuildGameState(stagedEvents);
@@ -147,11 +147,19 @@ export class MemoryCommandCommitStore implements CommandCommitStore {
       throw new Error("Domain event batch must not be empty");
     }
 
-    if (receipt.result.eventDisclosure === "EVENT_TYPES_ONLY" &&
-        (receipt.result.eventCount !== eventBatch.events.length ||
-          receipt.result.eventTypes.length !== eventBatch.events.length ||
-          !receipt.result.eventTypes.every((eventType, index) => eventType === eventBatch.events[index]?.eventType))) {
-      throw new Error("Accepted event summary must exactly match the canonical event batch");
+    if (receipt.result.eventDisclosure === "EVENT_TYPES_ONLY") {
+      const exactKeys = ["eventCount", "eventDisclosure", "eventTypes", "gameId", "gameVersion", "idempotent", "resultSchemaVersion", "status"];
+      const actualKeys = Object.keys(receipt.result).sort();
+      if (actualKeys.length !== exactKeys.length || actualKeys.some((key, index) => key !== exactKeys[index]) ||
+          Object.hasOwn(receipt.result, "events") || receipt.result.eventCount !== eventBatch.events.length ||
+          !Array.isArray(receipt.result.eventTypes) || receipt.result.eventTypes.length !== eventBatch.events.length) {
+        throw new Error("Accepted event summary must have the exact redacted shape");
+      }
+      for (let index = 0; index < receipt.result.eventTypes.length; index += 1) {
+        if (!Object.hasOwn(receipt.result.eventTypes, index) || receipt.result.eventTypes[index] !== eventBatch.events[index]?.eventType) {
+          throw new Error("Accepted event summary must exactly match the canonical event batch");
+        }
+      }
     }
 
     const existingEvents = this.events.get(eventBatch.gameId) ?? [];

@@ -29,6 +29,7 @@ import {
   formatRoleTenureTransitionFactId,
   formatSeamstressAbilityUseEntitlementId,
   isSeamstressActionOpportunityV2,
+  isDreamerInformationDeliveredV2Payload,
   createEvilTwinInformationDeliveredPayload,
   createEvilTwinPairEstablishedPayload,
   createEvilTwinPairEstablishedScheduledTaskSettlement,
@@ -692,6 +693,9 @@ const requireDreamerDelivery = (state: GameState): DreamerInformationDeliveredPa
   const delivery = state.dreamerInformation?.deliveries[0];
   if (delivery === undefined) {
     throw new Error("Expected stored Dreamer delivery");
+  }
+  if (isDreamerInformationDeliveredV2Payload(delivery)) {
+    throw new Error("Expected legacy Dreamer delivery");
   }
 
   return delivery;
@@ -1691,10 +1695,7 @@ describe("private knowledge projections", () => {
 
   it("projects settled DREAMER_INFORMATION only to the Dreamer without leaking reliability facts", () => {
     const state = stateWithDreamerInformation();
-    const delivery = state.dreamerInformation?.deliveries[0];
-    if (delivery === undefined) {
-      throw new Error("Expected Dreamer delivery");
-    }
+    const delivery = requireDreamerDelivery(state);
 
     const dreamerView = buildPlayerPrivateKnowledgeView(state, delivery.sourcePlayerId);
     expect(dreamerView.dreamerInformation).toStrictEqual({
@@ -1721,11 +1722,12 @@ describe("private knowledge projections", () => {
   it("does not project Dreamer information to non-source players or AI views", () => {
     const state = stateWithDreamerInformation();
     const delivery = state.dreamerInformation?.deliveries[0];
+    const legacyDelivery = delivery !== undefined && !isDreamerInformationDeliveredV2Payload(delivery) ? delivery : undefined;
     const other = state.roster?.entries.find((entry) =>
-      entry.playerId !== delivery?.sourcePlayerId &&
-      entry.playerId !== delivery?.targetPlayerId
+      entry.playerId !== legacyDelivery?.sourcePlayerId &&
+      entry.playerId !== legacyDelivery?.targetPlayerId
     );
-    if (delivery === undefined || other === undefined) {
+    if (legacyDelivery === undefined || other === undefined) {
       throw new Error("Expected Dreamer delivery and other player");
     }
 
@@ -1737,7 +1739,7 @@ describe("private knowledge projections", () => {
     expect(playerView.deliveredKnowledgeStages).not.toContain(DREAMER_INFORMATION_STAGE);
     expect(aiView).toStrictEqual(playerView);
     expect(JSON.stringify(aiView)).not.toContain("sourceImpairmentId");
-    expect(JSON.stringify(aiView)).not.toContain(delivery.targetPlayerId);
+    expect(JSON.stringify(aiView)).not.toContain(legacyDelivery.targetPlayerId);
   });
 
   it("projects validated Dreamer information identically to the source player and source AI", () => {

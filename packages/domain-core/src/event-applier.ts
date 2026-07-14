@@ -1,4 +1,5 @@
 import { DomainError, assertNever } from "./errors.js";
+import { sameCanonicalDataValue } from "./canonical-data.js";
 import type { DomainErrorCode } from "./errors.js";
 import { RULES_BASELINE_VERSION, SUPPORTED_DOMAIN_EVENT_VERSION, isCanonicalPlayerCounts } from "./events.js";
 import type {
@@ -18,6 +19,8 @@ import type {
   SnakeCharmerTargetChosenPayload,
   DreamerInformationDeliveredPayload,
   DreamerTargetChosenPayload,
+  DreamerInformationDeliveredV2Payload,
+  DreamerTargetChosenV2Payload,
   CerenovusChoiceRecordedPayload,
   CerenovusMadnessInstructionDeliveredPayload,
   CerenovusMadnessMarkedPayload,
@@ -143,12 +146,20 @@ import {
   validateWitchTargetChosenPayload
 } from "./witch.js";
 import {
-  appendDreamerInformationDelivery,
-  appendDreamerTargetChoice,
-  hasDreamerInformationForSettlement,
   validateDreamerInformationDeliveredPayload,
   validateDreamerTargetChosenPayload
 } from "./dreamer.js";
+import {
+  appendDreamerInformationDeliveryV1V2,
+  appendDreamerInformationDeliveryV2,
+  appendDreamerTargetChoiceV1V2,
+  appendDreamerTargetChoiceV2,
+  hasDreamerInformationForSettlementV1V2,
+  isDreamerInformationDeliveredV2Payload,
+  isDreamerTargetChosenV2Payload,
+  validateDreamerInformationDeliveredV2PayloadShape,
+  validateDreamerTargetChosenV2PayloadShape
+} from "./dreamer-v2.js";
 import {
   appendPhilosopherGrantedSeamstressAbility,
   appendSeamstressAbilitySpend,
@@ -1398,8 +1409,8 @@ const validateDreamerInformationDeliveredPayloadForState = (
   }
 
   const validation = validateDreamerInformationDeliveredPayload(payload, {
-    choices: state.dreamerTargetChoices,
-    deliveries: state.dreamerInformation,
+    choices: { choices: state.dreamerTargetChoices?.choices.filter((choice): choice is DreamerTargetChosenPayload => !isDreamerTargetChosenV2Payload(choice)) ?? [] },
+    deliveries: { deliveries: state.dreamerInformation?.deliveries.filter((delivery): delivery is DreamerInformationDeliveredPayload => !isDreamerInformationDeliveredV2Payload(delivery)) ?? [] },
     setup: state.setup,
     currentCharacterState: state.currentCharacterState,
     abilityImpairments: state.abilityImpairments,
@@ -1407,6 +1418,51 @@ const validateDreamerInformationDeliveredPayloadForState = (
   });
   if (!validation.valid) {
     throw new DomainError("InvalidDreamerInformationDeliveredPayload", validation.reason);
+  }
+};
+
+const validateDreamerTargetChosenV2PayloadForState = (
+  state: GameState,
+  payload: DreamerTargetChosenV2Payload
+): void => {
+  const shape = validateDreamerTargetChosenV2PayloadShape(payload);
+  if (!shape.valid) throw new DomainError("InvalidDreamerTargetChosenV2Payload", shape.reason);
+  if (state.phase !== "FIRST_NIGHT" || state.nightNumber !== 1 || state.dayNumber !== 0 ||
+      state.currentCharacterState === undefined || state.roster === undefined || state.firstNightTaskPlan === undefined) {
+    throw new DomainError("InvalidDreamerTargetChosenV2Payload", "DreamerTargetChosenV2 requires canonical first-night state");
+  }
+  const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, actionOpportunityId(payload.opportunityId));
+  const target = state.roster.entries.find((entry) => entry.playerId === payload.targetPlayerId);
+  const duplicate = state.dreamerTargetChoices?.choices.some((choice) =>
+    isDreamerTargetChosenV2Payload(choice) && choice.targetChoiceId === payload.targetChoiceId) ?? false;
+  if (opportunity === undefined || opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION" ||
+      opportunity.opportunityStatus !== "OPEN" || opportunity.taskId !== payload.taskId ||
+      !("sourceContract" in opportunity) || !sameCanonicalDataValue(opportunity.sourceContract, payload.sourceContract) ||
+      payload.settlementCharacterStateRevision !== state.currentCharacterState.revision ||
+      target === undefined || target.seatNumber !== payload.targetSeatNumber ||
+      target.playerId === payload.sourceContract.sourcePlayerId || duplicate) {
+    throw new DomainError("InvalidDreamerTargetChosenV2Payload", "DreamerTargetChosenV2 must match one open V2 opportunity and canonical target");
+  }
+};
+
+const validateDreamerInformationDeliveredV2PayloadForState = (
+  state: GameState,
+  payload: DreamerInformationDeliveredV2Payload
+): void => {
+  const shape = validateDreamerInformationDeliveredV2PayloadShape(payload);
+  if (!shape.valid) throw new DomainError("InvalidDreamerInformationDeliveredV2Payload", shape.reason);
+  const choices = state.dreamerTargetChoices?.choices.filter((choice): choice is DreamerTargetChosenV2Payload =>
+    isDreamerTargetChosenV2Payload(choice) && choice.targetChoiceId === payload.targetChoiceId) ?? [];
+  const choice = choices[0];
+  const duplicate = state.dreamerInformation?.deliveries.some((delivery) =>
+    isDreamerInformationDeliveredV2Payload(delivery) && delivery.deliveryId === payload.deliveryId) ?? false;
+  if (state.currentCharacterState === undefined || choices.length !== 1 || choice === undefined || duplicate ||
+      choice.taskId !== payload.taskId || choice.opportunityId !== payload.opportunityId ||
+      choice.targetPlayerId !== payload.targetTruth.targetPlayerId ||
+      choice.targetSeatNumber !== payload.targetTruth.targetSeatNumber ||
+      choice.settlementCharacterStateRevision !== payload.settlementCharacterStateRevision ||
+      !sameCanonicalDataValue(choice.sourceContract, payload.sourceContract)) {
+    throw new DomainError("InvalidDreamerInformationDeliveredV2Payload", "DreamerInformationDeliveredV2 must match one exact V2 target choice");
   }
 };
 
@@ -1801,7 +1857,7 @@ const validateScheduledTaskSettledPayloadForState = (
   if (payload.taskType === "DREAMER_ACTION") {
     if (
       payload.outcomeType !== "DREAMER_INFORMATION_DELIVERED" ||
-      !hasDreamerInformationForSettlement(state.dreamerInformation, payload)
+      !hasDreamerInformationForSettlementV1V2(state.dreamerInformation, payload)
     ) {
       throw new DomainError("InvalidScheduledTaskSettledPayload", "ScheduledTaskSettled must match delivered Dreamer information");
     }
@@ -1892,6 +1948,10 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidDreamerTargetChosenPayload";
     case "DreamerInformationDelivered":
       return "InvalidDreamerInformationDeliveredPayload";
+    case "DreamerTargetChosenV2":
+      return "InvalidDreamerTargetChosenV2Payload";
+    case "DreamerInformationDeliveredV2":
+      return "InvalidDreamerInformationDeliveredV2Payload";
     case "ClockmakerInformationDelivered":
       return "InvalidClockmakerInformationDeliveredPayload";
     case "MathematicianInformationDelivered":
@@ -2721,7 +2781,7 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
         ...state,
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
-        dreamerTargetChoices: appendDreamerTargetChoice(state.dreamerTargetChoices, event.payload)
+        dreamerTargetChoices: appendDreamerTargetChoiceV1V2(state.dreamerTargetChoices, event.payload)
       };
     }
 
@@ -2744,7 +2804,36 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
         gameVersion: event.gameVersion,
         lastEventSequence: event.eventSequence,
         firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
-        dreamerInformation: appendDreamerInformationDelivery(state.dreamerInformation, event.payload)
+        dreamerInformation: appendDreamerInformationDeliveryV1V2(state.dreamerInformation, event.payload)
+      };
+    }
+
+    case "DreamerTargetChosenV2": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "DreamerTargetChosenV2 requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidDreamerTargetChosenV2Payload", "DreamerTargetChosenV2 rules baseline must match state");
+      }
+      validateDreamerTargetChosenV2PayloadForState(state, event.payload);
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        dreamerTargetChoices: appendDreamerTargetChoiceV2(state.dreamerTargetChoices, event.payload)
+      };
+    }
+
+    case "DreamerInformationDeliveredV2": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "DreamerInformationDeliveredV2 requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) {
+        throw new DomainError("InvalidDreamerInformationDeliveredV2Payload", "DreamerInformationDeliveredV2 rules baseline must match state");
+      }
+      validateDreamerInformationDeliveredV2PayloadForState(state, event.payload);
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        firstNightActionOpportunities: closeFirstNightActionOpportunity(state.firstNightActionOpportunities, event.payload),
+        dreamerInformation: appendDreamerInformationDeliveryV2(state.dreamerInformation, event.payload)
       };
     }
 

@@ -3,11 +3,11 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `RUNNING`; current slice `2B19A`; branch `phase-3/dreamer-v2-base-vortox`; no current PR; `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`.
-- Design round is `2 / 2`; repair round is `0 / 2` because implementation has not started. No Design Round 3 is authorized.
+- Current control state: `READY_FOR_PRE_PUBLISH_AUDIT`; current slice `2B19A`; branch `phase-3/dreamer-v2-base-vortox`; no current PR; `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`.
+- Design round is `2 / 2`; repair round is `0 / 2`. Local implementation and gates are complete; no Design Round 3 is authorized.
 - Accepted slices remain `2B13` through `2B18B`. Slice `2B19` is not completed and is not in `completedSlices`.
 - PR #25 is closed, unmerged, and unaccepted; its remote branch `phase-3/dreamer-v2-completion` is retained as read-only history and no repair round 5 is authorized.
-- Slice 2B19A starts from accepted main `405f13ac2afbdaf33a20d54ece727b68199f152f`; no 2B19A production code, tests, PR, merge, tag, FIRST_NIGHT completion, DAY transition, 2B19B, or Phase 2C work exists.
+- Slice 2B19A starts from accepted main `405f13ac2afbdaf33a20d54ece727b68199f152f`; its reviewed base Dreamer V2 plus effective Vortox implementation exists only on the local feature branch. No PR, exact-head CI, final review, merge, tag, FIRST_NIGHT completion, DAY transition, 2B19B, or Phase 2C work exists.
 - Slice `2B18B` merged through PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) at `2026-07-13T14:18:39Z`.
 - Frozen feature HEAD: `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`; merge SHA: `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`.
 - Accepted tag: `phase-3-slice-2b18b-mathematician-first-night-information`.
@@ -22,7 +22,7 @@
 - `mergeCommitCI`: main run `29257399469` attempt 1 failed on the existing Cerenovus batch-event/clock-position retry test's 5,000 ms timeout; attempt 2 completed `SUCCESS` for merge SHA `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`. Accepted-tag run `29257432523` also completed `SUCCESS` for that exact merge SHA.
 - `closeoutCommitCI`: `PENDING` for the future exact docs-only closeout commit SHA and GitHub run; it inherits no earlier CI status.
 
-## Slice 2B19A Base-Only Implementation Authorized
+## Slice 2B19A Base-Only Local Implementation
 
 - Rule evidence: `docs/rules/evidence/2B19.md`, SHA-256 `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`, verdict `RULE_READY`, coverage `PARTIAL`.
 - Round 1 design is `docs/implementation/phase-3-slice-2b19a-design.md`, SHA-256 `26bace844cd7697b5e2d411cddf7c14dc1c497516a1221f7d07995797ef8ba70`. Independent review `docs/implementation/phase-3-slice-2b19a-design-review-round-1.md`, SHA-256 `4970c2002580d3eb7618c4cb7ea0e5dfdbdfb007f9aecdfe0b4ef16fa7ef0fed`, returned `RULE_DESIGN_FIX_REQUIRED` with two architecture blockers.
@@ -30,7 +30,9 @@
 - Fresh independent Round 2 review is `docs/implementation/phase-3-slice-2b19a-design-review-round-2.md`, SHA-256 `a33483620e123c0e7d3c077843b98a37321fa9ddbc583e8660fe82dc7b16fbb8`; it returned `RULE_DESIGN_PASS` with `remainingBlockers=[]`.
 - Scope is base Dreamer V2 plus effective Vortox only. Philosopher-gained Dreamer execution, gained contracts, grants, insertions, ordering, and traceability are explicitly excluded and fail receipt-free.
 - Round 2 closes the reviewed blockers by preserving strict complete replay at every accepted-history, receipt, staged-commit, ledger, and projection entry; only the internal prospective validator can replay target/delivery prefixes. V2 first success and idempotent replay return exact event-type summaries without private payloads.
-- There is no current design blocker. Only the reviewed base Dreamer V2 plus Vortox implementation and `D19A-001` through `D19A-043` are authorized; repair budget is `0 / 2`.
+- The reviewed base Dreamer V2 plus Vortox implementation is locally complete. `docs/implementation/phase-3-slice-2b19a-test-traceability.md` maps `D19A-001` through `D19A-043`; Philosopher-gained Dreamer remains receipt-free unsupported and 2B19B is not started.
+- Local gates pass: typecheck, lint, full `31 files / 1450 tests`, coverage `31 files / 1450 tests` with `86.41%` statements/lines, `81.19%` branches, `96.78%` functions, and diff-check. This is not acceptance: frozen-head CI and independent dual final review do not yet exist.
+- Repair budget remains `0 / 2`.
 - Design Round 2 is exhausted; there is no Round 3. 2B19B and Phase 2C are not started.
 
 ## Superseded Slice 2B19 / PR #25 History

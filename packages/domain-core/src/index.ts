@@ -43,6 +43,8 @@ export * from "./current-character-state.js";
 export * from "./deterministic-random.js";
 export * from "./domain-batch-semantics.js";
 export * from "./dreamer.js";
+export * from "./dreamer-v2.js";
+export type { DreamerInformationSet, DreamerTargetChoiceSet } from "./dreamer-v2.js";
 export * from "./errors.js";
 export * from "./event-applier.js";
 export * from "./event-batch.js";

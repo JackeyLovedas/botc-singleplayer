@@ -61,7 +61,8 @@ export const mathematicianVortoxExactRoleIds = mathematicianBaseExactRoleIds.map
       id === roleId("dreamer") ? roleId("savant") : id
 );
 export const mathematicianVortoxUnresolvedExactRoleIds = mathematicianBaseExactRoleIds.map((id) =>
-  id === roleId("fang_gu") ? roleId("vortox") : id === roleId("barber") ? roleId("clockmaker") : id
+  id === roleId("fang_gu") ? roleId("vortox") :
+    id === roleId("barber") ? roleId("clockmaker") : id
 );
 export const philosopherAndBaseMathematicianVortoxExactRoleIds = mathematicianVortoxExactRoleIds.map((id) =>
   id === roleId("flowergirl") ? roleId("philosopher") : id

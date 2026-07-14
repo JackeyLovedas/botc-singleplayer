@@ -94,6 +94,10 @@ import {
 } from "@botc/test-harness";
 import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
 import { deriveFirstNightAbilityOutcomeFact } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
+import {
+  rebuildDreamerV2ProspectivePrefixForInternalValidation
+} from "../../domain-core/src/dreamer-v2-replay.js";
+import type { DreamerV2ProspectiveEventTuple } from "../../domain-core/src/dreamer-v2-replay.js";
 
 const makeService = (
   commandStore = new MemoryCommandCommitStore(),
@@ -806,7 +810,8 @@ const advanceToScheduledTask = async (
               payload: { commandType: "SubmitDreamerAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
                 decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
             }));
-      expectAcceptedResult(result);
+      if (next.taskType === "DREAMER_ACTION") expectEventSummaryAcceptedResult(result);
+      else expectAcceptedResult(result);
       continue;
     }
     if (next.taskType === "EVIL_TWIN_SETUP") {
@@ -977,7 +982,7 @@ const reachSeamstressActionTask = async (
       }
     }
   }));
-  expectAcceptedResult(dreamerResult);
+  expectEventSummaryAcceptedResult(dreamerResult);
 
   const beforeSeamstress = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
   const seamstressTask = beforeSeamstress?.firstNightTaskPlan?.tasks.find((task) =>
@@ -3922,9 +3927,10 @@ describe("GameApplicationService", () => {
         taskId: dreamerTaskId
       }
     }))).resolves.toMatchObject({
-      status: "rejected",
-      code: "UnsupportedRoleActionOpportunity",
-      currentGameVersion: dreamerReady.gameVersion
+      status: "failed",
+      code: "ApplicationNotConfigured",
+      currentGameVersion: dreamerReady.gameVersion,
+      failureStage: "first-night-role-action"
     });
 
     const baseSnakeStore = new MemoryCommandCommitStore();
@@ -6163,13 +6169,63 @@ describe("GameApplicationService", () => {
         visibility: {
           canChooseTarget: true,
           supportedDecisionKinds: ["CHOOSE_PLAYER"],
-          targetSchema: "OTHER_NON_TRAVELLER_PLAYER"
+          targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER"
         }
       }
     });
   });
 
-  it("submits an effective Dreamer choice for a GOOD target and delivers isolated role information", async () => {
+  it("D19A-042 strict optional accepted replay and every command/store history path reject Dreamer V2 target and delivery tails without mutation", async () => {
+    const { service, commandStore } = makeService();
+    const { dreamerTask, opportunity, state } = await reachOpenDreamerActionOpportunity(service, commandStore);
+    const targets = state.currentCharacterState?.entries.filter((entry) => entry.playerId !== opportunity.sourcePlayerId) ?? [];
+    const target = targets[0];
+    const otherTarget = targets[1];
+    if (target === undefined || otherTarget === undefined) throw new Error("Expected two Dreamer targets");
+    const command = submitDreamerActionCommand({
+      commandId: commandId("d19a-042-submit"),
+      expectedGameVersion: state.gameVersion,
+      actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+      payload: { commandType: "SubmitDreamerAction", taskId: dreamerTask.taskId, opportunityId: opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+    });
+    expectEventSummaryAcceptedResult(await service.execute(command));
+    const complete = await commandStore.loadDomainEvents(ids.game);
+    const prior = complete.slice(0, -3);
+    const triplet = complete.slice(-3) as unknown as DreamerV2ProspectiveEventTuple;
+    expect(triplet.map((event) => event.eventType)).toStrictEqual([
+      "DreamerTargetChosenV2", "DreamerInformationDeliveredV2", "ScheduledTaskSettled"
+    ]);
+
+    for (const prefixLength of [1, 2] as const) {
+      const damaged = [...prior, ...triplet.slice(0, prefixLength)];
+      expect(() => domainCore.rebuildGameState(damaged)).toThrowError(DomainError);
+      expect(() => domainCore.rebuildOptionalCompleteAcceptedGameState(damaged)).toThrowError(DomainError);
+      expect(rebuildDreamerV2ProspectivePrefixForInternalValidation(prior, triplet, prefixLength).gameVersion).toBe(16);
+
+      const originalLoad = commandStore.loadDomainEvents.bind(commandStore);
+      commandStore.loadDomainEvents = () => Promise.resolve(damaged);
+      const receiptCount = commandStore.getReceiptCount();
+      const eventCount = complete.length;
+      const normal = await service.execute(submitDreamerActionCommand({
+        ...command,
+        commandId: commandId(`d19a-042-normal-${prefixLength}`)
+      }));
+      const matching = await service.execute(command);
+      const conflicting = await service.execute(submitDreamerActionCommand({
+        ...command,
+        payload: { ...command.payload, decision: { kind: "CHOOSE_PLAYER", targetPlayerId: otherTarget.playerId } }
+      }));
+      for (const result of [normal, matching, conflicting]) {
+        expect(result).toMatchObject({ status: "failed", code: "CanonicalStateRebuildFailed", failureStage: "state-rebuild" });
+      }
+      commandStore.loadDomainEvents = originalLoad;
+      expect(commandStore.getReceiptCount()).toBe(receiptCount);
+      expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(eventCount);
+    }
+  });
+
+  it("D19A-043 Dreamer V2 success and idempotent replay return only the exact event-type summary without private payload leakage", async () => {
     const { service, commandStore } = makeService();
     const { dreamerTask, opportunity, state: beforeSubmit } = await reachOpenDreamerActionOpportunity(service, commandStore);
     const target = beforeSubmit.currentCharacterState?.entries.find((entry) =>
@@ -6183,7 +6239,7 @@ describe("GameApplicationService", () => {
       throw new Error("Expected GOOD Dreamer target and EVIL false role");
     }
 
-    const result = await service.execute(submitDreamerActionCommand({
+    const command = submitDreamerActionCommand({
       commandId: commandId("submit-effective-dreamer-good-target"),
       expectedGameVersion: 15,
       actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
@@ -6196,31 +6252,28 @@ describe("GameApplicationService", () => {
           targetPlayerId: target.playerId
         }
       }
-    }));
+    });
+    const result = await service.execute(command);
     const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
 
-    expectAcceptedResult(result);
+    expectEventSummaryAcceptedResult(result);
     expect(result.gameVersion).toBe(16);
-    expect(result.events.map((event) => event.eventType)).toStrictEqual([
-      "DreamerTargetChosen",
-      "DreamerInformationDelivered",
+    expect(result.eventTypes).toStrictEqual([
+      "DreamerTargetChosenV2",
+      "DreamerInformationDeliveredV2",
       "ScheduledTaskSettled"
     ]);
-    expect(result.events.map((event) => event.eventSequence)).toStrictEqual([29, 30, 31]);
     expect(state?.dreamerTargetChoices?.choices).toHaveLength(1);
     expect(state?.dreamerInformation?.deliveries).toHaveLength(1);
     expect(state?.dreamerInformation?.deliveries[0]).toMatchObject({
       taskId: dreamerTask.taskId,
       taskType: "DREAMER_ACTION",
       opportunityId: opportunity.opportunityId,
-      knowledgeModelVersion: "dreamer-information-model-v1",
+      knowledgeModelVersion: "dreamer-information-model-v2",
       knowledgeStage: "DREAMER_INFORMATION",
-      targetPlayerId: target.playerId,
-      targetSeatNumber: target.seatNumber,
-      informationReliability: { kind: "EFFECTIVE" },
-      goodRole: target.role,
-      evilRole: lowestEvilRole,
-      falseRolePolicyVersion: "dreamer-false-role-policy-v1"
+      targetTruth: { targetPlayerId: target.playerId, targetSeatNumber: target.seatNumber },
+      selectedGoodRole: target.role,
+      selectedEvilRole: lowestEvilRole
     });
     expect(state?.firstNightTaskProgress?.settlements.at(-1)).toMatchObject({
       taskType: "DREAMER_ACTION",
@@ -6236,13 +6289,22 @@ describe("GameApplicationService", () => {
     ).toBe("SEAMSTRESS_ACTION");
     expect(state?.currentCharacterState).toStrictEqual(beforeSubmit.currentCharacterState);
     expect(state?.assignment).toStrictEqual(beforeSubmit.assignment);
-    expect(JSON.stringify(result.events[0]?.payload)).not.toContain("targetRole");
-    expect(JSON.stringify(result.events[0]?.payload)).not.toContain("targetAlignment");
-    expect(JSON.stringify(result.events[1]?.payload)).not.toContain("correctRole");
-    expect(JSON.stringify(result.events[1]?.payload)).not.toContain("assignment");
+    expect(JSON.stringify(result)).not.toContain("targetRole");
+    expect(JSON.stringify(result)).not.toContain("targetAlignment");
+    expect(JSON.stringify(result)).not.toContain("correctRole");
+    expect(JSON.stringify(result)).not.toContain("assignment");
     expect(state?.firstNightAbilityOutcomeLedger?.facts.at(-1)).toMatchObject({
       abilityRoleId: "dreamer", outcomeStatus: "NORMAL", causeKind: "NO_OTHER_CHARACTER_ABILITY"
     });
+    const eventCount = (await commandStore.loadDomainEvents(ids.game)).length;
+    const replay = await service.execute(command);
+    expectEventSummaryAcceptedResult(replay);
+    expect(replay).toStrictEqual({ ...result, idempotent: true });
+    expect(Object.keys(replay)).toStrictEqual([
+      "status", "resultSchemaVersion", "eventDisclosure", "gameId", "gameVersion", "eventCount", "eventTypes", "idempotent"
+    ]);
+    expect(JSON.stringify(replay)).not.toMatch(/payload|targetPlayerId|targetTruth|sourceContract|selectedGoodRole|selectedEvilRole|vortox/i);
+    expect((await commandStore.loadDomainEvents(ids.game))).toHaveLength(eventCount);
   });
 
   it("submits an effective Dreamer choice for an EVIL target with the target role in the EVIL slot", async () => {
@@ -6270,9 +6332,10 @@ describe("GameApplicationService", () => {
       }
     }));
 
-    expectAcceptedResult(result);
-    const information = result.events[1]?.payload as { readonly evilRole?: unknown; readonly goodRole?: unknown };
-    expect(information.evilRole).toStrictEqual(target.role);
+    expectEventSummaryAcceptedResult(result);
+    const settled = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const information = settled?.dreamerInformation?.deliveries[0];
+    expect(information).toMatchObject({ selectedEvilRole: target.role });
     expect(JSON.stringify(information)).not.toContain("targetAlignment");
   });
 

@@ -13,7 +13,11 @@ import {
   causationId,
   commandId,
   correlationId,
+  createDreamerInformationDeliveredPayload,
+  createDreamerTargetChosenPayload,
   createFirstNightTaskInsertedPayload,
+  createFirstNightRoleActionOpportunity,
+  evaluateDreamerEffectiveness,
   eventId,
   playerId,
   scheduledTaskId,
@@ -96,6 +100,89 @@ const convertV2PhilosopherMathematicianChoiceStreamToV1 = (
     if (legacyInsertion === undefined) throw new Error("Expected legacy Math insertion");
     converted[insertionIndex] = { ...insertionEvent, eventType: "FirstNightTaskInserted", payload: legacyInsertion };
   }
+  rebuildGameState(converted);
+  return converted;
+};
+
+const convertBaseDreamerV2StreamToAcceptedV1 = (
+  sourceEvents: readonly AnyDomainEventEnvelope[]
+): readonly AnyDomainEventEnvelope[] => {
+  const converted = structuredClone(sourceEvents) as AnyDomainEventEnvelope[];
+  const planEvent = converted.find((event) => event.eventType === "FirstNightTaskPlanCreated");
+  const opportunityIndex = converted.findIndex((event) =>
+    event.eventType === "FirstNightActionOpportunityCreated" &&
+    event.payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION"
+  );
+  const targetIndex = converted.findIndex((event) => event.eventType === "DreamerTargetChosenV2");
+  const deliveryIndex = converted.findIndex((event) => event.eventType === "DreamerInformationDeliveredV2");
+  const opportunityEvent = converted[opportunityIndex];
+  const targetEvent = converted[targetIndex];
+  const deliveryEventCandidate = converted[deliveryIndex];
+  if (
+    planEvent?.eventType !== "FirstNightTaskPlanCreated" ||
+    opportunityEvent?.eventType !== "FirstNightActionOpportunityCreated" ||
+    targetEvent?.eventType !== "DreamerTargetChosenV2" ||
+    deliveryEventCandidate?.eventType !== "DreamerInformationDeliveredV2"
+  ) {
+    throw new Error("Expected a convertible base Dreamer V2 accepted stream");
+  }
+
+  const beforeOpportunity = rebuildGameState(converted.slice(0, opportunityIndex));
+  if (beforeOpportunity.firstNightTaskPlan === undefined || beforeOpportunity.currentCharacterState === undefined) {
+    throw new Error("Expected legacy Dreamer opportunity source state");
+  }
+  const opportunity = createFirstNightRoleActionOpportunity({
+    taskId: opportunityEvent.payload.taskId,
+    firstNightTaskPlan: beforeOpportunity.firstNightTaskPlan,
+    firstNightTaskProgress: beforeOpportunity.firstNightTaskProgress,
+    currentCharacterState: beforeOpportunity.currentCharacterState,
+    firstNightActionOpportunities: beforeOpportunity.firstNightActionOpportunities,
+    seamstressResolutionCapability: beforeOpportunity.seamstressResolutionCapability,
+    seamstressRoleTenureState: beforeOpportunity.seamstressRoleTenureState,
+    seamstressAbilityState: beforeOpportunity.seamstressAbilityState,
+    philosopherGrantedAbilities: beforeOpportunity.philosopherGrantedAbilities
+  });
+  converted[opportunityIndex] = {
+    ...opportunityEvent,
+    payload: { rulesBaselineVersion: opportunityEvent.rulesBaselineVersion, ...opportunity }
+  };
+
+  const beforeTarget = rebuildGameState(converted.slice(0, targetIndex));
+  if (beforeTarget.roster === undefined || beforeTarget.currentCharacterState === undefined) {
+    throw new Error("Expected legacy Dreamer target source state");
+  }
+  const target = createDreamerTargetChosenPayload({
+    rulesBaselineVersion: targetEvent.rulesBaselineVersion,
+    taskId: opportunity.taskId,
+    opportunityId: opportunity.opportunityId,
+    targetPlayerId: targetEvent.payload.targetPlayerId,
+    firstNightActionOpportunities: beforeTarget.firstNightActionOpportunities,
+    roster: beforeTarget.roster.entries,
+    currentCharacterState: beforeTarget.currentCharacterState
+  });
+  const legacyTargetEvent = { ...targetEvent, eventType: "DreamerTargetChosen" as const, payload: target };
+  converted[targetIndex] = legacyTargetEvent;
+
+  const beforeDelivery = applyDomainEvent(beforeTarget, legacyTargetEvent);
+  if (beforeDelivery.setup === undefined || beforeDelivery.currentCharacterState === undefined) {
+    throw new Error("Expected legacy Dreamer delivery source state");
+  }
+  const information = createDreamerInformationDeliveredPayload({
+    rulesBaselineVersion: deliveryEventCandidate.rulesBaselineVersion,
+    targetChoice: target,
+    setup: beforeDelivery.setup,
+    currentCharacterState: beforeDelivery.currentCharacterState,
+    effectiveness: evaluateDreamerEffectiveness({
+      sourcePlayerId: target.sourcePlayerId,
+      abilityImpairments: beforeDelivery.abilityImpairments
+    })
+  });
+  converted[deliveryIndex] = {
+    ...deliveryEventCandidate,
+    eventType: "DreamerInformationDelivered",
+    payload: information
+  };
+
   rebuildGameState(converted);
   return converted;
 };
@@ -546,19 +633,22 @@ describe("2B18B accepted effective Vortox constraint and terminal cause", () => 
 describe("2B18B receipt-free unresolved and dependency failures", () => {
   it("[APP-UNRESOLVED-85] returns retryable receipt-free failure for a blocking unresolved ledger fact", async () => {
     const ready = await reachBaseMathematicianTask(mathematicianVortoxUnresolvedExactRoleIds);
-    const before = await ready.commandStore.loadDomainEvents(fixture.command.gameId);
+    const generated = await ready.commandStore.loadDomainEvents(fixture.command.gameId);
+    const before = convertBaseDreamerV2StreamToAcceptedV1(generated);
+    const loaded = preloadedStore(before);
+    const service = createMathematicianServiceForStore(loaded.store, uniquePreloadedIds()).service;
     const command = {
       ...fixture.command,
       commandId: commandId("mathematician-ledger-unresolved"),
       expectedGameVersion: ready.state.gameVersion,
       payload: { commandType: "SettleMathematicianInformation" as const, taskId: ready.task.taskId }
     };
-    const result = await ready.service.execute(command);
+    const result = await service.execute(command);
     expect(result).toMatchObject({
       status: "failed", code: "DependencyExecutionFailed", failureStage: "first-night-role-information", retryable: true
     });
-    expect(await ready.commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await ready.commandStore.loadDomainEvents(command.gameId)).toStrictEqual(before);
+    expect(await loaded.store.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
+    expect(await loaded.store.loadDomainEvents(command.gameId)).toStrictEqual(before);
   });
 
   it("[APP-METADATA-FAULT] returns retryable receipt-free failure when deterministic ID generation throws", async () => {

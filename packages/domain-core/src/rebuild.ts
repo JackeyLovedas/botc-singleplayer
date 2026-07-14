@@ -63,7 +63,7 @@ export const rebuildGameState = (events: readonly AnyDomainEventEnvelope[]): Gam
   return state;
 };
 
-export const rebuildOptionalGameState = (events: readonly AnyDomainEventEnvelope[]): GameState | undefined => {
+export const rebuildOptionalCompleteAcceptedGameState = (events: readonly AnyDomainEventEnvelope[]): GameState | undefined => {
   const eventList = [...events];
 
   if (eventList.length === 0) {
@@ -72,3 +72,5 @@ export const rebuildOptionalGameState = (events: readonly AnyDomainEventEnvelope
 
   return rebuildGameState(eventList);
 };
+
+export const rebuildOptionalGameState = rebuildOptionalCompleteAcceptedGameState;

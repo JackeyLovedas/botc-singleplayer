@@ -237,8 +237,7 @@ describe("Seamstress v3 domain model", () => {
     for (const invalid of [
       "role-tenure-v1:seat-3:role-seamstress:acquired-revision-1",
       "role-tenure-v1:seat-03:role-seamstress:acquired-revision-01",
-      "role-tenure-v1:seat-13:role-seamstress:acquired-revision-1",
-      "role-tenure-v1:seat-03:role-dreamer:acquired-revision-1"
+      "role-tenure-v1:seat-13:role-seamstress:acquired-revision-1"
     ]) expect(parseRoleTenureId(invalid)).toMatchObject({ valid: false });
     expect(parseSeamstressAbilityInstanceId("seamstress-ability-instance-v1:ROLE_TENURE:seat-03:role-philosopher:acquired-revision-1"))
       .toMatchObject({ valid: false });
@@ -249,6 +248,7 @@ describe("Seamstress v3 domain model", () => {
     const ability = bootstrapSeamstressAbilityState(tenures);
 
     expect(tenures.records.map((entry) => [entry.seatNumber, entry.roleId])).toStrictEqual([
+      [1, "dreamer"],
       [3, "seamstress"],
       [4, "vortox"],
       [5, "philosopher"]
@@ -339,7 +339,8 @@ describe("Seamstress v3 domain model", () => {
     expect(validateRoleTenureTransitionFact(leave)).toStrictEqual({ valid: true });
     const left = applyRoleTenureTransitionFact(initial, leave);
     const reacquired = applyRoleTenureTransitionFact(left, reacquire);
-    const oldTenure = reacquired.records.find((entry) => entry.roleTenureId === initial.records[0]?.roleTenureId)!;
+    const initialSeamstressTenure = initial.records.find((entry) => entry.roleId === "seamstress");
+    const oldTenure = reacquired.records.find((entry) => entry.roleTenureId === initialSeamstressTenure?.roleTenureId)!;
     const newTenure = reacquired.records.find((entry) => entry.acquiredCharacterStateRevision === 3)!;
 
     expect(oldTenure.endedCharacterStateRevision).toBe(2);
