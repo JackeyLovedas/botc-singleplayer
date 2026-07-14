@@ -3,8 +3,10 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `COMPLETED / ACCEPTED`; branch `main`; no current slice and no current PR; `implementationAuthorized=false`.
-- Accepted slices: `2B13` through `2B18B`. Slice `2B19` has not started and remains prohibited in this closeout.
+- Current control state: `HUMAN_BLOCKED`; current slice `2B19`; branch `main`; no feature branch and no current PR; `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`.
+- Design round is `2 / 2` and exhausted; repair round is `0 / 2` because implementation never started.
+- Accepted slices remain `2B13` through `2B18B`. Slice `2B19` is not completed and is not in `completedSlices`.
+- No 2B19 production code, tests, PR, merge, tag, FIRST_NIGHT completion, DAY transition, or Phase 2C work exists.
 - Slice `2B18B` merged through PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) at `2026-07-13T14:18:39Z`.
 - Frozen feature HEAD: `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`; merge SHA: `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`.
 - Accepted tag: `phase-3-slice-2b18b-mathematician-first-night-information`.
@@ -18,6 +20,19 @@
 - `productHeadCI`: push `29255450083` and pull request `29255453509`, both `SUCCESS` for frozen feature HEAD `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`.
 - `mergeCommitCI`: main run `29257399469` attempt 1 failed on the existing Cerenovus batch-event/clock-position retry test's 5,000 ms timeout; attempt 2 completed `SUCCESS` for merge SHA `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`. Accepted-tag run `29257432523` also completed `SUCCESS` for that exact merge SHA.
 - `closeoutCommitCI`: `PENDING` for the future exact docs-only closeout commit SHA and GitHub run; it inherits no earlier CI status.
+
+## Slice 2B19 Blocked Design State
+
+- Rule evidence: `docs/rules/evidence/2B19.md`, SHA-256 `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`, verdict `RULE_READY`, coverage `PARTIAL`.
+- Round 1 design: `docs/implementation/phase-3-slice-2b19-design.md`, SHA-256 `c73e4c85f32dfaf63b2d2df87ad9226bbd95fa6423e3feb52a7c666e8a6a36fd`.
+- Round 1 review: `docs/implementation/phase-3-slice-2b19-design-review-round-1.md`, SHA-256 `30ff865c3578c574425f2d224eaa25ec005880e7d6dd4540c7dd3b748a5593c7`, verdict `RULE_DESIGN_FIX_REQUIRED`.
+- Round 2 design: `docs/implementation/phase-3-slice-2b19-design-round-2.md`, SHA-256 `b169a34d18334dd403a08fece16a7932a54a4259a724495c7e95fca7c29d0c00`.
+- Final Round 2 review: `docs/implementation/phase-3-slice-2b19-design-review-round-2.md`, SHA-256 `306a3bb34a6ea00d16e437505ef99bf9ba84511a79e670373dc4ca0ccfc4d019`, verdict `RULE_DESIGN_FIX_REQUIRED`.
+- Remaining blockers are `B1_CANONICAL_CAPTURE_NORMALIZATION_AND_FINGERPRINT_UNDEFINED` and `B2_ACCEPTED_STREAM_REACHABILITY_LAYERING_STILL_INCORRECT`.
+- The first blocker requires exact optional-set normalization, roster/setup/task-plan mappings, identical pipeline/rebuild capture, and complete rules/provenance fingerprint coverage.
+- The second blocker requires D19-025, D19-077, D19-078, and D19-092 to stop claiming canonical accepted-stream reachability and move to exact scheduler/policy, hostile replay, constraint, or continuity seams.
+- README retains its known pre-existing 2B18B drift because the user required that correction to occur only on the authorized 2B19 feature branch with implementation. No branch was authorized after the failed design gate, so README was intentionally left unchanged.
+- Further design requires explicit new user authorization. No Round 3, feature branch, implementation, PR, or Phase 2C work may be inferred.
 
 ## Slice 2B18B Historical Conflict And Option A Resolution
 
