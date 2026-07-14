@@ -14,12 +14,34 @@ import type {
 import { hasExactEnumerableKeys, hasExactRoleSetupSnapshotShape, isPlainRecord } from "./initial-private-knowledge.js";
 import type { SeatNumber } from "./player-roster.js";
 import type { RoleCatalogSnapshot, RoleSetupSnapshot } from "./setup-types.js";
-import {
-  parseFirstNightAbilityInstanceId,
-  validateFirstNightAbilityInstanceProvenanceShape,
-  type FirstNightAbilityInstanceProvenance
-} from "./first-night-ability-outcome-ledger.js";
+import type { FirstNightAbilityInstanceProvenance } from "./first-night-ability-outcome-ledger.js";
+import { validateDreamerV2SourceContractShapeForInternalUse } from "./dreamer-v2-contract-internal.js";
 import type { ScheduledTask, ScheduledTaskSettlement } from "./first-night-task-plan.js";
+
+const BASE_DREAMER_V2_TASK_ID_PATTERN = /^first-night-v1:DREAMER_ACTION:seat-(0[1-9]|1[0-2])$/;
+const GAINED_DREAMER_V2_TASK_ID_PATTERN = /^first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-(0[1-9]|1[0-2]):from-dreamer$/;
+
+export type ParsedCanonicalDreamerV2TaskId = {
+  readonly valid: true;
+  readonly taskId: ScheduledTaskId;
+  readonly sourceKind: "BASE" | "PHILOSOPHER_GAINED";
+  readonly seatNumber: SeatNumber;
+};
+
+export const parseCanonicalDreamerV2TaskId = (
+  value: unknown
+): ParsedCanonicalDreamerV2TaskId | { readonly valid: false; readonly reason: string } => {
+  if (typeof value !== "string") return { valid: false, reason: "Dreamer task ID must be a string" };
+  const base = BASE_DREAMER_V2_TASK_ID_PATTERN.exec(value);
+  if (base?.[1] !== undefined) {
+    return { valid: true, taskId: value as ScheduledTaskId, sourceKind: "BASE", seatNumber: Number(base[1]) as SeatNumber };
+  }
+  const gained = GAINED_DREAMER_V2_TASK_ID_PATTERN.exec(value);
+  if (gained?.[1] !== undefined) {
+    return { valid: true, taskId: value as ScheduledTaskId, sourceKind: "PHILOSOPHER_GAINED", seatNumber: Number(gained[1]) as SeatNumber };
+  }
+  return { valid: false, reason: "Dreamer task ID is not canonical" };
+};
 
 export const DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION = "dreamer-first-night-action-v2" as const;
 export const DREAMER_V2_RESOLUTION_CAPABILITY_VERSION = "dreamer-first-night-resolution-capability-v2" as const;
@@ -300,25 +322,36 @@ export const resolveDreamerV2Candidates = (input: {
 };
 
 export const formatDreamerV2TargetChoiceId = (taskId: ScheduledTaskId): DreamerV2TargetChoiceId => {
-  if (typeof taskId !== "string" || taskId.trim() !== taskId || taskId.length === 0) {
+  if (!parseCanonicalDreamerV2TaskId(taskId).valid) {
     throw new DomainError("InvalidDreamerV2TargetChoiceId", "Dreamer V2 target choice requires a canonical task ID");
   }
   return `dreamer-target-choice-v2:${taskId}` as DreamerV2TargetChoiceId;
 };
 export const formatDreamerV2DeliveryId = (taskId: ScheduledTaskId): DreamerV2DeliveryId => {
-  if (typeof taskId !== "string" || taskId.trim() !== taskId || taskId.length === 0) {
+  if (!parseCanonicalDreamerV2TaskId(taskId).valid) {
     throw new DomainError("InvalidDreamerV2DeliveryId", "Dreamer V2 delivery requires a canonical task ID");
   }
   return `dreamer-delivery-v2:${taskId}` as DreamerV2DeliveryId;
 };
-export const parseDreamerV2TargetChoiceId = (value: unknown): { readonly valid: true; readonly taskId: ScheduledTaskId } | { readonly valid: false; readonly reason: string } =>
-  typeof value === "string" && value.startsWith("dreamer-target-choice-v2:") && value.length > "dreamer-target-choice-v2:".length
-    ? { valid: true, taskId: value.slice("dreamer-target-choice-v2:".length) as ScheduledTaskId }
-    : { valid: false, reason: "Dreamer V2 target choice ID is not canonical" };
-export const parseDreamerV2DeliveryId = (value: unknown): { readonly valid: true; readonly taskId: ScheduledTaskId } | { readonly valid: false; readonly reason: string } =>
-  typeof value === "string" && value.startsWith("dreamer-delivery-v2:") && value.length > "dreamer-delivery-v2:".length
-    ? { valid: true, taskId: value.slice("dreamer-delivery-v2:".length) as ScheduledTaskId }
-    : { valid: false, reason: "Dreamer V2 delivery ID is not canonical" };
+type ParsedDreamerV2AssociatedId = ParsedCanonicalDreamerV2TaskId;
+const parseDreamerV2AssociatedId = (
+  value: unknown,
+  prefix: "dreamer-target-choice-v2:" | "dreamer-delivery-v2:",
+  reason: string
+): ParsedDreamerV2AssociatedId | { readonly valid: false; readonly reason: string } => {
+  if (typeof value !== "string" || !value.startsWith(prefix)) return { valid: false, reason };
+  const task = parseCanonicalDreamerV2TaskId(value.slice(prefix.length));
+  if (!task.valid || value !== `${prefix}${task.taskId}`) return { valid: false, reason };
+  return task;
+};
+export const parseDreamerV2TargetChoiceId = (
+  value: unknown
+): ParsedDreamerV2AssociatedId | { readonly valid: false; readonly reason: string } =>
+  parseDreamerV2AssociatedId(value, "dreamer-target-choice-v2:", "Dreamer V2 target choice ID is not canonical");
+export const parseDreamerV2DeliveryId = (
+  value: unknown
+): ParsedDreamerV2AssociatedId | { readonly valid: false; readonly reason: string } =>
+  parseDreamerV2AssociatedId(value, "dreamer-delivery-v2:", "Dreamer V2 delivery ID is not canonical");
 
 export type DreamerTargetChosenV2Payload = {
   readonly rulesBaselineVersion: string;
@@ -426,38 +459,6 @@ const validateDreamerV2SourceEffectivenessShape = (value: unknown): value is Dre
     value.representedImpairments[0].impairmentKind === (value.kind === "KNOWN_DRUNK" ? "DRUNK" : "POISONED");
 };
 
-const validateDreamerV2GainedEntitlementShape = (value: unknown): boolean =>
-  hasExactDataProperties(value, ["entitlementVersion", "taskPlanVersion", "schedulingVersion", "insertedTaskId", "insertedTaskType", "philosopherTaskId", "philosopherOpportunityId", "grantId", "sourcePlayerId", "sourceSeatNumber", "sourceCharacterStateRevision", "sourceRole", "chosenRole", "originalOpportunityKind", "originalOpportunityStatus", "insertionEventType"]) &&
-  value.entitlementVersion === DREAMER_V2_GAINED_ENTITLEMENT_VERSION && value.taskPlanVersion === "first-night-task-plan-v2" &&
-  value.schedulingVersion === "philosopher-gained-first-night-scheduling-v2" && isCanonicalString(value.insertedTaskId) &&
-  value.insertedTaskType === "DREAMER_ACTION" && isCanonicalString(value.philosopherTaskId) &&
-  isCanonicalString(value.philosopherOpportunityId) && isCanonicalString(value.grantId) && isCanonicalString(value.sourcePlayerId) &&
-  isSeat(value.sourceSeatNumber) && isRevision(value.sourceCharacterStateRevision) && hasExactDreamerRoleShape(value.sourceRole) &&
-  value.sourceRole.roleId === "philosopher" && hasExactDreamerRoleShape(value.chosenRole) && value.chosenRole.roleId === "dreamer" &&
-  value.originalOpportunityKind === "PHILOSOPHER_FIRST_NIGHT_ACTION" && value.originalOpportunityStatus === "CLOSED" &&
-  value.insertionEventType === "FirstNightTaskInsertedV2";
-
-const baseSourceKeys = ["sourceContractVersion", "taskPlanVersion", "taskId", "taskType", "sourcePlayerId", "sourceSeatNumber", "sourceRole", "abilityRole", "sourceRoleTenure", "opportunityCharacterStateRevision", "abilityInstance", "kind"] as const;
-const gainedSourceKeys = [...baseSourceKeys, "schedulingVersion", "gainedEntitlement"] as const;
-const validateDreamerV2SourceContractShape = (value: unknown): value is DreamerV2SourceContract => {
-  if (!isPlainRecord(value) || (value.kind !== "BASE_DREAMER_V2" && value.kind !== "PHILOSOPHER_GAINED_DREAMER_V2")) return false;
-  if (!hasExactDataProperties(value, value.kind === "BASE_DREAMER_V2" ? baseSourceKeys : gainedSourceKeys) ||
-      value.sourceContractVersion !== DREAMER_V2_SOURCE_CONTRACT_VERSION || value.taskPlanVersion !== "first-night-task-plan-v2" ||
-      !isCanonicalString(value.taskId) || value.taskType !== "DREAMER_ACTION" || !isCanonicalString(value.sourcePlayerId) ||
-      !isSeat(value.sourceSeatNumber) || !hasExactDreamerRoleShape(value.sourceRole) || !hasExactDreamerRoleShape(value.abilityRole) ||
-      value.abilityRole.roleId !== "dreamer" || !validateDreamerV2TenureShape(value.sourceRoleTenure) ||
-      !isRevision(value.opportunityCharacterStateRevision) || !validateFirstNightAbilityInstanceProvenanceShape(value.abilityInstance).valid) return false;
-  const ability = value.abilityInstance as FirstNightAbilityInstanceProvenance;
-  if (ability.taskId !== value.taskId || ability.sourcePlayerId !== value.sourcePlayerId || ability.sourceSeatNumber !== value.sourceSeatNumber ||
-      ability.abilityRoleId !== "dreamer" || !parseFirstNightAbilityInstanceId(ability.abilityInstanceId).valid) return false;
-  return value.kind === "BASE_DREAMER_V2"
-    ? value.sourceRole.roleId === "dreamer" && ability.kind === "BASE_ROLE_TASK"
-    : value.sourceRole.roleId === "philosopher" && ability.kind === "PHILOSOPHER_GAINED_TASK_V2" &&
-      value.schedulingVersion === "philosopher-gained-first-night-scheduling-v2" && validateDreamerV2GainedEntitlementShape(value.gainedEntitlement) &&
-      (value.gainedEntitlement as DreamerV2GainedEntitlement).insertedTaskId === value.taskId &&
-      (value.gainedEntitlement as DreamerV2GainedEntitlement).grantId === ability.grantId;
-};
-
 const validateDreamerV2TargetTruthShape = (value: unknown): value is DreamerV2TargetTruth =>
   hasExactDataProperties(value, ["targetPlayerId", "targetSeatNumber", "targetCharacterStateRevision", "targetTrueRole", "targetNativeSide"]) &&
   isCanonicalString(value.targetPlayerId) && isSeat(value.targetSeatNumber) && isRevision(value.targetCharacterStateRevision) &&
@@ -499,8 +500,15 @@ export const validateDreamerTargetChosenV2PayloadShape = (value: unknown): Dream
       typeof value.targetSeatNumber !== "number" || !Number.isInteger(value.targetSeatNumber) ||
       value.targetSeatNumber < 1 || value.targetSeatNumber > 12 ||
       !isRevision(value.settlementCharacterStateRevision) ||
-      !parseDreamerV2TargetChoiceId(value.targetChoiceId).valid || !validateDreamerV2SourceContractShape(value.sourceContract)) {
+      !validateDreamerV2SourceContractShapeForInternalUse(value.sourceContract).valid) {
     return invalid("DreamerTargetChosenV2 payload contains invalid values");
+  }
+  const task = parseCanonicalDreamerV2TaskId(value.taskId);
+  const choice = parseDreamerV2TargetChoiceId(value.targetChoiceId);
+  const sourceContract = value.sourceContract as DreamerV2SourceContract;
+  if (!task.valid || !choice.valid || choice.taskId !== task.taskId || choice.sourceKind !== task.sourceKind ||
+      sourceContract.taskId !== task.taskId) {
+    return invalid("DreamerTargetChosenV2 payload identities do not match its task");
   }
   return { valid: true };
 };
@@ -511,15 +519,22 @@ export const validateDreamerInformationDeliveredV2PayloadShape = (value: unknown
       value.taskType !== "DREAMER_ACTION" || value.resolutionModelVersion !== DREAMER_V2_RESOLUTION_MODEL_VERSION ||
       value.simulationPolicyVersion !== DREAMER_V2_SIMULATION_POLICY_VERSION ||
       value.knowledgeModelVersion !== DREAMER_V2_INFORMATION_MODEL_VERSION || value.knowledgeStage !== DREAMER_V2_INFORMATION_STAGE ||
-      !parseDreamerV2TargetChoiceId(value.targetChoiceId).valid || !parseDreamerV2DeliveryId(value.deliveryId).valid ||
       !isCanonicalString(value.rulesBaselineVersion) || !isCanonicalString(value.taskId) || !isCanonicalString(value.opportunityId) ||
-      !isRevision(value.settlementCharacterStateRevision) || !validateDreamerV2SourceContractShape(value.sourceContract) ||
+      !isRevision(value.settlementCharacterStateRevision) || !validateDreamerV2SourceContractShapeForInternalUse(value.sourceContract).valid ||
       !validateDreamerV2TargetTruthShape(value.targetTruth) || !validateDreamerV2CandidateDomainShape(value.candidateDomain) ||
       !validateDreamerV2SourceEffectivenessShape(value.sourceEffectiveness) || !validateDreamerV2VortoxConstraintShape(value.vortoxConstraint) ||
       !hasExactDreamerRoleShape(value.selectedGoodRole) || !hasExactDreamerRoleShape(value.selectedEvilRole) ||
       value.selectedGoodRole.defaultAlignment !== "GOOD" || value.selectedEvilRole.defaultAlignment !== "EVIL" ||
       (value.truthOutcome !== "TARGET_INCLUDED" && value.truthOutcome !== "TARGET_EXCLUDED")) {
     return invalid("DreamerInformationDeliveredV2 payload contains invalid values");
+  }
+  const task = parseCanonicalDreamerV2TaskId(value.taskId);
+  const choice = parseDreamerV2TargetChoiceId(value.targetChoiceId);
+  const delivery = parseDreamerV2DeliveryId(value.deliveryId);
+  const sourceContract = value.sourceContract as DreamerV2SourceContract;
+  if (!task.valid || !choice.valid || !delivery.valid || choice.taskId !== task.taskId || delivery.taskId !== task.taskId ||
+      choice.sourceKind !== task.sourceKind || delivery.sourceKind !== task.sourceKind || sourceContract.taskId !== task.taskId) {
+    return invalid("DreamerInformationDeliveredV2 payload identities do not match its task");
   }
   return { valid: true };
 };

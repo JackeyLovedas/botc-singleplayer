@@ -112,6 +112,7 @@ import type {
   EvilTwinPairEstablishedPayload,
   GeneratedCharacterAssignment,
   GeneratedSetup,
+  GameId,
   GameState,
   CharactersAssignedPayload,
   DemonInformationDeliveredPayload,
@@ -220,7 +221,20 @@ export type GameApplicationServiceDependencies = {
   readonly firstNightTaskPlanner?: FirstNightTaskPlannerPort;
   readonly firstNightSystemInformationResolver?: FirstNightSystemInformationResolverPort;
   readonly firstNightTaskCatalogSnapshot?: FirstNightTaskCatalogSnapshot;
+  readonly dreamerV2ProspectiveValidator?: typeof validateProspectiveDreamerV2TripletForInternalApplication;
 };
+
+export const mapDreamerV2DependencyFailureForInternalValidation = (input: {
+  readonly gameId: GameId;
+  readonly currentGameVersion: number;
+  readonly message: string;
+}): CommandExecutionFailed => failed(
+  input.gameId,
+  "DependencyExecutionFailed",
+  input.message,
+  "first-night-role-action",
+  input.currentGameVersion
+);
 
 type DomainEventMetadata = Omit<DomainEventEnvelope, "eventType" | "payload">;
 
@@ -700,7 +714,7 @@ export class GameApplicationService {
         try{
           const fingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state,taskId:command.payload.taskId,boundary:{boundaryVersion:DREAMER_V2_RESOLUTION_BOUNDARY_VERSION,stage:"PRE_TARGET",opportunityId:command.payload.opportunityId,targetPlayerId:command.payload.decision.targetPlayerId,targetChoiceId:null,deliveryId:null}});
           const resolved=resolveDreamerV2FromAcceptedEventStream({acceptedEvents:events,pipelineStateFingerprint:fingerprint,taskId:command.payload.taskId,opportunityId:command.payload.opportunityId,targetPlayerId:command.payload.decision.targetPlayerId});
-          if(resolved.kind!=="READY")return failed(command.gameId,"DependencyExecutionFailed",resolved.message,"first-night-role-action",currentGameVersion);
+          if(resolved.kind!=="READY")return mapDreamerV2DependencyFailureForInternalValidation({gameId:command.gameId,currentGameVersion,message:resolved.message});
           dreamerDecision=resolved;
         }catch(error:unknown){return failed(command.gameId,"DependencyExecutionFailed",errorMessage(error,"Dreamer V2 resolution failed"),"first-night-role-action",currentGameVersion);}
       }
@@ -3947,8 +3961,9 @@ export class GameApplicationService {
         const [target,delivery,settlement]=batch.events;
         if(target?.eventType!=="DreamerTargetChosenV2"||delivery?.eventType!=="DreamerInformationDeliveredV2"||settlement?.eventType!=="ScheduledTaskSettled"||batch.events.length!==3)throw new DomainError("InvalidDomainBatchSemantics","Dreamer V2 success must be one exact triplet");
         const fingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state,taskId:target.payload.taskId,boundary:{boundaryVersion:DREAMER_V2_RESOLUTION_BOUNDARY_VERSION,stage:"PRE_TARGET",opportunityId:target.payload.opportunityId,targetPlayerId:target.payload.targetPlayerId,targetChoiceId:null,deliveryId:null}});
-        const validation=validateProspectiveDreamerV2TripletForInternalApplication({priorAcceptedEvents,pipelineStateFingerprint:fingerprint,events:[target,delivery,settlement]});
-        if(!validation.valid)throw new DomainError("InvalidDomainBatchSemantics",validation.reason);
+        const validator=this.dependencies.dreamerV2ProspectiveValidator??validateProspectiveDreamerV2TripletForInternalApplication;
+        const validation=validator({priorAcceptedEvents,pipelineStateFingerprint:fingerprint,events:[target,delivery,settlement]});
+        if(!validation.valid)throw new DomainError("InvalidDomainBatchSemantics",`${validation.code}: ${validation.reason}`);
       }
       validateDomainBatchSemantics(state, batch.events);
       applyDomainEventBatch(state, batch.events);

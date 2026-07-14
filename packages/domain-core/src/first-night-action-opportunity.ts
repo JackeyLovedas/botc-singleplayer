@@ -43,9 +43,11 @@ import { formatCerenovusAbilityInstanceId, parseCerenovusAbilityInstanceId } fro
 import type { CerenovusAbilitySourceDescriptor } from "./cerenovus.js";
 import {
   DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION,
-  DREAMER_V2_RESOLUTION_CAPABILITY_VERSION
+  DREAMER_V2_RESOLUTION_CAPABILITY_VERSION,
+  parseCanonicalDreamerV2TaskId
 } from "./dreamer-v2.js";
 import type { DreamerActionOpportunityV2, DreamerActionOpportunityVisibilityV2 } from "./dreamer-v2.js";
+import { validateDreamerV2SourceContractShapeForInternalUse } from "./dreamer-v2-contract-internal.js";
 import {
   findActiveSeamstressAbilityForSource,
   isRoleTenureContinuousAcross,
@@ -532,7 +534,7 @@ const CERENOVUS_ROLE_ID = "cerenovus" as RoleId;
 const DREAMER_ROLE_ID = "dreamer" as RoleId;
 const SEAMSTRESS_ROLE_ID = "seamstress" as RoleId;
 const FIRST_NIGHT_ACTION_OPPORTUNITY_ID_PATTERN =
-  /^(?:first-night-v1:(?:(PHILOSOPHER_ACTION|SNAKE_CHARMER_ACTION|WITCH_ACTION|CERENOVUS_ACTION|DREAMER_ACTION|SEAMSTRESS_ACTION):seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(SNAKE_CHARMER_ACTION|SEAMSTRESS_ACTION):seat-(0[1-9]|1[0-2]):from-(snake_charmer|seamstress):opportunity-(0[1-9][0-9]*))|first-night-v2:(?:(DREAMER_ACTION):BASE:seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(DREAMER_ACTION):seat-(0[1-9]|1[0-2]):from-(dreamer):opportunity-(0[1-9][0-9]*)))$/;
+  /^(?:first-night-v1:(?:(PHILOSOPHER_ACTION|SNAKE_CHARMER_ACTION|WITCH_ACTION|CERENOVUS_ACTION|DREAMER_ACTION|SEAMSTRESS_ACTION):seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(SNAKE_CHARMER_ACTION|SEAMSTRESS_ACTION):seat-(0[1-9]|1[0-2]):from-(snake_charmer|seamstress):opportunity-(0[1-9][0-9]*))|first-night-v2:(?:(DREAMER_ACTION):BASE:seat-(0[1-9]|1[0-2]):opportunity-(0[1-9]|[1-9][0-9]*)|PHILOSOPHER_GAINED:(DREAMER_ACTION):seat-(0[1-9]|1[0-2]):from-(dreamer):opportunity-(0[1-9]|[1-9][0-9]*)))$/;
 
 const fail = (reason: string): ValidationResult => ({ valid: false, reason });
 
@@ -791,11 +793,16 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
 
   if (value.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION") {
     if (dreamerV2) {
+      const parsedTask = parseCanonicalDreamerV2TaskId(value.taskId);
       return value.opportunitySchemaVersion === DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION &&
+        value.taskType === "DREAMER_ACTION" && parsedTask.valid &&
         parsedId.generation === "V2" && parsedId.taskType === "DREAMER_ACTION" &&
-        parsedId.seatNumber === value.sourceSeatNumber && isPlainRecord(value.sourceContract) &&
+        parsedId.seatNumber === value.sourceSeatNumber && parsedTask.seatNumber === value.sourceSeatNumber &&
+        parsedId.sourceKind === parsedTask.sourceKind && isPlainRecord(value.sourceContract) &&
+        validateDreamerV2SourceContractShapeForInternalUse(value.sourceContract).valid &&
         value.sourceContract.taskId === value.taskId && value.sourceContract.sourcePlayerId === value.sourcePlayerId &&
         value.sourceContract.sourceSeatNumber === value.sourceSeatNumber &&
+        value.sourceContract.kind === (parsedTask.sourceKind === "BASE" ? "BASE_DREAMER_V2" : "PHILOSOPHER_GAINED_DREAMER_V2") &&
         hasExactDreamerActionOpportunityVisibilityV2Shape(value.visibility);
     }
     return (
@@ -1460,7 +1467,7 @@ export const parseFirstNightActionOpportunityId = (
     !Number.isInteger(seatNumber) ||
     seatNumber < 1 ||
     seatNumber > 12 ||
-    !Number.isInteger(opportunityIndex) ||
+    !Number.isSafeInteger(opportunityIndex) ||
     opportunityIndex < 1
   ) {
     return { valid: false, reason: "ActionOpportunityId contains an unsupported seat or opportunity index" };
@@ -1484,7 +1491,7 @@ export const formatBaseDreamerV2ActionOpportunityId = (input: {
   readonly opportunityIndex?: number;
 }): ActionOpportunityId => {
   const index = input.opportunityIndex ?? 1;
-  if (!Number.isInteger(input.seatNumber) || input.seatNumber < 1 || input.seatNumber > 12 || !Number.isInteger(index) || index < 1) {
+  if (!Number.isInteger(input.seatNumber) || input.seatNumber < 1 || input.seatNumber > 12 || !Number.isSafeInteger(index) || index < 1) {
     throw new DomainError("InvalidFirstNightActionOpportunityCreatedPayload", "Dreamer V2 opportunity ID requires canonical seat and positive index");
   }
   return actionOpportunityId(`first-night-v2:DREAMER_ACTION:BASE:seat-${String(input.seatNumber).padStart(2, "0")}:opportunity-${String(index).padStart(2, "0")}`);
@@ -1495,7 +1502,7 @@ export const formatPhilosopherGainedDreamerV2ActionOpportunityId = (input: {
   readonly opportunityIndex?: number;
 }): ActionOpportunityId => {
   const index = input.opportunityIndex ?? 1;
-  if (!Number.isInteger(input.seatNumber) || input.seatNumber < 1 || input.seatNumber > 12 || !Number.isInteger(index) || index < 1) {
+  if (!Number.isInteger(input.seatNumber) || input.seatNumber < 1 || input.seatNumber > 12 || !Number.isSafeInteger(index) || index < 1) {
     throw new DomainError("InvalidFirstNightActionOpportunityCreatedPayload", "Gained Dreamer V2 opportunity ID requires canonical seat and positive index");
   }
   return actionOpportunityId(`first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-${String(input.seatNumber).padStart(2, "0")}:from-dreamer:opportunity-${String(index).padStart(2, "0")}`);

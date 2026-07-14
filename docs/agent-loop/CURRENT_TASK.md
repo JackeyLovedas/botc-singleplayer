@@ -1,32 +1,20 @@
 # Current Task
 
-## Phase 3 Slice 2B19 — final repair round 2 ready to publish
+## Phase 3 Slice 2B19 — final code repair round 3 local gates pass
 
-- Slice: `2B19 Dreamer V2 Completion`.
-- Control status: `RUNNING`.
-- Branch: `phase-3/dreamer-v2-completion`.
-- Ready PR: [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25).
-- Feature implementation commit: `e2e172b3fed1dd05440ba961f6281556875c7e25`.
-- Repair round: `2 / 2` (final authorized repair).
-- Rule evidence: `docs/rules/evidence/2B19.md`, SHA-256 `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`, verdict `RULE_READY`.
-- User authorization: `USER_AUTHORIZED_2B19_DESIGN_ROUND_3_CANONICAL_CAPTURE_COMPLETION`.
-- Round 3 design: `docs/implementation/phase-3-slice-2b19-design-round-3.md`, SHA-256 `c06ed0fc61c6b10d0838f1d826021d2113fae037089f8571fe084eeaa7993881`.
-- Design round: `3 / 3`; terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3`.
-- Round 3 review: `docs/implementation/phase-3-slice-2b19-design-review-round-3.md`, SHA-256 `59f3a80f05720f3f061117038ea01771e256573c22040ae03015f945a756fe10`, verdict `RULE_DESIGN_PASS`, `remainingBlockers=[]`.
-- `ruleDesignPass=true`; `implementationAuthorized=true`.
-- Repair-round-1 head `237ba2b207166d9c1127d562882d93f0b2216c3c` passed both Windows deterministic jobs and all `1450/1450` coverage assertions, but exact-head push/PR runs `29310466573 / 29310469160` failed because the combined Dreamer-and-later shard took `61.067 s` on Ubuntu and crossed Vitest's fixed 60-second `onTaskUpdate` boundary.
-- Final repair round 2 changes only test execution: that combined shard is split into mutually exclusive Dreamer V2 and later-role-action shards. The service assertions remain `89 + 53 + 15 + 64 = 221`; the three local `15_000 ms` bounded-test limits from repair round 1 remain. No assertion, production behavior, rule evidence, design, traceability, or role coverage changed.
-- Local final-repair gates pass: application `6 files / 230 tests`, full and coverage `34 files / 1450 tests`, coverage `86.85%` statements/lines, `81.64%` branches, `96.98%` functions, typecheck, targeted lint, full lint, diff, JSON, immutable hashes, D19 continuity, nondeterminism, deleted-test, production-scope, and root-export scans. Coverage shard durations are core `1.486 s`, role-actions `11.668 s`, Dreamer V2 `13.104 s`, and later-role-actions `25.924 s`.
-- The failed `237ba2b...` runs are superseded. This document does not invent the future final-repair commit SHA; after push, the live GitHub PR `headRefOid` is authoritative. Fresh exact-head CI, independent final review, merge, tag, FIRST_NIGHT completion, DAY transition, and Phase 2C remain pending or prohibited as applicable. If final-repair exact-head CI fails, immediately `HUMAN_BLOCKED`; no repair round 3 is authorized.
-- `completedSlices` remains through `2B18B`; Slice 2B19 remains incomplete.
-
-## Preserved history
-
-- Round 1 design and review remain immutable; review verdict `RULE_DESIGN_FIX_REQUIRED`.
-- Round 2 design SHA-256 is `b169a34d18334dd403a08fece16a7932a54a4259a724495c7e95fca7c29d0c00`.
-- Round 2 review SHA-256 is `306a3bb34a6ea00d16e437505ef99bf9ba84511a79e670373dc4ca0ccfc4d019`; it returned `RULE_DESIGN_FIX_REQUIRED` for B1 canonical capture/fingerprint and B2 reachability layering.
-- Round 3 completes only those two contracts and does not change Dreamer/Vortox rules, V1 boundaries, or Phase 2C scope.
+- Slice: `2B19 Dreamer V2 Completion`; branch `phase-3/dreamer-v2-completion`; ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25).
+- User authorization: `USER_AUTHORIZED_2B19_FINAL_CODE_REPAIR_ROUND_3`.
+- Repair control: `repairRound=3`, `maxRepairRounds=3`; this is the last authorized code repair. No repair round 4 may be inferred.
+- Current control fields are `reviewedHead=null` and `behaviorDesignFrozen=true`; the uncommitted repair candidate has no current review authority.
+- Historical reviewed published head: `8e236544073c3445a00b4d80368a830996331702`; exact-head push/PR CI `29311121767 / 29311124093` succeeded.
+- The immutable complete review of that head returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`. The four code blockers are: complete canonical-context validation/clone branding, independently resolved prospective `EXPECTED_*` comparisons, strict task/choice/delivery/opportunity identity grammar, and direct D19-009/014–017/083/086 proof at the frozen layers.
+- The local uncommitted repair candidate closes only those four blockers. It does not change rule evidence, Round 3 design, Dreamer/Vortox/Philosopher semantics, V1 behavior, Vitest sharding/timeouts, FIRST_NIGHT completion, DAY, or Phase 2C.
+- Current targeted evidence: Dreamer V2 unit `31/31`; D19 application selection `26` passed; all `32/32` R3-CTX canonical-context contract classes pass; D19-086 independently exercises all three `EXPECTED_*` codes and proves receipt/event/state no-mutation through the real application execution path before the same command succeeds.
+- The canonical builder now validates the complete raw/unbranded graph, performs one canonical structured clone, revalidates the complete clone, proves no nested identity is shared with the input/state graph, and applies the private brand last. Stored Philosopher choice/grant/insertion, impairment/provenance, tenure, Dreamer choice/delivery/settlement/ledger, and resolution-boundary links are exact and fail closed.
+- Full local gates pass: typecheck; lint with zero warnings; test `34 files / 1486 tests`; coverage `34 files / 1486 tests` at `87.23%` statements/lines, `82.12%` branches, and `97.06%` functions. JSON, diff, D19 uniqueness/contiguity, forbidden nondeterminism, and internal root-export scans pass.
+- D19-001 through D19-095 remain exactly one primary ID each. D19-014–017 now use a real gained Dreamer V2 accepted stream and complete trusted replay/stored validation; the old Snake Charmer surrogate is no longer the primary evidence. D19-009 now reaches the application failure mapper. D19-083 and D19-086 use the required structural layer.
+- No commit, push, PR-body update, fresh CI, new review, merge, tag, or next slice is authorized at this checkpoint.
 
 ## Required next action
 
-Create one attributed final-repair commit, push the existing branch normally, and update PR #25 with both superseded failed heads and the pending new-head gate. Require successful Windows/Ubuntu CI on the exact final-repair head before freezing it for the independent final reviewer. If that CI fails, immediately `HUMAN_BLOCKED`; do not infer another repair. Do not merge or start Phase 2C unless the complete final review returns both required pass verdicts with no blockers and the GitHub audit-comment chain is verified.
+Report the fully gated uncommitted repair candidate to the controller. Do not commit or push until separately authorized. After any future publish, require fresh exact-head CI and one new complete independent review. Anything short of `CODE_REVIEW_PASS / RULE_REVIEW_PASS` with empty blockers is immediately `HUMAN_BLOCKED` because repair round 3 is exhausted.

@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B19 Implementation Status
 
-> Status: `FINAL REPAIR ROUND 2 READY TO PUBLISH / LOCAL GATES PASS / CI PENDING / UNACCEPTED`. Ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25) contains unchanged feature implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`. Repair-round-1 head `237ba2b207166d9c1127d562882d93f0b2216c3c` failed exact-head validate CI after all assertions passed and is superseded by the local final-repair candidate. Fresh exact-head CI, independent final review, acceptance, and merge remain pending; no pass verdict is claimed here.
+> Status: `FINAL CODE REPAIR ROUND 3 LOCAL GATES PASS / UNCOMMITTED / UNPUBLISHED / UNACCEPTED`. Current control is `reviewedHead=null` and `behaviorDesignFrozen=true`. Ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25) remains at historically reviewed head `8e236544073c3445a00b4d80368a830996331702`, whose exact-head CI succeeded but whose complete independent review returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`. The local candidate is the last user-authorized code repair and has no commit, CI, or new review. No pass verdict is claimed here.
 
 ## Authority
 
@@ -10,8 +10,10 @@
 - Branch: `phase-3/dreamer-v2-completion`.
 - PR: [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25), ready and open.
 - Feature implementation commit: `e2e172b3fed1dd05440ba961f6281556875c7e25`.
-- Repair round: `2 / 2` (final; no further repair is authorized).
-- Final-head authority: this local repair cannot self-reference its future commit SHA. The live GitHub PR `headRefOid` after push is authoritative.
+- Repair round: `3 / 3` (final; no further repair is authorized).
+- Authorization: `USER_AUTHORIZED_2B19_FINAL_CODE_REPAIR_ROUND_3`.
+- Historical reviewed-head record: `8e236544073c3445a00b4d80368a830996331702`; push/PR CI `29311121767 / 29311124093` succeeded. Its prior dual audit comments are immutable FIX/PASS history and are invalidated for any future repaired head.
+- Local-head authority: the repair candidate is uncommitted. Do not invent its future SHA.
 
 ## Implemented boundary
 
@@ -20,6 +22,17 @@
 - Accepted-stream decision replay, prospective triplet validation, stored historical checkpoint validation, hostile replay rejection, and trusted player/AI private projection.
 - V1 no-Vortox completion remains V1. Current-Vortox V1 and mapped V1 gained choices fail receipt-free; accepted V1 projection and ledger bytes remain unchanged.
 - D19-001 through D19-095 are mapped in `docs/implementation/phase-3-slice-2b19-test-traceability.md`. D19-074 is the sole cross-platform CI-only gate.
+
+## Final code repair round 3
+
+- Added one module-private canonical-context data contract with the exact 31 fields, recursive canonical-data rejection, nested/set/cross-link validation, validation before and after structured clone, reference-isolation confirmation, and branding only after both validations.
+- The builder consumes raw unbranded state references, completes the whole exact validation before its single canonical structured clone, revalidates that complete clone, proves the clone shares no nested reference with either the plain graph or source state/boundary, and brands only the accepted clone.
+- Exact nested validators and cross-links cover stored Philosopher choice/grant/insertion, impairment plus provenance, role tenure, Dreamer opportunity/choice/delivery/settlement/ledger evidence, and the resolution boundary. Legal base and real Philosopher-gained histories remain accepted.
+- Added the complete internal base/gained source-contract exact validator and routed opportunities plus target/delivery payload validation through it.
+- Prospective validation now independently resolves the canonical target, delivery, and settlement and returns `EXPECTED_TARGET_MISMATCH`, `EXPECTED_DELIVERY_MISMATCH`, or `EXPECTED_SETTLEMENT_MISMATCH` before generic batch/stream checks.
+- The application service exposes a narrow Dreamer V2 prospective-validator dependency seam. D19-086 forces each `EXPECTED_*` failure through `execute`, proves no receipt/event/state mutation, then accepts the identical command after restoring the canonical validator path.
+- Canonical Dreamer task/choice/delivery IDs and V2 opportunity indexes now exact-round-trip; task, source kind, seat, payload, and source contract associations are closed.
+- D19-009, D19-014–017, D19-083, and D19-086 now directly exercise their frozen primary layers. D19-014–017 use a real gained Dreamer V2 accepted stream and complete trusted replay/stored validation, not the legacy Snake Charmer surrogate.
 
 ## Explicitly unsupported
 
@@ -36,15 +49,16 @@ Dreamer remains `PARTIAL`, never `COMPLETE`. The fixed twelve-player first-night
 
 ## Validation
 
-- Application tests: `6 files / 230 tests passed`.
-- Application-service test shards: core `89`, role-actions `53`, Dreamer V2 `15`, later-role-actions including Seamstress/Clockmaker/Cerenovus `64`; total `221`, with no omitted, duplicated, or skipped assertions. Full-test durations were `1.193 s / 8.092 s / 9.445 s / 17.155 s`; coverage durations were `1.486 s / 11.668 s / 13.104 s / 25.924 s`.
+- Application tests in the full gate (excluding the separately retained Mathematician suite): `7 workspace executions / 288 tests passed`.
+- Application-service test shards: core `89`, role-actions `53`, Dreamer V2 `50`, later-role-actions including Seamstress/Clockmaker/Cerenovus `64`; total `256`, with no omitted, duplicated, or skipped assertions.
+- Canonical-context Round 3 audit: `32/32` R3-CTX tests pass, covering legal base/gained graphs, hostile exact shapes and cross-links, duplicate/orphan records, getter-count-zero accessors, transparent/revoked proxies, cycles, non-plain objects, reference isolation, post-clone revalidation, and private-brand/fingerprint behavior.
 - Typecheck: pass.
 - Full lint: pass with zero warnings.
-- Full test: `34 files / 1450 tests passed`.
-- Coverage: `34 files / 1450 tests passed`; `86.85%` statements/lines, `81.64%` branches, and `96.98%` functions.
+- Full test: `34 files / 1486 tests passed`.
+- Coverage: `34 files / 1486 tests passed`; `87.23%` statements/lines, `82.12%` branches, and `97.06%` functions.
 - Repair-round-1 head `237ba2b...` push/PR runs `29310466573 / 29310469160` passed both Windows deterministic jobs and all `1450/1450` coverage assertions, then failed with one unhandled `onTaskUpdate` timeout because the combined Dreamer-and-later shard took `61.067 s`. No product assertion or rule claim failed.
 - Final-repair diff, JSON, immutable-authority hashes, D19-contiguity, nondeterminism, deleted-test, production-scope, and internal-root-export scans: pass.
-- Exact-head Windows/Ubuntu CI on the future final-repair head: pending; no feature HEAD is frozen and no final review exists. Any failure is immediately `HUMAN_BLOCKED` because repair `2 / 2` is exhausted.
+- Exact-head Windows/Ubuntu CI on the future final-repair head: pending; no feature HEAD is frozen and no final review exists. Any failure is immediately `HUMAN_BLOCKED` because repair `3 / 3` is exhausted.
 
 ## Rule-to-test traceability
 

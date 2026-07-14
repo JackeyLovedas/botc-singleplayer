@@ -9,6 +9,7 @@ import {
   formatDreamerV2DeliveryId,
   formatDreamerV2TargetChoiceId,
   orderDreamerV2GainedTasksForInternalValidation,
+  parseCanonicalDreamerV2TaskId,
   parseDreamerV2DeliveryId,
   parseDreamerV2TargetChoiceId,
   resolveDreamerV2Candidates,
@@ -25,6 +26,7 @@ import {
   validateDreamerV2SourceContinuityForInternalValidation
 } from "./dreamer-v2-internal.js";
 import { validateDreamerV2AliveEvidenceForInternalReplay } from "./dreamer-v2-replay.js";
+import { validateDreamerV2SourceContractShapeForInternalUse } from "./dreamer-v2-contract-internal.js";
 import {
   abilityOutcomeEvidenceRankForInternalValidation,
   classifyDreamerV2TerminalOutcomeForInternalValidation,
@@ -37,6 +39,7 @@ import type { RoleTenureState } from "./seamstress.js";
 import { formatRoleTenureId } from "./seamstress.js";
 import {
   formatBaseDreamerV2ActionOpportunityId,
+  formatPhilosopherGainedDreamerV2ActionOpportunityId,
   parseFirstNightActionOpportunityId,
   validateFirstNightActionOpportunityStateShape
 } from "./first-night-action-opportunity.js";
@@ -279,7 +282,7 @@ describe("Dreamer V2 pure and hostile domain seams", () => {
     expect(result).toMatchObject({ kind: "READY", truthOutcome: "TARGET_EXCLUDED", informationReliability: "VORTOX_CONSTRAINED_FALSE" });
   });
 
-  it("D19-009 PURE_POLICY_SEAM candidate shortage fails closed", () => {
+  it("candidate shortage fails closed", () => {
     expect(resolveDreamerV2Candidates({
       roleCatalogSnapshot: catalog([dreamer, witch]), roleCatalogSignature: "signed", targetTruth: targetTruth(dreamer),
       sourceEffectiveness: { kind: "EFFECTIVE", representedImpairments: [] }, vortoxConstraint: activeVortox
@@ -346,10 +349,39 @@ describe("Dreamer V2 pure and hostile domain seams", () => {
   });
 
   it("D19-083 STRUCTURAL_VALIDATION rejects hostile IDs", () => {
+    const gainedTaskId = scheduledTaskId("first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-09:from-dreamer");
+    expect(parseCanonicalDreamerV2TaskId(baseTaskId)).toMatchObject({ valid: true, sourceKind: "BASE", seatNumber: 1 });
+    expect(parseCanonicalDreamerV2TaskId(gainedTaskId)).toMatchObject({ valid: true, sourceKind: "PHILOSOPHER_GAINED", seatNumber: 9 });
+    expect(parseDreamerV2TargetChoiceId(formatDreamerV2TargetChoiceId(baseTaskId))).toMatchObject({ valid: true, taskId: baseTaskId, sourceKind: "BASE" });
+    expect(parseDreamerV2DeliveryId(formatDreamerV2DeliveryId(gainedTaskId))).toMatchObject({ valid: true, taskId: gainedTaskId, sourceKind: "PHILOSOPHER_GAINED" });
     expect(parseDreamerV2TargetChoiceId("Dreamer-target-choice-v2:task")).toEqual(expect.objectContaining({ valid: false }));
     expect(parseDreamerV2DeliveryId("dreamer-delivery-v2:")).toEqual(expect.objectContaining({ valid: false }));
+    for (const hostileTaskId of [
+      "first-night-v1:DREAMER_ACTION:seat-1",
+      "first-night-v1:dreamer_action:seat-01",
+      " first-night-v1:DREAMER_ACTION:seat-01",
+      "first-night-v1:DREAMER_ACTION:seat-01 ",
+      "first-night-v1:DREAMER_ACTION:seat-13",
+      "first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-01:from-Dreamer",
+      "first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-01:from-dreamer:extra"
+    ]) {
+      expect(parseCanonicalDreamerV2TaskId(hostileTaskId)).toEqual(expect.objectContaining({ valid: false }));
+      expect(parseDreamerV2TargetChoiceId(`dreamer-target-choice-v2:${hostileTaskId}`)).toEqual(expect.objectContaining({ valid: false }));
+      expect(parseDreamerV2DeliveryId(`dreamer-delivery-v2:${hostileTaskId}`)).toEqual(expect.objectContaining({ valid: false }));
+    }
     expect(parseFirstNightActionOpportunityId(actionOpportunityId("first-night-v2:DREAMER_ACTION:base:seat-01:opportunity-01")))
       .toEqual(expect.objectContaining({ valid: false }));
+    for (const index of [1, 9, 10, 11, 99, 100]) {
+      const base = formatBaseDreamerV2ActionOpportunityId({ seatNumber: seatNumber(1), opportunityIndex: index });
+      const gained = formatPhilosopherGainedDreamerV2ActionOpportunityId({ seatNumber: seatNumber(9), opportunityIndex: index });
+      expect(parseFirstNightActionOpportunityId(base)).toMatchObject({ valid: true, generation: "V2", sourceKind: "BASE", opportunityIndex: index });
+      expect(parseFirstNightActionOpportunityId(gained)).toMatchObject({ valid: true, generation: "V2", sourceKind: "PHILOSOPHER_GAINED", opportunityIndex: index });
+    }
+    for (const token of ["00", "0001", "010", "0010", "+1", "1.0", "-1", "9007199254740992"]) {
+      expect(parseFirstNightActionOpportunityId(actionOpportunityId(`first-night-v2:DREAMER_ACTION:BASE:seat-01:opportunity-${token}`)))
+        .toEqual(expect.objectContaining({ valid: false }));
+    }
+    expect(() => formatBaseDreamerV2ActionOpportunityId({ seatNumber: seatNumber(1), opportunityIndex: Number.MAX_SAFE_INTEGER + 1 })).toThrow();
   });
 
   it("D19-018 STRUCTURAL_VALIDATION rejects opportunity role-segment mismatch", () => {
@@ -358,8 +390,20 @@ describe("Dreamer V2 pure and hostile domain seams", () => {
     ))).toEqual(expect.objectContaining({ valid: false }));
   });
 
+  it("validates complete base Dreamer V2 source-contract identity and exact shape", () => {
+    expect(validateDreamerV2SourceContractShapeForInternalUse(baseSourceContract)).toEqual({ valid: true });
+    for (const hostile of [
+      { ...baseSourceContract, taskId: scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-02") },
+      { ...baseSourceContract, sourceRoleTenure: { ...baseSourceContract.sourceRoleTenure, playerId: playerId("other") } },
+      { ...baseSourceContract, abilityInstance: { ...baseSourceContract.abilityInstance, sourceSeatNumber: seatNumber(2) } },
+      { ...baseSourceContract, extra: true }
+    ]) {
+      expect(validateDreamerV2SourceContractShapeForInternalUse(hostile)).toEqual(expect.objectContaining({ valid: false }));
+    }
+  });
+
   it("D19-084 STRUCTURAL_VALIDATION rejects extra payload keys", () => {
-    const taskId = scheduledTaskId("task");
+    const taskId = baseTaskId;
     const targetPayload = {
       rulesBaselineVersion: "Phase One v2.1", targetChoiceSchemaVersion: DREAMER_V2_TARGET_CHOICE_SCHEMA_VERSION,
       nightNumber: 1, taskId, taskType: "DREAMER_ACTION", opportunityId: actionOpportunityId("opp"),
