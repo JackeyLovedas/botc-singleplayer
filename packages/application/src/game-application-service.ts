@@ -224,6 +224,10 @@ export type GameApplicationServiceDependencies = {
   readonly dreamerV2ProspectiveValidator?: typeof validateProspectiveDreamerV2TripletForInternalApplication;
 };
 
+type GameApplicationServiceInternalDependencies = GameApplicationServiceDependencies & {
+  readonly dreamerV2AcceptedStreamResolver?: typeof resolveDreamerV2FromAcceptedEventStream;
+};
+
 export const mapDreamerV2DependencyFailureForInternalValidation = (input: {
   readonly gameId: GameId;
   readonly currentGameVersion: number;
@@ -560,7 +564,7 @@ const firstNightSystemInformationFailureMessage = (
   ].join("; ");
 
 export class GameApplicationService {
-  public constructor(private readonly dependencies: GameApplicationServiceDependencies) {}
+  public constructor(private readonly dependencies: GameApplicationServiceInternalDependencies) {}
 
   public async execute(incomingCommand: SupportedCommandEnvelope): Promise<CommandResult> {
     const capturedResult = captureSupportedCommand(incomingCommand);
@@ -713,7 +717,8 @@ export class GameApplicationService {
       if(opportunity!==undefined&&isDreamerActionOpportunityV2(opportunity)){
         try{
           const fingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state,taskId:command.payload.taskId,boundary:{boundaryVersion:DREAMER_V2_RESOLUTION_BOUNDARY_VERSION,stage:"PRE_TARGET",opportunityId:command.payload.opportunityId,targetPlayerId:command.payload.decision.targetPlayerId,targetChoiceId:null,deliveryId:null}});
-          const resolved=resolveDreamerV2FromAcceptedEventStream({acceptedEvents:events,pipelineStateFingerprint:fingerprint,taskId:command.payload.taskId,opportunityId:command.payload.opportunityId,targetPlayerId:command.payload.decision.targetPlayerId});
+          const resolver=this.dependencies.dreamerV2AcceptedStreamResolver??resolveDreamerV2FromAcceptedEventStream;
+          const resolved=resolver({acceptedEvents:events,pipelineStateFingerprint:fingerprint,taskId:command.payload.taskId,opportunityId:command.payload.opportunityId,targetPlayerId:command.payload.decision.targetPlayerId});
           if(resolved.kind!=="READY")return mapDreamerV2DependencyFailureForInternalValidation({gameId:command.gameId,currentGameVersion,message:resolved.message});
           dreamerDecision=resolved;
         }catch(error:unknown){return failed(command.gameId,"DependencyExecutionFailed",errorMessage(error,"Dreamer V2 resolution failed"),"first-night-role-action",currentGameVersion);}

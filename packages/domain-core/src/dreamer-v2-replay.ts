@@ -63,6 +63,22 @@ export type ProspectiveDreamerV2TripletValidation =
       | "LEDGER_FACT_MISMATCH";
       readonly reason: string };
 
+export type DreamerV2ProspectivePrefixRebuilder = (
+  priorAcceptedEvents: readonly AnyDomainEventEnvelope[],
+  events: DreamerV2ProspectiveEventTuple,
+  prefixLength: 1 | 2 | 3
+) => GameState;
+
+const rebuildDreamerV2ProspectivePrefix: DreamerV2ProspectivePrefixRebuilder = (priorAcceptedEvents, events, prefixLength) => {
+  const fullPrefix = structuredClone([...priorAcceptedEvents, ...events.slice(0, prefixLength)]);
+  validateDomainEventStream(fullPrefix);
+  const acceptedPrefixLength = priorAcceptedEvents.length;
+  let state = rebuildGameState(fullPrefix.slice(0, acceptedPrefixLength));
+  // An incomplete atomic Dreamer tail cannot be rebuilt as accepted history, so apply it only after rebuilding the validated accepted prefix.
+  for (const event of fullPrefix.slice(acceptedPrefixLength)) state = applyDomainEvent(state, event);
+  return state;
+};
+
 const boundary=(stage:"PRE_TARGET"|"PRE_DELIVERY"|"PRE_SETTLEMENT",opportunityId:DomainEventEnvelope<"DreamerTargetChosenV2">["payload"]["opportunityId"],targetPlayerId:DomainEventEnvelope<"DreamerTargetChosenV2">["payload"]["targetPlayerId"],targetChoiceId:DreamerV2TargetChoiceId|null,deliveryId:DreamerV2DeliveryId|null)=>({boundaryVersion:DREAMER_V2_RESOLUTION_BOUNDARY_VERSION,stage,opportunityId,targetPlayerId,targetChoiceId,deliveryId});
 
 export const validateDreamerV2AliveEvidenceForInternalReplay = (
@@ -100,6 +116,7 @@ export const validateProspectiveDreamerV2TripletForInternalApplication=(input:{
   readonly priorAcceptedEvents:readonly AnyDomainEventEnvelope[];
   readonly pipelineStateFingerprint:DreamerV2PipelineStateFingerprint;
   readonly events:DreamerV2ProspectiveEventTuple;
+  readonly rebuildPrefixForInternalValidation?: DreamerV2ProspectivePrefixRebuilder;
 }):ProspectiveDreamerV2TripletValidation=>{
   try{
     const acceptedEvents=structuredClone(input.priorAcceptedEvents);validateDomainEventStream(acceptedEvents);
@@ -119,20 +136,30 @@ export const validateProspectiveDreamerV2TripletForInternalApplication=(input:{
     if(!sameCanonicalDataValue(expected.settlementPayload,settlement.payload))return {valid:false,code:"EXPECTED_SETTLEMENT_MISMATCH",reason:"Dreamer V2 prospective settlement differs from canonical resolution"};
     try{validateDomainBatchSemantics(prior,input.events);}catch(error){return {valid:false,code:"BATCH_CONTRACT_INVALID",reason:error instanceof Error?error.message:"Dreamer V2 batch contract is invalid"};}
     const prospective=[...acceptedEvents,...structuredClone(input.events)];validateDomainEventStream(prospective);
+    const rebuildPrefix=input.rebuildPrefixForInternalValidation??rebuildDreamerV2ProspectivePrefix;
     const factsBefore=prior.firstNightAbilityOutcomeLedger?.facts.length??0;
     const afterTarget=applyDomainEvent(prior,target);
-    captureDreamerV2PipelineFingerprintForInternalApplication({state:afterTarget,taskId:target.payload.taskId,boundary:boundary("PRE_DELIVERY",target.payload.opportunityId,target.payload.targetPlayerId,target.payload.targetChoiceId,null)});
+    const targetBoundary=boundary("PRE_DELIVERY",target.payload.opportunityId,target.payload.targetPlayerId,target.payload.targetChoiceId,null);
+    const appliedTargetFingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state:afterTarget,taskId:target.payload.taskId,boundary:targetBoundary});
+    const rebuiltTargetFingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state:rebuildPrefix(acceptedEvents,input.events,1),taskId:target.payload.taskId,boundary:targetBoundary});
+    if(!sameDreamerV2PipelineStateFingerprint(appliedTargetFingerprint,rebuiltTargetFingerprint))return {valid:false,code:"PROSPECTIVE_REBUILD_MISMATCH",reason:"TARGET_PREFIX_REBUILD_MISMATCH: independently rebuilt target prefix differs from applied target prefix"};
     const afterDelivery=applyDomainEvent(afterTarget,delivery);
-    captureDreamerV2PipelineFingerprintForInternalApplication({state:afterDelivery,taskId:target.payload.taskId,boundary:boundary("PRE_SETTLEMENT",target.payload.opportunityId,target.payload.targetPlayerId,target.payload.targetChoiceId,delivery.payload.deliveryId)});
+    const deliveryBoundary=boundary("PRE_SETTLEMENT",target.payload.opportunityId,target.payload.targetPlayerId,target.payload.targetChoiceId,delivery.payload.deliveryId);
+    const appliedDeliveryFingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state:afterDelivery,taskId:target.payload.taskId,boundary:deliveryBoundary});
+    const rebuiltDeliveryFingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state:rebuildPrefix(acceptedEvents,input.events,2),taskId:target.payload.taskId,boundary:deliveryBoundary});
+    if(!sameDreamerV2PipelineStateFingerprint(appliedDeliveryFingerprint,rebuiltDeliveryFingerprint))return {valid:false,code:"PROSPECTIVE_REBUILD_MISMATCH",reason:"DELIVERY_PREFIX_REBUILD_MISMATCH: independently rebuilt delivery prefix differs from applied delivery prefix"};
     const deliveryFacts=afterDelivery.firstNightAbilityOutcomeLedger?.facts??[];
     if(deliveryFacts.length!==factsBefore+1||deliveryFacts.filter((fact)=>fact.sourceEventId===delivery.eventId).length!==1)return {valid:false,code:"LEDGER_FACT_MISMATCH",reason:"Dreamer V2 delivery must append exactly one ledger fact"};
     const afterSettlement=applyDomainEvent(afterDelivery,settlement);
     if((afterSettlement.firstNightAbilityOutcomeLedger?.facts.length??0)!==deliveryFacts.length)return {valid:false,code:"LEDGER_FACT_MISMATCH",reason:"Dreamer V2 settlement must not append a second ledger fact"};
-    const rebuilt=rebuildGameState(prospective);
+    const rebuilt=rebuildPrefix(acceptedEvents,input.events,3);
     if(!sameCanonicalDataValue(afterSettlement,rebuilt))return {valid:false,code:"PROSPECTIVE_REBUILD_MISMATCH",reason:"Dreamer V2 prospective replay differs from full rebuild"};
+    const appliedSettlementFingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state:afterSettlement,taskId:target.payload.taskId,boundary:deliveryBoundary});
+    const rebuiltSettlementFingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state:rebuilt,taskId:target.payload.taskId,boundary:deliveryBoundary});
+    if(!sameDreamerV2PipelineStateFingerprint(appliedSettlementFingerprint,rebuiltSettlementFingerprint))return {valid:false,code:"PROSPECTIVE_REBUILD_MISMATCH",reason:"Dreamer V2 independently rebuilt settlement prefix differs from applied settlement prefix"};
     const facts=rebuilt.firstNightAbilityOutcomeLedger?.facts.filter((fact)=>fact.sourceEventId===delivery.eventId)??[];
     if(facts.length!==1)return {valid:false,code:"LEDGER_FACT_MISMATCH",reason:"Dreamer V2 delivery must append exactly one ledger fact"};
-    return {valid:true,prospectiveStateFingerprint:captureDreamerV2PipelineFingerprintForInternalApplication({state:afterSettlement,taskId:target.payload.taskId,boundary:boundary("PRE_SETTLEMENT",target.payload.opportunityId,target.payload.targetPlayerId,target.payload.targetChoiceId,delivery.payload.deliveryId)})};
+    return {valid:true,prospectiveStateFingerprint:appliedSettlementFingerprint};
   }catch(error){return {valid:false,code:"PROSPECTIVE_STREAM_INVALID",reason:error instanceof Error?error.message:"Dreamer V2 prospective validation failed"};}
 };
 

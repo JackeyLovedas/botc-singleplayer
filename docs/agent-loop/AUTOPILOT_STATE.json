@@ -5,40 +5,44 @@
   "currentBranch": "phase-3/dreamer-v2-completion",
   "currentSlice": "2B19",
   "reviewedHead": null,
-  "currentReviewHeadAuthority": "The uncommitted final code repair round 3 candidate has no reviewed HEAD. A future authorized publish requires fresh exact-head CI and a new complete independent review before reviewedHead may be populated.",
-  "exactHeadCIAuthority": "Reviewed PR #25 head 8e236544073c3445a00b4d80368a830996331702 passed exact-head push/PR CI 29311121767 / 29311124093. The uncommitted final code repair round 3 changes that reviewed content, so fresh exact-head Windows/Ubuntu CI and a new complete independent review will be required after a future authorized publish.",
-  "currentFeatureHead": "8e236544073c3445a00b4d80368a830996331702",
-  "currentFeatureHeadAuthority": "8e236544073c3445a00b4d80368a830996331702 is the last published and reviewed PR head. The local repair-round-3 candidate is uncommitted and must not be assigned a fabricated SHA.",
-  "currentFeatureHeadCIStatus": "REVIEWED_HEAD_SUCCESS_LOCAL_FINAL_CODE_REPAIR_ROUND_3_GATES_PASS_UNCOMMITTED",
-  "currentFinalReviewStatus": "NONE_FOR_UNCOMMITTED_REPAIR_CANDIDATE",
+  "currentReviewHeadAuthority": "No Round 4 reviewed HEAD exists. After an authorized push, the live GitHub PR #25 headRefOid is authoritative and requires fresh exact-head CI plus a complete independent review.",
+  "exactHeadCIAuthority": "PENDING_EXTERNAL_GATE for the future live PR #25 headRefOid; no prior CI status is inherited.",
+  "currentFeatureHead": null,
+  "currentFeatureHeadAuthority": "GitHub PR #25 live headRefOid after push is authoritative",
+  "featureHeadRecordedAtCommit": "PENDING_PUBLICATION",
+  "currentFeatureHeadCIStatus": "PENDING_EXTERNAL_GATE",
+  "exactHeadCIStatus": "PENDING_EXTERNAL_GATE",
+  "currentFinalReviewStatus": "PENDING_FRESH_EXACT_HEAD_REVIEW",
+  "finalReviewState": "PENDING_FRESH_EXACT_HEAD_REVIEW",
   "currentAcceptanceStatus": "UNACCEPTED",
-  "repairRound": 3,
+  "repairRound": 4,
   "designRound": 3,
   "maxDesignRounds": 3,
-  "userContinuationAuthorization": "USER_AUTHORIZED_2B19_FINAL_CODE_REPAIR_ROUND_3",
+  "userContinuationAuthorization": "USER_AUTHORIZED_2B19_ACCEPTANCE_CLOSURE_ROUND_4",
   "rescopeAuthorization": null,
   "scopeMode": "DREAMER_V2_COMPLETION",
   "behaviorDesignFrozen": true,
   "finalDesignCompletionRound": false,
   "designRound3_2Scope": null,
   "maxSlices": 1,
-  "maxRepairRounds": 3,
-  "historicalSlice2B19ReviewedHead": {
-    "reviewedHead": "8e236544073c3445a00b4d80368a830996331702",
-    "pushCI": 29311121767,
-    "pullRequestCI": 29311124093,
+  "maxRepairRounds": 4,
+  "priorRound4ReviewedHead": {
+    "reviewedHead": "af089791f8733a2c5294e436e13a110345813a2c",
+    "pushCI": 29318121669,
+    "pullRequestCI": 29318125376,
     "ciStatus": "SUCCESS",
     "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
     "ruleVerdict": "RULE_REVIEW_PASS",
     "remainingBlockerCount": 4,
     "remainingBlockers": [
-      "Complete canonical-context validation, clone isolation, and brand-last construction.",
-      "Independently resolve and compare prospective EXPECTED_TARGET, EXPECTED_DELIVERY, and EXPECTED_SETTLEMENT values.",
-      "Enforce strict canonical task, choice, delivery, and opportunity identity grammar and associations.",
-      "Provide direct frozen-layer evidence for D19-009, D19-014 through D19-017, D19-083, and D19-086."
+      "Bind initialization provenance to the ledger anchor, close exact V1/V2 unions, and prove initial/transition tenure provenance bidirectionally.",
+      "Independently rebuild and fingerprint the target and delivery prospective prefixes with stable mismatch reasons and a minimal test seam.",
+      "Provide real D19-009 atomic retry, separate D19-014 through D19-017 hostile tests, the complete D19-083 matrix, retain D19-086, and publish ten-field 95-row traceability.",
+      "Make Round 4 pre-publication status and control documents accurate without stale or self-referential feature-head claims."
     ],
-    "status": "HISTORICAL_SUPERSEDED_BY_UNCOMMITTED_FINAL_CODE_REPAIR_ROUND_3",
-    "noRepairRound4": true
+    "status": "HISTORICAL_SUPERSEDED_BY_USER_AUTHORIZED_ROUND_4",
+    "codeReviewCommentUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/25#issuecomment-4967132700",
+    "ruleReviewCommentUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/25#issuecomment-4967132960"
   },
   "candidateRole": null,
   "candidateScope": null,
@@ -83,7 +87,7 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": true,
-  "implementationStatus": "FINAL_CODE_REPAIR_ROUND_3_LOCAL_GATES_PASS_UNCOMMITTED_UNACCEPTED",
+  "implementationStatus": "ACCEPTANCE_CLOSURE_REPAIR_ROUND_4_LOCAL_GATES_PASS_PREPUBLICATION_UNACCEPTED",
   "implementationBranch": "phase-3/dreamer-v2-completion",
   "implementationCommit": "e2e172b3fed1dd05440ba961f6281556875c7e25",
   "repairCandidateCommit": null,
@@ -141,23 +145,23 @@
   "implementationLocalValidation": {
     "typecheck": "PASS",
     "targetedLint": "PASS",
-    "applicationSuite": "7 workspace executions / 288 tests passed in the full gate excluding the separately retained Mathematician suite; application-service shards 89 + 53 + 50 + 64 = 256 with zero skipped, omitted, or duplicated assertions",
-    "targetedDreamerV2": "domain Dreamer V2 31/31; selected D19 application assertions 26 passed; R3-CTX canonical-context contract audit 32/32 passed",
+    "applicationSuite": "Focused Dreamer/domain/application verification: 5 files / 298 tests passed",
+    "targetedDreamerV2": "PASS: Dreamer V2 domain and application coverage includes all authorized Round 4 canonical-context, identity-union, validated prospective-prefix, atomic-retry, hostile-validation, and traceability evidence",
     "fullLint": "PASS",
-    "fullTest": "34 files / 1486 tests passed",
-    "coverage": "34 files / 1486 tests passed; 87.23% statements/lines; 82.12% branches; 97.06% functions",
+    "fullTest": "34 files / 1497 tests PASS",
+    "coverage": "34 files / 1497 tests PASS; 87.42% statements/lines, 82.57% branches, 97.07% functions",
     "diffCheck": "PASS",
-    "forbiddenScans": "PASS",
+    "forbiddenScans": "PASS: exact 95-row/10-field traceability and source-title checks; no forbidden nondeterminism, raw JSON comparison, test modifiers, projection edits, immutable-authority edits, or public internal resolver/builder exports",
     "d19PrimaryIds": "95 total / 95 unique / none missing"
   },
   "implementationTraceabilityPath": "docs/implementation/phase-3-slice-2b19-test-traceability.md",
   "implementationTraceabilityStatus": "D19_001_THROUGH_D19_095_CONTIGUOUS_94_LOCAL_1_CI_ONLY",
   "implementationExternalGate": "D19-074_PENDING_EXACT_HEAD_WINDOWS_UBUNTU_CI",
   "controllerPrePublishAudit": {
-    "status": "FINAL_CODE_REPAIR_ROUND_3_LOCAL_GATES_AND_FINAL_SCANS_PASS_UNCOMMITTED",
-    "scope": "FOUR_AUTHORIZED_CODE_AND_TEST_CONTRACT_BLOCKERS_ONLY_NO_RULE_OR_SCOPE_CHANGE",
+    "status": "ACCEPTANCE_CLOSURE_REPAIR_ROUND_4_LOCAL_GATES_PASS_PREPUBLICATION",
+    "scope": "FOUR_AUTHORIZED_ACCEPTANCE_CLOSURE_BLOCKERS_ONLY_NO_RULE_OR_SCOPE_CHANGE",
     "localAuthorityCoverage": "D19_001_THROUGH_D19_095_EXACTLY_ONCE; D19_074_REMAINS_FUTURE_EXACT_HEAD_CI_GATE",
-    "localGates": "application 7 workspace executions/288; application-service 256; R3-CTX 32/32; full and coverage 34 files/1486; 87.23% statements/lines, 82.12% branches, 97.06% functions; typecheck, lint, diff, JSON, D19, determinism, and root-export scans pass"
+    "localGates": "Typecheck, full lint, full test, coverage, diff, JSON, traceability, source-title, nondeterminism, test-modifier, projection, immutable-authority, and root-export scans pass; full and coverage suites each pass 34 files / 1497 tests"
   },
   "compatibilityDesignVerdict": null,
   "designReviewPath": "docs/implementation/phase-3-slice-2b19-design-review-round-3.md",
@@ -200,7 +204,9 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [],
+  "remainingBlockers": [
+    "PENDING_EXTERNAL_CI_AND_FRESH_FINAL_REVIEW"
+  ],
   "ruleCoverageStatus": "PARTIAL",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "approvedOverrideIds": [
@@ -893,7 +899,7 @@
     "implementationAuthorized": false
   },
   "startedAt": "2026-07-13T06:57:55.960Z",
-  "lastAction": "Completed the controller-requested pre-commit canonical-capture audit on the uncommitted final code repair round 3 candidate: raw validation, one canonical clone, complete revalidation, reference isolation, brand-last, exact nested cross-links, 32 R3-CTX tests, and all full local gates/scans pass.",
+  "lastAction": "Completed the user-authorized Round 4 acceptance-closure prepublication candidate for exactly the four authorized blocker groups. All local gates and scans pass; the candidate remains unaccepted and has no Round 4 published or reviewed HEAD.",
   "lastError": null,
-  "nextAction": "Report the fully gated uncommitted final repair candidate to the controller. Do not commit or push without separate authorization; any future published head requires fresh exact-head Windows/Ubuntu CI and a new complete independent review before merge."
+  "nextAction": "The controller may create the separately authorized attributed repair commit and push it to existing PR #25. The resulting live PR head requires fresh exact-head Windows/Ubuntu CI and a new complete independent review before merge; do not start Phase 2C."
 }

@@ -4,13 +4,13 @@
 
 - Phase 3 controlled vertical slices.
 - Current control state: `RUNNING`; current slice `2B19`; branch `phase-3/dreamer-v2-completion`; ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25); `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, `reviewedHead=null`, and `behaviorDesignFrozen=true`.
-- Design round is `3 / 3`; code repair round is `3 / 3` and exhausted after this final candidate.
+- Design round remains frozen at `3 / 3`; user-authorized acceptance-closure code repair is `4 / 4`, with no Round 5.
 - Accepted slices remain `2B13` through `2B18B`. Slice `2B19` is not completed and is not in `completedSlices`.
 - Authorized 2B19 production code remains published at implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`; the slice remains `UNACCEPTED`.
 - Repair-round-1 head `237ba2b207166d9c1127d562882d93f0b2216c3c` passed both Windows deterministic jobs and all `1450/1450` coverage assertions, but push/PR validate runs `29310466573 / 29310469160` failed because the combined Dreamer-and-later coverage shard took `61.067 s` and crossed the fixed 60-second worker boundary.
 - Final repair round 2 splits only that combined shard into Dreamer V2 and later-role-action shards. Production code, assertions, rule evidence, design, traceability, and role coverage remain unchanged.
-- Published PR head `8e236544073c3445a00b4d80368a830996331702` passed exact-head push/PR CI `29311121767 / 29311124093`, then received a complete independent `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` report with four code/test-contract blockers. User authorization `USER_AUTHORIZED_2B19_FINAL_CODE_REPAIR_ROUND_3` permits the current last repair (`3 / 3`) only. The repair candidate is local and uncommitted; fresh CI and review do not yet exist. No repair round 4 may be inferred.
-- The repair-round-3 candidate now passes all local gates after the controller's canonical-capture contract audit: application `7 workspace executions / 288 tests`, including application-service shards `89 + 53 + 50 + 64 = 256`; full and coverage `34 files / 1486 tests`; coverage `87.23%` statements/lines, `82.12%` branches, and `97.06%` functions. All 32 R3-CTX classes pass. Typecheck, lint, diff, JSON, D19 exact-once, nondeterminism, and internal root-export scans pass. This local evidence is not exact-head CI or an independent review verdict.
+- Published PR head `af089791f8733a2c5294e436e13a110345813a2c` passed exact-head push/PR CI `29318121669 / 29318125376`, then received a complete independent `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS` report with four acceptance-closure blockers. `USER_AUTHORIZED_2B19_ACCEPTANCE_CLOSURE_ROUND_4` permits only repair `4 / 4` for those blockers.
+- The Round 4 prepublication candidate passes typecheck, lint, full test and coverage (`34 files / 1497 tests`), coverage `87.42%` statements/lines, `82.57%` branches, `97.07%` functions, plus diff and required scans. Its attributed repair commit, publication, fresh exact-head CI, and fresh independent review remain pending; this line makes no external-gate or final-review pass claim.
 - Slice `2B18B` merged through PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) at `2026-07-13T14:18:39Z`.
 - Frozen feature HEAD: `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`; merge SHA: `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`.
 - Accepted tag: `phase-3-slice-2b18b-mathematician-first-night-information`.
@@ -25,7 +25,7 @@
 - `mergeCommitCI`: main run `29257399469` attempt 1 failed on the existing Cerenovus batch-event/clock-position retry test's 5,000 ms timeout; attempt 2 completed `SUCCESS` for merge SHA `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`. Accepted-tag run `29257432523` also completed `SUCCESS` for that exact merge SHA.
 - `closeoutCommitCI`: `PENDING` for the future exact docs-only closeout commit SHA and GitHub run; it inherits no earlier CI status.
 
-## Slice 2B19 Final Code Repair Round 3 / Local Uncommitted Candidate
+## Slice 2B19 Acceptance Closure Repair Round 4 / Local Uncommitted Candidate
 
 - Rule evidence: `docs/rules/evidence/2B19.md`, SHA-256 `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`, verdict `RULE_READY`, coverage `PARTIAL`.
 - Round 1 design: `docs/implementation/phase-3-slice-2b19-design.md`, SHA-256 `c73e4c85f32dfaf63b2d2df87ad9226bbd95fa6423e3feb52a7c666e8a6a36fd`.

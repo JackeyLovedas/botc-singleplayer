@@ -1,6 +1,7 @@
 import { cloneRoleSetupSnapshot } from "./character-assignment.js";
 import { isCanonicalDataValue, sameCanonicalDataValue } from "./canonical-data.js";
 import type { DreamerInformationDeliveredPayload, DreamerTargetChosenPayload } from "./dreamer.js";
+import { validateDreamerInformationDeliveredV1PayloadShape, validateDreamerTargetChosenV1PayloadShape } from "./dreamer.js";
 import { DomainError } from "./errors.js";
 import type {
   AbilityImpairmentId,
@@ -590,12 +591,22 @@ export const validateDreamerTargetChoiceSetV1V2 = (value: unknown): DreamerV2Val
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["choices"]) || !Array.isArray(value.choices) ||
       !isCanonicalDataValue(value.choices)) return invalid("Dreamer target choice set must be one dense canonical choices array");
   const identities = new Set<string>();
-  for (const choice of value.choices) {
-    if (!isDreamerTargetChosenV2Payload(choice)) continue;
-    const validation = validateDreamerTargetChosenV2PayloadShape(choice);
-    if (!validation.valid) return validation;
-    if (identities.has(choice.targetChoiceId)) return invalid("Dreamer V2 target choice identities must be unique");
-    identities.add(choice.targetChoiceId);
+  const taskIds = new Set<string>();
+  for (const choice of value.choices as readonly unknown[]) {
+    const v1Validation = validateDreamerTargetChosenV1PayloadShape(choice);
+    const v2Validation = validateDreamerTargetChosenV2PayloadShape(choice);
+    if (v1Validation.valid === v2Validation.valid) return invalid("Dreamer target choice must match exactly one V1 or V2 variant");
+    const variant = v2Validation.valid
+      ? choice as DreamerTargetChosenV2Payload
+      : choice as DreamerTargetChosenPayload;
+    const taskId = variant.taskId;
+    if (taskIds.has(taskId)) return invalid("Dreamer target choice tasks must be unique across V1 and V2");
+    taskIds.add(taskId);
+    const identity = v2Validation.valid
+      ? (variant as DreamerTargetChosenV2Payload).targetChoiceId
+      : `${variant.taskId}:${variant.opportunityId}`;
+    if (identities.has(identity)) return invalid("Dreamer target choice identities must be unique");
+    identities.add(identity);
   }
   return { valid: true };
 };
@@ -604,23 +615,30 @@ export const validateDreamerInformationSetV1V2 = (value: unknown): DreamerV2Vali
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["deliveries"]) || !Array.isArray(value.deliveries) ||
       !isCanonicalDataValue(value.deliveries)) return invalid("Dreamer information set must be one dense canonical deliveries array");
   const identities = new Set<string>();
+  const taskIds = new Set<string>();
   const sourceIdentities = new Set<string>();
-  for (const delivery of value.deliveries) {
-    const sourcePlayerId = isDreamerInformationDeliveredV2Payload(delivery)
-      ? delivery.sourceContract.sourcePlayerId
-      : isPlainRecord(delivery) && typeof delivery.sourcePlayerId === "string"
-        ? delivery.sourcePlayerId
-        : undefined;
+  for (const delivery of value.deliveries as readonly unknown[]) {
+    const v1Validation = validateDreamerInformationDeliveredV1PayloadShape(delivery);
+    const v2Validation = validateDreamerInformationDeliveredV2PayloadShape(delivery);
+    if (v1Validation.valid === v2Validation.valid) return invalid("Dreamer delivery must match exactly one V1 or V2 variant");
+    const variant = v2Validation.valid
+      ? delivery as DreamerInformationDeliveredV2Payload
+      : delivery as DreamerInformationDeliveredPayload;
+    const taskId = variant.taskId;
+    if (taskIds.has(taskId)) return invalid("Dreamer delivery tasks must be unique across V1 and V2");
+    taskIds.add(taskId);
+    const sourcePlayerId = v2Validation.valid
+      ? (variant as DreamerInformationDeliveredV2Payload).sourceContract.sourcePlayerId
+      : (variant as DreamerInformationDeliveredPayload).sourcePlayerId;
     if (sourcePlayerId !== undefined) {
       if (sourceIdentities.has(sourcePlayerId)) return invalid("Dreamer delivery source identities must be unique");
       sourceIdentities.add(sourcePlayerId);
     }
-    if (isDreamerInformationDeliveredV2Payload(delivery)) {
-      const validation = validateDreamerInformationDeliveredV2PayloadShape(delivery);
-      if (!validation.valid) return validation;
-      if (identities.has(delivery.deliveryId)) return invalid("Dreamer V2 delivery identities must be unique");
-      identities.add(delivery.deliveryId);
-    }
+    const identity = v2Validation.valid
+      ? (variant as DreamerInformationDeliveredV2Payload).deliveryId
+      : `${variant.taskId}:${variant.opportunityId}`;
+    if (identities.has(identity)) return invalid("Dreamer delivery identities must be unique");
+    identities.add(identity);
   }
   return { valid: true };
 };

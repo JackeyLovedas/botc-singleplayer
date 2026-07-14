@@ -393,6 +393,43 @@ const hasExactReliabilityShape = (value: unknown): value is DreamerInformationRe
   );
 };
 
+export const validateDreamerTargetChosenV1PayloadShape = (payload: unknown): ValidationResult => {
+  if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, DREAMER_TARGET_CHOSEN_PAYLOAD_KEYS)) {
+    return fail("DreamerTargetChosen V1 payload must have exact runtime shape");
+  }
+  return typeof payload.rulesBaselineVersion === "string" && payload.rulesBaselineVersion.trim().length > 0 &&
+    payload.nightNumber === 1 && typeof payload.taskId === "string" && payload.taskId.trim().length > 0 &&
+    payload.taskType === "DREAMER_ACTION" && typeof payload.opportunityId === "string" && payload.opportunityId.trim().length > 0 &&
+    payload.decisionKind === "CHOOSE_PLAYER" && typeof payload.sourcePlayerId === "string" && payload.sourcePlayerId.trim().length > 0 &&
+    typeof payload.sourceSeatNumber === "number" && Number.isSafeInteger(payload.sourceSeatNumber) && payload.sourceSeatNumber >= 1 && payload.sourceSeatNumber <= 12 &&
+    hasExactRoleSetupSnapshotShape(payload.sourceRole) && typeof payload.sourceCharacterStateRevision === "number" &&
+    Number.isSafeInteger(payload.sourceCharacterStateRevision) && payload.sourceCharacterStateRevision > 0 &&
+    typeof payload.targetPlayerId === "string" && payload.targetPlayerId.trim().length > 0 &&
+    typeof payload.targetSeatNumber === "number" && Number.isSafeInteger(payload.targetSeatNumber) && payload.targetSeatNumber >= 1 && payload.targetSeatNumber <= 12
+      ? { valid: true }
+      : fail("DreamerTargetChosen V1 fields must use supported primitive values");
+};
+
+export const validateDreamerInformationDeliveredV1PayloadShape = (payload: unknown): ValidationResult => {
+  if (!isPlainRecord(payload) || !hasExactEnumerableKeys(payload, DREAMER_INFORMATION_DELIVERED_PAYLOAD_KEYS)) {
+    return fail("DreamerInformationDelivered V1 payload must have exact runtime shape");
+  }
+  return typeof payload.rulesBaselineVersion === "string" && payload.rulesBaselineVersion.trim().length > 0 &&
+    payload.nightNumber === 1 && typeof payload.taskId === "string" && payload.taskId.trim().length > 0 &&
+    payload.taskType === "DREAMER_ACTION" && typeof payload.opportunityId === "string" && payload.opportunityId.trim().length > 0 &&
+    payload.knowledgeModelVersion === SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION && payload.knowledgeStage === DREAMER_INFORMATION_STAGE &&
+    typeof payload.sourcePlayerId === "string" && payload.sourcePlayerId.trim().length > 0 &&
+    typeof payload.sourceSeatNumber === "number" && Number.isSafeInteger(payload.sourceSeatNumber) && payload.sourceSeatNumber >= 1 && payload.sourceSeatNumber <= 12 &&
+    typeof payload.sourceCharacterStateRevision === "number" && Number.isSafeInteger(payload.sourceCharacterStateRevision) && payload.sourceCharacterStateRevision > 0 &&
+    typeof payload.targetPlayerId === "string" && payload.targetPlayerId.trim().length > 0 &&
+    typeof payload.targetSeatNumber === "number" && Number.isSafeInteger(payload.targetSeatNumber) && payload.targetSeatNumber >= 1 && payload.targetSeatNumber <= 12 &&
+    hasExactReliabilityShape(payload.informationReliability) && hasExactRoleSetupSnapshotShape(payload.goodRole) &&
+    payload.goodRole.defaultAlignment === "GOOD" && hasExactRoleSetupSnapshotShape(payload.evilRole) &&
+    payload.evilRole.defaultAlignment === "EVIL" && payload.falseRolePolicyVersion === DREAMER_FALSE_ROLE_POLICY_VERSION
+      ? { valid: true }
+      : fail("DreamerInformationDelivered V1 fields must use supported primitive values");
+};
+
 const validateDreamerInformationPayloadShape = (
   payload: unknown,
   setup: Pick<GeneratedSetup, "roleCatalogSnapshot">

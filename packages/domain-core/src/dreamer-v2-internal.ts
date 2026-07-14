@@ -24,6 +24,7 @@ import type {
 import { getNextUnsettledFirstNightTask, validateFirstNightTaskPlanRuntimeState, validateFirstNightTaskProgress } from "./first-night-task-plan.js";
 import type { FirstNightTaskProgress, ScheduledTask } from "./first-night-task-plan.js";
 import type { GameState } from "./game-state.js";
+import type { SnakeCharmerDemonSwapAppliedPayload, SnakeCharmerDemonSwapSet } from "./snake-charmer.js";
 import type { GameId, PlayerId, RoleId, ScheduledTaskId } from "./ids.js";
 import type { GamePhase } from "./game-phase.js";
 import type { CurrentCharacterStateSet } from "./current-character-state.js";
@@ -48,6 +49,7 @@ import {
 import type { MathematicianImpairmentEventProvenanceState } from "./mathematician.js";
 import { validateMathematicianImpairmentEventProvenanceStateShape } from "./mathematician.js";
 import {
+  formatRoleTenureTransitionFactId,
   isRoleTenureActiveAt,
   isRoleTenureContinuousAcross,
   parseRoleTenureId,
@@ -78,6 +80,8 @@ import {
   validateDreamerInformationSetV1V2,
   validateDreamerTargetChoiceSetV1V2
 } from "./dreamer-v2.js";
+import type { DreamerInformationDeliveredPayload, DreamerTargetChosenPayload } from "./dreamer.js";
+import { validateStoredDreamerInformationDelivered } from "./dreamer.js";
 import { validateDreamerV2SourceContractShapeForInternalUse } from "./dreamer-v2-contract-internal.js";
 import {
   hasExactRoleSetupSnapshotShape,
@@ -113,6 +117,7 @@ type CanonicalDreamerV2Context = {
   readonly abilityImpairments: AbilityImpairmentSet;
   readonly impairmentEventProvenance: MathematicianImpairmentEventProvenanceState;
   readonly roleTenures: RoleTenureState;
+  readonly snakeCharmerDemonSwaps: SnakeCharmerDemonSwapSet;
   readonly dreamerTargetChoices: DreamerTargetChoiceSet;
   readonly dreamerInformationDeliveries: DreamerInformationSet;
   readonly firstNightAbilityOutcomeLedger: FirstNightAbilityOutcomeLedger;
@@ -130,7 +135,7 @@ const CANONICAL_DREAMER_V2_CONTEXT_KEYS = [
   "nightNumber", "firstNight", "firstNightInitializationProvenance", "initialPrivateKnowledge", "setup", "roster",
   "assignment", "currentCharacterState", "firstNightTaskPlan", "firstNightTaskProgress", "firstNightTaskInsertions",
   "philosopherAbilityChoices", "philosopherGrantedAbilities", "firstNightActionOpportunities", "abilityImpairments",
-  "impairmentEventProvenance", "roleTenures", "dreamerTargetChoices", "dreamerInformationDeliveries",
+  "impairmentEventProvenance", "roleTenures", "snakeCharmerDemonSwaps", "dreamerTargetChoices", "dreamerInformationDeliveries",
   "firstNightAbilityOutcomeLedger", "targetTask", "sourceContract", "sourceAbilityInstance", "resolutionBoundary"
 ] as const;
 const GAME_STATE_KEYS = new Set([
@@ -185,6 +190,7 @@ const TRANSITION_TENURE_START_KEYS = [
   "kind", "transitionFactId", "sourceEventId", "sourceEventSequence", "previousCharacterStateRevision",
   "nextCharacterStateRevision"
 ] as const;
+const TRACKED_ROLE_IDS = new Set<string>(["cerenovus", "dreamer", "mathematician", "philosopher", "seamstress", "vortox"]);
 
 const validateStoredPhilosopherChain = (context: CanonicalDreamerV2ContextData): boolean => {
   if (!validateContainer(context.philosopherAbilityChoices, "choices", (entry) => entry.opportunityId) ||
@@ -289,6 +295,86 @@ const validateRoleTenureStateInternal = (context: CanonicalDreamerV2ContextData)
       !Array.isArray(state.processedTransitionFactIds) || !uniqueBy(records, (entry) => entry.roleTenureId) ||
       processedTransitionFactIds.some((id) => !parseRoleTenureTransitionFactId(id).valid) ||
       new Set(processedTransitionFactIds).size !== processedTransitionFactIds.length) return false;
+  const initialAssignments = context.assignment.assignments.filter((entry) => TRACKED_ROLE_IDS.has(entry.role.roleId));
+  const baseRecords = records.filter((record) => record.startedBy.kind === "CHARACTERS_ASSIGNED");
+  if (baseRecords.length !== initialAssignments.length) return false;
+  for (const assignment of initialAssignments) {
+    if (baseRecords.filter((record) => record.playerId === assignment.playerId && record.seatNumber === assignment.seatNumber &&
+        record.roleId === assignment.role.roleId && record.acquiredCharacterStateRevision === 1).length !== 1) return false;
+  }
+  const initialSources = new Set(baseRecords.map((record) => `${record.startedBy.sourceEventSequence}:${record.startedBy.sourceEventId}`));
+  if (baseRecords.length > 0 && (initialSources.size !== 1 ||
+      baseRecords.some((record) => record.startedBy.sourceEventSequence >= context.firstNightInitializationProvenance.eventSequence))) return false;
+
+  const swaps = context.snakeCharmerDemonSwaps.swaps;
+  if (!exactKeys(context.snakeCharmerDemonSwaps, ["swaps"]) || !Array.isArray(swaps) ||
+      !uniqueBy(swaps, (entry) => `${String(entry.taskId)}:${String(entry.opportunityId)}`)) return false;
+  const linkedSwaps = swaps.flatMap((rawSwap): readonly [{
+    readonly swap: SnakeCharmerDemonSwapAppliedPayload;
+    readonly fact: FirstNightAbilityOutcomeLedger["facts"][number];
+    readonly source: Extract<FirstNightAbilityOutcomeLedger["facts"][number]["evidenceReferences"][number], { readonly kind: "SOURCE_EVENT" }>;
+    readonly sourceTransitionId: RoleTenureState["processedTransitionFactIds"][number];
+    readonly targetTransitionId: RoleTenureState["processedTransitionFactIds"][number];
+  }] | readonly [] => {
+    const swap = rawSwap as SnakeCharmerDemonSwapAppliedPayload;
+    if (!exactKeys(rawSwap, ["rulesBaselineVersion", "nightNumber", "taskId", "taskType", "opportunityId", "sourcePlayerId",
+          "sourceSeatNumber", "targetPlayerId", "targetSeatNumber", "previousCharacterStateRevision", "nextCharacterStateRevision",
+          "sourceBefore", "targetBefore", "sourceAfter", "targetAfter", "swapReason"]) ||
+        swap.rulesBaselineVersion !== context.rulesBaselineVersion || swap.nightNumber !== 1 || swap.taskType !== "SNAKE_CHARMER_ACTION" ||
+        !nonEmpty(swap.taskId) || !nonEmpty(swap.opportunityId) || !nonEmpty(swap.sourcePlayerId) || !seat(swap.sourceSeatNumber) ||
+        !nonEmpty(swap.targetPlayerId) || !seat(swap.targetSeatNumber) || swap.sourcePlayerId === swap.targetPlayerId ||
+        !positive(swap.previousCharacterStateRevision) || swap.nextCharacterStateRevision !== swap.previousCharacterStateRevision + 1 ||
+        swap.swapReason !== "SNAKE_CHARMER_DEMON_HIT") return [];
+    for (const entry of [swap.sourceBefore, swap.targetBefore, swap.sourceAfter, swap.targetAfter]) {
+      if (!exactKeys(entry, ["playerId", "seatNumber", "role", "currentAlignment"]) || !nonEmpty(entry.playerId) ||
+          !seat(entry.seatNumber) || !hasExactRoleSetupSnapshotShape(entry.role) || !["GOOD", "EVIL"].includes(entry.currentAlignment)) return [];
+    }
+    if (swap.sourceBefore.playerId !== swap.sourcePlayerId || swap.sourceBefore.seatNumber !== swap.sourceSeatNumber ||
+        swap.targetBefore.playerId !== swap.targetPlayerId || swap.targetBefore.seatNumber !== swap.targetSeatNumber ||
+        swap.sourceAfter.playerId !== swap.sourcePlayerId || swap.sourceAfter.seatNumber !== swap.sourceSeatNumber ||
+        swap.targetAfter.playerId !== swap.targetPlayerId || swap.targetAfter.seatNumber !== swap.targetSeatNumber ||
+        !sameRoleSetupSnapshot(swap.sourceAfter.role, swap.targetBefore.role) ||
+        !sameRoleSetupSnapshot(swap.targetAfter.role, swap.sourceBefore.role) ||
+        swap.sourceAfter.currentAlignment !== swap.targetBefore.currentAlignment ||
+        swap.targetAfter.currentAlignment !== swap.sourceBefore.currentAlignment) return [];
+    const facts = context.firstNightAbilityOutcomeLedger.facts.filter((fact) => {
+      const source = fact.evidenceReferences.find((entry): entry is Extract<typeof entry, { readonly kind: "SOURCE_EVENT" }> =>
+        entry.kind === "SOURCE_EVENT" && entry.eventType === "SnakeCharmerDemonSwapApplied");
+      const resolution = fact.evidenceReferences.find((entry): entry is Extract<typeof entry, { readonly kind: "SNAKE_CHARMER_RESOLUTION" }> =>
+        entry.kind === "SNAKE_CHARMER_RESOLUTION" && entry.resolutionKind === "DEMON_HIT_SWAP");
+      const sourceRole = fact.evidenceReferences.find((entry): entry is Extract<typeof entry, { readonly kind: "PLAYER_ROLE_AT_REVISION" }> => entry.kind === "PLAYER_ROLE_AT_REVISION" &&
+        entry.playerId === swap.sourcePlayerId && entry.characterStateRevision === swap.previousCharacterStateRevision);
+      const targetRole = fact.evidenceReferences.find((entry): entry is Extract<typeof entry, { readonly kind: "PLAYER_ROLE_AT_REVISION" }> => entry.kind === "PLAYER_ROLE_AT_REVISION" &&
+        entry.playerId === swap.targetPlayerId && entry.characterStateRevision === swap.previousCharacterStateRevision);
+      return source?.eventId === fact.sourceEventId && source.eventSequence === fact.sourceEventSequence &&
+        resolution?.resolutionEventId === source.eventId && resolution.taskId === swap.taskId &&
+        resolution.opportunityId === swap.opportunityId && resolution.targetPlayerId === swap.targetPlayerId &&
+        resolution.targetSeatNumber === swap.targetSeatNumber && resolution.targetRoleIdAtResolution === swap.targetBefore.role.roleId &&
+        fact.abilityTaskId === swap.taskId && fact.sourcePlayerId === swap.sourcePlayerId && fact.sourceSeatNumber === swap.sourceSeatNumber &&
+        fact.evaluatedCharacterStateRevision === swap.previousCharacterStateRevision &&
+        sourceRole?.seatNumber === swap.sourceSeatNumber && sourceRole.roleId === swap.sourceBefore.role.roleId &&
+        sourceRole.characterType === swap.sourceBefore.role.characterType && sourceRole.defaultAlignment === swap.sourceBefore.role.defaultAlignment &&
+        targetRole?.seatNumber === swap.targetSeatNumber && targetRole.roleId === swap.targetBefore.role.roleId &&
+        targetRole.characterType === swap.targetBefore.role.characterType && targetRole.defaultAlignment === swap.targetBefore.role.defaultAlignment;
+    });
+    const fact = facts[0];
+    const source = fact?.evidenceReferences.find((entry): entry is Extract<typeof entry, { readonly kind: "SOURCE_EVENT" }> =>
+      entry.kind === "SOURCE_EVENT" && entry.eventType === "SnakeCharmerDemonSwapApplied");
+    if (facts.length !== 1 || fact === undefined || source === undefined) return [];
+    return [{ swap, fact, source, sourceTransitionId: formatRoleTenureTransitionFactId({
+      sourceEventSequence: source.eventSequence, seatNumber: swap.sourceSeatNumber, nextCharacterStateRevision: swap.nextCharacterStateRevision
+    }), targetTransitionId: formatRoleTenureTransitionFactId({
+      sourceEventSequence: source.eventSequence, seatNumber: swap.targetSeatNumber, nextCharacterStateRevision: swap.nextCharacterStateRevision
+    }) }];
+  });
+  const terminalSnakeSwapFactCount = context.firstNightAbilityOutcomeLedger.facts.filter((fact) =>
+    fact.evidenceReferences.some((entry) => entry.kind === "SOURCE_EVENT" && entry.eventType === "SnakeCharmerDemonSwapApplied")
+  ).length;
+  if (linkedSwaps.length !== swaps.length || linkedSwaps.length !== terminalSnakeSwapFactCount) return false;
+  const expectedTransitionIds = linkedSwaps.flatMap((entry) => [entry.sourceTransitionId, entry.targetTransitionId]);
+  if (expectedTransitionIds.length !== processedTransitionFactIds.length ||
+      expectedTransitionIds.some((id) => !processedTransitionFactIds.includes(id)) ||
+      processedTransitionFactIds.some((id) => !expectedTransitionIds.includes(id))) return false;
   for (const record of records) {
     const keys = record.endedCharacterStateRevision === undefined
       ? ["roleTenureId", "playerId", "seatNumber", "roleId", "acquiredCharacterStateRevision", "startedBy"]
@@ -313,12 +399,41 @@ const validateRoleTenureStateInternal = (context: CanonicalDreamerV2ContextData)
           transition.seatNumber !== record.seatNumber || startedBy.nextCharacterStateRevision !== record.acquiredCharacterStateRevision ||
           startedBy.previousCharacterStateRevision + 1 !== startedBy.nextCharacterStateRevision ||
           !processedTransitionFactIds.includes(startedBy.transitionFactId) || !nonEmpty(startedBy.sourceEventId)) return false;
+      const side = linkedSwaps.flatMap((entry) => [
+        { link: entry, transitionId: entry.sourceTransitionId, playerId: entry.swap.sourcePlayerId,
+          seatNumber: entry.swap.sourceSeatNumber, afterRoleId: entry.swap.sourceAfter.role.roleId },
+        { link: entry, transitionId: entry.targetTransitionId, playerId: entry.swap.targetPlayerId,
+          seatNumber: entry.swap.targetSeatNumber, afterRoleId: entry.swap.targetAfter.role.roleId }
+      ]).find((entry) => entry.transitionId === startedBy.transitionFactId);
+      if (side === undefined || startedBy.sourceEventId !== side.link.source.eventId ||
+          startedBy.sourceEventSequence !== side.link.source.eventSequence || record.playerId !== side.playerId ||
+          record.seatNumber !== side.seatNumber || record.roleId !== side.afterRoleId ||
+          record.acquiredCharacterStateRevision !== side.link.swap.nextCharacterStateRevision ||
+          !TRACKED_ROLE_IDS.has(side.afterRoleId)) return false;
     } else return false;
+  }
+  for (const link of linkedSwaps) {
+    for (const side of [
+      { transitionId: link.sourceTransitionId, playerId: link.swap.sourcePlayerId, seatNumber: link.swap.sourceSeatNumber,
+        beforeRoleId: link.swap.sourceBefore.role.roleId, afterRoleId: link.swap.sourceAfter.role.roleId },
+      { transitionId: link.targetTransitionId, playerId: link.swap.targetPlayerId, seatNumber: link.swap.targetSeatNumber,
+        beforeRoleId: link.swap.targetBefore.role.roleId, afterRoleId: link.swap.targetAfter.role.roleId }
+    ]) {
+      const previousRecords = records.filter((record) => record.playerId === side.playerId && record.seatNumber === side.seatNumber &&
+        record.roleId === side.beforeRoleId && record.acquiredCharacterStateRevision <= link.swap.previousCharacterStateRevision &&
+        record.endedCharacterStateRevision === link.swap.nextCharacterStateRevision);
+      const nextRecords = records.filter((record) => record.startedBy.kind === "ROLE_TENURE_TRANSITION" &&
+        record.startedBy.transitionFactId === side.transitionId && record.playerId === side.playerId &&
+        record.seatNumber === side.seatNumber && record.roleId === side.afterRoleId &&
+        record.acquiredCharacterStateRevision === link.swap.nextCharacterStateRevision);
+      if ((TRACKED_ROLE_IDS.has(side.beforeRoleId) ? previousRecords.length !== 1 : previousRecords.length !== 0) ||
+          (TRACKED_ROLE_IDS.has(side.afterRoleId) ? nextRecords.length !== 1 : nextRecords.length !== 0)) return false;
+    }
   }
   for (let leftIndex = 0; leftIndex < records.length; leftIndex += 1) {
     for (let rightIndex = leftIndex + 1; rightIndex < records.length; rightIndex += 1) {
       const left = records[leftIndex]!; const right = records[rightIndex]!;
-      if (left.playerId !== right.playerId || left.roleId !== right.roleId) continue;
+      if (left.playerId !== right.playerId) continue;
       const leftEnd = left.endedCharacterStateRevision ?? Number.MAX_SAFE_INTEGER;
       const rightEnd = right.endedCharacterStateRevision ?? Number.MAX_SAFE_INTEGER;
       if (left.acquiredCharacterStateRevision < rightEnd && right.acquiredCharacterStateRevision < leftEnd) return false;
@@ -390,8 +505,36 @@ const validateDreamerV2CrossLinks = (context: CanonicalDreamerV2ContextData): bo
     }
   }
 
+  const v1Choices = context.dreamerTargetChoices.choices.filter((entry): entry is DreamerTargetChosenPayload =>
+    !("targetChoiceSchemaVersion" in entry));
+  const v1Deliveries = context.dreamerInformationDeliveries.deliveries.filter((entry): entry is DreamerInformationDeliveredPayload =>
+    !("deliverySchemaVersion" in entry));
   const v2Choices = context.dreamerTargetChoices.choices.filter((entry) => "targetChoiceSchemaVersion" in entry);
   const v2Deliveries = context.dreamerInformationDeliveries.deliveries.filter((entry) => "deliverySchemaVersion" in entry);
+  const generationsByTask = new Map<string, Set<"V1" | "V2">>();
+  for (const entry of [...v1Choices, ...v1Deliveries]) {
+    const generations = generationsByTask.get(entry.taskId) ?? new Set<"V1" | "V2">();
+    generations.add("V1"); generationsByTask.set(entry.taskId, generations);
+  }
+  for (const entry of [...v2Choices, ...v2Deliveries]) {
+    const generations = generationsByTask.get(entry.taskId) ?? new Set<"V1" | "V2">();
+    generations.add("V2"); generationsByTask.set(entry.taskId, generations);
+  }
+  if ([...generationsByTask.values()].some((generations) => generations.size !== 1)) return false;
+  for (const choice of v1Choices) {
+    if (v1Deliveries.filter((delivery) => delivery.taskId === choice.taskId && delivery.opportunityId === choice.opportunityId).length !== 1) return false;
+  }
+  for (const delivery of v1Deliveries) {
+    const settlements = context.firstNightTaskProgress.settlements.filter((entry) => entry.taskId === delivery.taskId);
+    if (settlements.length !== 1 || !validateStoredDreamerInformationDelivered(delivery, {
+      rulesBaselineVersion: context.rulesBaselineVersion,
+      setup: context.setup,
+      roster: context.roster.entries,
+      firstNightTaskPlan: context.firstNightTaskPlan,
+      choices: { choices: v1Choices },
+      settlement: settlements[0]
+    }).valid) return false;
+  }
   for (const choice of v2Choices) {
     const opportunities = v2Opportunities.filter((entry) => entry.opportunityId === choice.opportunityId);
     const opportunity = opportunities[0];
@@ -486,7 +629,17 @@ const validateCanonicalDreamerV2ContextInternal = (value: unknown): value is Can
         context.firstNightInitializationProvenance.gameId !== context.gameId ||
         context.firstNightInitializationProvenance.rulesBaselineVersion !== context.rulesBaselineVersion ||
         !nonEmpty(context.firstNightInitializationProvenance.eventId) ||
-        !positive(context.firstNightInitializationProvenance.eventSequence)) return false;
+        !positive(context.firstNightInitializationProvenance.eventSequence) ||
+        context.firstNightAbilityOutcomeLedger.windowAnchor.gameId !== context.firstNightInitializationProvenance.gameId ||
+        context.firstNightAbilityOutcomeLedger.windowAnchor.rulesBaselineVersion !== context.firstNightInitializationProvenance.rulesBaselineVersion ||
+        context.firstNightAbilityOutcomeLedger.windowAnchor.firstNightInitializedEventId !== context.firstNightInitializationProvenance.eventId ||
+        context.firstNightAbilityOutcomeLedger.windowAnchor.startEventSequence !== context.firstNightInitializationProvenance.eventSequence ||
+        context.firstNightAbilityOutcomeLedger.windowAnchor.startBoundary !== "EXCLUSIVE" ||
+        context.firstNightAbilityOutcomeLedger.windowAnchor.nightNumber !== 1 ||
+        context.firstNight.rulesBaselineVersion !== context.firstNightInitializationProvenance.rulesBaselineVersion ||
+        context.firstNightAbilityOutcomeLedger.facts.some((fact) =>
+          fact.sourceEventSequence <= context.firstNightInitializationProvenance.eventSequence ||
+          fact.sourceEventSequence > context.lastEventSequence || fact.detectedAtEventSequence !== fact.sourceEventSequence)) return false;
 
     if (!exactKeys(context.roster, ["rulesBaselineVersion", "rosterVersion", "entries"]) ||
         !validatePlayerRoster(context.roster.entries).valid ||
@@ -823,6 +976,7 @@ const buildCanonicalDreamerV2ContextFromStateUsingClone = (
   const opportunities = state.firstNightActionOpportunities ?? { opportunities: [] };
   const impairments = state.abilityImpairments ?? { impairments: [] };
   const roleTenures = state.seamstressRoleTenureState ?? { records: [], processedTransitionFactIds: [] };
+  const snakeCharmerDemonSwaps = state.snakeCharmerDemonSwaps ?? { swaps: [] };
   const targetChoices = state.dreamerTargetChoices ?? { choices: [] };
   const deliveries = state.dreamerInformation ?? { deliveries: [] };
   const impairmentProvenance = state.mathematicianImpairmentEventProvenance ?? { entries: [] };
@@ -891,6 +1045,7 @@ const buildCanonicalDreamerV2ContextFromStateUsingClone = (
     abilityImpairments: impairments,
     impairmentEventProvenance: impairmentProvenance,
     roleTenures,
+    snakeCharmerDemonSwaps,
     dreamerTargetChoices: targetChoices,
     dreamerInformationDeliveries: deliveries,
     firstNightAbilityOutcomeLedger: state.firstNightAbilityOutcomeLedger,
