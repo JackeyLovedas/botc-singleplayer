@@ -22,7 +22,7 @@ import type {
 import type {
   DreamerInformationSet,
   DreamerTargetChoiceSet
-} from "./dreamer.js";
+} from "./dreamer-v2.js";
 import type { CerenovusChoiceSet, CerenovusMadnessInstructionSet, CerenovusMadnessMarkerSet } from "./cerenovus.js";
 import type {
   RoleTenureState,

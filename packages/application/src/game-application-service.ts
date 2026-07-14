@@ -69,6 +69,7 @@ import {
   isFirstNightTaskSettled,
   isSupportedFirstNightRoleActionTask,
   isSeamstressActionOpportunityV2,
+  isDreamerActionOpportunityV2,
   isRoleTenureContinuousAcross,
   tryCreateFirstNightRoleActionOpportunity,
   evaluatePhaseTransition,
@@ -145,6 +146,8 @@ import type {
   SnakeCharmerTargetChosenPayload,
   DreamerInformationDeliveredPayload,
   DreamerTargetChosenPayload,
+  DreamerInformationDeliveredV2Payload,
+  DreamerTargetChosenV2Payload,
   WitchDeathPendingPayload,
   WitchIneffectiveResolvedPayload,
   WitchTargetChosenPayload,
@@ -166,6 +169,16 @@ import {
   validateProspectiveMathematicianInformationPair
 } from "../../domain-core/src/mathematician-internal.js";
 import type { InternalMathematicianResolution } from "../../domain-core/src/mathematician-internal.js";
+import {
+  captureDreamerV2PipelineFingerprintForInternalApplication,
+  createDreamerV2ActionOpportunityForInternalApplication
+} from "../../domain-core/src/dreamer-v2-internal.js";
+import {
+  resolveDreamerV2FromAcceptedEventStream,
+  validateProspectiveDreamerV2TripletForInternalApplication
+} from "../../domain-core/src/dreamer-v2-replay.js";
+import type { InternalDreamerV2Resolution } from "../../domain-core/src/dreamer-v2-replay.js";
+import { DREAMER_V2_RESOLUTION_BOUNDARY_VERSION } from "../../domain-core/src/dreamer-v2.js";
 import { accepted, acceptedWithEventSummary, failed, markIdempotent, rejected } from "./command-result.js";
 import {
   captureSupportedCommand,
@@ -628,6 +641,17 @@ export class GameApplicationService {
       );
     }
 
+    if(command.payload.commandType==="SubmitDreamerAction"&&state!==undefined){
+      const dreamerTaskId=command.payload.taskId;
+      const opportunity=findFirstNightActionOpportunityById(state.firstNightActionOpportunities,command.payload.opportunityId);
+      const task=state.firstNightTaskPlan?.tasks.find((entry)=>entry.taskId===dreamerTaskId);
+      if(opportunity?.opportunityKind==="DREAMER_FIRST_NIGHT_ACTION"&&!isDreamerActionOpportunityV2(opportunity)){
+        if(task?.source.kind==="PHILOSOPHER_GAINED_ABILITY")return failed(command.gameId,"ApplicationNotConfigured","Legacy V1 gained Dreamer settlement is unsupported","first-night-role-action",currentGameVersion);
+        const currentVortoxCount=state.currentCharacterState?.entries.filter((entry)=>entry.role.roleId==="vortox").length??0;
+        if(currentVortoxCount>0)return failed(command.gameId,"DependencyExecutionFailed","Legacy V1 Dreamer cannot represent current Vortox evidence","first-night-role-action",currentGameVersion);
+      }
+    }
+
     const validation = this.validate(command, state);
     if (validation !== undefined) {
       return this.recordRejected(command, commandFingerprint, rejected(command.gameId, validation.code, validation.message, currentGameVersion));
@@ -669,7 +693,20 @@ export class GameApplicationService {
       mathematicianDecision = decision;
     }
 
-    const batch = this.createBatchOrReject(command, state, currentGameVersion, mathematicianDecision);
+    let dreamerDecision:Extract<InternalDreamerV2Resolution,{readonly kind:"READY"}>|undefined;
+    if(command.payload.commandType==="SubmitDreamerAction"&&state!==undefined){
+      const opportunity=findFirstNightActionOpportunityById(state.firstNightActionOpportunities,command.payload.opportunityId);
+      if(opportunity!==undefined&&isDreamerActionOpportunityV2(opportunity)){
+        try{
+          const fingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state,taskId:command.payload.taskId,boundary:{boundaryVersion:DREAMER_V2_RESOLUTION_BOUNDARY_VERSION,stage:"PRE_TARGET",opportunityId:command.payload.opportunityId,targetPlayerId:command.payload.decision.targetPlayerId,targetChoiceId:null,deliveryId:null}});
+          const resolved=resolveDreamerV2FromAcceptedEventStream({acceptedEvents:events,pipelineStateFingerprint:fingerprint,taskId:command.payload.taskId,opportunityId:command.payload.opportunityId,targetPlayerId:command.payload.decision.targetPlayerId});
+          if(resolved.kind!=="READY")return failed(command.gameId,"DependencyExecutionFailed",resolved.message,"first-night-role-action",currentGameVersion);
+          dreamerDecision=resolved;
+        }catch(error:unknown){return failed(command.gameId,"DependencyExecutionFailed",errorMessage(error,"Dreamer V2 resolution failed"),"first-night-role-action",currentGameVersion);}
+      }
+    }
+
+    const batch = this.createBatchOrReject(command, state, currentGameVersion, mathematicianDecision,dreamerDecision);
     if ("status" in batch) {
       return batch;
     }
@@ -1258,7 +1295,11 @@ export class GameApplicationService {
           };
         }
 
-        const sourceValidation = tryCreateFirstNightRoleActionOpportunity({
+        let sourceValidation:{readonly valid:true}|{readonly valid:false;readonly reason:string};
+        if(state.firstNightTaskPlan.taskPlanVersion===CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION&&targetTask.taskType==="DREAMER_ACTION"){
+          try{createDreamerV2ActionOpportunityForInternalApplication(state,requestedTaskId);sourceValidation={valid:true};}
+          catch(error:unknown){sourceValidation={valid:false,reason:errorMessage(error,"Dreamer V2 opportunity source is invalid")};}
+        }else sourceValidation = tryCreateFirstNightRoleActionOpportunity({
           taskId: requestedTaskId,
           firstNightTaskPlan: state.firstNightTaskPlan,
           firstNightTaskProgress: state.firstNightTaskProgress,
@@ -1883,16 +1924,23 @@ export class GameApplicationService {
           entry.playerId === opportunity.sourcePlayerId &&
           entry.seatNumber === opportunity.sourceSeatNumber
         );
-        const dreamerSourceValid =
-          targetTask.source.kind === "ROLE" &&
-          targetTask.source.role.roleId === "dreamer" &&
-          targetTask.source.playerId === opportunity.sourcePlayerId &&
-          targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
-          currentSourceEntry !== undefined &&
-          currentSourceEntry.role.roleId === "dreamer" &&
-          sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.role) &&
-          sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
-          state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
+        const dreamerSourceValid = isDreamerActionOpportunityV2(opportunity)
+          ? state.firstNightTaskPlan.taskPlanVersion===CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION&&
+            targetTask.source.kind!=="SYSTEM"&&targetTask.source.playerId===opportunity.sourcePlayerId&&
+            targetTask.source.seatNumber===opportunity.sourceSeatNumber&&currentSourceEntry!==undefined&&
+            sameRoleSetupSnapshot(currentSourceEntry.role,opportunity.sourceRole)&&
+            opportunity.sourceContract.taskId===targetTask.taskId&&
+            opportunity.sourceContract.sourcePlayerId===opportunity.sourcePlayerId&&
+            opportunity.sourceContract.sourceSeatNumber===opportunity.sourceSeatNumber
+          : targetTask.source.kind === "ROLE" &&
+            targetTask.source.role.roleId === "dreamer" &&
+            targetTask.source.playerId === opportunity.sourcePlayerId &&
+            targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+            currentSourceEntry !== undefined &&
+            currentSourceEntry.role.roleId === "dreamer" &&
+            sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.role) &&
+            sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
+            state.currentCharacterState.revision === opportunity.sourceCharacterStateRevision;
 
         if (!dreamerSourceValid) {
           return {
@@ -2132,7 +2180,8 @@ export class GameApplicationService {
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number,
-    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>
+    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>,
+    dreamerDecision?: Extract<InternalDreamerV2Resolution,{readonly kind:"READY"}>
   ): DomainEventBatch | CommandExecutionFailed | { readonly code: GeneralCommandRejectionCode; readonly message: string } | {
     readonly code: "SetupGenerationFailed";
     readonly message: string;
@@ -2231,7 +2280,8 @@ export class GameApplicationService {
         initialPrivateKnowledge,
         firstNightTaskPlan,
         firstNightSystemInformation,
-        mathematicianDecision
+        mathematicianDecision,
+        dreamerDecision
       );
     } catch (error: unknown) {
       if (error instanceof EventMetadataGenerationError) {
@@ -2689,7 +2739,8 @@ export class GameApplicationService {
     initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
     firstNightTaskPlan: FirstNightTaskPlan | undefined,
     firstNightSystemInformation: FirstNightSystemInformationResolution | undefined,
-    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>
+    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>,
+    dreamerDecision?: Extract<InternalDreamerV2Resolution,{readonly kind:"READY"}>
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.createBatchId();
@@ -2705,7 +2756,8 @@ export class GameApplicationService {
       initialPrivateKnowledge,
       firstNightTaskPlan,
       firstNightSystemInformation,
-      mathematicianDecision
+      mathematicianDecision,
+      dreamerDecision
     );
 
     return {
@@ -2729,7 +2781,8 @@ export class GameApplicationService {
     initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
     firstNightTaskPlan: FirstNightTaskPlan | undefined,
     firstNightSystemInformation: FirstNightSystemInformationResolution | undefined,
-    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>
+    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>,
+    dreamerDecision?: Extract<InternalDreamerV2Resolution,{readonly kind:"READY"}>
   ): readonly AnyDomainEventEnvelope[] {
     const common = (eventSequence: number) => this.createEventMetadata(command, eventBatchId, eventSequence, gameVersion);
 
@@ -3003,8 +3056,12 @@ export class GameApplicationService {
           );
         }
 
-        const opportunity = createFirstNightRoleActionOpportunity({
-          taskId: command.payload.taskId,
+        const opportunityTaskId=command.payload.taskId;
+        const targetTask=state.firstNightTaskPlan.tasks.find((entry)=>entry.taskId===opportunityTaskId);
+        const opportunity = state.firstNightTaskPlan.taskPlanVersion===CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION&&targetTask?.taskType==="DREAMER_ACTION"
+          ? createDreamerV2ActionOpportunityForInternalApplication(state,opportunityTaskId)
+          : createFirstNightRoleActionOpportunity({
+          taskId: opportunityTaskId,
           firstNightTaskPlan: state.firstNightTaskPlan,
           firstNightTaskProgress: state.firstNightTaskProgress,
           currentCharacterState: state.currentCharacterState,
@@ -3013,7 +3070,7 @@ export class GameApplicationService {
           seamstressRoleTenureState: state.seamstressRoleTenureState,
           seamstressAbilityState: state.seamstressAbilityState,
           philosopherGrantedAbilities: state.philosopherGrantedAbilities
-        });
+          });
 
         const firstNightActionOpportunityCreatedEvent: DomainEventEnvelope<"FirstNightActionOpportunityCreated"> = {
           ...common(firstEventSequence),
@@ -3501,6 +3558,15 @@ export class GameApplicationService {
           );
         }
 
+        if(isDreamerActionOpportunityV2(opportunity)){
+          if(dreamerDecision===undefined)throw new DomainError("InvalidDreamerTargetChosenV2Payload","SubmitDreamerAction V2 requires an accepted-stream decision");
+          return [
+            {...common(firstEventSequence),eventType:"DreamerTargetChosenV2",payload:dreamerDecision.targetPayload satisfies DreamerTargetChosenV2Payload},
+            {...common(firstEventSequence+1),eventType:"DreamerInformationDeliveredV2",payload:dreamerDecision.deliveryPayload satisfies DreamerInformationDeliveredV2Payload},
+            {...common(firstEventSequence+2),eventType:"ScheduledTaskSettled",payload:dreamerDecision.settlementPayload satisfies ScheduledTaskSettledPayload}
+          ];
+        }
+
         const targetChoicePayload = createDreamerTargetChosenPayload({
           rulesBaselineVersion: RULES_BASELINE_VERSION,
           taskId: command.payload.taskId,
@@ -3876,6 +3942,13 @@ export class GameApplicationService {
           settlementEvent
         });
         if (!validation.valid) throw new DomainError("InvalidDomainBatchSemantics", validation.reason);
+      }
+      if(command.payload.commandType==="SubmitDreamerAction"&&state!==undefined&&batch.events[0]?.eventType==="DreamerTargetChosenV2"){
+        const [target,delivery,settlement]=batch.events;
+        if(target?.eventType!=="DreamerTargetChosenV2"||delivery?.eventType!=="DreamerInformationDeliveredV2"||settlement?.eventType!=="ScheduledTaskSettled"||batch.events.length!==3)throw new DomainError("InvalidDomainBatchSemantics","Dreamer V2 success must be one exact triplet");
+        const fingerprint=captureDreamerV2PipelineFingerprintForInternalApplication({state,taskId:target.payload.taskId,boundary:{boundaryVersion:DREAMER_V2_RESOLUTION_BOUNDARY_VERSION,stage:"PRE_TARGET",opportunityId:target.payload.opportunityId,targetPlayerId:target.payload.targetPlayerId,targetChoiceId:null,deliveryId:null}});
+        const validation=validateProspectiveDreamerV2TripletForInternalApplication({priorAcceptedEvents,pipelineStateFingerprint:fingerprint,events:[target,delivery,settlement]});
+        if(!validation.valid)throw new DomainError("InvalidDomainBatchSemantics",validation.reason);
       }
       validateDomainBatchSemantics(state, batch.events);
       applyDomainEventBatch(state, batch.events);

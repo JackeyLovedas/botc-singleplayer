@@ -48,6 +48,9 @@ export const mathematicianBaseExactRoleIds = [
   "dreamer", "snake_charmer", "mathematician", "flowergirl", "town_crier", "seamstress",
   "mutant", "sweetheart", "barber", "evil_twin", "witch", "fang_gu"
 ].map(roleId);
+export const mathematicianLegacyV1ExactRoleIds = mathematicianBaseExactRoleIds.map((id) =>
+  id === roleId("dreamer") ? roleId("klutz") : id === roleId("barber") ? roleId("artist") : id
+);
 
 export const philosopherGainedMathematicianExactRoleIds = mathematicianBaseExactRoleIds.map((id) =>
   id === roleId("mathematician") ? roleId("philosopher") : id
@@ -55,6 +58,10 @@ export const philosopherGainedMathematicianExactRoleIds = mathematicianBaseExact
 export const philosopherAndBaseMathematicianExactRoleIds = mathematicianBaseExactRoleIds.map((id) =>
   id === roleId("flowergirl") ? roleId("philosopher") : id
 );
+export const philosopherAndBaseMathematicianLegacyV1ExactRoleIds =
+  philosopherAndBaseMathematicianExactRoleIds.map((id) =>
+    id === roleId("dreamer") ? roleId("klutz") : id === roleId("barber") ? roleId("artist") : id
+  );
 export const mathematicianVortoxExactRoleIds = mathematicianBaseExactRoleIds.map((id) =>
   id === roleId("fang_gu") ? roleId("vortox") :
     id === roleId("barber") ? roleId("artist") :

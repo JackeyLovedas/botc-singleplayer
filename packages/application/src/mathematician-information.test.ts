@@ -55,7 +55,9 @@ import {
 } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
 import {
   settleBaseAndGainedMathematicianV2,
+  philosopherAndBaseMathematicianLegacyV1ExactRoleIds,
   philosopherAndBaseMathematicianVortoxExactRoleIds,
+  mathematicianLegacyV1ExactRoleIds,
   settleBaseMathematician,
   settleBaseMathematicianWithVortox,
   mathematicianVortoxUnresolvedExactRoleIds,
@@ -147,7 +149,7 @@ beforeAll(async () => {
 });
 
 describe("Phase 3 Slice 2B18B Mathematician first-night information", () => {
-  it("[APP-01] accepts the base Mathematician settlement", () => expect(fixture.result.status).toBe("accepted"));
+  it("D19-069 [APP-01] accepts the base Mathematician settlement", () => expect(fixture.result.status).toBe("accepted"));
   it("[APP-02] emits exactly the delivery and settlement summary", () => expect(fixture.result).toMatchObject({ eventTypes: ["MathematicianInformationDelivered", "ScheduledTaskSettled"] }));
   it("[RSP-03] rebuilds the accepted complete stream", () => expect(finalState.mathematicianInformation?.deliveries).toHaveLength(1));
   it("[RSP-04] stores the exact accepted payload", () => expect(finalState.mathematicianInformation?.deliveries[0]).toStrictEqual(delivery));
@@ -157,7 +159,7 @@ describe("Phase 3 Slice 2B18B Mathematician first-night information", () => {
   it("[RSP-08] uses the canonical fact ID", () => expect(finalState.firstNightAbilityOutcomeLedger?.facts.at(-1)?.auditFactId).toBe(formatFirstNightAbilityOutcomeFactId(deliveryEvent.eventId)));
   it("[RSP-09] does not create a settlement fact", () => expect(finalState.firstNightAbilityOutcomeLedger?.facts.some((fact) => fact.sourceEventId === settlementEvent.eventId)).toBe(false));
   it("[CSI-10] Layer A resolves the accepted prior stream", () => expect(resolveMathematicianInformationDecisionFromAcceptedEventStream(fixture.events.slice(0, -2), delivery.taskId).kind).toBe("READY"));
-  it("[CSI-11] Layer A payload equals the accepted delivery", () => {
+  it("D19-060 [CSI-11] Layer A payload equals the accepted delivery after consuming prior terminal facts", () => {
     const result = resolveMathematicianInformationDecisionFromAcceptedEventStream(fixture.events.slice(0, -2), delivery.taskId);
     expect(result.kind === "READY" ? result.deliveryPayload : undefined).toStrictEqual(delivery);
   });
@@ -167,7 +169,7 @@ describe("Phase 3 Slice 2B18B Mathematician first-night information", () => {
   it("[RSP-15] remains in FIRST_NIGHT", () => expect(finalState.phase).toBe("FIRST_NIGHT"));
   it("[RSP-16] remains on night one", () => expect(finalState.nightNumber).toBe(1));
   it("[RSP-17] remains before day one", () => expect(finalState.dayNumber).toBe(0));
-  it("[SHAPE-18] validates the exact 31-key payload", () => expect(validateMathematicianInformationDeliveredPayloadShape(delivery)).toStrictEqual({ valid: true }));
+  it("D19-072 [SHAPE-18] validates the unchanged exact 31-key Mathematician payload", () => expect(validateMathematicianInformationDeliveredPayloadShape(delivery)).toStrictEqual({ valid: true }));
   it("[SHAPE-19] has exactly 31 enumerable payload keys", () => expect(Object.keys(delivery)).toHaveLength(31));
   it("[SHAPE-20] delivery ID round-trips", () => expect(parseMathematicianDeliveryId(delivery.deliveryId)).toMatchObject({ valid: true, taskId: delivery.taskId, generation: "BASE" }));
   it("[COUNT-21] uses the exact count model", () => expect(delivery.resolutionModelVersion).toBe(MATHEMATICIAN_COUNT_RESOLUTION_MODEL_VERSION));
@@ -544,9 +546,16 @@ describe("2B18B accepted effective Vortox constraint and terminal cause", () => 
 });
 
 describe("2B18B receipt-free unresolved and dependency failures", () => {
-  it("[APP-UNRESOLVED-85] returns retryable receipt-free failure for a blocking unresolved ledger fact", async () => {
+  it("[APP-V2-VORTOX-85] consumes a resolved V2 Vortox Dreamer fact instead of treating it as unresolved", async () => {
     const ready = await reachBaseMathematicianTask(mathematicianVortoxUnresolvedExactRoleIds);
     const before = await ready.commandStore.loadDomainEvents(fixture.command.gameId);
+    const dreamerFact = ready.state.firstNightAbilityOutcomeLedger?.facts.find(
+      (fact) => fact.abilityRoleId === "dreamer"
+    );
+    expect(dreamerFact).toMatchObject({
+      outcomeStatus: "ABNORMAL",
+      causeKind: "VORTOX_FALSE_INFORMATION"
+    });
     const command = {
       ...fixture.command,
       commandId: commandId("mathematician-ledger-unresolved"),
@@ -554,11 +563,12 @@ describe("2B18B receipt-free unresolved and dependency failures", () => {
       payload: { commandType: "SettleMathematicianInformation" as const, taskId: ready.task.taskId }
     };
     const result = await ready.service.execute(command);
-    expect(result).toMatchObject({
-      status: "failed", code: "DependencyExecutionFailed", failureStage: "first-night-role-information", retryable: true
+    expect(result.status).toBe("accepted");
+    expect(await ready.commandStore.findCommandReceipt(command.gameId, command.commandId)).toMatchObject({
+      result: { status: "accepted" }
     });
-    expect(await ready.commandStore.findCommandReceipt(command.gameId, command.commandId)).toBeUndefined();
-    expect(await ready.commandStore.loadDomainEvents(command.gameId)).toStrictEqual(before);
+    expect((await ready.commandStore.loadDomainEvents(command.gameId)).slice(before.length).map((event) => event.eventType))
+      .toStrictEqual(["MathematicianInformationDelivered", "ScheduledTaskSettled"]);
   });
 
   it("[APP-METADATA-FAULT] returns retryable receipt-free failure when deterministic ID generation throws", async () => {
@@ -966,7 +976,7 @@ describe("2B18B Option A V1 base-only application", () => {
   let afterEvents: readonly AnyDomainEventEnvelope[];
 
   beforeAll(async () => {
-    const source = await reachBaseMathematicianTask();
+    const source = await reachBaseMathematicianTask(mathematicianLegacyV1ExactRoleIds);
     prior = convertV2PhilosopherMathematicianChoiceStreamToV1(await source.commandStore.loadDomainEvents(fixture.command.gameId));
     priorState = rebuildGameState(prior);
     const task = priorState.firstNightTaskPlan!.tasks[priorState.firstNightTaskProgress!.settlements.length]!;
@@ -1005,7 +1015,9 @@ describe("2B18B Option A V1 base-plus-gained receipt-free unsupported matrix", (
   let command: typeof fixture.command;
 
   beforeAll(async () => {
-    const source = await settleBaseAndGainedMathematicianV2();
+    const source = await settleBaseAndGainedMathematicianV2(
+      philosopherAndBaseMathematicianLegacyV1ExactRoleIds
+    );
     prior = convertV2PhilosopherMathematicianChoiceStreamToV1(source.eventsAfterChoice);
     state = rebuildGameState(prior);
     const tasks = state.firstNightTaskPlan!.tasks.filter((task) => task.taskType === "MATHEMATICIAN_INFORMATION");

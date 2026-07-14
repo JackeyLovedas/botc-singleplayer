@@ -32,6 +32,10 @@ import type {
   DreamerTargetChosenPayload
 } from "./dreamer.js";
 import type {
+  DreamerInformationDeliveredV2Payload,
+  DreamerTargetChosenV2Payload
+} from "./dreamer-v2.js";
+import type {
   CerenovusChoiceRecordedPayload,
   CerenovusMadnessInstructionDeliveredPayload,
   CerenovusMadnessMarkedPayload
@@ -84,6 +88,10 @@ export type {
   DreamerInformationDeliveredPayload,
   DreamerTargetChosenPayload
 } from "./dreamer.js";
+export type {
+  DreamerInformationDeliveredV2Payload,
+  DreamerTargetChosenV2Payload
+} from "./dreamer-v2.js";
 export type {
   CerenovusChoiceRecordedPayload,
   CerenovusMadnessInstructionDeliveredPayload,
@@ -221,6 +229,8 @@ export type DomainEventPayloadByType = {
   readonly CerenovusMadnessInstructionDelivered: CerenovusMadnessInstructionDeliveredPayload;
   readonly DreamerTargetChosen: DreamerTargetChosenPayload;
   readonly DreamerInformationDelivered: DreamerInformationDeliveredPayload;
+  readonly DreamerTargetChosenV2: DreamerTargetChosenV2Payload;
+  readonly DreamerInformationDeliveredV2: DreamerInformationDeliveredV2Payload;
   readonly ClockmakerInformationDelivered: ClockmakerInformationDeliveredPayload;
   readonly MathematicianInformationDelivered: MathematicianInformationDeliveredPayload;
   readonly EvilTwinPairEstablished: EvilTwinPairEstablishedPayload;

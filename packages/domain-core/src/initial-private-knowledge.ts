@@ -297,6 +297,7 @@ const SUPPORTED_PRIVATE_VIEW_TEAM_KNOWLEDGE_MODEL_VERSION = "first-night-team-kn
 const SUPPORTED_PRIVATE_VIEW_EVIL_TWIN_KNOWLEDGE_MODEL_VERSION = "evil-twin-knowledge-model-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_CERENOVUS_KNOWLEDGE_MODEL_VERSION = "cerenovus-madness-instruction-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_DREAMER_KNOWLEDGE_MODEL_VERSION = "dreamer-information-model-v1" as const;
+const SUPPORTED_PRIVATE_VIEW_DREAMER_V2_KNOWLEDGE_MODEL_VERSION = "dreamer-information-model-v2" as const;
 const SUPPORTED_PRIVATE_VIEW_CLOCKMAKER_KNOWLEDGE_MODEL_VERSION = "clockmaker-information-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_SEAMSTRESS_KNOWLEDGE_MODEL_VERSION = "seamstress-private-knowledge-v1" as const;
 const SUPPORTED_PRIVATE_VIEW_MATHEMATICIAN_KNOWLEDGE_MODEL_VERSION = "mathematician-knowledge-v1" as const;
@@ -690,7 +691,8 @@ export const validatePlayerPrivateKnowledgeViewShape = (
   const hasDreamerKnowledgeModelVersion = Object.hasOwn(value, "dreamerKnowledgeModelVersion");
   if (
     hasDreamerKnowledgeModelVersion &&
-    value.dreamerKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_DREAMER_KNOWLEDGE_MODEL_VERSION
+    value.dreamerKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_DREAMER_KNOWLEDGE_MODEL_VERSION &&
+    value.dreamerKnowledgeModelVersion !== SUPPORTED_PRIVATE_VIEW_DREAMER_V2_KNOWLEDGE_MODEL_VERSION
   ) {
     return fail("PlayerPrivateKnowledgeView dreamerKnowledgeModelVersion must be supported");
   }

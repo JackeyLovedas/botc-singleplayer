@@ -31,6 +31,7 @@ import {
   validateStoredClockmakerInformationDelivered,
   isCanonicalDataValue,
   isDenseCanonicalArray,
+  sameCanonicalDataValue,
   validateCerenovusActionOpportunityShape,
   validateCerenovusChoiceAgainstState,
   validateCerenovusChoiceRecordedPayloadShape,
@@ -42,12 +43,16 @@ import {
   isSeamstressActionOpportunityV2,
   sameRoleSetupSnapshot,
   validateSeamstressActionOpportunityV2Shape
+  ,isDreamerActionOpportunityV2
+  ,isDreamerInformationDeliveredV2Payload
+  ,isDreamerTargetChosenV2Payload
   ,MATHEMATICIAN_KNOWLEDGE_MODEL_VERSION
   ,MATHEMATICIAN_INFORMATION_STAGE
   ,validateMathematicianInformationDeliveredPayloadShape
   ,formatFirstNightAbilityOutcomeFactId
 } from "@botc/domain-core";
 import { replayTrustedMathematicianProjectionStream } from "../../domain-core/src/mathematician-internal.js";
+import { replayTrustedDreamerV2ProjectionStream } from "../../domain-core/src/dreamer-v2-replay.js";
 import type {
   GameState,
   InitialPrivateKnowledgeEstablishedPayload,
@@ -65,6 +70,7 @@ import type {
   ClockmakerInformationDeliveredPayload
   ,MathematicianInformationDeliveredPayload
   ,AnyDomainEventEnvelope
+  ,DreamerTargetChosenPayload
 } from "@botc/domain-core";
 
 type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishedPayload & {
@@ -239,6 +245,17 @@ const storedDreamerDeliveries = (state: GameState): readonly unknown[] => {
   return information.deliveries;
 };
 
+const hasDreamerV2History = (state: GameState): boolean =>
+  state.firstNightActionOpportunities?.opportunities.some(isDreamerActionOpportunityV2) === true ||
+  state.dreamerTargetChoices?.choices.some(isDreamerTargetChosenV2Payload) === true ||
+  state.dreamerInformation?.deliveries.some(isDreamerInformationDeliveredV2Payload) === true;
+
+const dreamerV1Choices = (state: GameState): { readonly choices: readonly DreamerTargetChosenPayload[] } => ({
+  choices: state.dreamerTargetChoices?.choices.filter(
+    (choice): choice is DreamerTargetChosenPayload => !isDreamerTargetChosenV2Payload(choice)
+  ) ?? []
+});
+
 const storedFirstNightSettlements = (state: GameState): readonly unknown[] => {
   const progress: unknown = state.firstNightTaskProgress;
   if (progress === undefined) {
@@ -273,7 +290,7 @@ const matchingStoredDreamerSettlement = (
     : undefined;
 };
 
-const requireDeliveredDreamerInformationIsSettled = (state: GameState): void => {
+const requireDeliveredDreamerInformationIsSettled = (state: GameState,allowDreamerV2History:boolean): void => {
   if (state.dreamerInformation === undefined && state.firstNightTaskProgress === undefined) {
     return;
   }
@@ -285,13 +302,14 @@ const requireDeliveredDreamerInformationIsSettled = (state: GameState): void => 
   const deliveries = storedDreamerDeliveries(state);
   const settlements = storedFirstNightSettlements(state);
   for (const delivery of deliveries) {
+    if(isDreamerInformationDeliveredV2Payload(delivery)){if(!allowDreamerV2History)throw new DomainError("PrivateKnowledgeUnavailable","Dreamer V2 history requires accepted-stream trust");continue;}
     const settlement = matchingStoredDreamerSettlement(settlements, delivery);
     const validation = validateStoredDreamerInformationDelivered(delivery, {
       rulesBaselineVersion: state.rulesBaselineVersion,
       setup: state.setup,
       roster: state.roster.entries,
       firstNightTaskPlan: state.firstNightTaskPlan,
-      choices: state.dreamerTargetChoices,
+      choices: dreamerV1Choices(state),
       settlement
     });
     if (!validation.valid) {
@@ -308,7 +326,9 @@ const requireDeliveredDreamerInformationIsSettled = (state: GameState): void => 
       deliveries.some((delivery) =>
         isPlainRecord(delivery) &&
         delivery.taskId === settlement.taskId &&
-        delivery.sourceCharacterStateRevision === settlement.characterStateRevision
+        (isDreamerInformationDeliveredV2Payload(delivery)
+          ? delivery.settlementCharacterStateRevision
+          : delivery.sourceCharacterStateRevision) === settlement.characterStateRevision
       ) !== true
     ) {
       throw new DomainError("PrivateKnowledgeUnavailable", "DREAMER_ACTION settlement exists without delivered Dreamer information");
@@ -569,7 +589,10 @@ const deliveredStagesForViewer = (
     stages.push("CLOCKMAKER_INFORMATION");
   }
 
-  if (state.dreamerInformation?.deliveries.some((delivery) => delivery.sourcePlayerId === viewerPlayerId) === true) {
+  if (state.dreamerInformation?.deliveries.some((delivery) =>
+    isDreamerInformationDeliveredV2Payload(delivery)
+      ? delivery.sourceContract.sourcePlayerId===viewerPlayerId
+      : delivery.sourcePlayerId === viewerPlayerId) === true) {
     stages.push(DREAMER_INFORMATION_STAGE);
   }
 
@@ -587,8 +610,12 @@ const deliveredStagesForViewer = (
 const buildPlayerPrivateKnowledgeViewInternal = (
   state: GameState,
   viewerPlayerId: PlayerId,
-  allowMathematicianHistory: boolean
+  allowMathematicianHistory: boolean,
+  allowDreamerV2History = false
 ): PlayerPrivateKnowledgeView => {
+  if (!allowDreamerV2History && hasDreamerV2History(state)) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate Dreamer V2 history; use the accepted-event-stream builder");
+  }
   if (!allowMathematicianHistory && (state.mathematicianInformation !== undefined ||
       state.firstNightTaskProgress?.settlements.some((entry) => entry.outcomeType === "MATHEMATICIAN_INFORMATION_DELIVERED") === true)) {
     throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate Mathematician history; use the accepted-event-stream builder");
@@ -610,7 +637,7 @@ const buildPlayerPrivateKnowledgeViewInternal = (
   const cerenovusInstructions = requireDeliveredCerenovusMadnessInstructionsAreSettled(state);
   const clockmakerDeliveries = requireDeliveredClockmakerInformationIsSettled(state);
   const mathematicianDeliveries = allowMathematicianHistory ? requireDeliveredMathematicianInformationIsSettled(state) : [];
-  requireDeliveredDreamerInformationIsSettled(state);
+  requireDeliveredDreamerInformationIsSettled(state,allowDreamerV2History);
   requireDeliveredSeamstressInformationIsSettled(state);
   const knownDemon = deliveredTeamEntries.find((entry) => entry.kind === "DEMON_IDENTITY");
   const knownMinions = deliveredTeamEntries
@@ -621,7 +648,9 @@ const buildPlayerPrivateKnowledgeViewInternal = (
     .flatMap((entry) => entry.kind === "DEMON_BLUFFS" ? entry.roles.map(cloneRoleSetupSnapshot) : []);
   const evilTwinCounterpart = findEvilTwinCounterpartForViewer(state.evilTwinInformation, viewerPlayerId);
   const cerenovusInstruction = cerenovusInstructions.find((delivery) => delivery.recipientPlayerId === viewerPlayerId);
-  const dreamerDelivery = state.dreamerInformation?.deliveries.find((delivery) => delivery.sourcePlayerId === viewerPlayerId);
+  const dreamerDeliveries=state.dreamerInformation?.deliveries.filter((delivery)=>isDreamerInformationDeliveredV2Payload(delivery)?delivery.sourceContract.sourcePlayerId===viewerPlayerId:delivery.sourcePlayerId===viewerPlayerId)??[];
+  if(dreamerDeliveries.length>1)throw new DomainError("PrivateKnowledgeUnavailable","Viewer has multiple Dreamer deliveries in the supported history");
+  const dreamerDelivery=dreamerDeliveries[0];
   const viewerClockmakerDeliveries = clockmakerDeliveries.filter((delivery) => delivery.sourceContract.sourcePlayerId === viewerPlayerId);
   if (viewerClockmakerDeliveries.length > 1) throw new DomainError("PrivateKnowledgeUnavailable", "Viewer has multiple Clockmaker deliveries in the supported first-night history");
   const clockmakerDelivery = viewerClockmakerDeliveries[0];
@@ -666,7 +695,10 @@ const buildPlayerPrivateKnowledgeViewInternal = (
     ...(dreamerDelivery === undefined
       ? {}
       : {
-          dreamerInformation: {
+          dreamerInformation: isDreamerInformationDeliveredV2Payload(dreamerDelivery)?{
+            target:cloneKnownPlayerReference({playerId:dreamerDelivery.targetTruth.targetPlayerId,seatNumber:dreamerDelivery.targetTruth.targetSeatNumber}),
+            goodRole:cloneRoleSetupSnapshot(dreamerDelivery.selectedGoodRole),evilRole:cloneRoleSetupSnapshot(dreamerDelivery.selectedEvilRole)
+          }:{
             target: cloneKnownPlayerReference({
               playerId: dreamerDelivery.targetPlayerId,
               seatNumber: dreamerDelivery.targetSeatNumber
@@ -674,7 +706,7 @@ const buildPlayerPrivateKnowledgeViewInternal = (
             goodRole: cloneRoleSetupSnapshot(dreamerDelivery.goodRole),
             evilRole: cloneRoleSetupSnapshot(dreamerDelivery.evilRole)
           },
-          dreamerKnowledgeModelVersion: SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION
+          dreamerKnowledgeModelVersion: isDreamerInformationDeliveredV2Payload(dreamerDelivery)?dreamerDelivery.knowledgeModelVersion:SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION
         }),
     ...(clockmakerDelivery === undefined
       ? {}
@@ -722,11 +754,11 @@ export const buildPlayerPrivateKnowledgeView = (
 export const buildPlayerPrivateKnowledgeViewFromAcceptedEventStream = (
   events: readonly AnyDomainEventEnvelope[],
   viewerPlayerId: PlayerId
-): PlayerPrivateKnowledgeView => buildPlayerPrivateKnowledgeViewInternal(
-  replayTrustedMathematicianProjectionStream(events).finalState,
-  viewerPlayerId,
-  true
-);
+): PlayerPrivateKnowledgeView => {
+  const math=replayTrustedMathematicianProjectionStream(events);const dreamer=replayTrustedDreamerV2ProjectionStream(events);
+  if(!sameCanonicalDataValue(math.finalState,dreamer.finalState))throw new DomainError("PrivateKnowledgeUnavailable","Trusted replay builders disagree on final state");
+  return buildPlayerPrivateKnowledgeViewInternal(dreamer.finalState,viewerPlayerId,true,true);
+};
 
 export const buildAiPrivateKnowledgeView = (
   state: GameState,

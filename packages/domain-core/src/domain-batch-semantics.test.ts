@@ -14,7 +14,7 @@ import {
   scheduledTaskId,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
-import type { AnyDomainEventEnvelope, DomainErrorCode, DomainEventEnvelope } from "@botc/domain-core";
+import type { AnyDomainEventEnvelope, DomainErrorCode, DomainEventEnvelope, GameState } from "@botc/domain-core";
 import {
   gameCreatedEvent,
   charactersAssignedEvent,
@@ -592,6 +592,50 @@ describe("domain batch semantic validation", () => {
         }
       }]),
       "InvalidDomainBatchSemantics"
+    );
+  });
+});
+
+describe("Dreamer V2 atomic batch semantics", () => {
+  const state = { phase: "FIRST_NIGHT", nightNumber: 1, dayNumber: 0 } as GameState;
+  const common = { category: "domain", gameId: "game", batchId: "batch", gameVersion: 2,
+    eventVersion: SUPPORTED_DOMAIN_EVENT_VERSION, rulesBaselineVersion: RULES_BASELINE_VERSION,
+    commandId: "command", createdAt: "2026-07-14T00:00:00.000Z", correlationId: "correlation", causationId: "causation" };
+  const target = { ...common, eventId: "target", eventSequence: 2, eventType: "DreamerTargetChosenV2", payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION, taskId: "task", opportunityId: "opportunity", targetChoiceId: "choice",
+    targetPlayerId: "target-player", targetSeatNumber: 2, settlementCharacterStateRevision: 1, sourceContract: { sourcePlayerId: "source" }
+  } } as unknown as DomainEventEnvelope<"DreamerTargetChosenV2">;
+  const delivery = { ...common, eventId: "delivery", eventSequence: 3, eventType: "DreamerInformationDeliveredV2", payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION, taskId: "task", opportunityId: "opportunity", targetChoiceId: "choice",
+    targetTruth: { targetPlayerId: "target-player", targetSeatNumber: 2 }, settlementCharacterStateRevision: 1,
+    sourceContract: { sourcePlayerId: "source" }
+  } } as unknown as DomainEventEnvelope<"DreamerInformationDeliveredV2">;
+  const settlement = { ...common, eventId: "settlement", eventSequence: 4, eventType: "ScheduledTaskSettled", payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION, taskId: "task", taskType: "DREAMER_ACTION",
+    outcomeType: "DREAMER_INFORMATION_DELIVERED", characterStateRevision: 1
+  } } as unknown as DomainEventEnvelope<"ScheduledTaskSettled">;
+
+  it("accepts the structural V2 target-delivery-settlement triplet contract", () => {
+    expect(() => validateDomainBatchSemantics(state, [target, delivery, settlement])).not.toThrow();
+  });
+
+  it("D19-042 D19-043 D19-044 D19-045 reject naked and reversed V2 triplets", () => {
+    for (const events of [[target], [delivery], [settlement], [delivery, target, settlement]]) {
+      expectDomainCode(() => validateDomainBatchSemantics(state, events), "InvalidDomainBatchSemantics");
+    }
+  });
+
+  it("D19-053 rejects a Dreamer V2 triplet mixed with PhaseTransitioned", () => {
+    const transition = {
+      ...common,
+      eventId: "phase",
+      eventSequence: 5,
+      eventType: "PhaseTransitioned",
+      payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: "FIRST_NIGHT", toPhase: "DAY" }
+    } as unknown as AnyDomainEventEnvelope;
+    expectDomainCode(
+      () => validateDomainBatchSemantics(state, [target, delivery, settlement, transition]),
+      "PhaseTransitionNotIntegrated"
     );
   });
 });

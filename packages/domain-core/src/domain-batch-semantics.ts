@@ -1,4 +1,5 @@
 import { DomainError } from "./errors.js";
+import { sameCanonicalDataValue } from "./canonical-data.js";
 import type { AnyDomainEventEnvelope, DomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
 import { validateCerenovusActionOpportunityShape } from "./first-night-action-opportunity.js";
@@ -1108,6 +1109,36 @@ const validateIntegratedDreamerInformationBatch = (
   }
 };
 
+const validateIntegratedDreamerV2InformationBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined || currentState.phase !== "FIRST_NIGHT" || currentState.nightNumber !== 1 ||
+      currentState.dayNumber !== 0 || events.length !== 3) {
+    reject("Dreamer V2 information batch requires canonical first-night state and exactly three events");
+  }
+  assertSharedBatchMetadataForAll(events);
+  const [first, second, third] = events;
+  if (first?.eventType !== "DreamerTargetChosenV2" || second?.eventType !== "DreamerInformationDeliveredV2" ||
+      third?.eventType !== "ScheduledTaskSettled") {
+    reject("Dreamer V2 batch must be TargetChosenV2, InformationDeliveredV2, ScheduledTaskSettled");
+  }
+  const target = first as DomainEventEnvelope<"DreamerTargetChosenV2">;
+  const delivery = second as DomainEventEnvelope<"DreamerInformationDeliveredV2">;
+  const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
+  if (target.payload.taskId !== delivery.payload.taskId || target.payload.opportunityId !== delivery.payload.opportunityId ||
+      target.payload.targetChoiceId !== delivery.payload.targetChoiceId ||
+      target.payload.targetPlayerId !== delivery.payload.targetTruth.targetPlayerId ||
+      target.payload.targetSeatNumber !== delivery.payload.targetTruth.targetSeatNumber ||
+      target.payload.settlementCharacterStateRevision !== delivery.payload.settlementCharacterStateRevision ||
+      !sameCanonicalDataValue(target.payload.sourceContract, delivery.payload.sourceContract) ||
+      settlement.payload.taskId !== delivery.payload.taskId || settlement.payload.taskType !== "DREAMER_ACTION" ||
+      settlement.payload.outcomeType !== "DREAMER_INFORMATION_DELIVERED" ||
+      settlement.payload.characterStateRevision !== delivery.payload.settlementCharacterStateRevision) {
+    reject("Dreamer V2 triplet fields must cross-link exactly");
+  }
+};
+
 const validateIntegratedCerenovusActionBatch = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -1481,6 +1512,11 @@ export const validateDomainBatchSemantics = (
     }
 
     reject("Dreamer batch must continue with InformationDelivered");
+    return;
+  }
+
+  if (first.eventType === "DreamerTargetChosenV2") {
+    validateIntegratedDreamerV2InformationBatch(currentState, batchEvents);
     return;
   }
 
