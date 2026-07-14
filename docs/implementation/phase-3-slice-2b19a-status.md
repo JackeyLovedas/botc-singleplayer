@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B19A Implementation Status
 
-> Status: `READY_FOR_PRE_PUBLISH_AUDIT / UNACCEPTED / PARTIAL`. The reviewed implementation is local on `phase-3/dreamer-v2-base-vortox`; no push, PR, exact-head CI, independent final review, merge, or tag exists.
+> Status: `REPAIR_ROUND_1_LOCAL_GATES_PASS / UNACCEPTED / PARTIAL`. PR [#26](https://github.com/JackeyLovedas/botc-singleplayer/pull/26) exists, but fresh repair-head CI, independent final review, merge, and tag remain pending.
 
 ## Implemented boundary
 
@@ -24,3 +24,7 @@
 ## Remaining acceptance gates
 
 The controller must audit the complete diff and traceability before publication. The frozen feature HEAD must then pass exact-head push and PR CI, followed by one complete independent final review returning both `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS` with no blockers. No acceptance or merge is claimed here.
+
+## Repair round 1
+
+Initial product HEAD `8bbd67b5523e79e4906bc2e27e2f12f0ab1cf971` failed push CI `29335406464` only because the existing Seamstress DEFER parameterized test executes four complete actor paths and exceeded Vitest's default 5,000 ms under Linux coverage. The repair adds an explicit `15_000` ms timeout to that test only; all four paths, assertions, and production semantics are unchanged. Targeted coverage passes in 3.22 seconds, and all local gates remain green at `31 files / 1450 tests`.

@@ -7212,7 +7212,7 @@ describe("GameApplicationService", () => {
         eventTypes: ["SeamstressActionDeferred", "ScheduledTaskSettled"]
       });
     }
-  });
+  }, 15_000);
 
   it("rejects malformed, future, mismatched, and non-source Seamstress submissions without domain events", async () => {
     const { service, commandStore } = makeService();
