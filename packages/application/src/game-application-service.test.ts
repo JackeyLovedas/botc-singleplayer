@@ -4837,7 +4837,7 @@ describe("GameApplicationService", () => {
     expect(after?.firstNightTaskProgress?.settlements.some((entry) => entry.taskId === gainedTask.taskId)).toBe(false);
     expect((after as unknown as Record<string, unknown>).mathematicianInformation).toBeUndefined();
     expect(beforeEvents.some((event) => event.eventType.includes("Mathematician"))).toBe(false);
-  });
+  }, 15_000);
 
   it("rejects an injected legacy V1 planner result at the planning boundary without writing", async () => {
     const legacyPlanner: FirstNightTaskPlannerPort = {

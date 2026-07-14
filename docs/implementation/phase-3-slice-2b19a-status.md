@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B19A Implementation Status
 
-> Status: `REPAIR_ROUND_1_LOCAL_GATES_PASS / UNACCEPTED / PARTIAL`. PR [#26](https://github.com/JackeyLovedas/botc-singleplayer/pull/26) exists, but fresh repair-head CI, independent final review, merge, and tag remain pending.
+> Status: `REPAIR_ROUND_2_LOCAL_GATES_PASS / UNACCEPTED / PARTIAL`. PR [#26](https://github.com/JackeyLovedas/botc-singleplayer/pull/26) exists, but fresh repair-head CI, independent final review, merge, and tag remain pending.
 
 ## Implemented boundary
 
@@ -28,3 +28,7 @@ The controller must audit the complete diff and traceability before publication.
 ## Repair round 1
 
 Initial product HEAD `8bbd67b5523e79e4906bc2e27e2f12f0ab1cf971` failed push CI `29335406464` only because the existing Seamstress DEFER parameterized test executes four complete actor paths and exceeded Vitest's default 5,000 ms under Linux coverage. The repair adds an explicit `15_000` ms timeout to that test only; all four paths, assertions, and production semantics are unchanged. Targeted coverage passes in 3.22 seconds, and all local gates remain green at `31 files / 1450 tests`.
+
+## Repair round 2
+
+Repair-round-1 HEAD `94ff27b3f9301a1eae2c211d2891b46e499ead97` failed PR CI `29336318869`, Windows deterministic job `87096328175`, only because the unchanged gained-Mathematician legacy compatibility test exceeded the default 5,000 ms timeout. Repair round 2 adds an explicit `15_000` ms timeout to this test only; assertions, production code, and rule semantics are unchanged. The focused test passes in 1.50 seconds, the application suite passes `213 / 213`, and all full gates remain green at `31 files / 1450 tests` with coverage `86.41% / 81.19% / 96.78%`. The repair budget is exhausted at `2 / 2`; any new CI failure is `HUMAN_BLOCKED` with no repair round 3.
