@@ -1266,7 +1266,7 @@ const expectRetryableFirstNightSystemInformationFailureWithoutWrites = async (
   return failedResult;
 };
 
-type ApplicationServiceTestShard = "core" | "role-actions" | "dreamer-and-later";
+type ApplicationServiceTestShard = "core" | "role-actions" | "dreamer-v2" | "later-role-actions";
 
 const describeApplicationServiceShard = (
   shard: ApplicationServiceTestShard,
@@ -6172,8 +6172,8 @@ describeApplicationServiceShard("role-actions", "GameApplicationService role act
 });
 
 describeApplicationServiceShard(
-  "dreamer-and-later",
-  "GameApplicationService Dreamer V2 and later",
+  "dreamer-v2",
+  "GameApplicationService Dreamer V2",
   () => {
   it("D19-093 rejects invalid Witch submissions and opens V2 capability from a V1-format base Dreamer task", async () => {
     const { service, commandStore } = makeService();
@@ -7028,6 +7028,12 @@ describeApplicationServiceShard(
     expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(28);
   });
 
+});
+
+describeApplicationServiceShard(
+  "later-role-actions",
+  "GameApplicationService later role actions",
+  () => {
   it("D19-071 opens base Seamstress as the next safe deterministic first-night DEFER opportunity", async () => {
     const { service, commandStore } = makeService();
     const { seamstressTask } = await reachSeamstressActionTask(service, commandStore);
@@ -8294,7 +8300,7 @@ describeApplicationServiceShard(
 });
 
 describeApplicationServiceShard(
-  "dreamer-and-later",
+  "later-role-actions",
   "Slice 2B16 Cerenovus first-night integration",
   () => {
   const submitCerenovus = (

@@ -4,11 +4,12 @@
 
 - Phase 3 controlled vertical slices.
 - Current control state: `RUNNING`; current slice `2B19`; branch `phase-3/dreamer-v2-completion`; ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25); `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`.
-- Design round is `3 / 3`; repair round is `1 / 2`.
+- Design round is `3 / 3`; repair round is `2 / 2` and exhausted after this final candidate.
 - Accepted slices remain `2B13` through `2B18B`. Slice `2B19` is not completed and is not in `completedSlices`.
 - Authorized 2B19 production code remains published at implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`; the slice remains `UNACCEPTED`.
-- Published live head `faf96e7edeb15f1e4c65b9fafcbde2573b4ea5cc` failed exact-head push/PR runs `29309341408 / 29309343890` because the monolithic application-service test crossed default per-test and fixed 60-second worker-reporting limits. Repair round 1 changes only test registration granularity and local limits for the three CI-hit bounded tests; production code, assertions, rule evidence, design, traceability, and coverage claims remain semantically unchanged.
-- The failed `faf96e7e...` head is superseded by the local repair candidate. This document deliberately does not self-reference the future repair commit SHA; GitHub's live PR `headRefOid` after push is authoritative. Fresh exact-head CI and independent dual final review remain pending, and merge, tag, FIRST_NIGHT completion, DAY transition, and Phase 2C remain prohibited or out of scope.
+- Repair-round-1 head `237ba2b207166d9c1127d562882d93f0b2216c3c` passed both Windows deterministic jobs and all `1450/1450` coverage assertions, but push/PR validate runs `29310466573 / 29310469160` failed because the combined Dreamer-and-later coverage shard took `61.067 s` and crossed the fixed 60-second worker boundary.
+- Final repair round 2 splits only that combined shard into Dreamer V2 and later-role-action shards. Production code, assertions, rule evidence, design, traceability, and role coverage remain unchanged.
+- The failed `237ba2b...` head is superseded by the local final-repair candidate. This document deliberately does not self-reference its future commit SHA; GitHub's live PR `headRefOid` after push is authoritative. Fresh exact-head CI and independent dual final review remain pending. If the final-repair CI fails, the slice becomes `HUMAN_BLOCKED`; no third repair is authorized.
 - Slice `2B18B` merged through PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) at `2026-07-13T14:18:39Z`.
 - Frozen feature HEAD: `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`; merge SHA: `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`.
 - Accepted tag: `phase-3-slice-2b18b-mathematician-first-night-information`.
@@ -17,13 +18,13 @@
 - Repair round history remains `1 / 2`: initial reviewed head `8b273eec34502906d6c2aa12031c4065ec97725c` returned dual FIX; immutable report `docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md` has SHA-256 `6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157`; repair implementation commit `dc9994546c6a95576872d313ec4e46ba3db1a999` closed the ten blocker groups without changing rules or scope.
 - Rule evidence remains `docs/rules/evidence/2B18B-resolved.md`, SHA-256 `0c4893de8f38dfc05876f89744976a7c54afc6bd41465f2e1198d22b0844a4c8`, terminal `RULE_READY`, coverage `PARTIAL`. Historical conflict evidence remains immutable at `docs/rules/evidence/2B18B.md`, SHA-256 `eae53e0eed5d54c5c4a78d31543749787359f61b2e9b7c3f0ceb27069d2471c1`.
 - The sole implementation authority remains `docs/implementation/phase-3-slice-2b18b-design-round-3.md`, SHA-256 `066be05f5ee8c0fccb83b00fd8471e439e7e6d2c8c8366af8c86aebceac0a792`; independent design review `a05dc0fcb3959863448620b7b064bef38db95987b92708475f77eaf34e308808` returned `RULE_DESIGN_PASS`.
-- Exact repair-round-1 local validation is application `5 files / 230 tests`, with application-service shards `89 + 53 + 79 = 221` and no omitted, duplicated, or skipped assertions; full and coverage `33 files / 1450 tests`; coverage `86.85%` statements/lines, `81.64%` branches, and `96.98%` functions; typecheck, targeted lint, full lint, diff, JSON, immutable-hash, D19-contiguity, nondeterminism, deleted-test, production-scope, and root-export scans pass.
+- Exact repair-round-2 local validation is application `6 files / 230 tests`, with application-service shards `89 + 53 + 15 + 64 = 221` and no omitted, duplicated, or skipped assertions; full and coverage `34 files / 1450 tests`; coverage `86.85%` statements/lines, `81.64%` branches, and `96.98%` functions; typecheck, targeted lint, full lint, diff, JSON, immutable-hash, D19-contiguity, nondeterminism, deleted-test, production-scope, and root-export scans pass. Coverage shards took `1.486 / 11.668 / 13.104 / 25.924 s`.
 - Mathematician remains `PARTIAL`; no role is `COMPLETE`.
 - `productHeadCI`: push `29255450083` and pull request `29255453509`, both `SUCCESS` for frozen feature HEAD `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`.
 - `mergeCommitCI`: main run `29257399469` attempt 1 failed on the existing Cerenovus batch-event/clock-position retry test's 5,000 ms timeout; attempt 2 completed `SUCCESS` for merge SHA `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`. Accepted-tag run `29257432523` also completed `SUCCESS` for that exact merge SHA.
 - `closeoutCommitCI`: `PENDING` for the future exact docs-only closeout commit SHA and GitHub run; it inherits no earlier CI status.
 
-## Slice 2B19 Repair Round 1 / Exact-Head CI Pending
+## Slice 2B19 Final Repair Round 2 / Exact-Head CI Pending
 
 - Rule evidence: `docs/rules/evidence/2B19.md`, SHA-256 `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`, verdict `RULE_READY`, coverage `PARTIAL`.
 - Round 1 design: `docs/implementation/phase-3-slice-2b19-design.md`, SHA-256 `c73e4c85f32dfaf63b2d2df87ad9226bbd95fa6423e3feb52a7c666e8a6a36fd`.

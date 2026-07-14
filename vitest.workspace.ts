@@ -70,10 +70,22 @@ export default defineWorkspace([
   },
   {
     test: {
-      name: "application-service-dreamer-and-later",
+      name: "application-service-dreamer-v2",
       include: [applicationServiceTest],
       env: {
-        BOTC_APPLICATION_SERVICE_TEST_SHARD: "dreamer-and-later"
+        BOTC_APPLICATION_SERVICE_TEST_SHARD: "dreamer-v2"
+      }
+    },
+    resolve: {
+      alias: aliases
+    }
+  },
+  {
+    test: {
+      name: "application-service-later-role-actions",
+      include: [applicationServiceTest],
+      env: {
+        BOTC_APPLICATION_SERVICE_TEST_SHARD: "later-role-actions"
       }
     },
     resolve: {

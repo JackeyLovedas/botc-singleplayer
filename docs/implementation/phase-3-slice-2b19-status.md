@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B19 Implementation Status
 
-> Status: `REPAIR ROUND 1 READY TO PUBLISH / LOCAL GATES PASS / CI PENDING / UNACCEPTED`. Ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25) contains feature implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`. Published head `faf96e7edeb15f1e4c65b9fafcbde2573b4ea5cc` failed exact-head CI and is superseded by the local repair candidate. Fresh exact-head CI, independent final review, acceptance, and merge remain pending; no pass verdict is claimed here.
+> Status: `FINAL REPAIR ROUND 2 READY TO PUBLISH / LOCAL GATES PASS / CI PENDING / UNACCEPTED`. Ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25) contains unchanged feature implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`. Repair-round-1 head `237ba2b207166d9c1127d562882d93f0b2216c3c` failed exact-head validate CI after all assertions passed and is superseded by the local final-repair candidate. Fresh exact-head CI, independent final review, acceptance, and merge remain pending; no pass verdict is claimed here.
 
 ## Authority
 
@@ -10,7 +10,7 @@
 - Branch: `phase-3/dreamer-v2-completion`.
 - PR: [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25), ready and open.
 - Feature implementation commit: `e2e172b3fed1dd05440ba961f6281556875c7e25`.
-- Repair round: `1 / 2`.
+- Repair round: `2 / 2` (final; no further repair is authorized).
 - Final-head authority: this local repair cannot self-reference its future commit SHA. The live GitHub PR `headRefOid` after push is authoritative.
 
 ## Implemented boundary
@@ -36,15 +36,15 @@ Dreamer remains `PARTIAL`, never `COMPLETE`. The fixed twelve-player first-night
 
 ## Validation
 
-- Application tests: `5 files / 230 tests passed`.
-- Application-service test shards: core `89`, role-actions `53`, Dreamer-and-later including Cerenovus `79`; total `221`, with no omitted, duplicated, or skipped assertions. Non-coverage durations were `0.870 s / 7.058 s / 23.371 s`; coverage durations were `1.427 s / 11.193 s / 37.030 s`.
+- Application tests: `6 files / 230 tests passed`.
+- Application-service test shards: core `89`, role-actions `53`, Dreamer V2 `15`, later-role-actions including Seamstress/Clockmaker/Cerenovus `64`; total `221`, with no omitted, duplicated, or skipped assertions. Full-test durations were `1.193 s / 8.092 s / 9.445 s / 17.155 s`; coverage durations were `1.486 s / 11.668 s / 13.104 s / 25.924 s`.
 - Typecheck: pass.
 - Full lint: pass with zero warnings.
-- Full test: `33 files / 1450 tests passed`.
-- Coverage: `33 files / 1450 tests passed`; `86.85%` statements/lines, `81.64%` branches, and `96.98%` functions.
-- Published head `faf96e7e...` push/PR runs `29309341408 / 29309343890` failed from test execution granularity: default 5-second limits on three bounded integration tests and the monolithic file's fixed 60-second worker `onTaskUpdate` boundary. No product assertion or rule claim failed.
-- Repair diff, JSON, immutable-authority hashes, D19-contiguity, nondeterminism, deleted-test, production-scope, and internal-root-export scans: pass.
-- Exact-head Windows/Ubuntu CI on the future repair head: pending; no feature HEAD is frozen and no final review exists.
+- Full test: `34 files / 1450 tests passed`.
+- Coverage: `34 files / 1450 tests passed`; `86.85%` statements/lines, `81.64%` branches, and `96.98%` functions.
+- Repair-round-1 head `237ba2b...` push/PR runs `29310466573 / 29310469160` passed both Windows deterministic jobs and all `1450/1450` coverage assertions, then failed with one unhandled `onTaskUpdate` timeout because the combined Dreamer-and-later shard took `61.067 s`. No product assertion or rule claim failed.
+- Final-repair diff, JSON, immutable-authority hashes, D19-contiguity, nondeterminism, deleted-test, production-scope, and internal-root-export scans: pass.
+- Exact-head Windows/Ubuntu CI on the future final-repair head: pending; no feature HEAD is frozen and no final review exists. Any failure is immediately `HUMAN_BLOCKED` because repair `2 / 2` is exhausted.
 
 ## Rule-to-test traceability
 
