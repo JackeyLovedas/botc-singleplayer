@@ -131,9 +131,9 @@ Windows 本地《血染钟楼》单机游戏项目。
 - Final independent review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS` with no blockers. Verbatim comments are archived in `docs/reviews/pr-23-code-review-final.md` and `docs/reviews/pr-23-rule-review-final.md`.
 - Mathematician remains `PARTIAL`; no role is `COMPLETE`. At the Slice 2B18A closeout, Slice 2B18B and Slice 2B19 had not started and no next slice was then authorized.
 
-## Slice 2B19 Dreamer V2 Implementation Worktree
+## Slice 2B19 Dreamer V2 Published PR
 
-- Slice 2B19 is implemented on `phase-3/dreamer-v2-completion`; all local gates pass. Feature publication, exact-head cross-platform CI, independent final review, acceptance, and merge remain pending; the feature commit is produced during the publication step.
+- Slice 2B19 is published in ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25) on `phase-3/dreamer-v2-completion`; feature implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25` and all local gates are recorded. The later docs-only live PR head is the final-freeze candidate; exact-head cross-platform CI, independent final review, acceptance, and merge remain pending.
 - The bounded fixed-roster first-night path covers base and Philosopher-gained V2 opportunity, target choice, deterministic GOOD/EVIL delivery, represented source impairment, effective Vortox forced-false behavior, accepted Snake Charmer current-role truth, exact outcome-ledger facts, hostile replay rejection, and trusted source-only player/AI projection.
 - Accepted V1 no-Vortox Dreamer completion remains V1. Current-Vortox V1 and mapped V1 gained paths fail receipt-free. No accepted V1 history is upgraded or reordered.
 - Dreamer remains `PARTIAL`. Other-night behavior, Travellers, life/death/revival, free Storyteller false-role choice, general poison production, UI, persistence, FIRST_NIGHT completion, DAY transition, and Phase 2C remain unsupported or out of scope.

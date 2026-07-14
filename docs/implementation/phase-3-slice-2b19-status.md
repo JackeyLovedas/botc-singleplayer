@@ -1,6 +1,6 @@
 # Phase 3 Slice 2B19 Implementation Status
 
-> Status: `IMPLEMENTED / LOCAL GATES PASS / UNACCEPTED`. Feature publication, exact-head CI, independent final review, acceptance, and merge remain pending. The feature commit is produced during the publication step; no final-review verdict or feature CI success is claimed here.
+> Status: `PUBLISHED / LOCAL GATES PASS / CI PENDING / UNACCEPTED`. Ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25) contains feature implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`. Exact live-head CI, independent final review, acceptance, and merge remain pending; no final-review verdict or final feature CI success is claimed here.
 
 ## Authority
 
@@ -8,6 +8,9 @@
 - Sole implementation design: `docs/implementation/phase-3-slice-2b19-design-round-3.md`, SHA-256 `c06ed0fc61c6b10d0838f1d826021d2113fae037089f8571fe084eeaa7993881`.
 - Independent design review: `docs/implementation/phase-3-slice-2b19-design-review-round-3.md`, SHA-256 `59f3a80f05720f3f061117038ea01771e256573c22040ae03015f945a756fe10`, `RULE_DESIGN_PASS`.
 - Branch: `phase-3/dreamer-v2-completion`.
+- PR: [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25), ready and open.
+- Feature implementation commit: `e2e172b3fed1dd05440ba961f6281556875c7e25`.
+- Final-head authority: this docs-only provenance synchronization cannot self-reference its future commit SHA. The live GitHub PR `headRefOid` after push is authoritative.
 
 ## Implemented boundary
 
@@ -38,7 +41,8 @@ Dreamer remains `PARTIAL`, never `COMPLETE`. The fixed twelve-player first-night
 - Full test: `31 files / 1450 tests passed`.
 - Coverage: `31 files / 1450 tests passed`; `86.85%` statements/lines, `81.52%` branches, and `96.98%` functions.
 - Diff check, JSON parse, immutable-authority hashes, D19-contiguity, nondeterminism, and internal-root-export scans: pass.
-- Exact-head Windows/Ubuntu CI: pending; no feature HEAD is frozen.
+- Feature-commit push/PR runs `29309115201 / 29309166298` are superseded for the final gate by the later docs-only PR head.
+- Exact-head Windows/Ubuntu CI on the live final-freeze candidate: pending; no feature HEAD is frozen and no final review exists.
 
 ## Rule-to-test traceability
 

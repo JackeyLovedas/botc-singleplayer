@@ -3,10 +3,11 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `RUNNING`; current slice `2B19`; branch `phase-3/dreamer-v2-completion`; no current PR; `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`.
+- Current control state: `RUNNING`; current slice `2B19`; branch `phase-3/dreamer-v2-completion`; ready PR [#25](https://github.com/JackeyLovedas/botc-singleplayer/pull/25); `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`.
 - Design round is `3 / 3`; repair round is `0 / 2`.
 - Accepted slices remain `2B13` through `2B18B`. Slice `2B19` is not completed and is not in `completedSlices`.
-- Authorized 2B19 production code, tests, traceability, status, README, role-matrix, and control-document changes now exist on the feature worktree. All local gates pass. Feature publication, exact-head CI, independent final review, merge, tag, FIRST_NIGHT completion, DAY transition, and Phase 2C work remain pending or prohibited as applicable.
+- Authorized 2B19 production code, tests, traceability, status, README, role-matrix, and control-document changes are published. Feature implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25` is the parent of this docs-only provenance synchronization. All local gates pass; the slice remains `UNACCEPTED`.
+- Feature-commit push run `29309115201` and pull-request run `29309166298` are not the final product gate because the docs-only synchronization advances PR #25. This document deliberately does not self-reference that future commit SHA; GitHub's live PR `headRefOid` after push is authoritative. Exact-head CI and independent dual final review remain pending, and merge, tag, FIRST_NIGHT completion, DAY transition, and Phase 2C remain prohibited or out of scope.
 - Slice `2B18B` merged through PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) at `2026-07-13T14:18:39Z`.
 - Frozen feature HEAD: `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`; merge SHA: `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`.
 - Accepted tag: `phase-3-slice-2b18b-mathematician-first-night-information`.
@@ -21,7 +22,7 @@
 - `mergeCommitCI`: main run `29257399469` attempt 1 failed on the existing Cerenovus batch-event/clock-position retry test's 5,000 ms timeout; attempt 2 completed `SUCCESS` for merge SHA `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`. Accepted-tag run `29257432523` also completed `SUCCESS` for that exact merge SHA.
 - `closeoutCommitCI`: `PENDING` for the future exact docs-only closeout commit SHA and GitHub run; it inherits no earlier CI status.
 
-## Slice 2B19 Local Gates Pass / Publication Pending
+## Slice 2B19 Published / Exact-Head CI Pending
 
 - Rule evidence: `docs/rules/evidence/2B19.md`, SHA-256 `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`, verdict `RULE_READY`, coverage `PARTIAL`.
 - Round 1 design: `docs/implementation/phase-3-slice-2b19-design.md`, SHA-256 `c73e4c85f32dfaf63b2d2df87ad9226bbd95fa6423e3feb52a7c666e8a6a36fd`.
@@ -34,6 +35,7 @@
 - Independent Round 3 review: `docs/implementation/phase-3-slice-2b19-design-review-round-3.md`, SHA-256 `59f3a80f05720f3f061117038ea01771e256573c22040ae03015f945a756fe10`, verdict `RULE_DESIGN_PASS`, `remainingBlockers=[]`.
 - Both historical Round 2 blockers are closed. Design Round 4 is prohibited.
 - The implementation worktree now contains the bounded V2 base/gained Dreamer pipeline, exact accepted-stream replay/projection validation, represented impairment/Vortox/current-role behavior, V1 compatibility boundary, and a contiguous D19-001 through D19-095 traceability map. D19-074 remains exact-head Windows/Ubuntu CI-only.
+- Ready PR #25 contains feature implementation commit `e2e172b3fed1dd05440ba961f6281556875c7e25`; the later docs-only live PR head is the final-freeze candidate once its exact-head CI succeeds. No final review verdict exists yet.
 - README is synchronized on the authorized 2B19 feature branch with the accepted 2B18B closeout and the current unaccepted 2B19 implementation boundary.
 - Implementation is authorized only on `phase-3/dreamer-v2-completion` under the reviewed Round 3 authority. Phase 2C remains prohibited.
 
