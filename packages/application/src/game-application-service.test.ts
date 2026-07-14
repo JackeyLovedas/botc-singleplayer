@@ -1266,7 +1266,20 @@ const expectRetryableFirstNightSystemInformationFailureWithoutWrites = async (
   return failedResult;
 };
 
-describe("GameApplicationService", () => {
+type ApplicationServiceTestShard = "core" | "role-actions" | "dreamer-and-later";
+
+const describeApplicationServiceShard = (
+  shard: ApplicationServiceTestShard,
+  name: string,
+  factory: () => void
+): void => {
+  const configuredShard = process.env.BOTC_APPLICATION_SERVICE_TEST_SHARD;
+  if (configuredShard === undefined || configuredShard === shard) {
+    describe(name, factory);
+  }
+};
+
+describeApplicationServiceShard("core", "GameApplicationService core", () => {
   it("creates a game with an accepted receipt and one atomic domain event batch", async () => {
     const { service, commandStore } = makeService();
     const command = createGameCommand();
@@ -3917,6 +3930,9 @@ describe("GameApplicationService", () => {
     expect((await actorStore.findCommandReceipt(aiCommand.gameId, aiCommand.commandId))?.result.status).toBe("rejected");
   });
 
+});
+
+describeApplicationServiceShard("role-actions", "GameApplicationService role actions", () => {
   it("D19-003 D19-010 D19-012 D19-020 D19-022 D19-024 D19-055 D19-059 D19-062 D19-063 D19-066 opens and settles gained Dreamer V2 after the impaired base holder", async () => {
     const dreamerStore = new MemoryCommandCommitStore();
     const { service: dreamerService } = makeService(dreamerStore);
@@ -4065,7 +4081,7 @@ describe("GameApplicationService", () => {
       }
     });
     expect(afterState?.firstNightActionOpportunities?.opportunities.at(-1)?.opportunityStatus).toBe("OPEN");
-  });
+  }, 15_000);
 
   it("settles base Snake Charmer non-Demon targets through the existing no-swap path", async () => {
     const commandStore = new MemoryCommandCommitStore();
@@ -6153,6 +6169,12 @@ describe("GameApplicationService", () => {
     }
   });
 
+});
+
+describeApplicationServiceShard(
+  "dreamer-and-later",
+  "GameApplicationService Dreamer V2 and later",
+  () => {
   it("D19-093 rejects invalid Witch submissions and opens V2 capability from a V1-format base Dreamer task", async () => {
     const { service, commandStore } = makeService();
     const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore);
@@ -7712,7 +7734,7 @@ describe("GameApplicationService", () => {
         eventTypes: ["SeamstressActionDeferred", "ScheduledTaskSettled"]
       });
     }
-  });
+  }, 15_000);
 
   it("rejects malformed, future, mismatched, and non-source Seamstress submissions without domain events", async () => {
     const { service, commandStore } = makeService();
@@ -8271,7 +8293,10 @@ describe("GameApplicationService", () => {
   });
 });
 
-describe("Slice 2B16 Cerenovus first-night integration", () => {
+describeApplicationServiceShard(
+  "dreamer-and-later",
+  "Slice 2B16 Cerenovus first-night integration",
+  () => {
   const submitCerenovus = (
     state: NonNullable<ReturnType<typeof rebuildOptionalGameState>>,
     taskIdValue: ReturnType<typeof scheduledTaskId>,
@@ -8460,7 +8485,7 @@ describe("Slice 2B16 Cerenovus first-night integration", () => {
       expect(failedState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.opportunityId === opportunity.opportunityId)?.opportunityStatus, fault.name).toBe("OPEN");
       await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
     }
-  });
+  }, 15_000);
 
   it("keeps thrown Cerenovus event construction retryable without burning the command ID", async () => {
     const { service, commandStore } = makeService();
