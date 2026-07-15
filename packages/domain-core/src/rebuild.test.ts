@@ -56,6 +56,7 @@ import {
   cloneCurrentCharacterStateSet,
   abilityImpairmentId,
   eventId,
+  formatRoleTenureTransitionFactId,
   expectedDemonInformationEntries,
   expectedMinionInformationEntries,
   firstNightTaskTypeForPhilosopherChoice,
@@ -64,6 +65,7 @@ import {
   resolveCurrentEvilTeam,
   roleId,
   scheduledTaskId,
+  seatNumber,
   scheduledTaskFromFirstNightTaskInsertedPayload,
   rebuildGameState,
   validateFirstNightTaskPlanCreatedPayload,
@@ -76,6 +78,7 @@ import {
   deriveFirstNightAbilityOutcomeFact,
   validateFirstNightAbilityOutcomeFactShape
 } from "./first-night-ability-outcome-ledger.js";
+import { assertRebuiltCanonicalRoleTenureState } from "./role-tenure-replay.js";
 import type {
   AnyDomainEventEnvelope,
   AbilityImpairmentSet,
@@ -2792,6 +2795,117 @@ describe("domain event rebuild", () => {
     expect(state.assignment?.assignments.map((assignment) => assignment.seatNumber)).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   });
 
+  it("[D19T-025, D19T-027..030] deterministically derives initial Dreamer tenure from legacy accepted assignment history", () => {
+    const events = assignmentEventStream();
+    const first = rebuildGameState(events);
+    const second = rebuildGameState(events);
+    const assignedDreamer = first.assignment?.assignments.find((entry) => entry.role.roleId === "dreamer");
+    const dreamerTenure = first.seamstressRoleTenureState?.records.find((entry) => entry.roleId === "dreamer");
+
+    expect(assignedDreamer).toBeDefined();
+    expect(dreamerTenure).toMatchObject({
+      playerId: assignedDreamer?.playerId,
+      seatNumber: assignedDreamer?.seatNumber,
+      acquiredCharacterStateRevision: 1,
+      startedBy: {
+        kind: "CHARACTERS_ASSIGNED",
+        sourceEventId: charactersAssignedEvent().eventId,
+        sourceEventSequence: charactersAssignedEvent().eventSequence
+      }
+    });
+    expect(first.seamstressRoleTenureState).toStrictEqual(second.seamstressRoleTenureState);
+    const trackedRoles = first.assignment?.assignments
+      .filter((entry) => ["cerenovus", "dreamer", "mathematician", "philosopher", "seamstress", "vortox"].includes(entry.role.roleId))
+      .map((entry) => entry.role.roleId) ?? [];
+    expect(first.seamstressRoleTenureState?.records.map((entry) => entry.roleId)).toStrictEqual(trackedRoles);
+    expect(first.seamstressAbilityState?.instances).toHaveLength(trackedRoles.filter((role) => role === "seamstress").length);
+  });
+
+  it("[D19T-016..017, D19T-043] rejects orphan processed IDs and transition-started tenures as state failures", () => {
+    const events = assignmentEventStream();
+    const state = rebuildGameState(events);
+    const factId = formatRoleTenureTransitionFactId({
+      sourceEventSequence: 999,
+      seatNumber: seatNumber(12),
+      nextCharacterStateRevision: 2
+    });
+    const orphanProcessed: GameState = {
+      ...state,
+      seamstressRoleTenureState: {
+        records: state.seamstressRoleTenureState?.records ?? [],
+        processedTransitionFactIds: [factId]
+      }
+    };
+    expectDomainCode(() => assertRebuiltCanonicalRoleTenureState(events, orphanProcessed), "InvalidRoleTenureState");
+
+    const untracked = state.currentCharacterState?.entries.find((entry) =>
+      !["cerenovus", "dreamer", "mathematician", "philosopher", "seamstress", "vortox"].includes(entry.role.roleId));
+    if (untracked === undefined || state.seamstressRoleTenureState === undefined) {
+      throw new Error("Expected untracked current character and role tenure state");
+    }
+    const orphanTenure: GameState = {
+      ...state,
+      seamstressRoleTenureState: {
+        records: [...state.seamstressRoleTenureState.records, {
+          roleTenureId: `role-tenure-v1:seat-${String(untracked.seatNumber).padStart(2, "0")}:role-dreamer:acquired-revision-2` as never,
+          playerId: untracked.playerId,
+          seatNumber: untracked.seatNumber,
+          roleId: "dreamer" as const,
+          acquiredCharacterStateRevision: 2,
+          startedBy: {
+            kind: "ROLE_TENURE_TRANSITION" as const,
+            transitionFactId: factId,
+            sourceEventId: eventId("orphan-transition"),
+            sourceEventSequence: 999,
+            previousCharacterStateRevision: 1,
+            nextCharacterStateRevision: 2
+          }
+        }].sort((left, right) => left.acquiredCharacterStateRevision - right.acquiredCharacterStateRevision || left.seatNumber - right.seatNumber),
+        processedTransitionFactIds: [factId]
+      }
+    };
+    expectDomainCode(() => assertRebuiltCanonicalRoleTenureState(events, orphanTenure), "InvalidRoleTenureState");
+  });
+
+  it("[D19T-019] rejects accepted-history tenure provenance mismatches", () => {
+    const events = assignmentEventStream();
+    const state = rebuildGameState(events);
+    if (state.assignment === undefined) throw new Error("Expected assignment authority");
+    const assignmentMismatch: GameState = {
+      ...state,
+      assignment: {
+        ...state.assignment,
+        randomStream: `${state.assignment.randomStream}:tampered`
+      }
+    };
+    expectDomainCode(
+      () => assertRebuiltCanonicalRoleTenureState(events, assignmentMismatch),
+      "InvalidRoleTenureState"
+    );
+    const records = state.seamstressRoleTenureState?.records;
+    const dreamerIndex = records?.findIndex((entry) => entry.roleId === "dreamer") ?? -1;
+    if (records === undefined || dreamerIndex < 0) throw new Error("Expected Dreamer tenure");
+    const dreamer = records[dreamerIndex]!;
+    const mutations = [
+      { ...dreamer, playerId: playerId("provenance-mismatch") },
+      { ...dreamer, seatNumber: seatNumber(dreamer.seatNumber === 1 ? 2 : 1) },
+      { ...dreamer, roleId: "seamstress" as const },
+      { ...dreamer, acquiredCharacterStateRevision: 2 },
+      { ...dreamer, startedBy: { ...dreamer.startedBy, sourceEventId: eventId("provenance-mismatch") } },
+      { ...dreamer, startedBy: { ...dreamer.startedBy, sourceEventSequence: 999 } }
+    ];
+    for (const mutation of mutations) {
+      const tampered: GameState = {
+        ...state,
+        seamstressRoleTenureState: {
+          records: records.map((record, index) => index === dreamerIndex ? mutation : record),
+          processedTransitionFactIds: state.seamstressRoleTenureState?.processedTransitionFactIds ?? []
+        }
+      };
+      expectDomainCode(() => assertRebuiltCanonicalRoleTenureState(events, tampered), "InvalidRoleTenureState");
+    }
+  });
+
   it("derives initial current character state from CharactersAssigned without changing the event payload", () => {
     const state = rebuildGameState(assignmentEventStream());
 
@@ -4891,7 +5005,7 @@ describe("domain event rebuild", () => {
     );
   });
 
-  it("[R4-T04] emits a SnakeCharmerDemonSwapApplied ledger SOURCE_EVENT fact", () => {
+  it("[R4-T04, D19T-026] emits a SnakeCharmer swap ledger fact and reconstructs exact tenure provenance", () => {
     const before = rebuildGameState(openSnakeCharmerStream());
     const [targetChosen, swap, poison, settlement] = snakeCharmerDemonHitBatchEvents();
     const state = rebuildGameState([
@@ -4909,6 +5023,16 @@ describe("domain event rebuild", () => {
       sourceCharacterStateRevision: 1
     });
     expect(state.snakeCharmerDemonSwaps?.swaps[0]).toStrictEqual(swap.payload);
+    expect(state.seamstressRoleTenureState?.processedTransitionFactIds).toHaveLength(2);
+    expect(state.seamstressRoleTenureState?.records.filter((record) =>
+      record.startedBy.kind === "ROLE_TENURE_TRANSITION")).toHaveLength(1);
+    expect(state.seamstressRoleTenureState?.records.find((record) =>
+      record.startedBy.kind === "ROLE_TENURE_TRANSITION")?.startedBy).toMatchObject({
+        sourceEventId: swap.eventId,
+        sourceEventSequence: swap.eventSequence,
+        previousCharacterStateRevision: swap.payload.previousCharacterStateRevision,
+        nextCharacterStateRevision: swap.payload.nextCharacterStateRevision
+      });
     expect(state.abilityImpairments?.impairments).toContainEqual(expect.objectContaining({
       affectedPlayerId: swap.payload.targetPlayerId,
       affectedRole: swap.payload.targetAfter.role,

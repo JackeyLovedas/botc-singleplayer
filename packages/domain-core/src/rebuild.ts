@@ -4,6 +4,7 @@ import { validateDomainEventStream } from "./event-stream-validator.js";
 import { validateDomainBatchSemantics } from "./domain-batch-semantics.js";
 import type { AnyDomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
+import { assertRebuiltCanonicalRoleTenureState } from "./role-tenure-replay.js";
 
 const groupConsecutiveBatches = (
   events: readonly AnyDomainEventEnvelope[]
@@ -58,6 +59,11 @@ export const rebuildGameState = (events: readonly AnyDomainEventEnvelope[]): Gam
         provenance.gameId !== initialization.gameId || provenance.rulesBaselineVersion !== initialization.rulesBaselineVersion) {
       throw new DomainError("InvalidFirstNightAbilityOutcomeLedger", "Rebuilt ledger anchor must equal the unique FirstNightInitialized event envelope");
     }
+  }
+
+  if (eventList.some((event) => event.eventType === "CharactersAssigned") || state.assignment !== undefined ||
+      state.currentCharacterState !== undefined || state.seamstressRoleTenureState !== undefined) {
+    assertRebuiltCanonicalRoleTenureState(eventList, state);
   }
 
   return state;
