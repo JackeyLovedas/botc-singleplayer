@@ -1,14 +1,14 @@
 # Current Task
 
-## Phase 3 Slice 2B19T — LOCAL_IMPLEMENTATION_READY_FOR_CONTROLLER_AUDIT
+## Phase 3 Slice 2B19T — PUBLISHED_PENDING_FROZEN_HEAD_CI
 
 - Slice: `2B19T Canonical Dreamer Role-Tenure Prerequisite`.
 - Prerequisite authorization: `USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE`.
 - Current authorization: `USER_AUTHORIZED_2B19T_DESIGN_ROUND_2_CONTRACT_CORRECTION`.
 - Scope mode: `CANONICAL_DREAMER_ROLE_TENURE_FOUNDATION`.
-- Control status: `RUNNING / LOCAL_IMPLEMENTATION_COMPLETE`.
+- Control status: `PUBLISHED_PENDING_FROZEN_HEAD_CI`.
 - Current branch: `phase-3/canonical-dreamer-role-tenure`.
-- Current PR: none.
+- Current PR: [#28](https://github.com/JackeyLovedas/botc-singleplayer/pull/28).
 - Limits: `maxSlices=1`, `maxDesignRounds=2`, `maxRepairRounds=2`.
 - Rule gate: `RULE_READY`.
 - Rule-design status: independent Round 2 review returned `RULE_DESIGN_PASS`; `ruleDesignPass=true`.
@@ -19,7 +19,7 @@
 - Dreamer role coverage: `PARTIAL` and unchanged.
 - Remaining blockers: `[]`.
 
-## Local implementation result
+## Published implementation result
 
 - Implemented the exact Round 2 tenure foundation within the four-file production allowlist and two files from the three-file test allowlist.
 - Added canonical Dreamer tenure bootstrap, shared transition reconciliation, exact hostile-state validation, unique active lookup, current-state correspondence, accepted-history replay audit, and `InvalidRoleTenureState`.
@@ -29,7 +29,9 @@
 - Coverage: `86.80%` statements/lines, `81.72%` branches, `97.79%` functions.
 - Typecheck, full lint, and diff check passed locally.
 - Implementation status: `docs/implementation/phase-3-slice-2b19t-status.md`.
-- Exact-head CI, PR publication, and independent final review have not occurred.
+- Implementation commit: `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
+- Initial implementation-head push run `29400886132` and pull-request run `29400927633` are `IN_PROGRESS` and apply only to `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
+- Candidate-final-head exact CI and independent final review have not occurred.
 
 ## Rule delta evidence
 
@@ -96,9 +98,9 @@ It must remain a `DERIVED_STATE_EXPANSION`. It does not authorize any event payl
 - Reviewed main is `f6058cfb8dc2241da07c8ed9297ee34057589230`; exact push run `29398067385` is `SUCCESS` across Linux validate and Windows deterministic gates.
 - The 2B19A1 prerequisite blocker history remains preserved; 2B19A1 itself has not restarted.
 - PR #25 and PR #26 remain closed and unmerged.
-- The authorized feature branch now contains the local implementation; no commit, push, PR, merge, tag, exact-head CI, or final review exists for 2B19T.
+- The authorized feature branch contains published implementation commit `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`; PR #28 is open. Initial implementation-head CI is in progress, while candidate-final-head CI, branch freeze, final review, merge, and tag remain absent.
 - `2B19A1`, `2B19A2`, `2B19A3`, `2B19B`, FIRST_NIGHT/DAY continuation, and Phase 2C have not started.
 
 ## Required next action
 
-Controller audits the complete local diff, allowlists, line ceiling, traceability, and forbidden scans. If no blocker remains, create one attributed implementation commit, push the existing branch, create one PR with the required five rule sections, and wait for exact-head CI before the independent final review. No Round 3 exists; 2B19A1 and Phase 2C remain unstarted.
+Push the publication metadata synchronization to form the candidate final feature HEAD. Then require that exact live PR HEAD to match local and origin and pass both push and pull-request CI on Linux and Windows before freezing the branch and requesting one complete independent final review. Do not modify the PR body, start a repair round, merge, start 2B19A1, or start Phase 2C.

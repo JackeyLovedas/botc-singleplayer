@@ -38,6 +38,17 @@
 - `D19T-046`: Dreamer matrix status remains exactly `PARTIAL`.
 - `D19T-047`: Slice implementation coverage remains exactly `FOUNDATION`.
 
+## Publication
+
+- Status: `PUBLISHED_PENDING_FROZEN_HEAD_CI`.
+- Implementation commit: `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
+- Branch: `phase-3/canonical-dreamer-role-tenure`.
+- Pull request: [#28](https://github.com/JackeyLovedas/botc-singleplayer/pull/28).
+- Initial implementation-head push run: `29400886132`, `IN_PROGRESS`, scoped only to `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
+- Initial implementation-head pull-request run: `29400927633`, `IN_PROGRESS`, scoped only to `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
+- Repair round remains `0`; `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, and `remainingBlockers=[]`.
+- This publication metadata synchronization will become the candidate final feature HEAD after its commit is pushed; its SHA is intentionally not self-recorded here and must be read from GitHub.
+
 ## Local validation
 
 - Focused: `packages/domain-core/src/seamstress.test.ts` and `packages/domain-core/src/rebuild.test.ts` — `223/223` passed.
@@ -45,8 +56,8 @@
 - Lint: passed with zero warnings.
 - Full suite: `33` files, `1418/1418` tests passed.
 - Coverage suite: `33` files, `1418/1418` tests passed; `86.80%` statements/lines, `81.72%` branches, `97.79%` functions.
-- Exact-head CI and independent final review remain pending.
+- Candidate-final-head push and pull-request CI, Linux/Windows completion, branch freeze, and independent final review remain pending.
 
 ## Stop boundary
 
-This implementation does not start 2B19A1, 2B19A2, 2B19A3, 2B19B, FIRST_NIGHT/DAY continuation, or Phase 2C. Merge remains gated on exact-head CI and a complete independent final review returning both required pass verdicts with no blockers.
+This implementation does not start 2B19A1, 2B19A2, 2B19A3, 2B19B, FIRST_NIGHT/DAY continuation, or Phase 2C. Next, push this metadata synchronization, require green push and pull-request CI for that exact live PR HEAD on Linux and Windows, freeze the branch, and request a complete independent final review. Merge remains unauthorized until both required pass verdicts are returned with no blockers.

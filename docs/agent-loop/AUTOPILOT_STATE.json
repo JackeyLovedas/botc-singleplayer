@@ -1,12 +1,12 @@
 {
-  "status": "RUNNING",
-  "currentPR": null,
-  "currentPRUrl": null,
+  "status": "PUBLISHED_PENDING_FROZEN_HEAD_CI",
+  "currentPR": 28,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/28",
   "currentBranch": "phase-3/canonical-dreamer-role-tenure",
   "currentSlice": "2B19T",
   "reviewedHead": null,
   "currentReviewHeadAuthority": "The independent 2B19T Round 2 design review returned RULE_DESIGN_PASS for design SHA-256 6d2adb12e719e5b8311efb02a343f349902d652d41befc00912337ecec03489b on reviewed main f6058cfb8dc2241da07c8ed9297ee34057589230. Implementation is authorized only within the reviewed Round 2 contract.",
-  "exactHeadCIAuthority": "Reviewed main HEAD f6058cfb8dc2241da07c8ed9297ee34057589230 passed push run 29398067385 attempt 1: overall SUCCESS, Linux validate SUCCESS, Windows deterministic SUCCESS, including typecheck, lint, test, coverage, and deterministic Windows suites.",
+  "exactHeadCIAuthority": "Initial implementation-head push run 29400886132 and pull-request run 29400927633 are IN_PROGRESS only for bada60ad25a8b5fe441b11a72bcdca6edf7e2c73. The candidate final feature HEAD is the live PR head after this publication metadata synchronization is pushed; its exact SHA and CI status must be read from GitHub and cannot be self-recorded by this commit.",
   "currentFeatureHead": null,
   "repairRound": 0,
   "designRound": 2,
@@ -86,7 +86,7 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": true,
-  "implementationStatus": "LOCAL_IMPLEMENTATION_COMPLETE_PENDING_CONTROLLER_AUDIT",
+  "implementationStatus": "PUBLISHED_PENDING_FROZEN_HEAD_CI",
   "implementationBranch": "phase-3/canonical-dreamer-role-tenure",
   "localImplementationValidation": {
     "focusedTests": "223/223 passed",
@@ -96,10 +96,31 @@
     "typecheck": "PASS",
     "lint": "PASS",
     "diffCheck": "PASS",
-    "exactHeadCI": "PENDING",
+    "exactHeadCI": "INITIAL_IMPLEMENTATION_HEAD_IN_PROGRESS_NOT_FINAL_CANDIDATE",
     "finalReview": "PENDING"
   },
-  "implementationCommit": null,
+  "implementationCommit": "bada60ad25a8b5fe441b11a72bcdca6edf7e2c73",
+  "slice2B19TPublication": {
+    "status": "PUBLISHED_PENDING_FROZEN_HEAD_CI",
+    "branch": "phase-3/canonical-dreamer-role-tenure",
+    "pr": 28,
+    "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/28",
+    "implementationCommit": "bada60ad25a8b5fe441b11a72bcdca6edf7e2c73",
+    "initialImplementationHeadCI": {
+      "commitSha": "bada60ad25a8b5fe441b11a72bcdca6edf7e2c73",
+      "pushRun": 29400886132,
+      "pushStatus": "IN_PROGRESS",
+      "pullRequestRun": 29400927633,
+      "pullRequestStatus": "IN_PROGRESS",
+      "scope": "Initial implementation HEAD only; not the candidate final feature HEAD after publication metadata synchronization"
+    },
+    "candidateFinalFeatureHead": "LIVE_PR_HEAD_AFTER_PUBLICATION_METADATA_PUSH",
+    "candidateFinalHeadCI": "PENDING",
+    "linuxStatus": "PENDING",
+    "windowsStatus": "PENDING",
+    "finalReview": "PENDING",
+    "remainingBlockers": []
+  },
   "repairCandidateCommit": null,
   "finalReviewRepairRound1Path": "docs/implementation/phase-3-slice-2b18b-final-review-repair-round-1.md",
   "finalReviewRepairRound1Hash": "6933ce65cd6b6a149fa8eaa18d2a6246fd6862080e1b34c65b8dbb24a78e4157",
@@ -903,7 +924,7 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-15T04:55:26.6822496Z",
-  "lastAction": "Implemented the exact 2B19T Round 2 canonical Dreamer role-tenure foundation on phase-3/canonical-dreamer-role-tenure. Local typecheck, lint, focused 223-test, full 1418-test, and coverage 1418-test gates pass; Dreamer remains PARTIAL and Slice coverage remains FOUNDATION. No commit, push, PR, exact-head CI, final review, merge, 2B19A1, or Phase 2C work exists.",
+  "lastAction": "Published implementation commit bada60ad25a8b5fe441b11a72bcdca6edf7e2c73 on phase-3/canonical-dreamer-role-tenure and opened PR #28. Initial implementation-head push run 29400886132 and pull-request run 29400927633 are IN_PROGRESS only for bada60ad; local focused 223-test, full 1418-test, coverage 1418-test, typecheck, and lint gates pass. Dreamer remains PARTIAL, Slice coverage remains FOUNDATION, repairRound remains 0, and 2B19A1 and Phase 2C remain unstarted.",
   "lastError": null,
-  "nextAction": "After controller audit, create one attributed implementation commit, push the existing phase-3/canonical-dreamer-role-tenure branch, create one PR with the five required rule-contract sections, wait for exact-head push and PR CI, and then request one complete independent final review. Do not create another branch, exceed the four-file production and three-file test allowlists or 800-line ceiling, create Round 3, or start 2B19A1 or Phase 2C."
+  "nextAction": "Push this publication metadata synchronization to form the candidate final feature HEAD, then require green push and pull-request CI for that exact live PR HEAD on Linux and Windows. After local, origin, and PR heads match and the branch is frozen, request one complete independent final review. Do not modify the PR body, start another repair round, merge, start 2B19A1, or start Phase 2C."
 }
