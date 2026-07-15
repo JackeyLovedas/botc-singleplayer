@@ -1,38 +1,56 @@
 # Current Task
 
-## Application-Service Vitest Sharding — completed
+## Phase 3 Slice 2B19A1 — HUMAN_BLOCKED
 
-- Control status: `COMPLETED`.
+- Slice: `2B19A1 Base Dreamer V2 Opportunity and Canonical Identity Foundation`.
+- Control status: `HUMAN_BLOCKED`.
 - Current branch: `main`.
 - Current PR: none.
-- Current role slice: none.
+- Limits: `maxSlices=1`, `maxDesignRounds=2`, `maxRepairRounds=2`.
+- Rule gate: `RULE_READY`.
+- Architect status: `HUMAN_BLOCKED`; no design was emitted and `ruleDesignPass=false`.
 - Implementation authorization: `false`.
-- Remaining blockers: `[]`.
-- Infrastructure PR: [#27](https://github.com/JackeyLovedas/botc-singleplayer/pull/27), merged without product or BOTC rule-semantic changes.
-- Frozen feature HEAD: `0ba9eaa9d1365811f1ecd8d266a9d05ece0eeadc`.
-- Merge SHA: `7efc825beb6f1aece5345a5a941434d0bdd39065`.
-- Infrastructure tag: `infrastructure-application-service-vitest-sharding-v1`.
-- Final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`, `ruleSemanticsChanged=false`.
-- Exact review archives:
-  - `docs/reviews/pr-27-code-review-final.md`.
-  - `docs/reviews/pr-27-rule-review-final.md`.
+- Design round: `1 / 2`; Round 2 has not been started or authorized.
+- Repair round: `0 / 2`.
+- Remaining blocker: `MISSING_CANONICAL_BASE_DREAMER_ROLE_TENURE_PREREQUISITE`.
 
-## CI provenance
+## Rule delta evidence
 
-- Product-head push CI: run `29384847799`, `SUCCESS`, exact SHA `0ba9eaa9d1365811f1ecd8d266a9d05ece0eeadc`.
-- Product-head pull-request CI: run `29384865986`, `SUCCESS`, exact SHA `0ba9eaa9d1365811f1ecd8d266a9d05ece0eeadc`.
-- Merge-commit CI: run `29385842111`, `SUCCESS`, exact SHA `7efc825beb6f1aece5345a5a941434d0bdd39065`.
-- Closeout-commit CI: pending for this future docs-only commit. It inherits no product-head or merge-commit CI status.
+- Evidence: `docs/rules/evidence/2B19A1.md`.
+- Evidence SHA-256: `03efe35093bc4facaa3053cb8947c6c13066308cafa64204c59c50a86ee4670d`.
+- Parent evidence: `docs/rules/evidence/2B19.md`.
+- Parent evidence SHA-256: `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`.
+- Terminal verdict: `RULE_READY`.
+- Rule coverage status: `SKELETON`.
+- Implementation coverage label: `OPPORTUNITY_FOUNDATION`.
+- Unresolved conflicts: `[]`.
+- No new user override was added.
 
-## Preserved Dreamer history and stop boundary
+## Authorized boundary
 
-- PR #25 and PR #26 are both closed and unmerged.
+This Slice is limited to the base Dreamer V2 opportunity and canonical identity foundation. It may later implement the base opening opportunity, exact source provenance, task/opportunity identity, V1 replay compatibility, duplicate/mixed-generation rejection, and receipt-free fail-closed submission boundary only after independent design approval.
+
+It does not authorize target choice, information delivery, GOOD/EVIL candidate resolution, impairment evaluation, Vortox behavior, ledger facts, private Dreamer knowledge, Philosopher-gained Dreamer, first-night completion, DAY, or Phase 2C.
+
+## Architect Round 1 prerequisite blocker
+
+- Assessment: `docs/implementation/phase-3-slice-2b19a1-architect-blocker-round-1.md`.
+- Assessment SHA-256: `38cc762f72ab48f1da76a1816a0a6b871114f69f408a04fcb0fcd469379df7ef`.
+- Accepted main has canonical base ability-instance support but no canonical active base Dreamer role-tenure support.
+- The accepted role-tenure role domain, bootstrap, parser/formatter grammar, transition reconciliation, and `GameState` tenure history exclude Dreamer.
+- Ability-instance identity cannot replace the missing tenure record, lifecycle, or active-tenure uniqueness proof.
+- Adding that shared prerequisite inside 2B19A1 would introduce a second general tenure risk and violate the Slice's single-risk boundary.
+- Required unblock: independently establish and accept a bounded canonical Dreamer role-tenure prerequisite Slice, then restart the 2B19A1 design gate.
+
+## Preserved history and stop boundary
+
+- Infrastructure PR #27 remains accepted and merged; its history is unchanged.
+- PR #25 and PR #26 remain closed and unmerged.
 - `phase-3/dreamer-v2-completion` and `phase-3/dreamer-v2-base-vortox` remain read-only references.
-- Dreamer V2 is not accepted.
-- This infrastructure work is not added to `completedSlices` because it is not a role slice.
-- `2B19A1`, `2B19A2`, `2B19A3`, and `2B19B` are future reslice suggestions only; none has started.
-- No FIRST_NIGHT or DAY feature continuation and no Phase 2C work has started.
+- No feature branch or PR exists for 2B19A1.
+- No design was generated; no production code or tests have been modified for 2B19A1.
+- `2B19A2`, `2B19A3`, `2B19B`, FIRST_NIGHT/DAY continuation, and Phase 2C have not started.
 
 ## Required next action
 
-Wait for CI on the exact docs-only closeout commit, then stop. Do not begin Dreamer implementation or any later phase without new user authorization.
+Await explicit user authorization for a separate bounded canonical Dreamer role-tenure prerequisite Slice. Do not add 2B19A1 design Round 2, create a feature branch or PR, or modify production code or tests.
