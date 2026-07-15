@@ -95,3 +95,23 @@ main baseline.
 - Package or lockfiles changed: 0.
 - Rule evidence or role coverage files changed: 0.
 - Dreamer status or role-completion claims changed: 0.
+
+## Accepted Infrastructure Closeout
+
+- PR: [#27](https://github.com/JackeyLovedas/botc-singleplayer/pull/27), merged at `2026-07-15T03:09:27Z`.
+- Frozen feature HEAD: `0ba9eaa9d1365811f1ecd8d266a9d05ece0eeadc`.
+- Merge SHA: `7efc825beb6f1aece5345a5a941434d0bdd39065`.
+- Tag: `infrastructure-application-service-vitest-sharding-v1`.
+- Final verdicts: `CODE_REVIEW_PASS / RULE_REVIEW_PASS` with `remainingBlockers=[]` and `ruleSemanticsChanged=false`.
+- Code review archive: `docs/reviews/pr-27-code-review-final.md`; exact original comment body SHA-256 `00c86ac5de399b70663405781de829b9695e2f7e9369809bebdc7e05233106ca`.
+- Rule review archive: `docs/reviews/pr-27-rule-review-final.md`; exact original comment body SHA-256 `7ee7d4bc0a04891644d657c95159efdf982fdbd53bdd1c13d011b0b0d1211938`.
+
+### CI provenance
+
+- `productHeadCI`: frozen feature HEAD `0ba9eaa9d1365811f1ecd8d266a9d05ece0eeadc`; push run [29384847799](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29384847799) `SUCCESS`; pull-request run [29384865986](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29384865986) `SUCCESS`; scope is the frozen infrastructure feature HEAD only.
+- `mergeCommitCI`: merge SHA `7efc825beb6f1aece5345a5a941434d0bdd39065`; main push run [29385842111](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29385842111) `SUCCESS`; scope is the exact merge commit only.
+- `closeoutCommitCI`: pending for this docs-only closeout commit. Its future SHA and run cannot be self-recorded here, and no earlier CI status is inherited.
+
+### Final boundary
+
+PR #25 and PR #26 are closed and unmerged. Their branches, `phase-3/dreamer-v2-completion` and `phase-3/dreamer-v2-base-vortox`, remain read-only references. Dreamer V2 is not accepted. The future `2B19A1`, `2B19A2`, `2B19A3`, and `2B19B` reslice suggestions, FIRST_NIGHT/DAY feature continuation, and Phase 2C have not started. This infrastructure acceptance does not alter the role-slice completion list.

@@ -3,10 +3,15 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `RUNNING`; current slice `2B19`; branch `main`; no feature branch and no current PR; `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`.
-- Design round is `2 / 2` and exhausted; repair round is `0 / 2` because implementation never started.
+- Current control state: `COMPLETED`; current slice and PR are null; branch `main`; `implementationAuthorized=false`; `remainingBlockers=[]`.
+- The completed work is pure application-service Vitest sharding infrastructure, not a role slice, so `completedSlices` is unchanged.
 - Accepted slices remain `2B13` through `2B18B`. Slice `2B19` is not completed and is not in `completedSlices`.
-- No 2B19 production code, tests, PR, merge, tag, FIRST_NIGHT completion, DAY transition, or Phase 2C work exists.
+- Dreamer V2 is not accepted. PR #25 and PR #26 are closed and unmerged; `phase-3/dreamer-v2-completion` and `phase-3/dreamer-v2-base-vortox` remain read-only references.
+- `2B19A1`, `2B19A2`, `2B19A3`, and `2B19B` are future reslice suggestions only. None has started, and no FIRST_NIGHT/DAY feature continuation or Phase 2C work has started.
+- Infrastructure PR [#27](https://github.com/JackeyLovedas/botc-singleplayer/pull/27) merged at `2026-07-15T03:09:27Z`; frozen feature HEAD `0ba9eaa9d1365811f1ecd8d266a9d05ece0eeadc`; merge SHA `7efc825beb6f1aece5345a5a941434d0bdd39065`; tag `infrastructure-application-service-vitest-sharding-v1`.
+- PR #27 final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`, `ruleSemanticsChanged=false`; exact comments are archived at `docs/reviews/pr-27-code-review-final.md` and `docs/reviews/pr-27-rule-review-final.md`.
+- Product-head push/PR CI `29384847799 / 29384865986` succeeded for `0ba9eaa9...`; merge CI `29385842111` succeeded for `7efc825...`; closeout CI is pending for this future docs-only commit and inherits no earlier status.
+- The prior accepted Slice 2B18B state below remains historical product context and is not changed by this infrastructure closeout.
 - Slice `2B18B` merged through PR [#24](https://github.com/JackeyLovedas/botc-singleplayer/pull/24) at `2026-07-13T14:18:39Z`.
 - Frozen feature HEAD: `00afa42169cd3c3cab724d7bf7bf07a2a6ed1d87`; merge SHA: `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`.
 - Accepted tag: `phase-3-slice-2b18b-mathematician-first-night-information`.
@@ -21,7 +26,7 @@
 - `mergeCommitCI`: main run `29257399469` attempt 1 failed on the existing Cerenovus batch-event/clock-position retry test's 5,000 ms timeout; attempt 2 completed `SUCCESS` for merge SHA `681f4f8a9bc9f7a909b64a30e0a7879cb4b5128c`. Accepted-tag run `29257432523` also completed `SUCCESS` for that exact merge SHA.
 - `closeoutCommitCI`: `PENDING` for the future exact docs-only closeout commit SHA and GitHub run; it inherits no earlier CI status.
 
-## Slice 2B19 Design Round 3 Pending Review
+## Preserved Incomplete Slice 2B19 Design History
 
 - Rule evidence: `docs/rules/evidence/2B19.md`, SHA-256 `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`, verdict `RULE_READY`, coverage `PARTIAL`.
 - Round 1 design: `docs/implementation/phase-3-slice-2b19-design.md`, SHA-256 `c73e4c85f32dfaf63b2d2df87ad9226bbd95fa6423e3feb52a7c666e8a6a36fd`.
@@ -30,13 +35,14 @@
 - Final Round 2 review: `docs/implementation/phase-3-slice-2b19-design-review-round-2.md`, SHA-256 `306a3bb34a6ea00d16e437505ef99bf9ba84511a79e670373dc4ca0ccfc4d019`, verdict `RULE_DESIGN_FIX_REQUIRED`.
 - User authorization `USER_AUTHORIZED_2B19_DESIGN_ROUND_3_CANONICAL_CAPTURE_COMPLETION` permits the final design round `3 / 3` only for the two remaining Round 2 blockers.
 - Round 3 design: `docs/implementation/phase-3-slice-2b19-design-round-3.md`, SHA-256 `c06ed0fc61c6b10d0838f1d826021d2113fae037089f8571fe084eeaa7993881`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3`.
+- This history is not an active task or implementation authorization. The later failed Dreamer attempts were closed without acceptance, and future Dreamer work must use a newly authorized bounded reslice.
 - Round 3 freezes canonical context capture, exact optional-empty normalization, full setup/roster/assignment/task-plan mapping, structured non-hash-only fingerprint equality, and honest accepted-stream/hostile/pure-seam test layering without changing Dreamer/Vortox semantics or V1 boundaries.
-- The only current blocker is `PENDING_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_3`. A non-pass verdict immediately returns the goal to `HUMAN_BLOCKED`; Design Round 4 is prohibited.
-- Remaining blockers are `B1_CANONICAL_CAPTURE_NORMALIZATION_AND_FINGERPRINT_UNDEFINED` and `B2_ACCEPTED_STREAM_REACHABILITY_LAYERING_STILL_INCORRECT`.
+- At this preserved pre-review checkpoint, the recorded blocker was `PENDING_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_3`; it is not an active blocker after the later closed, unaccepted Dreamer attempts.
+- The historical Round 2 blockers were `B1_CANONICAL_CAPTURE_NORMALIZATION_AND_FINGERPRINT_UNDEFINED` and `B2_ACCEPTED_STREAM_REACHABILITY_LAYERING_STILL_INCORRECT`.
 - The first blocker requires exact optional-set normalization, roster/setup/task-plan mappings, identical pipeline/rebuild capture, and complete rules/provenance fingerprint coverage.
 - The second blocker requires D19-025, D19-077, D19-078, and D19-092 to stop claiming canonical accepted-stream reachability and move to exact scheduler/policy, hostile replay, constraint, or continuity seams.
 - README retains its known pre-existing 2B18B drift because the user required that correction to occur only on the authorized 2B19 feature branch with implementation. No branch was authorized after the failed design gate, so README was intentionally left unchanged.
-- Further design requires explicit new user authorization. No Round 3, feature branch, implementation, PR, or Phase 2C work may be inferred.
+- Any new design or implementation requires explicit user authorization for a fresh bounded reslice. No feature branch, implementation, PR, FIRST_NIGHT/DAY continuation, or Phase 2C work may be inferred from this history.
 
 ## Slice 2B18B Historical Conflict And Option A Resolution
 
