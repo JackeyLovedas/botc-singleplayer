@@ -4,7 +4,7 @@
 
 - Decision ID: `ENGINEERING-GOVERNANCE-BASELINE-V1`
 - Authorization: `USER_AUTHORIZED_ENGINEERING_GOVERNANCE_BASELINE_V1`
-- Status: `ACCEPTED_CANDIDATE`
+- Status: `ACCEPTED`
 - Candidate base: accepted `main` at `8d98b4324acfd9592728b1813f6c83ba395742ba`
 - Scope: repository governance and a read-only 2B19A1 precheck
 - Product behavior changed: `false`
