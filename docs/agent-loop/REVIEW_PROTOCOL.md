@@ -114,6 +114,131 @@ reviewedHead=<exact SHA>
 2. Each record states the exact commit SHA, run URL or identifier, completion state, result, and executed scope.
 3. Never transfer a passing result from one commit to another. In particular, never claim full product CI for a closeout commit unless an independent CI run for that exact closeout commit executed that product scope.
 
+## Engineering Governance Baseline
+
+`docs/architecture/ADR-reachability-trust-boundaries-and-review-governance-v1.md` is the complete repository authority for reachability, trust boundaries, design freeze, final-review scope, stop-loss, proportional traceability, CI classification, coverage terminology, and evidence authority after its governance PR is independently reviewed and merged. While its status is `ACCEPTED_CANDIDATE`, this protocol applies the same requirements to that governance PR without claiming post-merge acceptance. Nothing in this section weakens the rule-truth, T1 safety, persistence, replay, information-safety, deterministic, exact-head CI, or complete independent-review gates above.
+
+### Mandatory Reachability Classification
+
+Every future design explicitly enumerates all four classes and assigns exactly one primary class to every claimed behavior or path:
+
+- `R1 CURRENTLY_REACHABLE_ACCEPTED_STREAM`: current accepted commands and producers create the history. Only R1 may be called accepted-stream integration, and it requires the frozen application, command/receipt, prospective-validation, replay, projection-or-explicit-no-output, integration-test, and cross-platform CI evidence.
+- `R2 LEGACY_OR_IMPORTED_ACCEPTED_HISTORY`: no current producer is required, but valid accepted/imported history has an exact replay-compatibility promise and cannot be silently migrated or reinterpreted.
+- `R3 HOSTILE_OR_CORRUPTED_HISTORY`: malformed, forged, orphaned, duplicate, mixed-generation, or otherwise impossible history must fail closed and must not be described as accepted-stream integration.
+- `R4 FUTURE_HYPOTHETICAL_STATE`: no current producer, accepted event, or reachable command path exists. It may be an extension point or explicit `ApplicationNotConfigured` boundary, but cannot be a current integration prerequisite.
+
+Classification order is R3 for invalid history, otherwise R1 when a current accepted producer exists, otherwise R2 when a valid replay promise exists, otherwise R4. A manually constructed state, direct event-applier call, pure resolver fixture, or hostile replay cannot prove R1. A slice may have distinct paths in multiple classes, but no behavior row may omit its class.
+
+### Mandatory Trust Classification
+
+Every design labels every callable entry point:
+
+- `T1 EXTERNAL_OR_PERSISTED_BOUNDARY`: commands, event envelopes, persisted/imported history, projection-viewer input, and public APIs receiving `unknown` or persisted data. Apply exact runtime shape, dense-array, proxy/getter/symbol/cycle/nonplain, canonical-ID, extra/missing-field, fail-closed, replay, and provenance requirements where the representation permits them.
+- `T2 CANONICAL_DERIVED_STATE`: fully validated rebuilt `GameState`, event-applier pre-event state, and aggregates already admitted through T1. Require domain invariants, source cross-links, deterministic rebuild, reference isolation, and state consistency; do not duplicate the full hostile-object matrix in every private helper.
+- `T3 MODULE_PRIVATE_PURE_CORE`: branded internal context, pure resolver, comparator, formatter internals, and candidate policy. Require closed types, determinism, boundary cases, exhaustive unions, and pure tests; do not invent a public hostile boundary, receipt, projection, producer, or full-history audit.
+
+If one function serves multiple trust levels, split the T1 wrapper from its core or apply the stricter level to the public entry. Types alone never downgrade a real T1 or persistence boundary.
+
+### Design Freeze And Final-Review Boundary
+
+Before `RULE_DESIGN_PASS`, design review freezes the current PR's rule semantics, support and unsupported matrix, reachability, trust, public API, event/state, failures/receipts, replay, projection, completion criteria, authority-test mapping, primary test layers, file allowlists, size estimates, Slice coverage, and Role coverage. These become the PR's definition of done. A material change requires an authorized design correction or reslice; implementation cannot silently widen it.
+
+Final review verifies that frozen definition on the exact PR HEAD and may classify a finding `BLOCKER` only for:
+
+A. violation of frozen design;
+
+B. actual P0/P1 data corruption or BOTC-rule error;
+
+C. private-information leakage;
+
+D. accepted replay or idempotency breakage;
+
+E. persistence incompatibility;
+
+F. an actually callable security or trust-boundary vulnerability;
+
+G. false or misleading claims/tests;
+
+H. absent, failed, stale, or wrong-SHA exact-head CI.
+
+When an item was not frozen, future R4 producers, new generic infrastructure, a T3 hostile matrix, unreachable lifecycle, a new event/schema, Storyteller free-choice strategy, a new role interaction, general refactoring, naming improvements, and extra traceability formatting are backlog by default. The exception is a reviewer-proven P0/P1 actual R1/R2 path under B-G; the report must name that path, evidence, severity, and impact. This exception preserves real T1, persistence, replay, and privacy blockers and does not permit speculative R4 blocking.
+
+Every finding or suggestion is exactly one of:
+
+- `BLOCKER`: satisfies A-H and gates the current PR;
+- `BACKLOG_HIGH`: serious bounded follow-up with a named risk/trigger but not a current frozen gate;
+- `BACKLOG_NORMAL`: non-gating improvement.
+
+Each finding records classification, evidence, affected reachability/trust class, frozen clause or A-H basis, and required action. An unclassified request to fix something is invalid review output.
+
+### Slice Scope And Stop-Loss
+
+One slice has one primary risk. The default suggested ceiling is 6 changed production files and 1,500 added production lines. Do not combine a new event system, new state system, new projection system, and generic audit system in one slice. Split a second independent infrastructure risk. CI infrastructure uses a separate PR. Docs-only status synchronization does not consume a product repair round.
+
+Before implementation, or immediately after the first review, reslice when any condition is true:
+
+1. previously unidentified shared infrastructure is required;
+2. more than 10 production files must change;
+3. estimated added production code exceeds 2,000 lines;
+4. an architectural blocker remains after two design rounds;
+5. a new public trust boundary is still discovered during a second repair;
+6. the PR owns three or more independent subsystems;
+7. a reviewer requires R4 work as the current acceptance prerequisite.
+
+Only explicit user authorization overrides stop-loss. Repair-budget exhaustion does not imply another repair or wider scope.
+
+### Test Layers And Proportional Traceability
+
+Every completion criterion has at least one primary authority test. Each test has exactly one primary layer; supporting tests may serve multiple criteria. Test volume follows risk and boundary count, not a fixed minimum or numbered-test quota. Do not duplicate low-value tests to inflate traceability.
+
+The only primary layers are:
+
+- `ACCEPTED_STREAM_INTEGRATION`;
+- `LEGACY_REPLAY_COMPATIBILITY`;
+- `HOSTILE_REPLAY_REJECTION`;
+- `STRUCTURAL_VALIDATION`;
+- `PURE_POLICY_SEAM`;
+- `PROJECTION`;
+- `CROSS_PLATFORM_CI`.
+
+Traceability records criterion, rule claim, reachability, trust, primary test, primary layer, supporting tests, and expected failure. Tests must use their actual layer; manually assembled state is never relabeled accepted-stream integration.
+
+### Coverage And Acceptance Terminology
+
+Keep three independent axes:
+
+- Slice coverage: `FOUNDATION`, `SKELETON`, `PARTIAL`, `COMPLETE`;
+- Role coverage: `NOT_STARTED`, `SKELETON`, `PARTIAL`, `COMPLETE`;
+- PR acceptance: `UNACCEPTED`, `ACCEPTED`.
+
+A foundation or infrastructure slice does not automatically raise or lower a role. Role coverage changes only from accepted player-visible role behavior. Accepted V1 behavior is not downgraded because V2 is missing. Unmerged PRs do not change accepted role coverage. Final reports name both Slice coverage and Role coverage, and neither substitutes for PR acceptance.
+
+### CI Classification And Repair Accounting
+
+Classify every CI failure:
+
+- `CI_PRODUCT_FAILURE`: product assertions, type/lint defects, product behavior, or frozen-contract failures; consumes product repair.
+- `CI_TEST_INFRASTRUCTURE_FAILURE`: sharding, worker RPC, deterministic runner plumbing, or a stable long-test budget; use a separate infrastructure PR and do not consume product repair.
+- `CI_EXTERNAL_RUNNER_FAILURE`: runner/platform/service failure outside the repository; retry or wait with exact evidence and do not report it as a rule failure.
+
+Do not raise global timeout in a product PR as an incidental fix. A single-test budget infrastructure PR is allowed only when repeated evidence shows the exact same test and timeout, no assertion/unhandled/coverage failure, and unchanged test body and expectations. CI failure is not a BOTC rule failure without independent rule evidence.
+
+### Evidence Authority Order
+
+When records conflict, use this stage-aware order; a not-yet-existing item contributes no authority:
+
+1. GitHub live PR HEAD;
+2. exact-head CI for that SHA;
+3. complete final-review comments whose markers and report `reviewedHead` equal that SHA;
+4. merge commit;
+5. accepted tag;
+6. post-merge main closeout;
+7. PR body;
+8. branch status docs;
+9. chat or controller memory.
+
+PR body is not a substitute for final-review verdicts. A commit after final review invalidates the review and comments. Feature-branch docs do not self-reference their future SHA. Do not create repeated feature docs commits merely to record CI IDs; record them in GitHub evidence or post-merge closeout. A docs-only closeout inherits no CI from another SHA.
+
 ## Role Coverage Gate
 1. `docs/rules/ROLE_COVERAGE_MATRIX.md` records, for every role, base ability, first-night behavior, other-night behavior, drunk behavior, poisoned behavior, Vortox interaction, Philosopher interaction, character-change interaction, alignment-change interaction, death interaction, Storyteller discretion, projection behavior, and `NOT_STARTED` / `SKELETON` / `PARTIAL` / `COMPLETE` status.
 2. Every merge updates the matrix from reviewed implementation evidence.
