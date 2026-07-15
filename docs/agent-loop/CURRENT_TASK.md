@@ -1,24 +1,24 @@
 # Current Task
 
-## Phase 3 Slice 2B19T — RUNNING
+## Phase 3 Slice 2B19T — COMPLETED
 
 - Slice: `2B19T Canonical Dreamer Role-Tenure Prerequisite`.
 - Prerequisite authorization: `USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE`.
 - Current authorization: `USER_AUTHORIZED_2B19T_DESIGN_ROUND_2_CONTRACT_CORRECTION`.
 - Test-infrastructure continuation authorization: `USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE`.
 - Scope mode: `CANONICAL_DREAMER_ROLE_TENURE_FOUNDATION`.
-- Control status: `RUNNING`.
-- Current branch: `phase-3/canonical-dreamer-role-tenure`.
-- Current PR: [#28](https://github.com/JackeyLovedas/botc-singleplayer/pull/28).
+- Control status: `COMPLETED / ACCEPTED`.
+- Current branch: `main`.
+- Current PR: none; [#28](https://github.com/JackeyLovedas/botc-singleplayer/pull/28) is merged.
 - Limits: `maxSlices=1`, `maxDesignRounds=2`, `maxRepairRounds=2`.
 - Rule gate: `RULE_READY`.
 - Rule-design status: independent Round 2 review returned `RULE_DESIGN_PASS`; `ruleDesignPass=true`.
-- Implementation authorization: `true` within the frozen 2B19T Round 2 contract; no product repair round is authorized.
+- Implementation authorization: `false` after acceptance.
 - Design round: `2 / 2`.
 - Repair round: `0 / 2`.
 - Slice coverage: `FOUNDATION`.
 - Dreamer role coverage: `PARTIAL` and unchanged.
-- Remaining blocker: `PENDING_EXACT_HEAD_CI_AND_FIRST_COMPLETE_FINAL_REVIEW`.
+- Remaining blockers: `[]`.
 
 ## Published implementation result
 
@@ -32,12 +32,13 @@
 - Post-infrastructure rerun also passed typecheck, full lint, `33` files / `1418` full tests, `33` files / `1418` coverage tests, coverage `86.80 / 81.72 / 97.79`, exact four-file/436-line production scope, and all forbidden scans.
 - Implementation status: `docs/implementation/phase-3-slice-2b19t-status.md`.
 - Implementation commit: `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
-- Product HEAD is `2b3d46bda1b7f7565ac353d3180d473c531045c1`.
-- Push run `29401137937` attempt 1 and attempt 2 both failed in Coverage because the same existing Slice 2B16 Cerenovus test timed out at `5000ms`.
-- Pull-request run `29401141471` succeeded for the same product HEAD.
+- Frozen product HEAD is `466f91481ad98059bd173af8c0335b88f1ce9fa2`.
+- Exact product-head push CI `29406838841` and pull-request CI `29406840748` both succeeded.
 - The separately accepted test-infrastructure PR #29 raised only that exact test's execution budget to `15000ms`, without assertion, fixture, production, workflow, global-timeout, or rule changes.
 - Infrastructure merge `8bfa5a1ec7af7aa19a5256cd67f814930d3579c8` passed main CI `29405396232`; closeout `f2a8c755ab860b6531b1e9e63ff35c6740f0f052` passed CI `29405973975`; accepted tag is `infrastructure-cerenovus-integration-timeout-v1`.
-- Latest `origin/main` was merged normally into this branch as `72a7883248f66d53e65102c26788d73b93b56651`; the inherited blocker is closed and fresh exact-head CI is pending. Independent final review has not started.
+- Complete independent final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS` with `remainingBlockers=[]`; exact comments are archived in `docs/reviews/pr-28-code-review-final.md` and `docs/reviews/pr-28-rule-review-final.md`.
+- PR #28 merged as `b87905a16e96647249859200db726da4dad5fbed`; merge-main CI `29407990924` succeeded; accepted tag `phase-3-slice-2b19t-canonical-dreamer-role-tenure` points to that merge.
+- Closeout commit CI is `PENDING` and inherits no prior CI status.
 
 ## Rule delta evidence
 
@@ -104,9 +105,9 @@ It must remain a `DERIVED_STATE_EXPANSION`. It does not authorize any event payl
 - Reviewed main is `f6058cfb8dc2241da07c8ed9297ee34057589230`; exact push run `29398067385` is `SUCCESS` across Linux validate and Windows deterministic gates.
 - The 2B19A1 prerequisite blocker history remains preserved; 2B19A1 itself has not restarted.
 - PR #25 and PR #26 remain closed and unmerged.
-- The authorized feature branch contains published implementation commit `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`; PR #28 is open. The accepted infrastructure prerequisite is merged through `72a7883248f66d53e65102c26788d73b93b56651`; final review, 2B19T merge, and 2B19T accepted tag remain absent.
+- The accepted feature is frozen at `466f91481ad98059bd173af8c0335b88f1ce9fa2`, merged as `b87905a16e96647249859200db726da4dad5fbed`, and tagged `phase-3-slice-2b19t-canonical-dreamer-role-tenure`.
 - `2B19A1`, `2B19A2`, `2B19A3`, `2B19B`, FIRST_NIGHT/DAY continuation, and Phase 2C have not started.
 
 ## Required next action
 
-Run the complete local gates without modifying 2B19T production code or tests, verify the frozen four-file/436-line product diff and all out-of-scope scans, update and push PR #28, then require both exact-head workflows to pass before the first complete independent final review. Do not start a product repair round, merge early, start 2B19A1, or start Phase 2C.
+Stop after the docs-only closeout and wait for its exact CI. Dreamer tenure foundation is accepted, but Dreamer opportunity and delivery remain unimplemented; 2B19A1 has not started, FIRST_NIGHT is incomplete, DAY has not started, and Phase 2C has not started.

@@ -40,20 +40,20 @@
 
 ## Publication
 
-- Status: `RUNNING`.
+- Status: `COMPLETED / ACCEPTED`.
 - Implementation commit: `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
-- Branch: `phase-3/canonical-dreamer-role-tenure`.
-- Pull request: [#28](https://github.com/JackeyLovedas/botc-singleplayer/pull/28).
-- Candidate product HEAD: `2b3d46bda1b7f7565ac353d3180d473c531045c1`.
-- Product-head push run `29401137937` attempt 1: `FAILURE` in Coverage because the existing Slice 2B16 Cerenovus test `keeps every Cerenovus batch event and clock metadata position retryable without burning the command ID` timed out at `5000ms`.
-- Product-head push run `29401137937` attempt 2: the identical Coverage test timed out again at `5000ms`; workflow conclusion `FAILURE`.
-- Product-head pull-request run `29401141471`: `SUCCESS` for the same HEAD.
-- The repeated identical push failure was classified and resolved by the separately accepted test-infrastructure PR [#29](https://github.com/JackeyLovedas/botc-singleplayer/pull/29), without changing 2B19T product behavior or rule semantics.
-- Accepted infrastructure merge: `8bfa5a1ec7af7aa19a5256cd67f814930d3579c8`; merge CI `29405396232` `SUCCESS`; accepted tag `infrastructure-cerenovus-integration-timeout-v1`.
-- Accepted infrastructure closeout: `f2a8c755ab860b6531b1e9e63ff35c6740f0f052`; closeout CI `29405973975` `SUCCESS`.
-- Latest accepted `origin/main` was merged normally with merge commit `72a7883248f66d53e65102c26788d73b93b56651`; no 2B19T production or test conflict occurred.
-- Repair round remains `0`; `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`; `ruleSemanticsChanged=false`.
-- Remaining blocker: `PENDING_EXACT_HEAD_CI_AND_FIRST_COMPLETE_FINAL_REVIEW`.
+- Frozen feature HEAD: `466f91481ad98059bd173af8c0335b88f1ce9fa2`.
+- Pull request: [#28](https://github.com/JackeyLovedas/botc-singleplayer/pull/28), merged at `2026-07-15T10:24:05Z`.
+- Product-head push CI `29406838841`: `SUCCESS` for the frozen feature HEAD.
+- Product-head pull-request CI `29406840748`: `SUCCESS` for the frozen feature HEAD.
+- Complete independent final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`; `remainingBlockers=[]`.
+- Exact GitHub comments are archived at `docs/reviews/pr-28-code-review-final.md` and `docs/reviews/pr-28-rule-review-final.md`.
+- Merge commit: `b87905a16e96647249859200db726da4dad5fbed`; merge-main CI `29407990924`: `SUCCESS`.
+- Accepted tag: `phase-3-slice-2b19t-canonical-dreamer-role-tenure` at the merge commit.
+- Closeout commit CI: `PENDING`; it does not inherit product-head or merge-main CI.
+- Repair round: `0`; `ruleSemanticsChanged=false`; `implementationAuthorized=false` after acceptance.
+- Separately accepted infrastructure prerequisite remains recorded as PR #29, merge `8bfa5a1ec7af7aa19a5256cd67f814930d3579c8`, tag `infrastructure-cerenovus-integration-timeout-v1`, merge CI `29405396232` `SUCCESS`, and closeout `f2a8c755ab860b6531b1e9e63ff35c6740f0f052` with CI `29405973975` `SUCCESS`.
+- Remaining blockers: `[]`.
 
 ## Local validation
 
@@ -62,8 +62,8 @@
 - Lint: passed with zero warnings.
 - Full suite: `33` files, `1418/1418` tests passed.
 - Coverage suite: `33` files, `1418/1418` tests passed; `86.80%` statements/lines, `81.72%` branches, `97.79%` functions.
-- Post-infrastructure local validation is refreshed and green: typecheck, lint, `33` files / `1418` tests, `33` files / `1418` coverage tests, coverage `86.80 / 81.72 / 97.79`, diff check, exact four-file/436-line production scope, and forbidden scans all pass. Independent final review has not started because fresh exact-head CI is pending.
+- Post-infrastructure local validation is green: typecheck, lint, `33` files / `1418` tests, `33` files / `1418` coverage tests, coverage `86.80 / 81.72 / 97.79`, diff check, exact four-file/436-line production scope, and forbidden scans all pass.
 
 ## Stop boundary
 
-This implementation does not start 2B19A1, 2B19A2, 2B19A3, 2B19B, FIRST_NIGHT/DAY continuation, or Phase 2C. Do not modify 2B19T production code or tests. Refresh the full local gates, publish the post-infrastructure exact HEAD, require both exact-head CI workflows to pass, and only then request the first complete independent final review.
+Dreamer tenure foundation is accepted with Slice coverage `FOUNDATION`; Dreamer overall remains `PARTIAL`. Dreamer opportunity and delivery are not implemented. Slice 2B19A1 has not started, FIRST_NIGHT is not complete, DAY has not started, and Phase 2C has not started. Stop after this docs-only closeout.
