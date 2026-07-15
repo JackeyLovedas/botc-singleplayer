@@ -1,6 +1,6 @@
 # Current Task
 
-## Phase 3 Slice 2B19T — Round 2 pending review
+## Phase 3 Slice 2B19T — AUTHORIZED_FOR_IMPLEMENTATION
 
 - Slice: `2B19T Canonical Dreamer Role-Tenure Prerequisite`.
 - Prerequisite authorization: `USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE`.
@@ -11,13 +11,13 @@
 - Current PR: none.
 - Limits: `maxSlices=1`, `maxDesignRounds=2`, `maxRepairRounds=2`.
 - Rule gate: `RULE_READY`.
-- Rule-design status: final authorized Round 2 design is ready for exact-head docs CI and independent review; `ruleDesignPass=false`.
-- Implementation authorization: `false`.
+- Rule-design status: independent Round 2 review returned `RULE_DESIGN_PASS`; `ruleDesignPass=true`.
+- Implementation authorization: `true`, limited to the exact reviewed Round 2 contract.
 - Design round: `2 / 2`.
 - Repair round: `0 / 2`.
 - Slice coverage: `FOUNDATION`.
 - Dreamer role coverage: `PARTIAL` and unchanged.
-- Remaining blocker: `PENDING_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_2`.
+- Remaining blockers: `[]`.
 
 ## Rule delta evidence
 
@@ -65,11 +65,23 @@ It must remain a `DERIVED_STATE_EXPANSION`. It does not authorize any event payl
 - The design targets all three Round 1 blockers by authorizing `errors.ts` as the fourth and final production file, freezing `InvalidRoleTenureState`, and requiring raw-state validation before clone/search/mutation plus clone/result revalidation.
 - Production allowlist is exactly `seamstress.ts`, internal `role-tenure-replay.ts`, `rebuild.ts`, and `errors.ts`; aggregate added production-code ceiling remains 800 lines.
 - Test authority is frozen at `D19T-001` through `D19T-047`.
-- These are design corrections pending independent review; they are not `RULE_DESIGN_PASS`.
+- Independent review has confirmed these corrections and closed all three Round 1 blockers.
+
+## Independent Round 2 review
+
+- Review: `docs/implementation/phase-3-slice-2b19t-design-review-round-2.md`.
+- Review SHA-256: `96272e4c3318d50e42591652527da49358722118f8b73061b8141529ee776097`.
+- Reviewed main: `f6058cfb8dc2241da07c8ed9297ee34057589230`.
+- Exact-head CI: push run `29398067385`, overall `SUCCESS`; Linux validate and Windows deterministic both `SUCCESS`.
+- Verdict: `RULE_DESIGN_PASS`.
+- Findings: `[]`.
+- Remaining blockers: `[]`.
+- Implementation authorized: `true`.
+- All three Round 1 blockers are `CLOSED`.
 
 ## Preserved state and stop boundary
 
-- Recovery main is `6d6e0ed9835cb39314eed2e5f8ee940166199c94`; run `29391126405` attempt 2 has Linux validate `SUCCESS` and Windows deterministic `FAILURE` only on the existing application 5,000 ms timeout. This is not attributed to unimplemented 2B19T behavior or the uncommitted Round 2 docs.
+- Reviewed main is `f6058cfb8dc2241da07c8ed9297ee34057589230`; exact push run `29398067385` is `SUCCESS` across Linux validate and Windows deterministic gates.
 - The 2B19A1 prerequisite blocker history remains preserved; 2B19A1 itself has not restarted.
 - PR #25 and PR #26 remain closed and unmerged.
 - No feature branch, implementation, production-code change, test change, commit, push, or PR exists for 2B19T at this gate.
@@ -77,4 +89,4 @@ It must remain a `DERIVED_STATE_EXPANSION`. It does not authorize any event payl
 
 ## Required next action
 
-After controller audit, publish only the five Round 2 docs/control files, wait for exact-head docs CI, then run a fresh independent read-only Round 2 rule-design review on exact design SHA-256 `6d2adb12e719e5b8311efb02a343f349902d652d41befc00912337ecec03489b`. Do not create a feature branch or modify production code or tests unless the reviewer returns `RULE_DESIGN_PASS`. No Round 3 exists; 2B19A1 and Phase 2C remain unstarted.
+After controller audit, publish only the five review/control docs. Then create the single authorized branch `phase-3/canonical-dreamer-role-tenure` and implement exactly the reviewed Round 2 authority. Do not exceed the four-file production or three-file test allowlists, 800 added production-line ceiling, or 47 authority IDs. No Round 3 exists; 2B19A1 and Phase 2C remain unstarted.
