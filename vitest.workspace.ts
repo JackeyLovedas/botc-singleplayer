@@ -10,6 +10,7 @@ const rulesSnv = fileURLToPath(new URL("./packages/rules-snv/src/index.ts", impo
 const setupEngine = fileURLToPath(new URL("./packages/setup-engine/src/index.ts", import.meta.url));
 const taskEngine = fileURLToPath(new URL("./packages/task-engine/src/index.ts", import.meta.url));
 const testHarness = fileURLToPath(new URL("./packages/test-harness/src/index.ts", import.meta.url));
+const applicationServiceTest = "packages/application/src/game-application-service.test.ts";
 
 const aliases = {
   "@botc/domain-core": domainCore,
@@ -36,7 +37,56 @@ export default defineWorkspace([
   {
     test: {
       name: "application",
-      include: ["packages/application/src/**/*.test.ts"]
+      include: ["packages/application/src/**/*.test.ts"],
+      exclude: [applicationServiceTest]
+    },
+    resolve: {
+      alias: aliases
+    }
+  },
+  {
+    test: {
+      name: "application-service-core",
+      include: [applicationServiceTest],
+      env: {
+        BOTC_APPLICATION_SERVICE_TEST_SHARD: "core"
+      }
+    },
+    resolve: {
+      alias: aliases
+    }
+  },
+  {
+    test: {
+      name: "application-service-role-actions",
+      include: [applicationServiceTest],
+      env: {
+        BOTC_APPLICATION_SERVICE_TEST_SHARD: "role-actions"
+      }
+    },
+    resolve: {
+      alias: aliases
+    }
+  },
+  {
+    test: {
+      name: "application-service-information-and-later-actions",
+      include: [applicationServiceTest],
+      env: {
+        BOTC_APPLICATION_SERVICE_TEST_SHARD: "information-and-later-actions"
+      }
+    },
+    resolve: {
+      alias: aliases
+    }
+  },
+  {
+    test: {
+      name: "application-service-compatibility-and-failure-boundaries",
+      include: [applicationServiceTest],
+      env: {
+        BOTC_APPLICATION_SERVICE_TEST_SHARD: "compatibility-and-failure-boundaries"
+      }
     },
     resolve: {
       alias: aliases

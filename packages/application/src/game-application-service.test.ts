@@ -1256,7 +1256,24 @@ const expectRetryableFirstNightSystemInformationFailureWithoutWrites = async (
   return failedResult;
 };
 
-describe("GameApplicationService", () => {
+type ApplicationServiceTestShard =
+  | "core"
+  | "role-actions"
+  | "information-and-later-actions"
+  | "compatibility-and-failure-boundaries";
+
+const describeApplicationServiceShard = (
+  shard: ApplicationServiceTestShard,
+  name: string,
+  factory: () => void
+): void => {
+  const configuredShard = process.env.BOTC_APPLICATION_SERVICE_TEST_SHARD;
+  if (configuredShard === undefined || configuredShard === shard) {
+    describe(name, factory);
+  }
+};
+
+describeApplicationServiceShard("core", "GameApplicationService", () => {
   it("creates a game with an accepted receipt and one atomic domain event batch", async () => {
     const { service, commandStore } = makeService();
     const command = createGameCommand();
@@ -3981,6 +3998,9 @@ describe("GameApplicationService", () => {
     expect(afterState?.firstNightActionOpportunities?.opportunities.at(-1)?.opportunityStatus).toBe("OPEN");
   });
 
+});
+
+describeApplicationServiceShard("role-actions", "GameApplicationService", () => {
   it("settles base Snake Charmer non-Demon targets through the existing no-swap path", async () => {
     const commandStore = new MemoryCommandCommitStore();
     const { service } = makeService(commandStore);
@@ -6066,6 +6086,9 @@ describe("GameApplicationService", () => {
     }
   });
 
+});
+
+describeApplicationServiceShard("information-and-later-actions", "GameApplicationService", () => {
   it("rejects invalid Witch submissions and opens the next Dreamer opportunity", async () => {
     const { service, commandStore } = makeService();
     const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore);
@@ -6813,6 +6836,9 @@ describe("GameApplicationService", () => {
     }
   );
 
+});
+
+describeApplicationServiceShard("compatibility-and-failure-boundaries", "GameApplicationService", () => {
   it("treats reordered own data properties as the same structural command", async () => {
     const { service, commandStore } = makeService();
     const original = createGameCommand();
@@ -7489,6 +7515,9 @@ describe("GameApplicationService", () => {
     expect(commandStore.acceptedCount).toBe(2);
   });
 
+});
+
+describeApplicationServiceShard("information-and-later-actions", "GameApplicationService", () => {
   it("inserts gained Clockmaker at its catalog position after Cerenovus and before Dreamer", async () => {
     const store = new MemoryCommandCommitStore();
     const { service } = makeService(store);
@@ -7708,7 +7737,10 @@ describe("GameApplicationService", () => {
   });
 });
 
-describe("Slice 2B16 Cerenovus first-night integration", () => {
+describeApplicationServiceShard(
+  "information-and-later-actions",
+  "Slice 2B16 Cerenovus first-night integration",
+  () => {
   const submitCerenovus = (
     state: NonNullable<ReturnType<typeof rebuildOptionalGameState>>,
     taskIdValue: ReturnType<typeof scheduledTaskId>,
@@ -8222,4 +8254,5 @@ describe("Slice 2B16 Cerenovus first-night integration", () => {
     } } as unknown as SupportedCommandEnvelope)).resolves.toMatchObject({ status: "rejected", code: "InvalidCerenovusActionDecision" });
     expect((await commandStore.loadDomainEvents(ids.game)).length).toBe(before);
   });
-});
+  }
+);
