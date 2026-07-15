@@ -3,21 +3,22 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `HUMAN_BLOCKED`; current slice `2B19T`; current PR null; branch `main`; `implementationAuthorized=false`.
-- Authorization is `USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE`; scope mode is `CANONICAL_DREAMER_ROLE_TENURE_FOUNDATION`.
-- Current limits are `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=2`; design round is `1`, repair round is `0`.
-- The 2B19T rule delta gate remains `RULE_READY`, but independent Round 1 design review returned `HUMAN_BLOCKED`; `ruleDesignPass=false` and Round 2 is not authorized.
+- Current control state: `RUNNING`; current slice `2B19T`; current PR null; branch `main`; `implementationAuthorized=false`.
+- Current authorization is `USER_AUTHORIZED_2B19T_DESIGN_ROUND_2_CONTRACT_CORRECTION`; prerequisite authorization remains preserved; scope mode is `CANONICAL_DREAMER_ROLE_TENURE_FOUNDATION`.
+- Current limits are `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=2`; design round is `2`, repair round is `0`. No Round 3 exists.
+- The 2B19T rule delta gate remains `RULE_READY`; final authorized Round 2 design is pending exact-head docs CI and independent review, so `ruleDesignPass=false`.
+- Slice coverage is `FOUNDATION`; authoritative Dreamer role coverage remains `PARTIAL`; `ruleSemanticsChanged=false`.
 - Rule evidence is `docs/rules/evidence/2B19T.md`, SHA-256 `b8c8b858ee3a7fb7fc141a1d28a0b385cf17111947caa397d569f9b79041185d`, with terminal `RULE_READY`, `ruleCoverageStatus=SKELETON`, implementation coverage label `FOUNDATION`, and unresolved conflicts `[]`.
 - The authorized product boundary is a `DERIVED_STATE_EXPANSION` that adds Dreamer to the existing canonical role-tenure system only. Event payloads/types, top-level `GameState`, application commands, projection, ledger, and Dreamer ability behavior remain out of scope.
 - Round 1 design is `docs/implementation/phase-3-slice-2b19t-design.md`, SHA-256 `0eca3f5d67fb1407b4ba9b0f27ef2914e57329f864b72e6a1effe49fff3f632a`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`. It freezes naming scheme B, `DERIVED_STATE_EXPANSION`, the three-file production allowlist (`seamstress.ts`, internal `role-tenure-replay.ts`, `rebuild.ts`), an 800-line ceiling, and 30 authority test IDs.
 - Independent review is `docs/implementation/phase-3-slice-2b19t-design-review-round-1.md`, SHA-256 `e69c5e9ee04bbfdde9f408214045cb066cd6f6584ca710997121c916955af101`, verdict and terminal `HUMAN_BLOCKED`.
-- Current blockers are exactly `DREAMER_ROLE_COVERAGE_STATUS_CONFLICT`, `INVALID_ROLE_TENURE_STATE_ERROR_CODE_OUTSIDE_ALLOWED_PRODUCTION_SURFACE`, and `RAW_ROLE_TENURE_STATE_PREVALIDATION_ORDER_NOT_FROZEN`.
-- User clarification is required before any Round 2 authorization: authoritative Dreamer role coverage must remain `PARTIAL`, Slice coverage may be `FOUNDATION`, and the final report must not claim role coverage `SKELETON`. A later explicitly authorized Round 2 may then freeze the exact compile-valid error code/three-file strategy and raw-state prevalidation order.
-- Accepted main is `ed403b2d732512b0a44b419dbb9eec15e4a7af42`; exact-head CI run `29388105044` is `SUCCESS` and is not attributed to the uncommitted 2B19T rule-gate working tree.
+- Final Round 2 design is `docs/implementation/phase-3-slice-2b19t-design-round-2.md`, SHA-256 `6d2adb12e719e5b8311efb02a343f349902d652d41befc00912337ecec03489b`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`. It is complete and standalone.
+- Round 2 targets all three historical blockers: it preserves Dreamer `PARTIAL` versus Slice `FOUNDATION`, authorizes `errors.ts` as the fourth and final production file with exact `InvalidRoleTenureState` duties, and freezes raw-before-clone/search/mutation validation plus clone/result revalidation. These corrections remain pending independent review and do not constitute `RULE_DESIGN_PASS`.
+- Recovery main is `6d6e0ed9835cb39314eed2e5f8ee940166199c94`; run `29391126405` attempt 2 has Linux validate `SUCCESS` and Windows deterministic `FAILURE` only on the existing application 5,000 ms timeout, which is not attributed to unimplemented 2B19T behavior or the uncommitted Round 2 docs working tree.
 - The prior 2B19A1 blocker assessment remains preserved at `docs/implementation/phase-3-slice-2b19a1-architect-blocker-round-1.md`, SHA-256 `38cc762f72ab48f1da76a1816a0a6b871114f69f408a04fcb0fcd469379df7ef`. Slice 2B19T is the separately authorized prerequisite and does not restart 2B19A1.
 - Accepted slices remain `2B13` through `2B18B`. Slice `2B19T` is active but unimplemented and unaccepted, and is not in `completedSlices`.
 - Dreamer V2 is not accepted. PR #25 and PR #26 are closed and unmerged; `phase-3/dreamer-v2-completion` and `phase-3/dreamer-v2-base-vortox` remain read-only references.
-- No 2B19T feature branch, PR, production-code change, or test change exists. Round 2, `2B19A1`, `2B19A2`, `2B19A3`, `2B19B`, FIRST_NIGHT/DAY continuation, and Phase 2C have not started.
+- No 2B19T feature branch, PR, production-code change, test change, role-matrix change, user-override change, or workflow change exists. `2B19A1`, `2B19A2`, `2B19A3`, `2B19B`, FIRST_NIGHT/DAY continuation, and Phase 2C have not started.
 - The accepted application-service Vitest sharding infrastructure remains historical context and is unchanged by this rule-gate step; `completedSlices` remains unchanged.
 - Infrastructure PR [#27](https://github.com/JackeyLovedas/botc-singleplayer/pull/27) merged at `2026-07-15T03:09:27Z`; frozen feature HEAD `0ba9eaa9d1365811f1ecd8d266a9d05ece0eeadc`; merge SHA `7efc825beb6f1aece5345a5a941434d0bdd39065`; tag `infrastructure-application-service-vitest-sharding-v1`.
 - PR #27 final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`, `ruleSemanticsChanged=false`; exact comments are archived at `docs/reviews/pr-27-code-review-final.md` and `docs/reviews/pr-27-rule-review-final.md`.

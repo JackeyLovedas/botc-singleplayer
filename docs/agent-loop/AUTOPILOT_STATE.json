@@ -1,20 +1,23 @@
 {
-  "status": "HUMAN_BLOCKED",
+  "status": "RUNNING",
   "currentPR": null,
   "currentPRUrl": null,
   "currentBranch": "main",
   "currentSlice": "2B19T",
   "reviewedHead": null,
-  "currentReviewHeadAuthority": "The independent 2B19T Round 1 design review returned HUMAN_BLOCKED on design SHA-256 0eca3f5d67fb1407b4ba9b0f27ef2914e57329f864b72e6a1effe49fff3f632a. No RULE_DESIGN_PASS exists and Round 2 is not authorized.",
-  "exactHeadCIAuthority": "Accepted main HEAD ed403b2d732512b0a44b419dbb9eec15e4a7af42 passed exact-head run 29388105044. This result is not attributed to the uncommitted 2B19T rule-gate working tree.",
+  "currentReviewHeadAuthority": "Phase 3 Slice 2B19T final authorized Round 2 design is materialized on recovery main 6d6e0ed9835cb39314eed2e5f8ee940166199c94 and awaits exact-head docs CI plus independent rule-design review. No RULE_DESIGN_PASS exists.",
+  "exactHeadCIAuthority": "Recovery main HEAD 6d6e0ed9835cb39314eed2e5f8ee940166199c94 run 29391126405 attempt 2: Linux validate SUCCESS; Windows deterministic FAILURE only on the existing application 5000 ms timeout. This failure is not attributed to unimplemented 2B19T behavior or to the uncommitted Round 2 docs working tree.",
   "currentFeatureHead": null,
   "repairRound": 0,
-  "designRound": 1,
+  "designRound": 2,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": null,
   "rescopeAuthorization": null,
-  "authorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
+  "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
+  "authorization": "USER_AUTHORIZED_2B19T_DESIGN_ROUND_2_CONTRACT_CORRECTION",
   "scopeMode": "CANONICAL_DREAMER_ROLE_TENURE_FOUNDATION",
+  "sliceCoverage": "FOUNDATION",
+  "dreamerRoleCoverage": "PARTIAL",
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
   "designRound3_2Scope": null,
@@ -22,12 +25,29 @@
   "maxRepairRounds": 2,
   "candidateRole": "dreamer",
   "candidateScope": "CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
-  "currentDesignPath": "docs/implementation/phase-3-slice-2b19t-design.md",
-  "currentDesignHash": "0eca3f5d67fb1407b4ba9b0f27ef2914e57329f864b72e6a1effe49fff3f632a",
-  "currentDesignStatus": "HUMAN_BLOCKED_AFTER_RULE_DESIGN_REVIEW_ROUND_1",
-  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b19t-design-review-round-1.md",
-  "currentDesignReviewHash": "e69c5e9ee04bbfdde9f408214045cb066cd6f6584ca710997121c916955af101",
-  "currentDesignReviewVerdict": "HUMAN_BLOCKED",
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b19t-design-round-2.md",
+  "currentDesignHash": "6d2adb12e719e5b8311efb02a343f349902d652d41befc00912337ecec03489b",
+  "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_2",
+  "currentDesignReviewPath": null,
+  "currentDesignReviewHash": null,
+  "currentDesignReviewVerdict": null,
+  "slice2B19TRound1DesignHistory": {
+    "designPath": "docs/implementation/phase-3-slice-2b19t-design.md",
+    "designSha256": "0eca3f5d67fb1407b4ba9b0f27ef2914e57329f864b72e6a1effe49fff3f632a",
+    "reviewPath": "docs/implementation/phase-3-slice-2b19t-design-review-round-1.md",
+    "reviewSha256": "e69c5e9ee04bbfdde9f408214045cb066cd6f6584ca710997121c916955af101",
+    "reviewVerdict": "HUMAN_BLOCKED",
+    "remainingBlockers": [
+      "DREAMER_ROLE_COVERAGE_STATUS_CONFLICT",
+      "INVALID_ROLE_TENURE_STATE_ERROR_CODE_OUTSIDE_ALLOWED_PRODUCTION_SURFACE",
+      "RAW_ROLE_TENURE_STATE_PREVALIDATION_ORDER_NOT_FROZEN"
+    ]
+  },
+  "slice2B19TRound2BlockerDisposition": {
+    "DREAMER_ROLE_COVERAGE_STATUS_CONFLICT": "DESIGN_CORRECTED_PENDING_INDEPENDENT_REVIEW",
+    "INVALID_ROLE_TENURE_STATE_ERROR_CODE_OUTSIDE_ALLOWED_PRODUCTION_SURFACE": "DESIGN_CORRECTED_PENDING_INDEPENDENT_REVIEW",
+    "RAW_ROLE_TENURE_STATE_PREVALIDATION_ORDER_NOT_FROZEN": "DESIGN_CORRECTED_PENDING_INDEPENDENT_REVIEW"
+  },
   "slice2B18BDesignRound3Authorization": "USER_AUTHORIZED_2B18B_DESIGN_ROUND_3_REPLAY_ADAPTER",
   "slice2B18BDesignRound3Path": "docs/implementation/phase-3-slice-2b18b-design-round-3.md",
   "slice2B18BDesignRound3Hash": "066be05f5ee8c0fccb83b00fd8471e439e7e6d2c8c8366af8c86aebceac0a792",
@@ -66,7 +86,7 @@
   "ruleReady": true,
   "ruleDesignPass": false,
   "implementationAuthorized": false,
-  "implementationStatus": "HUMAN_BLOCKED_NO_IMPLEMENTATION",
+  "implementationStatus": "NOT_STARTED_PENDING_RULE_DESIGN_REVIEW_ROUND_2",
   "implementationBranch": null,
   "implementationCommit": null,
   "repairCandidateCommit": null,
@@ -160,9 +180,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "DREAMER_ROLE_COVERAGE_STATUS_CONFLICT",
-    "INVALID_ROLE_TENURE_STATE_ERROR_CODE_OUTSIDE_ALLOWED_PRODUCTION_SURFACE",
-    "RAW_ROLE_TENURE_STATE_PREVALIDATION_ORDER_NOT_FROZEN"
+    "PENDING_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_2"
   ],
   "ruleCoverageStatus": "SKELETON",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
@@ -876,7 +894,7 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-15T04:55:26.6822496Z",
-  "lastAction": "Materialized the complete independent 2B19T Round 1 design review at docs/implementation/phase-3-slice-2b19t-design-review-round-1.md. The reviewer returned HUMAN_BLOCKED with one user-clarification blocker and two technical design-contract blockers; no branch, PR, production code, or tests were created or changed.",
+  "lastAction": "Materialized the complete final authorized 2B19T Round 2 design at docs/implementation/phase-3-slice-2b19t-design-round-2.md. It targets all three Round 1 blockers, keeps Dreamer role coverage PARTIAL and Slice coverage FOUNDATION, and awaits exact-head docs CI plus independent review; no branch, PR, production code, tests, role matrix, override, or workflow was changed.",
   "lastError": null,
-  "nextAction": "Await explicit user clarification that authoritative Dreamer role coverage remains PARTIAL while Slice coverage is FOUNDATION and the final report must not claim role coverage SKELETON. Only after that clarification may the user authorize design Round 2 to repair the exact error-code/three-file contract and raw-state prevalidation order. Do not infer or start Round 2, create a branch, modify production code or tests, or start 2B19A1."
+  "nextAction": "Commit and push only the five Round 2 docs/control files after controller audit, wait for exact-head docs CI, then run one fresh independent Round 2 rule-design review on SHA-256 6d2adb12e719e5b8311efb02a343f349902d652d41befc00912337ecec03489b. Do not create a feature branch or modify production code or tests without RULE_DESIGN_PASS; do not create Round 3 or start 2B19A1 or Phase 2C."
 }
