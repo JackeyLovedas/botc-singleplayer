@@ -84,3 +84,16 @@ Full gate results:
 - The ordinary and coverage suites have the same 1408-test baseline count.
 - No assertion failure, unhandled exception, coverage-threshold failure, `onTaskUpdate` RPC failure, other test timeout, retry, skip, `todo`, or `only` was observed.
 - The diff contains no production, workflow, package, lockfile, rule, matrix, fixture, assertion, import, global-timeout, or shard-assignment change.
+
+## CI Results
+
+The exact test-change commit was `5392e4889bf61ebaa92bb2d0b7e94b1c3e397613`.
+
+- Exact-head push workflow run `29404138394`: `SUCCESS`
+- Exact-head pull-request workflow run `29404173530`: `SUCCESS`
+- Ubuntu typecheck, lint, ordinary test, and coverage steps: PASS in both runs
+- Windows deterministic suite: PASS in both runs
+- Exact Cerenovus integration test: PASS
+- Test timeout, `onTaskUpdate` RPC failure, assertion failure, unhandled exception, and coverage-threshold failure: none
+
+The subsequent documentation-only publication-metadata commit requires fresh exact-head push and pull-request CI before the branch may be reviewed or accepted.
