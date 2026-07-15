@@ -1,23 +1,23 @@
 # Current Task
 
-## Phase 3 Slice 2B19T — PUBLISHED_PENDING_FROZEN_HEAD_CI
+## Phase 3 Slice 2B19T — HUMAN_BLOCKED
 
 - Slice: `2B19T Canonical Dreamer Role-Tenure Prerequisite`.
 - Prerequisite authorization: `USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE`.
 - Current authorization: `USER_AUTHORIZED_2B19T_DESIGN_ROUND_2_CONTRACT_CORRECTION`.
 - Scope mode: `CANONICAL_DREAMER_ROLE_TENURE_FOUNDATION`.
-- Control status: `PUBLISHED_PENDING_FROZEN_HEAD_CI`.
+- Control status: `HUMAN_BLOCKED`.
 - Current branch: `phase-3/canonical-dreamer-role-tenure`.
 - Current PR: [#28](https://github.com/JackeyLovedas/botc-singleplayer/pull/28).
 - Limits: `maxSlices=1`, `maxDesignRounds=2`, `maxRepairRounds=2`.
 - Rule gate: `RULE_READY`.
 - Rule-design status: independent Round 2 review returned `RULE_DESIGN_PASS`; `ruleDesignPass=true`.
-- Implementation authorization: `true`, limited to the exact reviewed Round 2 contract.
+- Implementation authorization: `false` while the repeated identical exact-head push CI failure remains unresolved.
 - Design round: `2 / 2`.
 - Repair round: `0 / 2`.
 - Slice coverage: `FOUNDATION`.
 - Dreamer role coverage: `PARTIAL` and unchanged.
-- Remaining blockers: `[]`.
+- Remaining blocker: `REPEATED_IDENTICAL_PRODUCT_HEAD_PUSH_CI_COVERAGE_TIMEOUT_IN_EXISTING_2B16_CERENOVUS_TEST`.
 
 ## Published implementation result
 
@@ -30,8 +30,10 @@
 - Typecheck, full lint, and diff check passed locally.
 - Implementation status: `docs/implementation/phase-3-slice-2b19t-status.md`.
 - Implementation commit: `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
-- Initial implementation-head push run `29400886132` and pull-request run `29400927633` are `IN_PROGRESS` and apply only to `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
-- Candidate-final-head exact CI and independent final review have not occurred.
+- Product HEAD is `2b3d46bda1b7f7565ac353d3180d473c531045c1`.
+- Push run `29401137937` attempt 1 and attempt 2 both failed in Coverage because the same existing Slice 2B16 Cerenovus test timed out at `5000ms`.
+- Pull-request run `29401141471` succeeded for the same product HEAD.
+- Repeated identical push failure blocks the mandatory dual exact-head CI gate. Independent final review has not started.
 
 ## Rule delta evidence
 
@@ -98,9 +100,9 @@ It must remain a `DERIVED_STATE_EXPANSION`. It does not authorize any event payl
 - Reviewed main is `f6058cfb8dc2241da07c8ed9297ee34057589230`; exact push run `29398067385` is `SUCCESS` across Linux validate and Windows deterministic gates.
 - The 2B19A1 prerequisite blocker history remains preserved; 2B19A1 itself has not restarted.
 - PR #25 and PR #26 remain closed and unmerged.
-- The authorized feature branch contains published implementation commit `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`; PR #28 is open. Initial implementation-head CI is in progress, while candidate-final-head CI, branch freeze, final review, merge, and tag remain absent.
+- The authorized feature branch contains published implementation commit `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`; PR #28 is open. Product HEAD `2b3d46bda1b7f7565ac353d3180d473c531045c1` is `HUMAN_BLOCKED` by repeated identical push Coverage failure; final review, merge, and tag remain absent.
 - `2B19A1`, `2B19A2`, `2B19A3`, `2B19B`, FIRST_NIGHT/DAY continuation, and Phase 2C have not started.
 
 ## Required next action
 
-Push the publication metadata synchronization to form the candidate final feature HEAD. Then require that exact live PR HEAD to match local and origin and pass both push and pull-request CI on Linux and Windows before freezing the branch and requesting one complete independent final review. Do not modify the PR body, start a repair round, merge, start 2B19A1, or start Phase 2C.
+Stop and await explicit human authorization for a bounded resolution of the inherited CI blocker. Do not modify production code, tests, the `5000ms` timeout, workflows, or the PR body; do not enter final review, merge, start 2B19A1, or start Phase 2C.

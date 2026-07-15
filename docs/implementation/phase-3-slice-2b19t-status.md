@@ -40,14 +40,17 @@
 
 ## Publication
 
-- Status: `PUBLISHED_PENDING_FROZEN_HEAD_CI`.
+- Status: `HUMAN_BLOCKED`.
 - Implementation commit: `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
 - Branch: `phase-3/canonical-dreamer-role-tenure`.
 - Pull request: [#28](https://github.com/JackeyLovedas/botc-singleplayer/pull/28).
-- Initial implementation-head push run: `29400886132`, `IN_PROGRESS`, scoped only to `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
-- Initial implementation-head pull-request run: `29400927633`, `IN_PROGRESS`, scoped only to `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
-- Repair round remains `0`; `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, and `remainingBlockers=[]`.
-- This publication metadata synchronization will become the candidate final feature HEAD after its commit is pushed; its SHA is intentionally not self-recorded here and must be read from GitHub.
+- Candidate product HEAD: `2b3d46bda1b7f7565ac353d3180d473c531045c1`.
+- Product-head push run `29401137937` attempt 1: `FAILURE` in Coverage because the existing Slice 2B16 Cerenovus test `keeps every Cerenovus batch event and clock metadata position retryable without burning the command ID` timed out at `5000ms`.
+- Product-head push run `29401137937` attempt 2: the identical Coverage test timed out again at `5000ms`; workflow conclusion `FAILURE`.
+- Product-head pull-request run `29401141471`: `SUCCESS` for the same HEAD.
+- The repeated identical push failure blocks the mandatory dual exact-head CI gate even though the pull-request workflow succeeded. It is not repaired or bypassed in this Slice.
+- Repair round remains `0`; `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=false` while blocked.
+- Remaining blocker: `REPEATED_IDENTICAL_PRODUCT_HEAD_PUSH_CI_COVERAGE_TIMEOUT_IN_EXISTING_2B16_CERENOVUS_TEST`.
 
 ## Local validation
 
@@ -56,8 +59,8 @@
 - Lint: passed with zero warnings.
 - Full suite: `33` files, `1418/1418` tests passed.
 - Coverage suite: `33` files, `1418/1418` tests passed; `86.80%` statements/lines, `81.72%` branches, `97.79%` functions.
-- Candidate-final-head push and pull-request CI, Linux/Windows completion, branch freeze, and independent final review remain pending.
+- Local validation remains green, but exact product-head CI is blocked by the repeated existing 2B16 Coverage timeout. Independent final review has not started.
 
 ## Stop boundary
 
-This implementation does not start 2B19A1, 2B19A2, 2B19A3, 2B19B, FIRST_NIGHT/DAY continuation, or Phase 2C. Next, push this metadata synchronization, require green push and pull-request CI for that exact live PR HEAD on Linux and Windows, freeze the branch, and request a complete independent final review. Merge remains unauthorized until both required pass verdicts are returned with no blockers.
+This implementation does not start 2B19A1, 2B19A2, 2B19A3, 2B19B, FIRST_NIGHT/DAY continuation, or Phase 2C. Do not modify production code, tests, the `5000ms` timeout, or CI workflow; do not enter independent final review or merge. Await explicit human authorization for a bounded resolution of the inherited CI blocker.
