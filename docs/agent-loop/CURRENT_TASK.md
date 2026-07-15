@@ -1,23 +1,24 @@
 # Current Task
 
-## Phase 3 Slice 2B19T — HUMAN_BLOCKED
+## Phase 3 Slice 2B19T — RUNNING
 
 - Slice: `2B19T Canonical Dreamer Role-Tenure Prerequisite`.
 - Prerequisite authorization: `USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE`.
 - Current authorization: `USER_AUTHORIZED_2B19T_DESIGN_ROUND_2_CONTRACT_CORRECTION`.
+- Test-infrastructure continuation authorization: `USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE`.
 - Scope mode: `CANONICAL_DREAMER_ROLE_TENURE_FOUNDATION`.
-- Control status: `HUMAN_BLOCKED`.
+- Control status: `RUNNING`.
 - Current branch: `phase-3/canonical-dreamer-role-tenure`.
 - Current PR: [#28](https://github.com/JackeyLovedas/botc-singleplayer/pull/28).
 - Limits: `maxSlices=1`, `maxDesignRounds=2`, `maxRepairRounds=2`.
 - Rule gate: `RULE_READY`.
 - Rule-design status: independent Round 2 review returned `RULE_DESIGN_PASS`; `ruleDesignPass=true`.
-- Implementation authorization: `false` while the repeated identical exact-head push CI failure remains unresolved.
+- Implementation authorization: `true` within the frozen 2B19T Round 2 contract; no product repair round is authorized.
 - Design round: `2 / 2`.
 - Repair round: `0 / 2`.
 - Slice coverage: `FOUNDATION`.
 - Dreamer role coverage: `PARTIAL` and unchanged.
-- Remaining blocker: `REPEATED_IDENTICAL_PRODUCT_HEAD_PUSH_CI_COVERAGE_TIMEOUT_IN_EXISTING_2B16_CERENOVUS_TEST`.
+- Remaining blocker: `PENDING_EXACT_HEAD_CI_AND_FIRST_COMPLETE_FINAL_REVIEW`.
 
 ## Published implementation result
 
@@ -28,12 +29,15 @@
 - Full and coverage suites: `33` files and `1418/1418` tests passed.
 - Coverage: `86.80%` statements/lines, `81.72%` branches, `97.79%` functions.
 - Typecheck, full lint, and diff check passed locally.
+- Post-infrastructure rerun also passed typecheck, full lint, `33` files / `1418` full tests, `33` files / `1418` coverage tests, coverage `86.80 / 81.72 / 97.79`, exact four-file/436-line production scope, and all forbidden scans.
 - Implementation status: `docs/implementation/phase-3-slice-2b19t-status.md`.
 - Implementation commit: `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`.
 - Product HEAD is `2b3d46bda1b7f7565ac353d3180d473c531045c1`.
 - Push run `29401137937` attempt 1 and attempt 2 both failed in Coverage because the same existing Slice 2B16 Cerenovus test timed out at `5000ms`.
 - Pull-request run `29401141471` succeeded for the same product HEAD.
-- Repeated identical push failure blocks the mandatory dual exact-head CI gate. Independent final review has not started.
+- The separately accepted test-infrastructure PR #29 raised only that exact test's execution budget to `15000ms`, without assertion, fixture, production, workflow, global-timeout, or rule changes.
+- Infrastructure merge `8bfa5a1ec7af7aa19a5256cd67f814930d3579c8` passed main CI `29405396232`; closeout `f2a8c755ab860b6531b1e9e63ff35c6740f0f052` passed CI `29405973975`; accepted tag is `infrastructure-cerenovus-integration-timeout-v1`.
+- Latest `origin/main` was merged normally into this branch as `72a7883248f66d53e65102c26788d73b93b56651`; the inherited blocker is closed and fresh exact-head CI is pending. Independent final review has not started.
 
 ## Rule delta evidence
 
@@ -100,9 +104,9 @@ It must remain a `DERIVED_STATE_EXPANSION`. It does not authorize any event payl
 - Reviewed main is `f6058cfb8dc2241da07c8ed9297ee34057589230`; exact push run `29398067385` is `SUCCESS` across Linux validate and Windows deterministic gates.
 - The 2B19A1 prerequisite blocker history remains preserved; 2B19A1 itself has not restarted.
 - PR #25 and PR #26 remain closed and unmerged.
-- The authorized feature branch contains published implementation commit `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`; PR #28 is open. Product HEAD `2b3d46bda1b7f7565ac353d3180d473c531045c1` is `HUMAN_BLOCKED` by repeated identical push Coverage failure; final review, merge, and tag remain absent.
+- The authorized feature branch contains published implementation commit `bada60ad25a8b5fe441b11a72bcdca6edf7e2c73`; PR #28 is open. The accepted infrastructure prerequisite is merged through `72a7883248f66d53e65102c26788d73b93b56651`; final review, 2B19T merge, and 2B19T accepted tag remain absent.
 - `2B19A1`, `2B19A2`, `2B19A3`, `2B19B`, FIRST_NIGHT/DAY continuation, and Phase 2C have not started.
 
 ## Required next action
 
-Stop and await explicit human authorization for a bounded resolution of the inherited CI blocker. Do not modify production code, tests, the `5000ms` timeout, workflows, or the PR body; do not enter final review, merge, start 2B19A1, or start Phase 2C.
+Run the complete local gates without modifying 2B19T production code or tests, verify the frozen four-file/436-line product diff and all out-of-scope scans, update and push PR #28, then require both exact-head workflows to pass before the first complete independent final review. Do not start a product repair round, merge early, start 2B19A1, or start Phase 2C.
