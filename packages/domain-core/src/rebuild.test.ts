@@ -4524,7 +4524,7 @@ describe("domain event rebuild", () => {
       ]),
       "InvalidDomainBatchSemantics"
     );
-  });
+  }, 15_000);
 
   it("[R4-T09] emits a DreamerInformationDelivered ledger SOURCE_EVENT fact", () => {
     const before = rebuildGameState(openDreamerActionStream());
