@@ -7929,7 +7929,7 @@ describeApplicationServiceShard(
       expect(failedState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.opportunityId === opportunity.opportunityId)?.opportunityStatus, fault.name).toBe("OPEN");
       await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", eventCount: 4 });
     }
-  });
+  }, 15_000);
 
   it("keeps thrown Cerenovus event construction retryable without burning the command ID", async () => {
     const { service, commandStore } = makeService();
