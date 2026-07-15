@@ -1,5 +1,7 @@
 import { cloneRoleSetupSnapshot } from "./character-assignment.js";
 import type { CharacterAssignmentSet } from "./character-assignment.js";
+import { isCanonicalDataValue, isDenseCanonicalArray } from "./canonical-data.js";
+import { hasExactCurrentCharacterStateShape } from "./current-character-state.js";
 import type { CurrentAlignment, CurrentCharacterStateSet } from "./current-character-state.js";
 import { DomainError } from "./errors.js";
 import type {
@@ -62,7 +64,25 @@ export type SeamstressResolutionCapabilityDeclaredPayload = {
   readonly deliveryPolicyVersion: typeof SEAMSTRESS_DELIVERY_POLICY_VERSION;
 };
 
-export type SeamstressRelevantRoleId = "cerenovus" | "mathematician" | "philosopher" | "seamstress" | "vortox";
+export const CANONICAL_ROLE_TENURE_TRACKED_ROLE_IDS = [
+  "cerenovus",
+  "dreamer",
+  "mathematician",
+  "philosopher",
+  "seamstress",
+  "vortox"
+] as const;
+
+export type CanonicalRoleTenureTrackedRoleId =
+  (typeof CANONICAL_ROLE_TENURE_TRACKED_ROLE_IDS)[number];
+
+export type SeamstressRelevantRoleId = CanonicalRoleTenureTrackedRoleId;
+
+export const isCanonicalRoleTenureTrackedRoleId = (
+  value: unknown
+): value is CanonicalRoleTenureTrackedRoleId =>
+  typeof value === "string" &&
+  CANONICAL_ROLE_TENURE_TRACKED_ROLE_IDS.some((roleId) => roleId === value);
 
 export type RoleTenureStartFact =
   | {
@@ -84,7 +104,7 @@ export type RoleTenureRecord = {
   readonly roleTenureId: RoleTenureId;
   readonly playerId: PlayerId;
   readonly seatNumber: SeatNumber;
-  readonly roleId: SeamstressRelevantRoleId;
+  readonly roleId: CanonicalRoleTenureTrackedRoleId;
   readonly acquiredCharacterStateRevision: number;
   readonly endedCharacterStateRevision?: number;
   readonly startedBy: RoleTenureStartFact;
@@ -151,9 +171,9 @@ export type ValidationResult =
 
 const fail = (reason: string): ValidationResult => ({ valid: false, reason });
 const isPositiveInteger = (value: unknown): value is number =>
-  typeof value === "number" && Number.isInteger(value) && value > 0;
+  typeof value === "number" && Number.isSafeInteger(value) && value > 0 && !Object.is(value, -0);
 const isSeatNumber = (value: unknown): value is SeatNumber =>
-  typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 12;
+  typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= 12 && !Object.is(value, -0);
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
 const isDenseArray = (value: readonly unknown[]): boolean => {
@@ -163,8 +183,7 @@ const isDenseArray = (value: readonly unknown[]): boolean => {
   return true;
 };
 const seatText = (seatNumber: SeatNumber): string => String(seatNumber).padStart(2, "0");
-const isRelevantRoleId = (value: unknown): value is SeamstressRelevantRoleId =>
-  value === "cerenovus" || value === "mathematician" || value === "philosopher" || value === "seamstress" || value === "vortox";
+const isRelevantRoleId = isCanonicalRoleTenureTrackedRoleId;
 
 const CAPABILITY_KEYS = [
   "alignmentModel",
@@ -209,7 +228,7 @@ export const validateSeamstressResolutionCapabilityDeclaredPayload = (
 
 export const formatRoleTenureId = (input: {
   readonly seatNumber: SeatNumber;
-  readonly roleId: SeamstressRelevantRoleId;
+  readonly roleId: CanonicalRoleTenureTrackedRoleId;
   readonly acquiredCharacterStateRevision: number;
 }): RoleTenureId => {
   if (!isSeatNumber(input.seatNumber) || !isRelevantRoleId(input.roleId) ||
@@ -225,18 +244,21 @@ export type ParseRoleTenureIdResult =
   | {
       readonly valid: true;
       readonly seatNumber: SeatNumber;
-      readonly roleId: SeamstressRelevantRoleId;
+      readonly roleId: CanonicalRoleTenureTrackedRoleId;
       readonly acquiredCharacterStateRevision: number;
     }
   | { readonly valid: false; readonly reason: string };
 
 export const parseRoleTenureId = (value: unknown): ParseRoleTenureIdResult => {
   if (typeof value !== "string") return { valid: false, reason: "RoleTenureId must be a string" };
-  const match = /^role-tenure-v1:seat-(0[1-9]|1[0-2]):role-(cerenovus|mathematician|philosopher|seamstress|vortox):acquired-revision-([1-9][0-9]*)$/.exec(value);
+  const match = /^role-tenure-v1:seat-(0[1-9]|1[0-2]):role-([a-z_]+):acquired-revision-([1-9][0-9]*)$/.exec(value);
   if (match === null) return { valid: false, reason: "RoleTenureId does not match the canonical grammar" };
+  if (!isCanonicalRoleTenureTrackedRoleId(match[2])) {
+    return { valid: false, reason: "RoleTenureId does not use a tracked role" };
+  }
   const parsed = {
     seatNumber: Number(match[1]) as SeatNumber,
-    roleId: match[2] as SeamstressRelevantRoleId,
+    roleId: match[2],
     acquiredCharacterStateRevision: Number(match[3])
   };
   if (!Number.isSafeInteger(parsed.acquiredCharacterStateRevision) ||
@@ -302,12 +324,209 @@ export const cloneRoleTenureState = (state: RoleTenureState | undefined): RoleTe
   processedTransitionFactIds: [...(state?.processedTransitionFactIds ?? [])]
 });
 
+const INVALID_ROLE_TENURE_STATE_REASONS = {
+  rawCanonicalData: "Role tenure state must be canonical data",
+  rawShape: "Role tenure state must have exact runtime shape",
+  records: "Role tenure records must be a dense canonical array",
+  processedIds: "Processed role tenure transition IDs must be a dense canonical array",
+  recordShape: "Role tenure record must have exact runtime shape",
+  startFactShape: "Role tenure start fact must have exact runtime shape",
+  recordFields: "Role tenure record fields are invalid",
+  startFactFields: "Role tenure start fact fields are invalid",
+  recordId: "Role tenure record ID does not match its fields",
+  transitionStart: "Transition-started role tenure provenance is invalid",
+  duplicateTenureId: "Role tenure IDs must be unique",
+  duplicateProcessedId: "Processed role tenure transition IDs must be unique",
+  orphanTransitionStart: "Transition-started role tenure must reference one processed transition ID",
+  recordOrder: "Role tenure records are not in canonical order",
+  processedOrder: "Processed role tenure transition IDs are not in canonical order",
+  playerSeat: "Role tenure player and seat identity is inconsistent",
+  interval: "Role tenure interval is invalid",
+  overlap: "Role tenure intervals must not overlap",
+  duplicateActive: "Role tenure state contains multiple active tenures",
+  bootstrapInput: "Role tenure bootstrap input is invalid",
+  bootstrapResult: "Role tenure bootstrap result is invalid",
+  transitionInput: "Role tenure transition input state is invalid",
+  transitionAlreadyProcessed: "Role tenure transition was already processed",
+  transitionBefore: "Role tenure transition before-state does not match canonical tenure state",
+  transitionSuccessor: "Role tenure transition successor conflicts with canonical tenure state",
+  transitionResult: "Role tenure transition result state is invalid",
+  queryInput: "Role tenure active query input is invalid",
+  queryMultiple: "Role tenure active query matched multiple records",
+  currentState: "Role tenure state does not match current character state",
+  replayMissing: "Rebuilt canonical role tenure state is missing",
+  replayAssignment: "Rebuilt role tenure assignment authority does not match accepted history",
+  replayTransitions: "Rebuilt role tenure transitions do not match accepted history",
+  replayProcessed: "Rebuilt processed role tenure transition IDs do not match accepted history",
+  replayRecords: "Rebuilt role tenure records do not match accepted history",
+  replayCurrent: "Rebuilt role tenure state does not match current character state"
+} as const;
+
+const RECORD_KEYS = [
+  "acquiredCharacterStateRevision", "playerId", "roleId", "roleTenureId", "seatNumber", "startedBy"
+] as const;
+const CLOSED_RECORD_KEYS = [...RECORD_KEYS, "endedCharacterStateRevision"] as const;
+const ASSIGNMENT_START_KEYS = ["characterStateRevision", "kind", "sourceEventId", "sourceEventSequence"] as const;
+const TRANSITION_START_KEYS = [
+  "kind", "nextCharacterStateRevision", "previousCharacterStateRevision", "sourceEventId",
+  "sourceEventSequence", "transitionFactId"
+] as const;
+
+const compareRoleTenureRecords = (left: RoleTenureRecord, right: RoleTenureRecord): number =>
+  left.acquiredCharacterStateRevision - right.acquiredCharacterStateRevision || left.seatNumber - right.seatNumber;
+
+const compareProcessedTransitionIds = (left: RoleTenureTransitionFactId, right: RoleTenureTransitionFactId): number => {
+  const leftParsed = parseRoleTenureTransitionFactId(left);
+  const rightParsed = parseRoleTenureTransitionFactId(right);
+  if (!leftParsed.valid || !rightParsed.valid) return 0;
+  return leftParsed.sourceEventSequence - rightParsed.sourceEventSequence || leftParsed.seatNumber - rightParsed.seatNumber;
+};
+
+export const validateRoleTenureStateExact = (value: unknown): ValidationResult => {
+  if (!isCanonicalDataValue(value)) return fail(INVALID_ROLE_TENURE_STATE_REASONS.rawCanonicalData);
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["processedTransitionFactIds", "records"])) {
+    return fail(INVALID_ROLE_TENURE_STATE_REASONS.rawShape);
+  }
+  if (!isDenseCanonicalArray(value.records)) return fail(INVALID_ROLE_TENURE_STATE_REASONS.records);
+  if (!isDenseCanonicalArray(value.processedTransitionFactIds)) return fail(INVALID_ROLE_TENURE_STATE_REASONS.processedIds);
+
+  const processedIds: RoleTenureTransitionFactId[] = [];
+  for (const candidate of value.processedTransitionFactIds) {
+    const parsed = parseRoleTenureTransitionFactId(candidate);
+    if (!parsed.valid) return fail(INVALID_ROLE_TENURE_STATE_REASONS.processedIds);
+    processedIds.push(candidate as RoleTenureTransitionFactId);
+  }
+  if (new Set(processedIds).size !== processedIds.length) {
+    return fail(INVALID_ROLE_TENURE_STATE_REASONS.duplicateProcessedId);
+  }
+  for (let index = 1; index < processedIds.length; index += 1) {
+    if (compareProcessedTransitionIds(processedIds[index - 1]!, processedIds[index]!) >= 0) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.processedOrder);
+    }
+  }
+
+  const records: RoleTenureRecord[] = [];
+  for (const candidate of value.records) {
+    if (!isPlainRecord(candidate)) return fail(INVALID_ROLE_TENURE_STATE_REASONS.recordShape);
+    const hasEnding = Object.hasOwn(candidate, "endedCharacterStateRevision");
+    if (!hasExactEnumerableKeys(candidate, hasEnding ? CLOSED_RECORD_KEYS : RECORD_KEYS)) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.recordShape);
+    }
+    if (!isNonEmptyString(candidate.playerId) || !isSeatNumber(candidate.seatNumber) ||
+        !isCanonicalRoleTenureTrackedRoleId(candidate.roleId) ||
+        !isPositiveInteger(candidate.acquiredCharacterStateRevision)) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.recordFields);
+    }
+    if (hasEnding && (!isPositiveInteger(candidate.endedCharacterStateRevision) ||
+        candidate.endedCharacterStateRevision <= candidate.acquiredCharacterStateRevision)) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.interval);
+    }
+    const parsedId = parseRoleTenureId(candidate.roleTenureId);
+    if (!parsedId.valid || parsedId.seatNumber !== candidate.seatNumber || parsedId.roleId !== candidate.roleId ||
+        parsedId.acquiredCharacterStateRevision !== candidate.acquiredCharacterStateRevision) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.recordId);
+    }
+    if (!isPlainRecord(candidate.startedBy)) return fail(INVALID_ROLE_TENURE_STATE_REASONS.startFactShape);
+    if (candidate.startedBy.kind === "CHARACTERS_ASSIGNED") {
+      if (!hasExactEnumerableKeys(candidate.startedBy, ASSIGNMENT_START_KEYS)) {
+        return fail(INVALID_ROLE_TENURE_STATE_REASONS.startFactShape);
+      }
+      if (!isNonEmptyString(candidate.startedBy.sourceEventId) ||
+          !isPositiveInteger(candidate.startedBy.sourceEventSequence) ||
+          candidate.startedBy.characterStateRevision !== 1 || candidate.acquiredCharacterStateRevision !== 1) {
+        return fail(INVALID_ROLE_TENURE_STATE_REASONS.startFactFields);
+      }
+    } else if (candidate.startedBy.kind === "ROLE_TENURE_TRANSITION") {
+      if (!hasExactEnumerableKeys(candidate.startedBy, TRANSITION_START_KEYS)) {
+        return fail(INVALID_ROLE_TENURE_STATE_REASONS.startFactShape);
+      }
+      const parsedFactId = parseRoleTenureTransitionFactId(candidate.startedBy.transitionFactId);
+      if (!isNonEmptyString(candidate.startedBy.sourceEventId) ||
+          !isPositiveInteger(candidate.startedBy.sourceEventSequence) ||
+          !isPositiveInteger(candidate.startedBy.previousCharacterStateRevision) ||
+          candidate.startedBy.nextCharacterStateRevision !== candidate.startedBy.previousCharacterStateRevision + 1) {
+        return fail(INVALID_ROLE_TENURE_STATE_REASONS.startFactFields);
+      }
+      if (!parsedFactId.valid || parsedFactId.sourceEventSequence !== candidate.startedBy.sourceEventSequence ||
+          parsedFactId.seatNumber !== candidate.seatNumber ||
+          parsedFactId.nextCharacterStateRevision !== candidate.startedBy.nextCharacterStateRevision ||
+          candidate.acquiredCharacterStateRevision !== candidate.startedBy.nextCharacterStateRevision) {
+        return fail(INVALID_ROLE_TENURE_STATE_REASONS.transitionStart);
+      }
+      const transitionFactId = candidate.startedBy.transitionFactId;
+      if (processedIds.filter((id) => id === transitionFactId).length !== 1) {
+        return fail(INVALID_ROLE_TENURE_STATE_REASONS.orphanTransitionStart);
+      }
+    } else {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.startFactShape);
+    }
+    records.push(candidate as RoleTenureRecord);
+  }
+
+  if (new Set(records.map((record) => record.roleTenureId)).size !== records.length) {
+    return fail(INVALID_ROLE_TENURE_STATE_REASONS.duplicateTenureId);
+  }
+  for (let index = 1; index < records.length; index += 1) {
+    if (compareRoleTenureRecords(records[index - 1]!, records[index]!) >= 0) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.recordOrder);
+    }
+  }
+  const playerSeats = new Map<string, number>();
+  const seatPlayers = new Map<number, string>();
+  for (const record of records) {
+    const knownSeat = playerSeats.get(record.playerId);
+    const knownPlayer = seatPlayers.get(record.seatNumber);
+    if ((knownSeat !== undefined && knownSeat !== record.seatNumber) ||
+        (knownPlayer !== undefined && knownPlayer !== record.playerId)) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.playerSeat);
+    }
+    playerSeats.set(record.playerId, record.seatNumber);
+    seatPlayers.set(record.seatNumber, record.playerId);
+  }
+  for (const recordsForSeat of [...seatPlayers.entries()].map(([seatNumber, playerId]) =>
+    records.filter((record) => record.seatNumber === seatNumber && record.playerId === playerId))) {
+    if (recordsForSeat.filter((record) => record.endedCharacterStateRevision === undefined).length > 1) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.duplicateActive);
+    }
+    for (let index = 1; index < recordsForSeat.length; index += 1) {
+      const previous = recordsForSeat[index - 1]!;
+      const current = recordsForSeat[index]!;
+      if (previous.endedCharacterStateRevision === undefined ||
+          current.acquiredCharacterStateRevision < previous.endedCharacterStateRevision) {
+        return fail(INVALID_ROLE_TENURE_STATE_REASONS.overlap);
+      }
+    }
+  }
+  return { valid: true };
+};
+
 export const bootstrapRoleTenuresFromCharactersAssigned = (input: {
   readonly assignments: CharacterAssignmentSet;
   readonly sourceEventId: EventId;
   readonly sourceEventSequence: number;
-}): RoleTenureState => ({
-  records: input.assignments
+}): RoleTenureState => {
+  if (!isCanonicalDataValue(input) || !isPlainRecord(input) ||
+      !hasExactEnumerableKeys(input, ["assignments", "sourceEventId", "sourceEventSequence"]) ||
+      !isDenseCanonicalArray(input.assignments) || !isNonEmptyString(input.sourceEventId) ||
+      !isPositiveInteger(input.sourceEventSequence)) {
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.bootstrapInput);
+  }
+  const assignments = input.assignments;
+  const seenPlayers = new Set<string>();
+  const seenSeats = new Set<number>();
+  const seenRoles = new Set<string>();
+  for (const assignment of assignments) {
+    if (!isPlainRecord(assignment) || !hasExactEnumerableKeys(assignment, ["playerId", "role", "seatNumber"]) ||
+        !isNonEmptyString(assignment.playerId) || !isSeatNumber(assignment.seatNumber) ||
+        !hasExactRoleSetupSnapshotShape(assignment.role) || seenPlayers.has(assignment.playerId) ||
+        seenSeats.has(assignment.seatNumber) || seenRoles.has(assignment.role.roleId)) {
+      throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.bootstrapInput);
+    }
+    seenPlayers.add(assignment.playerId);
+    seenSeats.add(assignment.seatNumber);
+    seenRoles.add(assignment.role.roleId);
+  }
+  const records = assignments
     .filter((assignment) => isRelevantRoleId(assignment.role.roleId))
     .sort((left, right) => left.seatNumber - right.seatNumber)
     .map((assignment) => ({
@@ -326,13 +545,19 @@ export const bootstrapRoleTenuresFromCharactersAssigned = (input: {
         sourceEventSequence: input.sourceEventSequence,
         characterStateRevision: 1 as const
       }
-    })),
-  processedTransitionFactIds: []
-});
+    }));
+  const result: RoleTenureState = { records, processedTransitionFactIds: [] };
+  if (!validateRoleTenureStateExact(result).valid) {
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.bootstrapResult);
+  }
+  return result;
+};
 
 export const validateRoleTenureTransitionFact = (fact: unknown): ValidationResult => {
   const keys = ["afterRole", "beforeRole", "nextCharacterStateRevision", "playerId", "previousCharacterStateRevision", "seatNumber", "sourceEventId", "sourceEventSequence", "transitionFactId"] as const;
-  if (!isPlainRecord(fact) || !hasExactEnumerableKeys(fact, keys)) return fail("RoleTenureTransitionFact must have exact runtime shape");
+  if (!isCanonicalDataValue(fact) || !isPlainRecord(fact) || !hasExactEnumerableKeys(fact, keys)) {
+    return fail("RoleTenureTransitionFact must have exact runtime shape");
+  }
   if (!isNonEmptyString(fact.playerId) || !isSeatNumber(fact.seatNumber) || !isNonEmptyString(fact.sourceEventId) ||
       !isPositiveInteger(fact.sourceEventSequence) || !isPositiveInteger(fact.previousCharacterStateRevision) ||
       fact.nextCharacterStateRevision !== fact.previousCharacterStateRevision + 1 ||
@@ -383,23 +608,29 @@ export const applyRoleTenureTransitionFact = (
 ): RoleTenureState => {
   const validation = validateRoleTenureTransitionFact(fact);
   if (!validation.valid) throw new DomainError("InvalidRoleTenureTransitionFact", validation.reason);
+  if (!validateRoleTenureStateExact(state).valid) {
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.transitionInput);
+  }
   const current = cloneRoleTenureState(state);
+  if (!validateRoleTenureStateExact(current).valid) {
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.transitionInput);
+  }
   if (current.processedTransitionFactIds.includes(fact.transitionFactId)) {
-    throw new DomainError("InvalidRoleTenureTransitionFact", "Role tenure transition fact was already processed");
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.transitionAlreadyProcessed);
   }
   const beforeRelevant = isRelevantRoleId(fact.beforeRole.roleId);
   const afterRelevant = isRelevantRoleId(fact.afterRole.roleId);
   const activeBefore = current.records.filter((record) =>
     record.playerId === fact.playerId && record.seatNumber === fact.seatNumber &&
-    record.roleId === fact.beforeRole.roleId && record.endedCharacterStateRevision === undefined
+    isRoleTenureActiveAt(record, fact.previousCharacterStateRevision)
   );
   const matchingActiveBefore = activeBefore[0];
   if (beforeRelevant && (activeBefore.length !== 1 || matchingActiveBefore === undefined ||
-      matchingActiveBefore.acquiredCharacterStateRevision > fact.previousCharacterStateRevision)) {
-    throw new DomainError("InvalidRoleTenureTransitionFact", "Role tenure transition requires exactly one matching active before tenure");
+      matchingActiveBefore.roleId !== fact.beforeRole.roleId || matchingActiveBefore.endedCharacterStateRevision !== undefined)) {
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.transitionBefore);
   }
   if (!beforeRelevant && activeBefore.length !== 0) {
-    throw new DomainError("InvalidRoleTenureTransitionFact", "Irrelevant before role cannot have a tracked active tenure");
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.transitionBefore);
   }
   const nextId = afterRelevant ? formatRoleTenureId({
     seatNumber: fact.seatNumber,
@@ -407,10 +638,16 @@ export const applyRoleTenureTransitionFact = (
     acquiredCharacterStateRevision: fact.nextCharacterStateRevision
   }) : undefined;
   if (nextId !== undefined && current.records.some((record) => record.roleTenureId === nextId)) {
-    throw new DomainError("InvalidRoleTenureTransitionFact", "Role tenure transition would create a duplicate tenure ID");
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.transitionSuccessor);
+  }
+  if (afterRelevant && current.records.some((record) => record.roleTenureId !== matchingActiveBefore?.roleTenureId &&
+      record.playerId === fact.playerId && record.seatNumber === fact.seatNumber &&
+      (record.endedCharacterStateRevision === undefined ||
+        record.endedCharacterStateRevision > fact.nextCharacterStateRevision))) {
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.transitionSuccessor);
   }
   const records = current.records.map((record) =>
-    activeBefore.some((active) => active.roleTenureId === record.roleTenureId)
+    matchingActiveBefore?.roleTenureId === record.roleTenureId
       ? { ...record, endedCharacterStateRevision: fact.nextCharacterStateRevision }
       : record
   );
@@ -431,10 +668,14 @@ export const applyRoleTenureTransitionFact = (
       }
     });
   }
-  return {
-    records,
-    processedTransitionFactIds: [...current.processedTransitionFactIds, fact.transitionFactId]
-  };
+  records.sort(compareRoleTenureRecords);
+  const processedTransitionFactIds = [...current.processedTransitionFactIds, fact.transitionFactId]
+    .sort(compareProcessedTransitionIds);
+  const result: RoleTenureState = { records, processedTransitionFactIds };
+  if (!validateRoleTenureStateExact(result).valid) {
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.transitionResult);
+  }
+  return result;
 };
 
 export const isRoleTenureActiveAt = (record: RoleTenureRecord, revision: number): boolean =>
@@ -445,6 +686,80 @@ export const isRoleTenureContinuousAcross = (record: RoleTenureRecord, start: nu
   isPositiveInteger(start) && isPositiveInteger(end) && end >= start &&
   record.acquiredCharacterStateRevision <= start &&
   (record.endedCharacterStateRevision === undefined || record.endedCharacterStateRevision > end);
+
+export const findUniqueActiveRoleTenure = (input: {
+  readonly state: RoleTenureState;
+  readonly playerId: PlayerId;
+  readonly seatNumber: SeatNumber;
+  readonly roleId: CanonicalRoleTenureTrackedRoleId;
+  readonly revision: number;
+}): RoleTenureRecord | undefined => {
+  if (!isCanonicalDataValue(input) || !isPlainRecord(input) ||
+      !hasExactEnumerableKeys(input, ["playerId", "revision", "roleId", "seatNumber", "state"]) ||
+      !isNonEmptyString(input.playerId) || !isSeatNumber(input.seatNumber) ||
+      !isCanonicalRoleTenureTrackedRoleId(input.roleId) || !isPositiveInteger(input.revision) ||
+      !validateRoleTenureStateExact(input.state).valid) {
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.queryInput);
+  }
+  const matches = input.state.records.filter((record) => record.playerId === input.playerId &&
+    record.seatNumber === input.seatNumber && record.roleId === input.roleId &&
+    isRoleTenureActiveAt(record, input.revision));
+  if (matches.length > 1) {
+    throw new DomainError("InvalidRoleTenureState", INVALID_ROLE_TENURE_STATE_REASONS.queryMultiple);
+  }
+  return matches[0] === undefined ? undefined : cloneRoleTenureRecord(matches[0]);
+};
+
+export const validateRoleTenureStateAgainstCurrentCharacterState = (input: {
+  readonly roleTenures: unknown;
+  readonly currentCharacterState: CurrentCharacterStateSet;
+}): ValidationResult => {
+  if (!isCanonicalDataValue(input) || !isPlainRecord(input) ||
+      !hasExactEnumerableKeys(input, ["currentCharacterState", "roleTenures"]) ||
+      !validateRoleTenureStateExact(input.roleTenures).valid ||
+      !isPlainRecord(input.currentCharacterState) ||
+      !hasExactEnumerableKeys(input.currentCharacterState, ["entries", "revision"]) ||
+      !isPositiveInteger(input.currentCharacterState.revision) ||
+      !isDenseCanonicalArray(input.currentCharacterState.entries) ||
+      input.currentCharacterState.entries.some((entry) => !hasExactCurrentCharacterStateShape(entry))) {
+    return fail(INVALID_ROLE_TENURE_STATE_REASONS.currentState);
+  }
+  const tenures = input.roleTenures as RoleTenureState;
+  const entries = input.currentCharacterState.entries;
+  const players = new Set<string>();
+  const seats = new Set<number>();
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index]!;
+    if (players.has(entry.playerId) || seats.has(entry.seatNumber) ||
+        (index > 0 && entries[index - 1]!.seatNumber >= entry.seatNumber)) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.currentState);
+    }
+    players.add(entry.playerId);
+    seats.add(entry.seatNumber);
+  }
+  if (tenures.records.some((record) => record.acquiredCharacterStateRevision > input.currentCharacterState.revision ||
+      (record.endedCharacterStateRevision !== undefined &&
+        record.endedCharacterStateRevision > input.currentCharacterState.revision))) {
+    return fail(INVALID_ROLE_TENURE_STATE_REASONS.currentState);
+  }
+  const active = tenures.records.filter((record) =>
+    isRoleTenureActiveAt(record, input.currentCharacterState.revision));
+  for (const entry of entries) {
+    const matches = active.filter((record) => record.playerId === entry.playerId && record.seatNumber === entry.seatNumber);
+    if (isCanonicalRoleTenureTrackedRoleId(entry.role.roleId)) {
+      if (matches.length !== 1 || matches[0]?.roleId !== entry.role.roleId) {
+        return fail(INVALID_ROLE_TENURE_STATE_REASONS.currentState);
+      }
+    } else if (matches.length !== 0) {
+      return fail(INVALID_ROLE_TENURE_STATE_REASONS.currentState);
+    }
+  }
+  if (active.some((record) => !entries.some((entry) => entry.playerId === record.playerId &&
+      entry.seatNumber === record.seatNumber && entry.role.roleId === record.roleId))) {
+    return fail(INVALID_ROLE_TENURE_STATE_REASONS.currentState);
+  }
+  return { valid: true };
+};
 
 export type ParsedSeamstressAbilityInstanceId =
   | {

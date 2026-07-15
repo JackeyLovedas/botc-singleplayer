@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DomainError,
+  CANONICAL_ROLE_TENURE_TRACKED_ROLE_IDS,
   RULES_BASELINE_VERSION,
   abilityImpairmentId,
   actionOpportunityId,
@@ -9,6 +10,7 @@ import {
   bootstrapRoleTenuresFromCharactersAssigned,
   bootstrapSeamstressAbilityState,
   canonicalizeSeamstressTargets,
+  cloneRoleTenureState,
   cloneFirstNightActionOpportunityState,
   createSeamstressActionDeferredPayloadV2,
   createSeamstressAbilitySpentPayload,
@@ -23,8 +25,11 @@ import {
   formatRoleTenureTransitionFactId,
   formatSeamstressAbilityUseEntitlementId,
   formatSeamstressAnswerCandidateId,
+  findUniqueActiveRoleTenure,
   grantedAbilityId,
   isRoleTenureContinuousAcross,
+  isRoleTenureActiveAt,
+  isCanonicalRoleTenureTrackedRoleId,
   isSeamstressActionOpportunityV2,
   parseRoleTenureId,
   parseRoleTenureTransitionFactId,
@@ -41,6 +46,8 @@ import {
   seatNumber,
   spendSeamstressAbilityEntitlement,
   validateRoleTenureTransitionFact,
+  validateRoleTenureStateAgainstCurrentCharacterState,
+  validateRoleTenureStateExact,
   validateSeamstressActionDecisionForOpportunity,
   validateSeamstressChoiceSpendChain,
   validateSeamstressInformationAgainstCanonicalState,
@@ -53,6 +60,7 @@ import type {
   AbilityImpairmentSet,
   CharacterAssignmentSet,
   CurrentCharacterStateSet,
+  DomainErrorCode,
   PhilosopherGrantedAbility,
   RoleSetupSnapshot,
   RoleTenureRecord,
@@ -205,6 +213,17 @@ const transition = (input: {
   afterRole: input.afterRole
 });
 
+const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
+  let caught: unknown;
+  try {
+    action();
+  } catch (error) {
+    caught = error;
+  }
+  expect(caught).toBeInstanceOf(DomainError);
+  expect((caught as DomainError).code).toBe(code);
+};
+
 describe("Seamstress v3 domain model", () => {
   it("declares only the exact public Sects & Violets capability literal and shape", () => {
     const capability = createSeamstressResolutionCapabilityDeclaredPayload(RULES_BASELINE_VERSION);
@@ -238,8 +257,10 @@ describe("Seamstress v3 domain model", () => {
       "role-tenure-v1:seat-3:role-seamstress:acquired-revision-1",
       "role-tenure-v1:seat-03:role-seamstress:acquired-revision-01",
       "role-tenure-v1:seat-13:role-seamstress:acquired-revision-1",
-      "role-tenure-v1:seat-03:role-dreamer:acquired-revision-1"
+      "role-tenure-v1:seat-03:role-snake_charmer:acquired-revision-1"
     ]) expect(parseRoleTenureId(invalid)).toMatchObject({ valid: false });
+    expect(parseRoleTenureId("role-tenure-v1:seat-03:role-dreamer:acquired-revision-1"))
+      .toMatchObject({ valid: true, roleId: "dreamer" });
     expect(parseSeamstressAbilityInstanceId("seamstress-ability-instance-v1:ROLE_TENURE:seat-03:role-philosopher:acquired-revision-1"))
       .toMatchObject({ valid: false });
   });
@@ -249,6 +270,7 @@ describe("Seamstress v3 domain model", () => {
     const ability = bootstrapSeamstressAbilityState(tenures);
 
     expect(tenures.records.map((entry) => [entry.seatNumber, entry.roleId])).toStrictEqual([
+      [1, "dreamer"],
       [3, "seamstress"],
       [4, "vortox"],
       [5, "philosopher"]
@@ -260,6 +282,307 @@ describe("Seamstress v3 domain model", () => {
       entitlementKind: "BASE_ONCE_PER_GAME",
       status: "UNSPENT"
     }]);
+  });
+
+  it("[D19T-001..009, D19T-021] treats Dreamer as a canonical tracked tenure at assignment revision one", () => {
+    const tenures = bootstrapTenures();
+    const dreamer = tenures.records.find((entry) => entry.roleId === "dreamer")!;
+
+    expect(CANONICAL_ROLE_TENURE_TRACKED_ROLE_IDS).toStrictEqual([
+      "cerenovus", "dreamer", "mathematician", "philosopher", "seamstress", "vortox"
+    ]);
+    expect(isCanonicalRoleTenureTrackedRoleId("dreamer")).toBe(true);
+    for (const alias of ["Dreamer", " dreamer", "dreamer ", "snake_charmer"]) {
+      expect(isCanonicalRoleTenureTrackedRoleId(alias)).toBe(false);
+    }
+    for (const invalidId of [
+      "role-tenure-v1:seat-01:role-Dreamer:acquired-revision-1",
+      "role-tenure-v1:seat-01:role-dreamer_:acquired-revision-1",
+      "role-tenure-v1:seat-01:role-dreamer:acquired-revision-1:extra",
+      `role-tenure-v1:seat-01:role-dreamer:acquired-revision-${Number.MAX_SAFE_INTEGER + 1}`
+    ]) {
+      expect(parseRoleTenureId(invalidId)).toMatchObject({ valid: false });
+    }
+    expect(validateRoleTenureStateExact(tenures)).toStrictEqual({ valid: true });
+    expect(dreamer).toMatchObject({
+      playerId: "target-good",
+      seatNumber: 1,
+      acquiredCharacterStateRevision: 1,
+      startedBy: { kind: "CHARACTERS_ASSIGNED", sourceEventId: "characters-assigned-event", sourceEventSequence: 10 }
+    });
+    expect(isRoleTenureActiveAt(dreamer, 1)).toBe(true);
+    expect(parseRoleTenureId(dreamer.roleTenureId)).toMatchObject({ valid: true, roleId: "dreamer" });
+    expectDomainCode(() => bootstrapRoleTenuresFromCharactersAssigned({
+      assignments: [...assignments, { playerId: playerId("duplicate-role"), seatNumber: seatNumber(6), role: dreamerRole }],
+      sourceEventId: eventId("characters-assigned-event"),
+      sourceEventSequence: 10
+    }), "InvalidRoleTenureState");
+    for (const invalidInput of [
+      {
+        assignments: [assignments[0]!, { ...assignments[1]!, playerId: assignments[0]!.playerId }],
+        sourceEventId: eventId("characters-assigned-event"), sourceEventSequence: 10
+      },
+      {
+        assignments: [assignments[0]!, { ...assignments[1]!, seatNumber: assignments[0]!.seatNumber }],
+        sourceEventId: eventId("characters-assigned-event"), sourceEventSequence: 10
+      },
+      { assignments, sourceEventId: eventId("characters-assigned-event"), sourceEventSequence: 0 },
+      { assignments, sourceEventId: eventId("characters-assigned-event"), sourceEventSequence: Number.MAX_SAFE_INTEGER + 1 }
+    ]) {
+      expectDomainCode(() => bootstrapRoleTenuresFromCharactersAssigned(invalidInput), "InvalidRoleTenureState");
+    }
+    const sparseAssignments = new Array<(typeof assignments)[number]>(2);
+    sparseAssignments[1] = assignments[0]!;
+    expectDomainCode(() => bootstrapRoleTenuresFromCharactersAssigned({
+      assignments: sparseAssignments,
+      sourceEventId: eventId("characters-assigned-event"),
+      sourceEventSequence: 10
+    }), "InvalidRoleTenureState");
+  });
+
+  it("[D19T-010..015, D19T-022..023, D19T-041] reconciles Dreamer enter, leave, and half-open intervals immutably", () => {
+    const empty = bootstrapRoleTenuresFromCharactersAssigned({
+      assignments: [{ playerId: playerId("target-evil"), seatNumber: seatNumber(2), role: witchRole }],
+      sourceEventId: eventId("single-assignment"),
+      sourceEventSequence: 10
+    });
+    const enter: RoleTenureTransitionFact = {
+      transitionFactId: formatRoleTenureTransitionFactId({ sourceEventSequence: 20, seatNumber: seatNumber(2), nextCharacterStateRevision: 2 }),
+      sourceEventId: eventId("enter-dreamer"), sourceEventSequence: 20,
+      playerId: playerId("target-evil"), seatNumber: seatNumber(2),
+      previousCharacterStateRevision: 1, nextCharacterStateRevision: 2,
+      beforeRole: witchRole, afterRole: dreamerRole
+    };
+    const entered = applyRoleTenureTransitionFact(empty, enter);
+    const dreamer = entered.records[0]!;
+    const leave: RoleTenureTransitionFact = {
+      transitionFactId: formatRoleTenureTransitionFactId({ sourceEventSequence: 21, seatNumber: seatNumber(2), nextCharacterStateRevision: 3 }),
+      sourceEventId: eventId("leave-dreamer"), sourceEventSequence: 21,
+      playerId: playerId("target-evil"), seatNumber: seatNumber(2),
+      previousCharacterStateRevision: 2, nextCharacterStateRevision: 3,
+      beforeRole: dreamerRole, afterRole: witchRole
+    };
+    const left = applyRoleTenureTransitionFact(entered, leave);
+    const closed = left.records[0]!;
+
+    expect(empty).toStrictEqual({ records: [], processedTransitionFactIds: [] });
+    expect(dreamer.startedBy).toMatchObject({
+      kind: "ROLE_TENURE_TRANSITION", transitionFactId: enter.transitionFactId,
+      sourceEventId: enter.sourceEventId, previousCharacterStateRevision: 1, nextCharacterStateRevision: 2
+    });
+    expect(isRoleTenureActiveAt(dreamer, 1)).toBe(false);
+    expect(isRoleTenureActiveAt(dreamer, 2)).toBe(true);
+    expect(isRoleTenureActiveAt(closed, 3)).toBe(false);
+    expect(isRoleTenureContinuousAcross(closed, 2, 2)).toBe(true);
+    expect(isRoleTenureContinuousAcross(closed, 2, 3)).toBe(false);
+    expect(validateRoleTenureStateExact(left)).toStrictEqual({ valid: true });
+    expectDomainCode(() => applyRoleTenureTransitionFact(left, leave), "InvalidRoleTenureState");
+
+    const trackedInitial = bootstrapTenures();
+    const trackedToDreamer = transition({
+      sequence: 30, previousRevision: 1, nextRevision: 2,
+      beforeRole: seamstressRole, afterRole: dreamerRole
+    });
+    const dreamerState = applyRoleTenureTransitionFact(trackedInitial, trackedToDreamer);
+    const endedSeamstress = dreamerState.records.find((record) => record.roleId === "seamstress")!;
+    const dreamerSuccessor = dreamerState.records.find((record) =>
+      record.seatNumber === 3 && record.roleId === "dreamer" && record.acquiredCharacterStateRevision === 2)!;
+    expect(endedSeamstress.endedCharacterStateRevision).toBe(2);
+    expect(dreamerSuccessor.startedBy).toStrictEqual({
+      kind: "ROLE_TENURE_TRANSITION",
+      transitionFactId: trackedToDreamer.transitionFactId,
+      sourceEventId: trackedToDreamer.sourceEventId,
+      sourceEventSequence: trackedToDreamer.sourceEventSequence,
+      previousCharacterStateRevision: 1,
+      nextCharacterStateRevision: 2
+    });
+    expect(trackedInitial.records.find((record) => record.roleId === "seamstress")?.endedCharacterStateRevision)
+      .toBeUndefined();
+
+    const dreamerToTracked = transition({
+      sequence: 31, previousRevision: 2, nextRevision: 3,
+      beforeRole: dreamerRole, afterRole: seamstressRole
+    });
+    const trackedAgain = applyRoleTenureTransitionFact(dreamerState, dreamerToTracked);
+    const endedDreamer = trackedAgain.records.find((record) => record.roleTenureId === dreamerSuccessor.roleTenureId)!;
+    const seamstressSuccessor = trackedAgain.records.find((record) =>
+      record.seatNumber === 3 && record.roleId === "seamstress" && record.acquiredCharacterStateRevision === 3)!;
+    expect(endedDreamer.endedCharacterStateRevision).toBe(3);
+    expect(seamstressSuccessor.startedBy).toMatchObject({
+      kind: "ROLE_TENURE_TRANSITION",
+      transitionFactId: dreamerToTracked.transitionFactId,
+      sourceEventId: dreamerToTracked.sourceEventId,
+      sourceEventSequence: 31,
+      previousCharacterStateRevision: 2,
+      nextCharacterStateRevision: 3
+    });
+    expect(validateRoleTenureStateExact(trackedAgain)).toStrictEqual({ valid: true });
+    expect(dreamerState.records.find((record) => record.roleTenureId === dreamerSuccessor.roleTenureId)
+      ?.endedCharacterStateRevision).toBeUndefined();
+  });
+
+  it("[D19T-018, D19T-024, D19T-040, D19T-042] exact-validates topology and returns only deep-cloned unique active records", () => {
+    const state = bootstrapTenures();
+    const clone = cloneRoleTenureState(state);
+    const found = findUniqueActiveRoleTenure({
+      state, playerId: playerId("target-good"), seatNumber: seatNumber(1), roleId: "dreamer", revision: 1
+    });
+
+    expect(clone).toStrictEqual(state);
+    expect(clone).not.toBe(state);
+    expect(clone.records).not.toBe(state.records);
+    expect(clone.records[0]?.startedBy).not.toBe(state.records[0]?.startedBy);
+    expect(found).toStrictEqual(state.records[0]);
+    expect(found).not.toBe(state.records[0]);
+    expect(findUniqueActiveRoleTenure({
+      state, playerId: playerId("missing"), seatNumber: seatNumber(6), roleId: "dreamer", revision: 1
+    })).toBeUndefined();
+
+    const duplicateId = { records: [...state.records, { ...state.records[0] }], processedTransitionFactIds: [] };
+    expect(validateRoleTenureStateExact(duplicateId)).toMatchObject({ valid: false });
+
+    const enterDreamer = transition({ sequence: 20, previousRevision: 1, nextRevision: 2, beforeRole: seamstressRole, afterRole: dreamerRole });
+    const transitioned = applyRoleTenureTransitionFact(state, enterDreamer);
+    const overlapping = {
+      ...transitioned,
+      records: transitioned.records.map((record) => record.roleId === "seamstress"
+        ? { roleTenureId: record.roleTenureId, playerId: record.playerId, seatNumber: record.seatNumber,
+            roleId: record.roleId, acquiredCharacterStateRevision: record.acquiredCharacterStateRevision,
+            startedBy: { ...record.startedBy } }
+        : { ...record, startedBy: { ...record.startedBy } })
+    };
+    expect(validateRoleTenureStateExact(overlapping)).toMatchObject({ valid: false });
+    expectDomainCode(() => findUniqueActiveRoleTenure({
+      state: overlapping, playerId: playerId("source-seamstress"), seatNumber: seatNumber(3),
+      roleId: "dreamer", revision: 2
+    }), "InvalidRoleTenureState");
+  });
+
+  it("[D19T-020] requires bidirectional correspondence with exact current character state", () => {
+    const tenures = bootstrapTenures();
+    expect(validateRoleTenureStateAgainstCurrentCharacterState({
+      roleTenures: tenures,
+      currentCharacterState: characterState(1, "GOOD", "EVIL", true)
+    })).toStrictEqual({ valid: true });
+    expect(validateRoleTenureStateAgainstCurrentCharacterState({
+      roleTenures: tenures,
+      currentCharacterState: {
+        ...characterState(1, "GOOD", "EVIL", true),
+        entries: characterState(1, "GOOD", "EVIL", true).entries.map((entry) =>
+          entry.seatNumber === 1 ? { ...entry, role: witchRole } : entry)
+      }
+    })).toMatchObject({ valid: false });
+  });
+
+  it("[D19T-031..039] rejects hostile raw states before clone, search, or getter invocation", () => {
+    const validFact = transition({ sequence: 20, previousRevision: 1, nextRevision: 2, beforeRole: seamstressRole, afterRole: dreamerRole });
+    expectDomainCode(() => applyRoleTenureTransitionFact(undefined, validFact), "InvalidRoleTenureState");
+    const rawExtraState = { ...bootstrapTenures(), extra: "raw-only-invalidity" };
+    const rawExtraSnapshot = structuredClone(rawExtraState);
+    expect(validateRoleTenureStateExact(rawExtraState)).toMatchObject({ valid: false });
+    expect(validateRoleTenureStateExact(cloneRoleTenureState(rawExtraState))).toStrictEqual({ valid: true });
+    expectDomainCode(() => applyRoleTenureTransitionFact(rawExtraState, validFact), "InvalidRoleTenureState");
+    expect(rawExtraState).toStrictEqual(rawExtraSnapshot);
+
+    const sparseRecords = new Array(2);
+    sparseRecords[1] = bootstrapTenures().records[0];
+    expect(validateRoleTenureStateExact({ records: sparseRecords, processedTransitionFactIds: [] })).toMatchObject({ valid: false });
+    const sparseIds = new Array(1);
+    expect(validateRoleTenureStateExact({ records: [], processedTransitionFactIds: sparseIds })).toMatchObject({ valid: false });
+
+    let getterCalls = 0;
+    const accessor = Object.defineProperty({ processedTransitionFactIds: [] }, "records", {
+      enumerable: true, get: () => { getterCalls += 1; return []; }
+    });
+    expect(validateRoleTenureStateExact(accessor)).toMatchObject({ valid: false });
+    expect(getterCalls).toBe(0);
+
+    const transparentProxy = new Proxy({ records: [], processedTransitionFactIds: [] }, {});
+    expect(validateRoleTenureStateExact(transparentProxy)).toMatchObject({ valid: false });
+    const revocable = Proxy.revocable({ records: [], processedTransitionFactIds: [] }, {});
+    revocable.revoke();
+    expect(validateRoleTenureStateExact(revocable.proxy)).toMatchObject({ valid: false });
+    const cyclic: { records: unknown[]; processedTransitionFactIds: unknown[]; self?: unknown } = {
+      records: [], processedTransitionFactIds: []
+    };
+    cyclic.self = cyclic;
+    expect(validateRoleTenureStateExact(cyclic)).toMatchObject({ valid: false });
+  });
+
+  it("[D19T-018, D19T-031..038] exact validator rejects representative hostile shapes and topologies", () => {
+    const base = bootstrapTenures();
+    const baseDreamer = base.records.find((record) => record.roleId === "dreamer")!;
+    const transitioned = applyRoleTenureTransitionFact(base, transition({
+      sequence: 40, previousRevision: 1, nextRevision: 2,
+      beforeRole: seamstressRole, afterRole: dreamerRole
+    }));
+    const processedId = transitioned.processedTransitionFactIds[0]!;
+    const duplicateProcessed = {
+      ...transitioned,
+      processedTransitionFactIds: [processedId, processedId]
+    };
+    expect(validateRoleTenureStateExact(duplicateProcessed)).toMatchObject({ valid: false });
+
+    const closedOverlap = {
+      ...transitioned,
+      records: transitioned.records.map((record) => record.roleId === "seamstress"
+        ? { ...record, endedCharacterStateRevision: 4 }
+        : record)
+    };
+    const duplicateActive = {
+      ...transitioned,
+      records: transitioned.records.map((record) => record.roleId === "seamstress"
+        ? {
+            roleTenureId: record.roleTenureId,
+            playerId: record.playerId,
+            seatNumber: record.seatNumber,
+            roleId: record.roleId,
+            acquiredCharacterStateRevision: record.acquiredCharacterStateRevision,
+            startedBy: { ...record.startedBy }
+          }
+        : record)
+    };
+    const nonPlain = cloneRoleTenureState(base);
+    Object.setPrototypeOf(nonPlain, { hostilePrototype: true });
+    const symbolKey = { ...base, [Symbol("hostile")]: true };
+    const hostileStates: readonly unknown[] = [
+      null,
+      false,
+      "role-tenure-state",
+      1,
+      1n,
+      Symbol("hostile"),
+      () => undefined,
+      [base],
+      nonPlain,
+      { records: base.records },
+      symbolKey,
+      { records: [{}], processedTransitionFactIds: [] },
+      { records: [{ ...baseDreamer, startedBy: { kind: "CHARACTERS_ASSIGNED" } }], processedTransitionFactIds: [] },
+      { records: [{ ...baseDreamer, playerId: "" }], processedTransitionFactIds: [] },
+      { records: [{ ...baseDreamer, seatNumber: 0 }], processedTransitionFactIds: [] },
+      { records: [{ ...baseDreamer, roleId: "snake_charmer" }], processedTransitionFactIds: [] },
+      { records: [{ ...baseDreamer, roleTenureId: "noncanonical-tenure-id" }], processedTransitionFactIds: [] },
+      { records: [{ ...baseDreamer, acquiredCharacterStateRevision: Number.MAX_SAFE_INTEGER + 1 }], processedTransitionFactIds: [] },
+      { records: [{ ...baseDreamer, acquiredCharacterStateRevision: -0 }], processedTransitionFactIds: [] },
+      closedOverlap,
+      duplicateActive
+    ];
+    for (const hostile of hostileStates) {
+      expect(validateRoleTenureStateExact(hostile)).toMatchObject({ valid: false });
+    }
+  });
+
+  it("[D19T-044..045] classifies malformed facts and direct IDs independently of hostile state", () => {
+    const malformed = { ...transition({ sequence: 20, previousRevision: 1, nextRevision: 2, beforeRole: seamstressRole, afterRole: dreamerRole }), extra: true };
+    expectDomainCode(
+      () => applyRoleTenureTransitionFact(undefined, malformed),
+      "InvalidRoleTenureTransitionFact"
+    );
+    expectDomainCode(
+      () => formatRoleTenureId({ seatNumber: seatNumber(3), roleId: "dreamer", acquiredCharacterStateRevision: Number.MAX_SAFE_INTEGER + 1 }),
+      "InvalidRoleTenureId"
+    );
   });
 
   it("preserves exact V1/V2 opportunity branches through clone, equality, and decision validation", () => {
@@ -339,7 +662,8 @@ describe("Seamstress v3 domain model", () => {
     expect(validateRoleTenureTransitionFact(leave)).toStrictEqual({ valid: true });
     const left = applyRoleTenureTransitionFact(initial, leave);
     const reacquired = applyRoleTenureTransitionFact(left, reacquire);
-    const oldTenure = reacquired.records.find((entry) => entry.roleTenureId === initial.records[0]?.roleTenureId)!;
+    const initialSeamstress = initial.records.find((entry) => entry.roleId === "seamstress")!;
+    const oldTenure = reacquired.records.find((entry) => entry.roleTenureId === initialSeamstress.roleTenureId)!;
     const newTenure = reacquired.records.find((entry) => entry.acquiredCharacterStateRevision === 3)!;
 
     expect(oldTenure.endedCharacterStateRevision).toBe(2);

@@ -40,6 +40,7 @@ export type DomainErrorCode =
   | "InvalidSeamstressAbilitySpentPayload"
   | "InvalidSeamstressInformationDeliveredPayload"
   | "InvalidRoleTenureId"
+  | "InvalidRoleTenureState"
   | "InvalidRoleTenureTransitionFact"
   | "InvalidSeamstressAbilityInstanceId"
   | "InvalidSeamstressAbilityUseEntitlementId"
