@@ -1,9 +1,9 @@
 # Current Task
 
-## Phase 3 Slice 2B19A — Repair round 1 local gates pass
+## Phase 3 Slice 2B19A — Repair round 3 CI execution granularity local gates pass
 
 - Slice: `2B19A Base Dreamer V2 and Vortox First-Night Information`.
-- Control status: `REPAIR_ROUND_2_LOCAL_GATES_PASS`.
+- Control status: `RUNNING`; implementation checkpoint `REPAIR_ROUND_3_LOCAL_GATES_PASS`.
 - Branch: `phase-3/dreamer-v2-base-vortox`, created from accepted main `405f13ac2afbdaf33a20d54ece727b68199f152f`.
 - Rule evidence: `docs/rules/evidence/2B19.md`, SHA-256 `76f9a13d8f04d9ab92bd40a3d341034eee2d0ab1619e74795a72181706fbf363`, verdict `RULE_READY`, coverage `PARTIAL`.
 - Round 1 design: `docs/implementation/phase-3-slice-2b19a-design.md`, SHA-256 `26bace844cd7697b5e2d411cddf7c14dc1c497516a1221f7d07995797ef8ba70`.
@@ -12,9 +12,11 @@
 - Round 2 independent review: `docs/implementation/phase-3-slice-2b19a-design-review-round-2.md`, SHA-256 `a33483620e123c0e7d3c077843b98a37321fa9ddbc583e8660fe82dc7b16fbb8`, verdict `RULE_DESIGN_PASS`, `remainingBlockers=[]`.
 - Design round: `2 / 2`; no Design Round 3 is authorized.
 - Round 2 closes the two design blockers by keeping every accepted-history API strict while isolating partial prefixes to the internal prospective validator, and by returning an exact redacted event-type summary for V2 success and idempotent replay.
-- `ruleDesignPass=true`; `implementationAuthorized=true`; repair round `2 / 2`.
+- `ruleDesignPass=true`; `implementationAuthorized=true`; repair round `3 / 3`; authorization `USER_AUTHORIZED_2B19A_CI_EXECUTION_GRANULARITY_REPAIR_ROUND_3`.
 - The reviewed base Dreamer V2 plus effective Vortox scope is implemented locally. `docs/implementation/phase-3-slice-2b19a-test-traceability.md` maps `D19A-001` through `D19A-043`; Dreamer and Vortox remain `PARTIAL`.
-- Local gates pass: typecheck, full lint, `31 files / 1450 tests`, coverage `31 files / 1450 tests` at `86.41%` statements/lines, `81.19%` branches, `96.78%` functions, and `git diff --check`.
+- Stage 0 reran only failed validate jobs: push `29337585218` attempt 2 repeated only the post-`1450` coverage `onTaskUpdate` timeout; PR `29337589161` attempt 2 succeeded.
+- Stage 1 leaves all `213` physical application-service tests unchanged and routes them mutually exclusively as core `90`, role-actions `52`, Dreamer V2 base `7`, and later-role-actions `64`.
+- Local gates pass: typecheck, full lint, all `1450` tests across the same `31` unique physical test files (`34` workspace project-file executions), coverage at `86.41%` statements/lines, `81.28%` branches, `96.78%` functions, no `onTaskUpdate` timeout, and `git diff --check`.
 - PR #26 exists at the initial product HEAD. No successful exact-head CI, final review, merge, tag, FIRST_NIGHT completion, DAY transition, 2B19B, or Phase 2C work exists.
 
 ## Repair round 1
@@ -36,8 +38,14 @@
 - Remote branch `phase-3/dreamer-v2-completion` and its history are retained as read-only reference.
 - No repair round 5 is authorized.
 
+## Repair round 3
+
+- Scope is `TEST_RUNNER_EXECUTION_GRANULARITY_ONLY`.
+- No production, workflow, package, lockfile, rule, design, assertion, fixture, test-count, coverage-threshold, or timeout change is authorized or present.
+- The ordinary application project excludes `game-application-service.test.ts`; four explicit workspace projects each register exactly one disjoint section. Direct file execution without a shard environment registers all four sections.
+
 ## Required next action
 
-Publish repair round 2 to the existing branch and PR #26, then require fresh exact-head push and PR CI. Any new CI failure is immediately `HUMAN_BLOCKED`; no repair round 3 exists.
+Publish the single repair-round-3 commit to the existing branch and PR #26, then require fresh exact-head push and PR CI. Any failure is immediately `HUMAN_BLOCKED`; no repair round 4 exists.
 
 Do not start 2B19B or Phase 2C.

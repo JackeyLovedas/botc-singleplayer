@@ -3,8 +3,8 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `REPAIR_ROUND_2_LOCAL_GATES_PASS`; current slice `2B19A`; branch `phase-3/dreamer-v2-base-vortox`; PR [#26](https://github.com/JackeyLovedas/botc-singleplayer/pull/26); `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`.
-- Design round is `2 / 2`; repair round is `2 / 2`. No Design Round 3 or repair round 3 is authorized.
+- Current control state: `RUNNING`, implementation checkpoint `REPAIR_ROUND_3_LOCAL_GATES_PASS`; current slice `2B19A`; branch `phase-3/dreamer-v2-base-vortox`; PR [#26](https://github.com/JackeyLovedas/botc-singleplayer/pull/26); `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`.
+- Design round is `2 / 2`; repair round is `3 / 3` under `USER_AUTHORIZED_2B19A_CI_EXECUTION_GRANULARITY_REPAIR_ROUND_3`. No Design Round 3 or repair round 4 is authorized.
 - Accepted slices remain `2B13` through `2B18B`. Slice `2B19` is not completed and is not in `completedSlices`.
 - PR #25 is closed, unmerged, and unaccepted; its remote branch `phase-3/dreamer-v2-completion` is retained as read-only history and no repair round 5 is authorized.
 - Slice 2B19A starts from accepted main `405f13ac2afbdaf33a20d54ece727b68199f152f`; its reviewed base Dreamer V2 plus effective Vortox implementation exists only on the local feature branch. No PR, exact-head CI, final review, merge, tag, FIRST_NIGHT completion, DAY transition, 2B19B, or Phase 2C work exists.
@@ -31,12 +31,14 @@
 - Scope is base Dreamer V2 plus effective Vortox only. Philosopher-gained Dreamer execution, gained contracts, grants, insertions, ordering, and traceability are explicitly excluded and fail receipt-free.
 - Round 2 closes the reviewed blockers by preserving strict complete replay at every accepted-history, receipt, staged-commit, ledger, and projection entry; only the internal prospective validator can replay target/delivery prefixes. V2 first success and idempotent replay return exact event-type summaries without private payloads.
 - The reviewed base Dreamer V2 plus Vortox implementation is locally complete. `docs/implementation/phase-3-slice-2b19a-test-traceability.md` maps `D19A-001` through `D19A-043`; Philosopher-gained Dreamer remains receipt-free unsupported and 2B19B is not started.
-- Local gates pass: typecheck, lint, full `31 files / 1450 tests`, coverage `31 files / 1450 tests` with `86.41%` statements/lines, `81.19%` branches, `96.78%` functions, and diff-check. This is not acceptance: frozen-head CI and independent dual final review do not yet exist.
+- Repair-round-3 Stage 0 reran only the failed validate jobs. Push `29337585218` attempt 2 repeated the same post-`1450` coverage `onTaskUpdate` timeout only; PR `29337589161` attempt 2 succeeded. No second failure type occurred.
+- Repair-round-3 Stage 1 changes only test execution granularity. Four mutually exclusive projects run the unchanged application-service tests as `90 / 52 / 7 / 64`, totaling `213 / 213`, with no duplicate or omitted test. No production, workflow, package, lockfile, rule, design, assertion, fixture, threshold, or timeout changes exist.
+- Local gates pass: typecheck, lint, all `1450` tests across `31` unique physical test files (`34` Vitest workspace project-file executions), coverage `86.41%` statements/lines, `81.28%` branches, `96.78%` functions, no `onTaskUpdate` timeout, and diff-check. This is not acceptance: frozen repair-head CI and independent dual final review do not yet exist.
 - Initial product HEAD `8bbd67b5523e79e4906bc2e27e2f12f0ab1cf971` failed push CI `29335406464` only on the unchanged high-cost Seamstress four-actor DEFER test exceeding the default 5,000 ms under Linux coverage. Repair round 1 assigns only that test an explicit `15_000` ms timeout; assertions and production semantics are unchanged.
 - Targeted coverage passes in 3.22 seconds; typecheck, lint, full and coverage `31 files / 1450 tests`, and diff-check pass locally. Fresh exact repair-head CI remains pending.
 - Repair-round-1 HEAD `94ff27b3f9301a1eae2c211d2891b46e499ead97` failed PR CI `29336318869`, Windows deterministic job `87096328175`, only because the gained-Mathematician legacy compatibility test exceeded the default 5,000 ms timeout. Repair round 2 adds only a `15_000` ms timeout to that test; assertions, production code, and rules are unchanged.
 - The focused test passes in 1.50 seconds, the application suite passes `213 / 213`, and typecheck, lint, full and coverage `31 files / 1450 tests` remain green at `86.41% / 81.19% / 96.78%`.
-- Repair budget is exhausted at `2 / 2`; any new CI failure is `HUMAN_BLOCKED` with no repair round 3.
+- The former repair budget was superseded only by explicit authorization of final round `3 / 3`. Any exact-head CI or final-review failure is `HUMAN_BLOCKED`; repair round 4 does not exist.
 - Design Round 2 is exhausted; there is no Round 3. 2B19B and Phase 2C are not started.
 
 ## Superseded Slice 2B19 / PR #25 History

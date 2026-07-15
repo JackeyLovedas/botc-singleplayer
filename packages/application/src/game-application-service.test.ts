@@ -1261,7 +1261,20 @@ const expectRetryableFirstNightSystemInformationFailureWithoutWrites = async (
   return failedResult;
 };
 
-describe("GameApplicationService", () => {
+type ApplicationServiceTestShard = "core" | "role-actions" | "dreamer-v2-base" | "later-role-actions";
+
+const describeApplicationServiceShard = (
+  shard: ApplicationServiceTestShard,
+  name: string,
+  factory: () => void
+): void => {
+  const configuredShard = process.env.BOTC_APPLICATION_SERVICE_TEST_SHARD;
+  if (configuredShard === undefined || configuredShard === shard) {
+    describe(name, factory);
+  }
+};
+
+describeApplicationServiceShard("core", "GameApplicationService core", () => {
   it("creates a game with an accepted receipt and one atomic domain event batch", async () => {
     const { service, commandStore } = makeService();
     const command = createGameCommand();
@@ -3987,6 +4000,9 @@ describe("GameApplicationService", () => {
     expect(afterState?.firstNightActionOpportunities?.opportunities.at(-1)?.opportunityStatus).toBe("OPEN");
   });
 
+});
+
+describeApplicationServiceShard("role-actions", "GameApplicationService role actions", () => {
   it("settles base Snake Charmer non-Demon targets through the existing no-swap path", async () => {
     const commandStore = new MemoryCommandCommitStore();
     const { service } = makeService(commandStore);
@@ -6072,6 +6088,12 @@ describe("GameApplicationService", () => {
     }
   });
 
+});
+
+describeApplicationServiceShard(
+  "dreamer-v2-base",
+  "GameApplicationService base Dreamer V2",
+  () => {
   it("rejects invalid Witch submissions and opens the next Dreamer opportunity", async () => {
     const { service, commandStore } = makeService();
     const { witchTask, opportunity, state } = await reachOpenWitchActionOpportunity(service, commandStore);
@@ -6506,6 +6528,12 @@ describe("GameApplicationService", () => {
     expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(28);
   });
 
+});
+
+describeApplicationServiceShard(
+  "later-role-actions",
+  "GameApplicationService later role actions",
+  () => {
   it("opens base Seamstress as the next safe deterministic first-night DEFER opportunity", async () => {
     const { service, commandStore } = makeService();
     const { seamstressTask } = await reachSeamstressActionTask(service, commandStore);
@@ -7771,7 +7799,10 @@ describe("GameApplicationService", () => {
   });
 });
 
-describe("Slice 2B16 Cerenovus first-night integration", () => {
+describeApplicationServiceShard(
+  "later-role-actions",
+  "Slice 2B16 Cerenovus first-night integration",
+  () => {
   const submitCerenovus = (
     state: NonNullable<ReturnType<typeof rebuildOptionalGameState>>,
     taskIdValue: ReturnType<typeof scheduledTaskId>,
