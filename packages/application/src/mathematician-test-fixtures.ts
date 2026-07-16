@@ -7,8 +7,11 @@ import type { CommandCommitStore } from "./ports/command-commit-store.js";
 import {
   commandId,
   correlationId,
+  formatFirstNightActionOpportunityId,
   rebuildGameState,
-  roleId
+  roleId,
+  seatNumber,
+  validateDomainEventStream
 } from "@botc/domain-core";
 import type { GameState, ScheduledTask, SettleMathematicianInformationCommand } from "@botc/domain-core";
 import {
@@ -131,7 +134,32 @@ const advanceOne = async (
     commandId: commandId(`math-fixture-open-${step}`), expectedGameVersion: state.gameVersion,
     payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: task.taskId }
   })));
-  const opened = await current(store);
+  let opened = await current(store);
+  if (task.taskType === "DREAMER_ACTION") {
+    const events = await store.loadDomainEvents(ids.game);
+    const created = events.find((event) =>
+      event.eventType === "FirstNightActionOpportunityCreated" && event.payload.taskId === task.taskId
+    );
+    if (created === undefined || created.eventType !== "FirstNightActionOpportunityCreated") {
+      throw new Error("Expected Mathematician fixture Dreamer opportunity event");
+    }
+    const payload = created.payload as unknown as Record<string, unknown>;
+    payload.opportunityId = formatFirstNightActionOpportunityId({
+      taskType: "DREAMER_ACTION",
+      seatNumber: seatNumber(payload.sourceSeatNumber as number),
+      opportunityIndex: 1
+    });
+    payload.opportunityKind = "DREAMER_FIRST_NIGHT_ACTION";
+    payload.visibility = {
+      canChooseTarget: true,
+      supportedDecisionKinds: ["CHOOSE_PLAYER"],
+      targetSchema: "OTHER_NON_TRAVELLER_PLAYER"
+    };
+    delete payload.opportunitySchemaVersion;
+    delete payload.sourceContract;
+    validateDomainEventStream(events);
+    opened = await current(store);
+  }
   const opportunity = opened.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === task.taskId);
   if (opportunity === undefined) throw new Error("Expected Mathematician fixture opportunity");
   if (task.taskType === "SEAMSTRESS_ACTION") {

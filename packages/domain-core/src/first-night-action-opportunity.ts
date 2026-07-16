@@ -1,11 +1,18 @@
 import { cloneRoleSetupSnapshot } from "./character-assignment.js";
+import { isCanonicalDataValue } from "./canonical-data.js";
 import type { CurrentCharacterStateSet } from "./current-character-state.js";
 import { DomainError } from "./errors.js";
 import {
   SUPPORTED_SCHEDULED_TASK_SETTLEMENT_VERSION,
   getNextUnsettledFirstNightTask,
-  isFirstNightTaskSettled
+  isFirstNightTaskSettled,
+  roleScheduledTaskId
 } from "./first-night-task-plan.js";
+import {
+  formatBaseFirstNightAbilityInstanceId,
+  parseFirstNightAbilityInstanceId
+} from "./first-night-ability-outcome-ledger.js";
+import type { FirstNightAbilityInstanceId } from "./first-night-ability-outcome-ledger.js";
 import type {
   FirstNightTaskPlan,
   FirstNightTaskProgress,
@@ -43,6 +50,7 @@ import { formatCerenovusAbilityInstanceId, parseCerenovusAbilityInstanceId } fro
 import type { CerenovusAbilitySourceDescriptor } from "./cerenovus.js";
 import {
   findActiveSeamstressAbilityForSource,
+  findUniqueActiveRoleTenure,
   isRoleTenureContinuousAcross,
   parseRoleTenureId,
   parseSeamstressAbilityInstanceId,
@@ -57,6 +65,7 @@ export type ActionOpportunityKind =
   | "WITCH_FIRST_NIGHT_ACTION"
   | "CERENOVUS_FIRST_NIGHT_ACTION"
   | "DREAMER_FIRST_NIGHT_ACTION"
+  | "DREAMER_FIRST_NIGHT_ACTION_V2"
   | "SEAMSTRESS_FIRST_NIGHT_ACTION";
 export type PhilosopherActionDecisionKind = "DEFER" | "CHOOSE_GOOD_CHARACTER";
 export type SnakeCharmerActionDecisionKind = "CHOOSE_PLAYER";
@@ -96,11 +105,29 @@ export type WitchActionOpportunityVisibility = {
   readonly targetSchema: "ANY_PLAYER";
 };
 
-export type DreamerActionOpportunityVisibility = {
+export const DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION =
+  "dreamer-first-night-action-opportunity-v2" as const;
+export const DREAMER_V2_VISIBILITY_SCHEMA_VERSION =
+  "dreamer-first-night-action-visibility-v2" as const;
+export const DREAMER_BASE_SOURCE_CONTRACT_VERSION =
+  "dreamer-base-source-contract-v1" as const;
+export type DreamerActionOpportunityVisibilityV1 = {
   readonly canChooseTarget: true;
   readonly supportedDecisionKinds: readonly ["CHOOSE_PLAYER"];
   readonly targetSchema: "OTHER_NON_TRAVELLER_PLAYER";
 };
+
+export type DreamerActionOpportunityVisibilityV2 = {
+  readonly visibilitySchemaVersion: typeof DREAMER_V2_VISIBILITY_SCHEMA_VERSION;
+  readonly canChooseTarget: false;
+  readonly supportedDecisionKinds: readonly [];
+  readonly futureUnsupportedDecisionKinds: readonly ["CHOOSE_PLAYER"];
+  readonly futureTargetSchema: "OTHER_NON_TRAVELLER_PLAYER";
+};
+
+export type DreamerActionOpportunityVisibility =
+  | DreamerActionOpportunityVisibilityV1
+  | DreamerActionOpportunityVisibilityV2;
 
 export type CerenovusActionOpportunityVisibility = {
   readonly canChooseTarget: true;
@@ -216,13 +243,41 @@ export type WitchActionOpportunity = WitchActionOpportunitySource & {
   readonly visibility: WitchActionOpportunityVisibility;
 };
 
-export type DreamerActionOpportunity = DreamerActionOpportunitySource & {
+export type BaseDreamerV2SourceContract = {
+  readonly sourceContractVersion: typeof DREAMER_BASE_SOURCE_CONTRACT_VERSION;
+  readonly kind: "BASE";
+  readonly taskPlanVersion: "first-night-task-plan-v2";
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: "DREAMER_ACTION";
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly sourceRoleId: "dreamer";
+  readonly sourceRoleTenureId: RoleTenureId;
+  readonly sourceCharacterStateRevision: number;
+  readonly sourceAbilityInstanceId: FirstNightAbilityInstanceId;
+};
+
+export type DreamerActionOpportunityV1 = DreamerActionOpportunitySource & {
   readonly nightNumber: 1;
   readonly opportunityId: ActionOpportunityId;
   readonly opportunityKind: "DREAMER_FIRST_NIGHT_ACTION";
   readonly opportunityStatus: ActionOpportunityStatus;
-  readonly visibility: DreamerActionOpportunityVisibility;
+  readonly visibility: DreamerActionOpportunityVisibilityV1;
 };
+
+export type DreamerActionOpportunityV2 = DreamerActionOpportunitySource & {
+  readonly opportunitySchemaVersion: typeof DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION;
+  readonly nightNumber: 1;
+  readonly opportunityId: ActionOpportunityId;
+  readonly opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V2";
+  readonly opportunityStatus: ActionOpportunityStatus;
+  readonly sourceContract: BaseDreamerV2SourceContract;
+  readonly visibility: DreamerActionOpportunityVisibilityV2;
+};
+
+export type DreamerActionOpportunity =
+  | DreamerActionOpportunityV1
+  | DreamerActionOpportunityV2;
 
 export type CerenovusActionOpportunity = CerenovusActionOpportunitySource & {
   readonly nightNumber: 1;
@@ -320,7 +375,7 @@ export type SeamstressActionDecisionValidationResult =
 
 type OpportunityValidationInput = {
   readonly taskId: ScheduledTaskId;
-  readonly firstNightTaskPlan: Pick<FirstNightTaskPlan, "tasks">;
+  readonly firstNightTaskPlan: FirstNightTaskPlan;
   readonly firstNightTaskProgress: FirstNightTaskProgress | undefined;
   readonly currentCharacterState: CurrentCharacterStateSet;
   readonly firstNightActionOpportunities: FirstNightActionOpportunityState | undefined;
@@ -379,6 +434,26 @@ const DREAMER_ACTION_OPPORTUNITY_VISIBILITY_KEYS = [
   "supportedDecisionKinds",
   "targetSchema"
 ] as const;
+const DREAMER_V2_ACTION_OPPORTUNITY_VISIBILITY_KEYS = [
+  "canChooseTarget",
+  "futureTargetSchema",
+  "futureUnsupportedDecisionKinds",
+  "supportedDecisionKinds",
+  "visibilitySchemaVersion"
+] as const;
+const DREAMER_V2_SOURCE_CONTRACT_KEYS = [
+  "kind",
+  "sourceAbilityInstanceId",
+  "sourceCharacterStateRevision",
+  "sourceContractVersion",
+  "sourcePlayerId",
+  "sourceRoleId",
+  "sourceRoleTenureId",
+  "sourceSeatNumber",
+  "taskId",
+  "taskPlanVersion",
+  "taskType"
+] as const;
 const SEAMSTRESS_ACTION_OPPORTUNITY_VISIBILITY_V1_KEYS = [
   "canDefer",
   "futureUnsupportedDecisionKinds",
@@ -419,6 +494,25 @@ const FIRST_NIGHT_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS = [
   "taskId",
   "taskType",
   "visibility"
+] as const;
+const DREAMER_V2_ACTION_OPPORTUNITY_KEYS = [
+  "nightNumber",
+  "opportunityId",
+  "opportunityKind",
+  "opportunitySchemaVersion",
+  "opportunityStatus",
+  "sourceCharacterStateRevision",
+  "sourceContract",
+  "sourcePlayerId",
+  "sourceRole",
+  "sourceSeatNumber",
+  "taskId",
+  "taskType",
+  "visibility"
+] as const;
+const DREAMER_V2_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS = [
+  ...DREAMER_V2_ACTION_OPPORTUNITY_KEYS,
+  "rulesBaselineVersion"
 ] as const;
 const SEAMSTRESS_ACTION_OPPORTUNITY_V2_KEYS = [
   ...FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS,
@@ -509,6 +603,7 @@ const DREAMER_ROLE_ID = "dreamer" as RoleId;
 const SEAMSTRESS_ROLE_ID = "seamstress" as RoleId;
 const FIRST_NIGHT_ACTION_OPPORTUNITY_ID_PATTERN =
   /^first-night-v1:(?:(PHILOSOPHER_ACTION|SNAKE_CHARMER_ACTION|WITCH_ACTION|CERENOVUS_ACTION|DREAMER_ACTION|SEAMSTRESS_ACTION):seat-(0[1-9]|1[0-2]):opportunity-(0[1-9][0-9]*)|PHILOSOPHER_GAINED:(SNAKE_CHARMER_ACTION|SEAMSTRESS_ACTION):seat-(0[1-9]|1[0-2]):from-(snake_charmer|seamstress):opportunity-(0[1-9][0-9]*))$/;
+const BASE_DREAMER_V2_ACTION_OPPORTUNITY_ID_PATTERN = /^first-night-v2:DREAMER_ACTION:seat-(0[1-9]|1[0-2]):opportunity-01$/;
 
 const fail = (reason: string): ValidationResult => ({ valid: false, reason });
 
@@ -538,10 +633,18 @@ const createCerenovusActionOpportunityVisibility = (): CerenovusActionOpportunit
   characterSchema: "ON_SCRIPT_TOWNSFOLK_OR_OUTSIDER"
 });
 
-const createDreamerActionOpportunityVisibility = (): DreamerActionOpportunityVisibility => ({
+const createDreamerActionOpportunityVisibility = (): DreamerActionOpportunityVisibilityV1 => ({
   canChooseTarget: true,
   supportedDecisionKinds: ["CHOOSE_PLAYER"],
   targetSchema: "OTHER_NON_TRAVELLER_PLAYER"
+});
+
+const createDreamerActionOpportunityVisibilityV2 = (): DreamerActionOpportunityVisibilityV2 => ({
+  visibilitySchemaVersion: DREAMER_V2_VISIBILITY_SCHEMA_VERSION,
+  canChooseTarget: false,
+  supportedDecisionKinds: [],
+  futureUnsupportedDecisionKinds: ["CHOOSE_PLAYER"],
+  futureTargetSchema: "OTHER_NON_TRAVELLER_PLAYER"
 });
 
 const createSeamstressActionOpportunityVisibilityV1 = (): SeamstressActionOpportunityVisibilityV1 => ({
@@ -612,7 +715,7 @@ const hasExactCerenovusActionOpportunityVisibilityShape = (value: unknown): valu
   value.targetSchema === "ANY_MODELED_ROSTER_PLAYER" &&
   value.characterSchema === "ON_SCRIPT_TOWNSFOLK_OR_OUTSIDER";
 
-const hasExactDreamerActionOpportunityVisibilityShape = (value: unknown): value is DreamerActionOpportunityVisibility =>
+const hasExactDreamerActionOpportunityVisibilityShape = (value: unknown): value is DreamerActionOpportunityVisibilityV1 =>
   isPlainRecord(value) &&
   hasExactEnumerableKeys(value, DREAMER_ACTION_OPPORTUNITY_VISIBILITY_KEYS) &&
   value.canChooseTarget === true &&
@@ -621,6 +724,40 @@ const hasExactDreamerActionOpportunityVisibilityShape = (value: unknown): value 
   value.supportedDecisionKinds.length === 1 &&
   value.supportedDecisionKinds[0] === "CHOOSE_PLAYER" &&
   value.targetSchema === "OTHER_NON_TRAVELLER_PLAYER";
+
+const hasExactDreamerActionOpportunityVisibilityV2Shape = (value: unknown): value is DreamerActionOpportunityVisibilityV2 =>
+  isPlainRecord(value) &&
+  hasExactEnumerableKeys(value, DREAMER_V2_ACTION_OPPORTUNITY_VISIBILITY_KEYS) &&
+  value.visibilitySchemaVersion === DREAMER_V2_VISIBILITY_SCHEMA_VERSION &&
+  value.canChooseTarget === false &&
+  Array.isArray(value.supportedDecisionKinds) &&
+  isDenseArray(value.supportedDecisionKinds) &&
+  value.supportedDecisionKinds.length === 0 &&
+  Array.isArray(value.futureUnsupportedDecisionKinds) &&
+  isDenseArray(value.futureUnsupportedDecisionKinds) &&
+  value.futureUnsupportedDecisionKinds.length === 1 &&
+  value.futureUnsupportedDecisionKinds[0] === "CHOOSE_PLAYER" &&
+  value.futureTargetSchema === "OTHER_NON_TRAVELLER_PLAYER";
+
+const hasExactBaseDreamerV2SourceContractShape = (value: unknown): value is BaseDreamerV2SourceContract =>
+  isPlainRecord(value) &&
+  hasExactEnumerableKeys(value, DREAMER_V2_SOURCE_CONTRACT_KEYS) &&
+  value.sourceContractVersion === DREAMER_BASE_SOURCE_CONTRACT_VERSION &&
+  value.kind === "BASE" &&
+  value.taskPlanVersion === "first-night-task-plan-v2" &&
+  typeof value.taskId === "string" &&
+  value.taskId.length > 0 &&
+  value.taskType === "DREAMER_ACTION" &&
+  typeof value.sourcePlayerId === "string" &&
+  value.sourcePlayerId.length > 0 &&
+  Number.isSafeInteger(value.sourceSeatNumber) &&
+  (value.sourceSeatNumber as number) >= 1 &&
+  (value.sourceSeatNumber as number) <= 12 &&
+  value.sourceRoleId === "dreamer" &&
+  typeof value.sourceRoleTenureId === "string" &&
+  Number.isSafeInteger(value.sourceCharacterStateRevision) &&
+  (value.sourceCharacterStateRevision as number) > 0 &&
+  typeof value.sourceAbilityInstanceId === "string";
 
 const hasExactSeamstressActionOpportunityVisibilityV1Shape = (value: unknown): value is SeamstressActionOpportunityVisibilityV1 =>
   isPlainRecord(value) &&
@@ -673,6 +810,13 @@ export const isSeamstressActionOpportunityV2 = (
   value.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION" &&
   Object.hasOwn(value.visibility, "visibilitySchemaVersion");
 
+export const isDreamerActionOpportunityV2 = (
+  value: DreamerActionOpportunity | FirstNightActionOpportunity
+): value is DreamerActionOpportunityV2 =>
+  value.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2" &&
+  Object.hasOwn(value, "opportunitySchemaVersion") &&
+  value.opportunitySchemaVersion === DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION;
+
 const hasExactFirstNightActionOpportunityShape = (value: unknown): value is FirstNightActionOpportunity => {
   if (!isPlainRecord(value)) {
     return false;
@@ -680,14 +824,23 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
   const seamstressV2 = value.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION" && isPlainRecord(value.visibility) &&
     Object.hasOwn(value.visibility, "visibilitySchemaVersion");
   const cerenovus = value.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION";
-  if (!hasExactEnumerableKeys(value, cerenovus ? CERENOVUS_ACTION_OPPORTUNITY_KEYS : seamstressV2 ? SEAMSTRESS_ACTION_OPPORTUNITY_V2_KEYS : FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS)) {
+  const dreamerV2 = value.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2";
+  if (!hasExactEnumerableKeys(value, dreamerV2
+    ? DREAMER_V2_ACTION_OPPORTUNITY_KEYS
+    : cerenovus
+    ? CERENOVUS_ACTION_OPPORTUNITY_KEYS
+    : seamstressV2
+    ? SEAMSTRESS_ACTION_OPPORTUNITY_V2_KEYS
+    : FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS)) {
     return false;
   }
 
   const commonFieldsValid =
     value.nightNumber === 1 &&
     typeof value.opportunityId === "string" &&
-    parseFirstNightActionOpportunityId(actionOpportunityId(value.opportunityId)).valid &&
+    (dreamerV2
+      ? parseBaseDreamerV2FirstNightActionOpportunityId(value.opportunityId).valid
+      : parseFirstNightActionOpportunityId(actionOpportunityId(value.opportunityId)).valid) &&
     (value.opportunityStatus === "OPEN" || value.opportunityStatus === "CLOSED") &&
     typeof value.taskId === "string" &&
     value.taskId.trim().length > 0 &&
@@ -703,6 +856,40 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
     value.sourceCharacterStateRevision > 0;
   if (!commonFieldsValid) {
     return false;
+  }
+
+  if (dreamerV2) {
+    const parsedV2Id = parseBaseDreamerV2FirstNightActionOpportunityId(value.opportunityId);
+    if (!hasExactBaseDreamerV2SourceContractShape(value.sourceContract)) return false;
+    const sourceContract = value.sourceContract;
+    const sourceRole = value.sourceRole as RoleSetupSnapshot;
+    const taskId = value.taskId as ScheduledTaskId;
+    const parsedTenure = parseRoleTenureId(sourceContract.sourceRoleTenureId);
+    const parsedInstance = parseFirstNightAbilityInstanceId(sourceContract.sourceAbilityInstanceId);
+    return value.opportunitySchemaVersion === DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION &&
+      value.opportunityStatus === "OPEN" &&
+      value.taskType === "DREAMER_ACTION" &&
+      sourceRole.roleId === "dreamer" &&
+      parsedV2Id.valid &&
+      parsedV2Id.seatNumber === value.sourceSeatNumber &&
+      sourceContract.taskId === value.taskId &&
+      sourceContract.taskType === value.taskType &&
+      sourceContract.sourcePlayerId === value.sourcePlayerId &&
+      sourceContract.sourceSeatNumber === value.sourceSeatNumber &&
+      sourceContract.sourceRoleId === sourceRole.roleId &&
+      sourceContract.sourceCharacterStateRevision === value.sourceCharacterStateRevision &&
+      parsedTenure.valid &&
+      parsedTenure.seatNumber === value.sourceSeatNumber &&
+      parsedTenure.roleId === "dreamer" &&
+      parsedTenure.acquiredCharacterStateRevision <= value.sourceCharacterStateRevision &&
+      parsedInstance.valid &&
+      parsedInstance.kind === "BASE_ROLE_TASK" &&
+      parsedInstance.generation === "BASE" &&
+      parsedInstance.taskId === value.taskId &&
+      parsedInstance.taskType === "DREAMER_ACTION" &&
+      parsedInstance.embeddedSeat === value.sourceSeatNumber &&
+      sourceContract.sourceAbilityInstanceId === formatBaseFirstNightAbilityInstanceId(taskId) &&
+      hasExactDreamerActionOpportunityVisibilityV2Shape(value.visibility);
   }
 
   const parsedId = parseFirstNightActionOpportunityId(actionOpportunityId(value.opportunityId as string));
@@ -792,12 +979,13 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
 export const validateFirstNightActionOpportunityStateShape = (
   value: unknown
 ): ValidationResult => {
-  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, ["opportunities"]) ||
+  if (!isCanonicalDataValue(value) || !isPlainRecord(value) || !hasExactEnumerableKeys(value, ["opportunities"]) ||
       !Array.isArray(value.opportunities) || !isDenseArray(value.opportunities)) {
     return fail("First-night action opportunity state must have one dense opportunities array");
   }
 
   const opportunityIds = new Set<string>();
+  const taskIds = new Set<string>();
   const opportunities = value.opportunities as unknown[];
   for (let index = 0; index < value.opportunities.length; index += 1) {
     const opportunity = opportunities[index];
@@ -807,7 +995,11 @@ export const validateFirstNightActionOpportunityStateShape = (
     if (opportunityIds.has(opportunity.opportunityId)) {
       return fail("First-night action opportunity identities must be unique");
     }
+    if (taskIds.has(opportunity.taskId)) {
+      return fail("First-night action opportunity task identities must be unique");
+    }
     opportunityIds.add(opportunity.opportunityId);
+    taskIds.add(opportunity.taskId);
   }
 
   return { valid: true };
@@ -835,6 +1027,15 @@ const cloneVisibility = (visibility: ActionOpportunityVisibility): ActionOpportu
     };
   }
   if (Object.hasOwn(visibility, "visibilitySchemaVersion")) {
+    if ((visibility as { readonly visibilitySchemaVersion?: unknown }).visibilitySchemaVersion === DREAMER_V2_VISIBILITY_SCHEMA_VERSION) {
+      return {
+        visibilitySchemaVersion: DREAMER_V2_VISIBILITY_SCHEMA_VERSION,
+        canChooseTarget: false,
+        supportedDecisionKinds: [],
+        futureUnsupportedDecisionKinds: ["CHOOSE_PLAYER"],
+        futureTargetSchema: "OTHER_NON_TRAVELLER_PLAYER"
+      };
+    }
     const seamstress = visibility as SeamstressActionOpportunityVisibilityV2;
     return {
       visibilitySchemaVersion: seamstress.visibilitySchemaVersion,
@@ -862,10 +1063,14 @@ const cloneVisibility = (visibility: ActionOpportunityVisibility): ActionOpportu
     };
   }
 
+  const targetVisibility = visibility as
+    | SnakeCharmerActionOpportunityVisibility
+    | WitchActionOpportunityVisibility
+    | DreamerActionOpportunityVisibilityV1;
   return {
-    canChooseTarget: visibility.canChooseTarget,
+    canChooseTarget: true,
     supportedDecisionKinds: ["CHOOSE_PLAYER"],
-    targetSchema: visibility.targetSchema
+    targetSchema: targetVisibility.targetSchema
   };
 };
 
@@ -880,6 +1085,18 @@ const sameVisibility = (left: ActionOpportunityVisibility, right: ActionOpportun
   const rightV2 = Object.hasOwn(right, "visibilitySchemaVersion");
   if (leftV2 || rightV2) {
     if (!leftV2 || !rightV2) return false;
+    const leftVersion = (left as { readonly visibilitySchemaVersion: string }).visibilitySchemaVersion;
+    const rightVersion = (right as { readonly visibilitySchemaVersion: string }).visibilitySchemaVersion;
+    if (leftVersion === DREAMER_V2_VISIBILITY_SCHEMA_VERSION || rightVersion === DREAMER_V2_VISIBILITY_SCHEMA_VERSION) {
+      if (leftVersion !== DREAMER_V2_VISIBILITY_SCHEMA_VERSION || rightVersion !== DREAMER_V2_VISIBILITY_SCHEMA_VERSION) return false;
+      const a = left as DreamerActionOpportunityVisibilityV2;
+      const b = right as DreamerActionOpportunityVisibilityV2;
+      return a.canChooseTarget === b.canChooseTarget &&
+        a.futureTargetSchema === b.futureTargetSchema &&
+        a.supportedDecisionKinds.length === b.supportedDecisionKinds.length &&
+        a.futureUnsupportedDecisionKinds.length === b.futureUnsupportedDecisionKinds.length &&
+        a.futureUnsupportedDecisionKinds[0] === b.futureUnsupportedDecisionKinds[0];
+    }
     const a = left as SeamstressActionOpportunityVisibilityV2;
     const b = right as SeamstressActionOpportunityVisibilityV2;
     return a.visibilitySchemaVersion === b.visibilitySchemaVersion &&
@@ -898,11 +1115,19 @@ const sameVisibility = (left: ActionOpportunityVisibility, right: ActionOpportun
       left.futureUnsupportedDecisionKinds.every((value, index) => value === right.futureUnsupportedDecisionKinds[index]);
   }
 
-  return left.canChooseTarget === right.canChooseTarget &&
-    left.supportedDecisionKinds.length === 1 &&
-    right.supportedDecisionKinds.length === 1 &&
-    left.supportedDecisionKinds[0] === right.supportedDecisionKinds[0] &&
-    left.targetSchema === right.targetSchema;
+  const leftTarget = left as
+    | SnakeCharmerActionOpportunityVisibility
+    | WitchActionOpportunityVisibility
+    | DreamerActionOpportunityVisibilityV1;
+  const rightTarget = right as
+    | SnakeCharmerActionOpportunityVisibility
+    | WitchActionOpportunityVisibility
+    | DreamerActionOpportunityVisibilityV1;
+  return leftTarget.canChooseTarget === rightTarget.canChooseTarget &&
+    leftTarget.supportedDecisionKinds.length === 1 &&
+    rightTarget.supportedDecisionKinds.length === 1 &&
+    leftTarget.supportedDecisionKinds[0] === rightTarget.supportedDecisionKinds[0] &&
+    leftTarget.targetSchema === rightTarget.targetSchema;
 };
 
 const cloneFirstNightActionOpportunity = (
@@ -975,6 +1200,24 @@ const cloneFirstNightActionOpportunity = (
     };
   }
 
+  if (opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2") {
+    return {
+      nightNumber: opportunity.nightNumber,
+      opportunityId: opportunity.opportunityId,
+      opportunityKind: opportunity.opportunityKind,
+      opportunitySchemaVersion: opportunity.opportunitySchemaVersion,
+      opportunityStatus: opportunity.opportunityStatus,
+      taskId: opportunity.taskId,
+      taskType: opportunity.taskType,
+      sourcePlayerId: opportunity.sourcePlayerId,
+      sourceSeatNumber: opportunity.sourceSeatNumber,
+      sourceRole: cloneRoleSetupSnapshot(opportunity.sourceRole),
+      sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision,
+      sourceContract: { ...opportunity.sourceContract },
+      visibility: cloneVisibility(opportunity.visibility) as DreamerActionOpportunityVisibilityV2
+    };
+  }
+
   if (opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION") {
     return {
       nightNumber: opportunity.nightNumber,
@@ -987,7 +1230,7 @@ const cloneFirstNightActionOpportunity = (
       sourceSeatNumber: opportunity.sourceSeatNumber,
       sourceRole: cloneRoleSetupSnapshot(opportunity.sourceRole),
       sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision,
-      visibility: cloneVisibility(opportunity.visibility) as DreamerActionOpportunityVisibility
+      visibility: cloneVisibility(opportunity.visibility) as DreamerActionOpportunityVisibilityV1
     };
   }
 
@@ -1031,6 +1274,19 @@ export const sameOpportunityCore = (
   right: FirstNightActionOpportunity
 ): boolean => {
   if (left.opportunityKind !== right.opportunityKind) return false;
+  if (left.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2" && right.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2" &&
+      (left.opportunitySchemaVersion !== right.opportunitySchemaVersion ||
+       left.sourceContract.sourceContractVersion !== right.sourceContract.sourceContractVersion ||
+       left.sourceContract.kind !== right.sourceContract.kind ||
+       left.sourceContract.taskPlanVersion !== right.sourceContract.taskPlanVersion ||
+       left.sourceContract.taskId !== right.sourceContract.taskId ||
+       left.sourceContract.taskType !== right.sourceContract.taskType ||
+       left.sourceContract.sourcePlayerId !== right.sourceContract.sourcePlayerId ||
+       left.sourceContract.sourceSeatNumber !== right.sourceContract.sourceSeatNumber ||
+       left.sourceContract.sourceRoleId !== right.sourceContract.sourceRoleId ||
+       left.sourceContract.sourceRoleTenureId !== right.sourceContract.sourceRoleTenureId ||
+       left.sourceContract.sourceCharacterStateRevision !== right.sourceContract.sourceCharacterStateRevision ||
+       left.sourceContract.sourceAbilityInstanceId !== right.sourceContract.sourceAbilityInstanceId)) return false;
   if (left.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION" && right.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION" &&
       (left.sourceRoleTenureId !== right.sourceRoleTenureId || left.sourceAbilityInstanceId !== right.sourceAbilityInstanceId ||
        left.abilitySource.kind !== right.abilitySource.kind || left.abilitySource.abilityRoleId !== right.abilitySource.abilityRoleId ||
@@ -1347,6 +1603,52 @@ export const formatPhilosopherGainedSeamstressActionOpportunityId = (input: {
   return actionOpportunityId(`first-night-v1:PHILOSOPHER_GAINED:SEAMSTRESS_ACTION:seat-${seatSegment}:from-seamstress:opportunity-${opportunitySegment}`);
 };
 
+export const formatBaseDreamerV2FirstNightActionOpportunityId = (input: {
+  readonly seatNumber: SeatNumber;
+}): ActionOpportunityId => {
+  if (!Number.isInteger(input.seatNumber) || input.seatNumber < 1 || input.seatNumber > 12) {
+    throw new DomainError(
+      "InvalidFirstNightActionOpportunityCreatedPayload",
+      "Base Dreamer V2 ActionOpportunityId seat number must be 1 through 12"
+    );
+  }
+  return actionOpportunityId(
+    `first-night-v2:DREAMER_ACTION:seat-${String(input.seatNumber).padStart(2, "0")}:opportunity-01`
+  );
+};
+
+export const parseBaseDreamerV2FirstNightActionOpportunityId = (
+  value: unknown
+):
+  | {
+      readonly valid: true;
+      readonly canonicalId: ActionOpportunityId;
+      readonly taskType: "DREAMER_ACTION";
+      readonly seatNumber: SeatNumber;
+      readonly opportunityIndex: 1;
+    }
+  | { readonly valid: false; readonly reason: string } => {
+  if (typeof value !== "string") {
+    return { valid: false, reason: "Base Dreamer V2 ActionOpportunityId must be a primitive string" };
+  }
+  const match = BASE_DREAMER_V2_ACTION_OPPORTUNITY_ID_PATTERN.exec(value);
+  if (match?.[1] === undefined) {
+    return { valid: false, reason: "Base Dreamer V2 ActionOpportunityId must use the exact canonical grammar" };
+  }
+  const seatNumber = Number(match[1]) as SeatNumber;
+  const canonicalId = formatBaseDreamerV2FirstNightActionOpportunityId({ seatNumber });
+  if (canonicalId !== value) {
+    return { valid: false, reason: "Base Dreamer V2 ActionOpportunityId must round-trip canonically" };
+  }
+  return {
+    valid: true,
+    canonicalId,
+    taskType: "DREAMER_ACTION",
+    seatNumber,
+    opportunityIndex: 1
+  };
+};
+
 export const parseFirstNightActionOpportunityId = (
   value: ActionOpportunityId
 ): {
@@ -1473,9 +1775,10 @@ export const tryCreatePhilosopherFirstNightActionOpportunity = (
 const validateCommonOpportunityTarget = (
   input: OpportunityValidationInput
 ): { readonly valid: true; readonly targetTask: ScheduledTask } | { readonly valid: false; readonly reason: string } => {
-  const targetTask = input.firstNightTaskPlan.tasks.find((task) => task.taskId === input.taskId);
-  if (targetTask === undefined) {
-    return { valid: false, reason: "FirstNightActionOpportunityCreated must reference a task in the first-night task plan" };
+  const matchingTasks = input.firstNightTaskPlan.tasks.filter((task) => task.taskId === input.taskId);
+  const targetTask = matchingTasks[0];
+  if (matchingTasks.length !== 1 || targetTask === undefined) {
+    return { valid: false, reason: "FirstNightActionOpportunityCreated must reference exactly one task in the first-night task plan" };
   }
 
   if (isFirstNightTaskSettled(input.firstNightTaskProgress, input.taskId)) {
@@ -1633,7 +1936,7 @@ export const tryCreateCerenovusFirstNightActionOpportunity = (
   };
 };
 
-export const tryCreateDreamerFirstNightActionOpportunity = (
+export const tryCreateLegacyDreamerFirstNightActionOpportunity = (
   input: OpportunityValidationInput
 ): CreateDreamerOpportunityResult => {
   const common = validateCommonOpportunityTarget(input);
@@ -1668,6 +1971,104 @@ export const tryCreateDreamerFirstNightActionOpportunity = (
     }
   };
 };
+
+const tryCreateBaseDreamerV2FirstNightActionOpportunity = (
+  input: OpportunityValidationInput
+): CreateDreamerOpportunityResult => {
+  if (input.firstNightTaskPlan.nightNumber !== 1 ||
+      input.firstNightTaskPlan.taskPlanVersion !== "first-night-task-plan-v2") {
+    return { valid: false, reason: "Base Dreamer V2 opportunity requires the V2 first-night task plan" };
+  }
+  const matchingTasks = input.firstNightTaskPlan.tasks.filter((task) => task.taskId === input.taskId);
+  if (matchingTasks.length !== 1 || matchingTasks[0] === undefined) {
+    return { valid: false, reason: "Base Dreamer V2 opportunity requires exactly one matching task" };
+  }
+  const common = validateCommonOpportunityTarget(input);
+  if (!common.valid) return common;
+  const task = common.targetTask;
+  const currentEntry = currentDreamerEntryForTask(task, input.currentCharacterState);
+  if (currentEntry === undefined || task.source.kind !== "ROLE") {
+    return { valid: false, reason: "Base Dreamer V2 opportunity source is not the current base Dreamer" };
+  }
+  if (task.taskId !== roleScheduledTaskId("DREAMER_ACTION", currentEntry.seatNumber) ||
+      input.currentCharacterState.revision < 1 ||
+      !Number.isSafeInteger(input.currentCharacterState.revision)) {
+    return { valid: false, reason: "Base Dreamer V2 opportunity requires canonical task and revision identity" };
+  }
+  if (input.seamstressRoleTenureState === undefined) {
+    return { valid: false, reason: "Base Dreamer V2 opportunity requires canonical role-tenure state" };
+  }
+  let tenure;
+  try {
+    tenure = findUniqueActiveRoleTenure({
+      state: input.seamstressRoleTenureState,
+      playerId: currentEntry.playerId,
+      seatNumber: currentEntry.seatNumber,
+      roleId: "dreamer",
+      revision: input.currentCharacterState.revision
+    });
+  } catch {
+    return { valid: false, reason: "Base Dreamer V2 opportunity role-tenure state is invalid" };
+  }
+  if (tenure === undefined || tenure.playerId !== currentEntry.playerId ||
+      tenure.seatNumber !== currentEntry.seatNumber || tenure.roleId !== "dreamer" ||
+      tenure.acquiredCharacterStateRevision > input.currentCharacterState.revision ||
+      (tenure.endedCharacterStateRevision !== undefined &&
+       tenure.endedCharacterStateRevision <= input.currentCharacterState.revision)) {
+    return { valid: false, reason: "Base Dreamer V2 opportunity requires exactly one matching active Dreamer tenure" };
+  }
+  const parsedTenure = parseRoleTenureId(tenure.roleTenureId);
+  if (!parsedTenure.valid || parsedTenure.seatNumber !== currentEntry.seatNumber ||
+      parsedTenure.roleId !== "dreamer" ||
+      parsedTenure.acquiredCharacterStateRevision !== tenure.acquiredCharacterStateRevision) {
+    return { valid: false, reason: "Base Dreamer V2 opportunity tenure identity must round-trip canonically" };
+  }
+  const sourceAbilityInstanceId = formatBaseFirstNightAbilityInstanceId(task.taskId);
+  const parsedInstance = parseFirstNightAbilityInstanceId(sourceAbilityInstanceId);
+  if (!parsedInstance.valid || parsedInstance.kind !== "BASE_ROLE_TASK" ||
+      parsedInstance.generation !== "BASE" || parsedInstance.taskId !== task.taskId ||
+      parsedInstance.taskType !== "DREAMER_ACTION" || parsedInstance.embeddedSeat !== currentEntry.seatNumber) {
+    return { valid: false, reason: "Base Dreamer V2 ability instance must round-trip canonically" };
+  }
+  const sourceContract: BaseDreamerV2SourceContract = {
+    sourceContractVersion: DREAMER_BASE_SOURCE_CONTRACT_VERSION,
+    kind: "BASE",
+    taskPlanVersion: "first-night-task-plan-v2",
+    taskId: task.taskId,
+    taskType: "DREAMER_ACTION",
+    sourcePlayerId: currentEntry.playerId,
+    sourceSeatNumber: currentEntry.seatNumber,
+    sourceRoleId: "dreamer",
+    sourceRoleTenureId: tenure.roleTenureId,
+    sourceCharacterStateRevision: input.currentCharacterState.revision,
+    sourceAbilityInstanceId
+  };
+  return {
+    valid: true,
+    opportunity: {
+      opportunitySchemaVersion: DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION,
+      nightNumber: 1,
+      opportunityId: formatBaseDreamerV2FirstNightActionOpportunityId({ seatNumber: currentEntry.seatNumber }),
+      opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V2",
+      opportunityStatus: "OPEN",
+      taskId: task.taskId,
+      taskType: "DREAMER_ACTION",
+      sourcePlayerId: currentEntry.playerId,
+      sourceSeatNumber: currentEntry.seatNumber,
+      sourceRole: cloneRoleSetupSnapshot(currentEntry.role),
+      sourceCharacterStateRevision: input.currentCharacterState.revision,
+      sourceContract,
+      visibility: createDreamerActionOpportunityVisibilityV2()
+    }
+  };
+};
+
+export const tryCreateDreamerFirstNightActionOpportunity = (
+  input: OpportunityValidationInput
+): CreateDreamerOpportunityResult =>
+  input.firstNightTaskPlan.taskPlanVersion === "first-night-task-plan-v2"
+    ? tryCreateBaseDreamerV2FirstNightActionOpportunity(input)
+    : tryCreateLegacyDreamerFirstNightActionOpportunity(input);
 
 export const tryCreateSeamstressFirstNightActionOpportunity = (
   input: OpportunityValidationInput
@@ -1814,17 +2215,20 @@ export const createFirstNightRoleActionOpportunity = (
   return result.opportunity;
 };
 
-export const validateFirstNightActionOpportunityCreatedPayload = (
+const validateFirstNightActionOpportunityCreatedPayloadInternal = (
   payload: unknown,
   input: OpportunityValidationInput
 ): ValidationResult => {
-  if (!isPlainRecord(payload)) {
+  if (!isCanonicalDataValue(payload) || !isPlainRecord(payload)) {
     return fail("FirstNightActionOpportunityCreated payload must have exact runtime shape");
   }
   const seamstressV2 = payload.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION" && isPlainRecord(payload.visibility) &&
     Object.hasOwn(payload.visibility, "visibilitySchemaVersion");
   const cerenovus = payload.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION";
-  if (!hasExactEnumerableKeys(payload, cerenovus
+  const dreamerV2 = payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2";
+  if (!hasExactEnumerableKeys(payload, dreamerV2
+    ? DREAMER_V2_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS
+    : cerenovus
     ? CERENOVUS_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS
     : seamstressV2
     ? SEAMSTRESS_ACTION_OPPORTUNITY_CREATED_PAYLOAD_V2_KEYS
@@ -1848,7 +2252,10 @@ export const validateFirstNightActionOpportunityCreatedPayload = (
     taskId: payload.taskId,
     taskType: payload.taskType,
     visibility: payload.visibility,
-    ...(cerenovus ? {
+    ...(dreamerV2 ? {
+      opportunitySchemaVersion: payload.opportunitySchemaVersion,
+      sourceContract: payload.sourceContract
+    } : cerenovus ? {
       sourceRoleTenureId: payload.sourceRoleTenureId,
       sourceAbilityInstanceId: payload.sourceAbilityInstanceId,
       abilitySource: payload.abilitySource
@@ -1869,6 +2276,8 @@ export const validateFirstNightActionOpportunityCreatedPayload = (
 
   const expected = payload.opportunityKind === "SEAMSTRESS_FIRST_NIGHT_ACTION" && !seamstressV2
     ? tryCreateLegacySeamstressFirstNightActionOpportunity(input)
+    : payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION"
+    ? tryCreateLegacyDreamerFirstNightActionOpportunity(input)
     : tryCreateFirstNightRoleActionOpportunity(input);
   if (!expected.valid) {
     return expected;
@@ -1879,6 +2288,17 @@ export const validateFirstNightActionOpportunityCreatedPayload = (
   }
 
   return { valid: true };
+};
+
+export const validateFirstNightActionOpportunityCreatedPayload = (
+  payload: unknown,
+  input: OpportunityValidationInput
+): ValidationResult => {
+  try {
+    return validateFirstNightActionOpportunityCreatedPayloadInternal(payload, input);
+  } catch {
+    return fail("FirstNightActionOpportunityCreated payload validation failed closed");
+  }
 };
 
 export const validateSeamstressActionDecision = (

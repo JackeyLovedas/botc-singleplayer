@@ -1,25 +1,30 @@
 # Project State
 
-## Active CI infrastructure task
+## Active product Slice
 
-- `USER_AUTHORIZED_COVERAGE_UNCOVERED_OBLIGATION_SEMANTIC_AUDIT_AND_SINGLE_FORK_V1` is active on `infra/vitest-coverage-single-fork-v1` at base main `2c15ca96bb7a1ee500ebd1d8707504e57a9719f6`.
-- `taskType=CI_TEST_INFRASTRUCTURE`, `productRepairRoundConsumed=false`, `currentSlice=null`, `slice2B19A1Started=false`, and `phase2CStarted=false`.
-- External Stage A verdict is `COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL`: all four maps have the same 59 source files and exact uncovered sets (3108 statements, 22 functions, 3108 lines, 1707 branch arms), with no added or removed obligation.
-- Pairwise raw branch differences affect zero zero-hit obligations and are classified `V8_COVERED_BRANCH_TOPOLOGY_NONDETERMINISM`.
-- Stage B local validation passed: typecheck, lint, ordinary `33/1418`, and two fresh single-fork coverage `33/1418` runs; fresh exact-obligation comparison equals the Stage A baseline and no timeout, worker RPC, assertion, threshold, or zero-hit obligation failure occurred.
-- The task is `READY_TO_PUBLISH`. Only the Ubuntu Coverage-step fork environment, one evidence document, and these necessary control records changed. No commit, PR, exact-head CI, review, merge, or acceptance is claimed yet.
-- Phase 3 Slice 2B19T remains accepted `FOUNDATION`; Dreamer remains `PARTIAL`; no product, rule, role coverage, test, timeout, dependency, or coverage-threshold change is authorized.
+- `USER_AUTHORIZED_2B19A1_BASE_DREAMER_V2_OPPORTUNITY_CONTRACT` started Phase 3 Slice `2B19A1` from accepted main `9c4938aca1416995b7607589b73b0238ef4f6ea4`.
+- The sole branch is `phase-3/dreamer-v2-base-opportunity-contract`; local implementation and all local gates are complete, but there is no PR or feature commit yet.
+- `taskType=PRODUCT_SLICE`, `productRepairRoundConsumed=false`, `currentSlice=2B19A1`, `slice2B19A1Started=true`, and `phase2CStarted=false`.
+- Rule research returned `RULE_READY`; independent Round 1 design review returned `RULE_DESIGN_PASS`; `ruleDesignPass=true`, `implementationAuthorized=true`, `designRound=1`, and `repairRound=0`.
+- Rule evidence is `docs/rules/evidence/2B19A1.md`, SHA-256 `505456357b498c063e8d579aaabef025fd7cb5437f11264915cd810b470da4e6`, with `ruleCoverageStatus=SKELETON`, implementation label `OPPORTUNITY_FOUNDATION`, `unresolvedConflicts=[]`, and `ruleSemanticsChanged=false`.
+- Round 1 design is `docs/implementation/phase-3-slice-2b19a1-design.md`, SHA-256 `1526a95bcdb7c4d1288a457b068f3fb632d76cebdcc805629469f26310a427dc`, with terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`.
+- Round 1 review is `docs/implementation/phase-3-slice-2b19a1-design-review-round-1.md`, SHA-256 `602d27c6153edfa96d0d06b17cfe96607177ced79337691e37e65e1355804d16`, verdict `RULE_DESIGN_PASS`, with `remainingBlockers=[]`.
+- The exact reviewed implementation is complete in the two-file allowlist with `480` added production lines. Typecheck, full lint, full `33 files / 1432 tests`, single-fork coverage `33 files / 1432 tests`, diff, scope, static, JSON, and authority-hash gates pass. Coverage is `86.94%` statements/lines, `81.80%` branches, and `97.81%` functions.
+- The bounded scope is the base Dreamer V2 opening-opportunity contract only. Target, delivery, candidates, Vortox, impairment information, ledger fact, private Dreamer knowledge, Philosopher-gained Dreamer, first-night completion, DAY, later 2B19 slices, and Phase 2C remain unstarted.
+- Vitest Coverage Single-Fork V1 is accepted independently at feature HEAD `45efbafd63208369ecf9f3b6a43e144939cb2652`, merge `9c4938aca1416995b7607589b73b0238ef4f6ea4`, and main CI `29470843060` `SUCCESS`; it consumed no product repair round.
 
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state: `COMPLETED`; no current slice or PR; branch `main`; `implementationAuthorized=false`.
-- Current design authorization is `USER_AUTHORIZED_2B19T_DESIGN_ROUND_2_CONTRACT_CORRECTION`; test-infrastructure continuation authorization is `USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE`; prerequisite authorization remains preserved; scope mode is `CANONICAL_DREAMER_ROLE_TENURE_FOUNDATION`.
-- Current limits are `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=2`; design round is `2`, repair round is `0`. No Round 3 exists.
-- The 2B19T rule delta gate remains `RULE_READY`; independent Round 2 design review returned `RULE_DESIGN_PASS`; implementation is now accepted and authorization is closed.
-- Slice coverage is `FOUNDATION`; authoritative Dreamer role coverage remains `PARTIAL`; `ruleSemanticsChanged=false`.
-- Rule evidence is `docs/rules/evidence/2B19T.md`, SHA-256 `b8c8b858ee3a7fb7fc141a1d28a0b385cf17111947caa397d569f9b79041185d`, with terminal `RULE_READY`, `ruleCoverageStatus=SKELETON`, implementation coverage label `FOUNDATION`, and unresolved conflicts `[]`.
-- The authorized product boundary is a `DERIVED_STATE_EXPANSION` that adds Dreamer to the existing canonical role-tenure system only. Event payloads/types, top-level `GameState`, application commands, projection, ledger, and Dreamer ability behavior remain out of scope.
+- Current control state: `RUNNING`; Slice `2B19A1`; branch `phase-3/dreamer-v2-base-opportunity-contract`; no current PR; `implementationAuthorized=true`.
+- Current authorization is `USER_AUTHORIZED_2B19A1_BASE_DREAMER_V2_OPPORTUNITY_CONTRACT`; scope mode is `BASE_DREAMER_V2_OPPORTUNITY_CONTRACT`.
+- Current limits are `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=2`; design round is `1`, repair round is `0`.
+- The independently rechecked `docs/rules/evidence/2B19A1.md` returned `RULE_READY`; the complete Round 1 design passed one fresh independent rule-design review with no blockers.
+- Dreamer role coverage remains `PARTIAL`; the active Slice implementation label is `FOUNDATION / OPPORTUNITY_CONTRACT`, while rule evidence remains `SKELETON`. The feature is not accepted until publication, exact-head CI, final review, audit comments, merge, tag, and closeout gates pass.
+- The accepted 2B19T tenure foundation and accepted single-fork coverage infrastructure are prerequisites/history only and remain unchanged.
+
+### Accepted 2B19T history
+
 - Round 1 design is `docs/implementation/phase-3-slice-2b19t-design.md`, SHA-256 `0eca3f5d67fb1407b4ba9b0f27ef2914e57329f864b72e6a1effe49fff3f632a`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`. It freezes naming scheme B, `DERIVED_STATE_EXPANSION`, the three-file production allowlist (`seamstress.ts`, internal `role-tenure-replay.ts`, `rebuild.ts`), an 800-line ceiling, and 30 authority test IDs.
 - Independent review is `docs/implementation/phase-3-slice-2b19t-design-review-round-1.md`, SHA-256 `e69c5e9ee04bbfdde9f408214045cb066cd6f6584ca710997121c916955af101`, verdict and terminal `HUMAN_BLOCKED`.
 - Final Round 2 design is `docs/implementation/phase-3-slice-2b19t-design-round-2.md`, SHA-256 `6d2adb12e719e5b8311efb02a343f349902d652d41befc00912337ecec03489b`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`. It is complete and standalone.
