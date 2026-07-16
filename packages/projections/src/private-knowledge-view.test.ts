@@ -1689,7 +1689,7 @@ describe("private knowledge projections", () => {
     expect(JSON.stringify(aiView)).not.toContain("goodTwinPlayer");
   });
 
-  it("projects settled DREAMER_INFORMATION only to the Dreamer without leaking reliability facts", () => {
+  it("[2B19A2-C24] projects settled DREAMER_INFORMATION only to the source player", () => {
     const state = stateWithDreamerInformation();
     const delivery = state.dreamerInformation?.deliveries[0];
     if (delivery === undefined) {
@@ -1718,7 +1718,7 @@ describe("private knowledge projections", () => {
     expect(serialized).not.toContain("currentAlignment");
   });
 
-  it("does not project Dreamer information to non-source players or AI views", () => {
+  it("[2B19A2-C26] omits Dreamer delivery from every non-source player and AI view", () => {
     const state = stateWithDreamerInformation();
     const delivery = state.dreamerInformation?.deliveries[0];
     const other = state.roster?.entries.find((entry) =>
@@ -1740,7 +1740,7 @@ describe("private knowledge projections", () => {
     expect(JSON.stringify(aiView)).not.toContain(delivery.targetPlayerId);
   });
 
-  it("projects validated Dreamer information identically to the source player and source AI", () => {
+  it("[2B19A2-C25] projects validated Dreamer information identically to the source AI", () => {
     const state = stateWithDreamerInformation();
     const delivery = requireDreamerDelivery(state);
 
@@ -1758,7 +1758,34 @@ describe("private knowledge projections", () => {
     });
   });
 
-  it("preserves historical Dreamer delivery after later character and impairment changes", () => {
+  it("[2B19A2-C27] exposes no canonical truth, source effectiveness, contract, or impairment fields", () => {
+    const state = stateWithDreamerInformation();
+    const delivery = requireDreamerDelivery(state);
+    const views = [
+      buildPlayerPrivateKnowledgeView(state, delivery.sourcePlayerId),
+      buildAiPrivateKnowledgeView(state, delivery.sourcePlayerId)
+    ];
+    const forbidden = new Set([
+      "informationReliability", "sourceImpairmentId", "sourceImpairmentKind", "sourceContract",
+      "sourceCharacterStateRevision", "targetTrueRole", "currentCharacterState", "currentAlignment",
+      "falseRolePolicyVersion", "targetSchemaVersion", "deliverySchemaVersion"
+    ]);
+    const scan = (value: unknown): void => {
+      if (Array.isArray(value)) {
+        value.forEach(scan);
+        return;
+      }
+      if (value !== null && typeof value === "object") {
+        for (const [key, nested] of Object.entries(value)) {
+          expect(forbidden.has(key), `forbidden projection key ${key}`).toBe(false);
+          scan(nested);
+        }
+      }
+    };
+    views.forEach(scan);
+  });
+
+  it("[2B19A2-C28] preserves historical Dreamer delivery after later character and impairment changes", () => {
     const state = stateWithDreamerInformation();
     const delivery = requireDreamerDelivery(state);
     const currentCharacterState = state.currentCharacterState;

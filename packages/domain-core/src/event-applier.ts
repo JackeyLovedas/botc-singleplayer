@@ -1403,7 +1403,10 @@ const validateDreamerInformationDeliveredPayloadForState = (
     setup: state.setup,
     currentCharacterState: state.currentCharacterState,
     abilityImpairments: state.abilityImpairments,
-    firstNightActionOpportunities: state.firstNightActionOpportunities
+    firstNightActionOpportunities: state.firstNightActionOpportunities,
+    ...(state.firstNightTaskPlan === undefined ? {} : { firstNightTaskPlan: state.firstNightTaskPlan }),
+    ...(state.firstNightTaskProgress === undefined ? {} : { firstNightTaskProgress: state.firstNightTaskProgress }),
+    ...(state.seamstressRoleTenureState === undefined ? {} : { roleTenures: state.seamstressRoleTenureState })
   });
   if (!validation.valid) {
     throw new DomainError("InvalidDreamerInformationDeliveredPayload", validation.reason);

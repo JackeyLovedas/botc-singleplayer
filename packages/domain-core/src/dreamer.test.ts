@@ -4,8 +4,12 @@ import {
   DREAMER_FALSE_ROLE_POLICY_VERSION,
   DREAMER_INFORMATION_STAGE,
   SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
+  createDreamerTargetChosenPayload,
   createDreamerInformationDeliveredPayload,
   evaluateDreamerEffectiveness,
+  resolveBaseDreamerV2NormalCapability,
+  validateDreamerInformationDeliveredPayload,
+  validateDreamerTargetChosenPayload,
   validateStoredDreamerInformationDelivered
 } from "./dreamer.js";
 import type {
@@ -15,10 +19,19 @@ import type {
 import { DomainError } from "./errors.js";
 import type { CurrentCharacterStateSet } from "./current-character-state.js";
 import type { FirstNightTaskPlan } from "./first-night-task-plan.js";
-import { abilityImpairmentId, actionOpportunityId, playerId, roleId, scheduledTaskId } from "./ids.js";
+import { abilityImpairmentId, actionOpportunityId, eventId, playerId, roleId, scheduledTaskId } from "./ids.js";
 import type { AbilityImpairmentSet } from "./philosopher-ability.js";
 import { seatNumber } from "./player-roster.js";
 import type { PlayerRoster } from "./player-roster.js";
+import {
+  DREAMER_BASE_SOURCE_CONTRACT_VERSION,
+  DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION,
+  DREAMER_V3_VISIBILITY_SCHEMA_VERSION,
+  formatBaseDreamerV2FirstNightActionOpportunityId
+} from "./first-night-action-opportunity.js";
+import type { DreamerActionOpportunityV3 } from "./first-night-action-opportunity.js";
+import { formatBaseFirstNightAbilityInstanceId } from "./first-night-ability-outcome-ledger.js";
+import { formatRoleTenureId } from "./seamstress.js";
 import type { GeneratedSetup, RoleSetupSnapshot } from "./setup-types.js";
 
 const role = (
@@ -41,6 +54,112 @@ const flowergirlRole = role("flowergirl", "TOWNSFOLK", "GOOD");
 const snakeCharmerRole = role("snake_charmer", "TOWNSFOLK", "GOOD");
 const witchRole = role("witch", "MINION", "EVIL");
 const fangGuRole = role("fang_gu", "DEMON", "EVIL");
+
+const v3TaskId = scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01");
+const v3TenureId = formatRoleTenureId({ seatNumber: seatNumber(1), roleId: "dreamer", acquiredCharacterStateRevision: 1 });
+const v3Opportunity = (): DreamerActionOpportunityV3 => ({
+  opportunitySchemaVersion: DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION,
+  nightNumber: 1,
+  opportunityId: formatBaseDreamerV2FirstNightActionOpportunityId({ seatNumber: seatNumber(1) }),
+  opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V3",
+  opportunityStatus: "OPEN",
+  taskId: v3TaskId,
+  taskType: "DREAMER_ACTION",
+  sourcePlayerId: playerId("dreamer-player"),
+  sourceSeatNumber: seatNumber(1),
+  sourceRole: dreamerRole,
+  sourceCharacterStateRevision: 1,
+  sourceContract: {
+    sourceContractVersion: DREAMER_BASE_SOURCE_CONTRACT_VERSION,
+    kind: "BASE",
+    taskPlanVersion: "first-night-task-plan-v2",
+    taskId: v3TaskId,
+    taskType: "DREAMER_ACTION",
+    sourcePlayerId: playerId("dreamer-player"),
+    sourceSeatNumber: seatNumber(1),
+    sourceRoleId: "dreamer",
+    sourceRoleTenureId: v3TenureId,
+    sourceCharacterStateRevision: 1,
+    sourceAbilityInstanceId: formatBaseFirstNightAbilityInstanceId(v3TaskId)
+  },
+  visibility: {
+    visibilitySchemaVersion: DREAMER_V3_VISIBILITY_SCHEMA_VERSION,
+    canChooseTarget: true,
+    supportedDecisionKinds: ["CHOOSE_PLAYER"],
+    futureUnsupportedDecisionKinds: [],
+    targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER"
+  }
+});
+
+const v3Plan = (): FirstNightTaskPlan => ({
+  nightNumber: 1,
+  taskPlanVersion: "first-night-task-plan-v2",
+  taskCatalogVersion: "snv-first-night-task-catalog-v1",
+  taskCatalogSignatureAlgorithm: "canonical-first-night-task-catalog-v1",
+  taskCatalogSignature: "test",
+  taskCatalogSnapshot: {
+    taskCatalogVersion: "snv-first-night-task-catalog-v1",
+    taskCatalogSignatureAlgorithm: "canonical-first-night-task-catalog-v1",
+    taskCatalogSignature: "test",
+    definitions: []
+  },
+  rosterVersion: "test",
+  assignmentAlgorithmVersion: "test",
+  roleCatalogSignature: "test-signature",
+  knowledgeModelVersion: "initial-own-character-knowledge-v1",
+  knowledgeStage: "OWN_CHARACTER_BOOTSTRAP",
+  tasks: [{
+    taskId: v3TaskId,
+    taskType: "DREAMER_ACTION",
+    taskClass: "ROLE_ACTION",
+    orderKey: { baseOrder: 900, insertionOrder: 0 },
+    source: { kind: "ROLE", playerId: playerId("dreamer-player"), seatNumber: seatNumber(1), role: dreamerRole },
+    status: "PENDING",
+    settlementPolicy: "REEVALUATE_SOURCE_AT_SETTLEMENT"
+  }]
+});
+
+const v3State = (targetRole: RoleSetupSnapshot = flowergirlRole): CurrentCharacterStateSet => ({
+  revision: 1,
+  entries: [
+    { playerId: playerId("dreamer-player"), seatNumber: seatNumber(1), role: dreamerRole, currentAlignment: "GOOD" },
+    { playerId: playerId("target-player"), seatNumber: seatNumber(2), role: targetRole, currentAlignment: targetRole.defaultAlignment },
+    { playerId: playerId("demon-player"), seatNumber: seatNumber(3), role: fangGuRole, currentAlignment: "EVIL" }
+  ]
+});
+
+const v3Facts = (targetRole: RoleSetupSnapshot = flowergirlRole) => {
+  const opportunity = v3Opportunity();
+  const state = v3State(targetRole);
+  const plan = v3Plan();
+  const opportunities = { opportunities: [opportunity] } as const;
+  const roster: PlayerRoster = state.entries.map((entry) => ({
+    playerId: entry.playerId,
+    seatNumber: entry.seatNumber,
+    playerKind: entry.playerId === playerId("target-player") ? "AI" : "HUMAN",
+    displayName: entry.playerId
+  }));
+  const roleTenures = { records: [{
+    roleTenureId: v3TenureId,
+    playerId: playerId("dreamer-player"),
+    seatNumber: seatNumber(1),
+    roleId: "dreamer",
+    acquiredCharacterStateRevision: 1,
+    startedBy: {
+      kind: "CHARACTERS_ASSIGNED",
+      sourceEventId: eventId("event-1"),
+      sourceEventSequence: 1,
+      characterStateRevision: 1
+    }
+  }], processedTransitionFactIds: [] } as const;
+  const setupFacts = setup([dreamerRole, flowergirlRole, snakeCharmerRole, witchRole, fangGuRole]);
+  const choice = createDreamerTargetChosenPayload({ rulesBaselineVersion: "Phase One v2.1", taskId: v3TaskId,
+    opportunityId: opportunity.opportunityId, targetPlayerId: playerId("target-player"),
+    firstNightActionOpportunities: opportunities, roster, currentCharacterState: state });
+  const delivery = createDreamerInformationDeliveredPayload({ rulesBaselineVersion: "Phase One v2.1", targetChoice: choice,
+    setup: setupFacts, currentCharacterState: state, effectiveness: { effective: true } });
+  return { opportunity, state, plan, opportunities, roster, roleTenures, setup: setupFacts, choice, delivery };
+};
 
 const setup = (roles: readonly RoleSetupSnapshot[]): Pick<GeneratedSetup, "roleCatalogSnapshot"> => ({
   roleCatalogSnapshot: {
@@ -216,7 +335,7 @@ describe("Dreamer information model", () => {
     expect(source).not.toContain("Intl.Collator");
   });
 
-  it("includes a GOOD target current role and lowest EVIL catalog role when effective", () => {
+  it("[2B19A2-C08] includes a GOOD target current role and lowest EVIL catalog role when effective", () => {
     const payload = createDreamerInformationDeliveredPayload({
       rulesBaselineVersion: "Phase One v2.1",
       targetChoice,
@@ -235,7 +354,7 @@ describe("Dreamer information model", () => {
     });
   });
 
-  it("includes an EVIL target current role and lowest GOOD catalog role when effective", () => {
+  it("[2B19A2-C09] includes an EVIL target current role and lowest GOOD catalog role when effective", () => {
     const payload = createDreamerInformationDeliveredPayload({
       rulesBaselineVersion: "Phase One v2.1",
       targetChoice,
@@ -272,7 +391,7 @@ describe("Dreamer information model", () => {
     expect(payload.evilRole).toStrictEqual(fangGuRole);
   });
 
-  it("throws a DomainError when no deterministic false role candidate exists", () => {
+  it("[2B19A2-C19] throws a DomainError when no deterministic opposite-alignment candidate exists", () => {
     expect(() => createDreamerInformationDeliveredPayload({
       rulesBaselineVersion: "Phase One v2.1",
       targetChoice,
@@ -280,6 +399,119 @@ describe("Dreamer information model", () => {
       currentCharacterState: currentState(flowergirlRole),
       effectiveness: { effective: true }
     })).toThrowError(DomainError);
+  });
+
+  it("[2B19A2-C10] selects the false role by stable code-unit roleId order", () => {
+    const upper = role("Z_minion", "MINION", "EVIL");
+    const underscore = role("_minion", "MINION", "EVIL");
+    const lower = role("a_minion", "MINION", "EVIL");
+    const payload = createDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      targetChoice,
+      setup: setup([lower, underscore, flowergirlRole, upper]),
+      currentCharacterState: currentState(flowergirlRole),
+      effectiveness: { effective: true }
+    });
+    expect(payload.evilRole.roleId).toBe(roleId("Z_minion"));
+  });
+
+  it("[2B19A2-C11] is invariant under every selected catalog permutation", () => {
+    const roles = [witchRole, fangGuRole, dreamerRole, flowergirlRole] as const;
+    const permutations = <T>(values: readonly T[]): T[][] => values.length === 0
+      ? [[]]
+      : values.flatMap((value, index) => permutations([...values.slice(0, index), ...values.slice(index + 1)])
+        .map((suffix) => [value, ...suffix]));
+    const pairs = permutations(roles).map((catalog) => {
+      const payload = createDreamerInformationDeliveredPayload({ rulesBaselineVersion: "Phase One v2.1", targetChoice,
+        setup: setup(catalog), currentCharacterState: currentState(flowergirlRole), effectiveness: { effective: true } });
+      return [payload.goodRole.roleId, payload.evilRole.roleId];
+    });
+    expect(new Set(pairs.map((pair) => JSON.stringify(pair)))).toStrictEqual(new Set([JSON.stringify(["flowergirl", "fang_gu"])]));
+  });
+
+  it("[2B19A2-C16] returns the closed represented-POISONED capability branch", () => {
+    const facts = v3Facts();
+    expect(resolveBaseDreamerV2NormalCapability({
+      opportunity: facts.opportunity,
+      firstNightTaskPlan: facts.plan,
+      firstNightTaskProgress: undefined,
+      firstNightActionOpportunities: facts.opportunities,
+      currentCharacterState: facts.state,
+      setup: facts.setup,
+      roleTenures: facts.roleTenures,
+      abilityImpairments: { impairments: [{
+        impairmentId: abilityImpairmentId("ability-impairment-v1:dreamer-poisoned"),
+        kind: "POISONED",
+        sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+        sourcePlayerId: playerId("snake-charmer-player"),
+        affectedPlayerId: playerId("dreamer-player"),
+        affectedSeatNumber: seatNumber(1),
+        affectedRole: dreamerRole,
+        sourceCharacterStateRevision: 1
+      }] }
+    })).toStrictEqual({
+      kind: "SOURCE_REPRESENTED_IMPAIRED",
+      impairmentId: abilityImpairmentId("ability-impairment-v1:dreamer-poisoned"),
+      impairmentKind: "POISONED"
+    });
+  });
+
+  it("[2B19A2-C31] produces the same deterministic vector under Windows and Ubuntu CI", () => {
+    const facts = v3Facts();
+    const vector = (roles: readonly RoleSetupSnapshot[]) => {
+      const delivery = createDreamerInformationDeliveredPayload({ rulesBaselineVersion: "Phase One v2.1",
+        targetChoice: facts.choice, setup: setup(roles), currentCharacterState: facts.state, effectiveness: { effective: true } });
+      return JSON.stringify({ target: delivery.targetPlayerId, good: delivery.goodRole.roleId, evil: delivery.evilRole.roleId });
+    };
+    expect(vector([witchRole, fangGuRole, dreamerRole, flowergirlRole, snakeCharmerRole]))
+      .toBe('{"target":"target-player","good":"flowergirl","evil":"fang_gu"}');
+    expect(vector([snakeCharmerRole, flowergirlRole, dreamerRole, fangGuRole, witchRole]))
+      .toBe('{"target":"target-player","good":"flowergirl","evil":"fang_gu"}');
+  });
+
+  it("[2B19A2-S01] rejects exhaustive V2 target, delivery, reliability, and source-contract shape mutations", () => {
+    const facts = v3Facts();
+    const targetInput = {
+      taskId: v3TaskId,
+      firstNightTaskPlan: facts.plan,
+      firstNightTaskProgress: undefined,
+      currentCharacterState: facts.state,
+      firstNightActionOpportunities: facts.opportunities,
+      roster: facts.roster
+    };
+    expect(validateDreamerTargetChosenPayload(facts.choice, targetInput)).toStrictEqual({ valid: true });
+    const deliveryInput = {
+      choices: { choices: [facts.choice] }, deliveries: undefined, setup: facts.setup,
+      currentCharacterState: facts.state, abilityImpairments: undefined,
+      firstNightActionOpportunities: facts.opportunities, firstNightTaskPlan: facts.plan,
+      roleTenures: facts.roleTenures
+    };
+    expect(validateDreamerInformationDeliveredPayload(facts.delivery, deliveryInput)).toStrictEqual({ valid: true });
+
+    for (const key of Object.keys(facts.choice)) {
+      const copy = { ...facts.choice } as Record<string, unknown>;
+      delete copy[key];
+      expect(validateDreamerTargetChosenPayload(copy, targetInput).valid, `target missing ${key}`).toBe(false);
+    }
+    for (const key of Object.keys(facts.delivery)) {
+      const copy = { ...facts.delivery } as Record<string, unknown>;
+      delete copy[key];
+      expect(validateDreamerInformationDeliveredPayload(copy, deliveryInput).valid, `delivery missing ${key}`).toBe(false);
+    }
+    for (const key of Object.keys(facts.opportunity.sourceContract)) {
+      const sourceContract = { ...facts.opportunity.sourceContract } as Record<string, unknown>;
+      delete sourceContract[key];
+      expect(validateDreamerTargetChosenPayload({ ...facts.choice, sourceContract }, targetInput).valid,
+        `target sourceContract missing ${key}`).toBe(false);
+      expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery, sourceContract }, deliveryInput).valid,
+        `delivery sourceContract missing ${key}`).toBe(false);
+    }
+    expect(validateDreamerTargetChosenPayload({ ...facts.choice, extra: true }, targetInput).valid).toBe(false);
+    expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery, extra: true }, deliveryInput).valid).toBe(false);
+    expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery,
+      informationReliability: { kind: "EFFECTIVE", extra: true } }, deliveryInput).valid).toBe(false);
+    expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery,
+      informationReliability: { kind: "SOURCE_IMPAIRED" } }, deliveryInput).valid).toBe(false);
   });
 
   it.each([

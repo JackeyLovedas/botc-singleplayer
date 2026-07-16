@@ -394,6 +394,31 @@ const convertStoredDreamerOpportunityToAcceptedV1 = async (
   return events;
 };
 
+const convertStoredDreamerOpportunityToAcceptedV2 = async (
+  store: MemoryCommandCommitStore,
+  taskId: ReturnType<typeof scheduledTaskId>
+): Promise<readonly AnyDomainEventEnvelope[]> => {
+  const events = await store.loadDomainEvents(ids.game);
+  const created = events.find((event) =>
+    event.eventType === "FirstNightActionOpportunityCreated" && event.payload.taskId === taskId
+  );
+  if (created === undefined || created.eventType !== "FirstNightActionOpportunityCreated") {
+    throw new Error("Expected stored Dreamer opportunity event");
+  }
+  const payload = created.payload as unknown as Record<string, unknown>;
+  payload.opportunityKind = "DREAMER_FIRST_NIGHT_ACTION_V2";
+  payload.opportunitySchemaVersion = "dreamer-first-night-action-opportunity-v2";
+  payload.visibility = {
+    visibilitySchemaVersion: "dreamer-first-night-action-visibility-v2",
+    canChooseTarget: false,
+    supportedDecisionKinds: [],
+    futureUnsupportedDecisionKinds: ["CHOOSE_PLAYER"],
+    futureTargetSchema: "OTHER_NON_TRAVELLER_PLAYER"
+  };
+  validateDomainEventStream(events);
+  return events;
+};
+
 const reachOpenExactPhilosopherOpportunity = async (
   service: GameApplicationService,
   store: MemoryCommandCommitStore
@@ -1003,6 +1028,7 @@ const reachOpenDreamerV2ActionOpportunity = async (
   });
   const openResult = await service.execute(openCommand);
   expectAcceptedResult(openResult);
+  await convertStoredDreamerOpportunityToAcceptedV2(commandStore, dreamerTask.taskId);
   const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
   const opportunity = state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
     candidate.taskId === dreamerTask.taskId &&
@@ -1011,6 +1037,29 @@ const reachOpenDreamerV2ActionOpportunity = async (
   if (state === undefined || opportunity === undefined ||
       !domainCore.isDreamerActionOpportunityV2(opportunity)) {
     throw new Error("Expected open base Dreamer V2 opportunity");
+  }
+  return { beforeDreamer, dreamerTask, opportunity, state, openCommand, openResult };
+};
+
+const reachOpenDreamerV3ActionOpportunity = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
+) => {
+  const { beforeDreamer, dreamerTask } = await reachDreamerActionTask(service, commandStore, exactRoleIds);
+  const openCommand = openFirstNightRoleActionOpportunityCommand({
+    commandId: commandId("open-dreamer-v3-action"),
+    expectedGameVersion: beforeDreamer.gameVersion,
+    payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: dreamerTask.taskId }
+  });
+  const openResult = await service.execute(openCommand);
+  expectAcceptedResult(openResult);
+  const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const opportunity = state?.firstNightActionOpportunities?.opportunities.find((candidate) =>
+    candidate.taskId === dreamerTask.taskId && candidate.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
+  );
+  if (state === undefined || opportunity === undefined || !domainCore.isDreamerActionOpportunityV3(opportunity)) {
+    throw new Error("Expected open base Dreamer V3 opportunity");
   }
   return { beforeDreamer, dreamerTask, opportunity, state, openCommand, openResult };
 };
@@ -1187,6 +1236,18 @@ class ThrowingCanonicalStreamCommandStore extends MemoryCommandCommitStore {
         throw new Error("Injected canonical stream iteration failure");
       }
     } as unknown as readonly AnyDomainEventEnvelope[];
+  }
+}
+
+class OneShotDomainEventLoadFailureStore extends MemoryCommandCommitStore {
+  public failNextDomainEventLoad = false;
+
+  public override async loadDomainEvents(gameIdValue: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
+    if (this.failNextDomainEventLoad) {
+      this.failNextDomainEventLoad = false;
+      throw new Error("injected domain event dependency failure");
+    }
+    return super.loadDomainEvents(gameIdValue);
   }
 }
 
@@ -6291,8 +6352,8 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
       eventType: "FirstNightActionOpportunityCreated",
       payload: {
         taskType: "DREAMER_ACTION",
-        opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V2",
-        opportunitySchemaVersion: "dreamer-first-night-action-opportunity-v2",
+        opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V3",
+        opportunitySchemaVersion: "dreamer-first-night-action-opportunity-v3",
         opportunityStatus: "OPEN",
         sourceContract: {
           sourceContractVersion: "dreamer-base-source-contract-v1",
@@ -6302,11 +6363,11 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
           sourceRoleId: "dreamer"
         },
         visibility: {
-          visibilitySchemaVersion: "dreamer-first-night-action-visibility-v2",
-          canChooseTarget: false,
-          supportedDecisionKinds: [],
-          futureUnsupportedDecisionKinds: ["CHOOSE_PLAYER"],
-          futureTargetSchema: "OTHER_NON_TRAVELLER_PLAYER"
+          visibilitySchemaVersion: "dreamer-first-night-action-visibility-v3",
+          canChooseTarget: true,
+          supportedDecisionKinds: ["CHOOSE_PLAYER"],
+          futureUnsupportedDecisionKinds: [],
+          targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER"
         }
       }
     });
@@ -6693,8 +6754,8 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
       await reachDreamerV2PayloadValidationAuthority(service, commandStore);
     const result = domainCore.tryCreateFirstNightRoleActionOpportunity(validationInput);
     expect(result.valid).toBe(true);
-    if (!result.valid || result.opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V2") {
-      throw new Error("Expected pure builder Dreamer V2 result");
+    if (!result.valid || result.opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V3") {
+      throw new Error("Expected pure builder Dreamer V3 result");
     }
     expect(result.opportunity.sourceContract).toStrictEqual({
       sourceContractVersion: "dreamer-base-source-contract-v1",
@@ -7118,6 +7179,246 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
     }))).resolves.toMatchObject({ status: "rejected", code: "InvalidDreamerTarget" });
 
     expect((await commandStore.findCommandReceipt(ids.game, commandId("hidden-payload-dreamer-target")))?.result.status).toBe("rejected");
+  });
+
+  it("[2B19A2-C03] new V2-plan base producer emits only the actionable V3 opportunity", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore);
+    expect(opened.openResult.events).toHaveLength(1);
+    expect(opened.openResult.events[0]).toMatchObject({
+      eventType: "FirstNightActionOpportunityCreated",
+      payload: {
+        opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V3",
+        opportunitySchemaVersion: "dreamer-first-night-action-opportunity-v3",
+        visibility: {
+          visibilitySchemaVersion: "dreamer-first-night-action-visibility-v3",
+          canChooseTarget: true,
+          supportedDecisionKinds: ["CHOOSE_PLAYER"],
+          futureUnsupportedDecisionKinds: [],
+          targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER"
+        }
+      }
+    });
+    expect(opened.state.firstNightActionOpportunities?.opportunities.some((entry) =>
+      entry.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2")).toBe(false);
+  });
+
+  it("[2B19A2-C06] rejects a V3 self target with a deterministic receipt and no append", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore);
+    const before = await commandStore.loadDomainEvents(ids.game);
+    const command = submitDreamerActionCommand({
+      commandId: commandId("2b19a2-self-target"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
+        opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: opened.opportunity.sourcePlayerId } }
+    });
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "rejected", code: "InvalidDreamerTarget" });
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeDefined();
+  });
+
+  it("[2B19A2-C07] accepts another modeled player through the real V3 command stream", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore);
+    const target = opened.state.currentCharacterState?.entries.find((entry) => entry.playerId !== opened.opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected V3 Dreamer target");
+    const result = await service.execute(submitDreamerActionCommand({
+      commandId: commandId("2b19a2-valid-target"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
+        opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+    }));
+    expectAcceptedResult(result);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
+    ]);
+  });
+
+  it("[2B19A2-C12] commits the V2 target delivery and settlement as one exact atomic batch", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore);
+    const target = opened.state.currentCharacterState?.entries.find((entry) => entry.playerId !== opened.opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected atomic Dreamer target");
+    const result = await service.execute(submitDreamerActionCommand({
+      commandId: commandId("2b19a2-atomic-batch"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
+        opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+    }));
+    expectAcceptedResult(result);
+    const [first, second, third] = result.events;
+    expect(first?.batchId).toBe(second?.batchId);
+    expect(second?.batchId).toBe(third?.batchId);
+    expect([first?.eventSequence, second?.eventSequence, third?.eventSequence]).toStrictEqual([
+      first!.eventSequence, first!.eventSequence + 1, first!.eventSequence + 2
+    ]);
+    expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([opened.state.gameVersion + 1]));
+  });
+
+  it("[2B19A2-C15] fails a represented DRUNK base Dreamer receipt-free through the real Philosopher chain", async () => {
+    const { service, commandStore } = makeService();
+    const philosopher = await reachOpenExactPhilosopherOpportunity(service, commandStore);
+    expectAcceptedResult(await service.execute(chooseExactPhilosopherRole("dreamer", philosopher, "2b19a2-choose-dreamer")));
+    const afterChoice = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const baseTask = afterChoice?.firstNightTaskPlan?.tasks.find((task) =>
+      task.taskType === "DREAMER_ACTION" && task.source.kind === "ROLE");
+    if (baseTask === undefined) throw new Error("Expected impaired base Dreamer task");
+    const ready = await advanceToScheduledTask(service, commandStore, baseTask.taskId, "2b19a2-drunk-advance");
+    const openResult = await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("2b19a2-drunk-open"), expectedGameVersion: ready.gameVersion,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: baseTask.taskId }
+    }));
+    expectAcceptedResult(openResult);
+    const openState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const opportunity = openState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === baseTask.taskId);
+    const target = openState?.roster?.entries.find((entry) => entry.playerId !== opportunity?.sourcePlayerId);
+    if (openState === undefined || opportunity === undefined || target === undefined) throw new Error("Expected impaired V3 opportunity");
+    const command = submitDreamerActionCommand({
+      commandId: commandId("2b19a2-drunk-submit"), expectedGameVersion: openState.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: baseTask.taskId, opportunityId: opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+    });
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action" });
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+  });
+
+  it("[2B19A2-C17] fails an effective current Vortox receipt-free", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore, noPhilosopherVortoxExactRoleIds);
+    const target = opened.state.roster?.entries.find((entry) => entry.playerId !== opened.opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected Vortox Dreamer target");
+    const command = submitDreamerActionCommand({ commandId: commandId("2b19a2-vortox"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId, opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } } });
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action" });
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+  });
+
+  it("[2B19A2-C18] treats every current No Dashii as unconditionally unresolved", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore, noPhilosopherNoDashiiExactRoleIds);
+    const target = opened.state.roster?.entries.find((entry) => entry.playerId !== opened.opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected No Dashii Dreamer target");
+    const command = submitDreamerActionCommand({ commandId: commandId("2b19a2-no-dashii"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId, opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } } });
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action" });
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+  });
+
+  it("[2B19A2-C20] keeps every retryable unsupported or dependency path receipt-free and mutation-free", async () => {
+    const exercise = async (input: {
+      readonly name: string;
+      readonly service: GameApplicationService;
+      readonly store: MemoryCommandCommitStore;
+      readonly opened: Pick<Awaited<ReturnType<typeof reachOpenDreamerV3ActionOpportunity>>,
+        "state" | "opportunity" | "dreamerTask">;
+      readonly expectedCode: CommandExecutionFailed["code"];
+      readonly expectedStage: CommandExecutionFailed["failureStage"];
+      readonly beforeExecute?: () => void;
+    }): Promise<void> => {
+      const target = input.opened.state.roster?.entries.find((entry) =>
+        entry.playerId !== input.opened.opportunity.sourcePlayerId);
+      if (target === undefined) throw new Error(`Expected ${input.name} Dreamer target`);
+      const command = submitDreamerActionCommand({
+        commandId: commandId(`2b19a2-c20-${input.name}`), expectedGameVersion: input.opened.state.gameVersion,
+        payload: { commandType: "SubmitDreamerAction", taskId: input.opened.dreamerTask.taskId,
+          opportunityId: input.opened.opportunity.opportunityId,
+          decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+      });
+      const beforeEvents = structuredClone(await input.store.loadDomainEvents(ids.game));
+      const beforeState = rebuildOptionalGameState(beforeEvents);
+      input.beforeExecute?.();
+      const result = await input.service.execute(command);
+      expect(result, input.name).toMatchObject({ status: "failed", retryable: true,
+        code: input.expectedCode, failureStage: input.expectedStage });
+      expect("events" in result, input.name).toBe(false);
+      expect(await input.store.loadDomainEvents(ids.game), input.name).toStrictEqual(beforeEvents);
+      expect(rebuildOptionalGameState(await input.store.loadDomainEvents(ids.game)), input.name).toStrictEqual(beforeState);
+      expect(await input.store.findCommandReceipt(ids.game, command.commandId), input.name).toBeUndefined();
+    };
+
+    for (const [name, roles] of [
+      ["vortox", noPhilosopherVortoxExactRoleIds],
+      ["no-dashii", noPhilosopherNoDashiiExactRoleIds]
+    ] as const) {
+      const context = makeService();
+      const opened = await reachOpenDreamerV3ActionOpportunity(context.service, context.commandStore, roles);
+      await exercise({ name, service: context.service, store: context.commandStore, opened,
+        expectedCode: "ApplicationNotConfigured", expectedStage: "first-night-role-action" });
+    }
+
+    const drunk = makeService();
+    const philosopher = await reachOpenExactPhilosopherOpportunity(drunk.service, drunk.commandStore);
+    expectAcceptedResult(await drunk.service.execute(chooseExactPhilosopherRole("dreamer", philosopher, "2b19a2-c20-choose-dreamer")));
+    const afterChoice = rebuildOptionalGameState(await drunk.commandStore.loadDomainEvents(ids.game));
+    const baseTask = afterChoice?.firstNightTaskPlan?.tasks.find((task) =>
+      task.taskType === "DREAMER_ACTION" && task.source.kind === "ROLE");
+    if (baseTask === undefined) throw new Error("Expected C20 impaired base Dreamer task");
+    const ready = await advanceToScheduledTask(drunk.service, drunk.commandStore, baseTask.taskId, "2b19a2-c20-drunk-advance");
+    expectAcceptedResult(await drunk.service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("2b19a2-c20-drunk-open"), expectedGameVersion: ready.gameVersion,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: baseTask.taskId }
+    })));
+    const drunkState = rebuildOptionalGameState(await drunk.commandStore.loadDomainEvents(ids.game));
+    const drunkOpportunity = drunkState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === baseTask.taskId);
+    if (drunkState === undefined || drunkOpportunity === undefined ||
+        !domainCore.isDreamerActionOpportunityV3(drunkOpportunity)) throw new Error("Expected C20 impaired V3 opportunity");
+    await exercise({ name: "drunk", service: drunk.service, store: drunk.commandStore,
+      opened: { dreamerTask: baseTask, opportunity: drunkOpportunity, state: drunkState },
+      expectedCode: "ApplicationNotConfigured", expectedStage: "first-night-role-action" });
+
+    const dependencyStore = new OneShotDomainEventLoadFailureStore();
+    const dependency = makeService(dependencyStore);
+    const dependencyOpened = await reachOpenDreamerV3ActionOpportunity(dependency.service, dependencyStore);
+    await exercise({ name: "dependency", service: dependency.service, store: dependencyStore, opened: dependencyOpened,
+      expectedCode: "CommandStoreReadFailed", expectedStage: "event-load",
+      beforeExecute: () => { dependencyStore.failNextDomainEventLoad = true; } });
+
+    const prospective = makeService();
+    const prospectiveOpened = await reachOpenDreamerV3ActionOpportunity(prospective.service, prospective.commandStore);
+    const prospectiveBoundary = prospective.service as unknown as { createBatch: (...args: readonly unknown[]) => DomainEventBatch };
+    const originalCreateBatch = prospectiveBoundary.createBatch.bind(prospective.service);
+    prospectiveBoundary.createBatch = (...args: readonly unknown[]): DomainEventBatch => {
+      const created = originalCreateBatch(...args);
+      return { ...created, events: created.events.map((event) => event.eventType === "DreamerTargetChosen"
+        ? { ...event, payload: { ...event.payload, sourcePlayerId: playerId("forged-prospective-source") } }
+        : event) };
+    };
+    await exercise({ name: "prospective", service: prospective.service, store: prospective.commandStore, opened: prospectiveOpened,
+      expectedCode: "DependencyExecutionFailed", expectedStage: "first-night-role-action" });
+    prospectiveBoundary.createBatch = originalCreateBatch;
+  }, 15_000);
+
+  it("[2B19A2-C21] retries the same command after a transient metadata dependency recovers", async () => {
+    const store = new MemoryCommandCommitStore();
+    const generator = new FaultInjectingIdGenerator();
+    const { service } = makeService(store, testSetupGenerator, generator);
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, store);
+    const target = opened.state.roster?.entries.find((entry) => entry.playerId !== opened.opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected another Dreamer target");
+    const command = submitDreamerActionCommand({ commandId: commandId("2b19a2-retry"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId, opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } } });
+    generator.failNextBatchId = true;
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", failureStage: "event-metadata" });
+    expect(await store.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted" });
+  });
+
+  it("[2B19A2-C29] keeps the accepted normal Dreamer settlement in FIRST_NIGHT", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore);
+    const target = opened.state.roster?.entries.find((entry) => entry.playerId !== opened.opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected another Dreamer target");
+    const result = await service.execute(submitDreamerActionCommand({ commandId: commandId("2b19a2-phase"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId, opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } } }));
+    expectAcceptedResult(result);
+    const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(state).toMatchObject({ phase: "FIRST_NIGHT", nightNumber: 1, dayNumber: 0 });
+    expect(result.events.some((event) => event.eventType === "PhaseTransitioned")).toBe(false);
   });
 
   it("keeps SubmitDreamerAction metadata generation failures classified independently", async () => {

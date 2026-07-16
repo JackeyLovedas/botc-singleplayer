@@ -1,7 +1,12 @@
 import { DomainError } from "./errors.js";
 import type { AnyDomainEventEnvelope, DomainEventEnvelope } from "./events.js";
 import type { GameState } from "./game-state.js";
-import { validateCerenovusActionOpportunityShape } from "./first-night-action-opportunity.js";
+import {
+  findFirstNightActionOpportunityById,
+  isDreamerActionOpportunityV3,
+  validateCerenovusActionOpportunityShape
+} from "./first-night-action-opportunity.js";
+import type { DreamerActionOpportunityV3 } from "./first-night-action-opportunity.js";
 import {
   CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
   LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
@@ -32,6 +37,7 @@ import {
 import {
   createDreamerInformationDeliveredPayload,
   evaluateDreamerEffectiveness,
+  resolveBaseDreamerV2NormalCapability,
   sameDreamerInformationDelivery
 } from "./dreamer.js";
 import {
@@ -1082,10 +1088,39 @@ const validateIntegratedDreamerInformationBatch = (
   const targetChosen = first as DomainEventEnvelope<"DreamerTargetChosen">;
   const information = second as DomainEventEnvelope<"DreamerInformationDelivered">;
   const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
-  const effectiveness = evaluateDreamerEffectiveness({
+  let effectiveness = evaluateDreamerEffectiveness({
     sourcePlayerId: targetChosen.payload.sourcePlayerId,
     abilityImpairments: state.abilityImpairments
   });
+  if ("deliverySchemaVersion" in information.payload) {
+    const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, information.payload.opportunityId);
+    if (opportunity === undefined) {
+      reject("Dreamer V2 information batch requires one canonical open V3 opportunity");
+    }
+    const canonicalOpportunity = opportunity!;
+    if (!isDreamerActionOpportunityV3(canonicalOpportunity)) {
+      reject("Dreamer V2 information batch requires one canonical open V3 opportunity");
+    }
+    const opportunities = state.firstNightActionOpportunities;
+    const roleTenures = state.seamstressRoleTenureState;
+    if (opportunities === undefined || roleTenures === undefined) {
+      reject("Dreamer V2 information batch requires one canonical open V3 opportunity and tenure state");
+    }
+    const capability = resolveBaseDreamerV2NormalCapability({
+      opportunity: canonicalOpportunity as DreamerActionOpportunityV3,
+      firstNightTaskPlan: state.firstNightTaskPlan!,
+      firstNightTaskProgress: state.firstNightTaskProgress,
+      firstNightActionOpportunities: opportunities!,
+      currentCharacterState: currentCharacterState!,
+      setup: setup!,
+      roleTenures: roleTenures!,
+      abilityImpairments: state.abilityImpairments
+    });
+    if (capability.kind !== "NORMAL_INFORMATION_SUPPORTED") {
+      reject("Dreamer V2 information batch requires proven normal-information capability");
+    }
+    effectiveness = { effective: true };
+  }
   const expectedInformation = createDreamerInformationDeliveredPayload({
     rulesBaselineVersion: information.payload.rulesBaselineVersion,
     targetChoice: targetChosen.payload,

@@ -23,6 +23,9 @@ import { batchId, eventId, gameId, grantedAbilityId, playerId, roleId, scheduled
 import type { FirstNightAbilityOutcomeFact, FirstNightAbilityOutcomeLedger, SourceEventEvidence } from "./first-night-ability-outcome-ledger.js";
 import type { GameState } from "./game-state.js";
 import { seatNumber } from "./player-roster.js";
+import { rebuildGameState } from "./rebuild.js";
+import { applyDomainEvent } from "./event-applier.js";
+import { captureAcceptedBaseDreamerV3NormalStream } from "@botc/test-harness";
 
 const taskId = scheduledTaskId("first-night-v1:WITCH_ACTION:seat-01");
 const opportunityIdFor=(taskType:"SNAKE_CHARMER_ACTION"|"WITCH_ACTION"|"DREAMER_ACTION")=>`first-night-v1:${taskType}:seat-01:opportunity-01`;
@@ -286,7 +289,29 @@ describe("first-night ability outcome ledger", () => {
       const event=terminalEvent("DreamerInformationDelivered",{taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),opportunityId:opportunityIdFor("DREAMER_ACTION"),sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,goodRole:roleSnapshot(containsTruth?"clockmaker":"artist"),evilRole:roleSnapshot("witch","MINION"),informationReliability:{kind:"SOURCE_IMPAIRED",sourceImpairmentId:impairmentId,sourceImpairmentKind:kind}}) as never;
       return {state,event,fact:deriveFirstNightAbilityOutcomeFact({stateBefore:state,event})!};
     };
-    it("[R4-51] derives effective truthful Dreamer as NORMAL",()=>{expect(deriveDreamer()).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY"});});
+    it("[2B19A2-C22] rebuilds exactly one NORMAL ledger fact from the real application-produced success stream",async()=>{
+      const captured=await captureAcceptedBaseDreamerV3NormalStream();
+      const state=rebuildGameState(structuredClone(captured.events));
+      const dreamerFacts=state.firstNightAbilityOutcomeLedger?.facts.filter((entry)=>entry.abilityRoleId==="dreamer")??[];
+      expect(dreamerFacts).toHaveLength(1);
+      expect(dreamerFacts[0]).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY",abilityRoleId:"dreamer"});
+      expect(validateFirstNightAbilityOutcomeFactShape(dreamerFacts[0])).toStrictEqual({valid:true});
+    },15_000);
+    it("[2B19A2-C23] preserves the captured accepted pre-settlement ledger when settlement is applied",async()=>{
+      const captured=await captureAcceptedBaseDreamerV3NormalStream();
+      const target=captured.events[captured.targetEventIndex];
+      const delivery=captured.events[captured.deliveryEventIndex];
+      const settlement=captured.events[captured.settlementEventIndex];
+      if(target?.eventType!=="DreamerTargetChosen"||delivery?.eventType!=="DreamerInformationDelivered"||
+        settlement?.eventType!=="ScheduledTaskSettled")throw new Error("Expected captured Dreamer terminal batch");
+      const beforeBatch=rebuildGameState(structuredClone(captured.events.slice(0,captured.targetEventIndex)));
+      const afterTarget=applyDomainEvent(beforeBatch,structuredClone(target));
+      const preSettlementState=applyDomainEvent(afterTarget,structuredClone(delivery));
+      const preSettlementLedger=structuredClone(preSettlementState.firstNightAbilityOutcomeLedger);
+      const settledState=applyDomainEvent(preSettlementState,structuredClone(settlement));
+      expect(preSettlementLedger?.facts.filter((entry)=>entry.abilityRoleId==="dreamer")).toHaveLength(1);
+      expect(settledState.firstNightAbilityOutcomeLedger).toStrictEqual(preSettlementLedger);
+    });
     it("[R4-52] keeps impaired truthful Dreamer information NORMAL",()=>{expect(impairedDreamer("DRUNK",true).fact).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY"});});
     it("[R4-53] derives DRUNK false Dreamer information as ABNORMAL",()=>{expect(impairedDreamer("DRUNK",false).fact).toMatchObject({outcomeStatus:"ABNORMAL",causeKind:"SOURCE_DRUNKENNESS"});});
     it("[R4-54] derives POISONED false Dreamer information as ABNORMAL",()=>{expect(impairedDreamer("POISONED",false).fact).toMatchObject({outcomeStatus:"ABNORMAL",causeKind:"SOURCE_POISONING"});});
