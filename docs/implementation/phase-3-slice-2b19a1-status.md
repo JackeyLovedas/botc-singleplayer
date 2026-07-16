@@ -11,7 +11,7 @@
 - Slice coverage: `FOUNDATION / OPPORTUNITY_CONTRACT`
 - Dreamer role coverage: `PARTIAL`
 - Rule evidence coverage: `SKELETON`
-- Publication status: `REPAIR_ROUND_1_LOCAL_GATES_PASS_PENDING_PUBLICATION`
+- Publication status: `COMPLETED / ACCEPTED / PENDING_CLOSEOUT_COMMIT_CI`
 
 ## Final Review Round 1
 
@@ -63,7 +63,11 @@ Production additions: `480` lines (`446 + 34`), with `25` removed legacy-domain 
 - Full lint: `PASS`
 - Diff, scope, static, JSON, and authority-hash audit: `PASS`
 - Repair Round 1 full local gates: `PASS`
-- Repair Round 1 exact-head cross-platform CI: `PENDING`
-- Fresh independent final review: `PENDING`
+- Repair Round 1 exact-head cross-platform CI: push `29483066575` and pull request `29483069638`, both `SUCCESS` on `67d3660b5fec9ca53253bfae1240eac6b2ad85e7`
+- Fresh independent final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`
+- Merge: PR #33 merge SHA `488d2e8c7a429ea1244c54859e8f682d05056707`; main CI `29483966050` `SUCCESS`
+- Accepted tag: `phase-3-slice-2b19a1-dreamer-v2-base-opportunity-contract`; tag CI `29483990622` `SUCCESS`
+- Verbatim audit archives: `docs/reviews/pr-33-code-review-final.md` and `docs/reviews/pr-33-rule-review-final.md`
+- Closeout commit CI: `PENDING` for the future exact docs-only commit; no prior CI is inherited
 
-The Round 1 authority-matrix finding is closed locally: the expanded matrix and every full local gate pass with zero production change. The active blocker is `PENDING_REPAIR_PUBLICATION_AND_EXACT_HEAD_CI_AND_FINAL_REVIEW`. The feature remains unaccepted until a bounded attributed repair commit is pushed, fresh exact-head CI succeeds, a new complete independent final review returns both pass verdicts, and both verbatim GitHub audit comments, merge, tag, and post-merge closeout requirements pass.
+The Round 1 authority-matrix finding is closed and the Slice is accepted at `FOUNDATION / OPPORTUNITY_CONTRACT`; Dreamer remains `PARTIAL`. FIRST_NIGHT completion, DAY, 2B19A2, 2B19A3, 2B19B, and Phase 2C remain unstarted. The only remaining closeout blocker is `PENDING_CLOSEOUT_COMMIT_CI`.
