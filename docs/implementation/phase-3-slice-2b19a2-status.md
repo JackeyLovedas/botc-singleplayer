@@ -2,7 +2,7 @@
 
 - Slice: `2B19A2 — Effective Base Dreamer V2 Normal Information`
 - Authorization: `USER_AUTHORIZED_2B19A2_EFFECTIVE_BASE_DREAMER_V2_NORMAL_INFORMATION`
-- Branch: `phase-3/dreamer-v2-base-normal-information`
+- Accepted branch: `phase-3/dreamer-v2-base-normal-information`; current branch: `main`
 - Rule evidence: `docs/rules/evidence/2B19A2.md`, verdict `RULE_READY`
 - Final design: `docs/implementation/phase-3-slice-2b19a2-design-round-2.md`, SHA-256 `7e4016b89f6cc5f5b07bcf32f6a6e14c9e12db39c7cb66960b1934efb1911687`
 - Design review: `docs/implementation/phase-3-slice-2b19a2-design-review-round-2.md`, SHA-256 `7bb36bd0e79200d8a803c2f43c1b1cc78669ad15969be58138a48417e3ff65b2`, verdict `RULE_DESIGN_PASS`
@@ -10,7 +10,7 @@
 - Repair round: `3 / 3`
 - Slice coverage: `PARTIAL / NORMAL_INFORMATION_ONLY`
 - Dreamer role coverage: `PARTIAL`
-- Publication status: `FINAL_FROZEN_DESIGN_REPAIR_ROUND_3_LOCAL_GATES_PASS / PENDING_PUBLICATION_EXACT_HEAD_CI_AND_FINAL_REVIEW`
+- Publication status: `COMPLETED / ACCEPTED / PENDING_CLOSEOUT_COMMIT_CI`
 
 ## Implemented
 
@@ -84,6 +84,8 @@ Round 3 production changes are confined to `packages/domain-core/src/first-night
 - Rebuild focused run: `204 / 204 PASS`; `17.78s` tests (`17.88s` standalone validation).
 - Single-fork full coverage: `34 files / 1457 tests PASS`; `128.4s`; `87.24%` statements/lines, `82.11%` branches, `97.76%` functions; no `onTaskUpdate` failure.
 - Diff/scope/static/JSON/design-hash/authority-uniqueness audits: `PASS`.
-- Round 3 publication, fresh exact-head push/PR CI, and independent final review remain pending on PR `#34`. No Repair Round 4 exists.
+- PR `#34` merged. Frozen feature HEAD `f5d5fe8b2d270fe760644e374e722f4aa1dd7dfe` passed push/PR CI `29503106606 / 29503110162`; complete independent review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`.
+- Merge `55738229962173b0f0772cff1f69d1453c14af1d` passed merge-main CI `29504378316`; accepted tag `phase-3-slice-2b19a2-dreamer-v2-base-normal-information` passed tag CI `29504409993` on the same SHA.
+- Final review archives: `docs/reviews/pr-34-code-review-final.md` and `docs/reviews/pr-34-rule-review-final.md`. The future docs-only closeout commit CI remains `PENDING` and inherits no prior status.
 
 Dreamer remains `PARTIAL`; this Slice does not claim complete Dreamer rules.
