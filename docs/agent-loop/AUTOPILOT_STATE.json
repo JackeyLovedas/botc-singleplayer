@@ -1,9 +1,9 @@
 {
   "status": "RUNNING",
   "taskType": "PRODUCT_SLICE",
-  "productRepairRoundConsumed": false,
-  "currentPR": null,
-  "currentPRUrl": null,
+  "productRepairRoundConsumed": true,
+  "currentPR": 33,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/33",
   "currentBranch": "phase-3/dreamer-v2-base-opportunity-contract",
   "currentSlice": "2B19A1",
   "slice2B19A1Started": true,
@@ -48,11 +48,11 @@
     },
     "remainingBlockers": []
   },
-  "reviewedHead": null,
-  "currentReviewHeadAuthority": null,
-  "exactHeadCIAuthority": "Accepted main 9c4938aca1416995b7607589b73b0238ef4f6ea4 passed main CI 29470843060 before Slice 2B19A1 started. No 2B19A1 feature-head CI or review exists yet.",
-  "currentFeatureHead": null,
-  "repairRound": 0,
+  "reviewedHead": "292d4e0dc4d718d2f03928e037eaddf9daed4349",
+  "currentReviewHeadAuthority": "docs/implementation/phase-3-slice-2b19a1-final-review-round-1.md",
+  "exactHeadCIAuthority": "Initial implementation HEAD 292d4e0dc4d718d2f03928e037eaddf9daed4349 passed push CI 29480909501 and pull-request CI 29480985744. Repair Round 1 is uncommitted and has no exact-head CI yet.",
+  "currentFeatureHead": "292d4e0dc4d718d2f03928e037eaddf9daed4349",
+  "repairRound": 1,
   "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": "USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE",
@@ -145,22 +145,38 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": true,
-  "implementationStatus": "LOCAL_IMPLEMENTATION_COMPLETE_READY_FOR_CONTROLLER_AUDIT",
+  "implementationStatus": "REPAIR_ROUND_1_LOCAL_GATES_PASS_PENDING_PUBLICATION",
   "implementationBranch": "phase-3/dreamer-v2-base-opportunity-contract",
   "localImplementationValidation": {
-    "focusedTests": "13 Slice 2B19A1 and hostile-state tests passed; application/rebuild/projection 6 projects / 502 tests passed; Mathematician compatibility 422/422 passed",
+    "focusedTests": "Repair Round 1 expanded 2B19A1 matrix: 12 tagged tests passed; typecheck and test-file lint passed",
     "fullTests": "33 files / 1432 tests passed",
     "coverageTests": "33 files / 1432 tests passed",
-    "coverage": "86.94% statements/lines, 81.80% branches, 97.81% functions",
+    "coverage": "86.99% statements/lines, 81.99% branches, 97.81% functions",
     "typecheck": "PASS",
     "lint": "PASS",
     "diffCheck": "PASS",
-    "postInfrastructureLocalGates": "PASS: typecheck, lint, 33 files / 1432 tests, 33 files / 1432 coverage tests, 86.94% statements/lines, 81.80% branches, 97.81% functions",
+    "postInfrastructureLocalGates": "PASS: targeted 12/12, typecheck, lint, 33 files / 1432 tests, 33 files / 1432 coverage tests, 86.99% statements/lines, 81.99% branches, 97.81% functions, diff/scope/static/JSON/hash audits",
     "frozenProductionScope": "PASS: exactly two authorized production files and 480 added production lines relative to origin/main; no workflow, dependency, timeout, GameState, event type, projection, or ledger production change",
-    "exactHeadCI": "PENDING: no commit or PR exists",
-    "finalReview": "PENDING: no final review exists"
+    "exactHeadCI": "Initial implementation HEAD 292d4e0dc4d718d2f03928e037eaddf9daed4349 passed 29480909501 / 29480985744; Repair Round 1 exact-head CI is PENDING",
+    "finalReview": "Round 1 CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS; blocker FROZEN_2B19A1_PRIMARY_AUTHORITY_TEST_MATRIX_INCOMPLETE remains until repair gates and renewed review"
   },
-  "implementationCommit": null,
+  "implementationCommit": "292d4e0dc4d718d2f03928e037eaddf9daed4349",
+  "slice2B19A1FinalReviewRound1": {
+    "report": "docs/implementation/phase-3-slice-2b19a1-final-review-round-1.md",
+    "reviewedHead": "292d4e0dc4d718d2f03928e037eaddf9daed4349",
+    "reviewedPR": 33,
+    "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [
+      "FROZEN_2B19A1_PRIMARY_AUTHORITY_TEST_MATRIX_INCOMPLETE"
+    ],
+    "repairScope": "TESTS_DOCS_CONTROL_PR_BODY_ONLY",
+    "productionChanged": false,
+    "workflowChanged": false,
+    "dependencyChanged": false,
+    "timeoutChanged": false,
+    "r4Expanded": false
+  },
   "slice2B19TPublication": {
     "status": "COMPLETED",
     "branch": "main",
@@ -353,7 +369,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_PUBLICATION_AND_EXACT_HEAD_CI_AND_FINAL_REVIEW"
+    "PENDING_REPAIR_PUBLICATION_AND_EXACT_HEAD_CI_AND_FINAL_REVIEW"
   ],
   "ruleCoverageStatus": "SKELETON",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
@@ -1067,7 +1083,7 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-16T12:47:57+08:00",
-  "lastAction": "Completed the bounded local Slice 2B19A1 implementation and controller-audit hardening in exactly two production files and 480 added production lines. All 13 Slice and hostile-state tests, application/rebuild/projection 502-test gate, Mathematician 422-test compatibility gate, typecheck, full lint, 33-file/1432-test full suite, 33-file/1432-test single-fork coverage, diff, scope, static, JSON, and design/review hash gates pass. Dreamer remains PARTIAL and no commit or PR exists.",
+  "lastAction": "Completed product repair Round 1 local authority closure without production change. Expanded the frozen exact-shape, source cross-binding, canonical ability-instance, and hostile pre-event tenure matrices; targeted 12/12, typecheck, full lint, full 33/1432 tests, single-fork 33/1432 coverage at 86.99/81.99/97.81, diff/scope/static/JSON scans, and authority hashes pass.",
   "lastError": null,
-  "nextAction": "Controller audits the local implementation and traceability. If accepted, create one attributed commit, push the existing branch, open the required PR with complete rule sections, and require exact-head CI before independent final review."
+  "nextAction": "Update PR #33 for repair pending, create one attributed repair commit, push without force, require fresh exact-head push/PR CI, and only then request a new complete independent final review."
 }

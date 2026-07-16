@@ -94,6 +94,7 @@ import {
 } from "@botc/test-harness";
 import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
 import { deriveFirstNightAbilityOutcomeFact } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
+import { assertRebuiltCanonicalRoleTenureState } from "../../domain-core/src/role-tenure-replay.js";
 
 const makeService = (
   commandStore = new MemoryCommandCommitStore(),
@@ -1028,6 +1029,9 @@ const reachDreamerV2PayloadValidationAuthority = async (
   }
   return {
     ...opened,
+    events,
+    event,
+    preEventStream: events.slice(0, -1),
     before,
     canonicalPayload: structuredClone(event.payload) as Record<string, unknown>,
     validationInput: {
@@ -6457,69 +6461,325 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
 
   it("[2B19A1-05/14] rejects malformed Dreamer V2 payload structures fail closed", async () => {
     const { service, commandStore } = makeService();
-    const { canonicalPayload: canonical, validationInput: input } =
+    const { before, canonicalPayload: canonical, event, validationInput: input } =
       await reachDreamerV2PayloadValidationAuthority(service, commandStore);
-    const mutators: readonly ((draft: Record<string, unknown>) => void)[] = [
-      (draft) => { draft.extra = true; },
-      (draft) => { delete draft.sourceContract; },
-      (draft) => { draft.opportunitySchemaVersion = "unknown-dreamer-schema"; },
-      (draft) => { draft.opportunityId = "first-night-v2:DREAMER_ACTION:seat-01:opportunity-1"; },
-      (draft) => { (draft.visibility as Record<string, unknown>).supportedDecisionKinds = ["CHOOSE_PLAYER"]; },
-      (draft) => { (draft.visibility as Record<string, unknown>).futureUnsupportedDecisionKinds = []; }
+    const topLevelKeys = [
+      "rulesBaselineVersion", "opportunitySchemaVersion", "nightNumber", "opportunityId",
+      "opportunityKind", "opportunityStatus", "taskId", "taskType", "sourcePlayerId",
+      "sourceSeatNumber", "sourceRole", "sourceCharacterStateRevision", "sourceContract",
+      "visibility"
+    ] as const;
+    const sourceContractKeys = [
+      "sourceContractVersion", "kind", "taskPlanVersion", "taskId", "taskType",
+      "sourcePlayerId", "sourceSeatNumber", "sourceRoleId", "sourceRoleTenureId",
+      "sourceCharacterStateRevision", "sourceAbilityInstanceId"
+    ] as const;
+    const visibilityKeys = [
+      "visibilitySchemaVersion", "canChooseTarget", "supportedDecisionKinds",
+      "futureUnsupportedDecisionKinds", "futureTargetSchema"
+    ] as const;
+    const validateInvalid = (value: unknown, label: string): void => {
+      expect(
+        domainCore.validateFirstNightActionOpportunityCreatedPayload(value, input),
+        label
+      ).toMatchObject({ valid: false });
+    };
+    expect(domainCore.validateFirstNightActionOpportunityCreatedPayload(canonical, input))
+      .toStrictEqual({ valid: true });
+
+    for (const key of topLevelKeys) {
+      const draft = structuredClone(canonical);
+      delete draft[key];
+      validateInvalid(draft, `missing top-level ${key}`);
+    }
+    for (const key of sourceContractKeys) {
+      const draft = structuredClone(canonical);
+      delete (draft.sourceContract as Record<string, unknown>)[key];
+      validateInvalid(draft, `missing sourceContract ${key}`);
+    }
+    for (const key of visibilityKeys) {
+      const draft = structuredClone(canonical);
+      delete (draft.visibility as Record<string, unknown>)[key];
+      validateInvalid(draft, `missing visibility ${key}`);
+    }
+
+    const wrongTopLevelValues: readonly (readonly [typeof topLevelKeys[number], unknown])[] = [
+      ["opportunitySchemaVersion", "unknown-dreamer-schema"],
+      ["nightNumber", 2],
+      ["opportunityId", "first-night-v2:DREAMER_ACTION:seat-01:opportunity-1"],
+      ["opportunityKind", "DREAMER_FIRST_NIGHT_ACTION"],
+      ["opportunityStatus", "CLOSED"],
+      ["taskId", "wrong-task"],
+      ["taskType", "WITCH_ACTION"],
+      ["sourcePlayerId", ""],
+      ["sourceSeatNumber", 0],
+      ["sourceRole", []],
+      ["sourceCharacterStateRevision", 0],
+      ["sourceContract", null],
+      ["visibility", null]
     ];
-    for (const mutate of mutators) {
+    for (const [key, value] of wrongTopLevelValues) {
+      const draft = structuredClone(canonical);
+      draft[key] = value;
+      validateInvalid(draft, `wrong top-level ${key}`);
+    }
+    const wrongRulesBaseline = structuredClone(event);
+    (wrongRulesBaseline.payload as { rulesBaselineVersion: string }).rulesBaselineVersion =
+      "wrong-rules-baseline";
+    expect(
+      () => domainCore.applyDomainEvent(before, wrongRulesBaseline),
+      "wrong top-level rulesBaselineVersion"
+    ).toThrowError(DomainError);
+
+    const wrongSourceContractValues: readonly (readonly [typeof sourceContractKeys[number], unknown])[] = [
+      ["sourceContractVersion", "wrong-source-contract-version"],
+      ["kind", "PHILOSOPHER_GAINED"],
+      ["taskPlanVersion", "first-night-task-plan-v1"],
+      ["taskId", "wrong-task"],
+      ["taskType", "WITCH_ACTION"],
+      ["sourcePlayerId", "wrong-player"],
+      ["sourceSeatNumber", 0],
+      ["sourceRoleId", "witch"],
+      ["sourceRoleTenureId", "wrong-tenure"],
+      ["sourceCharacterStateRevision", 0],
+      ["sourceAbilityInstanceId", "wrong-instance"]
+    ];
+    for (const [key, value] of wrongSourceContractValues) {
+      const draft = structuredClone(canonical);
+      (draft.sourceContract as Record<string, unknown>)[key] = value;
+      validateInvalid(draft, `wrong sourceContract ${key}`);
+    }
+
+    const wrongVisibilityValues: readonly (readonly [typeof visibilityKeys[number], unknown])[] = [
+      ["visibilitySchemaVersion", "wrong-visibility-schema"],
+      ["canChooseTarget", true],
+      ["supportedDecisionKinds", ["CHOOSE_PLAYER"]],
+      ["futureUnsupportedDecisionKinds", []],
+      ["futureTargetSchema", "ANY_PLAYER"]
+    ];
+    for (const [key, value] of wrongVisibilityValues) {
+      const draft = structuredClone(canonical);
+      (draft.visibility as Record<string, unknown>)[key] = value;
+      validateInvalid(draft, `wrong visibility ${key}`);
+    }
+
+    for (const [label, mutate] of [
+      ["extra top-level key", (draft: Record<string, unknown>) => { draft.extra = true; }],
+      ["extra sourceContract key", (draft: Record<string, unknown>) => {
+        (draft.sourceContract as Record<string, unknown>).extra = true;
+      }],
+      ["extra visibility key", (draft: Record<string, unknown>) => {
+        (draft.visibility as Record<string, unknown>).extra = true;
+      }]
+    ] as const) {
       const draft = structuredClone(canonical);
       mutate(draft);
-      expect(domainCore.validateFirstNightActionOpportunityCreatedPayload(draft, input)).toMatchObject({ valid: false });
+      validateInvalid(draft, label);
     }
+
+    for (const [label, value] of [
+      ["top-level null", null],
+      ["top-level array", []],
+      ["top-level nonplain", new Date(0)]
+    ] as const) {
+      validateInvalid(value, label);
+    }
+    for (const container of ["sourceContract", "visibility"] as const) {
+      for (const [label, value] of [
+        ["null", null],
+        ["array", []],
+        ["nonplain", new Date(0)]
+      ] as const) {
+        const draft = structuredClone(canonical);
+        draft[container] = value;
+        validateInvalid(draft, `${container} ${label}`);
+      }
+    }
+
+    for (const [key, denseWrong, sparseLength] of [
+      ["supportedDecisionKinds", ["CHOOSE_PLAYER"], 1],
+      ["futureUnsupportedDecisionKinds", [], 1]
+    ] as const) {
+      const denseDraft = structuredClone(canonical);
+      (denseDraft.visibility as Record<string, unknown>)[key] = denseWrong;
+      validateInvalid(denseDraft, `${key} dense wrong array`);
+      const sparseDraft = structuredClone(canonical);
+      (sparseDraft.visibility as Record<string, unknown>)[key] = new Array(sparseLength);
+      validateInvalid(sparseDraft, `${key} sparse array`);
+    }
+
     const accessor = structuredClone(canonical);
     Object.defineProperty(accessor, "opportunityStatus", { enumerable: true, get: () => "OPEN" });
-    expect(domainCore.validateFirstNightActionOpportunityCreatedPayload(accessor, input)).toMatchObject({ valid: false });
+    validateInvalid(accessor, "top-level accessor");
     const symbol = structuredClone(canonical);
     Object.defineProperty(symbol, Symbol("hidden"), { enumerable: true, value: true });
-    expect(domainCore.validateFirstNightActionOpportunityCreatedPayload(symbol, input)).toMatchObject({ valid: false });
+    validateInvalid(symbol, "top-level enumerable symbol");
     const cycle = structuredClone(canonical);
     cycle.cycle = cycle;
-    expect(domainCore.validateFirstNightActionOpportunityCreatedPayload(cycle, input)).toMatchObject({ valid: false });
-    expect(domainCore.validateFirstNightActionOpportunityCreatedPayload(new Proxy(canonical, {
+    validateInvalid(cycle, "top-level cycle");
+    validateInvalid(new Proxy(canonical, {
       ownKeys: () => { throw new Error("hostile ownKeys"); }
-    }), input)).toMatchObject({ valid: false });
+    }), "top-level Proxy");
   });
 
-  it("[2B19A1-09] rejects Dreamer V2 tenure, ability-instance, and revision provenance tampering", async () => {
+  it("[2B19A1-09] rejects hostile pre-event Dreamer tenure states against accepted history and event replay", async () => {
     const { service, commandStore } = makeService();
-    const { canonicalPayload, validationInput } =
+    const { before, event, events, preEventStream } =
       await reachDreamerV2PayloadValidationAuthority(service, commandStore);
-    for (const mutate of [
-      (draft: Record<string, unknown>) => {
-        (draft.sourceContract as Record<string, unknown>).sourceRoleTenureId = "wrong-tenure";
-      },
-      (draft: Record<string, unknown>) => {
-        (draft.sourceContract as Record<string, unknown>).sourceAbilityInstanceId = "wrong-instance";
-      },
-      (draft: Record<string, unknown>) => {
-        (draft.sourceContract as Record<string, unknown>).sourceCharacterStateRevision = 2;
-      }
-    ]) {
-      const draft = structuredClone(canonicalPayload);
-      mutate(draft);
-      expect(domainCore.validateFirstNightActionOpportunityCreatedPayload(draft, validationInput))
-        .toMatchObject({ valid: false });
+    expect(() => validateDomainEventStream(events)).not.toThrow();
+    expect(rebuildOptionalGameState(events)).toBeDefined();
+    const canonicalRecords = before.seamstressRoleTenureState?.records;
+    const canonicalDreamer = canonicalRecords?.find((record) => record.roleId === "dreamer");
+    if (canonicalRecords === undefined || canonicalDreamer === undefined ||
+        before.currentCharacterState === undefined) {
+      throw new Error("Expected canonical pre-event Dreamer tenure authority");
+    }
+    const alternateSeat = domainCore.seatNumber(canonicalDreamer.seatNumber === 1 ? 2 : 1);
+    const hostileCases: readonly (readonly [string, (records: Record<string, unknown>[]) => void])[] = [
+      ["missing", (records) => {
+        records.splice(records.findIndex((record) => record.roleId === "dreamer"), 1);
+      }],
+      ["duplicate", (records) => {
+        const dreamer = records.find((record) => record.roleId === "dreamer");
+        if (dreamer === undefined) throw new Error("Expected Dreamer tenure to duplicate");
+        records.push(structuredClone(dreamer));
+      }],
+      ["ended", (records) => {
+        const dreamer = records.find((record) => record.roleId === "dreamer");
+        if (dreamer === undefined) throw new Error("Expected Dreamer tenure to end");
+        dreamer.endedCharacterStateRevision = before.currentCharacterState!.revision;
+      }],
+      ["wrong-player", (records) => {
+        const dreamer = records.find((record) => record.roleId === "dreamer");
+        if (dreamer === undefined) throw new Error("Expected Dreamer tenure player");
+        dreamer.playerId = domainCore.playerId("hostile-dreamer-player");
+      }],
+      ["wrong-seat", (records) => {
+        const dreamer = records.find((record) => record.roleId === "dreamer");
+        if (dreamer === undefined) throw new Error("Expected Dreamer tenure seat");
+        dreamer.seatNumber = alternateSeat;
+      }],
+      ["wrong-role", (records) => {
+        const dreamer = records.find((record) => record.roleId === "dreamer");
+        if (dreamer === undefined) throw new Error("Expected Dreamer tenure role");
+        dreamer.roleId = "witch";
+      }],
+      ["wrong-revision", (records) => {
+        const dreamer = records.find((record) => record.roleId === "dreamer");
+        if (dreamer === undefined) throw new Error("Expected Dreamer tenure revision");
+        dreamer.acquiredCharacterStateRevision = before.currentCharacterState!.revision + 1;
+      }]
+    ];
+    for (const [label, mutate] of hostileCases) {
+      const hostileState = structuredClone(before);
+      const records = hostileState.seamstressRoleTenureState?.records as unknown as
+        Record<string, unknown>[] | undefined;
+      if (records === undefined) throw new Error("Expected mutable hostile tenure state");
+      mutate(records);
+      expect(
+        () => assertRebuiltCanonicalRoleTenureState(preEventStream, hostileState),
+        `${label} tenure must not match the real accepted pre-event history`
+      ).toThrowError(DomainError);
+      expect(
+        () => domainCore.applyDomainEvent(hostileState, event),
+        `${label} tenure must reject the real accepted opportunity event during replay`
+      ).toThrowError(DomainError);
     }
   });
 
-  it("[2B19A1-08/10] derives exact source and base ability identity through the pure builder seam", async () => {
+  it("[2B19A1-08/10] cross-binds every base source fact and rejects non-base ability identities", async () => {
     const { service, commandStore } = makeService();
-    const { dreamerTask, opportunity, validationInput } =
+    const { canonicalPayload, dreamerTask, opportunity, validationInput } =
       await reachDreamerV2PayloadValidationAuthority(service, commandStore);
     const result = domainCore.tryCreateFirstNightRoleActionOpportunity(validationInput);
     expect(result.valid).toBe(true);
     if (!result.valid || result.opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V2") {
       throw new Error("Expected pure builder Dreamer V2 result");
     }
-    expect(result.opportunity.sourceContract).toStrictEqual(opportunity.sourceContract);
-    expect(result.opportunity.sourceContract.sourceAbilityInstanceId)
-      .toBe(domainCore.formatBaseFirstNightAbilityInstanceId(dreamerTask.taskId));
+    expect(result.opportunity.sourceContract).toStrictEqual({
+      sourceContractVersion: "dreamer-base-source-contract-v1",
+      kind: "BASE",
+      taskPlanVersion: "first-night-task-plan-v2",
+      taskId: dreamerTask.taskId,
+      taskType: "DREAMER_ACTION",
+      sourcePlayerId: opportunity.sourcePlayerId,
+      sourceSeatNumber: opportunity.sourceSeatNumber,
+      sourceRoleId: "dreamer",
+      sourceRoleTenureId: opportunity.sourceContract.sourceRoleTenureId,
+      sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision,
+      sourceAbilityInstanceId: domainCore.formatBaseFirstNightAbilityInstanceId(dreamerTask.taskId)
+    });
+
+    const alternateSeat = domainCore.seatNumber(opportunity.sourceSeatNumber === 1 ? 2 : 1);
+    const tamperSourceTenure = (
+      draft: typeof validationInput,
+      mutate: (tenure: Record<string, unknown>) => void
+    ): void => {
+      const tenure = draft.seamstressRoleTenureState?.records.find((record) => record.roleId === "dreamer") as
+        unknown as Record<string, unknown> | undefined;
+      if (tenure === undefined) throw new Error("Expected Dreamer tenure source fact");
+      mutate(tenure);
+    };
+    const sourceFactCases: readonly (readonly [string, (draft: typeof validationInput) => void])[] = [
+      ["task", (draft) => {
+        (draft as { taskId: ReturnType<typeof scheduledTaskId> }).taskId = scheduledTaskId(
+          `first-night-v1:DREAMER_ACTION:seat-${String(alternateSeat).padStart(2, "0")}`
+        );
+      }],
+      ["player", (draft) => tamperSourceTenure(draft, (tenure) => {
+        tenure.playerId = domainCore.playerId("wrong-dreamer-player");
+      })],
+      ["seat", (draft) => tamperSourceTenure(draft, (tenure) => {
+        tenure.seatNumber = alternateSeat;
+      })],
+      ["role", (draft) => tamperSourceTenure(draft, (tenure) => {
+        tenure.roleId = "witch";
+      })],
+      ["revision", (draft) => tamperSourceTenure(draft, (tenure) => {
+        tenure.acquiredCharacterStateRevision = validationInput.currentCharacterState.revision + 1;
+      })]
+    ];
+    for (const [label, mutate] of sourceFactCases) {
+      const draft = structuredClone(validationInput);
+      mutate(draft);
+      expect(
+        domainCore.tryCreateFirstNightRoleActionOpportunity(draft),
+        `${label} source fact tamper`
+      ).toMatchObject({ valid: false });
+    }
+
+    const seatSegment = String(opportunity.sourceSeatNumber).padStart(2, "0");
+    const alternateSeatSegment = String(alternateSeat).padStart(2, "0");
+    const canonicalAbilityInstanceId = opportunity.sourceContract.sourceAbilityInstanceId;
+    const invalidAbilityInstanceIds = [
+      ["gained", domainCore.formatPhilosopherGainedV2AbilityInstanceId({
+        taskId: domainCore.scheduledTaskId(
+          `first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-${seatSegment}:from-dreamer`
+        ),
+        grantId: domainCore.grantedAbilityId(
+          `philosopher-grant-v1:seat-${seatSegment}:from-dreamer`
+        )
+      })],
+      ["alias", ` ${canonicalAbilityInstanceId}`],
+      ["wrong-kind", domainCore.formatExplicitFirstNightAbilityInstanceId({
+        roleId: domainCore.roleId("dreamer"),
+        existingInstanceId: domainCore.abilityInstanceId("wrong-kind-instance")
+      })],
+      ["wrong-task", domainCore.formatBaseFirstNightAbilityInstanceId(domainCore.scheduledTaskId(
+        `first-night-v1:WITCH_ACTION:seat-${seatSegment}`
+      ))],
+      ["wrong-seat", domainCore.formatBaseFirstNightAbilityInstanceId(domainCore.scheduledTaskId(
+        `first-night-v1:DREAMER_ACTION:seat-${alternateSeatSegment}`
+      ))]
+    ] as const;
+    for (const [label, sourceAbilityInstanceId] of invalidAbilityInstanceIds) {
+      const draft = structuredClone(canonicalPayload);
+      (draft.sourceContract as Record<string, unknown>).sourceAbilityInstanceId = sourceAbilityInstanceId;
+      expect(
+        domainCore.validateFirstNightActionOpportunityCreatedPayload(draft, validationInput),
+        `${label} ability instance`
+      ).toMatchObject({ valid: false });
+    }
   });
 
   it("[2B19A1-12/13] rejects duplicate task identities and V1/V2 same-task mixing in both orders", async () => {

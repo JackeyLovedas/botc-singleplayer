@@ -7,11 +7,21 @@
 - Design: `docs/implementation/phase-3-slice-2b19a1-design.md`, SHA-256 `1526a95bcdb7c4d1288a457b068f3fb632d76cebdcc805629469f26310a427dc`
 - Design review: `docs/implementation/phase-3-slice-2b19a1-design-review-round-1.md`, SHA-256 `602d27c6153edfa96d0d06b17cfe96607177ced79337691e37e65e1355804d16`, verdict `RULE_DESIGN_PASS`
 - Design round: `1 / 2`
-- Repair round: `0 / 2`
+- Repair round: `1 / 2`
 - Slice coverage: `FOUNDATION / OPPORTUNITY_CONTRACT`
 - Dreamer role coverage: `PARTIAL`
 - Rule evidence coverage: `SKELETON`
-- Publication status: `LOCAL_IMPLEMENTATION_COMPLETE_READY_FOR_CONTROLLER_AUDIT`
+- Publication status: `REPAIR_ROUND_1_LOCAL_GATES_PASS_PENDING_PUBLICATION`
+
+## Final Review Round 1
+
+- Initial implementation HEAD: `292d4e0dc4d718d2f03928e037eaddf9daed4349`.
+- PR: [#33](https://github.com/JackeyLovedas/botc-singleplayer/pull/33).
+- Initial exact-head CI: push `29480909501` and pull request `29480985744`, both `SUCCESS`.
+- Verbatim review: `docs/implementation/phase-3-slice-2b19a1-final-review-round-1.md`.
+- Verdicts: `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`.
+- Sole blocker: `FROZEN_2B19A1_PRIMARY_AUTHORITY_TEST_MATRIX_INCOMPLETE`.
+- Repair classification: tests, traceability, status, and control only; production behavior and R4 remain frozen.
 
 ## Implemented
 
@@ -42,16 +52,18 @@ Production additions: `480` lines (`446 + 34`), with `25` removed legacy-domain 
 
 ## Validation
 
-- Typecheck: `PASS`
-- Targeted lint: `PASS`
+- Repair Round 1 targeted 2B19A1 matrix: `12 tagged tests PASS`
+- Repair Round 1 typecheck: `PASS`
+- Repair Round 1 test-file lint: `PASS`
 - Application suite: `4 projects / 226 tests PASS`
 - Combined application/rebuild/projection suite: `6 projects / 502 tests PASS`
 - Mathematician compatibility suite: `1 file / 422 tests PASS`
 - Full tests: `33 files / 1432 tests PASS`
-- Full coverage: `33 files / 1432 tests PASS`; `86.94%` statements/lines, `81.80%` branches, `97.81%` functions
+- Full coverage: `33 files / 1432 tests PASS`; `86.99%` statements/lines, `81.99%` branches, `97.81%` functions
 - Full lint: `PASS`
 - Diff, scope, static, JSON, and authority-hash audit: `PASS`
-- Cross-platform CI: `PENDING`
-- Independent final review: `PENDING`
+- Repair Round 1 full local gates: `PASS`
+- Repair Round 1 exact-head cross-platform CI: `PENDING`
+- Fresh independent final review: `PENDING`
 
-The feature remains unaccepted until full local gates, exact-head CI, complete independent final review, both verbatim GitHub audit comments, merge, tag, and post-merge closeout requirements pass.
+The Round 1 authority-matrix finding is closed locally: the expanded matrix and every full local gate pass with zero production change. The active blocker is `PENDING_REPAIR_PUBLICATION_AND_EXACT_HEAD_CI_AND_FINAL_REVIEW`. The feature remains unaccepted until a bounded attributed repair commit is pushed, fresh exact-head CI succeeds, a new complete independent final review returns both pass verdicts, and both verbatim GitHub audit comments, merge, tag, and post-merge closeout requirements pass.
