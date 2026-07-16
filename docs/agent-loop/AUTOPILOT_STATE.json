@@ -1,17 +1,17 @@
 {
-  "status": "READY_TO_PUBLISH",
-  "taskType": "CI_TEST_INFRASTRUCTURE",
-  "productRepairRoundConsumed": false,
-  "currentPR": null,
-  "currentPRUrl": null,
-  "currentBranch": "infra/vitest-coverage-single-fork-v1",
-  "currentSlice": null,
-  "slice2B19A1Started": false,
+  "status": "RUNNING",
+  "taskType": "PRODUCT_SLICE",
+  "productRepairRoundConsumed": true,
+  "currentPR": 33,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/33",
+  "currentBranch": "phase-3/dreamer-v2-base-opportunity-contract",
+  "currentSlice": "2B19A1",
+  "slice2B19A1Started": true,
   "phase2CStarted": false,
   "infrastructureCoverageSingleForkV1": {
     "authorization": "USER_AUTHORIZED_COVERAGE_UNCOVERED_OBLIGATION_SEMANTIC_AUDIT_AND_SINGLE_FORK_V1",
     "taskType": "CI_TEST_INFRASTRUCTURE",
-    "status": "READY_TO_PUBLISH",
+    "status": "ACCEPTED",
     "classification": "CI_TEST_INFRASTRUCTURE_FAILURE",
     "solution": "SINGLE_FORK_COVERAGE_EXECUTION",
     "coverageSemanticGate": "UNCOVERED_SOURCE_OBLIGATION_EQUALITY",
@@ -30,6 +30,9 @@
     "infrastructureRepairRound": 0,
     "branch": "infra/vitest-coverage-single-fork-v1",
     "baseHead": "2c15ca96bb7a1ee500ebd1d8707504e57a9719f6",
+    "featureHead": "45efbafd63208369ecf9f3b6a43e144939cb2652",
+    "mergeCommit": "9c4938aca1416995b7607589b73b0238ef4f6ea4",
+    "mainCI": 29470843060,
     "externalAuditReport": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\coverage-semantic-obligation-audit.md",
     "externalAuditReportSha256": "cc801f07a677e2604c9a1753dd28715cd1c9a0ef81f2b294590e41bf995e53ea",
     "externalAuditScript": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\compare-coverage-obligations.mjs",
@@ -43,21 +46,19 @@
       "freshSemanticAudit": "COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL; 59 source files; 3108 statements; 22 functions; 3108 lines; 1707 branch arms; zero added/removed obligations",
       "diffCheck": "PASS"
     },
-    "remainingBlockers": [
-      "PENDING_COMMIT_PUSH_PR_AND_EXACT_HEAD_CI"
-    ]
+    "remainingBlockers": []
   },
-  "reviewedHead": "466f91481ad98059bd173af8c0335b88f1ce9fa2",
-  "currentReviewHeadAuthority": "The complete independent final review of PR 28 at frozen feature HEAD 466f91481ad98059bd173af8c0335b88f1ce9fa2 returned CODE_REVIEW_PASS and RULE_REVIEW_PASS with remainingBlockers empty. The exact GitHub comments are archived verbatim in docs/reviews/pr-28-code-review-final.md and docs/reviews/pr-28-rule-review-final.md.",
-  "exactHeadCIAuthority": "Frozen product HEAD 466f91481ad98059bd173af8c0335b88f1ce9fa2 passed exact push CI 29406838841 and pull-request CI 29406840748. Merge commit b87905a16e96647249859200db726da4dad5fbed passed merge-main CI 29407990924. The docs-only closeout commit CI is pending and inherits no prior status.",
-  "currentFeatureHead": "466f91481ad98059bd173af8c0335b88f1ce9fa2",
-  "repairRound": 0,
-  "designRound": 2,
+  "reviewedHead": "292d4e0dc4d718d2f03928e037eaddf9daed4349",
+  "currentReviewHeadAuthority": "docs/implementation/phase-3-slice-2b19a1-final-review-round-1.md",
+  "exactHeadCIAuthority": "Initial implementation HEAD 292d4e0dc4d718d2f03928e037eaddf9daed4349 passed push CI 29480909501 and pull-request CI 29480985744. Repair Round 1 is uncommitted and has no exact-head CI yet.",
+  "currentFeatureHead": "292d4e0dc4d718d2f03928e037eaddf9daed4349",
+  "repairRound": 1,
+  "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": "USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE",
   "rescopeAuthorization": null,
   "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
-  "authorization": "USER_AUTHORIZED_2B19T_DESIGN_ROUND_2_CONTRACT_CORRECTION",
+  "authorization": "USER_AUTHORIZED_2B19A1_BASE_DREAMER_V2_OPPORTUNITY_CONTRACT",
   "testInfrastructurePrerequisite": {
     "status": "ACCEPTED",
     "authorization": "USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE",
@@ -72,8 +73,8 @@
     "featureMergeCommit": "72a7883248f66d53e65102c26788d73b93b56651",
     "ruleSemanticsChanged": false
   },
-  "scopeMode": "CANONICAL_DREAMER_ROLE_TENURE_FOUNDATION",
-  "sliceCoverage": "FOUNDATION",
+  "scopeMode": "BASE_DREAMER_V2_OPPORTUNITY_CONTRACT",
+  "sliceCoverage": "SKELETON",
   "dreamerRoleCoverage": "PARTIAL",
   "behaviorDesignFrozen": true,
   "finalDesignCompletionRound": false,
@@ -81,13 +82,14 @@
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "candidateRole": "dreamer",
-  "candidateScope": "CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
-  "currentDesignPath": "docs/implementation/phase-3-slice-2b19t-design-round-2.md",
-  "currentDesignHash": "6d2adb12e719e5b8311efb02a343f349902d652d41befc00912337ecec03489b",
-  "currentDesignStatus": "ACCEPTED",
-  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b19t-design-review-round-2.md",
-  "currentDesignReviewHash": "96272e4c3318d50e42591652527da49358722118f8b73061b8141529ee776097",
+  "candidateScope": "BASE_DREAMER_V2_OPPORTUNITY_CONTRACT",
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b19a1-design.md",
+  "currentDesignHash": "1526a95bcdb7c4d1288a457b068f3fb632d76cebdcc805629469f26310a427dc",
+  "currentDesignStatus": "RULE_DESIGN_PASS",
+  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b19a1-design-review-round-1.md",
+  "currentDesignReviewHash": "602d27c6153edfa96d0d06b17cfe96607177ced79337691e37e65e1355804d16",
   "currentDesignReviewVerdict": "RULE_DESIGN_PASS",
+  "ruleDesignVerdict": "RULE_DESIGN_PASS",
   "slice2B19TRound1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19t-design.md",
     "designSha256": "0eca3f5d67fb1407b4ba9b0f27ef2914e57329f864b72e6a1effe49fff3f632a",
@@ -142,23 +144,39 @@
   "designReviewRound3Verdict": "RULE_DESIGN_FIX_REQUIRED",
   "ruleReady": true,
   "ruleDesignPass": true,
-  "implementationAuthorized": false,
-  "implementationStatus": "COMPLETED",
-  "implementationBranch": "main",
+  "implementationAuthorized": true,
+  "implementationStatus": "REPAIR_ROUND_1_LOCAL_GATES_PASS_PENDING_PUBLICATION",
+  "implementationBranch": "phase-3/dreamer-v2-base-opportunity-contract",
   "localImplementationValidation": {
-    "focusedTests": "223/223 passed",
-    "fullTests": "33 files / 1418 tests passed",
-    "coverageTests": "33 files / 1418 tests passed",
-    "coverage": "86.80% statements/lines, 81.72% branches, 97.79% functions",
+    "focusedTests": "Repair Round 1 expanded 2B19A1 matrix: 12 tagged tests passed; typecheck and test-file lint passed",
+    "fullTests": "33 files / 1432 tests passed",
+    "coverageTests": "33 files / 1432 tests passed",
+    "coverage": "86.99% statements/lines, 81.99% branches, 97.81% functions",
     "typecheck": "PASS",
     "lint": "PASS",
     "diffCheck": "PASS",
-    "postInfrastructureLocalGates": "PASS: typecheck, lint, 33 files / 1418 tests, 33 files / 1418 coverage tests, 86.80% statements/lines, 81.72% branches, 97.79% functions",
-    "frozenProductionScope": "PASS: exactly four authorized production files and 436 added production lines relative to origin/main",
-    "exactHeadCI": "PASS: push 29406838841 and pull request 29406840748 for 466f91481ad98059bd173af8c0335b88f1ce9fa2",
-    "finalReview": "CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]"
+    "postInfrastructureLocalGates": "PASS: targeted 12/12, typecheck, lint, 33 files / 1432 tests, 33 files / 1432 coverage tests, 86.99% statements/lines, 81.99% branches, 97.81% functions, diff/scope/static/JSON/hash audits",
+    "frozenProductionScope": "PASS: exactly two authorized production files and 480 added production lines relative to origin/main; no workflow, dependency, timeout, GameState, event type, projection, or ledger production change",
+    "exactHeadCI": "Initial implementation HEAD 292d4e0dc4d718d2f03928e037eaddf9daed4349 passed 29480909501 / 29480985744; Repair Round 1 exact-head CI is PENDING",
+    "finalReview": "Round 1 CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS; blocker FROZEN_2B19A1_PRIMARY_AUTHORITY_TEST_MATRIX_INCOMPLETE remains until repair gates and renewed review"
   },
-  "implementationCommit": "bada60ad25a8b5fe441b11a72bcdca6edf7e2c73",
+  "implementationCommit": "292d4e0dc4d718d2f03928e037eaddf9daed4349",
+  "slice2B19A1FinalReviewRound1": {
+    "report": "docs/implementation/phase-3-slice-2b19a1-final-review-round-1.md",
+    "reviewedHead": "292d4e0dc4d718d2f03928e037eaddf9daed4349",
+    "reviewedPR": 33,
+    "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [
+      "FROZEN_2B19A1_PRIMARY_AUTHORITY_TEST_MATRIX_INCOMPLETE"
+    ],
+    "repairScope": "TESTS_DOCS_CONTROL_PR_BODY_ONLY",
+    "productionChanged": false,
+    "workflowChanged": false,
+    "dependencyChanged": false,
+    "timeoutChanged": false,
+    "r4Expanded": false
+  },
   "slice2B19TPublication": {
     "status": "COMPLETED",
     "branch": "main",
@@ -341,8 +359,8 @@
     "round3Status": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_3"
   },
   "ruleResearchVerdict": "RULE_READY",
-  "ruleEvidencePath": "docs/rules/evidence/2B19T.md",
-  "ruleEvidenceSha256": "b8c8b858ee3a7fb7fc141a1d28a0b385cf17111947caa397d569f9b79041185d",
+  "ruleEvidencePath": "docs/rules/evidence/2B19A1.md",
+  "ruleEvidenceSha256": "505456357b498c063e8d579aaabef025fd7cb5437f11264915cd810b470da4e6",
   "ruleSemanticsChanged": false,
   "unresolvedConflicts": [],
   "closedRound2BehaviorBlockers": [
@@ -350,7 +368,9 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [],
+  "remainingBlockers": [
+    "PENDING_REPAIR_PUBLICATION_AND_EXACT_HEAD_CI_AND_FINAL_REVIEW"
+  ],
   "ruleCoverageStatus": "SKELETON",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "approvedOverrideIds": [
@@ -1062,8 +1082,8 @@
     "dayFeatureContinuationStarted": false,
     "phase2CStarted": false
   },
-  "startedAt": "2026-07-15T04:55:26.6822496Z",
-  "lastAction": "Completed the authorized local Vitest coverage single-fork infrastructure gates. Typecheck, lint, ordinary 1418-test execution, and two fresh single-fork 1418-test coverage runs passed. Exact comparison with the Stage A baseline found identical 59-file uncovered obligation sets and zero zero-hit raw differences. Product Slice 2B19T remains accepted history and no product repair round was consumed.",
+  "startedAt": "2026-07-16T12:47:57+08:00",
+  "lastAction": "Completed product repair Round 1 local authority closure without production change. Expanded the frozen exact-shape, source cross-binding, canonical ability-instance, and hostile pre-event tenure matrices; targeted 12/12, typecheck, full lint, full 33/1432 tests, single-fork 33/1432 coverage at 86.99/81.99/97.81, diff/scope/static/JSON scans, and authority hashes pass.",
   "lastError": null,
-  "nextAction": "Audit the exact allowed diff, create the single authorized commit, push the existing infrastructure branch, and open the required PR. Then require both exact-head CI runs before independent review. Do not start 2B19A1, claim FIRST_NIGHT complete, start DAY, or start Phase 2C."
+  "nextAction": "Update PR #33 for repair pending, create one attributed repair commit, push without force, require fresh exact-head push/PR CI, and only then request a new complete independent final review."
 }

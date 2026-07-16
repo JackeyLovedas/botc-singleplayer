@@ -1,21 +1,35 @@
 # Current Task
 
-## Vitest Coverage Single-Fork V1 — READY TO PUBLISH
+## Phase 3 Slice 2B19A1 — RUNNING / LOCAL IMPLEMENTATION COMPLETE
 
-- Authorization: `USER_AUTHORIZED_COVERAGE_UNCOVERED_OBLIGATION_SEMANTIC_AUDIT_AND_SINGLE_FORK_V1`.
-- Task type: `CI_TEST_INFRASTRUCTURE`; product repair round consumed: `false`.
-- Branch: `infra/vitest-coverage-single-fork-v1`; base HEAD: `2c15ca96bb7a1ee500ebd1d8707504e57a9719f6`.
-- Current Slice: `null`; `slice2B19A1Started=false`; `phase2CStarted=false`.
-- Stage A: `COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL` across four maps and 59 source files.
-- Exact uncovered sets in every input: statements `3108`, functions `22`, lines `3108`, branch arms `1707`.
-- Raw difference classification: `V8_COVERED_BRANCH_TOPOLOGY_NONDETERMINISM`; every pairwise zero-hit affected count is `0`.
-- Stage B changes are limited to the Coverage-step `VITEST_MAX_FORKS: "1"`, one implementation evidence document, and necessary control-state synchronization.
-- Production, tests, dependencies, `vitest.workspace.ts`, timeouts, coverage thresholds, rules, and role coverage remain unchanged.
-- Local gates: typecheck, lint, ordinary `33/1418`, and two fresh single-fork coverage `33/1418` runs passed; fresh exact-obligation audit equals the Stage A baseline with no zero-hit raw difference.
-- Status: `READY_TO_PUBLISH`; no commit, PR, exact-head CI, review, merge, or infrastructure acceptance is claimed yet.
-- Remaining blocker: `PENDING_COMMIT_PUSH_PR_AND_EXACT_HEAD_CI`.
+- Authorization: `USER_AUTHORIZED_2B19A1_BASE_DREAMER_V2_OPPORTUNITY_CONTRACT`.
+- Task type: `PRODUCT_SLICE`; product repair round consumed: `true`.
+- Scope: `Base Dreamer V2 Opportunity Contract`.
+- Branch: `phase-3/dreamer-v2-base-opportunity-contract`; base accepted main: `9c4938aca1416995b7607589b73b0238ef4f6ea4`.
+- Current Slice: `2B19A1`; `slice2B19A1Started=true`; `phase2CStarted=false`.
+- Limits: `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=2`; current design round `1`, repair round `1`.
+- Gate state: `ruleReady=true`, `ruleDesignPass=true`, and `implementationAuthorized=true`.
+- Current PR: [#33](https://github.com/JackeyLovedas/botc-singleplayer/pull/33), open and non-draft. Initial implementation HEAD `292d4e0dc4d718d2f03928e037eaddf9daed4349` passed exact push/PR CI `29480909501 / 29480985744`.
+- Rule evidence: `docs/rules/evidence/2B19A1.md`, SHA-256 `505456357b498c063e8d579aaabef025fd7cb5437f11264915cd810b470da4e6`, terminal `RULE_READY`, `ruleCoverageStatus=SKELETON`, implementation label `OPPORTUNITY_FOUNDATION`, and `ruleSemanticsChanged=false`.
+- Round 1 design: `docs/implementation/phase-3-slice-2b19a1-design.md`, SHA-256 `1526a95bcdb7c4d1288a457b068f3fb632d76cebdcc805629469f26310a427dc`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`.
+- Round 1 design review: `docs/implementation/phase-3-slice-2b19a1-design-review-round-1.md`, SHA-256 `602d27c6153edfa96d0d06b17cfe96607177ced79337691e37e65e1355804d16`, verdict `RULE_DESIGN_PASS`, and `remainingBlockers=[]`.
+- Local implementation remains exactly two production files and `480` added production lines; Repair Round 1 changes no production file. Dreamer remains `PARTIAL` and Slice coverage is `FOUNDATION / OPPORTUNITY_CONTRACT`.
+- Final review Round 1: verbatim report `docs/implementation/phase-3-slice-2b19a1-final-review-round-1.md`; `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`; sole blocker `FROZEN_2B19A1_PRIMARY_AUTHORITY_TEST_MATRIX_INCOMPLETE`.
+- Repair scope: complete the frozen exact-shape, source cross-binding, canonical ability-instance, and hostile tenure replay authority matrices in tests; correct traceability/control and PR CI prose only. Production, workflow, dependency, timeout, and R4 are frozen.
+- Repair validation: 12 tagged 2B19A1 tests, typecheck, full lint, full tests (`33 / 1432`), single-fork coverage (`33 / 1432`; `86.99 / 81.99 / 97.81`), diff/scope/static/JSON scans, and authority hashes pass with zero production change.
+- Required next gate: create one attributed repair commit, push without force, update PR #33, require fresh exact-head CI, then request a new complete independent final review.
+- Remaining blocker: `PENDING_REPAIR_PUBLICATION_AND_EXACT_HEAD_CI_AND_FINAL_REVIEW`.
+- Product boundaries remain frozen: no target, delivery, candidates, Vortox, impairment information, outcome-ledger fact, private Dreamer knowledge, Philosopher-gained Dreamer, first-night completion, DAY, 2B19A2/2B19A3/2B19B, or Phase 2C work.
 
-The accepted Phase 3 Slice 2B19T history below remains unchanged. This infrastructure task does not restart Dreamer V2 or authorize Phase 2C.
+## Vitest Coverage Single-Fork V1 — ACCEPTED
+
+- Accepted infrastructure feature HEAD: `45efbafd63208369ecf9f3b6a43e144939cb2652`.
+- Merge commit: `9c4938aca1416995b7607589b73b0238ef4f6ea4`.
+- Accepted main CI: `29470843060` `SUCCESS`.
+- The Ubuntu Coverage step alone uses `VITEST_MAX_FORKS: "1"`; production, tests, dependencies, `vitest.workspace.ts`, timeouts, coverage thresholds, rules, and role coverage remain unchanged.
+- This infrastructure acceptance consumed no product repair round.
+
+The accepted Phase 3 Slice 2B19T history below remains unchanged and supplies the canonical Dreamer tenure prerequisite. It does not itself authorize 2B19A1 implementation.
 
 ## Phase 3 Slice 2B19T — COMPLETED
 

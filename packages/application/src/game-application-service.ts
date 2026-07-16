@@ -68,6 +68,7 @@ import {
   LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
   isFirstNightTaskSettled,
   isSupportedFirstNightRoleActionTask,
+  isDreamerActionOpportunityV2,
   isSeamstressActionOpportunityV2,
   isRoleTenureContinuousAcross,
   tryCreateFirstNightRoleActionOpportunity,
@@ -613,6 +614,39 @@ export class GameApplicationService {
     const nextFirstNightTask = state?.firstNightTaskPlan === undefined
       ? undefined
       : getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
+    if (
+      command.payload.commandType === "OpenFirstNightRoleActionOpportunity" &&
+      state?.firstNightTaskPlan?.taskPlanVersion === "first-night-task-plan-v2" &&
+      nextFirstNightTask?.taskId === command.payload.taskId &&
+      nextFirstNightTask.taskType === "DREAMER_ACTION" &&
+      nextFirstNightTask.source.kind === "PHILOSOPHER_GAINED_ABILITY"
+    ) {
+      return failed(
+        command.gameId,
+        "ApplicationNotConfigured",
+        "Philosopher-gained Dreamer V2 opportunity is not configured in Slice 2B19A1",
+        "first-night-role-action",
+        currentGameVersion
+      );
+    }
+    if (command.payload.commandType === "SubmitDreamerAction") {
+      const opportunity = findFirstNightActionOpportunityById(
+        state?.firstNightActionOpportunities,
+        command.payload.opportunityId
+      );
+      if (opportunity !== undefined &&
+          opportunity.opportunityStatus === "OPEN" &&
+          opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2" &&
+          isDreamerActionOpportunityV2(opportunity)) {
+        return failed(
+          command.gameId,
+          "ApplicationNotConfigured",
+          "Dreamer V2 target submission is not configured in Slice 2B19A1",
+          "first-night-role-action",
+          currentGameVersion
+        );
+      }
+    }
     if (
       (command.payload.commandType === "OpenFirstNightRoleActionOpportunity" ||
         command.payload.commandType === "SettleFirstNightSystemTask") &&
