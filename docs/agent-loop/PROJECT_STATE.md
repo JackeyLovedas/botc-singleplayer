@@ -5,9 +5,9 @@
 - Phase 3 Slice `2B19A2` is running under `USER_AUTHORIZED_2B19A2_EFFECTIVE_BASE_DREAMER_V2_NORMAL_INFORMATION`.
 - Scope is limited to effective base Dreamer V2 normal target and information delivery.
 - Recovery main is `8b390b50f5d314b34535bc7cf9fad36ece76f85e`; exact main CI `29484611863` is `SUCCESS`.
-- Active branch is `phase-3/dreamer-v2-base-normal-information`; current PR is null.
-- Control gates are `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, `designRound=2/2`, and `repairRound=0/2`.
-- `productRepairRoundConsumed=false`, `slice2B19A2Started=true`, and `phase2CStarted=false`.
+- Active branch is `phase-3/dreamer-v2-base-normal-information`; current PR is [#34](https://github.com/JackeyLovedas/botc-singleplayer/pull/34).
+- Control gates are `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, `designRound=2/2`, and `repairRound=1/2`.
+- `productRepairRoundConsumed=true`, `slice2B19A2Started=true`, and `phase2CStarted=false`.
 - Governance precheck is `GO`: `docs/architecture/2B19A2-go-no-go-under-governance-v1.md`, SHA-256 `abc0a75b0b8267542d2e1a3bd0bbaeaad8ee9b11052c442ec38aee9558df4b1f`.
 - Rule research is `RULE_READY`: `docs/rules/evidence/2B19A2.md`, SHA-256 `e24038e7399cb7311204b6b3f001623b7ab0323034af61ee3bb64aa8e9a3c829`, `ruleCoverageStatus=PARTIAL`, Slice coverage `PARTIAL / NORMAL_INFORMATION_ONLY`, Dreamer role coverage `PARTIAL`, and `unresolvedConflicts=[]`.
 - Round 1 frozen design is `docs/implementation/phase-3-slice-2b19a2-design.md`, SHA-256 `fe7187b9b027c4579a21d3a0ccf2fd77a3625dfbc0f95ea638ea926c5982cfe0`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`, and remains immutable history.
@@ -17,7 +17,8 @@
 - Active blockers are `[]`; implementation is authorized only within the frozen six-file production allowlist.
 - Slice 2B19A1 is `COMPLETED / ACCEPTED`; exact closeout commit `8b390b50f5d314b34535bc7cf9fad36ece76f85e` passed CI `29484611863` and has no pending closeout blocker.
 - Governance, rule-truth, and final Round 2 design are complete. Local implementation is complete in exactly six authorized production files with `813` added production lines; the V3 normal-information target/delivery/settlement, exact replay, NORMAL ledger, and private projection paths are implemented.
-- All frozen authorities `C01-C31` and `S01-S02` are present exactly once. Typecheck, lint, seven-path focused `10 files / 662 tests`, ordinary `34 files / 1456 tests`, and single-fork coverage `34 files / 1456 tests` pass; coverage is `87.12 / 82.09 / 97.74`. Diff/scope/static/JSON/hash audits pass. Publication, exact-head CI, and independent final review remain pending.
+- Frozen HEAD `99f04a89bb06a66336c429af0e27c337bfc29af6` passed all tests but failed push/PR Coverage jobs `29493114740 / 29493159871` at worker shutdown with `Timeout calling "onTaskUpdate"`. Repair Round 1 replaces eager live capture in domain tests with an immutable fixture that application C07 verifies via real `GameApplicationService` commands and object-level `toStrictEqual`.
+- All frozen authorities `C01-C31` and `S01-S02` remain present exactly once. Typecheck, lint, focused `10 files / 662 tests`, ordinary `34 files / 1456 tests`, and single-fork coverage `34 files / 1456 tests` pass; coverage is `87.18 / 82.00 / 97.75`, duration `136.44s`, and no worker RPC error occurs. Repair publication, fresh exact-head CI, and independent final review remain pending.
 
 ## Latest accepted product Slice
 

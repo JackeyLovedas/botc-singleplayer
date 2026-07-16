@@ -7,10 +7,10 @@
 - Final design: `docs/implementation/phase-3-slice-2b19a2-design-round-2.md`, SHA-256 `7e4016b89f6cc5f5b07bcf32f6a6e14c9e12db39c7cb66960b1934efb1911687`
 - Design review: `docs/implementation/phase-3-slice-2b19a2-design-review-round-2.md`, SHA-256 `7bb36bd0e79200d8a803c2f43c1b1cc78669ad15969be58138a48417e3ff65b2`, verdict `RULE_DESIGN_PASS`
 - Design round: `2 / 2`
-- Repair round: `0 / 2`
+- Repair round: `1 / 2`
 - Slice coverage: `PARTIAL / NORMAL_INFORMATION_ONLY`
 - Dreamer role coverage: `PARTIAL`
-- Publication status: `LOCAL_GATES_PASS / PENDING_PUBLICATION_CI_AND_REVIEW`
+- Publication status: `REPAIR_ROUND_1_LOCAL_GATES_PASS / PENDING_REPAIR_PUBLICATION_EXACT_HEAD_CI_AND_REVIEW`
 
 ## Implemented
 
@@ -20,7 +20,13 @@
 - Target, delivery, and settlement commit as one exact atomic three-event batch; restart replay reproduces the same state and records one `NORMAL` outcome-ledger fact.
 - Source-player and source-AI projections receive only the historical target and two delivered roles. Non-source views omit the delivery, and later character or impairment changes do not rewrite it.
 - Represented source DRUNK/POISONED, effective Vortox, current No Dashii, inconsistent provenance, and dependency failures stay receipt-free and do not close or settle the opportunity.
-- Accepted-stream replay, hostile replay, and ledger authorities use a shared test-only harness that executes real `GameApplicationService` commands and captures the committed event stream before any test mutation.
+- Accepted-stream authority is a two-link test-only chain: application C07 executes real `GameApplicationService` commands and compares the committed 31-event stream to the immutable fixture with `toStrictEqual`; replay, hostile-replay, and ledger authorities clone that application-verified fixture before any mutation.
+
+## Repair Round 1
+
+- Frozen feature HEAD `99f04a89bb06a66336c429af0e27c337bfc29af6` passed all `34 / 1456` test assertions in push CI `29493114740` and PR CI `29493159871`, but both Coverage jobs failed after test execution with Vitest worker RPC error `Timeout calling "onTaskUpdate"`.
+- Root cause: `@botc/test-harness` eagerly re-exported the live Dreamer capture helper, so domain-core fixture consumers loaded and repeatedly executed the full application capture path inside the single-fork coverage worker.
+- The repair removes that eager live-capture export, exports only the immutable captured fixture to domain tests, and keeps live `GameApplicationService` generation plus exact fixture verification in application C07. Production, workflows, dependencies, timeouts, Vitest configuration, criteria, and test count are unchanged.
 
 ## Explicitly Unsupported
 
@@ -57,8 +63,8 @@ Production additions: `813` lines, below the `1500`-line stop-loss. No event typ
 - V3 opportunity structure: `2 / 2 PASS`.
 - Full lint: `PASS`.
 - Full ordinary tests: `34 files / 1456 tests PASS`.
-- Single-fork full coverage: `34 files / 1456 tests PASS`; `87.12%` statements/lines, `82.09%` branches, `97.74%` functions.
+- Single-fork full coverage: `34 files / 1456 tests PASS`; `136.44s`; `87.18%` statements/lines, `82.00%` branches, `97.75%` functions; no `onTaskUpdate` failure.
 - Diff/scope/static/JSON/design-hash/authority-uniqueness audits: `PASS`.
-- Exact-head CI, PR publication, and independent final review remain pending.
+- Repair publication, fresh exact-head push/PR CI, and independent final review remain pending on PR `#34`.
 
 Dreamer remains `PARTIAL`; this Slice does not claim complete Dreamer rules.

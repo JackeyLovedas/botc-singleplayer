@@ -25,7 +25,7 @@ import type { GameState } from "./game-state.js";
 import { seatNumber } from "./player-roster.js";
 import { rebuildGameState } from "./rebuild.js";
 import { applyDomainEvent } from "./event-applier.js";
-import { captureAcceptedBaseDreamerV3NormalStream } from "@botc/test-harness";
+import { loadAcceptedBaseDreamerV3NormalStreamFixture } from "@botc/test-harness";
 
 const taskId = scheduledTaskId("first-night-v1:WITCH_ACTION:seat-01");
 const opportunityIdFor=(taskType:"SNAKE_CHARMER_ACTION"|"WITCH_ACTION"|"DREAMER_ACTION")=>`first-night-v1:${taskType}:seat-01:opportunity-01`;
@@ -289,16 +289,16 @@ describe("first-night ability outcome ledger", () => {
       const event=terminalEvent("DreamerInformationDelivered",{taskId:scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01"),opportunityId:opportunityIdFor("DREAMER_ACTION"),sourcePlayerId:source.playerId,sourceSeatNumber:source.seatNumber,targetPlayerId:target.playerId,targetSeatNumber:target.seatNumber,goodRole:roleSnapshot(containsTruth?"clockmaker":"artist"),evilRole:roleSnapshot("witch","MINION"),informationReliability:{kind:"SOURCE_IMPAIRED",sourceImpairmentId:impairmentId,sourceImpairmentKind:kind}}) as never;
       return {state,event,fact:deriveFirstNightAbilityOutcomeFact({stateBefore:state,event})!};
     };
-    it("[2B19A2-C22] rebuilds exactly one NORMAL ledger fact from the real application-produced success stream",async()=>{
-      const captured=await captureAcceptedBaseDreamerV3NormalStream();
+    it("[2B19A2-C22] rebuilds exactly one NORMAL ledger fact from the real application-produced success stream",()=>{
+      const captured=loadAcceptedBaseDreamerV3NormalStreamFixture();
       const state=rebuildGameState(structuredClone(captured.events));
       const dreamerFacts=state.firstNightAbilityOutcomeLedger?.facts.filter((entry)=>entry.abilityRoleId==="dreamer")??[];
       expect(dreamerFacts).toHaveLength(1);
       expect(dreamerFacts[0]).toMatchObject({outcomeStatus:"NORMAL",causeKind:"NO_OTHER_CHARACTER_ABILITY",abilityRoleId:"dreamer"});
       expect(validateFirstNightAbilityOutcomeFactShape(dreamerFacts[0])).toStrictEqual({valid:true});
     },15_000);
-    it("[2B19A2-C23] preserves the captured accepted pre-settlement ledger when settlement is applied",async()=>{
-      const captured=await captureAcceptedBaseDreamerV3NormalStream();
+    it("[2B19A2-C23] preserves the captured accepted pre-settlement ledger when settlement is applied",()=>{
+      const captured=loadAcceptedBaseDreamerV3NormalStreamFixture();
       const target=captured.events[captured.targetEventIndex];
       const delivery=captured.events[captured.deliveryEventIndex];
       const settlement=captured.events[captured.settlementEventIndex];

@@ -1,13 +1,13 @@
 # Current Task
 
-## Phase 3 Slice 2B19A2 — RUNNING / AUTHORIZED FOR IMPLEMENTATION
+## Phase 3 Slice 2B19A2 — RUNNING / REPAIR ROUND 1 LOCAL GATES PASS
 
 - Authorization: `USER_AUTHORIZED_2B19A2_EFFECTIVE_BASE_DREAMER_V2_NORMAL_INFORMATION`.
-- Task type: `PRODUCT_SLICE`; product repair round consumed: `false`.
+- Task type: `PRODUCT_SLICE`; product repair round consumed: `true`.
 - Scope: `Effective Base Dreamer V2 Normal Target and Information Delivery`.
 - Recovery main: `8b390b50f5d314b34535bc7cf9fad36ece76f85e`; exact main CI `29484611863` is `SUCCESS`.
-- Current branch: `phase-3/dreamer-v2-base-normal-information`; current Slice: `2B19A2`; current PR: `null`.
-- Limits: `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=2`; current design round `2`, repair round `0`.
+- Current branch: `phase-3/dreamer-v2-base-normal-information`; current Slice: `2B19A2`; current PR: [#34](https://github.com/JackeyLovedas/botc-singleplayer/pull/34).
+- Limits: `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=2`; current design round `2`, repair round `1`.
 - Gate state: `ruleReady=true`, `ruleDesignPass=true`, and `implementationAuthorized=true`.
 - Governance precheck: `docs/architecture/2B19A2-go-no-go-under-governance-v1.md`, SHA-256 `abc0a75b0b8267542d2e1a3bd0bbaeaad8ee9b11052c442ec38aee9558df4b1f`, terminal `GO`.
 - Rule evidence: `docs/rules/evidence/2B19A2.md`, SHA-256 `e24038e7399cb7311204b6b3f001623b7ab0323034af61ee3bb64aa8e9a3c829`, terminal `RULE_READY`, `ruleCoverageStatus=PARTIAL`, Slice coverage `PARTIAL / NORMAL_INFORMATION_ONLY`, Dreamer role coverage `PARTIAL`, and `unresolvedConflicts=[]`.
@@ -19,10 +19,11 @@
 - `slice2B19A2Started=true`; `phase2CStarted=false`.
 - Slice 2B19A1 is `COMPLETED / ACCEPTED`; closeout commit `8b390b50f5d314b34535bc7cf9fad36ece76f85e` passed exact CI `29484611863`, so its stale pending-closeout marker is closed.
 - Local implementation is complete within the six-file production allowlist: `813` added production lines, below the `1500` stop-loss. No event type, `GameState`, workflow, dependency, timeout, or Vitest configuration changed.
-- Frozen authority tests `2B19A2-C01` through `C31` plus `S01` and `S02` are present exactly once. Typecheck and the seven-path focused suite pass at `10 files / 662 tests`, including application `236/236` and rebuild `204/204`.
+- Frozen authority tests `2B19A2-C01` through `C31` plus `S01` and `S02` are present exactly once. Typecheck and the focused suite pass at `10 files / 662 tests`, including application `236/236` and rebuild `204/204`.
 - Role coverage remains `PARTIAL`; status and traceability are `docs/implementation/phase-3-slice-2b19a2-status.md` and `docs/implementation/phase-3-slice-2b19a2-test-traceability.md`.
-- Full lint passes. Ordinary and single-fork coverage suites both pass at `34 files / 1456 tests`; coverage is `87.12%` statements/lines, `82.09%` branches, and `97.74%` functions. Diff/scope/static/JSON/hash/authority audits pass.
-- Commit, push, PR, exact-head CI, and independent final review remain pending.
+- Frozen HEAD `99f04a89bb06a66336c429af0e27c337bfc29af6` failed push/PR CI `29493114740 / 29493159871` only after all coverage tests passed, with Vitest worker RPC `Timeout calling "onTaskUpdate"`. Repair Round 1 removes the eager live application capture from domain fixture consumers while application C07 strictly verifies the committed fixture against real commands.
+- Full lint passes. Ordinary and single-fork coverage suites both pass at `34 files / 1456 tests`; single-fork duration is `136.44s`, coverage is `87.18%` statements/lines, `82.00%` branches, and `97.75%` functions, with no `onTaskUpdate` failure. Diff/scope/static/JSON/hash/authority audits pass.
+- Repair commit/push, fresh exact-head CI, and independent final review remain pending; no production, workflow, dependency, timeout, Vitest configuration, or test-count change is authorized.
 
 ## Phase 3 Slice 2B19A1 — COMPLETED / ACCEPTED
 

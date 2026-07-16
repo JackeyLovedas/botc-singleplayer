@@ -79,7 +79,7 @@ import {
   validateFirstNightAbilityOutcomeFactShape
 } from "./first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "./role-tenure-replay.js";
-import { captureAcceptedBaseDreamerV3NormalStream } from "@botc/test-harness";
+import { loadAcceptedBaseDreamerV3NormalStreamFixture } from "@botc/test-harness";
 import type {
   AnyDomainEventEnvelope,
   AbilityImpairmentSet,
@@ -4636,10 +4636,11 @@ describe("domain event rebuild", () => {
     expect(state.dreamerInformation).toBeUndefined();
   }, 15_000);
 
-  it("[2B19A2-C13] restarts from the real application-appended V3 target, delivery, and settlement stream", async () => {
-    const captured = await captureAcceptedBaseDreamerV3NormalStream();
+  it("[2B19A2-C13] restarts from the real application-appended V3 target, delivery, and settlement stream", () => {
+    const captured = loadAcceptedBaseDreamerV3NormalStreamFixture();
     const restarted = rebuildGameState(structuredClone(captured.events));
-    expect(restarted).toStrictEqual(captured.finalState);
+    expect(restarted.lastEventSequence).toBe(31);
+    expect(restarted.gameVersion).toBe(16);
     expect(restarted.dreamerTargetChoices?.choices).toStrictEqual([
       captured.events[captured.targetEventIndex]?.payload
     ]);
@@ -4649,8 +4650,8 @@ describe("domain event rebuild", () => {
     expect(restarted.firstNightTaskProgress?.settlements.at(-1)?.outcomeType).toBe("DREAMER_INFORMATION_DELIVERED");
   }, 15_000);
 
-  it("[2B19A2-C14] rejects duplicate, reversed, naked, partial, mixed, and cross-batch mutations of a real accepted stream", async () => {
-    const captured = await captureAcceptedBaseDreamerV3NormalStream();
+  it("[2B19A2-C14] rejects duplicate, reversed, naked, partial, mixed, and cross-batch mutations of a real accepted stream", () => {
+    const captured = loadAcceptedBaseDreamerV3NormalStreamFixture();
     const prefix = captured.events.slice(0, captured.targetEventIndex);
     const choice = captured.events[captured.targetEventIndex];
     const delivery = captured.events[captured.deliveryEventIndex];
@@ -4669,8 +4670,8 @@ describe("domain event rebuild", () => {
     for (const stream of hostile) expect(() => rebuildGameState(stream)).toThrowError(DomainError);
   }, 15_000);
 
-  it("[2B19A2-S02] rejects hostile cross-links mutated only after a real accepted application stream is captured", async () => {
-    const captured = await captureAcceptedBaseDreamerV3NormalStream();
+  it("[2B19A2-S02] rejects hostile cross-links mutated only after a real accepted application stream is captured", () => {
+    const captured = loadAcceptedBaseDreamerV3NormalStreamFixture();
     const opportunityIndex = captured.events.findIndex((event) =>
       event.eventType === "FirstNightActionOpportunityCreated" &&
       event.payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3");

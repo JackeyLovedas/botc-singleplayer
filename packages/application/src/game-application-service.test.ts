@@ -71,6 +71,7 @@ import {
   humanActor,
   ids,
   initializeFirstNightCommand,
+  loadAcceptedBaseDreamerV3NormalStreamFixture,
   openFirstNightRoleActionOpportunityCommand,
   otherGameId,
   planFirstNightTasksCommand,
@@ -92,6 +93,7 @@ import {
   testSetupGenerator,
   systemActor
 } from "@botc/test-harness";
+import { captureAcceptedBaseDreamerV3NormalStream } from "../../test-harness/src/dreamer-v3-accepted-stream.js";
 import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
 import { deriveFirstNightAbilityOutcomeFact } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "../../domain-core/src/role-tenure-replay.js";
@@ -7233,6 +7235,19 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
     expect(result.events.map((event) => event.eventType)).toStrictEqual([
       "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
     ]);
+    const captured = await captureAcceptedBaseDreamerV3NormalStream();
+    const fixture = loadAcceptedBaseDreamerV3NormalStreamFixture();
+    expect(captured.events).toStrictEqual(fixture.events);
+    expect({
+      targetEventIndex: captured.targetEventIndex,
+      deliveryEventIndex: captured.deliveryEventIndex,
+      settlementEventIndex: captured.settlementEventIndex
+    }).toStrictEqual({
+      targetEventIndex: fixture.targetEventIndex,
+      deliveryEventIndex: fixture.deliveryEventIndex,
+      settlementEventIndex: fixture.settlementEventIndex
+    });
+    expect(captured.finalState).toStrictEqual(rebuildOptionalGameState(fixture.events));
   });
 
   it("[2B19A2-C12] commits the V2 target delivery and settlement as one exact atomic batch", async () => {
