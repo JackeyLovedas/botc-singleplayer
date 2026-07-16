@@ -1,5 +1,22 @@
 # Current Task
 
+## Vitest Coverage Single-Fork V1 — READY TO PUBLISH
+
+- Authorization: `USER_AUTHORIZED_COVERAGE_UNCOVERED_OBLIGATION_SEMANTIC_AUDIT_AND_SINGLE_FORK_V1`.
+- Task type: `CI_TEST_INFRASTRUCTURE`; product repair round consumed: `false`.
+- Branch: `infra/vitest-coverage-single-fork-v1`; base HEAD: `2c15ca96bb7a1ee500ebd1d8707504e57a9719f6`.
+- Current Slice: `null`; `slice2B19A1Started=false`; `phase2CStarted=false`.
+- Stage A: `COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL` across four maps and 59 source files.
+- Exact uncovered sets in every input: statements `3108`, functions `22`, lines `3108`, branch arms `1707`.
+- Raw difference classification: `V8_COVERED_BRANCH_TOPOLOGY_NONDETERMINISM`; every pairwise zero-hit affected count is `0`.
+- Stage B changes are limited to the Coverage-step `VITEST_MAX_FORKS: "1"`, one implementation evidence document, and necessary control-state synchronization.
+- Production, tests, dependencies, `vitest.workspace.ts`, timeouts, coverage thresholds, rules, and role coverage remain unchanged.
+- Local gates: typecheck, lint, ordinary `33/1418`, and two fresh single-fork coverage `33/1418` runs passed; fresh exact-obligation audit equals the Stage A baseline with no zero-hit raw difference.
+- Status: `READY_TO_PUBLISH`; no commit, PR, exact-head CI, review, merge, or infrastructure acceptance is claimed yet.
+- Remaining blocker: `PENDING_COMMIT_PUSH_PR_AND_EXACT_HEAD_CI`.
+
+The accepted Phase 3 Slice 2B19T history below remains unchanged. This infrastructure task does not restart Dreamer V2 or authorize Phase 2C.
+
 ## Phase 3 Slice 2B19T — COMPLETED
 
 - Slice: `2B19T Canonical Dreamer Role-Tenure Prerequisite`.
