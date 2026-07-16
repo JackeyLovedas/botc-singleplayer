@@ -1,9 +1,52 @@
 {
-  "status": "COMPLETED",
+  "status": "READY_TO_PUBLISH",
+  "taskType": "CI_TEST_INFRASTRUCTURE",
+  "productRepairRoundConsumed": false,
   "currentPR": null,
   "currentPRUrl": null,
-  "currentBranch": "main",
+  "currentBranch": "infra/vitest-coverage-single-fork-v1",
   "currentSlice": null,
+  "slice2B19A1Started": false,
+  "phase2CStarted": false,
+  "infrastructureCoverageSingleForkV1": {
+    "authorization": "USER_AUTHORIZED_COVERAGE_UNCOVERED_OBLIGATION_SEMANTIC_AUDIT_AND_SINGLE_FORK_V1",
+    "taskType": "CI_TEST_INFRASTRUCTURE",
+    "status": "READY_TO_PUBLISH",
+    "classification": "CI_TEST_INFRASTRUCTURE_FAILURE",
+    "solution": "SINGLE_FORK_COVERAGE_EXECUTION",
+    "coverageSemanticGate": "UNCOVERED_SOURCE_OBLIGATION_EQUALITY",
+    "semanticAuditVerdict": "COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL",
+    "rawDifferenceClassification": "V8_COVERED_BRANCH_TOPOLOGY_NONDETERMINISM",
+    "productRepairRoundConsumed": false,
+    "currentSlice": null,
+    "slice2B19A1Started": false,
+    "phase2CStarted": false,
+    "ruleSemanticsChanged": false,
+    "productBehaviorChanged": false,
+    "testsChanged": false,
+    "timeoutsChanged": false,
+    "dependencyChanged": false,
+    "maxInfrastructureRepairRounds": 1,
+    "infrastructureRepairRound": 0,
+    "branch": "infra/vitest-coverage-single-fork-v1",
+    "baseHead": "2c15ca96bb7a1ee500ebd1d8707504e57a9719f6",
+    "externalAuditReport": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\coverage-semantic-obligation-audit.md",
+    "externalAuditReportSha256": "cc801f07a677e2604c9a1753dd28715cd1c9a0ef81f2b294590e41bf995e53ea",
+    "externalAuditScript": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\compare-coverage-obligations.mjs",
+    "externalAuditScriptSha256": "1ba9035aea562cc072d94396793621999cef18ac1c3fdf6baa534bf631bc5afa",
+    "localValidation": {
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "ordinaryTests": "33 files / 1418 tests passed",
+      "freshSingleForkCoverageRun1": "33 files / 1418 tests passed; 113.97s; no timeout, onTaskUpdate, assertion, or threshold failure",
+      "freshSingleForkCoverageRun2": "33 files / 1418 tests passed; 111.66s; no timeout, onTaskUpdate, assertion, or threshold failure",
+      "freshSemanticAudit": "COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL; 59 source files; 3108 statements; 22 functions; 3108 lines; 1707 branch arms; zero added/removed obligations",
+      "diffCheck": "PASS"
+    },
+    "remainingBlockers": [
+      "PENDING_COMMIT_PUSH_PR_AND_EXACT_HEAD_CI"
+    ]
+  },
   "reviewedHead": "466f91481ad98059bd173af8c0335b88f1ce9fa2",
   "currentReviewHeadAuthority": "The complete independent final review of PR 28 at frozen feature HEAD 466f91481ad98059bd173af8c0335b88f1ce9fa2 returned CODE_REVIEW_PASS and RULE_REVIEW_PASS with remainingBlockers empty. The exact GitHub comments are archived verbatim in docs/reviews/pr-28-code-review-final.md and docs/reviews/pr-28-rule-review-final.md.",
   "exactHeadCIAuthority": "Frozen product HEAD 466f91481ad98059bd173af8c0335b88f1ce9fa2 passed exact push CI 29406838841 and pull-request CI 29406840748. Merge commit b87905a16e96647249859200db726da4dad5fbed passed merge-main CI 29407990924. The docs-only closeout commit CI is pending and inherits no prior status.",
@@ -1020,7 +1063,7 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-15T04:55:26.6822496Z",
-  "lastAction": "Accepted Phase 3 Slice 2B19T after frozen product HEAD 466f91481ad98059bd173af8c0335b88f1ce9fa2 passed push and pull-request CI, complete independent review returned CODE_REVIEW_PASS and RULE_REVIEW_PASS with no blockers, PR 28 merged as b87905a16e96647249859200db726da4dad5fbed, merge-main CI 29407990924 succeeded, and both exact GitHub comments were archived verbatim. Slice coverage is FOUNDATION; Dreamer remains PARTIAL; repair round is 0.",
+  "lastAction": "Completed the authorized local Vitest coverage single-fork infrastructure gates. Typecheck, lint, ordinary 1418-test execution, and two fresh single-fork 1418-test coverage runs passed. Exact comparison with the Stage A baseline found identical 59-file uncovered obligation sets and zero zero-hit raw differences. Product Slice 2B19T remains accepted history and no product repair round was consumed.",
   "lastError": null,
-  "nextAction": "Wait for exact CI on the docs-only closeout commit, then stop. Do not start 2B19A1, claim FIRST_NIGHT complete, start DAY, or start Phase 2C."
+  "nextAction": "Audit the exact allowed diff, create the single authorized commit, push the existing infrastructure branch, and open the required PR. Then require both exact-head CI runs before independent review. Do not start 2B19A1, claim FIRST_NIGHT complete, start DAY, or start Phase 2C."
 }

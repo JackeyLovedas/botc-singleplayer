@@ -1,5 +1,15 @@
 # Project State
 
+## Active CI infrastructure task
+
+- `USER_AUTHORIZED_COVERAGE_UNCOVERED_OBLIGATION_SEMANTIC_AUDIT_AND_SINGLE_FORK_V1` is active on `infra/vitest-coverage-single-fork-v1` at base main `2c15ca96bb7a1ee500ebd1d8707504e57a9719f6`.
+- `taskType=CI_TEST_INFRASTRUCTURE`, `productRepairRoundConsumed=false`, `currentSlice=null`, `slice2B19A1Started=false`, and `phase2CStarted=false`.
+- External Stage A verdict is `COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL`: all four maps have the same 59 source files and exact uncovered sets (3108 statements, 22 functions, 3108 lines, 1707 branch arms), with no added or removed obligation.
+- Pairwise raw branch differences affect zero zero-hit obligations and are classified `V8_COVERED_BRANCH_TOPOLOGY_NONDETERMINISM`.
+- Stage B local validation passed: typecheck, lint, ordinary `33/1418`, and two fresh single-fork coverage `33/1418` runs; fresh exact-obligation comparison equals the Stage A baseline and no timeout, worker RPC, assertion, threshold, or zero-hit obligation failure occurred.
+- The task is `READY_TO_PUBLISH`. Only the Ubuntu Coverage-step fork environment, one evidence document, and these necessary control records changed. No commit, PR, exact-head CI, review, merge, or acceptance is claimed yet.
+- Phase 3 Slice 2B19T remains accepted `FOUNDATION`; Dreamer remains `PARTIAL`; no product, rule, role coverage, test, timeout, dependency, or coverage-threshold change is authorized.
+
 ## Phase
 
 - Phase 3 controlled vertical slices.
