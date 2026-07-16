@@ -7,10 +7,10 @@
 - Final design: `docs/implementation/phase-3-slice-2b19a2-design-round-2.md`, SHA-256 `7e4016b89f6cc5f5b07bcf32f6a6e14c9e12db39c7cb66960b1934efb1911687`
 - Design review: `docs/implementation/phase-3-slice-2b19a2-design-review-round-2.md`, SHA-256 `7bb36bd0e79200d8a803c2f43c1b1cc78669ad15969be58138a48417e3ff65b2`, verdict `RULE_DESIGN_PASS`
 - Design round: `2 / 2`
-- Repair round: `1 / 2`
+- Repair round: `2 / 2`
 - Slice coverage: `PARTIAL / NORMAL_INFORMATION_ONLY`
 - Dreamer role coverage: `PARTIAL`
-- Publication status: `REPAIR_ROUND_1_LOCAL_GATES_PASS / PENDING_REPAIR_PUBLICATION_EXACT_HEAD_CI_AND_REVIEW`
+- Publication status: `REPAIR_ROUND_2_LOCAL_GATES_PASS / PENDING_FINAL_REPAIR_PUBLICATION_EXACT_HEAD_CI_AND_REVIEW`
 
 ## Implemented
 
@@ -27,6 +27,13 @@
 - Frozen feature HEAD `99f04a89bb06a66336c429af0e27c337bfc29af6` passed all `34 / 1456` test assertions in push CI `29493114740` and PR CI `29493159871`, but both Coverage jobs failed after test execution with Vitest worker RPC error `Timeout calling "onTaskUpdate"`.
 - Root cause: `@botc/test-harness` eagerly re-exported the live Dreamer capture helper, so domain-core fixture consumers loaded and repeatedly executed the full application capture path inside the single-fork coverage worker.
 - The repair removes that eager live-capture export, exports only the immutable captured fixture to domain tests, and keeps live `GameApplicationService` generation plus exact fixture verification in application C07. Production, workflows, dependencies, timeouts, Vitest configuration, criteria, and test count are unchanged.
+
+## Repair Round 2
+
+- Repair Round 1 HEAD `bdb56f2c7314a4fba43b634a720aa7591d7c2b8b` passed push CI `29494706705`; PR CI `29494709511` again passed `34 / 1456` before the same worker RPC timeout. The successful runner completed rebuild `204` in `34.563s` and the suite in `117.06s`; the failed runner took `64.827s` and `213.78s`.
+- C14 still rejects the same seven duplicate/reversed/naked/partial/mixed/schema/cross-batch cases, and S02 still rejects the same nine source cross-links. Each now rebuilds its accepted prefix once, then validates every hostile suffix through the canonical full-stream validator, batch replay, event application, and role-tenure replay checks on a defensive cloned prefix state.
+- C01 and C30 share a lazy defensive accepted V1 capture. Either test still rebuilds independently when run alone; the cache only removes C30's duplicate accepted legacy Dreamer rebuild in the complete file run.
+- This final repair changes only `rebuild.test.ts` and status/control documentation. Production, design, fixture provenance, test IDs/count, workflows, dependencies, timeouts, and Vitest configuration remain unchanged.
 
 ## Explicitly Unsupported
 
@@ -63,8 +70,9 @@ Production additions: `813` lines, below the `1500`-line stop-loss. No event typ
 - V3 opportunity structure: `2 / 2 PASS`.
 - Full lint: `PASS`.
 - Full ordinary tests: `34 files / 1456 tests PASS`.
-- Single-fork full coverage: `34 files / 1456 tests PASS`; `136.44s`; `87.18%` statements/lines, `82.00%` branches, `97.75%` functions; no `onTaskUpdate` failure.
+- Rebuild focused run: `204 / 204 PASS`; `17.78s` tests (`17.88s` standalone validation).
+- Single-fork full coverage: `34 files / 1456 tests PASS`; `131.34s`; `87.18%` statements/lines, `82.00%` branches, `97.75%` functions; no `onTaskUpdate` failure.
 - Diff/scope/static/JSON/design-hash/authority-uniqueness audits: `PASS`.
-- Repair publication, fresh exact-head push/PR CI, and independent final review remain pending on PR `#34`.
+- Final repair publication, fresh exact-head push/PR CI, and independent final review remain pending on PR `#34`. No Repair Round 3 exists.
 
 Dreamer remains `PARTIAL`; this Slice does not claim complete Dreamer rules.

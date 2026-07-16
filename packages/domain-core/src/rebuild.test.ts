@@ -1395,6 +1395,53 @@ const dreamerInformationBatchEvents = (
   ];
 };
 
+type AcceptedLegacyDreamerV1Capture = {
+  readonly before: GameState;
+  readonly state: GameState;
+  readonly events: ReturnType<typeof dreamerInformationBatchEvents>;
+};
+
+let acceptedLegacyDreamerV1Cache: AcceptedLegacyDreamerV1Capture | undefined;
+
+const acceptedLegacyDreamerV1 = (): AcceptedLegacyDreamerV1Capture => {
+  if (acceptedLegacyDreamerV1Cache === undefined) {
+    const openEvents = openDreamerActionStream();
+    const before = rebuildGameState(openEvents);
+    const events = dreamerInformationBatchEvents("GOOD", before);
+    acceptedLegacyDreamerV1Cache = {
+      before,
+      state: rebuildGameState([...openEvents, ...events]),
+      events
+    };
+  }
+
+  return structuredClone(acceptedLegacyDreamerV1Cache);
+};
+
+const replayAcceptedSuffix = (
+  prefixEvents: readonly AnyDomainEventEnvelope[],
+  prefixState: GameState,
+  suffixEvents: readonly AnyDomainEventEnvelope[]
+): GameState => {
+  const suffix = structuredClone(suffixEvents);
+  const completeStream = [...prefixEvents, ...suffix];
+  validateDomainEventStream(completeStream);
+
+  let state = structuredClone(prefixState);
+  let batch: AnyDomainEventEnvelope[] = [];
+  for (const event of suffix) {
+    if (batch.length > 0 && batch[0]?.batchId !== event.batchId) {
+      state = applyDomainEventBatch(state, batch);
+      batch = [];
+    }
+    batch.push(event);
+  }
+  if (batch.length > 0) state = applyDomainEventBatch(state, batch);
+
+  assertRebuiltCanonicalRoleTenureState(completeStream, state);
+  return state;
+};
+
 const seamstressReadyStream = (): readonly AnyDomainEventEnvelope[] => {
   const dreamerStream = openDreamerActionStream();
   const dreamerState = rebuildGameState(dreamerStream);
@@ -4571,14 +4618,7 @@ describe("domain event rebuild", () => {
   });
 
   it("[2B19A2-C01][R4-T09] replays frozen V1 Dreamer history and emits its ledger SOURCE_EVENT fact", () => {
-    const before = rebuildGameState(openDreamerActionStream());
-    const [targetChosen, information, settlement] = dreamerInformationBatchEvents("GOOD");
-    const state = rebuildGameState([
-      ...openDreamerActionStream(),
-      targetChosen,
-      information,
-      settlement
-    ]);
+    const { before, state, events: [targetChosen, information] } = acceptedLegacyDreamerV1();
 
     expect(state.dreamerTargetChoices?.choices).toStrictEqual([targetChosen.payload]);
     expect(state.dreamerInformation?.deliveries).toStrictEqual([information.payload]);
@@ -4658,16 +4698,19 @@ describe("domain event rebuild", () => {
     const settlement = captured.events[captured.settlementEventIndex];
     if (choice?.eventType !== "DreamerTargetChosen" || delivery?.eventType !== "DreamerInformationDelivered" ||
         settlement?.eventType !== "ScheduledTaskSettled") throw new Error("Expected captured Dreamer V3 terminal batch");
-    const hostile: readonly (readonly AnyDomainEventEnvelope[])[] = [
-      [...captured.events, structuredClone(choice)],
-      [...prefix, delivery],
-      [...prefix, choice],
-      [...prefix, delivery, choice, settlement],
-      [...prefix, choice, delivery, structuredClone(delivery), settlement],
-      [...prefix, { ...choice, payload: { ...choice.payload, targetSchemaVersion: "dreamer-target-chosen-v1" } as never }, delivery, settlement],
-      [...prefix, choice, { ...delivery, batchId: batchId("cross-batch") }, settlement]
+    const prefixState = rebuildGameState(prefix);
+    const hostileSuffixes: readonly (readonly AnyDomainEventEnvelope[])[] = [
+      [choice, delivery, settlement, structuredClone(choice)],
+      [delivery],
+      [choice],
+      [delivery, choice, settlement],
+      [choice, delivery, structuredClone(delivery), settlement],
+      [{ ...choice, payload: { ...choice.payload, targetSchemaVersion: "dreamer-target-chosen-v1" } as never }, delivery, settlement],
+      [choice, { ...delivery, batchId: batchId("cross-batch") }, settlement]
     ];
-    for (const stream of hostile) expect(() => rebuildGameState(stream)).toThrowError(DomainError);
+    for (const suffix of hostileSuffixes) {
+      expect(() => replayAcceptedSuffix(prefix, prefixState, suffix)).toThrowError(DomainError);
+    }
   }, 15_000);
 
   it("[2B19A2-S02] rejects hostile cross-links mutated only after a real accepted application stream is captured", () => {
@@ -4676,12 +4719,14 @@ describe("domain event rebuild", () => {
       event.eventType === "FirstNightActionOpportunityCreated" &&
       event.payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3");
     if (opportunityIndex < 0) throw new Error("Expected captured Dreamer V3 opportunity");
+    const prefix = captured.events.slice(0, opportunityIndex);
+    const prefixState = rebuildGameState(prefix);
     const mutateOpportunity = (mutate: (payload: Record<string, unknown>) => void): readonly AnyDomainEventEnvelope[] => {
-      const copy = structuredClone(captured.events);
-      const event = copy[opportunityIndex];
+      const suffix = structuredClone(captured.events.slice(opportunityIndex));
+      const event = suffix[0];
       if (event?.eventType !== "FirstNightActionOpportunityCreated") throw new Error("Expected captured opportunity event");
       mutate(event.payload);
-      return copy;
+      return suffix;
     };
     const cases = [
       mutateOpportunity((payload) => { payload.sourcePlayerId = playerId("other-source"); }),
@@ -4694,11 +4739,13 @@ describe("domain event rebuild", () => {
       mutateOpportunity((payload) => { const role = payload.sourceRole as Record<string, unknown>; role.edition = "trouble-brewing"; }),
       mutateOpportunity((payload) => { payload.opportunityId = actionOpportunityId("first-night-v2:DREAMER_ACTION:seat-02:opportunity-01"); })
     ];
-    for (const stream of cases) expect(() => rebuildGameState(stream)).toThrowError(DomainError);
+    for (const suffix of cases) {
+      expect(() => replayAcceptedSuffix(prefix, prefixState, suffix)).toThrowError(DomainError);
+    }
   }, 15_000);
 
   it("[2B19A2-C30] preserves legacy Dreamer, Seamstress, task, and role-tenure rebuild behavior", () => {
-    const legacyDreamer = rebuildGameState([...openDreamerActionStream(), ...dreamerInformationBatchEvents()]);
+    const legacyDreamer = acceptedLegacyDreamerV1().state;
     const seamstress = rebuildGameState(openSeamstressActionStream());
     expect(legacyDreamer.dreamerInformation?.deliveries).toHaveLength(1);
     expect(legacyDreamer.firstNightTaskPlan?.taskPlanVersion).toBe(SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION);
