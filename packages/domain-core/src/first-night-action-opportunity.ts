@@ -934,7 +934,9 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
     return value.opportunitySchemaVersion === (dreamerV3
         ? DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION
         : DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION) &&
-      value.opportunityStatus === "OPEN" &&
+      (dreamerV3
+        ? value.opportunityStatus === "OPEN" || value.opportunityStatus === "CLOSED"
+        : value.opportunityStatus === "OPEN") &&
       value.taskType === "DREAMER_ACTION" &&
       sourceRole.roleId === "dreamer" &&
       parsedV2Id.valid &&

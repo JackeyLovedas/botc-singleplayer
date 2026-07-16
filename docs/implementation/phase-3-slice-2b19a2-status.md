@@ -7,10 +7,10 @@
 - Final design: `docs/implementation/phase-3-slice-2b19a2-design-round-2.md`, SHA-256 `7e4016b89f6cc5f5b07bcf32f6a6e14c9e12db39c7cb66960b1934efb1911687`
 - Design review: `docs/implementation/phase-3-slice-2b19a2-design-review-round-2.md`, SHA-256 `7bb36bd0e79200d8a803c2f43c1b1cc78669ad15969be58138a48417e3ff65b2`, verdict `RULE_DESIGN_PASS`
 - Design round: `2 / 2`
-- Repair round: `2 / 2`
+- Repair round: `3 / 3`
 - Slice coverage: `PARTIAL / NORMAL_INFORMATION_ONLY`
 - Dreamer role coverage: `PARTIAL`
-- Publication status: `REPAIR_ROUND_2_LOCAL_GATES_PASS / PENDING_FINAL_REPAIR_PUBLICATION_EXACT_HEAD_CI_AND_REVIEW`
+- Publication status: `FINAL_FROZEN_DESIGN_REPAIR_ROUND_3_LOCAL_GATES_PASS / PENDING_PUBLICATION_EXACT_HEAD_CI_AND_FINAL_REVIEW`
 
 ## Implemented
 
@@ -35,6 +35,15 @@
 - C01 and C30 share a lazy defensive accepted V1 capture. Either test still rebuilds independently when run alone; the cache only removes C30's duplicate accepted legacy Dreamer rebuild in the complete file run.
 - This final repair changes only `rebuild.test.ts` and status/control documentation. Production, design, fixture provenance, test IDs/count, workflows, dependencies, timeouts, and Vitest configuration remain unchanged.
 
+## Final Frozen-Design Repair Round 3
+
+- Authorization `USER_AUTHORIZED_2B19A2_FINAL_FROZEN_DESIGN_REPAIR_ROUND_3` overrides the prior `2 / 2` repair ceiling exactly once. Repair is now `3 / 3`; no Repair Round 4 exists.
+- Stored canonical Dreamer V3 opportunities now accept both legal lifecycle states, `OPEN` and `CLOSED`. Creation payloads still require `OPEN`, the immutable 2B19A1 non-actionable V2 contract still permits only `OPEN`, and `SubmitDreamerAction` still rejects a `CLOSED` V3 opportunity without appending.
+- One real command stream now settles effective V3 Dreamer information, opens the immediately following Seamstress opportunity, settles real Seamstress information, validates the accepted stream, and rebuilds both closed opportunities and terminal settlements. The continuation test measured `479–719ms` across focused, ordinary, and single-fork coverage runs; no timeout changed.
+- Dreamer V2 target and delivery T1 validators now apply an exception-safe canonical-data gate before semantic field access and wrap the remaining validation boundary fail closed. Throwing and revoked proxies, accessors, enumerable symbols, cycles, and non-plain objects are rejected; the direct accessor matrix proves zero getter invocations.
+- S01 now covers every target and delivery missing key, every top-level wrong type, frozen literal discriminants, every source-contract missing key and wrong type, all source-contract frozen literals, and the effective/impaired reliability rejection matrix.
+- This repair changes only `first-night-action-opportunity.ts`, `dreamer.ts`, their direct tests, the accepted-stream application test, and status/control/traceability documentation. It does not change rules, evidence, design, event versions, information selection, ledger, projection, receipt behavior, workflows, dependencies, timeouts, or Vitest configuration.
+
 ## Explicitly Unsupported
 
 - DRUNK or POISONED Dreamer information generation.
@@ -45,7 +54,7 @@
 
 ## Production Scope
 
-Only the six frozen production files changed:
+The complete Slice still contains the six frozen production files:
 
 - `packages/domain-core/src/first-night-action-opportunity.ts`
 - `packages/domain-core/src/dreamer.ts`
@@ -54,7 +63,9 @@ Only the six frozen production files changed:
 - `packages/domain-core/src/event-applier.ts`
 - `packages/application/src/game-application-service.ts`
 
-Production additions: `813` lines, below the `1500`-line stop-loss. No event type, event version, `GameState`, workflow, dependency, timeout, or Vitest configuration changed.
+Production additions: `885` lines, below the `1500`-line stop-loss. No event type, event version, `GameState`, workflow, dependency, timeout, or Vitest configuration changed.
+
+Round 3 production changes are confined to `packages/domain-core/src/first-night-action-opportunity.ts` and `packages/domain-core/src/dreamer.ts`.
 
 ## Local Validation
 
@@ -69,10 +80,10 @@ Production additions: `813` lines, below the `1500`-line stop-loss. No event typ
 - Batch semantics: `44 / 44 PASS`.
 - V3 opportunity structure: `2 / 2 PASS`.
 - Full lint: `PASS`.
-- Full ordinary tests: `34 files / 1456 tests PASS`.
+- Full ordinary tests: `34 files / 1457 tests PASS`.
 - Rebuild focused run: `204 / 204 PASS`; `17.78s` tests (`17.88s` standalone validation).
-- Single-fork full coverage: `34 files / 1456 tests PASS`; `131.34s`; `87.18%` statements/lines, `82.00%` branches, `97.75%` functions; no `onTaskUpdate` failure.
+- Single-fork full coverage: `34 files / 1457 tests PASS`; `128.4s`; `87.24%` statements/lines, `82.11%` branches, `97.76%` functions; no `onTaskUpdate` failure.
 - Diff/scope/static/JSON/design-hash/authority-uniqueness audits: `PASS`.
-- Final repair publication, fresh exact-head push/PR CI, and independent final review remain pending on PR `#34`. No Repair Round 3 exists.
+- Round 3 publication, fresh exact-head push/PR CI, and independent final review remain pending on PR `#34`. No Repair Round 4 exists.
 
 Dreamer remains `PARTIAL`; this Slice does not claim complete Dreamer rules.

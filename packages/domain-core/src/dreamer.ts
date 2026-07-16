@@ -57,6 +57,35 @@ export const DREAMER_TARGET_CHOSEN_V2_SCHEMA_VERSION = "dreamer-target-chosen-v2
 export const DREAMER_INFORMATION_DELIVERED_V2_SCHEMA_VERSION = "dreamer-information-delivered-v2" as const;
 export const DREAMER_BASE_SOURCE_EFFECTIVENESS_MODEL_VERSION = "dreamer-base-source-effectiveness-v1" as const;
 
+const isExceptionSafeCanonicalDreamerData = (value: unknown): boolean => {
+  const visited = new WeakSet<object>();
+  const inspect = (candidate: unknown): boolean => {
+    if (candidate === null) return true;
+    if (typeof candidate === "string" || typeof candidate === "boolean") return true;
+    if (typeof candidate === "number") return Number.isFinite(candidate);
+    if (typeof candidate !== "object") return false;
+    if (visited.has(candidate)) return false;
+
+    try {
+      if (Array.isArray(candidate)) return false;
+      const prototype = Object.getPrototypeOf(candidate) as unknown;
+      if (prototype !== Object.prototype && prototype !== null) return false;
+      const keys = Reflect.ownKeys(candidate);
+      if (keys.some((key) => typeof key === "symbol")) return false;
+      visited.add(candidate);
+      for (const key of keys) {
+        const descriptor = Object.getOwnPropertyDescriptor(candidate, key);
+        if (descriptor === undefined || !descriptor.enumerable || !("value" in descriptor) ||
+            !inspect(descriptor.value)) return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  return inspect(value);
+};
+
 export type DreamerActionDecision = {
   readonly kind: "CHOOSE_PLAYER";
   readonly targetPlayerId: PlayerId;
@@ -763,6 +792,9 @@ const validateDreamerInformationPayloadShape = (
   payload: unknown,
   setup: Pick<GeneratedSetup, "roleCatalogSnapshot">
 ): DreamerInformationPayloadShapeResult => {
+  if (!isExceptionSafeCanonicalDreamerData(payload)) {
+    return shapeFail("DreamerInformationDelivered payload must use exception-safe canonical data");
+  }
   if (!isPlainRecord(payload)) {
     return shapeFail("DreamerInformationDelivered payload must have exact runtime shape");
   }
@@ -1079,10 +1111,13 @@ export const createDreamerInformationDeliveredScheduledTaskSettlement = (input: 
   characterStateRevision: input.characterStateRevision
 });
 
-export const validateDreamerTargetChosenPayload = (
+const validateDreamerTargetChosenPayloadInternal = (
   payload: unknown,
   input: DreamerActionInput
 ): ValidationResult => {
+  if (!isExceptionSafeCanonicalDreamerData(payload)) {
+    return fail("DreamerTargetChosen payload must use exception-safe canonical data");
+  }
   if (!isPlainRecord(payload)) {
     return fail("DreamerTargetChosen payload must have exact runtime shape");
   }
@@ -1182,7 +1217,18 @@ export const validateDreamerTargetChosenPayload = (
   return { valid: true };
 };
 
-export const validateDreamerInformationDeliveredPayload = (
+export const validateDreamerTargetChosenPayload = (
+  payload: unknown,
+  input: DreamerActionInput
+): ValidationResult => {
+  try {
+    return validateDreamerTargetChosenPayloadInternal(payload, input);
+  } catch {
+    return fail("DreamerTargetChosen payload validation failed closed");
+  }
+};
+
+const validateDreamerInformationDeliveredPayloadInternal = (
   payload: unknown,
   input: {
     readonly choices: DreamerTargetChoiceSet | undefined;
@@ -1279,6 +1325,27 @@ export const validateDreamerInformationDeliveredPayload = (
   }
 
   return { valid: true };
+};
+
+export const validateDreamerInformationDeliveredPayload = (
+  payload: unknown,
+  input: {
+    readonly choices: DreamerTargetChoiceSet | undefined;
+    readonly deliveries: DreamerInformationSet | undefined;
+    readonly setup: Pick<GeneratedSetup, "roleCatalogSnapshot">;
+    readonly currentCharacterState: CurrentCharacterStateSet;
+    readonly abilityImpairments: AbilityImpairmentSet | undefined;
+    readonly firstNightActionOpportunities: FirstNightActionOpportunityState | undefined;
+    readonly firstNightTaskPlan?: FirstNightTaskPlan;
+    readonly firstNightTaskProgress?: FirstNightTaskProgress;
+    readonly roleTenures?: RoleTenureState;
+  }
+): ValidationResult => {
+  try {
+    return validateDreamerInformationDeliveredPayloadInternal(payload, input);
+  } catch {
+    return fail("DreamerInformationDelivered payload validation failed closed");
+  }
 };
 
 export const validateStoredDreamerInformationDelivered = (

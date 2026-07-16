@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   DREAMER_BASE_SOURCE_CONTRACT_VERSION,
+  DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION,
+  DREAMER_V2_VISIBILITY_SCHEMA_VERSION,
   DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION,
   DREAMER_V3_VISIBILITY_SCHEMA_VERSION,
   formatBaseDreamerV2FirstNightActionOpportunityId,
   parseBaseDreamerV2FirstNightActionOpportunityId,
   validateFirstNightActionOpportunityStateShape
 } from "./first-night-action-opportunity.js";
-import type { DreamerActionOpportunityV3 } from "./first-night-action-opportunity.js";
+import type { DreamerActionOpportunityV2, DreamerActionOpportunityV3 } from "./first-night-action-opportunity.js";
 import { formatBaseFirstNightAbilityInstanceId } from "./first-night-ability-outcome-ledger.js";
 import { playerId, roleId, scheduledTaskId } from "./ids.js";
 import { seatNumber } from "./player-roster.js";
@@ -56,12 +58,31 @@ const canonicalV3 = (): DreamerActionOpportunityV3 => ({
   }
 });
 
+const canonicalV2 = (): DreamerActionOpportunityV2 => {
+  const v3 = canonicalV3();
+  return {
+    ...v3,
+    opportunitySchemaVersion: DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION,
+    opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V2",
+    visibility: {
+      visibilitySchemaVersion: DREAMER_V2_VISIBILITY_SCHEMA_VERSION,
+      canChooseTarget: false,
+      supportedDecisionKinds: [],
+      futureUnsupportedDecisionKinds: ["CHOOSE_PLAYER"],
+      futureTargetSchema: "OTHER_NON_TRAVELLER_PLAYER"
+    }
+  };
+};
+
 const valid = (value: unknown): boolean => validateFirstNightActionOpportunityStateShape({ opportunities: [value] }).valid;
 
 describe("base Dreamer V3 action opportunity", () => {
   it("[2B19A2-C04] enforces the exact closed V3 opportunity, visibility, and source-contract shape", () => {
     const base = canonicalV3();
     expect(valid(base)).toBe(true);
+    expect(valid({ ...base, opportunityStatus: "CLOSED" })).toBe(true);
+    expect(valid(canonicalV2())).toBe(true);
+    expect(valid({ ...canonicalV2(), opportunityStatus: "CLOSED" })).toBe(false);
 
     for (const key of Object.keys(base)) {
       const copy = { ...base } as Record<string, unknown>;
@@ -85,7 +106,7 @@ describe("base Dreamer V3 action opportunity", () => {
       { ...base, nightNumber: 2 },
       { ...base, opportunityId: "first-night-v2:DREAMER_ACTION:seat-02:opportunity-01" },
       { ...base, opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V2" },
-      { ...base, opportunityStatus: "CLOSED" },
+      { ...base, opportunityStatus: "INVALID" },
       { ...base, taskId: scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-02") },
       { ...base, taskType: "WITCH_ACTION" },
       { ...base, sourcePlayerId: playerId("other") },

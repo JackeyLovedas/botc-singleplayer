@@ -512,6 +512,163 @@ describe("Dreamer information model", () => {
       informationReliability: { kind: "EFFECTIVE", extra: true } }, deliveryInput).valid).toBe(false);
     expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery,
       informationReliability: { kind: "SOURCE_IMPAIRED" } }, deliveryInput).valid).toBe(false);
+
+    const wrongType = (value: unknown): unknown => typeof value === "string"
+      ? 0
+      : typeof value === "number"
+      ? "wrong-type"
+      : typeof value === "boolean"
+      ? "wrong-type"
+      : "wrong-type";
+    for (const key of Object.keys(facts.choice)) {
+      const copy = { ...facts.choice, [key]: wrongType((facts.choice as unknown as Record<string, unknown>)[key]) };
+      expect(validateDreamerTargetChosenPayload(copy, targetInput).valid, `target wrong type ${key}`).toBe(false);
+    }
+    for (const key of Object.keys(facts.delivery)) {
+      const copy = { ...facts.delivery, [key]: wrongType((facts.delivery as unknown as Record<string, unknown>)[key]) };
+      expect(validateDreamerInformationDeliveredPayload(copy, deliveryInput).valid, `delivery wrong type ${key}`).toBe(false);
+    }
+
+    const targetWrongLiterals: Readonly<Record<string, unknown>> = {
+      targetSchemaVersion: "dreamer-target-chosen-v1",
+      nightNumber: 2,
+      taskType: "WITCH_ACTION",
+      opportunitySchemaVersion: "dreamer-first-night-action-opportunity-v2",
+      decisionKind: "DEFER"
+    };
+    for (const [key, value] of Object.entries(targetWrongLiterals)) {
+      expect(validateDreamerTargetChosenPayload({ ...facts.choice, [key]: value }, targetInput).valid,
+        `target wrong literal ${key}`).toBe(false);
+    }
+    const deliveryWrongLiterals: Readonly<Record<string, unknown>> = {
+      deliverySchemaVersion: "dreamer-information-delivered-v1",
+      nightNumber: 2,
+      taskType: "WITCH_ACTION",
+      opportunitySchemaVersion: "dreamer-first-night-action-opportunity-v2",
+      knowledgeModelVersion: "dreamer-information-model-v2",
+      knowledgeStage: "DREAMER_TRUTH",
+      falseRolePolicyVersion: "dreamer-false-role-policy-v2"
+    };
+    for (const [key, value] of Object.entries(deliveryWrongLiterals)) {
+      expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery, [key]: value }, deliveryInput).valid,
+        `delivery wrong literal ${key}`).toBe(false);
+    }
+
+    for (const key of Object.keys(facts.opportunity.sourceContract)) {
+      const sourceContract = {
+        ...facts.opportunity.sourceContract,
+        [key]: wrongType((facts.opportunity.sourceContract as unknown as Record<string, unknown>)[key])
+      };
+      expect(validateDreamerTargetChosenPayload({ ...facts.choice, sourceContract }, targetInput).valid,
+        `target sourceContract wrong type ${key}`).toBe(false);
+      expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery, sourceContract }, deliveryInput).valid,
+        `delivery sourceContract wrong type ${key}`).toBe(false);
+    }
+    const sourceContractWrongLiterals: Readonly<Record<string, unknown>> = {
+      sourceContractVersion: "dreamer-base-source-contract-v2",
+      kind: "PHILOSOPHER_GAINED",
+      taskPlanVersion: "first-night-task-plan-v1",
+      taskType: "WITCH_ACTION",
+      sourceRoleId: "artist",
+      sourceRoleTenureId: "role-tenure-v1:seat-02:role-dreamer:acquired-revision-1",
+      sourceAbilityInstanceId: "first-night-ability-instance-v1:BASE:task-invalid"
+    };
+    for (const [key, value] of Object.entries(sourceContractWrongLiterals)) {
+      const sourceContract = { ...facts.opportunity.sourceContract, [key]: value };
+      expect(validateDreamerTargetChosenPayload({ ...facts.choice, sourceContract }, targetInput).valid,
+        `target sourceContract wrong literal ${key}`).toBe(false);
+      expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery, sourceContract }, deliveryInput).valid,
+        `delivery sourceContract wrong literal ${key}`).toBe(false);
+    }
+
+    const reliabilityMatrix: readonly unknown[] = [
+      null,
+      [],
+      {},
+      { kind: 1 },
+      { kind: "UNRELIABLE" },
+      { kind: "EFFECTIVE", extra: true },
+      { kind: "SOURCE_IMPAIRED" },
+      {
+        kind: "SOURCE_IMPAIRED",
+        reason: "SOURCE_DRUNK",
+        sourceImpairmentId: "ability-impairment-v1:test",
+        sourceImpairmentKind: "DRUNK"
+      },
+      {
+        kind: "SOURCE_IMPAIRED",
+        reason: "SOURCE_POISONED",
+        sourceImpairmentId: "ability-impairment-v1:test",
+        sourceImpairmentKind: "POISONED"
+      }
+    ];
+    for (const informationReliability of reliabilityMatrix) {
+      expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery, informationReliability }, deliveryInput).valid)
+        .toBe(false);
+    }
+
+    let getterCalls = 0;
+    const accessor = <T extends object>(value: T, key: keyof T): T => {
+      const copy = { ...value };
+      const captured = copy[key];
+      Object.defineProperty(copy, key, {
+        enumerable: true,
+        get: () => {
+          getterCalls += 1;
+          return captured;
+        }
+      });
+      return copy;
+    };
+    const withEnumerableSymbol = <T extends object>(value: T): T => {
+      const copy = { ...value };
+      Object.defineProperty(copy, Symbol("hostile"), { enumerable: true, value: true });
+      return copy;
+    };
+    const withCycle = <T extends object>(value: T): T => {
+      const copy = { ...value } as T & { cycle?: unknown };
+      copy.cycle = copy;
+      return copy;
+    };
+    const throwingProxy = <T extends object>(value: T): T => new Proxy({ ...value }, {
+      ownKeys: () => { throw new Error("hostile ownKeys"); }
+    });
+    const getThrowingProxy = <T extends object>(value: T): T => new Proxy({ ...value }, {
+      get: () => { throw new Error("hostile get"); }
+    });
+    const revokedTarget = Proxy.revocable({ ...facts.choice }, {});
+    revokedTarget.revoke();
+    const revokedDelivery = Proxy.revocable({ ...facts.delivery }, {});
+    revokedDelivery.revoke();
+    const targetHostiles: readonly unknown[] = [
+      throwingProxy(facts.choice),
+      getThrowingProxy(facts.choice),
+      revokedTarget.proxy,
+      accessor(facts.choice, "targetPlayerId"),
+      { ...facts.choice, sourceContract: accessor(facts.opportunity.sourceContract, "kind") },
+      withEnumerableSymbol(facts.choice),
+      withCycle(facts.choice),
+      Object.assign(new (class NonPlainTarget {})(), facts.choice)
+    ];
+    const deliveryHostiles: readonly unknown[] = [
+      throwingProxy(facts.delivery),
+      getThrowingProxy(facts.delivery),
+      revokedDelivery.proxy,
+      accessor(facts.delivery, "targetPlayerId"),
+      { ...facts.delivery, informationReliability: accessor(facts.delivery.informationReliability, "kind") },
+      withEnumerableSymbol(facts.delivery),
+      withCycle(facts.delivery),
+      Object.assign(new (class NonPlainDelivery {})(), facts.delivery)
+    ];
+    for (const hostile of targetHostiles) {
+      expect(() => validateDreamerTargetChosenPayload(hostile, targetInput)).not.toThrow();
+      expect(validateDreamerTargetChosenPayload(hostile, targetInput).valid).toBe(false);
+    }
+    for (const hostile of deliveryHostiles) {
+      expect(() => validateDreamerInformationDeliveredPayload(hostile, deliveryInput)).not.toThrow();
+      expect(validateDreamerInformationDeliveredPayload(hostile, deliveryInput).valid).toBe(false);
+    }
+    expect(getterCalls).toBe(0);
   });
 
   it.each([

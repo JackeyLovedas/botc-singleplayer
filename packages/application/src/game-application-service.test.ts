@@ -7250,6 +7250,111 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
     expect(captured.finalState).toStrictEqual(rebuildOptionalGameState(fixture.events));
   });
 
+  it("continues a real accepted V3 Dreamer success through a terminal Seamstress action", async () => {
+    const { service, commandStore } = makeService();
+    const openedDreamer = await reachOpenDreamerV3ActionOpportunity(service, commandStore);
+    const dreamerTarget = openedDreamer.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== openedDreamer.opportunity.sourcePlayerId
+    );
+    if (dreamerTarget === undefined) throw new Error("Expected modeled Dreamer target");
+    const dreamerCommand = submitDreamerActionCommand({
+      commandId: commandId("2b19a2-round3-dreamer"),
+      expectedGameVersion: openedDreamer.state.gameVersion,
+      payload: {
+        commandType: "SubmitDreamerAction",
+        taskId: openedDreamer.dreamerTask.taskId,
+        opportunityId: openedDreamer.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: dreamerTarget.playerId }
+      }
+    });
+    expectAcceptedResult(await service.execute(dreamerCommand));
+
+    const afterDreamerEvents = await commandStore.loadDomainEvents(ids.game);
+    const afterDreamer = rebuildOptionalGameState(afterDreamerEvents);
+    const closedRetryCommand = submitDreamerActionCommand({
+      commandId: commandId("2b19a2-round3-closed-dreamer"),
+      expectedGameVersion: afterDreamer?.gameVersion ?? -1,
+      payload: dreamerCommand.payload
+    });
+    const beforeClosedRetry = structuredClone(afterDreamerEvents);
+    await expect(service.execute(closedRetryCommand)).resolves.toMatchObject({
+      status: "rejected",
+      code: "ActionOpportunityAlreadyClosed"
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(beforeClosedRetry);
+    const closedCreationStream = structuredClone(afterDreamerEvents);
+    const createdV3 = closedCreationStream.find((event) =>
+      event.eventType === "FirstNightActionOpportunityCreated" &&
+      event.payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
+    );
+    if (createdV3?.eventType !== "FirstNightActionOpportunityCreated") {
+      throw new Error("Expected V3 creation event");
+    }
+    (createdV3.payload as unknown as Record<string, unknown>).opportunityStatus = "CLOSED";
+    expect(() => rebuildOptionalGameState(closedCreationStream)).toThrowError(DomainError);
+    const seamstressTask = afterDreamer?.firstNightTaskPlan?.tasks.find((task) =>
+      task.taskType === "SEAMSTRESS_ACTION"
+    );
+    if (afterDreamer === undefined || seamstressTask === undefined) {
+      throw new Error("Expected Seamstress task after terminal Dreamer success");
+    }
+    expect(afterDreamer.firstNightTaskPlan && afterDreamer.firstNightTaskProgress
+      ? afterDreamer.firstNightTaskPlan.tasks[afterDreamer.firstNightTaskProgress.settlements.length]?.taskId
+      : undefined).toBe(seamstressTask.taskId);
+
+    const openSeamstressCommand = openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("2b19a2-round3-open-seamstress"),
+      expectedGameVersion: afterDreamer.gameVersion,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: seamstressTask.taskId }
+    });
+    expectAcceptedResult(await service.execute(openSeamstressCommand));
+    const beforeSeamstress = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const seamstressOpportunity = beforeSeamstress?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.taskId === seamstressTask.taskId
+    );
+    if (beforeSeamstress === undefined || seamstressOpportunity === undefined ||
+        !isSeamstressActionOpportunityV2(seamstressOpportunity)) {
+      throw new Error("Expected actionable Seamstress opportunity after Dreamer");
+    }
+    const seamstressTargets = beforeSeamstress.currentCharacterState?.entries
+      .filter((entry) => entry.playerId !== seamstressOpportunity.sourcePlayerId)
+      .slice(0, 2);
+    if (seamstressTargets?.[0] === undefined || seamstressTargets[1] === undefined) {
+      throw new Error("Expected two modeled Seamstress targets");
+    }
+    const seamstressCommand = submitSeamstressActionCommand({
+      commandId: commandId("2b19a2-round3-submit-seamstress"),
+      expectedGameVersion: beforeSeamstress.gameVersion,
+      payload: {
+        commandType: "SubmitSeamstressAction",
+        taskId: seamstressTask.taskId,
+        opportunityId: seamstressOpportunity.opportunityId,
+        decision: {
+          kind: "CHOOSE_TWO_PLAYERS",
+          targetPlayerIds: [seamstressTargets[0].playerId, seamstressTargets[1].playerId]
+        }
+      }
+    });
+    const seamstressResult = await service.execute(seamstressCommand);
+    expectEventSummaryAcceptedResult(seamstressResult);
+
+    const acceptedStream = await commandStore.loadDomainEvents(ids.game);
+    expect(() => validateDomainEventStream(acceptedStream)).not.toThrow();
+    const finalState = rebuildOptionalGameState(acceptedStream);
+    expect(finalState?.dreamerInformation?.deliveries).toHaveLength(1);
+    expect(finalState?.seamstressInformation?.deliveries).toHaveLength(1);
+    expect(finalState?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === openedDreamer.opportunity.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(finalState?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === seamstressOpportunity.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(finalState?.firstNightTaskProgress?.settlements.slice(-2).map((entry) => entry.outcomeType)).toStrictEqual([
+      "DREAMER_INFORMATION_DELIVERED",
+      "SEAMSTRESS_INFORMATION_DELIVERED"
+    ]);
+  });
+
   it("[2B19A2-C12] commits the V2 target delivery and settlement as one exact atomic batch", async () => {
     const { service, commandStore } = makeService();
     const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore);

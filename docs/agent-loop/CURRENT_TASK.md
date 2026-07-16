@@ -1,13 +1,14 @@
 # Current Task
 
-## Phase 3 Slice 2B19A2 — RUNNING / FINAL REPAIR ROUND 2 LOCAL GATES PASS
+## Phase 3 Slice 2B19A2 — RUNNING / FINAL FROZEN-DESIGN REPAIR ROUND 3
 
 - Authorization: `USER_AUTHORIZED_2B19A2_EFFECTIVE_BASE_DREAMER_V2_NORMAL_INFORMATION`.
 - Task type: `PRODUCT_SLICE`; product repair round consumed: `true`.
 - Scope: `Effective Base Dreamer V2 Normal Target and Information Delivery`.
 - Recovery main: `8b390b50f5d314b34535bc7cf9fad36ece76f85e`; exact main CI `29484611863` is `SUCCESS`.
 - Current branch: `phase-3/dreamer-v2-base-normal-information`; current Slice: `2B19A2`; current PR: [#34](https://github.com/JackeyLovedas/botc-singleplayer/pull/34).
-- Limits: `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=2`; current design round `2`, repair round `2`; no Repair Round 3 exists.
+- Final repair authorization: `USER_AUTHORIZED_2B19A2_FINAL_FROZEN_DESIGN_REPAIR_ROUND_3`.
+- Limits: `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=3`; current design round `2`, repair round `3`; no Repair Round 4 exists.
 - Gate state: `ruleReady=true`, `ruleDesignPass=true`, and `implementationAuthorized=true`.
 - Governance precheck: `docs/architecture/2B19A2-go-no-go-under-governance-v1.md`, SHA-256 `abc0a75b0b8267542d2e1a3bd0bbaeaad8ee9b11052c442ec38aee9558df4b1f`, terminal `GO`.
 - Rule evidence: `docs/rules/evidence/2B19A2.md`, SHA-256 `e24038e7399cb7311204b6b3f001623b7ab0323034af61ee3bb64aa8e9a3c829`, terminal `RULE_READY`, `ruleCoverageStatus=PARTIAL`, Slice coverage `PARTIAL / NORMAL_INFORMATION_ONLY`, Dreamer role coverage `PARTIAL`, and `unresolvedConflicts=[]`.
@@ -15,16 +16,16 @@
 - Independent Round 1 review: `docs/implementation/phase-3-slice-2b19a2-design-review-round-1.md`, SHA-256 `bc588436e2622b801576c4f6477907d9ce1adf54768fe59148ff4a9727fb44fd`, verdict `RULE_DESIGN_FIX_REQUIRED`.
 - Complete standalone Round 2 replacement: `docs/implementation/phase-3-slice-2b19a2-design-round-2.md`, SHA-256 `7e4016b89f6cc5f5b07bcf32f6a6e14c9e12db39c7cb66960b1934efb1911687`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`, status `RULE_DESIGN_PASS`.
 - Independent Round 2 review: `docs/implementation/phase-3-slice-2b19a2-design-review-round-2.md`, SHA-256 `7bb36bd0e79200d8a803c2f43c1b1cc78669ad15969be58138a48417e3ff65b2`, verdict and terminal `RULE_DESIGN_PASS`, `remainingBlockers=[]`.
-- Remaining blockers: `[]`.
+- Remaining blockers: `[]`. Round 3 locally closed exactly `CLOSED_V3_OPPORTUNITY_STATE_IS_REJECTED_AS_NONCANONICAL` and `V2_DREAMER_T1_HOSTILE_VALIDATION_AND_S01_AUTHORITY_INCOMPLETE`; fresh publication, exact-head CI, and independent final review remain mandatory.
 - `slice2B19A2Started=true`; `phase2CStarted=false`.
 - Slice 2B19A1 is `COMPLETED / ACCEPTED`; closeout commit `8b390b50f5d314b34535bc7cf9fad36ece76f85e` passed exact CI `29484611863`, so its stale pending-closeout marker is closed.
-- Local implementation is complete within the six-file production allowlist: `813` added production lines, below the `1500` stop-loss. No event type, `GameState`, workflow, dependency, timeout, or Vitest configuration changed.
+- Local implementation remains within the six-file Slice allowlist: `885` added production lines in total, below the `1500` stop-loss. Round 3 production changes are confined to `first-night-action-opportunity.ts` and `dreamer.ts`; no event type, `GameState`, workflow, dependency, timeout, or Vitest configuration changed.
 - Frozen authority tests `2B19A2-C01` through `C31` plus `S01` and `S02` are present exactly once. Typecheck and the focused suite pass at `10 files / 662 tests`, including application `236/236` and rebuild `204/204`.
 - Role coverage remains `PARTIAL`; status and traceability are `docs/implementation/phase-3-slice-2b19a2-status.md` and `docs/implementation/phase-3-slice-2b19a2-test-traceability.md`.
 - Repair Round 1 HEAD `bdb56f2c7314a4fba43b634a720aa7591d7c2b8b` passed push CI `29494706705`; PR CI `29494709511` passed all `34 / 1456` tests then failed the same worker RPC timeout. Successful versus failed runner rebuild/total durations were `34.563s / 117.06s` versus `64.827s / 213.78s`.
 - Final Repair Round 2 preserves all seven C14 and nine S02 hostile cases but rebuilds each shared accepted prefix once, then uses canonical full-stream, batch, event, and tenure replay validation on defensive clones. C01/C30 share a lazy defensive accepted-V1 capture that remains standalone-safe.
-- Full lint passes. Focused is `10 / 662`, rebuild is `204 / 204` at `17.78s`, and ordinary/single-fork coverage are `34 / 1456`; single-fork total is `131.34s`, coverage `87.18 / 82.00 / 97.75`, with no worker RPC failure. Diff/scope/static/JSON/hash/authority audits pass.
-- Final repair commit/push, fresh exact-head CI, and independent final review remain pending; production, design, workflow, dependency, timeout, Vitest configuration, IDs, and test count are frozen.
+- Final Frozen-Design Repair Round 3 closes only the stored V3 lifecycle and T1/S01 validation-authority findings. Direct focused tests pass `6 projects / 290 tests`; typecheck and full lint pass; ordinary and single-fork coverage pass `34 / 1457`; coverage completed in `128.4s` at `87.24 / 82.11 / 97.76`, with no worker RPC failure. The new real Dreamer-to-Seamstress continuation measured `479–719ms` without a timeout change.
+- Round 3 commit/push, fresh exact-head CI, and independent final review remain pending; design, rules, workflow, dependency, timeout, Vitest configuration, event versions, information algorithm, ledger, projection, and receipt semantics remain frozen.
 
 ## Phase 3 Slice 2B19A1 — COMPLETED / ACCEPTED
 
