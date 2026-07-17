@@ -1,5 +1,9 @@
 # Review Protocol
 
+## Governance Traceability V1.1 Applicability
+
+`docs/architecture/ADR-reachability-trust-boundaries-and-review-governance-v1.md` defines Engineering Governance Traceability V1.1. On its governance PR branch the amendment is `PROPOSED_PENDING_INDEPENDENT_REVIEW`; this protocol applies its proposed requirements to that PR without claiming acceptance. Only merged governance evidence, the accepted governance tag, and any permitted post-merge docs-only closeout may record `ACCEPTED`. After acceptance, all later designs, implementations, traceability reports, and reviews must apply V1.1.
+
 ## Rule-Truth Gate Before Every Slice
 1. Existing code, tests, README files, repository summaries, and model memory are not rule truth and cannot independently authorize a slice design.
 2. The read-only `rule-researcher` must freshly check all four sources for the proposed slice:
@@ -14,6 +18,7 @@
 7. Before architect work, the sole writer materializes the sourced report as `docs/rules/evidence/<slice-id>.md`. It must include `sliceId`, `involvedRoles`, `sourceUrls`, `retrievalDate`, `sourceRevision` or `oldid`, `abilityRules`, `firstNightOrder`, `otherNightOrder`, `interactions`, `drunkennessRules`, `poisoningRules`, `VortoxRules`, `characterChangeRules`, `alignmentChangeRules`, `storytellerDiscretion`, `explicitOutOfScope`, `unresolvedConflicts`, `requiredRegressionTests`, and `ruleCoverageStatus`.
 8. `ruleCoverageStatus` is exactly one of `SKELETON`, `PARTIAL`, or `COMPLETE`. `COMPLETE` is forbidden unless all formal mechanisms and all currently supported interactions are implemented. Dreamer remains `PARTIAL` while Vortox forced-false behavior, Storyteller false-role selection, Traveller target restriction, or complete drunk/poison information evaluation is missing.
 9. Only `RULE_READY` allows the architect to design a slice.
+10. Rule evidence owns only external rule truth, source revisions, the supported/unsupported rule boundary, rule-level reachability context, and unresolved conflicts. It must not freeze a physical test title, primary layer, supporting fixture ID, or engineering traceability metadata. `requiredRegressionTests` is a rule-obligation list, not physical authority. Existing `NON_AUTHORITATIVE_ENGINEERING_TRACE_REFERENCE` markers may remain. Design, implementation traceability, this protocol, and the ADR own engineering mapping. This separation changes no BOTC rule or rule-source priority.
 
 ## Rule Design Review Before Implementation
 1. The reviewer independently reads the external sources or approved snapshots, current rule evidence, official nightsheet, and current `docs/rules/ROLE_COVERAGE_MATRIX.md`; the rule-researcher summary alone is insufficient.
@@ -116,18 +121,18 @@ reviewedHead=<exact SHA>
 
 ## Engineering Governance Baseline
 
-`docs/architecture/ADR-reachability-trust-boundaries-and-review-governance-v1.md` is the complete repository authority for reachability, trust boundaries, design freeze, final-review scope, stop-loss, proportional traceability, CI classification, coverage terminology, and evidence authority after its governance PR is independently reviewed and merged. While its status is `ACCEPTED_CANDIDATE`, this protocol applies the same requirements to that governance PR without claiming post-merge acceptance. Nothing in this section weakens the rule-truth, T1 safety, persistence, replay, information-safety, deterministic, exact-head CI, or complete independent-review gates above.
+`docs/architecture/ADR-reachability-trust-boundaries-and-review-governance-v1.md` is the complete repository authority for reachability, trust boundaries, design freeze, final-review scope, stop-loss, two-phase traceability, CI classification, coverage terminology, and evidence authority after its governance PR is independently reviewed and merged. While the V1.1 amendment is `PROPOSED_PENDING_INDEPENDENT_REVIEW`, this protocol applies the same requirements to that governance PR without claiming post-merge acceptance. Nothing in this section weakens the rule-truth, T1 safety, persistence, replay, information-safety, deterministic, exact-head CI, or complete independent-review gates above.
 
 ### Mandatory Reachability Classification
 
-Every future design explicitly enumerates all four classes and assigns exactly one primary class to every claimed behavior or path:
+Every future design explicitly enumerates all four classes and assigns exactly one primary class to every claimed behavior or path. Reachability, trust, and primary test layer are independent axes:
 
-- `R1 CURRENTLY_REACHABLE_ACCEPTED_STREAM`: current accepted commands and producers create the history. Only R1 may be called accepted-stream integration, and it requires the frozen application, command/receipt, prospective-validation, replay, projection-or-explicit-no-output, integration-test, and cross-platform CI evidence.
+- `R1 CURRENTLY_REACHABLE_APPLICATION_PATH`: a real formal application command path is currently callable and may succeed, reject, or fail through configured or fault-injected production ports. A no-event, rejected, or rollback result can be R1. `CURRENTLY_REACHABLE_ACCEPTED_STREAM` is a deprecated pre-V1.1 descriptive alias, not a primary-layer conclusion. Only the successful full producer/accepted-events/receipt/append/rebuild/projection path is accepted-stream integration; not every R1 row is accepted-stream.
 - `R2 LEGACY_OR_IMPORTED_ACCEPTED_HISTORY`: no current producer is required, but valid accepted/imported history has an exact replay-compatibility promise and cannot be silently migrated or reinterpreted.
 - `R3 HOSTILE_OR_CORRUPTED_HISTORY`: malformed, forged, orphaned, duplicate, mixed-generation, or otherwise impossible history must fail closed and must not be described as accepted-stream integration.
-- `R4 FUTURE_HYPOTHETICAL_STATE`: no current producer, accepted event, or reachable command path exists. It may be an extension point or explicit `ApplicationNotConfigured` boundary, but cannot be a current integration prerequisite.
+- `R4 FUTURE_HYPOTHETICAL_STATE`: no current producer or accepted event creates the hypothetical behavior. It may remain an extension point or unsupported behavior, but cannot be a current integration prerequisite. If a real formal command currently reports `ApplicationNotConfigured`, that reachable rejection is a separate `R1 + APPLICATION_COMMAND_INTEGRATION` path while the hypothetical behavior remains R4.
 
-Classification order is R3 for invalid history, otherwise R1 when a current accepted producer exists, otherwise R2 when a valid replay promise exists, otherwise R4. A manually constructed state, direct event-applier call, pure resolver fixture, or hostile replay cannot prove R1. A slice may have distinct paths in multiple classes, but no behavior row may omit its class.
+Classification order is R3 for invalid, manually tampered persisted/imported history; otherwise R1 when a real formal application path is currently callable; otherwise R2 when a valid replay promise exists; otherwise R4. A real reachable dependency, metadata, prospective-validation, append, commit-store, or receipt fault is not made R3 merely because it fails. A manually constructed state, direct event-applier call, pure resolver fixture, or hostile replay cannot prove accepted-stream integration. A slice may have distinct paths in multiple classes, but no behavior row may omit its class.
 
 ### Mandatory Trust Classification
 
@@ -141,7 +146,9 @@ If one function serves multiple trust levels, split the T1 wrapper from its core
 
 ### Design Freeze And Final-Review Boundary
 
-Before `RULE_DESIGN_PASS`, design review freezes the current PR's rule semantics, support and unsupported matrix, reachability, trust, public API, event/state, failures/receipts, replay, projection, completion criteria, authority-test mapping, primary test layers, file allowlists, size estimates, Slice coverage, and Role coverage. These become the PR's definition of done. A material change requires an authorized design correction or reslice; implementation cannot silently widen it.
+Before `RULE_DESIGN_PASS`, design review freezes the current PR's rule semantics, support and unsupported matrix, reachability, trust, public API, event/state, failures/receipts, replay, projection, file allowlists, size estimates, Slice coverage, Role coverage, and these exact design-time fields per criterion: `CriterionId`, `RuleClaim`, `CompletionCriterion`, `RequiredEvidenceMechanism`, `ExpectedReachability`, `ExpectedTrust`, `ExpectedPrimaryLayer`, `ExpectedResult`, and `SupportingAuthorityRequirement`. These become the PR's definition of done. A material change requires an authorized design correction or reslice; implementation cannot silently widen it.
+
+Design does not have to freeze the final physical test title, final source line, final fixture ID, or final supporting-test name before implementation. A planned physical path or title is non-authoritative unless the design explicitly marks an already-existing authority.
 
 Final review verifies that frozen definition on the exact PR HEAD and may classify a finding `BLOCKER` only for:
 
@@ -187,21 +194,71 @@ Before implementation, or immediately after the first review, reslice when any c
 
 Only explicit user authorization overrides stop-loss. Repair-budget exhaustion does not imply another repair or wider scope.
 
-### Test Layers And Proportional Traceability
+### Test Layers And Two-Phase Traceability V1.1
 
-Every completion criterion has at least one primary authority test. Each test has exactly one primary layer; supporting tests may serve multiple criteria. Test volume follows risk and boundary count, not a fixed minimum or numbered-test quota. Do not duplicate low-value tests to inflate traceability.
+Every completion criterion has at least one primary authority test after implementation. Test volume follows risk and boundary count, not a fixed minimum or numbered-test quota. Do not duplicate low-value tests to inflate traceability.
 
-The only primary layers are:
+The only primary layers are exactly these eight, in this order:
 
-- `ACCEPTED_STREAM_INTEGRATION`;
-- `LEGACY_REPLAY_COMPATIBILITY`;
-- `HOSTILE_REPLAY_REJECTION`;
-- `STRUCTURAL_VALIDATION`;
-- `PURE_POLICY_SEAM`;
-- `PROJECTION`;
-- `CROSS_PLATFORM_CI`.
+1. `ACCEPTED_STREAM_INTEGRATION`: real successful formal command, producer, accepted events, receipt, append, rebuild, and projection.
+2. `APPLICATION_COMMAND_INTEGRATION`: real formal application-command acceptance, rejection, or failure contract whose main assertion is not successful accepted-stream semantics.
+3. `LEGACY_REPLAY_COMPATIBILITY`: valid R2 history retains exact meaning.
+4. `HOSTILE_REPLAY_REJECTION`: manually tampered persisted/imported R3 history fails replay or rebuild closed.
+5. `STRUCTURAL_VALIDATION`: direct payload, parser, exact-shape, version, ID, field, or cross-link validation.
+6. `PURE_POLICY_SEAM`: deterministic selector, comparator, or policy behavior.
+7. `PROJECTION`: authorized viewer output and non-leakage.
+8. `CROSS_PLATFORM_CI`: required exact-head runner or platform execution.
 
-Traceability records criterion, rule claim, reachability, trust, primary test, primary layer, supporting tests, and expected failure. Tests must use their actual layer; manually assembled state is never relabeled accepted-stream integration.
+`APPLICATION_COMMAND_INTEGRATION` requires real invocation of `GameApplicationService` or a formal application command entry and real port or failure injection. It includes actor rejection, `expectedGameVersion` rejection, malformed-command rejection through the formal entry, dependency failure, metadata failure, prospective-validation failure, append failure, commit-store failure, receipt failure, no-event/no-mutation atomicity, retryability, same-`commandId` recovery or retry, deterministic rejected receipt, and failure stage or code. It asserts events, receipts, `gameVersion`, and state outcome. Manually forged accepted history is forbidden as application authority. Reachability is usually R1 when the real command or fault path is currently callable.
+
+Apply this exact A-G algorithm. Trust is independently classified. Entry path and main assertion decide the layer; setup alone never does.
+
+A. Real successful command with producer, accepted events, receipt, append, rebuild, and projection: `R1 + ACCEPTED_STREAM_INTEGRATION`.
+
+B. Real formal command rejected, or dependency, prospective validation, metadata, append, commit, or receipt fails without commit or with atomic rollback: normally `R1 + APPLICATION_COMMAND_INTEGRATION`.
+
+C. Accepted prefix followed by manually tampered persisted/imported event, payload, history, provenance, tenure, impairment, delivery, or ledger, then replay/rebuild rejection: `R3 + HOSTILE_REPLAY_REJECTION`; prefix supporting only.
+
+D. Direct payload, parser, exact-shape, version, ID, field, or cross-link validator: `R3 + STRUCTURAL_VALIDATION`.
+
+E. Pure selector, comparator, or policy: actual reachability plus `PURE_POLICY_SEAM`, normally T3.
+
+F. Viewer output or non-leakage: `PROJECTION`.
+
+G. Exact-head runner or platform execution: `CROSS_PLATFORM_CI`.
+
+One physical test identity, `ActualTestFile` plus `ActualTestTitle`, has exactly one primary layer. If it supports other criteria, list it only as supporting there. Split a test whose separate primary assertions require different layers.
+
+Design-time traceability records exactly `CriterionId`, `RuleClaim`, `CompletionCriterion`, `RequiredEvidenceMechanism`, `ExpectedReachability`, `ExpectedTrust`, `ExpectedPrimaryLayer`, `ExpectedResult`, and `SupportingAuthorityRequirement`.
+
+Implementation-time traceability retains the design expected fields and adds exactly these actual-binding fields: `CriterionId`, `ActualTestFile`, `ActualTestTitle`, `ActualPrimaryLayer`, `ActualReachability`, `ActualTrust`, `SupportingAuthorityId`, and `MechanismMatch` (`PASS|FAIL`). `SupportingAuthorityId` is `NONE` or one or more unique `SUP-<slice-or-task>-NNN` IDs, each resolving exactly once. Traceability also identifies the actual main assertion, entry, and fault mechanism sufficiently for review. `MechanismMatch=PASS` is semantic, not token equality: the actual test proves `CompletionCriterion` through `RequiredEvidenceMechanism` and the correct A-G classification.
+
+### Traceability Correction Gate
+
+If `ExpectedPrimaryLayer` differs from `ActualPrimaryLayer` while behavior contract and `RequiredEvidenceMechanism` are unchanged and the actual test still proves the criterion, return `TRACEABILITY_CORRECTION_REQUIRED`. This normally authorizes only a bounded docs or test-traceability repair, blocks release and final pass until corrected, and does not itself require `RESLICE`.
+
+The mismatch is a `BLOCKER` or requires `RESLICE` when the actual test does not prove the criterion, R3 is represented as R1, a direct validator is represented as accepted integration, a claim or test is false, a new public trust boundary appears, or behavior design must change. If `RequiredEvidenceMechanism` changed, `MechanismMatch` is `FAIL` and the correction exception is forbidden.
+
+The reviewer reports the old layer, new layer, `RequiredEvidenceMechanism`, `behaviorDesignChanged`, `ruleSemanticsChanged`, and complete `remainingBlockers`.
+
+### Supporting Authority Gate
+
+At design time, `PLANNED_SUPPORTING_AUTHORITY` records purpose, expected accepted/legacy/hostile status, mutation expectation, and consuming `CriterionId` values. No final unique ID, file, or title is required before implementation.
+
+At implementation time, every support receives one unique `SUP-<slice-or-task>-NNN` ID and records `SupportingAuthorityId`, `Producer`, `SourceTestOrFixture`, `AuthorityStatus` (`ACCEPTED|LEGACY|HOSTILE`), `UsedByCriteria`, and `MutationDisposition` (`NONE|CLONE_MUTATED|PERSISTED_OR_IMPORTED_MUTATED`). An optional fixture hash or revision may be recorded when persisted. Every referenced ID resolves exactly once. Supporting authority never determines the primary layer or substitutes for the primary test. An accepted source remains accepted support when a clone is mutated; the mutated artifact is classified by the primary mechanism.
+
+### Governance Traceability Review Checks
+
+- A new layer must not weaken accepted replay, persistence, or provenance.
+- R3 hostile history cannot become R1.
+- Dependency, metadata, prospective-validation, append, commit-store, and receipt failures must match their real formal application mechanism.
+- Accepted-stream success remains independent from application-command failure authority.
+- Design need not invent nonexistent physical tests, titles, fixture IDs, or support IDs.
+- Actual mapping and semantic `MechanismMatch` are mandatory after implementation.
+- False claims or tests remain blockers.
+- Supporting IDs are unique, resolvable, and complete.
+- The governance amendment changes no BOTC rule, product behavior, test, workflow, dependency, or role coverage.
+- No traceability correction may hide or relax a slice's frozen behavior, API, schema, failure, replay, projection, allowlist, size, or coverage contract.
 
 ### Coverage And Acceptance Terminology
 
