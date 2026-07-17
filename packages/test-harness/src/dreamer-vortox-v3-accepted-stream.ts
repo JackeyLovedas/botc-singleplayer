@@ -1,6 +1,29 @@
 import { GameApplicationService } from "@botc/application";
-import { commandId, rebuildOptionalGameState, roleId } from "@botc/domain-core";
-import type { AnyDomainEventEnvelope, GameState } from "@botc/domain-core";
+import type {
+  CommandCommitStore,
+  CommandReceipt,
+  CommitAcceptedCommandInput,
+  IdGenerator,
+  RecordRejectedCommandInput
+} from "@botc/application";
+import {
+  batchId,
+  commandId,
+  eventId,
+  rebuildGameState,
+  rebuildOptionalGameState,
+  roleId,
+  validateDomainBatchSemantics,
+  validateDomainEventStream
+} from "@botc/domain-core";
+import type {
+  AnyDomainEventEnvelope,
+  BatchId,
+  CommandId,
+  EventId,
+  GameId,
+  GameState
+} from "@botc/domain-core";
 import {
   assignCharactersCommand,
   createGameCommand,
@@ -40,31 +63,112 @@ export type AcceptedDreamerVortoxV3StreamCapture = {
   readonly settlementEventIndex: number;
 };
 
-const requireState = async (store: MemoryCommandCommitStore): Promise<GameState> => {
+export type AcceptedDreamerVortoxV3OpenPrefixCapture = {
+  readonly events: readonly AnyDomainEventEnvelope[];
+  readonly finalState: GameState;
+  readonly opportunityEventIndex: number;
+};
+
+class ContinuedFixedIdGenerator implements IdGenerator {
+  private eventCounter: number;
+  private batchCounter: number;
+
+  public constructor(events: readonly AnyDomainEventEnvelope[]) {
+    this.eventCounter = events.length;
+    this.batchCounter = new Set(events.map((event) => event.batchId)).size;
+  }
+
+  public nextEventId(): EventId {
+    this.eventCounter += 1;
+    return eventId(`event-${this.eventCounter}`);
+  }
+
+  public nextBatchId(): BatchId {
+    this.batchCounter += 1;
+    return batchId(`batch-${this.batchCounter}`);
+  }
+}
+
+class AcceptedPrefixCommandStore implements CommandCommitStore {
+  private events: AnyDomainEventEnvelope[];
+  private readonly receipts = new Map<string, CommandReceipt>();
+
+  public constructor(events: readonly AnyDomainEventEnvelope[]) {
+    this.events = [...structuredClone(events)];
+  }
+
+  public loadDomainEvents(gameId: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
+    return Promise.resolve(this.events.filter((event) => event.gameId === gameId));
+  }
+
+  public findCommandReceipt(gameId: GameId, requestedCommandId: CommandId): Promise<CommandReceipt | undefined> {
+    return Promise.resolve(this.receipts.get(`${gameId}\u0000${requestedCommandId}`));
+  }
+
+  public commitAcceptedCommand(input: CommitAcceptedCommandInput): Promise<void> {
+    try {
+      const currentVersion = this.events.at(-1)?.gameVersion ?? 0;
+      if (currentVersion !== input.expectedGameVersion) {
+        throw new Error("Accepted prefix store version mismatch");
+      }
+      validateDomainBatchSemantics(rebuildOptionalGameState(this.events), input.eventBatch.events);
+      const stagedEvents = [...this.events, ...input.eventBatch.events];
+      validateDomainEventStream(stagedEvents);
+      rebuildGameState(stagedEvents);
+      this.events = stagedEvents;
+      this.receipts.set(
+        `${input.receipt.gameId}\u0000${input.receipt.commandId}`,
+        input.receipt
+      );
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject(error instanceof Error ? error : new Error("Unknown accepted prefix store failure"));
+    }
+  }
+
+  public recordRejectedCommand(input: RecordRejectedCommandInput): Promise<void> {
+    this.receipts.set(`${input.gameId}\u0000${input.commandId}`, input.receipt);
+    return Promise.resolve();
+  }
+}
+
+const requireState = async (store: CommandCommitStore): Promise<GameState> => {
   const state = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
   if (state === undefined) throw new Error("Expected accepted Dreamer Vortox harness state");
   return state;
 };
 
-export const captureAcceptedBaseDreamerVortoxV3Stream = async (
-  targetKind: "VORTOX" | "GOOD" | "NON_VORTOX_EVIL" = "GOOD"
-): Promise<AcceptedDreamerVortoxV3StreamCapture> => {
+const createService = (
+  store: CommandCommitStore,
+  idGenerator: IdGenerator
+): GameApplicationService => new GameApplicationService({
+  commandStore: store,
+  ids: idGenerator,
+  clock: new FixedClock(),
+  setupGenerator: testSetupGenerator,
+  characterAssignmentGenerator: testAssignmentGenerator,
+  initialPrivateKnowledgeBuilder: testInitialPrivateKnowledgeBuilder,
+  firstNightTaskPlanner: testFirstNightTaskPlanner,
+  firstNightTaskCatalogSnapshot: testFirstNightTaskCatalog,
+  firstNightSystemInformationResolver: testFirstNightSystemInformationResolver
+});
+
+const executeAccepted = async (
+  service: GameApplicationService,
+  command: Parameters<GameApplicationService["execute"]>[0]
+): Promise<void> => {
+  const result = await service.execute(command);
+  if (result.status !== "accepted") {
+    throw new Error(`Dreamer Vortox harness command failed: ${JSON.stringify(result)}`);
+  }
+};
+
+const captureAcceptedBaseDreamerVortoxV3OpenPrefixUncached = async (
+): Promise<AcceptedDreamerVortoxV3OpenPrefixCapture> => {
   const store = new MemoryCommandCommitStore();
-  const service = new GameApplicationService({
-    commandStore: store,
-    ids: new FixedIdGenerator(),
-    clock: new FixedClock(),
-    setupGenerator: testSetupGenerator,
-    characterAssignmentGenerator: testAssignmentGenerator,
-    initialPrivateKnowledgeBuilder: testInitialPrivateKnowledgeBuilder,
-    firstNightTaskPlanner: testFirstNightTaskPlanner,
-    firstNightTaskCatalogSnapshot: testFirstNightTaskCatalog,
-    firstNightSystemInformationResolver: testFirstNightSystemInformationResolver
-  });
-  const execute = async (command: Parameters<GameApplicationService["execute"]>[0]): Promise<void> => {
-    const result = await service.execute(command);
-    if (result.status !== "accepted") throw new Error(`Dreamer Vortox harness command failed: ${JSON.stringify(result)}`);
-  };
+  const service = createService(store, new FixedIdGenerator());
+  const execute = (command: Parameters<GameApplicationService["execute"]>[0]): Promise<void> =>
+    executeAccepted(service, command);
 
   await execute(createGameCommand());
   await execute(selectScriptCommand());
@@ -133,6 +237,40 @@ export const captureAcceptedBaseDreamerVortoxV3Stream = async (
     payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: task.taskId }
   }));
   const opened = await requireState(store);
+  const events = await store.loadDomainEvents(ids.game);
+  const opportunityEventIndex = events.findIndex((event) =>
+    event.eventType === "FirstNightActionOpportunityCreated" &&
+    event.payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
+  );
+  if (opportunityEventIndex < 0) {
+    throw new Error("Expected real-command Dreamer Vortox V3 OPEN prefix");
+  }
+  return {
+    events: structuredClone(events),
+    finalState: structuredClone(opened),
+    opportunityEventIndex
+  };
+};
+
+let acceptedOpenPrefixPromise: Promise<AcceptedDreamerVortoxV3OpenPrefixCapture> | undefined;
+
+export const captureAcceptedBaseDreamerVortoxV3OpenPrefix = async (
+): Promise<AcceptedDreamerVortoxV3OpenPrefixCapture> => {
+  acceptedOpenPrefixPromise ??= captureAcceptedBaseDreamerVortoxV3OpenPrefixUncached();
+  return structuredClone(await acceptedOpenPrefixPromise);
+};
+
+export const captureAcceptedBaseDreamerVortoxV3Stream = async (
+  targetKind: "VORTOX" | "GOOD" | "NON_VORTOX_EVIL" = "GOOD"
+): Promise<AcceptedDreamerVortoxV3StreamCapture> => {
+  const prefix = await captureAcceptedBaseDreamerVortoxV3OpenPrefix();
+  const store = new AcceptedPrefixCommandStore(prefix.events);
+  const service = createService(store, new ContinuedFixedIdGenerator(prefix.events));
+  const opened = prefix.finalState;
+  const task = opened.firstNightTaskPlan?.tasks[opened.firstNightTaskProgress?.settlements.length ?? 0];
+  if (task?.taskType !== "DREAMER_ACTION") {
+    throw new Error("Expected cached Dreamer Vortox task");
+  }
   const opportunity = opened.firstNightActionOpportunities?.opportunities.find((entry) =>
     entry.taskId === task.taskId && entry.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3");
   const target = opened.currentCharacterState?.entries.find((entry) =>
@@ -143,7 +281,7 @@ export const captureAcceptedBaseDreamerVortoxV3Stream = async (
         ? entry.role.defaultAlignment === "EVIL" && entry.role.roleId !== "vortox"
         : entry.role.defaultAlignment === "GOOD"));
   if (opportunity === undefined || target === undefined) throw new Error("Expected Dreamer Vortox target");
-  await execute(submitDreamerActionCommand({
+  await executeAccepted(service, submitDreamerActionCommand({
     commandId: commandId(`vortox-submit-dreamer-${targetKind.toLowerCase()}`), expectedGameVersion: opened.gameVersion,
     actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
     payload: { commandType: "SubmitDreamerAction", taskId: task.taskId, opportunityId: opportunity.opportunityId,
@@ -151,8 +289,7 @@ export const captureAcceptedBaseDreamerVortoxV3Stream = async (
   }));
 
   const events = await store.loadDomainEvents(ids.game);
-  const opportunityEventIndex = events.findIndex((event) => event.eventType === "FirstNightActionOpportunityCreated" &&
-    event.payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3");
+  const opportunityEventIndex = prefix.opportunityEventIndex;
   const targetEventIndex = events.findIndex((event) => event.eventType === "DreamerTargetChosen" && "targetSchemaVersion" in event.payload);
   const deliveryEventIndex = events.findIndex((event) => event.eventType === "DreamerInformationDelivered" &&
     "deliverySchemaVersion" in event.payload && event.payload.deliverySchemaVersion === "dreamer-information-delivered-v3");

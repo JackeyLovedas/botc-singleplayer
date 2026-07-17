@@ -94,7 +94,10 @@ import {
   systemActor
 } from "@botc/test-harness";
 import { captureAcceptedBaseDreamerV3NormalStream } from "../../test-harness/src/dreamer-v3-accepted-stream.js";
-import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
+import {
+  captureAcceptedBaseDreamerVortoxV3OpenPrefix,
+  captureAcceptedBaseDreamerVortoxV3Stream
+} from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
 import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
 import { deriveFirstNightAbilityOutcomeFact } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
@@ -254,7 +257,14 @@ const philosopherGainedSnakeCharmerOpportunityId = actionOpportunityId(
 
 describe("Phase 3 Slice 2B19A3A effective-source Vortox Dreamer", () => {
   it("[2B19A3A-C06/C09/C10/C11/C15/C37] accepts a GOOD target with an exact false native-category atomic batch", async () => {
+    const prefix = await captureAcceptedBaseDreamerVortoxV3OpenPrefix();
+    expect(prefix.events[prefix.opportunityEventIndex]).toMatchObject({
+      eventType: "FirstNightActionOpportunityCreated",
+      commandId: "vortox-open-dreamer",
+      payload: { opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V3", opportunityStatus: "OPEN" }
+    });
     const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+    expect(captured.events.slice(0, captured.targetEventIndex)).toStrictEqual(prefix.events);
     expect(captured).toStrictEqual(loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD"));
     const target = captured.events[captured.targetEventIndex];
     const delivery = captured.events[captured.deliveryEventIndex];

@@ -4,10 +4,10 @@
 - Authorization: `USER_AUTHORIZED_2B19A3A_EFFECTIVE_SOURCE_VORTOX_IMPLEMENTATION`
 - Classification authorization: `USER_AUTHORIZED_GOVERNANCE_TRACEABILITY_V1_1_APPLICATION_COMMAND_LAYER`
 - Branch: `phase-3/dreamer-vortox-effective-source`
-- Design round: `3 / 3`; repair round: `1 / 2`
+- Design round: `3 / 3`; repair round: `2 / 2`
 - Rule status: `RULE_READY`; design release: `DESIGN_RELEASE_PASS`
 - Coverage: `PARTIAL / EFFECTIVE_SOURCE_VORTOX_FALSE_ONLY`
-- Publication status: `RUNNING / CI_EXECUTION_REPAIR_ROUND_1_LOCAL_GATES_PASS / PENDING_REPAIR_COMMIT_AND_EXACT_HEAD_CI`
+- Publication status: `RUNNING / CI_EXECUTION_REPAIR_ROUND_2_LOCAL_GATES_PASS / PENDING_FINAL_REPAIR_COMMIT_AND_EXACT_HEAD_CI`
 
 ## Frozen authority
 
@@ -60,6 +60,14 @@ Both IDs resolve exactly once in `phase-3-slice-2b19a3a-test-traceability.md`. N
 - Replay, batch, ledger, projection, and Mathematician consumers load a defensive clone; final state is rebuilt once per target kind from the stored accepted events. The fixture loader SHA-256 is `22bca1c09b254ee5870f0ee992de7132ef65850184c4905008fde13f5abfa11b`; the JSON SHA-256 is `8943548aa5a047909473ff43aae04da8410002cdd3870c3399b617ce93feae4f`.
 - C/S/SUP identities, primary mechanisms, test counts, product semantics, and traceability coverage are unchanged.
 
+## CI execution repair round 2
+
+- Repair-1 HEAD `596cb20ba5001bb2764e18518cea1d98eb7c600c` had successful PR CI attempt 2 (`29573217753`), while push run `29573215219` attempts 1, 2, and 3 each completed `1512 / 1512` before `onTaskUpdate` timed out. Attempt-2 file evidence identified `application-service-information-and-later-actions` at `66,334ms` as the only project file above `60s`; rebuild was `56,466ms` and Mathematician `42,796ms`. No product assertion failed.
+- The final bounded infrastructure repair reuses the existing live capture support path. A module-private lazy cache builds the effective-Vortox V3 OPEN prefix once per project process through real `GameApplicationService` commands and returns only defensive clones. No fourth support path was added.
+- C06/C07/C08 each remain independently runnable. Each starts from a defensive clone of that real accepted OPEN prefix, continues deterministic event/batch IDs, and executes the formal `SubmitDreamerAction` command for `GOOD`, `NON_VORTOX_EVIL`, or `VORTOX`; every terminal capture still `toStrictEqual`s its immutable terminal fixture.
+- C06 explicitly verifies the prefix OPEN event was created by command `vortox-open-dreamer`, has V3 kind and OPEN status, and is the exact accepted history before the terminal target batch. This is supporting test infrastructure only and introduces no new rule, design, trust, or product authority.
+- Production, workflow, dependency, timeout, Vitest configuration, threshold, event, ledger, projection, receipt, and rule semantics remain byte-unchanged. C01-C53, S01-S39, SUP-001/002, 34 files, and 1512 tests remain unchanged.
+
 ## Validation state
 
 - C48 focused: `1 / 1 PASS`.
@@ -70,11 +78,12 @@ Both IDs resolve exactly once in `phase-3-slice-2b19a3a-test-traceability.md`. N
 - Ledger plus projection compatibility run: `131 / 131 PASS`.
 - Typecheck: `PASS`.
 - Full lint: `PASS`.
-- Full ordinary tests after CI repair: `34 files / 1512 tests PASS`; `33.22s`.
-- Fresh single-fork coverage run 1: `34 files / 1512 tests PASS`; `49.11s`; `87.44%` statements/lines, `82.46%` branches, `97.88%` functions; no worker RPC timeout.
-- Fresh single-fork coverage run 2: `34 files / 1512 tests PASS`; `47.20s`; `87.44%` statements/lines, `82.45%` branches, `97.88%` functions; no worker RPC timeout.
+- Full ordinary tests after final repair: `34 files / 1512 tests PASS`; `32.38s`.
+- Fresh single-fork coverage run 1: `34 files / 1512 tests PASS`; `47.96s`; `87.44%` statements/lines, `82.43%` branches, `97.81%` functions; no worker RPC timeout.
+- Fresh single-fork coverage run 2: `34 files / 1512 tests PASS`; `48.32s`; `87.44%` statements/lines, `82.43%` branches, `97.81%` functions; no worker RPC timeout.
+- Coverage changed-project durations remained below `60s`: application core `9.3-9.4s`, compatibility `12.1-12.3s`, role actions `15.2-15.5s`, and information/later-actions `40.2s` in the explicit observation run. Rebuild was `31.6-32.0s`; Mathematician was `26.9-27.4s`.
 - Diff/allowlist/baseline fixture/traceability schema/SUP resolution/reachability-layer/serialization/determinism/test-disable audits: `PASS`.
-- Exact repair-head push/PR CI and independent final review: `PENDING` until the repair commit is published.
+- Exact final-repair-head push/PR CI and independent final review: `PENDING` until the final repair commit is published. No Repair Round 3 exists.
 
 ## Explicitly unsupported
 
