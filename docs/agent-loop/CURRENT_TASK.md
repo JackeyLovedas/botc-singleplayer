@@ -1,5 +1,30 @@
 # Current Task
 
+## Phase 3 Slice 2B19A3A — HUMAN_BLOCKED / NO DESIGN ROUND 4 / UNACCEPTED
+
+- Authorization: `USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3`.
+- Original reslice authorization remains `USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY`.
+- Task type: `PRODUCT_SLICE`; current Slice: `2B19A3A`; current branch: `phase-3/dreamer-vortox-effective-source`; current PR: `null`.
+- Accepted docs-only base: `d5d007ff9b9b7140a3552d076a53330893a3201d`; exact archive CI `29553826536` is `SUCCESS`.
+- Scope label: `Effective Base Dreamer + Effective Vortox Forced-False Information`; this is not yet rule evidence or a frozen design.
+- Control display: `HUMAN_BLOCKED / STOP_NO_DESIGN_ROUND_4 / UNACCEPTED`.
+- Gate state: `status=HUMAN_BLOCKED`, `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`, `designRound=3/3`, `repairRound=0/2`, and `productRepairRoundConsumed=false`.
+- Design correction scope is exactly `REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY`.
+- Governance precheck: `docs/architecture/2B19A3A-go-no-go-under-governance-v1.md`, SHA-256 `ccb73944855c4eb110335462aba32865cb5dbd357db2733dfae6e2b1980426f9`, terminal `GO`. It authorizes fresh rule research only.
+- Fresh rule evidence: `docs/rules/evidence/2B19A3A.md`, SHA-256 `7c427b38240ef888e7b9851b5c8ce9a67377224722be01fa8f3154e5f731a7eb`, verdict and terminal `RULE_READY`, `ruleCoverageStatus=PARTIAL`, and `unresolvedConflicts=[]`. The only change from pre-correction SHA-256 `2da6b7c9d6fea31bbab05674ac3e6a45213257c7af314f66d47eb4a8436f84b6` is the engineering-responsibility marker.
+- Complete standalone Design Round 1: `docs/implementation/phase-3-slice-2b19a3a-design.md`, SHA-256 `fb9dc655ba718030dde3208f2a3f3fc51e9582fcef0f3b2db4cccbaabfa9c794`, unique terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`, C01-C30 and S01-S04 unique.
+- Independent Round 1 review: `docs/implementation/phase-3-slice-2b19a3a-design-review-round-1.md`, SHA-256 `3d7d4a2c18195bf7755753c96b82b11a86a5e868b9af3c4e66bbd8df24d4a892`, verdict and terminal `RULE_DESIGN_FIX_REQUIRED`.
+- Complete standalone Design Round 2: `docs/implementation/phase-3-slice-2b19a3a-design-round-2.md`, SHA-256 `a3059ff3d3bd9011df19660123139fbbd890a8da549a00c07ac09a65db04a172`, unique terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`, 53 unique C rows and 39 unique S rows. It freezes legal nine/ten evidence cardinality, the complete ADR R/T/primary-layer traceability, and exact closed production/test/harness/documentation allowlists including the four immutable acceptedMain-diff paths.
+- Independent Round 2 review: `docs/implementation/phase-3-slice-2b19a3a-design-review-round-2.md`, SHA-256 `51defb79e2df640f666fb4a702668a5652678a31b590526e79afddf38c3ad8d1`, verdict and terminal `RULE_DESIGN_FIX_REQUIRED`.
+- Complete standalone Design Round 3: `docs/implementation/phase-3-slice-2b19a3a-design-round-3.md`, SHA-256 `ff191fe9b0877b9fc613fb0f98341fa757a19019918f83b875d564d5e8a91b57`, unique terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3`, 53 unique C rows and 39 unique S rows. Relative to Round 2, only C27-C32 and S37 trace rows changed.
+- Independent Round 3 review: `docs/implementation/phase-3-slice-2b19a3a-design-review-round-3.md`, SHA-256 `fb98868d6953dd8a686f18e75532a19a519e599273496c5e2947cb181133ec69`, verdict and terminal `RULE_DESIGN_FIX_REQUIRED`.
+- Remaining blockers are exactly `C27_C32_PRIMARY_LAYER_MECHANISM_MISMATCH`, `C17_FAILURE_PRIMARY_ACCEPTED_STREAM_MISCLASSIFICATION`, `ACCEPTED_PREFIX_SUPPORTING_AUTHORITY_NOT_UNIQUELY_TRACEABLE`, and `ROUND3_CORRECTION_AUTHORITY_METADATA_INCOMPLETE`.
+- Root-cause classification is `GOVERNANCE_PRIMARY_LAYER_VOCABULARY_INCOMPLETE`.
+- This is not a Vortox behavior, provenance, event, ledger, external-rule conflict, or product-reslice finding. 2B19A3A implementation is paused.
+- Required next action: `Engineering Governance Traceability V1.1`.
+- Round 2 and Round 3 design/review history is immutable. No Round 4 may be inferred. No 2B19A3A production edit, test edit, implementation commit, push, PR, or accepted tag exists.
+- `phase2CStarted=false`; 2B19A3B, 2B19A4, and 2B19B have not started.
+
 ## Phase 3 Slice 2B19A3 — RESLICE_REQUIRED / UNACCEPTED
 
 - Reslice authorization: `USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY`.
@@ -20,6 +45,7 @@
 - `slice2B19A4Started=false`, `slice2B19BStarted=false`, and `phase2CStarted=false`.
 - No 2B19A3 production edit, test edit, PR, accepted tag, implementation commit, or push exists. Slice 2B19A3 is unaccepted.
 - No Design Round 3 is authorized or permitted. The next work is the separately gated `2B19A3A` reslice; this archive step does not start it.
+- Archive commit: `d5d007ff9b9b7140a3552d076a53330893a3201d`; exact archive CI: `29553826536` `SUCCESS`.
 
 ## Phase 3 Slice 2B19A2 — COMPLETED / ACCEPTED
 

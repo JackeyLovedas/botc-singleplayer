@@ -1,14 +1,15 @@
 {
-  "status": "RESLICE_REQUIRED",
+  "status": "HUMAN_BLOCKED",
   "taskType": "PRODUCT_SLICE",
   "productRepairRoundConsumed": false,
   "currentPR": null,
   "currentPRUrl": null,
-  "currentBranch": "phase-3/dreamer-v2-base-vortox-information",
-  "currentSlice": null,
+  "currentBranch": "phase-3/dreamer-vortox-effective-source",
+  "currentSlice": "2B19A3A",
   "slice2B19A1Started": false,
   "slice2B19A2Started": false,
   "slice2B19A3Started": true,
+  "slice2B19A3AStarted": true,
   "slice2B19A4Started": false,
   "slice2B19BStarted": false,
   "phase2CStarted": false,
@@ -53,16 +54,18 @@
     "remainingBlockers": []
   },
   "reviewedHead": null,
-  "currentReviewHeadAuthority": "No 2B19A3 review exists. Accepted 2B19A2 final-review authority remains archived verbatim in docs/reviews/pr-34-code-review-final.md and docs/reviews/pr-34-rule-review-final.md.",
-  "exactHeadCIAuthority": "Accepted base and 2B19A2 docs-only closeout HEAD 138748d8211b961616f414d6bf17911fd93f4265 passed exact CI 29505429489. Slice 2B19A3 has no product HEAD, PR, or CI authority yet.",
+  "currentReviewHeadAuthority": "Independent 2B19A3A Classification-Only Rule Design Review Round 3 is materialized at docs/implementation/phase-3-slice-2b19a3a-design-review-round-3.md with SHA-256 fb98868d6953dd8a686f18e75532a19a519e599273496c5e2947cb181133ec69 and verdict RULE_DESIGN_FIX_REQUIRED. No product or final review exists.",
+  "exactHeadCIAuthority": "Accepted docs-only main d5d007ff9b9b7140a3552d076a53330893a3201d passed exact archive CI 29553826536. Slice 2B19A3A has no product HEAD, PR, or CI authority yet.",
   "currentFeatureHead": null,
   "repairRound": 0,
-  "designRound": 2,
-  "maxDesignRounds": 2,
+  "designRound": 3,
+  "maxDesignRounds": 3,
   "userContinuationAuthorization": "USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE",
-  "rescopeAuthorization": null,
+  "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
   "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
-  "authorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
+  "authorization": "USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3",
+  "classificationOnlyDesignCorrectionAuthorization": "USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3",
+  "designCorrectionScope": "REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY",
   "resliceAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
   "testInfrastructurePrerequisite": {
     "status": "ACCEPTED",
@@ -78,26 +81,42 @@
     "featureMergeCommit": "72a7883248f66d53e65102c26788d73b93b56651",
     "ruleSemanticsChanged": false
   },
-  "scopeMode": "BASE_DREAMER_VORTOX_FORCED_FALSE_INFORMATION",
-  "sliceCoverage": "PARTIAL / VORTOX_FORCED_FALSE_ONLY",
+  "scopeMode": "EFFECTIVE_BASE_DREAMER_EFFECTIVE_VORTOX_FORCED_FALSE_INFORMATION",
+  "sliceCoverage": "PARTIAL / EFFECTIVE_SOURCE_VORTOX_FALSE_ONLY",
   "dreamerRoleCoverage": "PARTIAL",
   "governancePrecheck": "GO",
-  "governancePrecheckPath": "docs/architecture/2B19A3-go-no-go-under-governance-v1.md",
-  "governancePrecheckSha256": "2950b08811e97eddb9b6457ce1a453297df3bd55787c7df0007618e3e80a0402",
+  "governancePrecheckPath": "docs/architecture/2B19A3A-go-no-go-under-governance-v1.md",
+  "governancePrecheckSha256": "ccb73944855c4eb110335462aba32865cb5dbd357db2733dfae6e2b1980426f9",
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
   "designRound3_2Scope": null,
   "maxSlices": 1,
   "maxRepairRounds": 2,
   "candidateRole": "dreamer",
-  "candidateScope": "BASE_DREAMER_VORTOX_FORCED_FALSE_INFORMATION",
-  "currentDesignPath": "docs/implementation/phase-3-slice-2b19a3-design-round-2.md",
-  "currentDesignHash": "c0bffc0f420bc769341a08ec9d42f7c178f6a6078797e0725aa5ba8e22013cae",
-  "currentDesignStatus": "HUMAN_BLOCKED_RULE_DESIGN_FIX_REQUIRED_ROUND_2",
-  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b19a3-design-review-round-2.md",
-  "currentDesignReviewHash": "3061fffcaf59a1ccdebf7214b2d819eb474b8f57fcfdd2b30e2ac56a111b89e1",
+  "candidateScope": "EFFECTIVE_BASE_DREAMER_EFFECTIVE_VORTOX_FORCED_FALSE_INFORMATION",
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b19a3a-design-round-3.md",
+  "currentDesignHash": "ff191fe9b0877b9fc613fb0f98341fa757a19019918f83b875d564d5e8a91b57",
+  "currentDesignStatus": "RULE_DESIGN_FIX_REQUIRED",
+  "currentDesignTerminal": "RULE_DESIGN_FIX_REQUIRED",
+  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b19a3a-design-review-round-3.md",
+  "currentDesignReviewHash": "fb98868d6953dd8a686f18e75532a19a519e599273496c5e2947cb181133ec69",
   "currentDesignReviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
   "ruleDesignVerdict": "RULE_DESIGN_FIX_REQUIRED",
+  "rootCauseClassification": "GOVERNANCE_PRIMARY_LAYER_VOCABULARY_INCOMPLETE",
+  "knownBlockers": [
+    "C27_C32_PRIMARY_LAYER_MECHANISM_MISMATCH",
+    "C17_FAILURE_PRIMARY_ACCEPTED_STREAM_MISCLASSIFICATION",
+    "ACCEPTED_PREFIX_SUPPORTING_AUTHORITY_NOT_UNIQUELY_TRACEABLE",
+    "ROUND3_CORRECTION_AUTHORITY_METADATA_INCOMPLETE"
+  ],
+  "implementationPaused": true,
+  "vortoxBehaviorConflict": false,
+  "provenanceConflict": false,
+  "eventSchemaConflict": false,
+  "ledgerSchemaConflict": false,
+  "ruleConflict": false,
+  "productResliceRequired": false,
+  "nextGovernanceTask": "Engineering Governance Traceability V1.1",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",
@@ -173,11 +192,11 @@
   "ruleReady": true,
   "ruleDesignPass": false,
   "implementationAuthorized": false,
-  "implementationStatus": "RESLICE_REQUIRED",
+  "implementationStatus": "STOP_NO_DESIGN_ROUND_4",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
-  "implementationBranch": "phase-3/dreamer-v2-base-vortox-information",
+  "implementationBranch": "phase-3/dreamer-vortox-effective-source",
   "localImplementationValidation": {
     "focusedTests": "2B19A2 frozen C01-C31 plus S01-S02 authority matrix: 10 files / 662 tests passed",
     "fullTests": "34 files / 1457 tests passed",
@@ -497,8 +516,8 @@
     "round3Status": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_3"
   },
   "ruleResearchVerdict": "RULE_READY",
-  "ruleEvidencePath": "docs/rules/evidence/2B19A3.md",
-  "ruleEvidenceSha256": "798c5d2edeb7053e9cd720937e15785492ce214b87f7975f9a66cc9b056947c6",
+  "ruleEvidencePath": "docs/rules/evidence/2B19A3A.md",
+  "ruleEvidenceSha256": "7c427b38240ef888e7b9851b5c8ce9a67377224722be01fa8f3154e5f731a7eb",
   "ruleSemanticsChanged": false,
   "unresolvedConflicts": [],
   "closedRound2BehaviorBlockers": [
@@ -507,10 +526,36 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "STORED_VORTOX_APPLICABILITY_NEGATIVE_PROVENANCE_NOT_CLOSED",
-    "LEDGER_EVIDENCE_CLAIMS_EXCEED_EXISTING_CLOSED_SCHEMA",
-    "REACHABILITY_TRUST_AND_PRIMARY_LAYER_CLASSIFICATION_INCORRECT"
+    "C27_C32_PRIMARY_LAYER_MECHANISM_MISMATCH",
+    "C17_FAILURE_PRIMARY_ACCEPTED_STREAM_MISCLASSIFICATION",
+    "ACCEPTED_PREFIX_SUPPORTING_AUTHORITY_NOT_UNIQUELY_TRACEABLE",
+    "ROUND3_CORRECTION_AUTHORITY_METADATA_INCOMPLETE"
   ],
+  "slice2B19A3ARound1Design": {
+    "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
+    "sha256": "fb9dc655ba718030dde3208f2a3f3fc51e9582fcef0f3b2db4cccbaabfa9c794",
+    "terminal": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_1"
+  },
+  "slice2B19A3ARound1DesignReview": {
+    "path": "docs/implementation/phase-3-slice-2b19a3a-design-review-round-1.md",
+    "sha256": "3d7d4a2c18195bf7755753c96b82b11a86a5e868b9af3c4e66bbd8df24d4a892",
+    "verdict": "RULE_DESIGN_FIX_REQUIRED",
+    "remainingBlockers": [
+      "Replace the impossible unconditional ten-entry Dreamer V3 evidence contract with an exact legal nine/ten-entry contract that handles target=current Vortox without changing evidence identity semantics.",
+      "Supply the ADR-complete per-claim reachability/trust/primary-layer traceability matrix and correct the post-delivery character-change and compound-layer classifications.",
+      "Close the test/support path allowlist so `S04` can enforce the frozen diff scope exactly."
+    ]
+  },
+  "slice2B19A3ARound2DesignReview": {
+    "path": "docs/implementation/phase-3-slice-2b19a3a-design-review-round-2.md",
+    "sha256": "51defb79e2df640f666fb4a702668a5652678a31b590526e79afddf38c3ad8d1",
+    "verdict": "RULE_DESIGN_FIX_REQUIRED",
+    "downstreamControllerStatus": "HUMAN_BLOCKED",
+    "requiredNextAction": "RESLICE_REQUIRED",
+    "remainingBlockers": [
+      "R3_ACCEPTED_STREAM_PRIMARY_LAYER_MISCLASSIFICATION_C27_C32"
+    ]
+  },
   "slice2B19A3Archive": {
     "status": "RESLICE_REQUIRED",
     "accepted": false,
@@ -524,6 +569,13 @@
     "designRound": 2,
     "maxDesignRounds": 2,
     "designRound3Authorized": false,
+    "governancePath": "docs/architecture/2B19A3-go-no-go-under-governance-v1.md",
+    "governanceSha256": "2950b08811e97eddb9b6457ce1a453297df3bd55787c7df0007618e3e80a0402",
+    "ruleEvidencePath": "docs/rules/evidence/2B19A3.md",
+    "ruleEvidenceSha256": "798c5d2edeb7053e9cd720937e15785492ce214b87f7975f9a66cc9b056947c6",
+    "archiveCommit": "d5d007ff9b9b7140a3552d076a53330893a3201d",
+    "archiveCI": 29553826536,
+    "archiveCIStatus": "SUCCESS",
     "nextWork": "2B19A3A reslice"
   },
   "ruleCoverageStatus": "PARTIAL",
@@ -1239,8 +1291,9 @@
     "dayFeatureContinuationStarted": false,
     "phase2CStarted": false
   },
-  "startedAt": "2026-07-17T10:01:23+08:00",
-  "lastAction": "Archived failed Slice 2B19A3 as RESLICE_REQUIRED under USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY. No production code, tests, PR, accepted tag, or Round 3 exists; the next work is the separately gated 2B19A3A reslice.",
-  "lastError": "RESLICE_REQUIRED: the two authorized 2B19A3 design rounds ended with three unresolved architecture and classification blockers.",
-  "nextAction": "Commit the 2B19A3 docs/control history only. Do not begin 2B19A3A, switch branches, merge, push, or modify production/tests in this archive step."
+  "startedAt": "2026-07-17T12:08:49.3515000+08:00",
+  "lastAction": "Classified the terminal 2B19A3A Round 3 RULE_DESIGN_FIX_REQUIRED result as GOVERNANCE_PRIMARY_LAYER_VOCABULARY_INCOMPLETE, preserved all four known blockers, and paused 2B19A3A implementation. This is not a Vortox behavior, provenance, event, ledger, rule-conflict, or product-reslice finding.",
+  "lastError": null,
+  "requiredNextAction": "ENGINEERING_GOVERNANCE_TRACEABILITY_V1_1",
+  "nextAction": "Proceed only to Engineering Governance Traceability V1.1 under separate governance authority. Keep 2B19A3A implementation paused; do not infer Design Round 4, product reslice, production/test edits, push, PR, merge, tag, 2B19A3B, 2B19B, or Phase 2C."
 }

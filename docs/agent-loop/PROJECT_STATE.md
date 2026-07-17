@@ -1,5 +1,24 @@
 # Project State
 
+## Active controlled Slice — 2B19A3A HUMAN_BLOCKED / NO DESIGN ROUND 4 / UNACCEPTED
+
+- Control status is `HUMAN_BLOCKED / STOP_NO_DESIGN_ROUND_4 / UNACCEPTED` on `phase-3/dreamer-vortox-effective-source` from accepted docs-only main `d5d007ff9b9b7140a3552d076a53330893a3201d`; exact archive CI `29553826536` is `SUCCESS` and current PR is `null`.
+- Authorization is `USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3`; original reslice authorization remains `USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY`; scope label is `Effective Base Dreamer + Effective Vortox Forced-False Information`.
+- Active gates are `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`, `designRound=3/3`, and `repairRound=0/2`; `productRepairRoundConsumed=false`.
+- Design correction scope is exactly `REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY`.
+- Governance precheck `docs/architecture/2B19A3A-go-no-go-under-governance-v1.md`, SHA-256 `ccb73944855c4eb110335462aba32865cb5dbd357db2733dfae6e2b1980426f9`, returned terminal `GO`; it is not a rule or design pass.
+- Fresh rule evidence `docs/rules/evidence/2B19A3A.md`, SHA-256 `7c427b38240ef888e7b9851b5c8ce9a67377224722be01fa8f3154e5f731a7eb`, returned `RULE_READY`, `PARTIAL`, and no conflict. Its only change from pre-correction SHA-256 `2da6b7c9d6fea31bbab05674ac3e6a45213257c7af314f66d47eb4a8436f84b6` is the engineering-responsibility marker.
+- Complete standalone Design Round 1 `docs/implementation/phase-3-slice-2b19a3a-design.md`, SHA-256 `fb9dc655ba718030dde3208f2a3f3fc51e9582fcef0f3b2db4cccbaabfa9c794`, is ready for independent review; implementation remains unauthorized.
+- Independent Round 1 review `docs/implementation/phase-3-slice-2b19a3a-design-review-round-1.md`, SHA-256 `3d7d4a2c18195bf7755753c96b82b11a86a5e868b9af3c4e66bbd8df24d4a892`, returned `RULE_DESIGN_FIX_REQUIRED`.
+- Complete standalone Design Round 2 `docs/implementation/phase-3-slice-2b19a3a-design-round-2.md`, SHA-256 `a3059ff3d3bd9011df19660123139fbbd890a8da549a00c07ac09a65db04a172`, has unique terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`, 53 unique C rows, 39 unique S rows, legal conditional nine/ten ledger cardinality, complete per-claim R/T/primary-layer traceability, and closed exact production/test/harness/documentation allowlists.
+- Independent Round 2 review `docs/implementation/phase-3-slice-2b19a3a-design-review-round-2.md`, SHA-256 `51defb79e2df640f666fb4a702668a5652678a31b590526e79afddf38c3ad8d1`, returned `RULE_DESIGN_FIX_REQUIRED` and exhausted the authorized `2/2` design budget.
+- Complete standalone Design Round 3 `docs/implementation/phase-3-slice-2b19a3a-design-round-3.md`, SHA-256 `ff191fe9b0877b9fc613fb0f98341fa757a19019918f83b875d564d5e8a91b57`, has unique terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_3`, 53 unique C rows, and 39 unique S rows; only C27-C32 and S37 trace rows differ from immutable Round 2.
+- Independent Round 3 review `docs/implementation/phase-3-slice-2b19a3a-design-review-round-3.md`, SHA-256 `fb98868d6953dd8a686f18e75532a19a519e599273496c5e2947cb181133ec69`, returned `RULE_DESIGN_FIX_REQUIRED`.
+- Remaining blockers are exactly `C27_C32_PRIMARY_LAYER_MECHANISM_MISMATCH`, `C17_FAILURE_PRIMARY_ACCEPTED_STREAM_MISCLASSIFICATION`, `ACCEPTED_PREFIX_SUPPORTING_AUTHORITY_NOT_UNIQUELY_TRACEABLE`, and `ROUND3_CORRECTION_AUTHORITY_METADATA_INCOMPLETE`.
+- Root-cause classification is `GOVERNANCE_PRIMARY_LAYER_VOCABULARY_INCOMPLETE`. This is not a Vortox behavior, provenance, event, ledger, external-rule conflict, or product-reslice finding. 2B19A3A implementation is paused; the next task is `Engineering Governance Traceability V1.1`.
+- Round 2 and Round 3 design/review history is immutable. No Round 4 may be inferred.
+- No production, test, PR, implementation commit, push, tag, or implementation activity is authorized or exists at this checkpoint; `phase2CStarted=false`. 2B19A3B and 2B19B have not started.
+
 ## Archived failed Slice — 2B19A3
 
 - Control status is `RESLICE_REQUIRED / UNACCEPTED` on `phase-3/dreamer-v2-base-vortox-information` from accepted base `138748d8211b961616f414d6bf17911fd93f4265`; current Slice and PR are both `null`.
@@ -14,6 +33,7 @@
 - Status is `RESLICE_REQUIRED`; the three exact blockers are: `STORED_VORTOX_APPLICABILITY_NEGATIVE_PROVENANCE_NOT_CLOSED`; `LEDGER_EVIDENCE_CLAIMS_EXCEED_EXISTING_CLOSED_SCHEMA`; `REACHABILITY_TRUST_AND_PRIMARY_LAYER_CLASSIFICATION_INCORRECT`.
 - Both authorized design rounds are consumed. No Design Round 3 is authorized or recorded; the next work is the separately gated `2B19A3A` reslice.
 - No 2B19A3 production edit, test edit, PR, accepted tag, implementation commit, or push exists; 2B19A3 is not accepted.
+- Archive commit `d5d007ff9b9b7140a3552d076a53330893a3201d` passed exact archive CI `29553826536`; no Design Round 3 exists.
 - Slice 2B19A2 remains `COMPLETED / ACCEPTED`; its exact docs-only closeout HEAD `138748d8211b961616f414d6bf17911fd93f4265` passed live CI `29505429489`, which supersedes stale historical `PENDING` wording.
 - Slice 2B19A4, Slice 2B19B, and Phase 2C have not started. Dreamer role coverage remains `PARTIAL`.
 
@@ -24,7 +44,7 @@
 - Recovery main is `8b390b50f5d314b34535bc7cf9fad36ece76f85e`; exact main CI `29484611863` is `SUCCESS`.
 - PR [#34](https://github.com/JackeyLovedas/botc-singleplayer/pull/34) merged at `55738229962173b0f0772cff1f69d1453c14af1d`; frozen feature HEAD is `f5d5fe8b2d270fe760644e374e722f4aa1dd7dfe`; accepted tag is `phase-3-slice-2b19a2-dreamer-v2-base-normal-information`.
 - At acceptance, the Slice gates were `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=false`, `designRound=2/2`, and `repairRound=3/3`; no Repair Round 4 exists.
-- Slice 2B19A2 consumed its product repair authorization and is no longer active. Slice 2B19A3 is now the gated current Slice; 2B19A4, 2B19B, and Phase 2C have not started.
+- Slice 2B19A2 consumed its product repair authorization and is no longer active. Slice 2B19A3A is now the gated current Slice; 2B19A3B, 2B19A4, 2B19B, and Phase 2C have not started.
 - Governance precheck is `GO`: `docs/architecture/2B19A2-go-no-go-under-governance-v1.md`, SHA-256 `abc0a75b0b8267542d2e1a3bd0bbaeaad8ee9b11052c442ec38aee9558df4b1f`.
 - Rule research is `RULE_READY`: `docs/rules/evidence/2B19A2.md`, SHA-256 `e24038e7399cb7311204b6b3f001623b7ab0323034af61ee3bb64aa8e9a3c829`, `ruleCoverageStatus=PARTIAL`, Slice coverage `PARTIAL / NORMAL_INFORMATION_ONLY`, Dreamer role coverage `PARTIAL`, and `unresolvedConflicts=[]`.
 - Round 1 frozen design is `docs/implementation/phase-3-slice-2b19a2-design.md`, SHA-256 `fe7187b9b027c4579a21d3a0ccf2fd77a3625dfbc0f95ea638ea926c5982cfe0`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`, and remains immutable history.
@@ -55,9 +75,9 @@
 ## Phase
 
 - Phase 3 controlled vertical slices.
-- Current control state after archiving is `RESLICE_REQUIRED / UNACCEPTED`; current Slice and PR are `null`, the unchanged archive branch is `phase-3/dreamer-v2-base-vortox-information`, and `implementationAuthorized=false`.
-- The failed Slice consumed `designRound=2/2`, used no product repair round, and has no authorized Design Round 3.
-- Governance was `GO` and rule research remains `RULE_READY`, but both design reviews returned `RULE_DESIGN_FIX_REQUIRED`; the next work is `2B19A3A` and has not started in this archive step.
+- Current control state is `RUNNING / PRODUCT_SLICE`; current Slice is `2B19A3A`, current PR is `null`, branch is `phase-3/dreamer-vortox-effective-source`, and `implementationAuthorized=false`.
+- Current limits are `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=2`; design and repair rounds are both `0`, and no product repair round is consumed.
+- 2B19A3A governance returned `GO`, fresh rule research returned `RULE_READY`, and Round 1 review returned `RULE_DESIGN_FIX_REQUIRED`; final authorized Design Round 2 is pending. Failed 2B19A3 remains immutable archived history with no Round 3.
 - Dreamer role coverage remains `PARTIAL`; accepted Slice 2B19A2 and all earlier accepted history remain unchanged.
 - The accepted 2B19T tenure foundation and accepted single-fork coverage infrastructure are prerequisites/history only and remain unchanged.
 
