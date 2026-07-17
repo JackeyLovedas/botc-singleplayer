@@ -1,6 +1,19 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3A — HUMAN_BLOCKED / NO DESIGN ROUND 4 / UNACCEPTED
+## Phase 3 Slice 2B19A3A — READY_FOR_IMPLEMENTATION / UNACCEPTED
+
+- Current status: `READY_FOR_IMPLEMENTATION`; task type: `PRODUCT_SLICE`; current Slice: `2B19A3A`; branch: `phase-3/dreamer-vortox-effective-source`; current PR: `null`.
+- Authorization: `USER_AUTHORIZED_GOVERNANCE_TRACEABILITY_V1_1_APPLICATION_COMMAND_LAYER`.
+- Gate state: `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, `designRound=3/3`, `repairRound=0/2`, `remainingBlockers=[PENDING_IMPLEMENTATION]`, and `phase2CStarted=false`.
+- Accepted Governance Traceability V1.1: PR `#35`, merge SHA `8d70147264c3cc839aa369257ea47ba4cf4b5e10`, tag `governance-application-command-integration-layer-v1-1`, exact merge-head CI `29565845242 / SUCCESS`.
+- Governance closeout main: `9c4d009f32d4d24d0e072168717f34795b3c322c`; exact closeout CI `29567136355 / SUCCESS`.
+- Immutable product authority remains `docs/implementation/phase-3-slice-2b19a3a-design-round-3.md`, SHA-256 `ff191fe9b0877b9fc613fb0f98341fa757a19019918f83b875d564d5e8a91b57`.
+- Independent release review: `docs/implementation/phase-3-slice-2b19a3a-design-release-review-under-governance-v1-1.md`, SHA-256 `cc5fb0b1443cd4a4b08ccedacfa038d8f51a2a358e22df49838ea01fe9b3ad6c`, verdict and terminal `DESIGN_RELEASE_PASS`.
+- The release review closes only the Governance V1.1 classification blockers. Behavior, rules, API, payload, event, provenance, ledger, projection, receipt, allowlists, size, and coverage contracts are unchanged.
+- Round 1, Round 2, and Round 3 designs and reviews remain immutable failed history. No Design Round 4 was created or inferred.
+- This control update does not start implementation, create a product commit, push a feature branch, or open a product PR. 2B19A3B, 2B19B, and Phase 2C remain unstarted.
+
+## Historical 2B19A3A Round 3 Gate Failure — superseded only by V1.1 release review
 
 - Authorization: `USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3`.
 - Original reslice authorization remains `USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY`.
