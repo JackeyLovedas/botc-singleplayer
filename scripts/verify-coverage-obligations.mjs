@@ -1,0 +1,449 @@
+import { createHash } from "node:crypto";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
+import process from "node:process";
+
+const APPROVED_COVERAGE_PROFILES = Object.freeze([
+  Object.freeze({
+    id: "accepted-main-9c4d009-single-process-v1",
+    sourceHead: "9c4d009f32d4d24d0e072168717f34795b3c322c",
+    sourceKind: "SINGLE_PROCESS_BASELINE",
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 61,
+        sha256: "b8076fca1bce06a811d10d189d3bf89f6caefe5fb81de270d1e91dabc1565920"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3157,
+        sha256: "057ceb478f9359c70c6d654d615369e0225b1d440fc2ebb8626098df46a4bcda"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "0566362f681edfe7d13ccea297fe63b53f92de0a7a7b223d4224459d96c783a6"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3157,
+        sha256: "4cbb5823a6b2261c4b014d1e959cbf57b810a47903d08ffd16d6a3c4d5d78ab1"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1759,
+        sha256: "5169dda9f7bf457fe4676e23d6c1650d8de24adc3fe7d2958145d966532435bb"
+      })
+    })
+  }),
+  Object.freeze({
+    id: "frozen-pr36-035f037-single-process-v1",
+    sourceHead: "035f0377bce97b8416f74f658bd6e1f8adbbac1a",
+    sourceKind: "SINGLE_PROCESS_BASELINE",
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3176,
+        sha256: "ff94c61bd3a98324ec5202244bee5f9e7589f779dce02405bc8ea1bd255b3355"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "0d16a1e243523c4dbd2f9408acffffec7c77d3043ed09187da80f22085f262dd"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3176,
+        sha256: "c20b9dc8624c3320cbd28212e4bba1a6af4b8b682408cf64995cd97a7595c1e2"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1778,
+        sha256: "cb2a134aa8ee0158cc3cea596edaade621a148e67a949f71bf0a6cdf01eba93f"
+      })
+    })
+  })
+]);
+
+function parseArguments(argv) {
+  if (argv.length === 2 && argv[0] === "--validate-candidate") {
+    return { baseline: null, candidate: argv[1] };
+  }
+  if (argv.length === 2 && !argv[0].startsWith("--") && !argv[1].startsWith("--")) {
+    return { baseline: argv[0], candidate: argv[1] };
+  }
+  throw new Error(
+    "Usage: node scripts/verify-coverage-obligations.mjs <baseline-coverage-final.json> <candidate-coverage-final.json>\n" +
+      "   or: node scripts/verify-coverage-obligations.mjs --validate-candidate <coverage-final.json>"
+  );
+}
+
+function readCoverageMap(file) {
+  const absolute = path.resolve(file);
+  if (!existsSync(absolute)) {
+    throw new Error(`Coverage map does not exist: ${absolute}`);
+  }
+  const parsed = JSON.parse(readFileSync(absolute, "utf8"));
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`Coverage map is not an object: ${absolute}`);
+  }
+  if (Object.keys(parsed).length === 0) {
+    throw new Error(`Coverage map is empty: ${absolute}`);
+  }
+  return parsed;
+}
+
+function canonicalSourceFile(file) {
+  const normalized = file.replaceAll("\\", "/");
+  const packageMarker = "/packages/";
+  const markerIndex = normalized.lastIndexOf(packageMarker);
+  if (markerIndex >= 0) {
+    return normalized.slice(markerIndex + 1);
+  }
+  const relative = path.relative(process.cwd(), path.resolve(file)).split(path.sep).join("/");
+  if (relative === ".." || relative.startsWith("../")) {
+    throw new Error(`Coverage source file is outside the repository and packages tree: ${file}`);
+  }
+  return relative;
+}
+
+function assertCoverageEntryShape(file, entry) {
+  if (
+    entry === null ||
+    typeof entry !== "object" ||
+    entry.statementMap === null ||
+    typeof entry.statementMap !== "object" ||
+    entry.fnMap === null ||
+    typeof entry.fnMap !== "object" ||
+    entry.branchMap === null ||
+    typeof entry.branchMap !== "object" ||
+    entry.s === null ||
+    typeof entry.s !== "object" ||
+    entry.f === null ||
+    typeof entry.f !== "object" ||
+    entry.b === null ||
+    typeof entry.b !== "object"
+  ) {
+    throw new Error(`Coverage entry has an invalid shape: ${file}`);
+  }
+}
+
+function canonicalPosition(position) {
+  if (
+    position === null ||
+    typeof position !== "object" ||
+    !Number.isInteger(position.line) ||
+    !Number.isInteger(position.column)
+  ) {
+    throw new Error("Coverage location contains an invalid position");
+  }
+  return `${position.line}:${position.column}`;
+}
+
+function canonicalLocation(location) {
+  if (location === null || typeof location !== "object") {
+    throw new Error("Coverage map contains an invalid location");
+  }
+  return `${canonicalPosition(location.start)}-${canonicalPosition(location.end)}`;
+}
+
+function numericHit(value, context) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new Error(`Coverage map contains an invalid hit count: ${context}`);
+  }
+  return value;
+}
+
+function summarizeCoverageMap(map) {
+  const sourceFiles = new Set();
+  const statements = new Set();
+  const functions = new Set();
+  const lines = new Set();
+  const branchArms = new Set();
+
+  for (const [rawFile, entry] of Object.entries(map)) {
+    const file = canonicalSourceFile(rawFile);
+    if (sourceFiles.has(file)) {
+      throw new Error(`Coverage map contains duplicate canonical source file: ${file}`);
+    }
+    sourceFiles.add(file);
+    assertCoverageEntryShape(file, entry);
+
+    const lineHits = new Map();
+    for (const [statementId, location] of Object.entries(entry.statementMap)) {
+      if (!Object.hasOwn(entry.s, statementId)) {
+        throw new Error(`Statement ${statementId} is missing its hit count in ${file}`);
+      }
+      const hits = numericHit(entry.s[statementId], `${file} statement ${statementId}`);
+      const locationIdentity = canonicalLocation(location);
+      if (hits === 0) {
+        statements.add(`${file}|${locationIdentity}`);
+      }
+      const line = location.start.line;
+      lineHits.set(line, Math.max(lineHits.get(line) ?? 0, hits));
+    }
+    for (const [line, hits] of lineHits) {
+      if (hits === 0) {
+        lines.add(`${file}|${line}`);
+      }
+    }
+
+    for (const [functionId, definition] of Object.entries(entry.fnMap)) {
+      if (!Object.hasOwn(entry.f, functionId)) {
+        throw new Error(`Function ${functionId} is missing its hit count in ${file}`);
+      }
+      const hits = numericHit(entry.f[functionId], `${file} function ${functionId}`);
+      if (
+        definition === null ||
+        typeof definition !== "object" ||
+        typeof definition.name !== "string"
+      ) {
+        throw new Error(`Function ${functionId} has an invalid definition in ${file}`);
+      }
+      if (hits === 0) {
+        functions.add(
+          `${file}|${JSON.stringify(definition.name)}|decl:${canonicalLocation(definition.decl)}|loc:${canonicalLocation(definition.loc)}`
+        );
+      }
+    }
+
+    for (const [branchId, definition] of Object.entries(entry.branchMap)) {
+      const counts = entry.b[branchId];
+      if (
+        definition === null ||
+        typeof definition !== "object" ||
+        typeof definition.type !== "string" ||
+        !Array.isArray(counts) ||
+        !Array.isArray(definition.locations)
+      ) {
+        throw new Error(`Branch ${branchId} has an invalid definition or count array in ${file}`);
+      }
+      if (counts.length !== definition.locations.length) {
+        throw new Error(`Branch ${branchId} count/location length mismatch in ${file}`);
+      }
+      const branchLocation = canonicalLocation(definition.loc);
+      for (let armIndex = 0; armIndex < counts.length; armIndex += 1) {
+        const hits = numericHit(counts[armIndex], `${file} branch ${branchId} arm ${armIndex}`);
+        if (hits === 0) {
+          const identity = `${file}|type:${JSON.stringify(definition.type)}|branch:${branchLocation}|arm:${armIndex}|location:${canonicalLocation(definition.locations[armIndex])}`;
+          if (branchArms.has(identity)) {
+            throw new Error(
+              `Coverage map contains duplicate canonical uncovered branch-arm identity in ${file}: ${identity}`
+            );
+          }
+          branchArms.add(identity);
+        }
+      }
+    }
+  }
+
+  return { sourceFiles, statements, functions, lines, branchArms };
+}
+
+function listProductionTypeScriptFiles(directory) {
+  const files = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...listProductionTypeScriptFiles(absolute));
+    } else if (
+      entry.isFile() &&
+      entry.name.endsWith(".ts") &&
+      !entry.name.endsWith(".test.ts") &&
+      !entry.name.endsWith(".d.ts")
+    ) {
+      files.push(absolute);
+    }
+  }
+  return files;
+}
+
+function validateWorkspaceSourcePackages(summary) {
+  const packagesRoot = path.resolve("packages");
+  if (!existsSync(packagesRoot) || !statSync(packagesRoot).isDirectory()) {
+    throw new Error(`Workspace packages directory does not exist: ${packagesRoot}`);
+  }
+  const coveredPackages = new Set(
+    [...summary.sourceFiles]
+      .filter((file) => file.startsWith("packages/"))
+      .map((file) => file.split("/").slice(0, 2).join("/"))
+  );
+  const requiredPackages = [];
+  for (const packageEntry of readdirSync(packagesRoot, { withFileTypes: true })) {
+    if (!packageEntry.isDirectory()) {
+      continue;
+    }
+    const sourceDirectory = path.join(packagesRoot, packageEntry.name, "src");
+    if (
+      existsSync(sourceDirectory) &&
+      statSync(sourceDirectory).isDirectory() &&
+      listProductionTypeScriptFiles(sourceDirectory).length > 0
+    ) {
+      requiredPackages.push(`packages/${packageEntry.name}`);
+    }
+  }
+  const missingPackages = requiredPackages.filter((packageName) => !coveredPackages.has(packageName));
+  if (missingPackages.length > 0) {
+    throw new Error(`Coverage map is missing source packages: ${missingPackages.join(", ")}`);
+  }
+  return requiredPackages.sort();
+}
+
+function hashSet(set) {
+  return createHash("sha256").update([...set].sort().join("\n"), "utf8").digest("hex");
+}
+
+function setDifference(left, right) {
+  return [...left].filter((value) => !right.has(value)).sort();
+}
+
+function comparisonFor(name, baseline, candidate) {
+  const added = setDifference(candidate, baseline);
+  const removed = setDifference(baseline, candidate);
+  return {
+    name,
+    baseline: baseline.size,
+    candidate: candidate.size,
+    added: added.length,
+    removed: removed.length,
+    addedSample: added.slice(0, 20),
+    removedSample: removed.slice(0, 20),
+    baselineSha256: hashSet(baseline),
+    candidateSha256: hashSet(candidate)
+  };
+}
+
+function summarizeForOutput(summary, requiredPackages) {
+  return {
+    sourceFiles: summary.sourceFiles.size,
+    zeroHitStatements: summary.statements.size,
+    zeroHitFunctions: summary.functions.size,
+    zeroHitLines: summary.lines.size,
+    zeroHitBranchArms: summary.branchArms.size,
+    requiredSourcePackages: requiredPackages,
+    sourceFilesSha256: hashSet(summary.sourceFiles),
+    zeroHitStatementsSha256: hashSet(summary.statements),
+    zeroHitFunctionsSha256: hashSet(summary.functions),
+    zeroHitLinesSha256: hashSet(summary.lines),
+    zeroHitBranchArmsSha256: hashSet(summary.branchArms)
+  };
+}
+
+function obligationGroups(summary) {
+  return {
+    sourceFiles: {
+      count: summary.sourceFiles.size,
+      sha256: hashSet(summary.sourceFiles)
+    },
+    zeroHitStatements: {
+      count: summary.statements.size,
+      sha256: hashSet(summary.statements)
+    },
+    zeroHitFunctions: {
+      count: summary.functions.size,
+      sha256: hashSet(summary.functions)
+    },
+    zeroHitLines: {
+      count: summary.lines.size,
+      sha256: hashSet(summary.lines)
+    },
+    zeroHitBranchArms: {
+      count: summary.branchArms.size,
+      sha256: hashSet(summary.branchArms)
+    }
+  };
+}
+
+function compareToApprovedProfile(candidateGroups, profile) {
+  const groups = Object.fromEntries(
+    Object.entries(profile.obligations).map(([name, expected]) => {
+      const candidate = candidateGroups[name];
+      if (candidate === undefined) {
+        throw new Error(`Approved profile contains an unknown obligation group: ${name}`);
+      }
+      return [
+        name,
+        {
+          expectedCount: expected.count,
+          candidateCount: candidate.count,
+          countMatches: expected.count === candidate.count,
+          expectedSha256: expected.sha256,
+          candidateSha256: candidate.sha256,
+          sha256Matches: expected.sha256 === candidate.sha256,
+          matches:
+            expected.count === candidate.count && expected.sha256 === candidate.sha256
+        }
+      ];
+    })
+  );
+  return {
+    profileId: profile.id,
+    sourceHead: profile.sourceHead,
+    sourceKind: profile.sourceKind,
+    matches: Object.values(groups).every((group) => group.matches),
+    groups
+  };
+}
+
+function main() {
+  const options = parseArguments(process.argv.slice(2));
+  const candidate = summarizeCoverageMap(readCoverageMap(options.candidate));
+  const requiredPackages = validateWorkspaceSourcePackages(candidate);
+
+  if (options.baseline === null) {
+    const candidateGroups = obligationGroups(candidate);
+    const profiles = APPROVED_COVERAGE_PROFILES.map((profile) =>
+      compareToApprovedProfile(candidateGroups, profile)
+    );
+    const matches = profiles.filter((profile) => profile.matches);
+    const verdict =
+      matches.length === 1
+        ? "COVERAGE_APPROVED_PROFILE_MATCH"
+        : matches.length === 0
+          ? "COVERAGE_APPROVED_PROFILE_MISMATCH"
+          : "COVERAGE_APPROVED_PROFILE_AMBIGUOUS";
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          verdict,
+          matchedProfileId: matches.length === 1 ? matches[0].profileId : null,
+          candidate: summarizeForOutput(candidate, requiredPackages),
+          profiles
+        },
+        null,
+        2
+      )}\n`
+    );
+    if (matches.length !== 1) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
+  const baseline = summarizeCoverageMap(readCoverageMap(options.baseline));
+  const comparisons = [
+    comparisonFor("sourceFiles", baseline.sourceFiles, candidate.sourceFiles),
+    comparisonFor("zeroHitStatements", baseline.statements, candidate.statements),
+    comparisonFor("zeroHitFunctions", baseline.functions, candidate.functions),
+    comparisonFor("zeroHitLines", baseline.lines, candidate.lines),
+    comparisonFor("zeroHitBranchArms", baseline.branchArms, candidate.branchArms)
+  ];
+  const hasDifference = comparisons.some(
+    (comparison) => comparison.added !== 0 || comparison.removed !== 0
+  );
+  const result = {
+    verdict: hasDifference
+      ? "COVERAGE_SEMANTIC_OBLIGATIONS_DIFFER"
+      : "COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL",
+    baseline: summarizeForOutput(baseline, validateWorkspaceSourcePackages(baseline)),
+    candidate: summarizeForOutput(candidate, requiredPackages),
+    comparisons
+  };
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  if (hasDifference) {
+    process.exitCode = 1;
+  }
+}
+
+try {
+  main();
+} catch (error) {
+  const message = error instanceof Error ? error.stack ?? error.message : String(error);
+  process.stderr.write(`${message}\n`);
+  process.exitCode = 1;
+}
