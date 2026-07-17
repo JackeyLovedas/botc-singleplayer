@@ -1,13 +1,34 @@
 # Current Task
 
-## Phase 3 Slice 2B19A2 — COMPLETED / ACCEPTED / PENDING CLOSEOUT COMMIT CI
+## Phase 3 Slice 2B19A3 — RESLICE_REQUIRED / UNACCEPTED
+
+- Reslice authorization: `USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY`.
+- Task type: `PRODUCT_SLICE`; current Slice: `null`; product repair round consumed: `false`.
+- Proposed bounded label: `Base Dreamer Vortox Forced-False Information`; this label is not rule evidence or a frozen design.
+- Accepted base: `138748d8211b961616f414d6bf17911fd93f4265`; exact closeout CI `29505429489` is `SUCCESS`.
+- Current branch: `phase-3/dreamer-v2-base-vortox-information`; current PR: `null`.
+- Terminal state: `RESLICE_REQUIRED`; independent rule-researcher verdict `RULE_READY`; `ruleReady=true`, `ruleDesignPass=false`, and `implementationAuthorized=false`.
+- Limits: `maxDesignRounds=2` and `maxRepairRounds=2`; current design round `2`, repair round `0`.
+- Governance precheck: `docs/architecture/2B19A3-go-no-go-under-governance-v1.md`, SHA-256 `2950b08811e97eddb9b6457ce1a453297df3bd55787c7df0007618e3e80a0402`, terminal `GO`. This GO permits only fresh rule research and does not pass the rule or design gate.
+- Refreshed rule evidence: `docs/rules/evidence/2B19A3.md`, SHA-256 `798c5d2edeb7053e9cd720937e15785492ce214b87f7975f9a66cc9b056947c6`, retrieval `2026-07-17T10:57:49.9930245+08:00`, independently returned `RULE_READY`, `ruleCoverageStatus=PARTIAL`, and `unresolvedConflicts=[]`. It preserves all `39` independent authorities and adds fresh official/Chinese Mathematician source authority and C29/C32/C33/C38 traceability.
+- Complete standalone Round 1 design: `docs/implementation/phase-3-slice-2b19a3-design.md`, SHA-256 `da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`. It freezes five production files, 850-1150 expected added production LOC, 39 unique primary authorities, S01-S08, and the exact V3/capability/preparation/ledger/projection contracts.
+- Complete independent Round 1 review: `docs/implementation/phase-3-slice-2b19a3-design-review-round-1.md`, SHA-256 `024d6bea20055f7e4f21472509e6f53251c1df1286bba719b5cb580f721339e6`, verdict and terminal `RULE_DESIGN_FIX_REQUIRED`.
+- Complete standalone Round 2 design: `docs/implementation/phase-3-slice-2b19a3-design-round-2.md`, SHA-256 `c0bffc0f420bc769341a08ec9d42f7c178f6a6078797e0725aa5ba8e22013cae`, unique terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`. It closes all six Round 1 blockers prospectively and freezes C01-C53 plus S01-S13, pending independent confirmation.
+- Complete independent Round 2 review: `docs/implementation/phase-3-slice-2b19a3-design-review-round-2.md`, SHA-256 `3061fffcaf59a1ccdebf7214b2d819eb474b8f57fcfdd2b30e2ac56a111b89e1`, verdict and terminal `RULE_DESIGN_FIX_REQUIRED`.
+- Remaining blockers are exactly: `STORED_VORTOX_APPLICABILITY_NEGATIVE_PROVENANCE_NOT_CLOSED`; `LEDGER_EVIDENCE_CLAIMS_EXCEED_EXISTING_CLOSED_SCHEMA`; `REACHABILITY_TRUST_AND_PRIMARY_LAYER_CLASSIFICATION_INCORRECT`.
+- Slice 2B19A2 remains `COMPLETED / ACCEPTED`; its docs-only closeout commit is the accepted base above and its live exact-SHA CI supersedes stale lower-authority `PENDING` wording.
+- `slice2B19A4Started=false`, `slice2B19BStarted=false`, and `phase2CStarted=false`.
+- No 2B19A3 production edit, test edit, PR, accepted tag, implementation commit, or push exists. Slice 2B19A3 is unaccepted.
+- No Design Round 3 is authorized or permitted. The next work is the separately gated `2B19A3A` reslice; this archive step does not start it.
+
+## Phase 3 Slice 2B19A2 — COMPLETED / ACCEPTED
 
 - Authorization: `USER_AUTHORIZED_2B19A2_EFFECTIVE_BASE_DREAMER_V2_NORMAL_INFORMATION`.
 - Task type: `PRODUCT_SLICE`; product repair round consumed: `true`.
 - Scope: `Effective Base Dreamer V2 Normal Target and Information Delivery`.
 - Recovery main: `8b390b50f5d314b34535bc7cf9fad36ece76f85e`; exact main CI `29484611863` is `SUCCESS`.
 - Accepted feature HEAD: `f5d5fe8b2d270fe760644e374e722f4aa1dd7dfe`; merge SHA: `55738229962173b0f0772cff1f69d1453c14af1d`; accepted tag: `phase-3-slice-2b19a2-dreamer-v2-base-normal-information`.
-- Current branch: `main`; current Slice: `null`; current PR: `null`.
+- Acceptance-time branch: `main`; accepted Slice and PR were cleared after merge.
 - Final repair authorization: `USER_AUTHORIZED_2B19A2_FINAL_FROZEN_DESIGN_REPAIR_ROUND_3`.
 - Limits: `maxSlices=1`, `maxDesignRounds=2`, and `maxRepairRounds=3`; current design round `2`, repair round `3`; no Repair Round 4 exists.
 - Gate state after acceptance: `ruleReady=true`, `ruleDesignPass=true`, and `implementationAuthorized=false`.
@@ -18,7 +39,7 @@
 - Complete standalone Round 2 replacement: `docs/implementation/phase-3-slice-2b19a2-design-round-2.md`, SHA-256 `7e4016b89f6cc5f5b07bcf32f6a6e14c9e12db39c7cb66960b1934efb1911687`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`, status `RULE_DESIGN_PASS`.
 - Independent Round 2 review: `docs/implementation/phase-3-slice-2b19a2-design-review-round-2.md`, SHA-256 `7bb36bd0e79200d8a803c2f43c1b1cc78669ad15969be58138a48417e3ff65b2`, verdict and terminal `RULE_DESIGN_PASS`, `remainingBlockers=[]`.
 - Complete independent final review on the frozen feature HEAD returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, with `remainingBlockers=[]`. Exact archives: `docs/reviews/pr-34-code-review-final.md` and `docs/reviews/pr-34-rule-review-final.md`.
-- `slice2B19A2Started=false`; `phase2CStarted=false`; 2B19A3 and 2B19B have not started.
+- `slice2B19A2Started=false` after acceptance. Slice 2B19A3 is now the active gated control task; 2B19A4, 2B19B, and Phase 2C have not started.
 - Slice 2B19A1 is `COMPLETED / ACCEPTED`; closeout commit `8b390b50f5d314b34535bc7cf9fad36ece76f85e` passed exact CI `29484611863`, so its stale pending-closeout marker is closed.
 - Local implementation remains within the six-file Slice allowlist: `885` added production lines in total, below the `1500` stop-loss. Round 3 production changes are confined to `first-night-action-opportunity.ts` and `dreamer.ts`; no event type, `GameState`, workflow, dependency, timeout, or Vitest configuration changed.
 - Frozen authority tests `2B19A2-C01` through `C31` plus `S01` and `S02` are present exactly once. Typecheck and the focused suite pass at `10 files / 662 tests`, including application `236/236` and rebuild `204/204`.
@@ -26,7 +47,7 @@
 - Repair Round 1 HEAD `bdb56f2c7314a4fba43b634a720aa7591d7c2b8b` passed push CI `29494706705`; PR CI `29494709511` passed all `34 / 1456` tests then failed the same worker RPC timeout. Successful versus failed runner rebuild/total durations were `34.563s / 117.06s` versus `64.827s / 213.78s`.
 - Final Repair Round 2 preserves all seven C14 and nine S02 hostile cases but rebuilds each shared accepted prefix once, then uses canonical full-stream, batch, event, and tenure replay validation on defensive clones. C01/C30 share a lazy defensive accepted-V1 capture that remains standalone-safe.
 - Final Frozen-Design Repair Round 3 closes only the stored V3 lifecycle and T1/S01 validation-authority findings. Direct focused tests pass `6 projects / 290 tests`; typecheck and full lint pass; ordinary and single-fork coverage pass `34 / 1457`; coverage completed in `128.4s` at `87.24 / 82.11 / 97.76`, with no worker RPC failure. The new real Dreamer-to-Seamstress continuation measured `479–719ms` without a timeout change.
-- Product-head push/PR CI `29503106606 / 29503110162`, merge-main CI `29504378316`, and accepted-tag CI `29504409993` are `SUCCESS` on their exact recorded SHAs. The future docs-only closeout commit CI is `PENDING` and inherits no earlier status.
+- Product-head push/PR CI `29503106606 / 29503110162`, merge-main CI `29504378316`, and accepted-tag CI `29504409993` are `SUCCESS` on their exact recorded SHAs. Docs-only closeout commit `138748d8211b961616f414d6bf17911fd93f4265` passed exact CI `29505429489`; that live authority supersedes the historical pre-run `PENDING` wording.
 
 ## Phase 3 Slice 2B19A1 — COMPLETED / ACCEPTED
 
