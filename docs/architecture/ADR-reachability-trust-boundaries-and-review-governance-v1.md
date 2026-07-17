@@ -14,13 +14,19 @@
 - Task repair budget: `1` docs-only repair
 - Traceability amendment: `ENGINEERING-GOVERNANCE-TRACEABILITY-V1.1`
 - Amendment authorization: `USER_AUTHORIZED_GOVERNANCE_TRACEABILITY_V1_1_APPLICATION_COMMAND_LAYER`
-- Amendment status: `PROPOSED_PENDING_INDEPENDENT_REVIEW`
+- Amendment status: `ACCEPTED`
 - Amendment scope: `application-command primary layer and traceability bindings only`
 - Amendment product behavior changed: `false`
 - Amendment BOTC rule semantics changed: `false`
 - Amendment tests or workflows changed: `false`
+- Amendment accepted PR: `#35`
+- Amendment frozen feature HEAD: `dbee2f3e1a6e88dd8580ea2d5820dd65bffe0a43`
+- Amendment independent review: `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`
+- Amendment merge SHA: `8d70147264c3cc839aa369257ea47ba4cf4b5e10`
+- Amendment accepted tag: `governance-application-command-integration-layer-v1-1`
+- Amendment merge-head CI: `29565845242` (`SUCCESS`)
 
-This ADR becomes repository-level authority only after an independent review passes and the governance PR merges. Only the post-merge closeout may change its status to `ACCEPTED`. A feature-branch document must not claim its own future commit SHA, CI run, review comment, merge commit, or accepted tag.
+Engineering Governance Traceability V1.1 is accepted repository-level authority. PR #35 passed independent code and rule review, merged at `8d70147264c3cc839aa369257ea47ba4cf4b5e10`, was tagged `governance-application-command-integration-layer-v1-1`, and its exact merge-head CI run `29565845242` completed with `SUCCESS`.
 
 ## Context And Decision Drivers
 
@@ -53,7 +59,7 @@ This decision governs all future slices, infrastructure PRs, final reviews, and 
 
 This amendment addresses root cause `GOVERNANCE_PRIMARY_LAYER_VOCABULARY_INCOMPLETE`. It preserves the complete 2B19A3A Round 1 through Round 3 designs and independent reviews as immutable history and does not retroactively rewrite, repair, reinterpret, or pass those artifacts.
 
-On the governance PR branch this amendment remains `PROPOSED_PENDING_INDEPENDENT_REVIEW`. Only merged governance evidence, the accepted governance tag, and any permitted post-merge docs-only closeout may record `ACCEPTED`; this feature-branch document does not self-claim future acceptance.
+The amendment is `ACCEPTED` through the post-merge closeout record above. Its classification semantics remain unchanged from the independently reviewed and merged PR #35 content.
 
 ## 1. Reachability Model
 
