@@ -27,8 +27,18 @@ const aliases = {
 export default defineWorkspace([
   {
     test: {
+      name: "domain-core-rebuild",
+      include: ["packages/domain-core/src/rebuild.test.ts"]
+    },
+    resolve: {
+      alias: aliases
+    }
+  },
+  {
+    test: {
       name: "domain-core",
-      include: ["packages/domain-core/src/**/*.test.ts"]
+      include: ["packages/domain-core/src/**/*.test.ts"],
+      exclude: ["packages/domain-core/src/rebuild.test.ts"]
     },
     resolve: {
       alias: aliases
