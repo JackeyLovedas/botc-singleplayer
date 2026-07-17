@@ -28,7 +28,7 @@ import {
   setupGeneratedEvent,
   setupPhaseTransitionedEvent
 } from "@botc/test-harness";
-import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
+import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 
 const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
   let caught: unknown;
@@ -598,8 +598,8 @@ describe("domain batch semantic validation", () => {
 });
 
 describe("Phase 3 Slice 2B19A3A Vortox Dreamer batch semantics", () => {
-  it("[2B19A3A-S23/S24/S25/S26/S27/S28/S29] rejects naked, partial, reordered, duplicate, split, cross-batch, and mismatched metadata", async () => {
-    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+  it("[2B19A3A-S23/S24/S25/S26/S27/S28/S29] rejects naked, partial, reordered, duplicate, split, cross-batch, and mismatched metadata", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
     const state = rebuildGameState(captured.events.slice(0, captured.targetEventIndex));
     const target = captured.events[captured.targetEventIndex];
     const delivery = captured.events[captured.deliveryEventIndex];

@@ -7,7 +7,7 @@
 - Immutable Round 3 review: `docs/implementation/phase-3-slice-2b19a3a-design-review-round-3.md`, canonical LF SHA-256 `fb98868d6953dd8a686f18e75532a19a519e599273496c5e2947cb181133ec69`.
 - Classification release: `docs/implementation/phase-3-slice-2b19a3a-design-release-review-under-governance-v1-1.md`, recorded SHA-256 `cc5fb0b1443cd4a4b08ccedacfa038d8f51a2a358e22df49838ea01fe9b3ad6c`.
 
-`MechanismMatch=PASS` means the physical authority uses the required entry and assertion mechanism. Runtime status is recorded separately; C51-C53 remain exact-head CI obligations until the frozen feature HEAD is pushed and succeeds.
+`MechanismMatch=PASS` means the physical authority uses the required entry and assertion mechanism. Runtime status is recorded separately; C51-C53 remain exact-head CI obligations until the CI-repair HEAD is pushed and succeeds. The immutable Vortox fixture does not replace application authority: C06/C07/C08 still execute the real `GameApplicationService` chain for all three target kinds and compare the complete capture with `toStrictEqual`; downstream consumers receive defensive fixture clones.
 
 ## Supporting authority registry
 
@@ -27,9 +27,9 @@ Each `SUP-*` ID resolves exactly once. Fault injection occurs after the accepted
 | C03 | `packages/projections/src/private-knowledge-view.test.ts` | `[2B19A3A-C03]...projects settled V1 DREAMER_INFORMATION...` | `PROJECTION` | R2 | T1 | NONE | PASS | V1 state-only source view remains accepted and hidden fields stay absent. |
 | C04 | `packages/projections/src/private-knowledge-view.test.ts` | `[2B19A3A-C04] keeps normal V2 history accepted by the state-only private projection` | `PROJECTION` | R2 | T1 | NONE | PASS | Normal V2 state-only player/AI views remain accepted and equal. |
 | C05 | `packages/domain-core/src/dreamer.test.ts` | `[2B19A3A-C05] validates the exact canonical V3 shape` | `STRUCTURAL_VALIDATION` | R1 | T1 | NONE | PASS | Exact 20-key V3 validates. |
-| C06 | `packages/application/src/game-application-service.test.ts` | `[2B19A3A-C06/C09/C10/C11/C15/C37] accepts a GOOD target...` | `ACCEPTED_STREAM_INTEGRATION` | R1 | T1 | NONE | PASS | Real GOOD-target command accepts the exact three-event batch. |
-| C07 | `packages/application/src/game-application-service.test.ts` | `[2B19A3A-C07] accepts a non-Vortox EVIL target through real commands` | `ACCEPTED_STREAM_INTEGRATION` | R1 | T1 | NONE | PASS | Real non-Vortox EVIL target succeeds. |
-| C08 | `packages/application/src/game-application-service.test.ts` | `[2B19A3A-C08] accepts the current Vortox as the Dreamer target` | `ACCEPTED_STREAM_INTEGRATION` | R1 | T1 | NONE | PASS | Current Vortox is a legal target and commits. |
+| C06 | `packages/application/src/game-application-service.test.ts` | `[2B19A3A-C06/C09/C10/C11/C15/C37] accepts a GOOD target...` | `ACCEPTED_STREAM_INTEGRATION` | R1 | T1 | NONE | PASS | Real GOOD-target command accepts the exact three-event batch and its complete capture strictly equals the immutable GOOD fixture. |
+| C07 | `packages/application/src/game-application-service.test.ts` | `[2B19A3A-C07] accepts a non-Vortox EVIL target through real commands` | `ACCEPTED_STREAM_INTEGRATION` | R1 | T1 | NONE | PASS | Real non-Vortox EVIL target succeeds and its complete capture strictly equals the immutable NON_VORTOX_EVIL fixture. |
+| C08 | `packages/application/src/game-application-service.test.ts` | `[2B19A3A-C08] accepts the current Vortox as the Dreamer target` | `ACCEPTED_STREAM_INTEGRATION` | R1 | T1 | NONE | PASS | Current Vortox is a legal target, commits, and its complete capture strictly equals the immutable VORTOX fixture. |
 | C09 | `packages/application/src/game-application-service.test.ts` | `[2B19A3A-C06/C09/C10/C11/C15/C37]...` | `ACCEPTED_STREAM_INTEGRATION` | R1 | T2 | NONE | PASS | Delivered GOOD role is native GOOD. |
 | C10 | `packages/application/src/game-application-service.test.ts` | `[2B19A3A-C06/C09/C10/C11/C15/C37]...` | `ACCEPTED_STREAM_INTEGRATION` | R1 | T2 | NONE | PASS | Delivered EVIL role is native EVIL. |
 | C11 | `packages/application/src/game-application-service.test.ts` | `[2B19A3A-C06/C09/C10/C11/C15/C37]...` | `ACCEPTED_STREAM_INTEGRATION` | R1 | T2 | NONE | PASS | Both roles exclude settlement-time truth. |
@@ -122,12 +122,17 @@ Each `SUP-*` ID resolves exactly once. Fault injection occurs after the accepted
 
 ## Runtime evidence
 
+- CI failure classification: frozen feature HEAD `f9bfc7351ac250414dca18fca4dff1ec6b5bc954`, push run `29572059311` and PR run `29572103884` attempt 1, both completed `34 / 1512` and coverage generation before `[vitest-worker]: Timeout calling "onTaskUpdate"`; product assertions never failed, and attempt 2 of both runs succeeded. The repeated first-attempt amplification is `CI_TEST_INFRASTRUCTURE_FAILURE`, `productRepairRoundConsumed=false`.
+- Immutable fixture provenance: current real application capture for `GOOD`, `NON_VORTOX_EVIL`, and `VORTOX`; loader SHA-256 `22bca1c09b254ee5870f0ee992de7132ef65850184c4905008fde13f5abfa11b`; JSON SHA-256 `8943548aa5a047909473ff43aae04da8410002cdd3870c3399b617ce93feae4f`; C06/C07/C08 full-capture `toStrictEqual` authority is green.
+- CI-repair focused run: `9 projects / 1076 tests PASS`.
+
 - Focused C38/C39: `2 / 2 PASS`.
 - Focused C48: `1 / 1 PASS`.
 - Focused Dreamer Slice tests: `10 / 10 PASS`; C46 standalone `1 / 1 PASS`.
 - Complete affected-path run: `10 projects / 1136 tests PASS`.
 - Typecheck and full lint: `PASS`.
-- Full ordinary tests: `34 files / 1512 tests PASS`; `33.34s`.
-- Full single-fork coverage: `34 files / 1512 tests PASS`; `51.1s`; `87.44%` statements/lines, `82.45%` branches, `97.88%` functions; no worker RPC timeout.
+- Full ordinary tests after repair: `34 files / 1512 tests PASS`; `33.22s`.
+- Fresh single-fork coverage run 1: `34 files / 1512 tests PASS`; `49.11s`; `87.44%` statements/lines, `82.46%` branches, `97.88%` functions; no worker RPC timeout.
+- Fresh single-fork coverage run 2: `34 files / 1512 tests PASS`; `47.20s`; `87.44%` statements/lines, `82.45%` branches, `97.88%` functions; no worker RPC timeout.
 - Static traceability, SUP resolution, scope, baseline fixture, reachability/layer, semantic equality, deterministic API, disabled-test, and production-LOC audits: `PASS`.
-- Exact-head CI remains pending until the frozen feature commit is published. CI status is never inherited from another SHA.
+- Exact repair-head CI remains pending until the repair commit is published. CI status is never inherited from another SHA.

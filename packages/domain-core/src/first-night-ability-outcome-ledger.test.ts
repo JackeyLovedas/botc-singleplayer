@@ -26,7 +26,7 @@ import { seatNumber } from "./player-roster.js";
 import { rebuildGameState } from "./rebuild.js";
 import { applyDomainEvent } from "./event-applier.js";
 import { loadAcceptedBaseDreamerV3NormalStreamFixture } from "@botc/test-harness";
-import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
+import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 
 const taskId = scheduledTaskId("first-night-v1:WITCH_ACTION:seat-01");
 const opportunityIdFor=(taskType:"SNAKE_CHARMER_ACTION"|"WITCH_ACTION"|"DREAMER_ACTION")=>`first-night-v1:${taskType}:seat-01:opportunity-01`;
@@ -354,9 +354,9 @@ describe("Phase 3 Slice 2B19A3A Vortox ledger evidence", () => {
     }
   };
 
-  it("[2B19A3A-C34/C35/C36] derives exact nine/ten-entry abnormal facts without impairment evidence", async () => {
-    const currentVortox = dreamerFact((await captureAcceptedBaseDreamerVortoxV3Stream("VORTOX")).finalState);
-    const otherTarget = dreamerFact((await captureAcceptedBaseDreamerVortoxV3Stream("GOOD")).finalState);
+  it("[2B19A3A-C34/C35/C36] derives exact nine/ten-entry abnormal facts without impairment evidence", () => {
+    const currentVortox = dreamerFact(loadAcceptedBaseDreamerVortoxV3StreamFixture("VORTOX").finalState);
+    const otherTarget = dreamerFact(loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD").finalState);
     for (const [candidate, count] of [[currentVortox, 9], [otherTarget, 10]] as const) {
       expect(candidate).toMatchObject({ outcomeStatus: "ABNORMAL", causeKind: "VORTOX_FALSE_INFORMATION",
         causedByAnotherCharacterAbility: true });
@@ -366,8 +366,8 @@ describe("Phase 3 Slice 2B19A3A Vortox ledger evidence", () => {
     }
   }, 15_000);
 
-  it("[2B19A3A-S11/S12/S13/S14/S15/S16] rejects every hostile nine-set mutation", async () => {
-    const fact = dreamerFact((await captureAcceptedBaseDreamerVortoxV3Stream("VORTOX")).finalState);
+  it("[2B19A3A-S11/S12/S13/S14/S15/S16] rejects every hostile nine-set mutation", () => {
+    const fact = dreamerFact(loadAcceptedBaseDreamerVortoxV3StreamFixture("VORTOX").finalState);
     for (let index = 0; index < fact.evidenceReferences.length; index += 1) {
       expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
         evidenceReferences: fact.evidenceReferences.filter((_entry, candidateIndex) => candidateIndex !== index) }).valid).toBe(false);
@@ -388,8 +388,8 @@ describe("Phase 3 Slice 2B19A3A Vortox ledger evidence", () => {
       evidenceReferences: [...fact.evidenceReferences].reverse() }).valid).toBe(false);
   }, 15_000);
 
-  it("[2B19A3A-S17/S18/S19/S20/S21/S22] rejects every hostile ten-set mutation", async () => {
-    const fact = dreamerFact((await captureAcceptedBaseDreamerVortoxV3Stream("GOOD")).finalState);
+  it("[2B19A3A-S17/S18/S19/S20/S21/S22] rejects every hostile ten-set mutation", () => {
+    const fact = dreamerFact(loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD").finalState);
     for (let index = 0; index < fact.evidenceReferences.length; index += 1) {
       expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
         evidenceReferences: fact.evidenceReferences.filter((_entry, candidateIndex) => candidateIndex !== index) }).valid).toBe(false);

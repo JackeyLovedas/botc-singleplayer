@@ -70,7 +70,7 @@ import {
   submitSeamstressActionCommand,
   systemActor
 } from "@botc/test-harness";
-import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
+import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 
 type Fixture = Awaited<ReturnType<typeof settleBaseMathematician>>;
 let fixture: Fixture;
@@ -155,7 +155,7 @@ beforeAll(async () => {
 
 describe("Phase 3 Slice 2B19A3A Mathematician consumption", () => {
   it("[2B19A3A-C38] counts the Vortox-abnormal Dreamer source exactly once through the real later command", async () => {
-    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
     const preloaded = preloadedStore(captured.events);
     const service = createMathematicianServiceForStore(preloaded.store, uniquePreloadedIds()).service;
     let state = rebuildGameState(await preloaded.store.loadDomainEvents(ids.game));

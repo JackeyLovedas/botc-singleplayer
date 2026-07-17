@@ -80,7 +80,7 @@ import {
 } from "./first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "./role-tenure-replay.js";
 import { loadAcceptedBaseDreamerV3NormalStreamFixture } from "@botc/test-harness";
-import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
+import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 import type {
   AnyDomainEventEnvelope,
   AbilityImpairmentSet,
@@ -228,16 +228,16 @@ const noPhilosopherFirstNightPayload = (): FirstNightInitializedPayload => ({
 });
 
 describe("Phase 3 Slice 2B19A3A Vortox replay", () => {
-  it("[2B19A3A-C16] rebuilds the exact accepted batch from its pre-delivery canonical Vortox state", async () => {
-    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+  it("[2B19A3A-C16] rebuilds the exact accepted batch from its pre-delivery canonical Vortox state", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
     const beforeBatch = rebuildGameState(captured.events.slice(0, captured.targetEventIndex));
     expect(beforeBatch.currentCharacterState?.entries.filter((entry) => entry.role.roleId === "vortox")).toHaveLength(1);
     expect(beforeBatch.dreamerInformation).toBeUndefined();
     expect(rebuildGameState(structuredClone(captured.events))).toStrictEqual(captured.finalState);
   }, 15_000);
 
-  it("[2B19A3A-C21/C22/C23/C24/C25/C26] rejects hostile Vortox tenure, identity, revision, and applicability mutations", async () => {
-    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+  it("[2B19A3A-C21/C22/C23/C24/C25/C26] rejects hostile Vortox tenure, identity, revision, and applicability mutations", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
     const mutateDelivery = (mutate: (payload: Record<string, unknown>, constraint: Record<string, unknown>) => void) => {
       const stream = structuredClone(captured.events);
       const delivery = stream[captured.deliveryEventIndex];

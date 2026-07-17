@@ -95,6 +95,7 @@ import {
 } from "@botc/test-harness";
 import { captureAcceptedBaseDreamerV3NormalStream } from "../../test-harness/src/dreamer-v3-accepted-stream.js";
 import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
+import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
 import { deriveFirstNightAbilityOutcomeFact } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "../../domain-core/src/role-tenure-replay.js";
@@ -254,6 +255,7 @@ const philosopherGainedSnakeCharmerOpportunityId = actionOpportunityId(
 describe("Phase 3 Slice 2B19A3A effective-source Vortox Dreamer", () => {
   it("[2B19A3A-C06/C09/C10/C11/C15/C37] accepts a GOOD target with an exact false native-category atomic batch", async () => {
     const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+    expect(captured).toStrictEqual(loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD"));
     const target = captured.events[captured.targetEventIndex];
     const delivery = captured.events[captured.deliveryEventIndex];
     const settlement = captured.events[captured.settlementEventIndex];
@@ -284,6 +286,7 @@ describe("Phase 3 Slice 2B19A3A effective-source Vortox Dreamer", () => {
 
   it("[2B19A3A-C07] accepts a non-Vortox EVIL target through real commands", async () => {
     const captured = await captureAcceptedBaseDreamerVortoxV3Stream("NON_VORTOX_EVIL");
+    expect(captured).toStrictEqual(loadAcceptedBaseDreamerVortoxV3StreamFixture("NON_VORTOX_EVIL"));
     const delivery = captured.events[captured.deliveryEventIndex];
     if (delivery?.eventType !== "DreamerInformationDelivered" || !("deliverySchemaVersion" in delivery.payload)) {
       throw new Error("Expected V3 delivery");
@@ -296,6 +299,7 @@ describe("Phase 3 Slice 2B19A3A effective-source Vortox Dreamer", () => {
 
   it("[2B19A3A-C08] accepts the current Vortox as the Dreamer target", async () => {
     const captured = await captureAcceptedBaseDreamerVortoxV3Stream("VORTOX");
+    expect(captured).toStrictEqual(loadAcceptedBaseDreamerVortoxV3StreamFixture("VORTOX"));
     const delivery = captured.events[captured.deliveryEventIndex];
     if (delivery?.eventType !== "DreamerInformationDelivered" || !("deliverySchemaVersion" in delivery.payload)) {
       throw new Error("Expected V3 delivery");

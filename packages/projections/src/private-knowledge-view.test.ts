@@ -64,7 +64,7 @@ import {
   buildPlayerPrivateKnowledgeView,
   buildPlayerPrivateKnowledgeViewFromAcceptedEventStream
 } from "@botc/projections";
-import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
+import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 import {
   charactersAssignedEvent,
   charactersAssignedPhaseTransitionedEvent,
@@ -2411,8 +2411,8 @@ describe("Phase 3 Slice 2B19A3A accepted-stream Dreamer projection", () => {
     expect(aiView).toStrictEqual(playerView);
   });
 
-  it("[2B19A3A-C40/C41/C42/C43/C45] reveals only the historical pair to the source player and AI", async () => {
-    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+  it("[2B19A3A-C40/C41/C42/C43/C45] reveals only the historical pair to the source player and AI", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
     const delivery = captured.events[captured.deliveryEventIndex];
     if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected Dreamer delivery");
     const playerView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(captured.events, delivery.payload.sourcePlayerId);
@@ -2431,8 +2431,8 @@ describe("Phase 3 Slice 2B19A3A accepted-stream Dreamer projection", () => {
     expect(JSON.stringify(playerView)).not.toContain("VORTOX_FORCED_FALSE");
   }, 15_000);
 
-  it("[2B19A3A-C44] rejects V3 from the state-only projection boundary", async () => {
-    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+  it("[2B19A3A-C44] rejects V3 from the state-only projection boundary", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
     const delivery = captured.events[captured.deliveryEventIndex];
     if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected Dreamer delivery");
     expect(() => buildPlayerPrivateKnowledgeView(captured.finalState, delivery.payload.sourcePlayerId))
@@ -2441,8 +2441,8 @@ describe("Phase 3 Slice 2B19A3A accepted-stream Dreamer projection", () => {
       .toThrowError(DomainError);
   }, 15_000);
 
-  it("[2B19A3A-C47] projection leaves accepted historical payload bytes unchanged", async () => {
-    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+  it("[2B19A3A-C47] projection leaves accepted historical payload bytes unchanged", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
     const delivery = captured.events[captured.deliveryEventIndex];
     if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected Dreamer delivery");
     const before = structuredClone(delivery.payload);
