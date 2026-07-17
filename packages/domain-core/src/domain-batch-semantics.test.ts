@@ -28,6 +28,7 @@ import {
   setupGeneratedEvent,
   setupPhaseTransitionedEvent
 } from "@botc/test-harness";
+import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
 
 const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
   let caught: unknown;
@@ -594,4 +595,29 @@ describe("domain batch semantic validation", () => {
       "InvalidDomainBatchSemantics"
     );
   });
+});
+
+describe("Phase 3 Slice 2B19A3A Vortox Dreamer batch semantics", () => {
+  it("[2B19A3A-S23/S24/S25/S26/S27/S28/S29] rejects naked, partial, reordered, duplicate, split, cross-batch, and mismatched metadata", async () => {
+    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+    const state = rebuildGameState(captured.events.slice(0, captured.targetEventIndex));
+    const target = captured.events[captured.targetEventIndex];
+    const delivery = captured.events[captured.deliveryEventIndex];
+    const settlement = captured.events[captured.settlementEventIndex];
+    if (target?.eventType !== "DreamerTargetChosen" || delivery?.eventType !== "DreamerInformationDelivered" ||
+        settlement?.eventType !== "ScheduledTaskSettled") throw new Error("Expected V3 Dreamer batch");
+    expect(() => validateDomainBatchSemantics(state, [target, delivery, settlement])).not.toThrow();
+    const hostile: readonly (readonly AnyDomainEventEnvelope[])[] = [
+      [delivery],
+      [target, delivery],
+      [delivery, target, settlement],
+      [target, delivery, delivery, settlement],
+      [target],
+      [target, { ...delivery, batchId: batchId("cross-batch") }, settlement],
+      [target, { ...delivery, commandId: commandId("other-command") }, settlement]
+    ];
+    for (const candidate of hostile) {
+      expect(() => validateDomainBatchSemantics(state, candidate)).toThrowError(DomainError);
+    }
+  }, 15_000);
 });

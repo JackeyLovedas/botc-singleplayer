@@ -94,6 +94,7 @@ import {
   systemActor
 } from "@botc/test-harness";
 import { captureAcceptedBaseDreamerV3NormalStream } from "../../test-harness/src/dreamer-v3-accepted-stream.js";
+import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
 import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
 import { deriveFirstNightAbilityOutcomeFact } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "../../domain-core/src/role-tenure-replay.js";
@@ -249,6 +250,60 @@ const philosopherGainedSnakeCharmerTaskId = scheduledTaskId("first-night-v2:PHIL
 const philosopherGainedSnakeCharmerOpportunityId = actionOpportunityId(
   "first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer:opportunity-01"
 );
+
+describe("Phase 3 Slice 2B19A3A effective-source Vortox Dreamer", () => {
+  it("[2B19A3A-C06/C09/C10/C11/C15/C37] accepts a GOOD target with an exact false native-category atomic batch", async () => {
+    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+    const target = captured.events[captured.targetEventIndex];
+    const delivery = captured.events[captured.deliveryEventIndex];
+    const settlement = captured.events[captured.settlementEventIndex];
+    if (target?.eventType !== "DreamerTargetChosen" || delivery?.eventType !== "DreamerInformationDelivered" ||
+        settlement?.eventType !== "ScheduledTaskSettled" || !("deliverySchemaVersion" in delivery.payload)) {
+      throw new Error("Expected accepted V3 Dreamer Vortox terminal batch");
+    }
+    const truth = captured.finalState.currentCharacterState?.entries.find((entry) =>
+      entry.playerId === delivery.payload.targetPlayerId)?.role.roleId;
+    expect(delivery.payload).toMatchObject({
+      deliverySchemaVersion: "dreamer-information-delivered-v3",
+      informationReliability: { kind: "VORTOX_FORCED_FALSE" },
+      vortoxConstraint: { kind: "VORTOX_FORCED_FALSE_REQUIRED", vortoxRoleId: "vortox" }
+    });
+    expect(["TOWNSFOLK", "OUTSIDER"]).toContain(delivery.payload.goodRole.characterType);
+    expect(["MINION", "DEMON"]).toContain(delivery.payload.evilRole.characterType);
+    expect(delivery.payload.goodRole.roleId).not.toBe(truth);
+    expect(delivery.payload.evilRole.roleId).not.toBe(truth);
+    expect([target.batchId, delivery.batchId, settlement.batchId]).toStrictEqual([
+      target.batchId, target.batchId, target.batchId
+    ]);
+    expect([target.commandId, delivery.commandId, settlement.commandId]).toStrictEqual([
+      target.commandId, target.commandId, target.commandId
+    ]);
+    expect(captured.finalState.firstNightAbilityOutcomeLedger?.facts.filter((fact) =>
+      fact.abilityRoleId === "dreamer")).toHaveLength(1);
+  }, 15_000);
+
+  it("[2B19A3A-C07] accepts a non-Vortox EVIL target through real commands", async () => {
+    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("NON_VORTOX_EVIL");
+    const delivery = captured.events[captured.deliveryEventIndex];
+    if (delivery?.eventType !== "DreamerInformationDelivered" || !("deliverySchemaVersion" in delivery.payload)) {
+      throw new Error("Expected V3 delivery");
+    }
+    const target = captured.finalState.currentCharacterState?.entries.find((entry) =>
+      entry.playerId === delivery.payload.targetPlayerId);
+    expect(target?.role.defaultAlignment).toBe("EVIL");
+    expect(target?.role.roleId).not.toBe("vortox");
+  }, 15_000);
+
+  it("[2B19A3A-C08] accepts the current Vortox as the Dreamer target", async () => {
+    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("VORTOX");
+    const delivery = captured.events[captured.deliveryEventIndex];
+    if (delivery?.eventType !== "DreamerInformationDelivered" || !("deliverySchemaVersion" in delivery.payload)) {
+      throw new Error("Expected V3 delivery");
+    }
+    expect(captured.finalState.currentCharacterState?.entries.find((entry) =>
+      entry.playerId === delivery.payload.targetPlayerId)?.role.roleId).toBe("vortox");
+  }, 15_000);
+});
 
 const advancePastSystemInformation = async (
   service: GameApplicationService,
@@ -7250,9 +7305,9 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
     expect(captured.finalState).toStrictEqual(rebuildOptionalGameState(fixture.events));
   });
 
-  it("continues a real accepted V3 Dreamer success through a terminal Seamstress action", async () => {
+  it("[2B19A3A-C48] continues a real accepted Vortox V3 Dreamer success through a terminal Seamstress action", async () => {
     const { service, commandStore } = makeService();
-    const openedDreamer = await reachOpenDreamerV3ActionOpportunity(service, commandStore);
+    const openedDreamer = await reachOpenDreamerV3ActionOpportunity(service, commandStore, noPhilosopherVortoxExactRoleIds);
     const dreamerTarget = openedDreamer.state.currentCharacterState?.entries.find((entry) =>
       entry.playerId !== openedDreamer.opportunity.sourcePlayerId
     );
@@ -7376,7 +7431,7 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
     expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([opened.state.gameVersion + 1]));
   });
 
-  it("[2B19A2-C15] fails a represented DRUNK base Dreamer receipt-free through the real Philosopher chain", async () => {
+  it("[2B19A3A-C17] fails a represented DRUNK base Dreamer receipt-free through the real Philosopher chain", async () => {
     const { service, commandStore } = makeService();
     const philosopher = await reachOpenExactPhilosopherOpportunity(service, commandStore);
     expectAcceptedResult(await service.execute(chooseExactPhilosopherRole("dreamer", philosopher, "2b19a2-choose-dreamer")));
@@ -7399,11 +7454,15 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
       payload: { commandType: "SubmitDreamerAction", taskId: baseTask.taskId, opportunityId: opportunity.opportunityId,
         decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
     });
+    const before = await commandStore.loadDomainEvents(ids.game);
     await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action" });
     expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(rebuildOptionalGameState(before)?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === opportunity.opportunityId)?.opportunityStatus).toBe("OPEN");
   });
 
-  it("[2B19A2-C17] fails an effective current Vortox receipt-free", async () => {
+  it("accepts an effective current Vortox as V3 forced-false information", async () => {
     const { service, commandStore } = makeService();
     const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore, noPhilosopherVortoxExactRoleIds);
     const target = opened.state.roster?.entries.find((entry) => entry.playerId !== opened.opportunity.sourcePlayerId);
@@ -7411,8 +7470,8 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
     const command = submitDreamerActionCommand({ commandId: commandId("2b19a2-vortox"), expectedGameVersion: opened.state.gameVersion,
       payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId, opportunityId: opened.opportunity.opportunityId,
         decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } } });
-    await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action" });
-    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+    await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted" });
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeDefined();
   });
 
   it("[2B19A2-C18] treats every current No Dashii as unconditionally unresolved", async () => {
@@ -7459,10 +7518,7 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
       expect(await input.store.findCommandReceipt(ids.game, command.commandId), input.name).toBeUndefined();
     };
 
-    for (const [name, roles] of [
-      ["vortox", noPhilosopherVortoxExactRoleIds],
-      ["no-dashii", noPhilosopherNoDashiiExactRoleIds]
-    ] as const) {
+    for (const [name, roles] of [["no-dashii", noPhilosopherNoDashiiExactRoleIds]] as const) {
       const context = makeService();
       const opened = await reachOpenDreamerV3ActionOpportunity(context.service, context.commandStore, roles);
       await exercise({ name, service: context.service, store: context.commandStore, opened,
@@ -9410,3 +9466,110 @@ describeApplicationServiceShard(
   });
   }
 );
+
+describe("Phase 3 Slice 2B19A3A retryable application boundaries", () => {
+  const prepare = async (
+    store = new MemoryCommandCommitStore(),
+    idsGenerator: IdGenerator = new FixedIdGenerator(),
+    clock: Clock = new FixedClock()
+  ) => {
+    const { service } = makeService(store, testSetupGenerator, idsGenerator, clock);
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, store, noPhilosopherVortoxExactRoleIds);
+    const target = opened.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== opened.opportunity.sourcePlayerId && entry.role.roleId !== "vortox");
+    if (target === undefined) throw new Error("Expected Vortox Dreamer target");
+    const command = submitDreamerActionCommand({
+      commandId: commandId("2b19a3a-retry-command"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
+        opportunityId: opened.opportunity.opportunityId, decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+    });
+    return { service, store, opened, command };
+  };
+  const expectUnchangedFailure = async (
+    context: Awaited<ReturnType<typeof prepare>>,
+    code: CommandExecutionFailed["code"],
+    stage: CommandExecutionFailed["failureStage"]
+  ) => {
+    const before = await context.store.loadDomainEvents(ids.game);
+    const beforeState = rebuildOptionalGameState(before);
+    await expect(context.service.execute(context.command)).resolves.toMatchObject({
+      status: "failed", code, failureStage: stage, retryable: true,
+      currentGameVersion: context.opened.state.gameVersion
+    });
+    expect(await context.store.findCommandReceipt(ids.game, context.command.commandId)).toBeUndefined();
+    expect(await context.store.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(rebuildOptionalGameState(await context.store.loadDomainEvents(ids.game))).toStrictEqual(beforeState);
+    expect(beforeState?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === context.opened.opportunity.opportunityId)?.opportunityStatus).toBe("OPEN");
+  };
+
+  it("[2B19A3A-C27/C33] keeps unresolved capability receipt-free and accepts the identical command after repair", async () => {
+    const context = await prepare();
+    const boundary = context.service as unknown as {
+      resolveDreamerCapability: (...args: readonly unknown[]) => ReturnType<typeof domainCore.resolveBaseDreamerV2NormalCapability>;
+    };
+    const original = boundary.resolveDreamerCapability.bind(context.service);
+    boundary.resolveDreamerCapability = () => ({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "SOURCE_PROVENANCE_INVALID" });
+    await expectUnchangedFailure(context, "DependencyExecutionFailed", "first-night-role-action");
+    boundary.resolveDreamerCapability = original;
+    await expect(context.service.execute(context.command)).resolves.toMatchObject({ status: "accepted" });
+    expect(await context.store.findCommandReceipt(ids.game, context.command.commandId)).toBeDefined();
+  }, 15_000);
+
+  it("[2B19A3A-C28] keeps V3 canonical-result construction failure receipt-free", async () => {
+    const context = await prepare();
+    const boundary = context.service as unknown as { createDreamerVortoxDelivery: (...args: readonly unknown[]) => never };
+    boundary.createDreamerVortoxDelivery = () => { throw new Error("injected candidate construction failure"); };
+    await expectUnchangedFailure(context, "DependencyExecutionFailed", "first-night-role-action");
+  }, 15_000);
+
+  it("[2B19A3A-C29/C30] contains DomainError and unexpected prospective failures at their exact stages", async () => {
+    const domainContext = await prepare();
+    const domainBoundary = domainContext.service as unknown as { createBatch: (...args: readonly unknown[]) => DomainEventBatch };
+    const originalDomain = domainBoundary.createBatch.bind(domainContext.service);
+    domainBoundary.createBatch = (...args: readonly unknown[]): DomainEventBatch => {
+      const batch = originalDomain(...args);
+      return { ...batch, events: batch.events.map((event) => event.eventType === "DreamerTargetChosen"
+        ? { ...event, payload: { ...event.payload, sourcePlayerId: playerId("hostile-source") } }
+        : event) };
+    };
+    await expectUnchangedFailure(domainContext, "DependencyExecutionFailed", "first-night-role-action");
+
+    const unexpectedContext = await prepare();
+    const unexpectedBoundary = unexpectedContext.service as unknown as { createBatch: (...args: readonly unknown[]) => DomainEventBatch };
+    const originalUnexpected = unexpectedBoundary.createBatch.bind(unexpectedContext.service);
+    unexpectedBoundary.createBatch = (...args: readonly unknown[]): DomainEventBatch => {
+      const batch = originalUnexpected(...args);
+      const hostile = new Proxy(batch.events, { get(target, property, receiver) {
+        if (property === Symbol.iterator) throw new Error("injected prospective iterator failure");
+        return Reflect.get(target, property, receiver) as unknown;
+      } });
+      return { ...batch, events: hostile };
+    };
+    await expectUnchangedFailure(unexpectedContext, "DependencyExecutionFailed", "prospective-validation");
+  }, 15_000);
+
+  it("[2B19A3A-C31] keeps every V3 batch/event-ID and clock metadata failure atomic", async () => {
+    const faults = [
+      { name: "batch", configure: (idsValue: FaultInjectingIdGenerator, clockValue: FaultInjectingClock) => { void clockValue; idsValue.failNextBatchId = true; } },
+      ...([1, 2, 3] as const).map((position) => ({ name: `event-${position}`, configure: (idsValue: FaultInjectingIdGenerator, clockValue: FaultInjectingClock) => { void clockValue; idsValue.failEventAfter(position); } })),
+      ...([1, 2, 3] as const).map((position) => ({ name: `clock-${position}`, configure: (idsValue: FaultInjectingIdGenerator, clockValue: FaultInjectingClock) => { void idsValue; clockValue.failClockAfter(position); } }))
+    ];
+    for (const fault of faults) {
+      const idsValue = new FaultInjectingIdGenerator();
+      const clockValue = new FaultInjectingClock();
+      const context = await prepare(new MemoryCommandCommitStore(), idsValue, clockValue);
+      fault.configure(idsValue, clockValue);
+      await expectUnchangedFailure(context, "MetadataGenerationFailed", "event-metadata");
+    }
+  }, 15_000);
+
+  it("[2B19A3A-C32] keeps before-commit and during-commit failures atomic", async () => {
+    for (const mode of ["before", "during"] as const) {
+      const context = await prepare();
+      if (mode === "before") context.store.failBeforeCommit = true;
+      else context.store.failDuringCommit = true;
+      await expectUnchangedFailure(context, "EventStoreAppendFailed", "accepted-commit");
+    }
+  }, 15_000);
+});

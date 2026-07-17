@@ -1,14 +1,14 @@
 # Project State
 
-## Active controlled Slice — 2B19A3A READY_FOR_IMPLEMENTATION / UNACCEPTED
+## Active controlled Slice — 2B19A3A RUNNING / IMPLEMENTATION / UNACCEPTED
 
-- Control status is `READY_FOR_IMPLEMENTATION / UNACCEPTED` on `phase-3/dreamer-vortox-effective-source`; current PR is `null`.
-- Active gates are `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, `designRound=3/3`, `repairRound=0/2`, and `remainingBlockers=[PENDING_IMPLEMENTATION]`; `phase2CStarted=false`.
+- Control status is `RUNNING / IMPLEMENTATION / UNACCEPTED` on `phase-3/dreamer-vortox-effective-source`; current PR is `null`; implementation authorization is `USER_AUTHORIZED_2B19A3A_EFFECTIVE_SOURCE_VORTOX_IMPLEMENTATION`.
+- Active gates are `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, `designRound=3/3`, `repairRound=0/2`, and `remainingBlockers=[PENDING_FEATURE_COMMIT_PUSH_PR_CI_AND_FINAL_REVIEW]`; `phase2CStarted=false`.
 - Governance Traceability V1.1 is accepted through PR `#35`, merge `8d70147264c3cc839aa369257ea47ba4cf4b5e10`, tag `governance-application-command-integration-layer-v1-1`, and exact merge-head CI `29565845242 / SUCCESS`.
 - Post-merge governance closeout is `9c4d009f32d4d24d0e072168717f34795b3c322c` with exact closeout CI `29567136355 / SUCCESS`.
 - Immutable Round 3 behavior authority remains `docs/implementation/phase-3-slice-2b19a3a-design-round-3.md`, SHA-256 `ff191fe9b0877b9fc613fb0f98341fa757a19019918f83b875d564d5e8a91b57`.
 - Independent release review `docs/implementation/phase-3-slice-2b19a3a-design-release-review-under-governance-v1-1.md`, SHA-256 `cc5fb0b1443cd4a4b08ccedacfa038d8f51a2a358e22df49838ea01fe9b3ad6c`, returned `DESIGN_RELEASE_PASS` with no classification blocker and no behavior, rule, or schema change.
-- Round 1-3 failed designs/reviews remain immutable history. No Design Round 4 exists. Implementation is authorized for a later turn but has not started; no product commit, push, PR, or tag exists.
+- Round 1-3 failed designs/reviews remain immutable history. No Design Round 4 exists. The bounded implementation and all local gates now pass: five production files, seven tests, one private support file, `522` production additions, `34 / 1512` ordinary and coverage tests, coverage `87.44 / 82.45 / 97.88`, and all scope/static audits. Product commit, push, PR, exact-head CI, and final review remain pending.
 - 2B19A3B, 2B19B, and Phase 2C have not started.
 
 ## Historical 2B19A3A Round 3 Gate Failure — superseded only by V1.1 release review

@@ -26,6 +26,7 @@ import { seatNumber } from "./player-roster.js";
 import { rebuildGameState } from "./rebuild.js";
 import { applyDomainEvent } from "./event-applier.js";
 import { loadAcceptedBaseDreamerV3NormalStreamFixture } from "@botc/test-harness";
+import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
 
 const taskId = scheduledTaskId("first-night-v1:WITCH_ACTION:seat-01");
 const opportunityIdFor=(taskType:"SNAKE_CHARMER_ACTION"|"WITCH_ACTION"|"DREAMER_ACTION")=>`first-night-v1:${taskType}:seat-01:opportunity-01`;
@@ -332,4 +333,80 @@ describe("first-night ability outcome ledger", () => {
     it("[R4-A9] rejects duplicate FirstNightInitialized application",()=>{const {anchored}=initializedLedgerState();const duplicate={...terminalEvent("FirstNightInitialized",{}),eventId:eventId("event-duplicate"),eventSequence:11,rulesBaselineVersion:"Phase One v2.1"} as never;expect(()=>applyFirstNightAbilityOutcomeLedger(anchored,duplicate,anchored)).toThrowError(DomainError);});
     it("[R4-A10] rejects a later event attempting to replace the anchor",()=>{const {anchored}=initializedLedgerState();const replacement={...anchored,firstNightAbilityOutcomeLedger:{...anchored.firstNightAbilityOutcomeLedger!,windowAnchor:{...anchored.firstNightAbilityOutcomeLedger!.windowAnchor,startEventSequence:9}}};expect(()=>applyFirstNightAbilityOutcomeLedger(anchored,nonTerminalAfter(),replacement)).toThrowError(DomainError);});
   });
+});
+
+describe("Phase 3 Slice 2B19A3A Vortox ledger evidence", () => {
+  const dreamerFact = (state: GameState): FirstNightAbilityOutcomeFact => {
+    const facts = state.firstNightAbilityOutcomeLedger?.facts.filter((entry) => entry.abilityRoleId === "dreamer") ?? [];
+    if (facts.length !== 1 || facts[0] === undefined) throw new Error("Expected one Dreamer Vortox fact");
+    return facts[0];
+  };
+  const substituteEvidenceIdentity = (entry: FirstNightAbilityOutcomeFact["evidenceReferences"][number]) => {
+    switch (entry.kind) {
+      case "SOURCE_EVENT": return { ...entry, eventId: eventId("other-source-event") };
+      case "TASK": return { ...entry, taskId: scheduledTaskId("other-task") };
+      case "ACTION_OPPORTUNITY": return { ...entry, opportunityId: "other-opportunity" };
+      case "CHARACTER_STATE": return { ...entry, characterStateRevision: entry.characterStateRevision + 1 };
+      case "PLAYER_ROLE_AT_REVISION": return { ...entry, playerId: playerId("other-player") };
+      case "ROLE_TENURE": return { ...entry, roleTenureId: "other-tenure" };
+      case "DREAMER_DELIVERY": return { ...entry, terminalEventId: eventId("other-delivery") };
+      default: return { ...entry, kind: "TASK" as const, taskId: scheduledTaskId("other-task"), taskType: "DREAMER_ACTION" as const };
+    }
+  };
+
+  it("[2B19A3A-C34/C35/C36] derives exact nine/ten-entry abnormal facts without impairment evidence", async () => {
+    const currentVortox = dreamerFact((await captureAcceptedBaseDreamerVortoxV3Stream("VORTOX")).finalState);
+    const otherTarget = dreamerFact((await captureAcceptedBaseDreamerVortoxV3Stream("GOOD")).finalState);
+    for (const [candidate, count] of [[currentVortox, 9], [otherTarget, 10]] as const) {
+      expect(candidate).toMatchObject({ outcomeStatus: "ABNORMAL", causeKind: "VORTOX_FALSE_INFORMATION",
+        causedByAnotherCharacterAbility: true });
+      expect(candidate.evidenceReferences).toHaveLength(count);
+      expect(candidate.evidenceReferences.filter((entry) => entry.kind === "ABILITY_IMPAIRMENT")).toHaveLength(0);
+      expect(validateFirstNightAbilityOutcomeFactShape(candidate)).toStrictEqual({ valid: true });
+    }
+  }, 15_000);
+
+  it("[2B19A3A-S11/S12/S13/S14/S15/S16] rejects every hostile nine-set mutation", async () => {
+    const fact = dreamerFact((await captureAcceptedBaseDreamerVortoxV3Stream("VORTOX")).finalState);
+    for (let index = 0; index < fact.evidenceReferences.length; index += 1) {
+      expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
+        evidenceReferences: fact.evidenceReferences.filter((_entry, candidateIndex) => candidateIndex !== index) }).valid).toBe(false);
+      expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
+        evidenceReferences: [...fact.evidenceReferences, fact.evidenceReferences[index]!] }).valid).toBe(false);
+      expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
+        evidenceReferences: fact.evidenceReferences.map((entry, candidateIndex) =>
+          candidateIndex === index ? substituteEvidenceIdentity(entry) : entry) }).valid,
+      `nine-set substitution ${index}:${fact.evidenceReferences[index]?.kind}`).toBe(false);
+    }
+    const sourceRole = fact.evidenceReferences.find((entry) => entry.kind === "PLAYER_ROLE_AT_REVISION");
+    if (sourceRole?.kind !== "PLAYER_ROLE_AT_REVISION") throw new Error("Expected role evidence");
+    expect(validateFirstNightAbilityOutcomeFactShape({ ...fact, evidenceReferences: [...fact.evidenceReferences,
+      { ...sourceRole, roleId: roleId("conflicting-role") }] }).valid).toBe(false);
+    expect(validateFirstNightAbilityOutcomeFactShape({ ...fact, evidenceReferences: [...fact.evidenceReferences,
+      { kind: "CHARACTER_STATE", characterStateRevision: 99 }] }).valid).toBe(false);
+    expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
+      evidenceReferences: [...fact.evidenceReferences].reverse() }).valid).toBe(false);
+  }, 15_000);
+
+  it("[2B19A3A-S17/S18/S19/S20/S21/S22] rejects every hostile ten-set mutation", async () => {
+    const fact = dreamerFact((await captureAcceptedBaseDreamerVortoxV3Stream("GOOD")).finalState);
+    for (let index = 0; index < fact.evidenceReferences.length; index += 1) {
+      expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
+        evidenceReferences: fact.evidenceReferences.filter((_entry, candidateIndex) => candidateIndex !== index) }).valid).toBe(false);
+      expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
+        evidenceReferences: [...fact.evidenceReferences, fact.evidenceReferences[index]!] }).valid).toBe(false);
+      expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
+        evidenceReferences: fact.evidenceReferences.map((entry, candidateIndex) =>
+          candidateIndex === index ? substituteEvidenceIdentity(entry) : entry) }).valid,
+      `ten-set substitution ${index}:${fact.evidenceReferences[index]?.kind}`).toBe(false);
+    }
+    const targetRole = [...fact.evidenceReferences].reverse().find((entry) => entry.kind === "PLAYER_ROLE_AT_REVISION");
+    if (targetRole?.kind !== "PLAYER_ROLE_AT_REVISION") throw new Error("Expected role evidence");
+    expect(validateFirstNightAbilityOutcomeFactShape({ ...fact, evidenceReferences: [...fact.evidenceReferences,
+      { ...targetRole, roleId: roleId("conflicting-role") }] }).valid).toBe(false);
+    expect(validateFirstNightAbilityOutcomeFactShape({ ...fact, evidenceReferences: [...fact.evidenceReferences,
+      { kind: "CHARACTER_STATE", characterStateRevision: 99 }] }).valid).toBe(false);
+    expect(validateFirstNightAbilityOutcomeFactShape({ ...fact,
+      evidenceReferences: [...fact.evidenceReferences].reverse() }).valid).toBe(false);
+  }, 15_000);
 });

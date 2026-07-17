@@ -35,7 +35,9 @@ import {
   validateCerenovusMarkerAgainstChoice
 } from "./cerenovus.js";
 import {
+  DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION,
   createDreamerInformationDeliveredPayload,
+  createDreamerVortoxInformationDeliveredPayload,
   evaluateDreamerEffectiveness,
   resolveBaseDreamerV2NormalCapability,
   sameDreamerInformationDelivery
@@ -1088,11 +1090,15 @@ const validateIntegratedDreamerInformationBatch = (
   const targetChosen = first as DomainEventEnvelope<"DreamerTargetChosen">;
   const information = second as DomainEventEnvelope<"DreamerInformationDelivered">;
   const settlement = third as DomainEventEnvelope<"ScheduledTaskSettled">;
-  let effectiveness = evaluateDreamerEffectiveness({
+  const effectiveness = evaluateDreamerEffectiveness({
     sourcePlayerId: targetChosen.payload.sourcePlayerId,
     abilityImpairments: state.abilityImpairments
   });
+  let expectedInformation;
   if ("deliverySchemaVersion" in information.payload) {
+    const targetChoice = "targetSchemaVersion" in targetChosen.payload
+      ? targetChosen.payload
+      : reject("Dreamer V2/V3 information batch requires a V2 target choice");
     const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, information.payload.opportunityId);
     if (opportunity === undefined) {
       reject("Dreamer V2 information batch requires one canonical open V3 opportunity");
@@ -1116,18 +1122,38 @@ const validateIntegratedDreamerInformationBatch = (
       roleTenures: roleTenures!,
       abilityImpairments: state.abilityImpairments
     });
-    if (capability.kind !== "NORMAL_INFORMATION_SUPPORTED") {
-      reject("Dreamer V2 information batch requires proven normal-information capability");
+    if (information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION) {
+      const vortoxCapability = capability.kind === "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
+        ? capability
+        : reject("Dreamer V3 information batch requires proven effective-source Vortox capability");
+      expectedInformation = createDreamerVortoxInformationDeliveredPayload({
+        rulesBaselineVersion: information.payload.rulesBaselineVersion,
+        targetChoice,
+        setup: setup!,
+        currentCharacterState: currentCharacterState!,
+        capability: vortoxCapability
+      });
+    } else {
+      if (capability.kind !== "NORMAL_INFORMATION_SUPPORTED") {
+        reject("Dreamer V2 information batch requires proven normal-information capability");
+      }
+      expectedInformation = createDreamerInformationDeliveredPayload({
+        rulesBaselineVersion: information.payload.rulesBaselineVersion,
+        targetChoice: targetChosen.payload,
+        setup: setup!,
+        currentCharacterState: currentCharacterState!,
+        effectiveness: { effective: true }
+      });
     }
-    effectiveness = { effective: true };
+  } else {
+    expectedInformation = createDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: information.payload.rulesBaselineVersion,
+      targetChoice: targetChosen.payload,
+      setup: setup!,
+      currentCharacterState: currentCharacterState!,
+      effectiveness
+    });
   }
-  const expectedInformation = createDreamerInformationDeliveredPayload({
-    rulesBaselineVersion: information.payload.rulesBaselineVersion,
-    targetChoice: targetChosen.payload,
-    setup: setup!,
-    currentCharacterState: currentCharacterState!,
-    effectiveness
-  });
 
   if (!sameDreamerInformationDelivery(information.payload, expectedInformation)) {
     reject("DreamerInformationDelivered must match the preceding target choice and deterministic information model");

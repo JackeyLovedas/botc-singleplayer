@@ -64,6 +64,13 @@ import {
 } from "./mathematician-test-fixtures.js";
 import { createMathematicianServiceForStore } from "./mathematician-test-fixtures.js";
 import type { CommandCommitStore, CommandReceipt } from "./ports/command-commit-store.js";
+import {
+  ids,
+  openFirstNightRoleActionOpportunityCommand,
+  submitSeamstressActionCommand,
+  systemActor
+} from "@botc/test-harness";
+import { captureAcceptedBaseDreamerVortoxV3Stream } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
 
 type Fixture = Awaited<ReturnType<typeof settleBaseMathematician>>;
 let fixture: Fixture;
@@ -144,6 +151,54 @@ beforeAll(async () => {
   settlementEvent = settlementCandidate;
   delivery = deliveryEvent.payload;
   finalState = rebuildGameState(fixture.events);
+});
+
+describe("Phase 3 Slice 2B19A3A Mathematician consumption", () => {
+  it("[2B19A3A-C38] counts the Vortox-abnormal Dreamer source exactly once through the real later command", async () => {
+    const captured = await captureAcceptedBaseDreamerVortoxV3Stream("GOOD");
+    const preloaded = preloadedStore(captured.events);
+    const service = createMathematicianServiceForStore(preloaded.store, uniquePreloadedIds()).service;
+    let state = rebuildGameState(await preloaded.store.loadDomainEvents(ids.game));
+    const seamstressTask = state.firstNightTaskPlan?.tasks[state.firstNightTaskProgress?.settlements.length ?? 0];
+    if (seamstressTask?.taskType !== "SEAMSTRESS_ACTION") throw new Error("Expected Seamstress after Dreamer");
+    const opened = await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("2b19a3a-open-seamstress-before-math"), expectedGameVersion: state.gameVersion,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: seamstressTask.taskId }
+    }));
+    if (opened.status !== "accepted") throw new Error("Expected Seamstress opportunity");
+    state = rebuildGameState(await preloaded.store.loadDomainEvents(ids.game));
+    const opportunity = state.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === seamstressTask.taskId);
+    if (opportunity === undefined) throw new Error("Expected Seamstress opportunity");
+    const deferred = await service.execute(submitSeamstressActionCommand({
+      commandId: commandId("2b19a3a-defer-seamstress-before-math"), expectedGameVersion: state.gameVersion,
+      actor: { kind: "ai", playerId: opportunity.sourcePlayerId },
+      payload: { commandType: "SubmitSeamstressAction", taskId: seamstressTask.taskId,
+        opportunityId: opportunity.opportunityId, decision: { kind: "DEFER" } }
+    }));
+    if (deferred.status !== "accepted") throw new Error("Expected Seamstress defer");
+    state = rebuildGameState(await preloaded.store.loadDomainEvents(ids.game));
+    const mathTask = state.firstNightTaskPlan?.tasks[state.firstNightTaskProgress?.settlements.length ?? 0];
+    if (mathTask?.taskType !== "MATHEMATICIAN_INFORMATION") throw new Error("Expected Mathematician after Seamstress");
+    const result = await service.execute({
+      commandId: commandId("2b19a3a-settle-mathematician"), gameId: ids.game,
+      expectedGameVersion: state.gameVersion, actor: systemActor, issuedAt: "2026-07-17T00:00:00.000Z",
+      correlationId: correlationId("2b19a3a-settle-mathematician"),
+      payload: { commandType: "SettleMathematicianInformation", taskId: mathTask.taskId }
+    });
+    expect(result).toMatchObject({ status: "accepted" });
+    const final = rebuildGameState(await preloaded.store.loadDomainEvents(ids.game));
+    const dreamerFacts = final.firstNightAbilityOutcomeLedger?.facts.filter((fact) => fact.abilityRoleId === "dreamer") ?? [];
+    expect(dreamerFacts).toHaveLength(1);
+    expect(dreamerFacts[0]).toMatchObject({ outcomeStatus: "ABNORMAL", causeKind: "VORTOX_FALSE_INFORMATION" });
+    expect(final.mathematicianInformation?.deliveries.at(-1)?.trueCount).toBe(1);
+  }, 15_000);
+
+  it("[2B19A3A-C39] does not count the accepted normal Dreamer", () => {
+    const dreamerFacts = finalState.firstNightAbilityOutcomeLedger?.facts.filter((fact) => fact.abilityRoleId === "dreamer") ?? [];
+    expect(dreamerFacts).toHaveLength(1);
+    expect(dreamerFacts[0]).toMatchObject({ outcomeStatus: "NORMAL", causeKind: "NO_OTHER_CHARACTER_ABILITY" });
+    expect(delivery.trueCount).toBe(0);
+  });
 });
 
 describe("Phase 3 Slice 2B18B Mathematician first-night information", () => {
