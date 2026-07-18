@@ -44,6 +44,7 @@ import {
   findCerenovusOpportunity,
   formatCerenovusAbilityInstanceId,
   createDreamerInformationDeliveredPayload,
+  createDreamerVortoxInformationDeliveredPayload,
   createDreamerInformationDeliveredScheduledTaskSettlement,
   createDreamerTargetChosenPayload,
   createSeamstressDeferredScheduledTaskSettlement,
@@ -142,11 +143,16 @@ import type {
   PhilosopherAbilityGrantedPayload,
   PlayerRosterCreatedPayload,
   ScheduledTaskSettledPayload,
+  ScheduledTaskSettlement,
   SnakeCharmerDemonSwapAppliedPayload,
   SnakeCharmerIneffectiveResolvedPayload,
   SnakeCharmerNoSwapResolvedPayload,
   SnakeCharmerTargetChosenPayload,
   DreamerInformationDeliveredPayload,
+  DreamerInformationDeliveredPayloadV2,
+  DreamerInformationDeliveredPayloadV3,
+  DreamerTargetChosenPayloadV2,
+  BaseDreamerV2NormalCapability,
   DreamerTargetChosenPayload,
   WitchDeathPendingPayload,
   WitchIneffectiveResolvedPayload,
@@ -535,8 +541,34 @@ const firstNightSystemInformationFailureMessage = (
     `conflictingPlayerIds=[${failure.conflictingPlayerIds.join(",")}]`
   ].join("; ");
 
+type PreparedBaseDreamerSubmission =
+  | {
+      readonly kind: "BASE_DREAMER_NORMAL_V2";
+      readonly targetChoice: DreamerTargetChosenPayloadV2;
+      readonly delivery: DreamerInformationDeliveredPayloadV2;
+      readonly settlement: ScheduledTaskSettlement;
+    }
+  | {
+      readonly kind: "BASE_DREAMER_VORTOX_FALSE_V3";
+      readonly targetChoice: DreamerTargetChosenPayloadV2;
+      readonly delivery: DreamerInformationDeliveredPayloadV3;
+      readonly settlement: ScheduledTaskSettlement;
+    };
+
 export class GameApplicationService {
   public constructor(private readonly dependencies: GameApplicationServiceDependencies) {}
+
+  private resolveDreamerCapability(
+    input: Parameters<typeof resolveBaseDreamerV2NormalCapability>[0]
+  ): BaseDreamerV2NormalCapability {
+    return resolveBaseDreamerV2NormalCapability(input);
+  }
+
+  private createDreamerVortoxDelivery(
+    input: Parameters<typeof createDreamerVortoxInformationDeliveredPayload>[0]
+  ): DreamerInformationDeliveredPayloadV3 {
+    return createDreamerVortoxInformationDeliveredPayload(input);
+  }
 
   public async execute(incomingCommand: SupportedCommandEnvelope): Promise<CommandResult> {
     const capturedResult = captureSupportedCommand(incomingCommand);
@@ -631,6 +663,7 @@ export class GameApplicationService {
         currentGameVersion
       );
     }
+    let preparedDreamerSubmission: PreparedBaseDreamerSubmission | undefined;
     if (command.payload.commandType === "SubmitDreamerAction") {
       const opportunity = findFirstNightActionOpportunityById(
         state?.firstNightActionOpportunities,
@@ -676,7 +709,7 @@ export class GameApplicationService {
             state.roster === undefined || state.firstNightActionOpportunities === undefined || state.seamstressRoleTenureState === undefined) {
           return failed(command.gameId, "DependencyExecutionFailed", "Dreamer normal information dependencies are unavailable", "first-night-role-action", currentGameVersion);
         }
-        const capability = resolveBaseDreamerV2NormalCapability({
+        const capability = this.resolveDreamerCapability({
           opportunity,
           firstNightTaskPlan: state.firstNightTaskPlan,
           firstNightTaskProgress: state.firstNightTaskProgress,
@@ -686,12 +719,11 @@ export class GameApplicationService {
           roleTenures: state.seamstressRoleTenureState,
           abilityImpairments: state.abilityImpairments
         });
-        if (capability.kind === "SOURCE_REPRESENTED_IMPAIRED" ||
-            capability.kind === "VORTOX_FORCED_FALSE_UNSUPPORTED" ||
-            capability.kind === "NO_DASHII_EFFECT_UNRESOLVED") {
+        if (capability.kind === "SOURCE_REPRESENTED_IMPAIRED" || capability.kind === "NO_DASHII_EFFECT_UNRESOLVED") {
           return failed(command.gameId, "ApplicationNotConfigured", "Dreamer normal information capability is not configured for this source state", "first-night-role-action", currentGameVersion);
         }
-        if (capability.kind !== "NORMAL_INFORMATION_SUPPORTED") {
+        if (capability.kind !== "NORMAL_INFORMATION_SUPPORTED" &&
+            capability.kind !== "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED") {
           return failed(command.gameId, "DependencyExecutionFailed", "Dreamer normal information capability could not be proven", "first-night-role-action", currentGameVersion);
         }
         try {
@@ -704,13 +736,38 @@ export class GameApplicationService {
             roster: state.roster.entries,
             currentCharacterState: state.currentCharacterState
           });
-          createDreamerInformationDeliveredPayload({
-            rulesBaselineVersion: RULES_BASELINE_VERSION,
-            targetChoice,
-            setup: state.setup,
-            currentCharacterState: state.currentCharacterState,
-            effectiveness: { effective: true }
+          if (!("targetSchemaVersion" in targetChoice)) {
+            throw new DomainError("InvalidDreamerTargetChosenPayload", "Base Dreamer preparation requires a V2 target choice");
+          }
+          const settlement = createDreamerInformationDeliveredScheduledTaskSettlement({
+            taskId: opportunity.taskId,
+            characterStateRevision: targetChoice.sourceCharacterStateRevision
           });
+          preparedDreamerSubmission = capability.kind === "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
+            ? {
+                kind: "BASE_DREAMER_VORTOX_FALSE_V3",
+                targetChoice,
+                delivery: this.createDreamerVortoxDelivery({
+                  rulesBaselineVersion: RULES_BASELINE_VERSION,
+                  targetChoice,
+                  setup: state.setup,
+                  currentCharacterState: state.currentCharacterState,
+                  capability
+                }),
+                settlement
+              }
+            : {
+                kind: "BASE_DREAMER_NORMAL_V2",
+                targetChoice,
+                delivery: createDreamerInformationDeliveredPayload({
+                  rulesBaselineVersion: RULES_BASELINE_VERSION,
+                  targetChoice,
+                  setup: state.setup,
+                  currentCharacterState: state.currentCharacterState,
+                  effectiveness: { effective: true }
+                }) as DreamerInformationDeliveredPayloadV2,
+                settlement
+              };
         } catch {
           return failed(command.gameId, "DependencyExecutionFailed", "Dreamer normal information dependencies could not produce a canonical result", "first-night-role-action", currentGameVersion);
         }
@@ -753,7 +810,13 @@ export class GameApplicationService {
       mathematicianDecision = decision;
     }
 
-    const batch = this.createBatchOrReject(command, state, currentGameVersion, mathematicianDecision);
+    const batch = this.createBatchOrReject(
+      command,
+      state,
+      currentGameVersion,
+      mathematicianDecision,
+      preparedDreamerSubmission
+    );
     if ("status" in batch) {
       return batch;
     }
@@ -2219,7 +2282,8 @@ export class GameApplicationService {
     command: SupportedCommandEnvelope,
     state: GameState | undefined,
     currentGameVersion: number,
-    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>
+    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>,
+    preparedDreamerSubmission?: PreparedBaseDreamerSubmission
   ): DomainEventBatch | CommandExecutionFailed | { readonly code: GeneralCommandRejectionCode; readonly message: string } | {
     readonly code: "SetupGenerationFailed";
     readonly message: string;
@@ -2318,7 +2382,8 @@ export class GameApplicationService {
         initialPrivateKnowledge,
         firstNightTaskPlan,
         firstNightSystemInformation,
-        mathematicianDecision
+        mathematicianDecision,
+        preparedDreamerSubmission
       );
     } catch (error: unknown) {
       if (error instanceof EventMetadataGenerationError) {
@@ -2776,7 +2841,8 @@ export class GameApplicationService {
     initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
     firstNightTaskPlan: FirstNightTaskPlan | undefined,
     firstNightSystemInformation: FirstNightSystemInformationResolution | undefined,
-    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>
+    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>,
+    preparedDreamerSubmission?: PreparedBaseDreamerSubmission
   ): DomainEventBatch {
     const newVersion = currentGameVersion + 1;
     const batch = this.createBatchId();
@@ -2792,7 +2858,8 @@ export class GameApplicationService {
       initialPrivateKnowledge,
       firstNightTaskPlan,
       firstNightSystemInformation,
-      mathematicianDecision
+      mathematicianDecision,
+      preparedDreamerSubmission
     );
 
     return {
@@ -2816,7 +2883,8 @@ export class GameApplicationService {
     initialPrivateKnowledge: InitialPrivateKnowledge | undefined,
     firstNightTaskPlan: FirstNightTaskPlan | undefined,
     firstNightSystemInformation: FirstNightSystemInformationResolution | undefined,
-    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>
+    mathematicianDecision?: Extract<InternalMathematicianResolution, { readonly kind: "READY" }>,
+    preparedDreamerSubmission?: PreparedBaseDreamerSubmission
   ): readonly AnyDomainEventEnvelope[] {
     const common = (eventSequence: number) => this.createEventMetadata(command, eventBatchId, eventSequence, gameVersion);
 
@@ -3589,15 +3657,23 @@ export class GameApplicationService {
           );
         }
 
-        const targetChoicePayload = createDreamerTargetChosenPayload({
-          rulesBaselineVersion: RULES_BASELINE_VERSION,
-          taskId: command.payload.taskId,
-          opportunityId: command.payload.opportunityId,
-          targetPlayerId: command.payload.decision.targetPlayerId,
-          firstNightActionOpportunities: state.firstNightActionOpportunities,
-          roster: state.roster.entries,
-          currentCharacterState: state.currentCharacterState
-        });
+        const targetChoicePayload = opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
+          ? preparedDreamerSubmission?.targetChoice
+          : createDreamerTargetChosenPayload({
+              rulesBaselineVersion: RULES_BASELINE_VERSION,
+              taskId: command.payload.taskId,
+              opportunityId: command.payload.opportunityId,
+              targetPlayerId: command.payload.decision.targetPlayerId,
+              firstNightActionOpportunities: state.firstNightActionOpportunities,
+              roster: state.roster.entries,
+              currentCharacterState: state.currentCharacterState
+            });
+        if (targetChoicePayload === undefined) {
+          throw new DomainError(
+            "InvalidDreamerTargetChosenPayload",
+            "Base Dreamer V3 event creation requires the prepared canonical submission"
+          );
+        }
 
         const dreamerTargetChosenEvent: DomainEventEnvelope<"DreamerTargetChosen"> = {
           ...common(firstEventSequence),
@@ -3605,19 +3681,24 @@ export class GameApplicationService {
           payload: targetChoicePayload satisfies DreamerTargetChosenPayload
         };
 
-        const effectiveness = opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
-          ? { effective: true } as const
-          : evaluateDreamerEffectiveness({
-              sourcePlayerId: targetChoicePayload.sourcePlayerId,
-              abilityImpairments: state.abilityImpairments
+        const informationPayload = opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
+          ? preparedDreamerSubmission?.delivery
+          : createDreamerInformationDeliveredPayload({
+              rulesBaselineVersion: RULES_BASELINE_VERSION,
+              targetChoice: targetChoicePayload,
+              setup: state.setup,
+              currentCharacterState: state.currentCharacterState,
+              effectiveness: evaluateDreamerEffectiveness({
+                sourcePlayerId: targetChoicePayload.sourcePlayerId,
+                abilityImpairments: state.abilityImpairments
+              })
             });
-        const informationPayload = createDreamerInformationDeliveredPayload({
-          rulesBaselineVersion: RULES_BASELINE_VERSION,
-          targetChoice: targetChoicePayload,
-          setup: state.setup,
-          currentCharacterState: state.currentCharacterState,
-          effectiveness
-        });
+        if (informationPayload === undefined) {
+          throw new DomainError(
+            "InvalidDreamerInformationDeliveredPayload",
+            "Base Dreamer V3 event creation requires the prepared canonical delivery"
+          );
+        }
 
         const dreamerInformationDeliveredEvent: DomainEventEnvelope<"DreamerInformationDelivered"> = {
           ...common(firstEventSequence + 1),
@@ -3625,10 +3706,18 @@ export class GameApplicationService {
           payload: informationPayload satisfies DreamerInformationDeliveredPayload
         };
 
-        const settlement = createDreamerInformationDeliveredScheduledTaskSettlement({
-          taskId: opportunity.taskId,
-          characterStateRevision: targetChoicePayload.sourceCharacterStateRevision
-        });
+        const settlement = opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
+          ? preparedDreamerSubmission?.settlement
+          : createDreamerInformationDeliveredScheduledTaskSettlement({
+              taskId: opportunity.taskId,
+              characterStateRevision: targetChoicePayload.sourceCharacterStateRevision
+            });
+        if (settlement === undefined) {
+          throw new DomainError(
+            "InvalidDomainBatchSemantics",
+            "Base Dreamer V3 event creation requires the prepared canonical settlement"
+          );
+        }
         const scheduledTaskSettledEvent: DomainEventEnvelope<"ScheduledTaskSettled"> = {
           ...common(firstEventSequence + 2),
           eventType: "ScheduledTaskSettled" as const,

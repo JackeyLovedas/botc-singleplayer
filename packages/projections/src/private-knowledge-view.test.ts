@@ -58,7 +58,13 @@ import type {
   SeamstressActionOpportunityV2,
   SetupGeneratedPayload
 } from "@botc/domain-core";
-import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
+import {
+  buildAiPrivateKnowledgeView,
+  buildAiPrivateKnowledgeViewFromAcceptedEventStream,
+  buildPlayerPrivateKnowledgeView,
+  buildPlayerPrivateKnowledgeViewFromAcceptedEventStream
+} from "@botc/projections";
+import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 import {
   charactersAssignedEvent,
   charactersAssignedPhaseTransitionedEvent,
@@ -71,6 +77,7 @@ import {
   scriptSelectedEvent,
   setupGeneratedEvent,
   setupPhaseTransitionedEvent,
+  loadAcceptedBaseDreamerV3NormalStreamFixture,
   testAssignmentGenerator,
   testFirstNightTaskCatalog,
   testFirstNightTaskPlanner,
@@ -1689,7 +1696,7 @@ describe("private knowledge projections", () => {
     expect(JSON.stringify(aiView)).not.toContain("goodTwinPlayer");
   });
 
-  it("[2B19A2-C24] projects settled DREAMER_INFORMATION only to the source player", () => {
+  it("[2B19A3A-C03][2B19A2-C24] projects settled V1 DREAMER_INFORMATION only to the source player", () => {
     const state = stateWithDreamerInformation();
     const delivery = state.dreamerInformation?.deliveries[0];
     if (delivery === undefined) {
@@ -2386,4 +2393,60 @@ describe("private knowledge projections", () => {
     expect(view.deliveredKnowledgeStages).not.toContain("CLOCKMAKER_INFORMATION");
     expect(buildAiPrivateKnowledgeView(state, viewer.playerId)).toStrictEqual(view);
   });
+});
+
+describe("Phase 3 Slice 2B19A3A accepted-stream Dreamer projection", () => {
+  it("[2B19A3A-C04] keeps normal V2 history accepted by the state-only private projection", () => {
+    const captured = loadAcceptedBaseDreamerV3NormalStreamFixture();
+    const state = rebuildGameState(captured.events);
+    const delivery = captured.events[captured.deliveryEventIndex];
+    if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected normal Dreamer delivery");
+    const playerView = buildPlayerPrivateKnowledgeView(state, delivery.payload.sourcePlayerId);
+    const aiView = buildAiPrivateKnowledgeView(state, delivery.payload.sourcePlayerId);
+    expect(playerView.dreamerInformation).toStrictEqual({
+      target: { playerId: delivery.payload.targetPlayerId, seatNumber: delivery.payload.targetSeatNumber },
+      goodRole: delivery.payload.goodRole,
+      evilRole: delivery.payload.evilRole
+    });
+    expect(aiView).toStrictEqual(playerView);
+  });
+
+  it("[2B19A3A-C40/C41/C42/C43/C45] reveals only the historical pair to the source player and AI", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const delivery = captured.events[captured.deliveryEventIndex];
+    if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected Dreamer delivery");
+    const playerView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(captured.events, delivery.payload.sourcePlayerId);
+    const aiView = buildAiPrivateKnowledgeViewFromAcceptedEventStream(captured.events, delivery.payload.sourcePlayerId);
+    expect(playerView.dreamerInformation).toStrictEqual({
+      target: { playerId: delivery.payload.targetPlayerId, seatNumber: delivery.payload.targetSeatNumber },
+      goodRole: delivery.payload.goodRole,
+      evilRole: delivery.payload.evilRole
+    });
+    expect(aiView).toStrictEqual(playerView);
+    const otherView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(captured.events, delivery.payload.targetPlayerId);
+    expect(otherView).not.toHaveProperty("dreamerInformation");
+    const visible = playerView as unknown as Record<string, unknown>;
+    expect(visible).not.toHaveProperty("vortoxConstraint");
+    expect(visible).not.toHaveProperty("informationReliability");
+    expect(JSON.stringify(playerView)).not.toContain("VORTOX_FORCED_FALSE");
+  }, 15_000);
+
+  it("[2B19A3A-C44] rejects V3 from the state-only projection boundary", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const delivery = captured.events[captured.deliveryEventIndex];
+    if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected Dreamer delivery");
+    expect(() => buildPlayerPrivateKnowledgeView(captured.finalState, delivery.payload.sourcePlayerId))
+      .toThrowError(DomainError);
+    expect(() => buildAiPrivateKnowledgeView(captured.finalState, delivery.payload.sourcePlayerId))
+      .toThrowError(DomainError);
+  }, 15_000);
+
+  it("[2B19A3A-C47] projection leaves accepted historical payload bytes unchanged", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const delivery = captured.events[captured.deliveryEventIndex];
+    if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected Dreamer delivery");
+    const before = structuredClone(delivery.payload);
+    buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(captured.events, delivery.payload.sourcePlayerId);
+    expect(captured.events[captured.deliveryEventIndex]?.payload).toStrictEqual(before);
+  }, 15_000);
 });

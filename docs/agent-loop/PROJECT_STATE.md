@@ -1,6 +1,20 @@
 # Project State
 
-## Active controlled Slice — 2B19A3A HUMAN_BLOCKED / NO DESIGN ROUND 4 / UNACCEPTED
+## Active controlled Slice — 2B19A3A RUNNING / IMPLEMENTATION / UNACCEPTED
+
+- Control status is `RUNNING / CI_EXECUTION_REPAIR_ROUND_2 / UNACCEPTED` on `phase-3/dreamer-vortox-effective-source`; current PR is `#36`, https://github.com/JackeyLovedas/botc-singleplayer/pull/36; implementation authorization is `USER_AUTHORIZED_2B19A3A_EFFECTIVE_SOURCE_VORTOX_IMPLEMENTATION`.
+- Active gates are `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, `designRound=3/3`, `repairRound=2/2`, `productRepairRoundConsumed=false`, and `remainingBlockers=[PENDING_FINAL_REPAIR_COMMIT_PUSH_EXACT_HEAD_CI_AND_FINAL_REVIEW]`; `phase2CStarted=false`. No Repair Round 3 exists.
+- Governance Traceability V1.1 is accepted through PR `#35`, merge `8d70147264c3cc839aa369257ea47ba4cf4b5e10`, tag `governance-application-command-integration-layer-v1-1`, and exact merge-head CI `29565845242 / SUCCESS`.
+- Post-merge governance closeout is `9c4d009f32d4d24d0e072168717f34795b3c322c` with exact closeout CI `29567136355 / SUCCESS`.
+- Immutable Round 3 behavior authority remains `docs/implementation/phase-3-slice-2b19a3a-design-round-3.md`, SHA-256 `ff191fe9b0877b9fc613fb0f98341fa757a19019918f83b875d564d5e8a91b57`.
+- Independent release review `docs/implementation/phase-3-slice-2b19a3a-design-release-review-under-governance-v1-1.md`, SHA-256 `cc5fb0b1443cd4a4b08ccedacfa038d8f51a2a358e22df49838ea01fe9b3ad6c`, returned `DESIGN_RELEASE_PASS` with no classification blocker and no behavior, rule, or schema change.
+- Round 1-3 failed designs/reviews remain immutable history. No Design Round 4 exists. Feature HEAD `f9bfc7351ac250414dca18fca4dff1ec6b5bc954` is on PR #36. Its push run `29572059311` and PR run `29572103884` attempt 1 ran all `34 / 1512` tests and generated coverage before a Vitest `onTaskUpdate` worker RPC timeout; product assertions never failed, and attempt 2 of both runs succeeded. The repeated first-attempt amplification is `CI_TEST_INFRASTRUCTURE_FAILURE`, does not consume the product repair budget, and is superseded as final authority when the repair HEAD is pushed.
+- CI repair round 1 adds only the two remaining frozen fixture-support paths and test/docs changes. The five production files are byte-unchanged from the feature HEAD. Real C06/C07/C08 application captures for all three target kinds strictly equal the fixture; all downstream consumers use defensive clones. Focused `9 projects / 1076`, typecheck, lint, ordinary `34 / 1512`, and two single-fork coverage runs `34 / 1512` all pass locally with no RPC timeout. Repair commit/push, exact repair-head CI, and final review remain pending.
+- Repair-1 HEAD `596cb20ba5001bb2764e18518cea1d98eb7c600c` PR attempt 2 is green, but push attempts 1/2/3 all reproduced the post-`1512 / 1512` worker timeout. Final bounded repair round 2 therefore reuses the existing live helper to cache one real-command V3 OPEN prefix per project process; every consumer gets a defensive clone, and all three primary application criteria still perform a real formal submit plus immutable terminal equality.
+- Final local gates pass with no new support path and zero production/workflow/config/dependency/timeout/threshold diff: independent C06/C07/C08, full application `4 / 269`, typecheck, lint, ordinary `34 / 1512`, and two raw coverage runs `34 / 1512`. All changed application project files are under `60s`; maximum observed `40.2s`. Final repair commit/push, exact-head dual CI, and independent review remain pending.
+- 2B19A3B, 2B19B, and Phase 2C have not started.
+
+## Historical 2B19A3A Round 3 Gate Failure — superseded only by V1.1 release review
 
 - Control status is `HUMAN_BLOCKED / STOP_NO_DESIGN_ROUND_4 / UNACCEPTED` on `phase-3/dreamer-vortox-effective-source` from accepted docs-only main `d5d007ff9b9b7140a3552d076a53330893a3201d`; exact archive CI `29553826536` is `SUCCESS` and current PR is `null`.
 - Authorization is `USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3`; original reslice authorization remains `USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY`; scope label is `Effective Base Dreamer + Effective Vortox Forced-False Information`.

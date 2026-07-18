@@ -80,6 +80,7 @@ import {
 } from "./first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "./role-tenure-replay.js";
 import { loadAcceptedBaseDreamerV3NormalStreamFixture } from "@botc/test-harness";
+import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 import type {
   AnyDomainEventEnvelope,
   AbilityImpairmentSet,
@@ -224,6 +225,38 @@ const noPhilosopherFirstNightPayload = (): FirstNightInitializedPayload => ({
   rosterVersion: SUPPORTED_ROSTER_VERSION,
   assignmentAlgorithmVersion: noPhilosopherCharactersAssignedEvent().payload.assignmentAlgorithmVersion,
   roleCatalogSignature: noPhilosopherSetupGeneratedEvent().payload.roleCatalogSignature
+});
+
+describe("Phase 3 Slice 2B19A3A Vortox replay", () => {
+  it("[2B19A3A-C16] rebuilds the exact accepted batch from its pre-delivery canonical Vortox state", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const beforeBatch = rebuildGameState(captured.events.slice(0, captured.targetEventIndex));
+    expect(beforeBatch.currentCharacterState?.entries.filter((entry) => entry.role.roleId === "vortox")).toHaveLength(1);
+    expect(beforeBatch.dreamerInformation).toBeUndefined();
+    expect(rebuildGameState(structuredClone(captured.events))).toStrictEqual(captured.finalState);
+  }, 15_000);
+
+  it("[2B19A3A-C21/C22/C23/C24/C25/C26] rejects hostile Vortox tenure, identity, revision, and applicability mutations", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const mutateDelivery = (mutate: (payload: Record<string, unknown>, constraint: Record<string, unknown>) => void) => {
+      const stream = structuredClone(captured.events);
+      const delivery = stream[captured.deliveryEventIndex];
+      if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected V3 delivery");
+      const payload = delivery.payload as unknown as Record<string, unknown>;
+      const constraint = payload.vortoxConstraint as Record<string, unknown>;
+      mutate(payload, constraint);
+      return stream;
+    };
+    const hostileStreams = [
+      mutateDelivery((_payload, constraint) => { constraint.vortoxRoleTenureId = "role-tenure-v1:seat-12:role-vortox:acquired-revision-1"; }),
+      mutateDelivery((payload, constraint) => { constraint.vortoxRoleTenureId = (payload.sourceContract as Record<string, unknown>).sourceRoleTenureId; }),
+      mutateDelivery((_payload, constraint) => { constraint.vortoxRoleTenureId = "role-tenure-v1:seat-12:role-vortox:acquired-revision-2"; }),
+      mutateDelivery((_payload, constraint) => { constraint.vortoxPlayerId = playerId("wrong-vortox"); }),
+      mutateDelivery((_payload, constraint) => { constraint.evaluatedCharacterStateRevision = 2; }),
+      mutateDelivery((_payload, constraint) => { constraint.vortoxSeatNumber = seatNumber(11); })
+    ];
+    for (const stream of hostileStreams) expect(() => rebuildGameState(stream)).toThrowError(DomainError);
+  }, 15_000);
 });
 
 const noPhilosopherFirstNightInitializedEvent = (): DomainEventEnvelope<"FirstNightInitialized"> =>
@@ -4617,7 +4650,7 @@ describe("domain event rebuild", () => {
     );
   });
 
-  it("[2B19A2-C01][R4-T09] replays frozen V1 Dreamer history and emits its ledger SOURCE_EVENT fact", () => {
+  it("[2B19A3A-C01][2B19A2-C01][R4-T09] replays frozen V1 Dreamer history and emits its ledger SOURCE_EVENT fact", () => {
     const { before, state, events: [targetChosen, information] } = acceptedLegacyDreamerV1();
 
     expect(state.dreamerTargetChoices?.choices).toStrictEqual([targetChosen.payload]);
@@ -4676,7 +4709,7 @@ describe("domain event rebuild", () => {
     expect(state.dreamerInformation).toBeUndefined();
   }, 15_000);
 
-  it("[2B19A2-C13] restarts from the real application-appended V3 target, delivery, and settlement stream", () => {
+  it("[2B19A3A-C02][2B19A2-C13] restarts from the real application-appended normal V2 delivery stream", () => {
     const captured = loadAcceptedBaseDreamerV3NormalStreamFixture();
     const restarted = rebuildGameState(structuredClone(captured.events));
     expect(restarted.lastEventSequence).toBe(31);

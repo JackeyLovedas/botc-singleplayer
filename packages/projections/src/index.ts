@@ -5,6 +5,7 @@ import {
   MINION_INFORMATION_KNOWLEDGE_STAGE,
   DEMON_INFORMATION_KNOWLEDGE_STAGE,
   DREAMER_INFORMATION_STAGE,
+  DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION,
   CERENOVUS_INFORMATION_STAGE,
   CERENOVUS_MADNESS_INSTRUCTION_MODEL_VERSION,
   CLOCKMAKER_INFORMATION_MODEL_VERSION,
@@ -587,11 +588,18 @@ const deliveredStagesForViewer = (
 const buildPlayerPrivateKnowledgeViewInternal = (
   state: GameState,
   viewerPlayerId: PlayerId,
-  allowMathematicianHistory: boolean
+  allowAcceptedStreamOnlyHistory: boolean
 ): PlayerPrivateKnowledgeView => {
-  if (!allowMathematicianHistory && (state.mathematicianInformation !== undefined ||
+  if (!allowAcceptedStreamOnlyHistory && (state.mathematicianInformation !== undefined ||
       state.firstNightTaskProgress?.settlements.some((entry) => entry.outcomeType === "MATHEMATICIAN_INFORMATION_DELIVERED") === true)) {
     throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate Mathematician history; use the accepted-event-stream builder");
+  }
+  if (!allowAcceptedStreamOnlyHistory && state.dreamerInformation?.deliveries.some((delivery) =>
+    isPlainRecord(delivery) &&
+    "deliverySchemaVersion" in delivery &&
+    delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION
+  ) === true) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate Dreamer V3 history; use the accepted-event-stream builder");
   }
   const privateKnowledge = requireInitialPrivateKnowledge(state);
   const rosterEntry = state.roster?.entries.find((entry) => entry.playerId === viewerPlayerId);
@@ -609,7 +617,7 @@ const buildPlayerPrivateKnowledgeViewInternal = (
   requireDeliveredEvilTwinInformationIsSettled(state);
   const cerenovusInstructions = requireDeliveredCerenovusMadnessInstructionsAreSettled(state);
   const clockmakerDeliveries = requireDeliveredClockmakerInformationIsSettled(state);
-  const mathematicianDeliveries = allowMathematicianHistory ? requireDeliveredMathematicianInformationIsSettled(state) : [];
+  const mathematicianDeliveries = allowAcceptedStreamOnlyHistory ? requireDeliveredMathematicianInformationIsSettled(state) : [];
   requireDeliveredDreamerInformationIsSettled(state);
   requireDeliveredSeamstressInformationIsSettled(state);
   const knownDemon = deliveredTeamEntries.find((entry) => entry.kind === "DEMON_IDENTITY");

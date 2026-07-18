@@ -3,6 +3,14 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
+const UNIQUE_OWNERSHIP_PROFILE_ID = "frozen-pr36-035f037-ownership-v2-1";
+const UNIQUE_OWNERSHIP_SOURCE_KIND =
+  "PROCESS_ISOLATED_UNIQUE_TEST_OWNERSHIP_BASELINE";
+const UNIQUE_OWNERSHIP_SUPERSESSION_REASON =
+  "UNIQUE_APPLICATION_TEST_OWNERSHIP_AND_GENUINE_BRANCH_COVERAGE_IMPROVEMENT";
+const UNIQUE_OWNERSHIP_REMOVED_TUPLE =
+  'packages/domain-core/src/first-night-ability-outcome-ledger.ts|type:"branch"|branch:473:476-473:531|arm:0|location:473:476-473:531';
+
 const APPROVED_COVERAGE_PROFILES = Object.freeze([
   Object.freeze({
     id: "accepted-main-9c4d009-single-process-v1",
@@ -57,20 +65,148 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
         sha256: "cb2a134aa8ee0158cc3cea596edaade621a148e67a949f71bf0a6cdf01eba93f"
       })
     })
+  }),
+  Object.freeze({
+    id: UNIQUE_OWNERSHIP_PROFILE_ID,
+    sourceHead: "035f0377bce97b8416f74f658bd6e1f8adbbac1a",
+    sourceKind: UNIQUE_OWNERSHIP_SOURCE_KIND,
+    supersedesForTopology: "frozen-pr36-035f037-single-process-v1",
+    supersessionReason: UNIQUE_OWNERSHIP_SUPERSESSION_REASON,
+    removedObligationAudit: Object.freeze({
+      canonicalTuple: UNIQUE_OWNERSHIP_REMOVED_TUPLE,
+      baselineHit: 0,
+      candidateHit: 396,
+      auditArtifactSha256:
+        "43388d69dd4253ae9880912dd0432cb2ef0fe9860ed243776fbf0a38897c68b7"
+    }),
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3176,
+        sha256: "ff94c61bd3a98324ec5202244bee5f9e7589f779dce02405bc8ea1bd255b3355"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "0d16a1e243523c4dbd2f9408acffffec7c77d3043ed09187da80f22085f262dd"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3176,
+        sha256: "c20b9dc8624c3320cbd28212e4bba1a6af4b8b682408cf64995cd97a7595c1e2"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1777,
+        sha256: "86729bdd6cab5519cbeab5f3e270955237f9832199f8d8bf5ae95fd38114b8f7"
+      })
+    })
   })
 ]);
 
 function parseArguments(argv) {
   if (argv.length === 2 && argv[0] === "--validate-candidate") {
-    return { baseline: null, candidate: argv[1] };
+    return { baseline: null, candidate: argv[1], profileId: null };
+  }
+  if (
+    argv.length === 4 &&
+    argv[0] === "--validate-candidate" &&
+    argv[2] === "--profile"
+  ) {
+    return { baseline: null, candidate: argv[1], profileId: argv[3] };
   }
   if (argv.length === 2 && !argv[0].startsWith("--") && !argv[1].startsWith("--")) {
-    return { baseline: argv[0], candidate: argv[1] };
+    return { baseline: argv[0], candidate: argv[1], profileId: null };
   }
   throw new Error(
     "Usage: node scripts/verify-coverage-obligations.mjs <baseline-coverage-final.json> <candidate-coverage-final.json>\n" +
-      "   or: node scripts/verify-coverage-obligations.mjs --validate-candidate <coverage-final.json>"
+      "   or: node scripts/verify-coverage-obligations.mjs --validate-candidate <coverage-final.json> [--profile <approved-profile-id>]"
   );
+}
+
+function validateApprovedProfiles() {
+  const ids = new Set();
+  for (const profile of APPROVED_COVERAGE_PROFILES) {
+    if (
+      profile === null ||
+      typeof profile !== "object" ||
+      typeof profile.id !== "string" ||
+      profile.id.length === 0 ||
+      typeof profile.sourceHead !== "string" ||
+      !/^[0-9a-f]{40}$/u.test(profile.sourceHead) ||
+      typeof profile.sourceKind !== "string" ||
+      profile.sourceKind.length === 0
+    ) {
+      throw new Error("Approved coverage profile has invalid identity metadata");
+    }
+    if (ids.has(profile.id)) {
+      throw new Error(`Approved coverage profile ID is duplicated: ${profile.id}`);
+    }
+    ids.add(profile.id);
+    if (profile.id === UNIQUE_OWNERSHIP_PROFILE_ID) {
+      if (
+        profile.sourceKind !== UNIQUE_OWNERSHIP_SOURCE_KIND ||
+        typeof profile.supersedesForTopology !== "string" ||
+        profile.supersedesForTopology.length === 0 ||
+        profile.supersessionReason !== UNIQUE_OWNERSHIP_SUPERSESSION_REASON ||
+        profile.removedObligationAudit === null ||
+        typeof profile.removedObligationAudit !== "object" ||
+        profile.removedObligationAudit.canonicalTuple !==
+          UNIQUE_OWNERSHIP_REMOVED_TUPLE ||
+        profile.removedObligationAudit.baselineHit !== 0 ||
+        !Number.isInteger(profile.removedObligationAudit.candidateHit) ||
+        profile.removedObligationAudit.candidateHit <= 0 ||
+        typeof profile.removedObligationAudit.auditArtifactSha256 !== "string" ||
+        !/^[0-9a-f]{64}$/u.test(profile.removedObligationAudit.auditArtifactSha256)
+      ) {
+        throw new Error(`Process-isolated coverage profile has invalid audit metadata: ${profile.id}`);
+      }
+    }
+  }
+  for (const profile of APPROVED_COVERAGE_PROFILES) {
+    if (
+      profile.supersedesForTopology !== undefined &&
+      (!ids.has(profile.supersedesForTopology) || profile.supersedesForTopology === profile.id)
+    ) {
+      throw new Error(`Coverage profile has invalid topology supersession metadata: ${profile.id}`);
+    }
+  }
+  const uniqueOwnershipProfile = APPROVED_COVERAGE_PROFILES.find(
+    (profile) => profile.id === UNIQUE_OWNERSHIP_PROFILE_ID
+  );
+  if (uniqueOwnershipProfile === undefined) {
+    throw new Error(`Required coverage profile is missing: ${UNIQUE_OWNERSHIP_PROFILE_ID}`);
+  }
+  const supersededProfile = APPROVED_COVERAGE_PROFILES.find(
+    (profile) => profile.id === uniqueOwnershipProfile.supersedesForTopology
+  );
+  if (
+    supersededProfile === undefined ||
+    uniqueOwnershipProfile.sourceHead !== supersededProfile.sourceHead
+  ) {
+    throw new Error("Unique-ownership profile must supersede the same source HEAD");
+  }
+  for (const name of [
+    "sourceFiles",
+    "zeroHitStatements",
+    "zeroHitFunctions",
+    "zeroHitLines"
+  ]) {
+    const current = uniqueOwnershipProfile.obligations[name];
+    const previous = supersededProfile.obligations[name];
+    if (
+      current.count !== previous.count ||
+      current.sha256 !== previous.sha256
+    ) {
+      throw new Error(`Unique-ownership profile changed a non-branch obligation group: ${name}`);
+    }
+  }
+  if (
+    uniqueOwnershipProfile.obligations.zeroHitBranchArms.count !==
+    supersededProfile.obligations.zeroHitBranchArms.count - 1
+  ) {
+    throw new Error("Unique-ownership profile must remove exactly one zero-hit branch arm");
+  }
 }
 
 function readCoverageMap(file) {
@@ -375,12 +511,16 @@ function compareToApprovedProfile(candidateGroups, profile) {
     profileId: profile.id,
     sourceHead: profile.sourceHead,
     sourceKind: profile.sourceKind,
+    supersedesForTopology: profile.supersedesForTopology ?? null,
+    supersessionReason: profile.supersessionReason ?? null,
+    removedObligationAudit: profile.removedObligationAudit ?? null,
     matches: Object.values(groups).every((group) => group.matches),
     groups
   };
 }
 
 function main() {
+  validateApprovedProfiles();
   const options = parseArguments(process.argv.slice(2));
   const candidate = summarizeCoverageMap(readCoverageMap(options.candidate));
   const requiredPackages = validateWorkspaceSourcePackages(candidate);
@@ -391,16 +531,27 @@ function main() {
       compareToApprovedProfile(candidateGroups, profile)
     );
     const matches = profiles.filter((profile) => profile.matches);
+    const requestedProfile =
+      options.profileId === null
+        ? null
+        : profiles.find((profile) => profile.profileId === options.profileId);
+    if (options.profileId !== null && requestedProfile === undefined) {
+      throw new Error(`Unknown approved coverage profile: ${options.profileId}`);
+    }
     const verdict =
-      matches.length === 1
+      matches.length === 1 &&
+      (requestedProfile === null || matches[0].profileId === requestedProfile.profileId)
         ? "COVERAGE_APPROVED_PROFILE_MATCH"
         : matches.length === 0
           ? "COVERAGE_APPROVED_PROFILE_MISMATCH"
+          : requestedProfile !== null && !requestedProfile.matches
+            ? "COVERAGE_REQUESTED_PROFILE_MISMATCH"
           : "COVERAGE_APPROVED_PROFILE_AMBIGUOUS";
     process.stdout.write(
       `${JSON.stringify(
         {
           verdict,
+          requestedProfileId: options.profileId,
           matchedProfileId: matches.length === 1 ? matches[0].profileId : null,
           candidate: summarizeForOutput(candidate, requiredPackages),
           profiles
@@ -409,7 +560,7 @@ function main() {
         2
       )}\n`
     );
-    if (matches.length !== 1) {
+    if (verdict !== "COVERAGE_APPROVED_PROFILE_MATCH") {
       process.exitCode = 1;
     }
     return;

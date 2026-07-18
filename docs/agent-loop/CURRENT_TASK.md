@@ -1,6 +1,25 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3A — HUMAN_BLOCKED / NO DESIGN ROUND 4 / UNACCEPTED
+## Phase 3 Slice 2B19A3A — RUNNING / IMPLEMENTATION / UNACCEPTED
+
+- Current status: `RUNNING / CI_EXECUTION_REPAIR_ROUND_2`; task type: `PRODUCT_SLICE`; current Slice: `2B19A3A`; branch: `phase-3/dreamer-vortox-effective-source`; current PR: `#36`, https://github.com/JackeyLovedas/botc-singleplayer/pull/36.
+- Implementation authorization: `USER_AUTHORIZED_2B19A3A_EFFECTIVE_SOURCE_VORTOX_IMPLEMENTATION`.
+- Authorization: `USER_AUTHORIZED_GOVERNANCE_TRACEABILITY_V1_1_APPLICATION_COMMAND_LAYER`.
+- Gate state: `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, `designRound=3/3`, `repairRound=2/2`, `productRepairRoundConsumed=false`, `remainingBlockers=[PENDING_FINAL_REPAIR_COMMIT_PUSH_EXACT_HEAD_CI_AND_FINAL_REVIEW]`, and `phase2CStarted=false`. No Repair Round 3 exists.
+- Accepted Governance Traceability V1.1: PR `#35`, merge SHA `8d70147264c3cc839aa369257ea47ba4cf4b5e10`, tag `governance-application-command-integration-layer-v1-1`, exact merge-head CI `29565845242 / SUCCESS`.
+- Governance closeout main: `9c4d009f32d4d24d0e072168717f34795b3c322c`; exact closeout CI `29567136355 / SUCCESS`.
+- Immutable product authority remains `docs/implementation/phase-3-slice-2b19a3a-design-round-3.md`, SHA-256 `ff191fe9b0877b9fc613fb0f98341fa757a19019918f83b875d564d5e8a91b57`.
+- Independent release review: `docs/implementation/phase-3-slice-2b19a3a-design-release-review-under-governance-v1-1.md`, SHA-256 `cc5fb0b1443cd4a4b08ccedacfa038d8f51a2a358e22df49838ea01fe9b3ad6c`, verdict and terminal `DESIGN_RELEASE_PASS`.
+- The release review closes only the Governance V1.1 classification blockers. Behavior, rules, API, payload, event, provenance, ledger, projection, receipt, allowlists, size, and coverage contracts are unchanged.
+- Round 1, Round 2, and Round 3 designs and reviews remain immutable failed history. No Design Round 4 was created or inferred.
+- Feature commit `f9bfc7351ac250414dca18fca4dff1ec6b5bc954` is published on PR #36. Push run `29572059311` and PR run `29572103884` attempt 1 completed all `34 / 1512` tests plus coverage generation, then failed with `[vitest-worker]: Timeout calling "onTaskUpdate"`; Windows/ordinary checks were green and no product assertion failed. Attempt 2 of both runs succeeded. The repeated first-attempt amplification is classified `CI_TEST_INFRASTRUCTURE_FAILURE`, not a product repair; final CI authority must move to the new repair HEAD.
+- CI repair round 1 stays within the frozen five-production/seven-test/three-support-path maximum. Production diff from the feature HEAD is zero. C06/C07/C08 keep the real application command capture for `GOOD`, `NON_VORTOX_EVIL`, and `VORTOX` and `toStrictEqual` the immutable fixture; replay, ledger, projection, batch, and Mathematician consumers use defensive fixture clones.
+- Repair-1 HEAD `596cb20ba5001bb2764e18518cea1d98eb7c600c` PR CI `29573217753` attempt 2 succeeded, while push CI `29573215219` attempts 1/2/3 each timed out after `1512 / 1512`; no product assertion failed. Its only file over `60s` was application information/later-actions at `66,334ms`.
+- Final bounded CI repair round 2 reuses the existing live support path and adds no support path. A module-private lazy defensive cache generates the V3 OPEN prefix once through real commands; C06/C07/C08 each remain independently runnable, execute a real formal submit for their target kind, and strictly equal the immutable terminal fixture. C06 explicitly proves the real OPEN event and exact prefix history.
+- Final local repair gates pass: independent C06/C07/C08 runs in all four application projects, full application file `4 projects / 269 tests`, typecheck, full lint, ordinary `34 / 1512` in `32.38s`, and two raw single-fork coverage runs `34 / 1512` in `47.96s` and `48.32s`, both without worker RPC timeout. Every changed application project file is below `60s`; the slowest observed is information/later-actions at `40.2s`. C/S/SUP remain 53/39/2 and product semantics are unchanged.
+- Status and traceability are `docs/implementation/phase-3-slice-2b19a3a-status.md` and `docs/implementation/phase-3-slice-2b19a3a-test-traceability.md`. The final attributed repair commit, push, exact final-repair-head CI, and final review remain pending. 2B19A3B, 2B19B, and Phase 2C remain unstarted.
+
+## Historical 2B19A3A Round 3 Gate Failure — superseded only by V1.1 release review
 
 - Authorization: `USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3`.
 - Original reslice authorization remains `USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY`.
