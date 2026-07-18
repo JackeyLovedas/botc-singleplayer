@@ -1,5 +1,18 @@
 # Project State
 
+## Current gated Slice — 2B19A3B1 RUNNING
+
+- Fresh independent rule research is complete: `docs/rules/evidence/2B19A3B1.md`, canonical LF SHA-256 `ae48ce51ddbcd6ba3bae2dc49ab6441769e77c55f994aa8c2e043e98e58a2653`, retrieval `2026-07-18T21:38:04+08:00`, verdict `RULE_READY`, coverage `PARTIAL`, and `unresolvedConflicts=[]`.
+- Governance precheck `docs/architecture/2B19A3B1-go-no-go-under-governance-v1.md`, SHA-256 `e566256966764d3fb53141ad0f2529b6ebe9005928b60454f497216a65911b1b`, returned `GO`.
+- Immutable standalone architect Round 1 design `docs/implementation/phase-3-slice-2b19a3b1-design.md` remains SHA-256 `bbcb781fe00cd8cfd259ad4e24dc3da2520e88f8676d3d0c922b82412e0c4266`; immutable independent Round 1 review `docs/implementation/phase-3-slice-2b19a3b1-design-review-round-1.md` remains SHA-256 `0d6f0e68ae3b532e7b685f491fec931f8e9ca949f8baf7ec2832264c5493e8f4`, verdict `RULE_DESIGN_FIX_REQUIRED`.
+- Standalone architect Round 2 design `docs/implementation/phase-3-slice-2b19a3b1-design-round-2.md`, canonical LF SHA-256 `a0f11a05c2685355f2da454fcdc4ee8de6ff2421c56c695f87c0360612e205a0`, 668 lines, is complete through the unique terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`.
+- Independent Round 2 review `docs/implementation/phase-3-slice-2b19a3b1-design-review-round-2.md`, canonical LF SHA-256 `1fbe40cc1344fd109338173df28ab2a9dbae9f1583b3143abc78275e6d191713`, returned `RULE_DESIGN_PASS`; the reviewer independently confirmed `FIDELITY_PASS`, `findings=[]`, `remainingBlockers=[]`, and terminal `RULE_DESIGN_PASS`.
+- Current control is `status=RUNNING`, `taskType=PRODUCT_SLICE`, `currentSlice=2B19A3B1`, `currentPR=null`, `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, design `2/2`, repair `0/2`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
+- Mechanical design checks passed: criteria are exactly C=40/S=20/C24=0 with 60 unique IDs; each row has one allowed R enum, T enum, and primary layer; only the exact no-commit archive cherry-pick is executable; three independent complete nine-shard candidate runs bind the exact product implementation HEAD before a separate profile-only commit. Remaining blockers are `[]`; next action is `RECOVER_ARCHIVED_EXPERIMENT_WITH_SINGLE_AUTHORIZED_METHOD`.
+- The original 2B19A3B experiment remains unaccepted and unrestored. Its external patch SHA-256 is `b271c2db780c0940e001bd0dec596ff21fd70950a0af6cee6ec861b9aa5a8a6c`; its local-only archive branch WIP is `ef51b62777751ecf0480f14fb98b378197f6ef21`.
+- Combined Mathematician settlement remains deferred to `2B19A3B2_COMBINED_MATHEMATICIAN_INTEGRATION` after `2B19B_PHILOSOPHER_GAINED_DREAMER_EXECUTION`; no combined total is frozen by 2B19A3B1.
+- Main exact-head push CI `29646098230` completed `SUCCESS / 22 of 22 jobs` for `45a467cec81703d911914de464180e5192fc7714`. The merged local 2B19A3B feature branch was deleted; the local archive branch remains.
+
 ## Phase 3 Slice 2B19A3B reslice archive
 
 - 2B19A3B is `RESLICE_REQUIRED / UNACCEPTED`; its prior Round 2 `RULE_DESIGN_PASS` remains immutable history but no longer authorizes implementation.

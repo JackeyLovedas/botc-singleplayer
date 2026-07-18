@@ -1,5 +1,20 @@
 # Current Task
 
+## Phase 3 Slice 2B19A3B1 — RUNNING / READY FOR SINGLE-METHOD RECOVERY
+
+- Fresh rule evidence `docs/rules/evidence/2B19A3B1.md`, canonical LF SHA-256 `ae48ce51ddbcd6ba3bae2dc49ab6441769e77c55f994aa8c2e043e98e58a2653`, retrieval `2026-07-18T21:38:04+08:00`, returned `RULE_READY / PARTIAL / unresolvedConflicts=[]`; formal combined Mathematician total remains undefined and deferred.
+- Governance record `docs/architecture/2B19A3B1-go-no-go-under-governance-v1.md`, SHA-256 `e566256966764d3fb53141ad0f2529b6ebe9005928b60454f497216a65911b1b`, returned exact `GO` within the five-file production allowlist and inherited stop-loss.
+- Immutable read-only architect Round 1 design remains `docs/implementation/phase-3-slice-2b19a3b1-design.md`, SHA-256 `bbcb781fe00cd8cfd259ad4e24dc3da2520e88f8676d3d0c922b82412e0c4266`; its independent review remains `docs/implementation/phase-3-slice-2b19a3b1-design-review-round-1.md`, SHA-256 `0d6f0e68ae3b532e7b685f491fec931f8e9ca949f8baf7ec2832264c5493e8f4`, verdict `RULE_DESIGN_FIX_REQUIRED`.
+- Read-only architect Round 2 design `docs/implementation/phase-3-slice-2b19a3b1-design-round-2.md`, canonical LF SHA-256 `a0f11a05c2685355f2da454fcdc4ee8de6ff2421c56c695f87c0360612e205a0`, 668 lines, ends with the unique terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`.
+- Reslice authorization: `USER_AUTHORIZED_2B19A3B_RESLICE_TO_CORE_AND_DEFER_COMBINED_MATHEMATICIAN_INTEGRATION`; branch `phase-3/dreamer-vortox-canonical-drunk-core`; PR `null`.
+- Independent Round 2 review `docs/implementation/phase-3-slice-2b19a3b1-design-review-round-2.md`, canonical LF SHA-256 `1fbe40cc1344fd109338173df28ab2a9dbae9f1583b3143abc78275e6d191713`, 371 lines, returned `RULE_DESIGN_PASS` with `findings=[]` and `remainingBlockers=[]`.
+- Control state: `status=RUNNING`, `taskType=PRODUCT_SLICE`, `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, design `2/2`, repair `0/2`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
+- Mechanical design checks passed: exactly 40 C rows and 20 S rows, no C24, all 60 IDs unique, every row has a singleton `R1|R2|R3|R4`, singleton `T1|T2|T3`, and one allowed primary layer; the only executable recovery method is `git cherry-pick --no-commit ef51b62777751ecf0480f14fb98b378197f6ef21`; the contract requires three independent complete nine-shard candidates on one exact product implementation HEAD.
+- Remaining blockers are exactly `[]`.
+- The unaccepted 2B19A3B experiment remains external/archive evidence only: patch SHA-256 `b271c2db780c0940e001bd0dec596ff21fd70950a0af6cee6ec861b9aa5a8a6c`, local archive WIP `ef51b62777751ecf0480f14fb98b378197f6ef21`.
+- The combined formal Mathematician total remains deferred to `2B19A3B2_COMBINED_MATHEMATICIAN_INTEGRATION` after `2B19B_PHILOSOPHER_GAINED_DREAMER_EXECUTION`; the current design contains no `C24` and freezes no future `trueCount`.
+- Required next action: `RECOVER_ARCHIVED_EXPERIMENT_WITH_SINGLE_AUTHORIZED_METHOD`. The only authorized command is `git cherry-pick --no-commit ef51b62777751ecf0480f14fb98b378197f6ef21`; its raw result remains unaccepted pending the frozen audit and bounded implementation.
+
 ## Phase 3 Slice 2B19A3B — RESLICE_REQUIRED / UNACCEPTED
 
 - Reslice authorization: `USER_AUTHORIZED_2B19A3B_RESLICE_TO_CORE_AND_DEFER_COMBINED_MATHEMATICIAN_INTEGRATION`.
