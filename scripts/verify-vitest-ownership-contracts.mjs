@@ -424,12 +424,115 @@ function runSelfTest() {
       }
     });
 
+    check("18 contract A cannot bind contract B semantic test", () => {
+      const fixture = createFixture(root, ["2BTESTA", "2BTESTB"]);
+      writeFixture(
+        root,
+        fixture.contracts[0].traceabilityFile,
+        traceability("2BTESTA", fixture.owned[1].title)
+      );
+      expectCode("TRACEABILITY_BINDING_WRONG_OWNERSHIP_CONTRACT", () =>
+        audit(root, fixture.contracts, fixture.inventory)
+      );
+      writeFixture(
+        root,
+        fixture.contracts[0].traceabilityFile,
+        traceability("2BTESTA", fixture.legacy.title)
+      );
+      expectCode("TRACEABILITY_BINDING_WRONG_OWNERSHIP_CONTRACT", () =>
+        audit(root, fixture.contracts, fixture.inventory)
+      );
+    });
+
+    check("19 reciprocal cross-contract traceability swap rejects", () => {
+      const fixture = createFixture(root, ["2BTESTA", "2BTESTB"]);
+      writeFixture(
+        root,
+        fixture.contracts[0].traceabilityFile,
+        traceability("2BTESTA", fixture.owned[1].title)
+      );
+      writeFixture(
+        root,
+        fixture.contracts[1].traceabilityFile,
+        traceability("2BTESTB", fixture.owned[0].title)
+      );
+      expectCode("TRACEABILITY_BINDING_WRONG_OWNERSHIP_CONTRACT", () =>
+        audit(root, [...fixture.contracts].reverse(), fixture.inventory)
+      );
+    });
+
+    check("20 registered foreign supporting authority rejects", () => {
+      const fixture = createFixture(root, ["2BTESTA", "2BTESTB"]);
+      writeFixture(
+        root,
+        fixture.contracts[0].traceabilityFile,
+        traceability("2BTESTA", fixture.owned[0].title, {
+          supportingReference: "SUP-2BTESTB-001"
+        })
+      );
+      expectCode("INVALID_SUPPORTING_AUTHORITY_REFERENCE", () =>
+        audit(root, fixture.contracts, fixture.inventory)
+      );
+      writeFixture(
+        root,
+        fixture.contracts[0].traceabilityFile,
+        traceability("2BTESTA", fixture.owned[0].title, {
+          registryRows: ["| SUP-2BTESTB-001 | foreign registry entry |"]
+        })
+      );
+      expectCode("INVALID_SUPPORTING_AUTHORITY_REGISTRY_ENTRY", () =>
+        audit(root, fixture.contracts, fixture.inventory)
+      );
+    });
+
+    check("21 unregistered foreign mixed and unknown support never become zero", () => {
+      const fixture = createFixture(root);
+      const zeroSupportingContract = {
+        ...fixture.contracts[0],
+        frozenBaseline: {
+          ...fixture.contracts[0].frozenBaseline,
+          supportingAuthorityCount: 0
+        }
+      };
+      for (const supportingReference of [
+        "SUP-2BTESTB-001",
+        "NONE SUP-2BTESTA-001",
+        "UNKNOWN"
+      ]) {
+        writeFixture(
+          root,
+          zeroSupportingContract.traceabilityFile,
+          traceability("2BTESTA", fixture.owned[0].title, {
+            registryRows: [],
+            supportingReference
+          })
+        );
+        expectCode("INVALID_SUPPORTING_AUTHORITY_REFERENCE", () =>
+          audit(root, [zeroSupportingContract], fixture.inventory)
+        );
+      }
+    });
+
+    check("22 duplicate active traceability file rejects", () => {
+      const fixture = createFixture(root, ["2BTESTA", "2BTESTB"]);
+      const duplicateFileContract = {
+        ...fixture.contracts[1],
+        traceabilityFile: fixture.contracts[0].traceabilityFile
+      };
+      expectCode("DUPLICATE_OWNERSHIP_TRACEABILITY_FILE", () =>
+        validateOwnershipContracts(
+          [fixture.contracts[0], duplicateFileContract],
+          { repoRoot: root }
+        )
+      );
+    });
+
     process.stdout.write(
       `${JSON.stringify(
         {
           verdict: "OWNERSHIP_CONTRACT_SELF_TEST_PASS",
           checksPassed: results.length,
-          checksExpected: 17,
+          checksExpected: 22,
           checks: results
         },
         null,

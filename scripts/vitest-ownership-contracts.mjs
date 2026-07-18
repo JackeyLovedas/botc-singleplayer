@@ -226,12 +226,17 @@ function validateContractsInner(input, options) {
       supportingAuthorityPrefix: assertNonEmptyString(
         descriptorValue(descriptors, "supportingAuthorityPrefix"),
         `${context}.supportingAuthorityPrefix`
+      ),
+      traceabilityFile: assertNonEmptyString(
+        descriptorValue(descriptors, "traceabilityFile"),
+        `${context}.traceabilityFile`
       )
     });
   }
   const contractIds = new Set();
   const markerPrefixes = new Set();
   const supportingPrefixes = new Set();
+  const traceabilityFiles = new Set();
   for (const identity of registryIdentities) {
     if (contractIds.has(identity.contractId)) {
       fail("DUPLICATE_OWNERSHIP_CONTRACT_ID", identity.contractId);
@@ -245,9 +250,16 @@ function validateContractsInner(input, options) {
         identity.supportingAuthorityPrefix
       );
     }
+    if (traceabilityFiles.has(identity.traceabilityFile)) {
+      fail(
+        "DUPLICATE_OWNERSHIP_TRACEABILITY_FILE",
+        identity.traceabilityFile
+      );
+    }
     contractIds.add(identity.contractId);
     markerPrefixes.add(identity.markerPrefix);
     supportingPrefixes.add(identity.supportingAuthorityPrefix);
+    traceabilityFiles.add(identity.traceabilityFile);
   }
   for (let left = 0; left < registryIdentities.length; left += 1) {
     for (let right = left + 1; right < registryIdentities.length; right += 1) {
@@ -531,7 +543,24 @@ function traceTitleMatches(actualTitle, inventoryTitle) {
   return true;
 }
 
-function parseTraceability(repoRoot, contract, semanticInventory) {
+function parseSupportingAuthorityReference(value, contract) {
+  if (value === "NONE") return null;
+  const plainMatch = /^(SUP-[A-Z0-9]+-\d{3})$/u.exec(value);
+  const codeMatch = /^`(SUP-[A-Z0-9]+-\d{3})`$/u.exec(value);
+  const supportingAuthorityId = plainMatch?.[1] ?? codeMatch?.[1] ?? null;
+  if (
+    supportingAuthorityId === null ||
+    !supportingAuthorityId.startsWith(contract.supportingAuthorityPrefix)
+  ) {
+    fail(
+      "INVALID_SUPPORTING_AUTHORITY_REFERENCE",
+      `${contract.contractId}: ${value || "empty"}`
+    );
+  }
+  return supportingAuthorityId;
+}
+
+function parseTraceability(repoRoot, contract, semanticInventory, contracts) {
   const traceabilityPath = path.resolve(repoRoot, contract.traceabilityFile);
   if (!existsSync(traceabilityPath)) {
     fail(
@@ -586,6 +615,22 @@ function parseTraceability(repoRoot, contract, semanticInventory) {
         `${contract.contractId}:${id} resolves to ${semanticCandidates.size} tests`
       );
     }
+    const semanticKey = [...semanticCandidates][0];
+    const resolvedIdentity = semanticInventory.get(semanticKey);
+    const classification = classifyOwnershipTitle(
+      resolvedIdentity.title,
+      contracts
+    );
+    if (
+      classification === null ||
+      classification.unregisteredSliceMarker === true ||
+      classification.contract.contractId !== contract.contractId
+    ) {
+      fail(
+        "TRACEABILITY_BINDING_WRONG_OWNERSHIP_CONTRACT",
+        `${contract.contractId}:${id} resolves to ${resolvedIdentity.title}`
+      );
+    }
     dynamicTestAuthorityRows += 1;
   }
 
@@ -594,27 +639,43 @@ function parseTraceability(repoRoot, contract, semanticInventory) {
     "\\$&"
   );
   const supportingPattern = new RegExp(
-    `^\\| \`?(${escapedSupportingPrefix}\\d{3})\`? \\|`,
+    `^${escapedSupportingPrefix}\\d{3}$`,
     "u"
-  );
-  const referencePattern = new RegExp(
-    `${escapedSupportingPrefix}\\d{3}`,
-    "gu"
   );
   const registryIds = new Set();
   for (const line of traceabilityLines) {
-    const match = supportingPattern.exec(line);
-    if (match === null) continue;
-    if (registryIds.has(match[1])) {
-      fail("DUPLICATE_SUPPORTING_AUTHORITY", `${contract.contractId}:${match[1]}`);
+    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+    const rawRegistryToken = cells[0] ?? "";
+    if (!rawRegistryToken.includes("SUP-")) continue;
+    const plainRegistryMatch = /^(SUP-[A-Z0-9]+-\d{3})$/u.exec(
+      rawRegistryToken
+    );
+    const codeRegistryMatch = /^`(SUP-[A-Z0-9]+-\d{3})`$/u.exec(
+      rawRegistryToken
+    );
+    const registryToken =
+      plainRegistryMatch?.[1] ?? codeRegistryMatch?.[1] ?? null;
+    if (registryToken === null || !supportingPattern.test(registryToken)) {
+      fail(
+        "INVALID_SUPPORTING_AUTHORITY_REGISTRY_ENTRY",
+        `${contract.contractId}: ${rawRegistryToken}`
+      );
     }
-    registryIds.add(match[1]);
+    if (registryIds.has(registryToken)) {
+      fail(
+        "DUPLICATE_SUPPORTING_AUTHORITY",
+        `${contract.contractId}:${registryToken}`
+      );
+    }
+    registryIds.add(registryToken);
   }
   const referencedIds = new Set();
   for (const cells of traceabilityRows.values()) {
-    for (const match of cells[6].matchAll(referencePattern)) {
-      referencedIds.add(match[0]);
-    }
+    const supportingAuthorityId = parseSupportingAuthorityReference(
+      cells[6],
+      contract
+    );
+    if (supportingAuthorityId !== null) referencedIds.add(supportingAuthorityId);
   }
   const missingSupportingIds = [...referencedIds].filter((id) => !registryIds.has(id));
   const unusedSupportingIds = [...registryIds].filter((id) => !referencedIds.has(id));
@@ -795,7 +856,12 @@ export function auditOwnershipContracts({
         `${contract.contractId} project executions: expected=${baseline.projectExecutionsAfter}, actual=${inventory.length}`
       );
     }
-    const traceability = parseTraceability(resolvedRoot, contract, semanticInventory);
+    const traceability = parseTraceability(
+      resolvedRoot,
+      contract,
+      semanticInventory,
+      validatedContracts
+    );
     if (
       traceability.traceabilityRows !== baseline.traceabilityRowCount ||
       traceability.dynamicTestAuthorityRows !== baseline.dynamicTestAuthorityRows ||

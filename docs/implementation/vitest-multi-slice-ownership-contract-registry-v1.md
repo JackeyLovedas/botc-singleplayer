@@ -75,7 +75,8 @@ non-owned inventory by omission from the registry.
 Validation rejects empty registries, inactive or empty contracts, unknown
 fields, accessor properties, symbol keys, sparse arrays, non-plain records,
 noncanonical repository paths, non-lowercase SHA-256 values, duplicate
-contract IDs, duplicate marker/supporting prefixes, duplicate criteria,
+contract IDs, duplicate marker/supporting prefixes, duplicate active
+traceability files, duplicate criteria,
 contract-unspecific markers, overlapping prefixes, and unavailable active
 traceability files. Validated data is defensively cloned and frozen.
 
@@ -90,8 +91,18 @@ For every active contract, the verifier independently checks:
 5. the exact criterion set in that contract's traceability file;
 6. nine traceability fields and `MechanismMatch=PASS`;
 7. unique resolution of every dynamic `.test.ts` binding;
-8. exact supporting-authority registry/reference closure; and
-9. stable output ordered by `contractId`.
+8. exact leading ownership of every resolved dynamic binding by the current
+   contract, rejecting another active contract, an unregistered slice marker,
+   or a non-owned test;
+9. exact supporting-authority registry/reference closure; and
+10. stable output ordered by `contractId`.
+
+The `SupportingAuthorityId` field is parsed as a complete value. It is either
+the exact literal `NONE` or one current-contract ID, optionally enclosed by one
+matching Markdown code span. Foreign registered or unregistered prefixes,
+mixed `NONE`/ID text, malformed IDs, and unknown tokens fail closed. Registry
+rows that start with `SUP-` must likewise be exact current-contract entries;
+foreign values cannot disappear into a zero-count result.
 
 With one active contract, the top-level verifier deliberately preserves the
 accepted single-contract JSON output shape byte-for-byte at the field level.
@@ -131,15 +142,19 @@ node scripts/verify-vitest-ownership-contracts.mjs --self-test
 ```
 
 The standard-library-only harness uses a temporary directory outside the
-repository and performs 17 named checks: one contract; two independent
+repository and performs 22 named checks: one contract; two independent
 contracts; marker overlap; duplicate contract ID; duplicate supporting prefix;
 frozen legacy marker acceptance plus unknown-marker addition/mutation rejection;
 duplicate project execution; wrong owner; missing traceability; missing and
 duplicate criteria; missing and unused supporting authorities; non-PASS
 mechanism; non-leading authority marker; hostile/noncanonical registry shapes;
-and input-order-independent output. Its hostile-shape matrix includes unknown
-fields, getters, symbols, sparse arrays, non-plain objects, and revoked proxies,
-and asserts getter invocation count remains zero.
+input-order-independent output; A-to-B dynamic binding rejection; reciprocal
+A/B traceability-swap rejection; registered and unregistered foreign supporting
+authority rejection; malformed/mixed/unknown supporting-value rejection even
+with a zero-count baseline; and duplicate active traceability-file rejection.
+Its hostile-shape matrix includes unknown fields, getters, symbols, sparse
+arrays, non-plain objects, and revoked proxies, and asserts getter invocation
+count remains zero.
 
 The harness creates no repository `.test.ts` file and changes no product test.
 
