@@ -1,5 +1,13 @@
 # Project State
 
+## Phase 3 Slice 2B19A3B reslice archive
+
+- 2B19A3B is `RESLICE_REQUIRED / UNACCEPTED`; its prior Round 2 `RULE_DESIGN_PASS` remains immutable history but no longer authorizes implementation.
+- The experiment never produced a product commit, PR, tag, coverage profile, ownership contract, or accepted product behavior. It is preserved externally at patch SHA-256 `b271c2db780c0940e001bd0dec596ff21fd70950a0af6cee6ec861b9aa5a8a6c` and locally at archive WIP `ef51b62777751ecf0480f14fb98b378197f6ef21`.
+- The blocking command graph is exact: canonical Philosopher DRUNK enables native/base Dreamer V4 work, but accepted V2 scheduling inserts an unsupported Philosopher-gained Dreamer task before formal Mathematician settlement.
+- The valid contribution claim is limited to at most one terminal abnormal fact for the native/base Dreamer. A future combined Mathematician `trueCount` is deferred to `2B19A3B2_COMBINED_MATHEMATICIAN_INTEGRATION` after `2B19B_PHILOSOPHER_GAINED_DREAMER_EXECUTION` and is not frozen as `1`.
+- The next bounded Slice is authorized as `2B19A3B1 / Canonical Drunk Dreamer Vortox Core`, but its rule delta, governance, and design gates have not started.
+
 ## Current gated Slice — 2B19A3B READY_FOR_IMPLEMENTATION / RULE_DESIGN_PASS
 
 - The user approved `BOTC-SIM-DREAMER-VORTOX-DRUNK-LEDGER-ATTRIBUTION-V1`; this changes no external rule truth and resolves only the simulator's single terminal-fact attribution.

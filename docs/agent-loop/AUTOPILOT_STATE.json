@@ -1,11 +1,11 @@
 {
-  "status": "READY_FOR_IMPLEMENTATION",
+  "status": "RESLICE_REQUIRED",
   "taskType": "PRODUCT_SLICE",
   "productRepairRoundConsumed": false,
   "currentPR": null,
   "currentPRUrl": null,
   "currentBranch": "phase-3/dreamer-vortox-canonical-drunk-precedence",
-  "currentSlice": "2B19A3B",
+  "currentSlice": null,
   "slice2B19A1Started": false,
   "slice2B19A2Started": false,
   "slice2B19A3Started": false,
@@ -15,9 +15,9 @@
   "slice2B19BStarted": false,
   "phase2CStarted": false,
   "slice2B19A3BGate": {
-    "authorization": "USER_AUTHORIZED_2B19A3B_DESIGN_ROUND_2_CLASSIFICATION_AND_TRACEABILITY_REPAIR",
-    "status": "READY_FOR_IMPLEMENTATION",
-    "disposition": "RULE_DESIGN_PASS",
+    "authorization": "USER_AUTHORIZED_2B19A3B_RESLICE_TO_CORE_AND_DEFER_COMBINED_MATHEMATICIAN_INTEGRATION",
+    "status": "RESLICE_REQUIRED",
+    "disposition": "UNACCEPTED",
     "scopeMode": "CANONICAL_DRUNK_BASE_DREAMER_EFFECTIVE_VORTOX_PRECEDENCE",
     "ruleVerdict": "RULE_READY",
     "ruleCoverageStatus": "PARTIAL",
@@ -36,7 +36,7 @@
     "simulatorAuditPolicyAdded": true,
     "ruleReady": true,
     "ruleDesignPass": true,
-    "implementationAuthorized": true,
+    "implementationAuthorized": false,
     "designRound": 2,
     "maxDesignRounds": 2,
     "repairRound": 0,
@@ -67,10 +67,30 @@
     "round2ReviewSha256": "d572bc262bbb61b79cda582aaed625f09c9096807bb4181d92d590ba9cbe7479",
     "round2ReviewVerdict": "RULE_DESIGN_PASS",
     "round2ReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
+    "experimentArchive": {
+      "acceptance": "UNACCEPTED",
+      "externalPatchPath": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\product-experiments\\phase-3-slice-2b19a3b\\2b19a3b-unaccepted-experiment.patch",
+      "externalPatchSha256": "b271c2db780c0940e001bd0dec596ff21fd70950a0af6cee6ec861b9aa5a8a6c",
+      "externalManifestPath": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\product-experiments\\phase-3-slice-2b19a3b\\2b19a3b-unaccepted-experiment-manifest.md",
+      "archiveBranch": "archive/2b19a3b-unaccepted-mathematician-blocked-experiment",
+      "archiveWipCommit": "ef51b62777751ecf0480f14fb98b378197f6ef21",
+      "productCommit": null,
+      "pullRequest": null,
+      "tag": null,
+      "coverageProfile": null,
+      "ownershipContractRegistered": false
+    },
+    "mathematicianIntegrationDeferral": {
+      "currentSliceContributionClaim": "The native/base Dreamer produces at most one terminal abnormal fact.",
+      "deferredCombinedTotalClaim": "The final Mathematician trueCount after Philosopher-gained Dreamer settlement is not frozen by 2B19A3B.",
+      "futureItem": "2B19A3B2_COMBINED_MATHEMATICIAN_INTEGRATION",
+      "dependsOn": "2B19B_PHILOSOPHER_GAINED_DREAMER_EXECUTION"
+    },
     "remainingBlockers": [
-      "PENDING_IMPLEMENTATION"
+      "C24_FORMAL_MATHEMATICIAN_UNREACHABLE_BEHIND_PHILOSOPHER_GAINED_DREAMER_V2",
+      "C24_CONFLATES_SINGLE_SOURCE_CONTRIBUTION_WITH_FINAL_MATHEMATICIAN_TOTAL"
     ],
-    "mechanicalRuleStatus": "RULE_READY_RULE_DESIGN_PASS",
+    "mechanicalRuleStatus": "RULE_READY_RULE_DESIGN_PASS_RESLICE_REQUIRED",
     "poisonedSourceReachability": "R4_FUTURE_HYPOTHETICAL_STATE",
     "phase2CStarted": false
   },
@@ -192,8 +212,8 @@
   "userContinuationAuthorization": "USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE",
   "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
   "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
-  "authorization": "USER_AUTHORIZED_2B19A3B_DESIGN_ROUND_2_CLASSIFICATION_AND_TRACEABILITY_REPAIR",
-  "implementationAuthorization": "USER_AUTHORIZED_2B19A3B_DESIGN_ROUND_2_CLASSIFICATION_AND_TRACEABILITY_REPAIR",
+  "authorization": "USER_AUTHORIZED_2B19A3B_RESLICE_TO_CORE_AND_DEFER_COMBINED_MATHEMATICIAN_INTEGRATION",
+  "implementationAuthorization": null,
   "classificationOnlyDesignCorrectionAuthorization": "USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3",
   "designCorrectionScope": "REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY",
   "resliceAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
@@ -217,7 +237,7 @@
   "governancePrecheck": "GO",
   "governancePrecheckPath": "docs/architecture/2B19A3B-go-no-go-resolved-under-governance-v1.md",
   "governancePrecheckSha256": "52b06f360bfe7abd122ddc662aaf4ba7d6f11c59bf80f27b8345220d81115d4c",
-  "behaviorDesignFrozen": false,
+  "behaviorDesignFrozen": true,
   "finalDesignCompletionRound": false,
   "designRound3_2Scope": null,
   "maxSlices": 1,
@@ -248,16 +268,17 @@
   },
   "rootCauseClassification": "SIMULATOR_AUDIT_ATTRIBUTION_RESOLVED_BY_APPROVED_OVERRIDE",
   "knownBlockers": [
-    "PENDING_IMPLEMENTATION"
+    "C24_FORMAL_MATHEMATICIAN_UNREACHABLE_BEHIND_PHILOSOPHER_GAINED_DREAMER_V2",
+    "C24_CONFLATES_SINGLE_SOURCE_CONTRIBUTION_WITH_FINAL_MATHEMATICIAN_TOTAL"
   ],
-  "implementationPaused": false,
+  "implementationPaused": true,
   "vortoxBehaviorConflict": false,
   "provenanceConflict": false,
   "eventSchemaConflict": false,
   "ledgerSchemaConflict": false,
   "ruleConflict": false,
-  "productResliceRequired": false,
-  "nextGovernanceTask": "PENDING_IMPLEMENTATION",
+  "productResliceRequired": true,
+  "nextGovernanceTask": "PENDING_2B19A3B1_BRANCH_INITIALIZATION",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",
@@ -332,8 +353,8 @@
   "designReviewRound3Verdict": "RULE_DESIGN_FIX_REQUIRED",
   "ruleReady": true,
   "ruleDesignPass": true,
-  "implementationAuthorized": true,
-  "implementationStatus": "READY_FOR_IMPLEMENTATION",
+  "implementationAuthorized": false,
+  "implementationStatus": "RESLICE_REQUIRED",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -1511,8 +1532,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-18T14:54:58+08:00",
-  "lastAction": "Materialized the independent read-only 2B19A3B Design Round 2 review at canonical LF SHA-256 d572bc262bbb61b79cda582aaed625f09c9096807bb4181d92d590ba9cbe7479; the reviewer returned RULE_DESIGN_PASS with remainingBlockers=[], so the Slice is READY_FOR_IMPLEMENTATION under the unchanged Round 2 authority.",
-  "lastError": null,
-  "requiredNextAction": "PENDING_IMPLEMENTATION",
-  "nextAction": "A later explicitly controlled implementation turn may implement only the passed Round 2 design. Do not push this docs-only closeout, create a PR, start 2B19B, or start Phase 2C in this turn."
+  "lastAction": "Archived the unaccepted 2B19A3B experiment externally and on a local-only archive branch, then classified the formal Mathematician continuation as a required reslice without accepting any product behavior.",
+  "lastError": "C24 formal Mathematician settlement is unreachable behind the unsupported Philosopher-gained Dreamer V2 task, and the original criterion incorrectly froze a combined future total as one.",
+  "requiredNextAction": "PENDING_2B19A3B1_BRANCH_INITIALIZATION",
+  "nextAction": "Archive this docs-only reslice record to main by fast-forward, require exact-main CI, then create the authorized 2B19A3B1 branch with ruleReady=false and no implementation authorization."
 }

@@ -1,5 +1,16 @@
 # Current Task
 
+## Phase 3 Slice 2B19A3B — RESLICE_REQUIRED / UNACCEPTED
+
+- Reslice authorization: `USER_AUTHORIZED_2B19A3B_RESLICE_TO_CORE_AND_DEFER_COMBINED_MATHEMATICIAN_INTEGRATION`.
+- Terminal control state: `status=RESLICE_REQUIRED`, `currentSlice=null`, `currentPR=null`, `implementationAuthorized=false`, `ruleReady=true`, `ruleDesignPass=true`, design `2/2`, repair `0/2`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
+- Exact blockers: `C24_FORMAL_MATHEMATICIAN_UNREACHABLE_BEHIND_PHILOSOPHER_GAINED_DREAMER_V2` and `C24_CONFLATES_SINGLE_SOURCE_CONTRIBUTION_WITH_FINAL_MATHEMATICIAN_TOTAL`.
+- The native/base Dreamer can contribute at most one terminal abnormal fact. The future combined Mathematician total after Philosopher-gained Dreamer settlement is not frozen by this Slice and must not be claimed as `1`.
+- The unaccepted eight-file experiment is preserved by external patch SHA-256 `b271c2db780c0940e001bd0dec596ff21fd70950a0af6cee6ec861b9aa5a8a6c` and local-only archive WIP `ef51b62777751ecf0480f14fb98b378197f6ef21` on `archive/2b19a3b-unaccepted-mathematician-blocked-experiment`.
+- No product commit, push, PR, tag, coverage profile, or ownership contract exists. Round 2 design/review remain immutable; no Round 3 exists. The approved audit-attribution override remains unchanged but produced no accepted behavior.
+- Full closeout: `docs/implementation/phase-3-slice-2b19a3b-status.md`.
+- Next authorized controller action after docs-only main archival and exact-main CI is creation of `phase-3/dreamer-vortox-canonical-drunk-core` for Slice `2B19A3B1`; no rule research or design has started.
+
 ## Phase 3 Slice 2B19A3B — READY_FOR_IMPLEMENTATION / RULE_DESIGN_PASS
 
 - Authorization: `USER_AUTHORIZED_2B19A3B_DESIGN_ROUND_2_CLASSIFICATION_AND_TRACEABILITY_REPAIR`.
