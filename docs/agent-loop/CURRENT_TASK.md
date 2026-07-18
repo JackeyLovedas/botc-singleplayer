@@ -1,5 +1,18 @@
 # Current Task
 
+## Phase 3 Slice 2B19A3B — HUMAN_BLOCKED / RESLICE_REQUIRED
+
+- Authorization: `USER_AUTHORIZED_2B19A3B_CANONICAL_DRUNK_DREAMER_VORTOX_PRECEDENCE`.
+- Current control state: `status=HUMAN_BLOCKED`, current Slice `2B19A3B`, branch context `main`, PR `null`.
+- Rule gate: `RULE_CONFLICT`; `ruleReady=false`, `ruleDesignPass=false`, `implementationAuthorized=false`, `designRound=0/2`, `repairRound=0/2`, and `phase2CStarted=false`.
+- Fresh evidence: `docs/rules/evidence/2B19A3B.md`; retrieval `2026-07-18T14:54:58+08:00`; `ruleCoverageStatus=PARTIAL`; all mandatory live sources were available and no snapshot was used.
+- Governance precheck: `docs/architecture/2B19A3B-go-no-go-under-governance-v1.md`; canonical DRUNK is R1, poisoned base Dreamer is R4, and GO condition 8 fails.
+- Settled mechanics: a real accepted Philosopher choice can make the original base Dreamer canonically DRUNK; with an effective current Vortox, the apparent Dreamer pair remains one native GOOD plus one native EVIL and both exclude settlement-time target truth; Mathematician counts the Dreamer player once.
+- Remaining blocker: `LEDGER_CAUSE_CARDINALITY_UNRESOLVED_BY_MANDATORY_RULE_SOURCES`. Mandatory sources do not decide between sole Vortox terminal cause plus independent DRUNK evidence and Philosopher-plus-Vortox multi-cause attribution.
+- Required disposition: `RESLICE_REQUIRED`. A narrower Slice must isolate mechanical behavior from attribution, or the user must approve a discrete ledger-cause override followed by fresh evidence.
+- No architect design, feature branch, production/test/matrix edit, commit, PR, merge, tag, 2B19A3C, 2B19B, or Phase 2C work is authorized.
+- Phase 3 Slice 2B19A3A remains `COMPLETED / ACCEPTED`; its history below is unchanged.
+
 ## Phase 3 Slice 2B19A3A — COMPLETED / ACCEPTED / PENDING CLOSEOUT COMMIT CI
 
 - Current status: `COMPLETED / ACCEPTED / PENDING_CLOSEOUT_COMMIT_CI`; task type: `PRODUCT_SLICE`; current Slice: `null`; current branch: `main`; current PR: `null`.
