@@ -33,8 +33,170 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
-        run: pnpm test
+  test-shard:
+    name: test shard (${{ matrix.group }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: domain-core-rebuild
+            projects: --project=domain-core-rebuild
+          - group: domain-core-rest
+            projects: --project=domain-core
+          - group: application
+            projects: --project=application
+          - group: application-service-core
+            projects: --project=application-service-core
+          - group: application-service-role-actions
+            projects: --project=application-service-role-actions
+          - group: application-service-information-and-later-actions
+            projects: --project=application-service-information-and-later-actions
+          - group: application-service-compatibility-and-failure-boundaries
+            projects: --project=application-service-compatibility-and-failure-boundaries
+          - group: application-service-dreamer-vortox
+            projects: --project=application-service-dreamer-vortox
+          - group: engines-and-projections
+            projects: >-
+              --project=assignment-engine
+              --project=information-engine
+              --project=projections
+              --project=rules-snv
+              --project=setup-engine
+              --project=task-engine
+              --project=test-harness
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "11.7.0"
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.15.0"
+          cache: "pnpm"
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Test shard
+        env:
+          VITEST_MAX_FORKS: "1"
+        run: >-
+          pnpm exec vitest run
+          --workspace vitest.workspace.ts
+          ${{ matrix.projects }}
+          --reporter=blob
+          --outputFile=.vitest-test/${{ matrix.group }}/${{ matrix.group }}.blob
+
+      - name: Upload test blob
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-blob-${{ matrix.group }}
+          path: .vitest-test/${{ matrix.group }}/${{ matrix.group }}.blob
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 1
+
+  test-merge:
+    name: test merge and semantic gates
+    runs-on: ubuntu-latest
+    needs: test-shard
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "11.7.0"
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.15.0"
+          cache: "pnpm"
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Download test blobs
+        uses: actions/download-artifact@v5
+        with:
+          pattern: test-blob-*
+          path: .vitest-test/merged-blobs
+          merge-multiple: true
+
+      - name: Verify test blob set
+        run: |
+          groups=(
+            domain-core-rebuild
+            domain-core-rest
+            application
+            application-service-core
+            application-service-role-actions
+            application-service-information-and-later-actions
+            application-service-compatibility-and-failure-boundaries
+            application-service-dreamer-vortox
+            engines-and-projections
+          )
+          test "$(find .vitest-test/merged-blobs -maxdepth 1 -type f -name '*.blob' | wc -l)" -eq "${#groups[@]}"
+          test "$(find .vitest-test/merged-blobs -maxdepth 1 -type f ! -name '*.blob' | wc -l)" -eq 0
+          for group in "${groups[@]}"; do
+            test -f ".vitest-test/merged-blobs/${group}.blob"
+          done
+
+      - name: Build per-group merged test reports
+        run: |
+          mkdir -p .vitest-test/group-blobs .vitest-test/group-reports
+          for group in \
+            domain-core-rebuild \
+            domain-core-rest \
+            application \
+            application-service-core \
+            application-service-role-actions \
+            application-service-information-and-later-actions \
+            application-service-compatibility-and-failure-boundaries \
+            application-service-dreamer-vortox \
+            engines-and-projections
+          do
+            mkdir -p ".vitest-test/group-blobs/${group}"
+            cp ".vitest-test/merged-blobs/${group}.blob" ".vitest-test/group-blobs/${group}/${group}.blob"
+            pnpm exec vitest \
+              --merge-reports ".vitest-test/group-blobs/${group}" \
+              --reporter=json \
+              --outputFile=".vitest-test/group-reports/${group}.json"
+          done
+
+      - name: Merge test reports
+        run: >-
+          pnpm exec vitest
+          --merge-reports .vitest-test/merged-blobs
+          --reporter=json
+          --outputFile=.vitest-test/merged-tests.json
+
+      - name: Verify test inventory and semantic ownership
+        run: >-
+          node scripts/verify-vitest-coverage-groups.mjs
+          --merged-report .vitest-test/merged-tests.json
+          --merged-group-report domain-core-rebuild=.vitest-test/group-reports/domain-core-rebuild.json
+          --merged-group-report domain-core-rest=.vitest-test/group-reports/domain-core-rest.json
+          --merged-group-report application=.vitest-test/group-reports/application.json
+          --merged-group-report application-service-core=.vitest-test/group-reports/application-service-core.json
+          --merged-group-report application-service-role-actions=.vitest-test/group-reports/application-service-role-actions.json
+          --merged-group-report application-service-information-and-later-actions=.vitest-test/group-reports/application-service-information-and-later-actions.json
+          --merged-group-report application-service-compatibility-and-failure-boundaries=.vitest-test/group-reports/application-service-compatibility-and-failure-boundaries.json
+          --merged-group-report application-service-dreamer-vortox=.vitest-test/group-reports/application-service-dreamer-vortox.json
+          --merged-group-report engines-and-projections=.vitest-test/group-reports/engines-and-projections.json
+          --output .vitest-test/inventory-audit.json
 
   coverage-shard:
     name: coverage shard (${{ matrix.group }})
@@ -57,6 +219,8 @@ jobs:
             projects: --project=application-service-information-and-later-actions
           - group: application-service-compatibility-and-failure-boundaries
             projects: --project=application-service-compatibility-and-failure-boundaries
+          - group: application-service-dreamer-vortox
+            projects: --project=application-service-dreamer-vortox
           - group: engines-and-projections
             projects: >-
               --project=assignment-engine
@@ -141,8 +305,22 @@ jobs:
 
       - name: Verify coverage blob set
         run: |
-          test "$(find .vitest-coverage/merged-blobs -maxdepth 1 -type f -name '*.blob' | wc -l)" -eq 8
+          groups=(
+            domain-core-rebuild
+            domain-core-rest
+            application
+            application-service-core
+            application-service-role-actions
+            application-service-information-and-later-actions
+            application-service-compatibility-and-failure-boundaries
+            application-service-dreamer-vortox
+            engines-and-projections
+          )
+          test "$(find .vitest-coverage/merged-blobs -maxdepth 1 -type f -name '*.blob' | wc -l)" -eq "${#groups[@]}"
           test "$(find .vitest-coverage/merged-blobs -maxdepth 1 -type f ! -name '*.blob' | wc -l)" -eq 0
+          for group in "${groups[@]}"; do
+            test -f ".vitest-coverage/merged-blobs/${group}.blob"
+          done
 
       - name: Build per-group merged test reports
         run: |
@@ -155,6 +333,7 @@ jobs:
             application-service-role-actions \
             application-service-information-and-later-actions \
             application-service-compatibility-and-failure-boundaries \
+            application-service-dreamer-vortox \
             engines-and-projections
           do
             mkdir -p ".vitest-coverage/group-blobs/${group}"
@@ -188,6 +367,7 @@ jobs:
           --merged-group-report application-service-role-actions=.vitest-coverage/group-reports/application-service-role-actions.json
           --merged-group-report application-service-information-and-later-actions=.vitest-coverage/group-reports/application-service-information-and-later-actions.json
           --merged-group-report application-service-compatibility-and-failure-boundaries=.vitest-coverage/group-reports/application-service-compatibility-and-failure-boundaries.json
+          --merged-group-report application-service-dreamer-vortox=.vitest-coverage/group-reports/application-service-dreamer-vortox.json
           --merged-group-report engines-and-projections=.vitest-coverage/group-reports/engines-and-projections.json
           --output .vitest-coverage/inventory-audit.json
 
@@ -195,6 +375,7 @@ jobs:
         run: >-
           node scripts/verify-coverage-obligations.mjs
           --validate-candidate .vitest-coverage/merged-coverage/coverage-final.json
+          --profile frozen-pr36-035f037-ownership-v2-1
 
   deterministic-windows:
     name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch/dreamer/clockmaker
