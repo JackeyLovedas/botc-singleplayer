@@ -1,9 +1,9 @@
 {
   "status": "RUNNING",
   "taskType": "PRODUCT_SLICE",
-  "productRepairRoundConsumed": false,
-  "currentPR": null,
-  "currentPRUrl": null,
+  "productRepairRoundConsumed": true,
+  "currentPR": 40,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/40",
   "currentBranch": "phase-3/dreamer-vortox-canonical-drunk-core",
   "currentSlice": "2B19A3B1",
   "slice2B19A1Started": false,
@@ -97,7 +97,7 @@
   },
   "slice2B19A3B1Gate": {
     "authorization": "USER_AUTHORIZED_2B19A3B_RESLICE_TO_CORE_AND_DEFER_COMBINED_MATHEMATICIAN_INTEGRATION",
-    "status": "COVERAGE_PROFILE_FROZEN_PENDING_PUBLISH",
+    "status": "REPAIR_ROUND_1_REPOSITORY_GATES_PASS_PENDING_PR_BODY_AND_EXACT_HEAD_CI",
     "title": "Canonical Drunk Dreamer Vortox Core",
     "scopeMode": "CANONICAL_DRUNK_BASE_DREAMER_VORTOX_CORE",
     "coverageTarget": "PARTIAL / CANONICAL_DRUNK_VORTOX_CORE_ONLY",
@@ -106,13 +106,16 @@
     "implementationAuthorized": true,
     "designRound": 2,
     "maxDesignRounds": 2,
-    "repairRound": 0,
+    "repairRound": 1,
     "maxRepairRounds": 2,
-    "productRepairRoundConsumed": false,
+    "productRepairRoundConsumed": true,
     "currentBranch": "phase-3/dreamer-vortox-canonical-drunk-core",
-    "currentPR": null,
+    "currentPR": 40,
+    "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/40",
     "phase2CStarted": false,
-    "remainingBlockers": [],
+    "remainingBlockers": [
+      "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI"
+    ],
     "deferredItem": "2B19A3B2_COMBINED_MATHEMATICIAN_INTEGRATION",
     "deferredDependency": "2B19B_PHILOSOPHER_GAINED_DREAMER_EXECUTION",
     "experimentRestored": true,
@@ -131,11 +134,12 @@
       "supportingAuthorities": 4,
       "verification": "PASS"
     },
-    "focusedTests": "7 files / 395 tests PASS",
-    "fullOrdinaryTests": "35 files / 1494 tests PASS / 26.98s",
+    "focusedTests": "7 projects / 542 tests PASS",
+    "ownershipVerification": "registry load PASS / verifier self-test 22/22 PASS",
+    "fullOrdinaryTests": "35 files / 1499 tests PASS / 28.09s",
     "typecheck": "PASS",
     "lint": "PASS",
-    "coverage": "35 files / 1494 tests PASS / 40.50s / statements-lines 79.10 / branches 82.58 / functions 97.45",
+    "coverage": "35 files / 1499 tests PASS / 42.8s / statements-lines 79.04 / branches 82.72 / functions 97.46",
     "productionFilesChanged": 5,
     "productionAddedLines": 406,
     "stopLoss": "PASS / suggested <=6 files and <=1000 added lines / hard >8 files or >1500 added lines",
@@ -158,7 +162,7 @@
       "lint": "PASS",
       "ordinaryTests": "35 files / 1494 tests PASS / 93.89s",
       "fullCoverageGate": "35 files / 1494 tests PASS / 138.06s / statements-lines 79.03 / branches 82.58 / functions 97.45",
-      "nextGate": "PUSH_CREATE_PR_EXACT_HEAD_CI"
+      "nextGate": "IMMUTABLE_HISTORICAL_PROFILE_TO_BE_SUPERSEDED_BY_REPAIRED_HEAD_EVIDENCE"
     },
     "ruleResearchStarted": true,
     "ruleResearchCompleted": true,
@@ -177,7 +181,56 @@
     "designTerminal": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_2",
     "designReviewPath": "docs/implementation/phase-3-slice-2b19a3b1-design-review-round-2.md",
     "designReviewSha256": "1fbe40cc1344fd109338173df28ab2a9dbae9f1583b3143abc78275e6d191713",
-    "designReviewVerdict": "RULE_DESIGN_PASS"
+    "designReviewVerdict": "RULE_DESIGN_PASS",
+    "exactHeadCI": {
+      "commitSha": "17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d",
+      "pushRun": 29650271580,
+      "pullRequestRun": 29650302623,
+      "status": "SUCCESS",
+      "jobs": "22/22"
+    },
+    "finalReviewRound1": {
+      "path": "docs/implementation/phase-3-slice-2b19a3b1-final-review-round-1.md",
+      "sha256": "9182de58144b00661f95c2beb82efe0f3555b914211a24d88ac94a6f60e79ff6",
+      "reviewedHead": "17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d",
+      "reviewedHeadStatus": "CURRENT_HEAD_UNCHANGED_REVIEW_INVALIDATES_ON_FUTURE_COMMIT",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "remainingBlockers": [
+        "F-01_FROZEN_HOSTILE_REPLAY_MECHANISMS_NOT_EXECUTED",
+        "F-02_V4_FAILURE_REPAIR_RETRY_MATRIX_MISSING",
+        "F-03_LEGACY_EVENT_EVIDENCE_LEDGER_MATRICES_MISSING",
+        "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI"
+      ]
+    },
+    "repairRound1Repository": {
+      "status": "LOCAL_GATES_PASS",
+      "productionFilesChanged": 0,
+      "testFilesChanged": [
+        "packages/application/src/game-application-service.test.ts",
+        "packages/domain-core/src/rebuild.test.ts",
+        "packages/projections/src/private-knowledge-view.test.ts"
+      ],
+      "repositoryBlockersClosed": [
+        "F-01_FROZEN_HOSTILE_REPLAY_MECHANISMS_NOT_EXECUTED",
+        "F-02_V4_FAILURE_REPAIR_RETRY_MATRIX_MISSING",
+        "F-03_LEGACY_EVENT_EVIDENCE_LEDGER_MATRICES_MISSING"
+      ],
+      "externalBlockersRemaining": [
+        "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI"
+      ],
+      "focusedTests": "7 projects / 542 tests PASS",
+      "ownershipVerification": "registry load PASS / verifier self-test 22/22 PASS",
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "ordinaryTests": "35 files / 1499 tests PASS / 28.09s",
+      "coverage": "35 files / 1499 tests PASS / 42.8s / statements-lines 79.04 / branches 82.72 / functions 97.46",
+      "commit": "PENDING_CURRENT_REPAIR_COMMIT",
+      "push": false,
+      "prBodyUpdated": false,
+      "newExactHeadCI": null,
+      "freshFinalReview": null
+    }
   },
   "infrastructureVitestMultiSliceOwnershipRegistryV1": {
     "authorization": "USER_AUTHORIZED_VITEST_MULTI_SLICE_OWNERSHIP_CONTRACT_REGISTRY_V1",
@@ -287,11 +340,11 @@
     },
     "remainingBlockers": []
   },
-  "reviewedHead": "4c765d2e247c1cced6505ed992f2360669c23b74",
-  "currentReviewHeadAuthority": "Complete independent PR #36 final review on frozen feature HEAD 4c765d2e247c1cced6505ed992f2360669c23b74 returned CODE_REVIEW_PASS and RULE_REVIEW_PASS with remainingBlockers=[]. The exact original GitHub comment bodies are archived at docs/reviews/pr-36-code-review-final.md and docs/reviews/pr-36-rule-review-final.md.",
-  "exactHeadCIAuthority": "Docs-only 2B19A3B reslice closeout main HEAD 45a467cec81703d911914de464180e5192fc7714 passed push CI 29646098230 with 22/22 successful jobs. This record authorizes branch initialization only and is not product implementation CI for 2B19A3B1.",
-  "currentFeatureHead": "00160fc342487506f33d713667d404d4ace734c4",
-  "repairRound": 0,
+  "reviewedHead": "17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d",
+  "currentReviewHeadAuthority": "Complete independent PR #40 final review round 1 remains immutable history bound only to pre-repair HEAD 17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d. It cannot authorize the pending Repair Round 1 commit or any later HEAD.",
+  "exactHeadCIAuthority": "Push CI 29650271580 and PR CI 29650302623 are historical evidence only for pre-repair HEAD 17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d. Fresh exact-head CI is mandatory after the Repair Round 1 commit.",
+  "currentFeatureHead": "PENDING_REPAIR_ROUND_1_COMMIT",
+  "repairRound": 1,
   "designRound": 2,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": "USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE",
@@ -317,7 +370,7 @@
     "ruleSemanticsChanged": false
   },
   "scopeMode": "CANONICAL_DRUNK_BASE_DREAMER_VORTOX_CORE",
-  "sliceCoverage": "PARTIAL / CANONICAL_DRUNK_VORTOX_CORE_ONLY / PROFILE_FROZEN_PENDING_EXACT_HEAD_CI",
+  "sliceCoverage": "PARTIAL / CANONICAL_DRUNK_VORTOX_CORE_ONLY / REPAIR_ROUND_1_REPOSITORY_GATES_PASS",
   "dreamerRoleCoverage": "PARTIAL",
   "governancePrecheck": "GO",
   "governancePrecheckPath": "docs/architecture/2B19A3B1-go-no-go-under-governance-v1.md",
@@ -352,7 +405,9 @@
     "remainingBlockers": []
   },
   "rootCauseClassification": "RESLICED_TO_CANONICAL_DRUNK_VORTOX_CORE",
-  "knownBlockers": [],
+  "knownBlockers": [
+    "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI"
+  ],
   "implementationPaused": false,
   "vortoxBehaviorConflict": false,
   "provenanceConflict": false,
@@ -360,7 +415,7 @@
   "ledgerSchemaConflict": false,
   "ruleConflict": false,
   "productResliceRequired": false,
-  "nextGovernanceTask": "PUSH_CREATE_PR_AND_WAIT_EXACT_PROFILE_HEAD_CI",
+  "nextGovernanceTask": "IMPLEMENT_REPAIR_ROUND_1_TEST_AUTHORITY_AND_PR_METADATA",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",
@@ -850,7 +905,9 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [],
+  "remainingBlockers": [
+    "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI"
+  ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
     "sha256": "fb9dc655ba718030dde3208f2a3f3fc51e9582fcef0f3b2db4cccbaabfa9c794",
@@ -1614,8 +1671,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-18T21:45:00+08:00",
-  "lastAction": "Materialized the complete independent 2B19A3B1 Round 2 design review verbatim; the reviewer returned RULE_DESIGN_PASS with findings=[] and remainingBlockers=[], authorizing only the frozen single-method archive recovery and bounded implementation.",
-  "lastError": null,
-  "requiredNextAction": "RECOVER_ARCHIVED_EXPERIMENT_WITH_SINGLE_AUTHORIZED_METHOD",
-  "nextAction": "RECOVER_ARCHIVED_EXPERIMENT_WITH_SINGLE_AUTHORIZED_METHOD"
+  "lastAction": "Closed repository blockers F01-F03 with physical tests and exact traceability; all focused, ownership, typecheck, lint, ordinary, and coverage gates pass locally without production changes.",
+  "lastError": "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI",
+  "requiredNextAction": "CREATE_REPAIR_ROUND_1_COMMIT_THEN_RECONCILE_PR_BODY_AND_RUN_NEW_EXACT_HEAD_CI",
+  "nextAction": "CREATE_REPAIR_ROUND_1_COMMIT_THEN_RECONCILE_PR_BODY_AND_RUN_NEW_EXACT_HEAD_CI"
 }
