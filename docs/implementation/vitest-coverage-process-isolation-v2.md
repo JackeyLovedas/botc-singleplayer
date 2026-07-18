@@ -91,7 +91,7 @@ Per-group merged reports are required because Vitest 3.2.6's global merged JSON 
 
 The explicit coverage include is exactly `packages/*/src/**/*.ts`. It covers the same nine production-source packages as the pre-change workspace coverage universe and excludes the newly introduced repository audit scripts. It does not exclude any workspace product source, change any threshold, or classify an uncovered product obligation as covered.
 
-`--validate-candidate` is a strict CI profile gate, not a shape-only check. A candidate exits successfully only when all five exact count-and-hash pairs match exactly one of the two named profiles below. A candidate that matches neither or more than one exits nonzero and reports every per-profile group comparison. Future legitimate product or test changes require separately approved evidence and an explicit new profile; CI must not infer or learn a profile from the candidate it is validating.
+`--validate-candidate` is a strict CI profile gate, not a shape-only check. A candidate exits successfully only when all five exact count-and-hash pairs match exactly one approved profile. The optional `--profile` argument additionally requires that unique match to be the named topology profile. A candidate that matches neither, matches more than one, or does not match the explicitly requested profile exits nonzero and reports every per-profile group comparison. Future legitimate product or test changes require separately approved evidence and an explicit new profile; CI must not infer or learn a profile from the candidate it is validating.
 
 ## Semantic coverage audit
 
@@ -103,6 +103,9 @@ The explicit coverage include is exactly `packages/*/src/**/*.ts`. It covers the
 |---|---|---|---|---|---|---|
 | `accepted-main-9c4d009-single-process-v1` | `9c4d009f32d4d24d0e072168717f34795b3c322c` | `61` / `b8076fca1bce06a811d10d189d3bf89f6caefe5fb81de270d1e91dabc1565920` | `3157` / `057ceb478f9359c70c6d654d615369e0225b1d440fc2ebb8626098df46a4bcda` | `23` / `0566362f681edfe7d13ccea297fe63b53f92de0a7a7b223d4224459d96c783a6` | `3157` / `4cbb5823a6b2261c4b014d1e959cbf57b810a47903d08ffd16d6a3c4d5d78ab1` | `1759` / `5169dda9f7bf457fe4676e23d6c1650d8de24adc3fe7d2958145d966532435bb` |
 | `frozen-pr36-035f037-single-process-v1` | `035f0377bce97b8416f74f658bd6e1f8adbbac1a` | `63` / `f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691` | `3176` / `ff94c61bd3a98324ec5202244bee5f9e7589f779dce02405bc8ea1bd255b3355` | `23` / `0d16a1e243523c4dbd2f9408acffffec7c77d3043ed09187da80f22085f262dd` | `3176` / `c20b9dc8624c3320cbd28212e4bba1a6af4b8b682408cf64995cd97a7595c1e2` | `1778` / `cb2a134aa8ee0158cc3cea596edaade621a148e67a949f71bf0a6cdf01eba93f` |
+| `frozen-pr36-035f037-ownership-v2-1` | `035f0377bce97b8416f74f658bd6e1f8adbbac1a` | `63` / `f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691` | `3176` / `ff94c61bd3a98324ec5202244bee5f9e7589f779dce02405bc8ea1bd255b3355` | `23` / `0d16a1e243523c4dbd2f9408acffffec7c77d3043ed09187da80f22085f262dd` | `3176` / `c20b9dc8624c3320cbd28212e4bba1a6af4b8b682408cf64995cd97a7595c1e2` | `1777` / `86729bdd6cab5519cbeab5f3e270955237f9832199f8d8bf5ae95fd38114b8f7` |
+
+The third profile is restricted to the nine-process, unique `application-service-dreamer-vortox` ownership topology. Its structured metadata records the superseded topology, the reason for supersession, and the externally audited canonical tuple that changed from hit 0 to hit 396. The old single-process profiles remain unchanged. Full evidence is in `docs/implementation/pr36-test-ownership-and-process-isolation-v2-1.md`.
 
 ### Accepted main base
 

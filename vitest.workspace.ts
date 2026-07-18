@@ -104,6 +104,18 @@ export default defineWorkspace([
   },
   {
     test: {
+      name: "application-service-dreamer-vortox",
+      include: [applicationServiceTest],
+      env: {
+        BOTC_APPLICATION_SERVICE_TEST_SHARD: "dreamer-vortox"
+      }
+    },
+    resolve: {
+      alias: aliases
+    }
+  },
+  {
+    test: {
       name: "assignment-engine",
       include: ["packages/assignment-engine/src/**/*.test.ts"]
     },

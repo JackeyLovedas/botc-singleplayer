@@ -255,7 +255,25 @@ const philosopherGainedSnakeCharmerOpportunityId = actionOpportunityId(
   "first-night-v1:PHILOSOPHER_GAINED:SNAKE_CHARMER_ACTION:seat-10:from-snake_charmer:opportunity-01"
 );
 
-describe("Phase 3 Slice 2B19A3A effective-source Vortox Dreamer", () => {
+type ApplicationServiceTestShard =
+  | "core"
+  | "role-actions"
+  | "information-and-later-actions"
+  | "compatibility-and-failure-boundaries"
+  | "dreamer-vortox";
+
+const describeApplicationServiceShard = (
+  shard: ApplicationServiceTestShard,
+  name: string,
+  factory: () => void
+): void => {
+  const configuredShard = process.env.BOTC_APPLICATION_SERVICE_TEST_SHARD;
+  if (configuredShard === undefined || configuredShard === shard) {
+    describe(name, factory);
+  }
+};
+
+describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3A effective-source Vortox Dreamer", () => {
   it("[2B19A3A-C06/C09/C10/C11/C15/C37] accepts a GOOD target with an exact false native-category atomic batch", async () => {
     const prefix = await captureAcceptedBaseDreamerVortoxV3OpenPrefix();
     expect(prefix.events[prefix.opportunityEventIndex]).toMatchObject({
@@ -1483,23 +1501,6 @@ const expectRetryableFirstNightSystemInformationFailureWithoutWrites = async (
   expect(commandStore.rejectedCount).toBe(0);
 
   return failedResult;
-};
-
-type ApplicationServiceTestShard =
-  | "core"
-  | "role-actions"
-  | "information-and-later-actions"
-  | "compatibility-and-failure-boundaries";
-
-const describeApplicationServiceShard = (
-  shard: ApplicationServiceTestShard,
-  name: string,
-  factory: () => void
-): void => {
-  const configuredShard = process.env.BOTC_APPLICATION_SERVICE_TEST_SHARD;
-  if (configuredShard === undefined || configuredShard === shard) {
-    describe(name, factory);
-  }
 };
 
 describeApplicationServiceShard("core", "GameApplicationService", () => {
@@ -7319,6 +7320,9 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
     expect(captured.finalState).toStrictEqual(rebuildOptionalGameState(fixture.events));
   });
 
+});
+
+describeApplicationServiceShard("dreamer-vortox", "GameApplicationService", () => {
   it("[2B19A3A-C48] continues a real accepted Vortox V3 Dreamer success through a terminal Seamstress action", async () => {
     const { service, commandStore } = makeService();
     const openedDreamer = await reachOpenDreamerV3ActionOpportunity(service, commandStore, noPhilosopherVortoxExactRoleIds);
@@ -7424,6 +7428,9 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
     ]);
   });
 
+});
+
+describeApplicationServiceShard("information-and-later-actions", "GameApplicationService", () => {
   it("[2B19A2-C12] commits the V2 target delivery and settlement as one exact atomic batch", async () => {
     const { service, commandStore } = makeService();
     const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore);
@@ -7445,6 +7452,9 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
     expect(new Set(result.events.map((event) => event.gameVersion))).toStrictEqual(new Set([opened.state.gameVersion + 1]));
   });
 
+});
+
+describeApplicationServiceShard("dreamer-vortox", "GameApplicationService", () => {
   it("[2B19A3A-C17] fails a represented DRUNK base Dreamer receipt-free through the real Philosopher chain", async () => {
     const { service, commandStore } = makeService();
     const philosopher = await reachOpenExactPhilosopherOpportunity(service, commandStore);
@@ -7476,6 +7486,9 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
       entry.opportunityId === opportunity.opportunityId)?.opportunityStatus).toBe("OPEN");
   });
 
+});
+
+describeApplicationServiceShard("information-and-later-actions", "GameApplicationService", () => {
   it("accepts an effective current Vortox as V3 forced-false information", async () => {
     const { service, commandStore } = makeService();
     const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore, noPhilosopherVortoxExactRoleIds);
@@ -9481,7 +9494,7 @@ describeApplicationServiceShard(
   }
 );
 
-describe("Phase 3 Slice 2B19A3A retryable application boundaries", () => {
+describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3A retryable application boundaries", () => {
   const prepare = async (
     store = new MemoryCommandCommitStore(),
     idsGenerator: IdGenerator = new FixedIdGenerator(),
