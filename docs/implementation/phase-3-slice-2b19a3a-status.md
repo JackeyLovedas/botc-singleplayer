@@ -3,11 +3,11 @@
 - Slice: `2B19A3A — Effective Base Dreamer + Effective Vortox Forced-False Information`
 - Authorization: `USER_AUTHORIZED_2B19A3A_EFFECTIVE_SOURCE_VORTOX_IMPLEMENTATION`
 - Classification authorization: `USER_AUTHORIZED_GOVERNANCE_TRACEABILITY_V1_1_APPLICATION_COMMAND_LAYER`
-- Branch: `phase-3/dreamer-vortox-effective-source`
+- Accepted branch: `phase-3/dreamer-vortox-effective-source`; current branch: `main`
 - Design round: `3 / 3`; repair round: `2 / 2`
 - Rule status: `RULE_READY`; design release: `DESIGN_RELEASE_PASS`
 - Coverage: `PARTIAL / EFFECTIVE_SOURCE_VORTOX_FALSE_ONLY`
-- Publication status: `RUNNING / CI_EXECUTION_REPAIR_ROUND_2_LOCAL_GATES_PASS / PENDING_FINAL_REPAIR_COMMIT_AND_EXACT_HEAD_CI`
+- Publication status: `COMPLETED / ACCEPTED / PENDING_CLOSEOUT_COMMIT_CI`
 
 ## Frozen authority
 
@@ -83,7 +83,10 @@ Both IDs resolve exactly once in `phase-3-slice-2b19a3a-test-traceability.md`. N
 - Fresh single-fork coverage run 2: `34 files / 1512 tests PASS`; `48.32s`; `87.44%` statements/lines, `82.43%` branches, `97.81%` functions; no worker RPC timeout.
 - Coverage changed-project durations remained below `60s`: application core `9.3-9.4s`, compatibility `12.1-12.3s`, role actions `15.2-15.5s`, and information/later-actions `40.2s` in the explicit observation run. Rebuild was `31.6-32.0s`; Mathematician was `26.9-27.4s`.
 - Diff/allowlist/baseline fixture/traceability schema/SUP resolution/reachability-layer/serialization/determinism/test-disable audits: `PASS`.
-- Exact final-repair-head push/PR CI and independent final review: `PENDING` until the final repair commit is published. No Repair Round 3 exists.
+- Frozen feature HEAD `4c765d2e247c1cced6505ed992f2360669c23b74` passed push CI `29628727277` and pull-request CI `29628728455`; each completed `22 / 22` jobs successfully.
+- Complete independent final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, with `remainingBlockers=[]`; exact archives are `docs/reviews/pr-36-code-review-final.md` and `docs/reviews/pr-36-rule-review-final.md`.
+- PR `#36` merged as `dc35c7d678ceaa724060ee7370ea035df575dd47`; merge-main CI `29630569532` completed `22 / 22` jobs successfully on that exact SHA. Accepted tag: `phase-3-slice-2b19a3a-dreamer-effective-source-vortox-information`.
+- The future docs-only closeout commit CI remains `PENDING` and inherits no product-head or merge-commit CI status. No Repair Round 3 exists.
 
 ## Explicitly unsupported
 
