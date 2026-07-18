@@ -37,14 +37,14 @@
     "ruleReady": true,
     "ruleDesignPass": false,
     "implementationAuthorized": false,
-    "designRound": 0,
+    "designRound": 1,
     "maxDesignRounds": 2,
     "repairRound": 0,
     "maxRepairRounds": 2,
     "currentBranch": "phase-3/dreamer-vortox-canonical-drunk-precedence",
     "currentPR": null,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_DESIGN_ROUND_1"
+      "PENDING_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_1"
     ],
     "mechanicalRuleStatus": "RULE_READY_PENDING_DESIGN",
     "poisonedSourceReachability": "R4_FUTURE_HYPOTHETICAL_STATE",
@@ -95,7 +95,7 @@
   "exactHeadCIAuthority": "Frozen feature HEAD 4c765d2e247c1cced6505ed992f2360669c23b74 passed push CI 29628727277 and pull-request CI 29628728455, each with 22/22 successful jobs. Merge SHA dc35c7d678ceaa724060ee7370ea035df575dd47 separately passed main CI 29630569532 with 22/22 successful jobs. Future closeout commit CI is pending and inherits neither record.",
   "currentFeatureHead": "4c765d2e247c1cced6505ed992f2360669c23b74",
   "repairRound": 0,
-  "designRound": 0,
+  "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": "USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE",
   "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
@@ -132,10 +132,11 @@
   "maxRepairRounds": 2,
   "candidateRole": "dreamer",
   "candidateScope": "CANONICAL_DRUNK_BASE_DREAMER_EFFECTIVE_VORTOX_PRECEDENCE",
-  "currentDesignPath": null,
-  "currentDesignHash": null,
-  "currentDesignStatus": "PENDING_INDEPENDENT_DESIGN_ROUND_1",
-  "currentDesignTerminal": null,
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b19a3b-design.md",
+  "currentDesignHash": "4937f3dbc741c638d7715502e64a79d603c78b2500dec06ca928cb638c00ce4b",
+  "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_1",
+  "currentDesignTerminal": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_1",
+  "currentDesignSource": "READ_ONLY_ARCHITECT",
   "currentDesignReviewPath": null,
   "currentDesignReviewHash": null,
   "currentDesignReviewVerdict": null,
@@ -154,7 +155,7 @@
   },
   "rootCauseClassification": "SIMULATOR_AUDIT_ATTRIBUTION_RESOLVED_BY_APPROVED_OVERRIDE",
   "knownBlockers": [
-    "PENDING_INDEPENDENT_DESIGN_ROUND_1"
+    "PENDING_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_1"
   ],
   "implementationPaused": true,
   "vortoxBehaviorConflict": false,
@@ -163,7 +164,7 @@
   "ledgerSchemaConflict": false,
   "ruleConflict": false,
   "productResliceRequired": false,
-  "nextGovernanceTask": "INDEPENDENT_DESIGN_ROUND_1",
+  "nextGovernanceTask": "INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_1",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",
@@ -1417,8 +1418,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-18T14:54:58+08:00",
-  "lastAction": "Recorded the exact approved 2B19A3B ledger-attribution override, materialized fresh resolved rule evidence with RULE_READY and a resolved governance GO, and preserved the immutable original conflict evidence and governance record.",
+  "lastAction": "Materialized the read-only architect's complete standalone 2B19A3B Design Round 1 against the resolved RULE_READY evidence and governance GO; no production or test edit was authorized or made.",
   "lastError": null,
-  "requiredNextAction": "PENDING_INDEPENDENT_DESIGN_ROUND_1",
-  "nextAction": "Run one bounded read-only architect Design Round 1, then require independent RULE_DESIGN_PASS before any production or test change. Preserve accepted 2B19A3A and phase2CStarted=false."
+  "requiredNextAction": "PENDING_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_1",
+  "nextAction": "Run one independent Rule Design Review Round 1 on the exact design hash; require RULE_DESIGN_PASS before any production or test change. Preserve accepted 2B19A3A and phase2CStarted=false."
 }
