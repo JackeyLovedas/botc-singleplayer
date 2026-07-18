@@ -1,5 +1,15 @@
 # Project State
 
+## Latest accepted infrastructure — Vitest Multi-Slice Test Ownership Contract Registry V1
+
+- `USER_AUTHORIZED_VITEST_MULTI_SLICE_OWNERSHIP_CONTRACT_REGISTRY_V1` completed and is accepted independently of product Slice repair accounting.
+- PR [#39](https://github.com/JackeyLovedas/botc-singleplayer/pull/39) merged as `92dc77548c407371e2cd00198fa11a5acab06143`; frozen feature HEAD `aac30f6a3efad3132dfd547541a9bd01077c48db`; accepted tag `infrastructure-vitest-multi-slice-ownership-contract-registry-v1`; infrastructure repair `1/1`.
+- Exact feature-head push/PR CI `29639177439 / 29639178760`, merge-main CI `29639670444`, and accepted-tag CI `29639687007` each completed `SUCCESS / 22 of 22 jobs` on their separately recorded SHAs.
+- Complete independent final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`. Original GitHub comment bodies are archived verbatim in `docs/reviews/pr-39-code-review-final.md` and `docs/reviews/pr-39-rule-review-final.md` with SHA-256 `a716c2673a966caedab6e00ddef9122fc1af8d4496a560b014ec22aa89520544` and `f5ee535c7ac04e4d4844a31a41c4d5a70171c93c0cfafbe70c961f12200a4bd0`.
+- The active registry contains exactly the accepted `2B19A3A` contract and does not contain a planned, empty, or provisional `2B19A3B` contract. `ruleSemanticsChanged=false`; product behavior, production code, conventional tests, workspace, dependencies, timeouts, coverage profile, and role coverage are unchanged.
+- Current control is `COMPLETED / CI_TEST_INFRASTRUCTURE`; branch `main`; `currentSlice=null`; `currentPR=null`; `implementationAuthorized=false`; `phase2CStarted=false`. No next Slice or 2B19A3B Design 2 is selected, started, synchronized, or claimed on main.
+- The docs-only `closeoutCommitCI` remains `PENDING` until GitHub records CI for that exact future closeout SHA; it inherits no earlier CI result.
+
 ## Latest accepted product Slice — 2B19A3A
 
 - Phase 3 Slice `2B19A3A` completed and is accepted under `USER_AUTHORIZED_2B19A3A_EFFECTIVE_SOURCE_VORTOX_IMPLEMENTATION` and accepted Governance Traceability V1.1.

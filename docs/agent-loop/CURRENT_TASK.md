@@ -1,5 +1,17 @@
 # Current Task
 
+## Vitest Multi-Slice Test Ownership Contract Registry V1 — COMPLETED / ACCEPTED / PENDING CLOSEOUT COMMIT CI
+
+- Authorization: `USER_AUTHORIZED_VITEST_MULTI_SLICE_OWNERSHIP_CONTRACT_REGISTRY_V1`; task type: `CI_TEST_INFRASTRUCTURE`; current status: `COMPLETED / ACCEPTED / PENDING_CLOSEOUT_COMMIT_CI`.
+- PR [#39](https://github.com/JackeyLovedas/botc-singleplayer/pull/39) merged as `92dc77548c407371e2cd00198fa11a5acab06143`; frozen feature HEAD is `aac30f6a3efad3132dfd547541a9bd01077c48db`; accepted tag is `infrastructure-vitest-multi-slice-ownership-contract-registry-v1`.
+- Infrastructure repair is exhausted and accepted at `1/1`; no further infrastructure repair round is authorized or required.
+- Product-head push/PR CI `29639177439 / 29639178760` succeeded with `22/22` jobs on the exact frozen feature HEAD. Merge-main CI `29639670444` and accepted-tag CI `29639687007` separately succeeded with `22/22` jobs on the exact merge SHA.
+- Complete independent review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, with `remainingBlockers=[]`. The exact original GitHub comments are archived verbatim at `docs/reviews/pr-39-code-review-final.md` and `docs/reviews/pr-39-rule-review-final.md`.
+- The active registry contains only the accepted `2B19A3A` contract. No provisional or empty `2B19A3B` contract was registered, and this closeout does not claim that 2B19A3B Design 2 exists on `main`.
+- `ruleSemanticsChanged=false`; no game production code, conventional test file, workspace topology, dependency, timeout, coverage profile, event schema, replay behavior, projection, receipt, or role-coverage status changed.
+- Current branch is `main`; `currentSlice=null`, `currentPR=null`, `implementationAuthorized=false`, and `phase2CStarted=false`. The retained A3B branch is untouched and not synchronized by this closeout.
+- `closeoutCommitCI` is `PENDING` for the future exact docs-only closeout commit and inherits no product-head, merge-main, or tag CI status.
+
 ## Phase 3 Slice 2B19A3A — COMPLETED / ACCEPTED / PENDING CLOSEOUT COMMIT CI
 
 - Current status: `COMPLETED / ACCEPTED / PENDING_CLOSEOUT_COMMIT_CI`; task type: `PRODUCT_SLICE`; current Slice: `null`; current branch: `main`; current PR: `null`.

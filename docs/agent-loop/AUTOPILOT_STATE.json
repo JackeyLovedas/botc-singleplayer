@@ -1,6 +1,6 @@
 {
   "status": "COMPLETED",
-  "taskType": "PRODUCT_SLICE",
+  "taskType": "CI_TEST_INFRASTRUCTURE",
   "productRepairRoundConsumed": false,
   "currentPR": null,
   "currentPRUrl": null,
@@ -13,6 +13,72 @@
   "slice2B19A4Started": false,
   "slice2B19BStarted": false,
   "phase2CStarted": false,
+  "infrastructureVitestMultiSliceOwnershipRegistryV1": {
+    "authorization": "USER_AUTHORIZED_VITEST_MULTI_SLICE_OWNERSHIP_CONTRACT_REGISTRY_V1",
+    "taskType": "CI_TEST_INFRASTRUCTURE",
+    "status": "COMPLETED_ACCEPTED_PENDING_CLOSEOUT_COMMIT_CI",
+    "classification": "TEST_OWNERSHIP_GOVERNANCE_PREREQUISITE",
+    "pr": 39,
+    "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/39",
+    "baseHead": "1767333e5ba634eb0016743e35f61fc7d6b2faa0",
+    "frozenFeatureHead": "aac30f6a3efad3132dfd547541a9bd01077c48db",
+    "mergeCommit": "92dc77548c407371e2cd00198fa11a5acab06143",
+    "acceptedTag": "infrastructure-vitest-multi-slice-ownership-contract-registry-v1",
+    "infrastructureRepairRound": 1,
+    "maxInfrastructureRepairRounds": 1,
+    "activeOwnershipContracts": ["2B19A3A"],
+    "slice2B19A3BContractRegistered": false,
+    "ruleSemanticsChanged": false,
+    "productBehaviorChanged": false,
+    "productionCodeChanged": false,
+    "conventionalTestFilesChanged": false,
+    "workspaceChanged": false,
+    "dependencyChanged": false,
+    "timeoutsChanged": false,
+    "coverageProfileChanged": false,
+    "productHeadCI": {
+      "commitSha": "aac30f6a3efad3132dfd547541a9bd01077c48db",
+      "pushRun": 29639177439,
+      "pullRequestRun": 29639178760,
+      "status": "SUCCESS",
+      "jobs": "22/22"
+    },
+    "mergeCommitCI": {
+      "commitSha": "92dc77548c407371e2cd00198fa11a5acab06143",
+      "run": 29639670444,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29639670444",
+      "status": "SUCCESS",
+      "jobs": "22/22"
+    },
+    "tagCI": {
+      "commitSha": "92dc77548c407371e2cd00198fa11a5acab06143",
+      "run": 29639687007,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29639687007",
+      "status": "SUCCESS",
+      "jobs": "22/22"
+    },
+    "finalReview": {
+      "reviewedHead": "aac30f6a3efad3132dfd547541a9bd01077c48db",
+      "codeVerdict": "CODE_REVIEW_PASS",
+      "ruleVerdict": "RULE_REVIEW_PASS",
+      "remainingBlockers": [],
+      "codeCommentUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/39#issuecomment-5010792011",
+      "codeCommentTimestamp": "2026-07-18T09:42:34Z",
+      "codeCommentSha256": "a716c2673a966caedab6e00ddef9122fc1af8d4496a560b014ec22aa89520544",
+      "codeArchive": "docs/reviews/pr-39-code-review-final.md",
+      "ruleCommentUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/39#issuecomment-5010792165",
+      "ruleCommentTimestamp": "2026-07-18T09:42:38Z",
+      "ruleCommentSha256": "f5ee535c7ac04e4d4844a31a41c4d5a70171c93c0cfafbe70c961f12200a4bd0",
+      "ruleArchive": "docs/reviews/pr-39-rule-review-final.md"
+    },
+    "closeoutCommitCI": {
+      "commitSha": null,
+      "run": null,
+      "status": "PENDING",
+      "scope": "DOCS_ONLY_CLOSEOUT"
+    },
+    "remainingBlockers": []
+  },
   "infrastructureCoverageSingleForkV1": {
     "authorization": "USER_AUTHORIZED_COVERAGE_UNCOVERED_OBLIGATION_SEMANTIC_AUDIT_AND_SINGLE_FORK_V1",
     "taskType": "CI_TEST_INFRASTRUCTURE",
@@ -1383,8 +1449,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-17T12:08:49.3515000+08:00",
-  "lastAction": "Archived both exact PR #36 final-review comments after merge, recorded separate product-head and merge-commit CI provenance, accepted Slice 2B19A3A at PARTIAL / EFFECTIVE_SOURCE_VORTOX_FALSE_ONLY, kept Dreamer PARTIAL and Vortox NOT_STARTED, and left only the future docs-only closeout commit CI pending.",
+  "lastAction": "Accepted infrastructure PR #39 after exact-head dual review and exact merge/tag CI; archived both original final-review comments verbatim, recorded repair 1/1 and commit-specific CI provenance, cleared current Slice/PR, and left only the future docs-only closeout commit CI pending without starting or registering 2B19A3B.",
   "lastError": null,
   "requiredNextAction": "OBSERVE_EXACT_CLOSEOUT_COMMIT_CI",
-  "nextAction": "Controller records CI for the exact docs-only closeout commit after push. No next Slice is selected; do not start 2B19A3B, 2B19B, or Phase 2C."
+  "nextAction": "Controller records CI for the exact PR #39 docs-only closeout commit after push. No next Slice is selected; do not start or claim 2B19A3B Design 2, 2B19B, or Phase 2C."
 }
