@@ -101,6 +101,33 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
         sha256: "86729bdd6cab5519cbeab5f3e270955237f9832199f8d8bf5ae95fd38114b8f7"
       })
     })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b19a3b1-00160fc-ownership-v2-1",
+    sourceHead: "00160fc342487506f33d713667d404d4ace734c4",
+    sourceKind: "PRODUCT_IMPLEMENTATION_STABLE_NINE_PROCESS_BASELINE",
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3185,
+        sha256: "0cfec8ab5ed6c823b7fc0aa7647b61c7354c7fc279e49d08469afa46bdd51817"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "0b8011b10d4293987c00e4f76c2d734c481b8d9878a70e59be15913d938cad5c"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3185,
+        sha256: "c05c6e1960772a445430df01689249053b8ec169f62c40d4f494068e259b1d6a"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1781,
+        sha256: "e2da7c5d301b86c069a33bbca78f0454ff3e131b78cab23e646707521c9ebac0"
+      })
+    })
   })
 ]);
 

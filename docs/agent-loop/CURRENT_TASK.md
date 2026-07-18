@@ -1,6 +1,6 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B1 — RUNNING / LOCAL IMPLEMENTATION GATES
+## Phase 3 Slice 2B19A3B1 — RUNNING / COVERAGE PROFILE FROZEN
 
 - The sole authorized recovery command `git cherry-pick --no-commit ef51b62777751ecf0480f14fb98b378197f6ef21` was executed exactly once. It succeeded with zero conflicts and touched exactly the eight frozen archive paths.
 - The raw experiment was audited rather than accepted as-is. The former `C24` formal-Mathematician/`trueCount=1` test and gained-Dreamer boundary crossing were removed; all Slice-local markers are `2B19A3B1`.
@@ -9,7 +9,8 @@
 - ACTIVE ownership contract `2B19A3B1` uses marker `[2B19A3B1-`, owner `application-service-dreamer-vortox`, and support prefix `SUP-2B19A3B1-`. Verification reports three semantic tests only in the owner project and zero missing/duplicate/unexpected/ambiguous entries; accepted A3A frozen values remain unchanged.
 - Focused affected run: 7 files / 395 tests PASS. Full gates: typecheck PASS; lint PASS; ordinary 35 files / 1494 tests PASS in 26.98s; coverage 35 / 1494 PASS in 40.50s at 79.10% statements/lines, 82.58% branches, and 97.45% functions.
 - Role coverage remains `PARTIAL / CANONICAL_DRUNK_VORTOX_CORE_ONLY`. Gained Dreamer, combined Mathematician, POISONED Dreamer, impaired/dead Vortox, No Dashii, other-night, and Storyteller discretion remain explicit non-goals.
-- Production stop-loss passes at exactly five allowlisted production files and 406 added production lines. Required next action: create the attributed product implementation commit without a coverage profile, then run the separately governed three-candidate profile phase.
+- Product implementation commit is `00160fc342487506f33d713667d404d4ace734c4`. Three independent complete nine-process candidates each passed 9/9 shards and 1494/1494 tests with identical inventory, ownership identities, and exact five-obligation tuple.
+- Exact profile `phase-3-slice-2b19a3b1-00160fc-ownership-v2-1` binds source HEAD `00160fc342487506f33d713667d404d4ace734c4`; all three candidates independently return `COVERAGE_APPROVED_PROFILE_MATCH`. Production stop-loss remains exactly five allowlisted production files and 406 added production lines. Required next action: create the separate attributed profile-only commit, push, open one PR, and await exact profile-HEAD CI.
 
 - Fresh rule evidence `docs/rules/evidence/2B19A3B1.md`, canonical LF SHA-256 `ae48ce51ddbcd6ba3bae2dc49ab6441769e77c55f994aa8c2e043e98e58a2653`, retrieval `2026-07-18T21:38:04+08:00`, returned `RULE_READY / PARTIAL / unresolvedConflicts=[]`; formal combined Mathematician total remains undefined and deferred.
 - Governance record `docs/architecture/2B19A3B1-go-no-go-under-governance-v1.md`, SHA-256 `e566256966764d3fb53141ad0f2529b6ebe9005928b60454f497216a65911b1b`, returned exact `GO` within the five-file production allowlist and inherited stop-loss.
@@ -22,7 +23,7 @@
 - Remaining blockers are exactly `[]`.
 - The unaccepted 2B19A3B experiment remains external/archive evidence only: patch SHA-256 `b271c2db780c0940e001bd0dec596ff21fd70950a0af6cee6ec861b9aa5a8a6c`, local archive WIP `ef51b62777751ecf0480f14fb98b378197f6ef21`.
 - The combined formal Mathematician total remains deferred to `2B19A3B2_COMBINED_MATHEMATICIAN_INTEGRATION` after `2B19B_PHILOSOPHER_GAINED_DREAMER_EXECUTION`; the current design contains no `C24` and freezes no future `trueCount`.
-- Recovery is complete and cannot be repeated. The next gate is the bounded product implementation commit after all local gates pass.
+- Recovery is complete and cannot be repeated. Coverage profile evidence is `docs/implementation/phase-3-slice-2b19a3b1-coverage-profile.md`; the next gate is push/PR/exact-head CI after the separate profile-only commit.
 
 ## Phase 3 Slice 2B19A3B — RESLICE_REQUIRED / UNACCEPTED
 
