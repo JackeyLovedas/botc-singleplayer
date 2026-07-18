@@ -56,6 +56,7 @@ export const DREAMER_FALSE_ROLE_POLICY_VERSION = "dreamer-false-role-policy-v1" 
 export const DREAMER_TARGET_CHOSEN_V2_SCHEMA_VERSION = "dreamer-target-chosen-v2" as const;
 export const DREAMER_INFORMATION_DELIVERED_V2_SCHEMA_VERSION = "dreamer-information-delivered-v2" as const;
 export const DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION = "dreamer-information-delivered-v3" as const;
+export const DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION = "dreamer-information-delivered-v4" as const;
 export const DREAMER_BASE_SOURCE_EFFECTIVENESS_MODEL_VERSION = "dreamer-base-source-effectiveness-v1" as const;
 export const DREAMER_VORTOX_CONSTRAINT_VERSION = "dreamer-vortox-constraint-v1" as const;
 
@@ -219,10 +220,52 @@ export type DreamerInformationDeliveredPayloadV3 = {
   readonly falseRolePolicyVersion: typeof DREAMER_FALSE_ROLE_POLICY_VERSION;
 };
 
+export type DreamerCanonicalPhilosopherDrunkSourceImpairment = {
+  readonly impairmentId: AbilityImpairmentId;
+  readonly kind: "DRUNK";
+  readonly sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE";
+  readonly sourcePlayerId: PlayerId;
+  readonly affectedPlayerId: PlayerId;
+  readonly affectedSeatNumber: SeatNumber;
+  readonly affectedRole: RoleSetupSnapshot;
+  readonly chosenRoleId: "dreamer";
+  readonly sourceCharacterStateRevision: number;
+};
+
+export type DreamerCanonicalDrunkVortoxInformationReliability = {
+  readonly kind: "VORTOX_FORCED_FALSE_WITH_CANONICAL_SOURCE_DRUNK";
+};
+
+export type DreamerInformationDeliveredPayloadV4 = {
+  readonly rulesBaselineVersion: string;
+  readonly deliverySchemaVersion: typeof DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION;
+  readonly nightNumber: 1;
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: "DREAMER_ACTION";
+  readonly opportunityId: ActionOpportunityId;
+  readonly opportunitySchemaVersion: typeof DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION;
+  readonly knowledgeModelVersion: typeof SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION;
+  readonly knowledgeStage: typeof DREAMER_INFORMATION_STAGE;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly sourceCharacterStateRevision: number;
+  readonly evaluatedCharacterStateRevision: number;
+  readonly sourceContract: BaseDreamerV2SourceContract;
+  readonly targetPlayerId: PlayerId;
+  readonly targetSeatNumber: SeatNumber;
+  readonly informationReliability: DreamerCanonicalDrunkVortoxInformationReliability;
+  readonly sourceImpairment: DreamerCanonicalPhilosopherDrunkSourceImpairment;
+  readonly vortoxConstraint: DreamerVortoxConstraint;
+  readonly goodRole: RoleSetupSnapshot;
+  readonly evilRole: RoleSetupSnapshot;
+  readonly falseRolePolicyVersion: typeof DREAMER_FALSE_ROLE_POLICY_VERSION;
+};
+
 export type DreamerInformationDeliveredPayload =
   | DreamerInformationDeliveredPayloadV1
   | DreamerInformationDeliveredPayloadV2
-  | DreamerInformationDeliveredPayloadV3;
+  | DreamerInformationDeliveredPayloadV3
+  | DreamerInformationDeliveredPayloadV4;
 
 export type DreamerIneffectiveInformationDeliveredPayload = DreamerInformationDeliveredPayloadV1 & {
   readonly informationReliability: Extract<DreamerInformationReliability, { readonly kind: "SOURCE_IMPAIRED" }>;
@@ -242,6 +285,15 @@ export type BaseDreamerV2NormalCapability =
       readonly evaluatedCharacterStateRevision: number;
       readonly sourceRoleTenureId: RoleTenureId;
       readonly sourceAbilityInstanceId: FirstNightAbilityInstanceId;
+      readonly vortoxConstraint: DreamerVortoxConstraint;
+    }
+  | {
+      readonly kind: "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED";
+      readonly evaluationModelVersion: typeof DREAMER_BASE_SOURCE_EFFECTIVENESS_MODEL_VERSION;
+      readonly evaluatedCharacterStateRevision: number;
+      readonly sourceRoleTenureId: RoleTenureId;
+      readonly sourceAbilityInstanceId: FirstNightAbilityInstanceId;
+      readonly sourceImpairment: DreamerCanonicalPhilosopherDrunkSourceImpairment;
       readonly vortoxConstraint: DreamerVortoxConstraint;
     }
   | { readonly kind: "SOURCE_REPRESENTED_IMPAIRED"; readonly impairmentId: AbilityImpairmentId; readonly impairmentKind: "DRUNK" | "POISONED" }
@@ -341,6 +393,7 @@ const DREAMER_IMPAIRED_RELIABILITY_KEYS = [
   "sourceImpairmentKind"
 ] as const;
 const DREAMER_VORTOX_RELIABILITY_KEYS = ["kind"] as const;
+const DREAMER_CANONICAL_DRUNK_VORTOX_RELIABILITY_KEYS = ["kind"] as const;
 const DREAMER_INFORMATION_DELIVERED_PAYLOAD_KEYS = [
   "evilRole",
   "falseRolePolicyVersion",
@@ -401,6 +454,41 @@ const DREAMER_INFORMATION_DELIVERED_V3_PAYLOAD_KEYS = [
   "taskId",
   "taskType",
   "vortoxConstraint"
+] as const;
+const DREAMER_INFORMATION_DELIVERED_V4_PAYLOAD_KEYS = [
+  "deliverySchemaVersion",
+  "evaluatedCharacterStateRevision",
+  "evilRole",
+  "falseRolePolicyVersion",
+  "goodRole",
+  "informationReliability",
+  "knowledgeModelVersion",
+  "knowledgeStage",
+  "nightNumber",
+  "opportunityId",
+  "opportunitySchemaVersion",
+  "rulesBaselineVersion",
+  "sourceCharacterStateRevision",
+  "sourceContract",
+  "sourceImpairment",
+  "sourcePlayerId",
+  "sourceSeatNumber",
+  "targetPlayerId",
+  "targetSeatNumber",
+  "taskId",
+  "taskType",
+  "vortoxConstraint"
+] as const;
+const DREAMER_CANONICAL_DRUNK_SOURCE_IMPAIRMENT_KEYS = [
+  "affectedPlayerId",
+  "affectedRole",
+  "affectedSeatNumber",
+  "chosenRoleId",
+  "impairmentId",
+  "kind",
+  "sourceCharacterStateRevision",
+  "sourceKind",
+  "sourcePlayerId"
 ] as const;
 const DREAMER_VORTOX_CONSTRAINT_KEYS = [
   "constraintVersion",
@@ -468,7 +556,42 @@ const cloneReliability = (reliability: DreamerInformationReliability): DreamerIn
       };
 
 const cloneInformationDelivery = (delivery: DreamerInformationDeliveredPayload): DreamerInformationDeliveredPayload =>
-  "deliverySchemaVersion" in delivery && delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION
+  "deliverySchemaVersion" in delivery && delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION
+    ? {
+        rulesBaselineVersion: delivery.rulesBaselineVersion,
+        deliverySchemaVersion: delivery.deliverySchemaVersion,
+        nightNumber: delivery.nightNumber,
+        taskId: delivery.taskId,
+        taskType: delivery.taskType,
+        opportunityId: delivery.opportunityId,
+        opportunitySchemaVersion: delivery.opportunitySchemaVersion,
+        knowledgeModelVersion: delivery.knowledgeModelVersion,
+        knowledgeStage: delivery.knowledgeStage,
+        sourcePlayerId: delivery.sourcePlayerId,
+        sourceSeatNumber: delivery.sourceSeatNumber,
+        sourceCharacterStateRevision: delivery.sourceCharacterStateRevision,
+        evaluatedCharacterStateRevision: delivery.evaluatedCharacterStateRevision,
+        sourceContract: { ...delivery.sourceContract },
+        targetPlayerId: delivery.targetPlayerId,
+        targetSeatNumber: delivery.targetSeatNumber,
+        informationReliability: { kind: "VORTOX_FORCED_FALSE_WITH_CANONICAL_SOURCE_DRUNK" },
+        sourceImpairment: {
+          impairmentId: delivery.sourceImpairment.impairmentId,
+          kind: delivery.sourceImpairment.kind,
+          sourceKind: delivery.sourceImpairment.sourceKind,
+          sourcePlayerId: delivery.sourceImpairment.sourcePlayerId,
+          affectedPlayerId: delivery.sourceImpairment.affectedPlayerId,
+          affectedSeatNumber: delivery.sourceImpairment.affectedSeatNumber,
+          affectedRole: cloneRoleSetupSnapshot(delivery.sourceImpairment.affectedRole),
+          chosenRoleId: delivery.sourceImpairment.chosenRoleId,
+          sourceCharacterStateRevision: delivery.sourceImpairment.sourceCharacterStateRevision
+        },
+        vortoxConstraint: { ...delivery.vortoxConstraint },
+        goodRole: cloneRoleSetupSnapshot(delivery.goodRole),
+        evilRole: cloneRoleSetupSnapshot(delivery.evilRole),
+        falseRolePolicyVersion: delivery.falseRolePolicyVersion
+      }
+    : "deliverySchemaVersion" in delivery && delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION
     ? {
         rulesBaselineVersion: delivery.rulesBaselineVersion,
         deliverySchemaVersion: delivery.deliverySchemaVersion,
@@ -831,8 +954,24 @@ export const resolveBaseDreamerV2NormalCapability = (input: {
     if (sourceImpairments.length > 1 || new Set(sourceImpairments.map((marker) => marker.impairmentId)).size !== sourceImpairments.length) {
       return unresolved("SOURCE_IMPAIRMENT_CONFLICT");
     }
-    if (sourceImpairments[0] !== undefined) {
-      return { kind: "SOURCE_REPRESENTED_IMPAIRED", impairmentId: sourceImpairments[0].impairmentId, impairmentKind: sourceImpairments[0].kind };
+    const sourceImpairment = sourceImpairments[0];
+    const canonicalDrunk = sourceImpairment?.kind === "DRUNK" &&
+      sourceImpairment.sourceKind === "PHILOSOPHER_CHOSEN_DUPLICATE" &&
+      sourceImpairment.chosenRoleId === "dreamer"
+      ? {
+          impairmentId: sourceImpairment.impairmentId,
+          kind: sourceImpairment.kind,
+          sourceKind: sourceImpairment.sourceKind,
+          sourcePlayerId: sourceImpairment.sourcePlayerId,
+          affectedPlayerId: sourceImpairment.affectedPlayerId,
+          affectedSeatNumber: sourceImpairment.affectedSeatNumber,
+          affectedRole: cloneRoleSetupSnapshot(sourceImpairment.affectedRole),
+          chosenRoleId: "dreamer",
+          sourceCharacterStateRevision: sourceImpairment.sourceCharacterStateRevision
+        } satisfies DreamerCanonicalPhilosopherDrunkSourceImpairment
+      : undefined;
+    if (sourceImpairment !== undefined && canonicalDrunk === undefined) {
+      return { kind: "SOURCE_REPRESENTED_IMPAIRED", impairmentId: sourceImpairment.impairmentId, impairmentKind: sourceImpairment.kind };
     }
 
     const demons = input.currentCharacterState.entries.filter((entry) => entry.role.characterType === "DEMON");
@@ -862,6 +1001,25 @@ export const resolveBaseDreamerV2NormalCapability = (input: {
         return unresolved("VORTOX_EFFECTIVENESS_CONFLICT");
       }
       if (vortoxImpairments.length === 0) {
+        if (canonicalDrunk !== undefined) {
+          return {
+            kind: "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED",
+            evaluationModelVersion: DREAMER_BASE_SOURCE_EFFECTIVENESS_MODEL_VERSION,
+            evaluatedCharacterStateRevision: input.currentCharacterState.revision,
+            sourceRoleTenureId: tenure.roleTenureId,
+            sourceAbilityInstanceId: expectedAbility,
+            sourceImpairment: canonicalDrunk,
+            vortoxConstraint: {
+              constraintVersion: DREAMER_VORTOX_CONSTRAINT_VERSION,
+              kind: "VORTOX_FORCED_FALSE_REQUIRED",
+              vortoxPlayerId: demon.playerId,
+              vortoxSeatNumber: demon.seatNumber,
+              vortoxRoleId: "vortox",
+              vortoxRoleTenureId: vortoxTenure.roleTenureId,
+              evaluatedCharacterStateRevision: input.currentCharacterState.revision
+            }
+          };
+        }
         return {
           kind: "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED",
           evaluationModelVersion: DREAMER_BASE_SOURCE_EFFECTIVENESS_MODEL_VERSION,
@@ -880,6 +1038,13 @@ export const resolveBaseDreamerV2NormalCapability = (input: {
         };
       }
       return unresolved("VORTOX_EFFECTIVENESS_CONFLICT");
+    }
+    if (canonicalDrunk !== undefined) {
+      return {
+        kind: "SOURCE_REPRESENTED_IMPAIRED",
+        impairmentId: canonicalDrunk.impairmentId,
+        impairmentKind: "DRUNK"
+      };
     }
     return {
       kind: "NORMAL_INFORMATION_SUPPORTED",
@@ -928,6 +1093,28 @@ const hasExactVortoxReliabilityShape = (value: unknown): value is DreamerVortoxI
   isPlainRecord(value) && hasExactEnumerableKeys(value, DREAMER_VORTOX_RELIABILITY_KEYS) &&
   value.kind === "VORTOX_FORCED_FALSE";
 
+const hasExactCanonicalDrunkVortoxReliabilityShape = (
+  value: unknown
+): value is DreamerCanonicalDrunkVortoxInformationReliability =>
+  isPlainRecord(value) &&
+  hasExactEnumerableKeys(value, DREAMER_CANONICAL_DRUNK_VORTOX_RELIABILITY_KEYS) &&
+  value.kind === "VORTOX_FORCED_FALSE_WITH_CANONICAL_SOURCE_DRUNK";
+
+const hasExactCanonicalDrunkSourceImpairmentShape = (
+  value: unknown
+): value is DreamerCanonicalPhilosopherDrunkSourceImpairment =>
+  isPlainRecord(value) &&
+  hasExactEnumerableKeys(value, DREAMER_CANONICAL_DRUNK_SOURCE_IMPAIRMENT_KEYS) &&
+  typeof value.impairmentId === "string" && value.impairmentId.trim().length > 0 &&
+  value.kind === "DRUNK" && value.sourceKind === "PHILOSOPHER_CHOSEN_DUPLICATE" &&
+  typeof value.sourcePlayerId === "string" && value.sourcePlayerId.trim().length > 0 &&
+  typeof value.affectedPlayerId === "string" && value.affectedPlayerId.trim().length > 0 &&
+  Number.isSafeInteger(value.affectedSeatNumber) && (value.affectedSeatNumber as number) >= 1 &&
+  (value.affectedSeatNumber as number) <= 12 && hasExactRoleSetupSnapshotShape(value.affectedRole) &&
+  value.affectedRole.roleId === DREAMER_ROLE_ID && value.chosenRoleId === "dreamer" &&
+  Number.isSafeInteger(value.sourceCharacterStateRevision) &&
+  (value.sourceCharacterStateRevision as number) > 0;
+
 const hasExactDreamerVortoxConstraintShape = (value: unknown): value is DreamerVortoxConstraint => {
   if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, DREAMER_VORTOX_CONSTRAINT_KEYS)) return false;
   const parsedTenure = parseRoleTenureId(value.vortoxRoleTenureId);
@@ -954,8 +1141,10 @@ const validateDreamerInformationPayloadShape = (
   const hasVersion = Object.hasOwn(payload, "deliverySchemaVersion");
   const v2 = hasVersion && payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V2_SCHEMA_VERSION;
   const v3 = hasVersion && payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION;
-  if ((hasVersion && !v2 && !v3) || !hasExactEnumerableKeys(payload, v3
-      ? DREAMER_INFORMATION_DELIVERED_V3_PAYLOAD_KEYS
+  const v4 = hasVersion && payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION;
+  if ((hasVersion && !v2 && !v3 && !v4) || !hasExactEnumerableKeys(payload, v4
+      ? DREAMER_INFORMATION_DELIVERED_V4_PAYLOAD_KEYS
+      : v3 ? DREAMER_INFORMATION_DELIVERED_V3_PAYLOAD_KEYS
       : v2 ? DREAMER_INFORMATION_DELIVERED_V2_PAYLOAD_KEYS : DREAMER_INFORMATION_DELIVERED_PAYLOAD_KEYS)) {
     return shapeFail("DreamerInformationDelivered payload must have exact runtime shape");
   }
@@ -986,25 +1175,31 @@ const validateDreamerInformationPayloadShape = (
     !Number.isInteger(payload.targetSeatNumber) ||
     payload.targetSeatNumber < 1 ||
     payload.targetSeatNumber > 12 ||
-    !(v3 ? hasExactVortoxReliabilityShape(payload.informationReliability) :
+    !(v4 ? hasExactCanonicalDrunkVortoxReliabilityShape(payload.informationReliability) :
+      v3 ? hasExactVortoxReliabilityShape(payload.informationReliability) :
       hasExactReliabilityShape(payload.informationReliability)) ||
     !hasExactRoleSetupSnapshotShape(payload.goodRole) ||
     !hasExactRoleSetupSnapshotShape(payload.evilRole) ||
     payload.falseRolePolicyVersion !== DREAMER_FALSE_ROLE_POLICY_VERSION ||
-    ((v2 || v3) && (
+    ((v2 || v3 || v4) && (
       payload.opportunitySchemaVersion !== DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION ||
       !hasExactBaseDreamerSourceContractShape(payload.sourceContract) ||
       !isPlainRecord(payload.informationReliability) ||
       !hasExactEnumerableKeys(payload.informationReliability, ["kind"]) ||
-      (v2 ? payload.informationReliability.kind !== "EFFECTIVE" :
-        payload.informationReliability.kind !== "VORTOX_FORCED_FALSE") ||
-      (v3 && (!hasExactDreamerVortoxConstraintShape(payload.vortoxConstraint) ||
-        payload.vortoxConstraint.evaluatedCharacterStateRevision !== payload.sourceCharacterStateRevision))))
+      (v2 ? payload.informationReliability.kind !== "EFFECTIVE" : v3
+        ? payload.informationReliability.kind !== "VORTOX_FORCED_FALSE"
+        : payload.informationReliability.kind !== "VORTOX_FORCED_FALSE_WITH_CANONICAL_SOURCE_DRUNK") ||
+      ((v3 || v4) && (!hasExactDreamerVortoxConstraintShape(payload.vortoxConstraint) ||
+        payload.vortoxConstraint.evaluatedCharacterStateRevision !== payload.sourceCharacterStateRevision)) ||
+      (v4 && (!Number.isSafeInteger(payload.evaluatedCharacterStateRevision) ||
+        (payload.evaluatedCharacterStateRevision as number) <= 0 ||
+        payload.evaluatedCharacterStateRevision !== payload.sourceCharacterStateRevision ||
+        !hasExactCanonicalDrunkSourceImpairmentShape(payload.sourceImpairment)))))
   ) {
     return shapeFail("DreamerInformationDelivered fields must use supported primitive values");
   }
 
-  if (v3
+  if (v3 || v4
     ? !((payload.goodRole.characterType === "TOWNSFOLK" || payload.goodRole.characterType === "OUTSIDER") &&
         (payload.evilRole.characterType === "MINION" || payload.evilRole.characterType === "DEMON"))
     : payload.goodRole.defaultAlignment !== "GOOD" || payload.evilRole.defaultAlignment !== "EVIL") {
@@ -1045,6 +1240,16 @@ const sameVortoxConstraint = (left: DreamerVortoxConstraint, right: DreamerVorto
   left.vortoxRoleId === right.vortoxRoleId && left.vortoxRoleTenureId === right.vortoxRoleTenureId &&
   left.evaluatedCharacterStateRevision === right.evaluatedCharacterStateRevision;
 
+const sameCanonicalDrunkSourceImpairment = (
+  left: DreamerCanonicalPhilosopherDrunkSourceImpairment,
+  right: DreamerCanonicalPhilosopherDrunkSourceImpairment
+): boolean =>
+  left.impairmentId === right.impairmentId && left.kind === right.kind &&
+  left.sourceKind === right.sourceKind && left.sourcePlayerId === right.sourcePlayerId &&
+  left.affectedPlayerId === right.affectedPlayerId && left.affectedSeatNumber === right.affectedSeatNumber &&
+  sameRoleSetupSnapshot(left.affectedRole, right.affectedRole) && left.chosenRoleId === right.chosenRoleId &&
+  left.sourceCharacterStateRevision === right.sourceCharacterStateRevision;
+
 const sameTargetChoice = (left: DreamerTargetChosenPayload, right: DreamerTargetChosenPayload): boolean =>
   (("targetSchemaVersion" in left && "targetSchemaVersion" in right &&
       left.targetSchemaVersion === right.targetSchemaVersion &&
@@ -1071,7 +1276,15 @@ export const sameDreamerInformationDelivery = (
   const leftVersion = "deliverySchemaVersion" in left ? left.deliverySchemaVersion : undefined;
   const rightVersion = "deliverySchemaVersion" in right ? right.deliverySchemaVersion : undefined;
   if (leftVersion !== rightVersion) return false;
-  if (leftVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION) {
+  if (leftVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION) {
+    if (!("deliverySchemaVersion" in left) || left.deliverySchemaVersion !== DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION ||
+        !("deliverySchemaVersion" in right) || right.deliverySchemaVersion !== DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION ||
+        !sameBaseDreamerSourceContract(left.sourceContract, right.sourceContract) ||
+        !sameCanonicalDrunkSourceImpairment(left.sourceImpairment, right.sourceImpairment) ||
+        !sameVortoxConstraint(left.vortoxConstraint, right.vortoxConstraint) ||
+        left.informationReliability.kind !== right.informationReliability.kind ||
+        left.evaluatedCharacterStateRevision !== right.evaluatedCharacterStateRevision) return false;
+  } else if (leftVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION) {
     if (!("deliverySchemaVersion" in left) || left.deliverySchemaVersion !== DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION ||
         !("deliverySchemaVersion" in right) || right.deliverySchemaVersion !== DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION ||
         !sameBaseDreamerSourceContract(left.sourceContract, right.sourceContract) ||
@@ -1332,6 +1545,92 @@ export const createDreamerVortoxInformationDeliveredPayload = (input: {
   };
 };
 
+export const createDreamerCanonicalDrunkVortoxInformationDeliveredPayload = (input: {
+  readonly rulesBaselineVersion: string;
+  readonly targetChoice: DreamerTargetChosenPayloadV2;
+  readonly setup: Pick<GeneratedSetup, "roleCatalogSnapshot">;
+  readonly currentCharacterState: CurrentCharacterStateSet;
+  readonly capability: Extract<BaseDreamerV2NormalCapability, {
+    readonly kind: "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED";
+  }>;
+}): DreamerInformationDeliveredPayloadV4 => {
+  const { targetChoice: choice, capability } = input;
+  const source = input.currentCharacterState.entries.find((entry) =>
+    entry.playerId === choice.sourcePlayerId && entry.seatNumber === choice.sourceSeatNumber);
+  const target = input.currentCharacterState.entries.find((entry) =>
+    entry.playerId === choice.targetPlayerId && entry.seatNumber === choice.targetSeatNumber);
+  const vortox = input.currentCharacterState.entries.find((entry) =>
+    entry.playerId === capability.vortoxConstraint.vortoxPlayerId &&
+    entry.seatNumber === capability.vortoxConstraint.vortoxSeatNumber);
+  const targetRole = target === undefined ? undefined : roleFromCatalog(input.setup, target.role);
+  const sourceRole = source === undefined ? undefined : roleFromCatalog(input.setup, source.role);
+  const vortoxRole = vortox === undefined ? undefined : roleFromCatalog(input.setup, vortox.role);
+  const impairment = capability.sourceImpairment;
+  if (!hasExactBaseDreamerSourceContractShape(choice.sourceContract) ||
+      !hasExactCanonicalDrunkSourceImpairmentShape(impairment) ||
+      source === undefined || target === undefined || vortox === undefined ||
+      sourceRole?.roleId !== DREAMER_ROLE_ID || targetRole === undefined || vortoxRole?.roleId !== "vortox" ||
+      capability.evaluationModelVersion !== DREAMER_BASE_SOURCE_EFFECTIVENESS_MODEL_VERSION ||
+      capability.evaluatedCharacterStateRevision !== input.currentCharacterState.revision ||
+      capability.evaluatedCharacterStateRevision !== choice.sourceCharacterStateRevision ||
+      capability.sourceRoleTenureId !== choice.sourceContract.sourceRoleTenureId ||
+      capability.sourceAbilityInstanceId !== choice.sourceContract.sourceAbilityInstanceId ||
+      capability.vortoxConstraint.evaluatedCharacterStateRevision !== input.currentCharacterState.revision ||
+      capability.vortoxConstraint.vortoxRoleId !== "vortox" ||
+      impairment.affectedPlayerId !== source.playerId ||
+      impairment.affectedSeatNumber !== source.seatNumber ||
+      !sameRoleSetupSnapshot(impairment.affectedRole, source.role) ||
+      impairment.sourceCharacterStateRevision < choice.sourceContract.sourceCharacterStateRevision ||
+      impairment.sourceCharacterStateRevision > capability.evaluatedCharacterStateRevision) {
+    throw new DomainError(
+      "InvalidDreamerInformationDeliveredPayload",
+      "Dreamer canonical-drunk Vortox information requires exact source, impairment, target, and Vortox facts"
+    );
+  }
+  const goodRole = selectLowestCatalogRoleByNativeCategory(input.setup, "GOOD", targetRole.roleId);
+  const evilRole = selectLowestCatalogRoleByNativeCategory(input.setup, "EVIL", targetRole.roleId);
+  if (goodRole === undefined || evilRole === undefined) {
+    throw new DomainError(
+      "InvalidDreamerInformationDeliveredPayload",
+      "Dreamer canonical-drunk Vortox information requires deterministic false GOOD and EVIL role candidates"
+    );
+  }
+  return {
+    rulesBaselineVersion: input.rulesBaselineVersion,
+    deliverySchemaVersion: DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION,
+    nightNumber: 1,
+    taskId: choice.taskId,
+    taskType: "DREAMER_ACTION",
+    opportunityId: choice.opportunityId,
+    opportunitySchemaVersion: DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION,
+    knowledgeModelVersion: SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
+    knowledgeStage: DREAMER_INFORMATION_STAGE,
+    sourcePlayerId: choice.sourcePlayerId,
+    sourceSeatNumber: choice.sourceSeatNumber,
+    sourceCharacterStateRevision: choice.sourceCharacterStateRevision,
+    evaluatedCharacterStateRevision: capability.evaluatedCharacterStateRevision,
+    sourceContract: { ...choice.sourceContract },
+    targetPlayerId: choice.targetPlayerId,
+    targetSeatNumber: choice.targetSeatNumber,
+    informationReliability: { kind: "VORTOX_FORCED_FALSE_WITH_CANONICAL_SOURCE_DRUNK" },
+    sourceImpairment: {
+      impairmentId: impairment.impairmentId,
+      kind: impairment.kind,
+      sourceKind: impairment.sourceKind,
+      sourcePlayerId: impairment.sourcePlayerId,
+      affectedPlayerId: impairment.affectedPlayerId,
+      affectedSeatNumber: impairment.affectedSeatNumber,
+      affectedRole: cloneRoleSetupSnapshot(impairment.affectedRole),
+      chosenRoleId: "dreamer",
+      sourceCharacterStateRevision: impairment.sourceCharacterStateRevision
+    },
+    vortoxConstraint: { ...capability.vortoxConstraint },
+    goodRole,
+    evilRole,
+    falseRolePolicyVersion: DREAMER_FALSE_ROLE_POLICY_VERSION
+  };
+};
+
 export const createDreamerInformationDeliveredScheduledTaskSettlement = (input: {
   readonly taskId: ScheduledTaskId;
   readonly characterStateRevision: number;
@@ -1484,6 +1783,8 @@ const validateDreamerInformationDeliveredPayloadInternal = (
     delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V2_SCHEMA_VERSION;
   const v3 = "deliverySchemaVersion" in delivery &&
     delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION;
+  const v4 = "deliverySchemaVersion" in delivery &&
+    delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION;
 
   if (input.deliveries?.deliveries.some((candidate) => candidate.opportunityId === delivery.opportunityId) === true) {
     return fail("DreamerInformationDelivered cannot deliver the same opportunity twice");
@@ -1502,7 +1803,7 @@ const validateDreamerInformationDeliveredPayloadInternal = (
   if (
     opportunity === undefined ||
     opportunity.opportunityStatus !== "OPEN" ||
-    opportunity.opportunityKind !== (v2 || v3 ? "DREAMER_FIRST_NIGHT_ACTION_V3" : "DREAMER_FIRST_NIGHT_ACTION") ||
+    opportunity.opportunityKind !== (v2 || v3 || v4 ? "DREAMER_FIRST_NIGHT_ACTION_V3" : "DREAMER_FIRST_NIGHT_ACTION") ||
     opportunity.taskType !== "DREAMER_ACTION"
   ) {
     return fail("DreamerInformationDelivered must close a matching OPEN Dreamer action opportunity");
@@ -1520,7 +1821,7 @@ const validateDreamerInformationDeliveredPayloadInternal = (
   }
 
   let expected: DreamerInformationDeliveredPayload;
-  if (v2 || v3) {
+  if (v2 || v3 || v4) {
     if (!("targetSchemaVersion" in choice) || !isDreamerActionOpportunityV3(opportunity) ||
         input.firstNightTaskPlan === undefined ||
         input.roleTenures === undefined || input.firstNightActionOpportunities === undefined ||
@@ -1544,7 +1845,20 @@ const validateDreamerInformationDeliveredPayloadInternal = (
     if (v3 && capability.kind !== "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED") {
       return fail("DreamerInformationDelivered V3 requires proven Vortox forced-false capability");
     }
-    expected = v3
+    if (v4 && capability.kind !== "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED") {
+      return fail("DreamerInformationDelivered V4 requires proven canonical-drunk Vortox forced-false capability");
+    }
+    expected = v4
+      ? createDreamerCanonicalDrunkVortoxInformationDeliveredPayload({
+          rulesBaselineVersion: delivery.rulesBaselineVersion,
+          targetChoice: choice,
+          setup: input.setup,
+          currentCharacterState: input.currentCharacterState,
+          capability: capability as Extract<BaseDreamerV2NormalCapability, {
+            readonly kind: "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED";
+          }>
+        })
+      : v3
       ? createDreamerVortoxInformationDeliveredPayload({
           rulesBaselineVersion: delivery.rulesBaselineVersion,
           targetChoice: choice,

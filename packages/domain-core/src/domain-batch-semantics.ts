@@ -36,6 +36,8 @@ import {
 } from "./cerenovus.js";
 import {
   DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION,
+  DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION,
+  createDreamerCanonicalDrunkVortoxInformationDeliveredPayload,
   createDreamerInformationDeliveredPayload,
   createDreamerVortoxInformationDeliveredPayload,
   evaluateDreamerEffectiveness,
@@ -1098,7 +1100,7 @@ const validateIntegratedDreamerInformationBatch = (
   if ("deliverySchemaVersion" in information.payload) {
     const targetChoice = "targetSchemaVersion" in targetChosen.payload
       ? targetChosen.payload
-      : reject("Dreamer V2/V3 information batch requires a V2 target choice");
+      : reject("Dreamer versioned information batch requires a V2 target choice");
     const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, information.payload.opportunityId);
     if (opportunity === undefined) {
       reject("Dreamer V2 information batch requires one canonical open V3 opportunity");
@@ -1122,7 +1124,19 @@ const validateIntegratedDreamerInformationBatch = (
       roleTenures: roleTenures!,
       abilityImpairments: state.abilityImpairments
     });
-    if (information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION) {
+    if (information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION) {
+      const canonicalDrunkVortoxCapability = capability.kind ===
+        "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
+        ? capability
+        : reject("Dreamer V4 information batch requires proven canonical-drunk Vortox capability");
+      expectedInformation = createDreamerCanonicalDrunkVortoxInformationDeliveredPayload({
+        rulesBaselineVersion: information.payload.rulesBaselineVersion,
+        targetChoice,
+        setup: setup!,
+        currentCharacterState: currentCharacterState!,
+        capability: canonicalDrunkVortoxCapability
+      });
+    } else if (information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION) {
       const vortoxCapability = capability.kind === "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
         ? capability
         : reject("Dreamer V3 information batch requires proven effective-source Vortox capability");

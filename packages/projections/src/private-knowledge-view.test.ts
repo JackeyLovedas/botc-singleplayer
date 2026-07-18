@@ -2449,4 +2449,18 @@ describe("Phase 3 Slice 2B19A3A accepted-stream Dreamer projection", () => {
     buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(captured.events, delivery.payload.sourcePlayerId);
     expect(captured.events[captured.deliveryEventIndex]?.payload).toStrictEqual(before);
   }, 15_000);
-});
+  });
+
+  it("[2B19A3B1-C38] rejects V4 from the state-only player and AI projection boundaries", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const state = structuredClone(captured.finalState);
+    const delivery = state.dreamerInformation?.deliveries[0];
+    if (delivery === undefined || !("deliverySchemaVersion" in delivery)) {
+      throw new Error("Expected versioned Dreamer delivery");
+    }
+    (delivery as unknown as Record<string, unknown>).deliverySchemaVersion = "dreamer-information-delivered-v4";
+    expect(() => buildPlayerPrivateKnowledgeView(state, delivery.sourcePlayerId))
+      .toThrowError(DomainError);
+    expect(() => buildAiPrivateKnowledgeView(state, delivery.sourcePlayerId))
+      .toThrowError(DomainError);
+  });

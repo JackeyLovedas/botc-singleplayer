@@ -44,6 +44,7 @@ import {
   findCerenovusOpportunity,
   formatCerenovusAbilityInstanceId,
   createDreamerInformationDeliveredPayload,
+  createDreamerCanonicalDrunkVortoxInformationDeliveredPayload,
   createDreamerVortoxInformationDeliveredPayload,
   createDreamerInformationDeliveredScheduledTaskSettlement,
   createDreamerTargetChosenPayload,
@@ -151,6 +152,7 @@ import type {
   DreamerInformationDeliveredPayload,
   DreamerInformationDeliveredPayloadV2,
   DreamerInformationDeliveredPayloadV3,
+  DreamerInformationDeliveredPayloadV4,
   DreamerTargetChosenPayloadV2,
   BaseDreamerV2NormalCapability,
   DreamerTargetChosenPayload,
@@ -553,6 +555,12 @@ type PreparedBaseDreamerSubmission =
       readonly targetChoice: DreamerTargetChosenPayloadV2;
       readonly delivery: DreamerInformationDeliveredPayloadV3;
       readonly settlement: ScheduledTaskSettlement;
+    }
+  | {
+      readonly kind: "BASE_DREAMER_CANONICAL_DRUNK_VORTOX_FALSE_V4";
+      readonly targetChoice: DreamerTargetChosenPayloadV2;
+      readonly delivery: DreamerInformationDeliveredPayloadV4;
+      readonly settlement: ScheduledTaskSettlement;
     };
 
 export class GameApplicationService {
@@ -568,6 +576,12 @@ export class GameApplicationService {
     input: Parameters<typeof createDreamerVortoxInformationDeliveredPayload>[0]
   ): DreamerInformationDeliveredPayloadV3 {
     return createDreamerVortoxInformationDeliveredPayload(input);
+  }
+
+  private createDreamerCanonicalDrunkVortoxDelivery(
+    input: Parameters<typeof createDreamerCanonicalDrunkVortoxInformationDeliveredPayload>[0]
+  ): DreamerInformationDeliveredPayloadV4 {
+    return createDreamerCanonicalDrunkVortoxInformationDeliveredPayload(input);
   }
 
   public async execute(incomingCommand: SupportedCommandEnvelope): Promise<CommandResult> {
@@ -723,7 +737,8 @@ export class GameApplicationService {
           return failed(command.gameId, "ApplicationNotConfigured", "Dreamer normal information capability is not configured for this source state", "first-night-role-action", currentGameVersion);
         }
         if (capability.kind !== "NORMAL_INFORMATION_SUPPORTED" &&
-            capability.kind !== "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED") {
+            capability.kind !== "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED" &&
+            capability.kind !== "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED") {
           return failed(command.gameId, "DependencyExecutionFailed", "Dreamer normal information capability could not be proven", "first-night-role-action", currentGameVersion);
         }
         try {
@@ -743,7 +758,20 @@ export class GameApplicationService {
             taskId: opportunity.taskId,
             characterStateRevision: targetChoice.sourceCharacterStateRevision
           });
-          preparedDreamerSubmission = capability.kind === "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
+          preparedDreamerSubmission = capability.kind === "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
+            ? {
+                kind: "BASE_DREAMER_CANONICAL_DRUNK_VORTOX_FALSE_V4",
+                targetChoice,
+                delivery: this.createDreamerCanonicalDrunkVortoxDelivery({
+                  rulesBaselineVersion: RULES_BASELINE_VERSION,
+                  targetChoice,
+                  setup: state.setup,
+                  currentCharacterState: state.currentCharacterState,
+                  capability
+                }),
+                settlement
+              }
+            : capability.kind === "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
             ? {
                 kind: "BASE_DREAMER_VORTOX_FALSE_V3",
                 targetChoice,
