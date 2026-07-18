@@ -1,6 +1,6 @@
 # Project State
 
-## Current gated Slice — 2B19A3B RULE_READY / PENDING DESIGN ROUND 1
+## Current gated Slice — 2B19A3B HUMAN_BLOCKED / RULE_DESIGN_FIX_REQUIRED
 
 - The user approved `BOTC-SIM-DREAMER-VORTOX-DRUNK-LEDGER-ATTRIBUTION-V1`; this changes no external rule truth and resolves only the simulator's single terminal-fact attribution.
 - Fresh live-source research returned `RULE_READY`; resolved evidence is `docs/rules/evidence/2B19A3B-resolved.md`, retrieval `2026-07-18T15:30:38+08:00`, coverage `PARTIAL`, and `unresolvedConflicts=[]`.
@@ -9,7 +9,9 @@
 - Current gates are `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`, `designRound=1/2`, `repairRound=0/2`; current branch is `phase-3/dreamer-vortox-canonical-drunk-precedence`, current PR is `null`, and `phase2CStarted=false`.
 - Immutable conflict history remains recorded in the immediately following historical checkpoint and at `docs/rules/evidence/2B19A3B.md` plus `docs/architecture/2B19A3B-go-no-go-under-governance-v1.md`; it was not rewritten.
 - Complete read-only architect Design Round 1 is `docs/implementation/phase-3-slice-2b19a3b-design.md`, SHA-256 `4937f3dbc741c638d7715502e64a79d603c78b2500dec06ca928cb638c00ce4b`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`.
-- The only blocker is `PENDING_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_1`. No production code, test, role matrix, push, PR, merge, or next Slice is authorized before independent `RULE_DESIGN_PASS`.
+- Independent Design Review Round 1 is `docs/implementation/phase-3-slice-2b19a3b-design-review-round-1.md`, SHA-256 `6fc6b954f4f4e976ae672971efdd05beb5e5cfa04c4f5e66fbf5a58c15a676ba`, verdict and terminal `RULE_DESIGN_FIX_REQUIRED`.
+- Remaining blockers are exactly `A3B_TEST_OWNERSHIP_VERIFIER_PREREQUISITE`, `C07_DIRECT_STRUCTURAL_REACHABILITY_MISCLASSIFIED`, `C34_COMPOUND_REACHABILITY_TRUST_CLASSIFICATION`, `S01_S17_UNMATERIALIZED_AND_MIXED_TRACEABILITY`, `C15_C16_HOSTILE_REPLAY_TRUST_MISMATCH`, and `C39_HISTORICAL_MUTATION_AUTHORITY_UNDEFINED`.
+- Required next action is a separately authorized and accepted A3B test-ownership-verifier infrastructure prerequisite. Design Round 2 may begin only after that prerequisite and must correct every remaining classification and traceability blocker. No production code, test, role matrix, push, PR, merge, or next Slice is authorized before independent `RULE_DESIGN_PASS`.
 
 ### Historical pre-override checkpoint preserved below
 

@@ -1,8 +1,8 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B — RUNNING / RULE_READY / PENDING DESIGN ROUND 1
+## Phase 3 Slice 2B19A3B — HUMAN_BLOCKED / RULE_DESIGN_FIX_REQUIRED
 
-- Current control state: `status=RUNNING`, current Slice `2B19A3B`, branch `phase-3/dreamer-vortox-canonical-drunk-precedence`, PR `null`.
+- Current control state: `status=HUMAN_BLOCKED`, current Slice `2B19A3B`, branch `phase-3/dreamer-vortox-canonical-drunk-precedence`, PR `null`.
 - Rule gate: `RULE_READY`; `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`, `designRound=1/2`, `repairRound=0/2`, and `phase2CStarted=false`.
 - Approved policy: `BOTC-SIM-DREAMER-VORTOX-DRUNK-LEDGER-ATTRIBUTION-V1` under `USER_AUTHORIZED_BOTC_SIM_DREAMER_VORTOX_DRUNK_LEDGER_ATTRIBUTION_V1`; it changes no BOTC behavior truth and only freezes internal audit attribution.
 - Resolved evidence: `docs/rules/evidence/2B19A3B-resolved.md`; retrieval `2026-07-18T15:30:38+08:00`; `ruleCoverageStatus=PARTIAL`; all mandatory live sources were available and no snapshot was used.
@@ -10,7 +10,9 @@
 - Frozen audit attribution: exactly one terminal fact with `ABNORMAL / VORTOX_FALSE_INFORMATION / causedByAnotherCharacterAbility=true`; exact positive Philosopher-produced `ABILITY_IMPAIRMENT` evidence remains mandatory; no second cause or fact; Mathematician counts the Dreamer player at most once.
 - Immutable conflict history remains in the immediately following historical checkpoint and in `docs/rules/evidence/2B19A3B.md` plus `docs/architecture/2B19A3B-go-no-go-under-governance-v1.md`; it was not rewritten.
 - Complete read-only architect Design Round 1: `docs/implementation/phase-3-slice-2b19a3b-design.md`, SHA-256 `4937f3dbc741c638d7715502e64a79d603c78b2500dec06ca928cb638c00ce4b`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`.
-- The only remaining blocker is `PENDING_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_1`.
+- Independent Design Review Round 1: `docs/implementation/phase-3-slice-2b19a3b-design-review-round-1.md`, SHA-256 `6fc6b954f4f4e976ae672971efdd05beb5e5cfa04c4f5e66fbf5a58c15a676ba`, verdict and terminal `RULE_DESIGN_FIX_REQUIRED`.
+- Remaining blockers are exactly `A3B_TEST_OWNERSHIP_VERIFIER_PREREQUISITE`, `C07_DIRECT_STRUCTURAL_REACHABILITY_MISCLASSIFIED`, `C34_COMPOUND_REACHABILITY_TRUST_CLASSIFICATION`, `S01_S17_UNMATERIALIZED_AND_MIXED_TRACEABILITY`, `C15_C16_HOSTILE_REPLAY_TRUST_MISMATCH`, and `C39_HISTORICAL_MUTATION_AUTHORITY_UNDEFINED`.
+- Required next action: separately authorize and accept the A3B test-ownership-verifier infrastructure prerequisite. Only afterward may Design Round 2 correct all classification and traceability blockers.
 - No production/test/matrix edit, push, PR, merge, tag, 2B19A3C, 2B19B, or Phase 2C work is authorized before independent `RULE_DESIGN_PASS`.
 
 ### Historical pre-override checkpoint preserved below
