@@ -1,5 +1,19 @@
 # Project State
 
+## Current gated Slice — 2B19A3B RULE_READY / PENDING DESIGN ROUND 1
+
+- The user approved `BOTC-SIM-DREAMER-VORTOX-DRUNK-LEDGER-ATTRIBUTION-V1`; this changes no external rule truth and resolves only the simulator's single terminal-fact attribution.
+- Fresh live-source research returned `RULE_READY`; resolved evidence is `docs/rules/evidence/2B19A3B-resolved.md`, retrieval `2026-07-18T15:30:38+08:00`, coverage `PARTIAL`, and `unresolvedConflicts=[]`.
+- Resolved governance is `GO` in `docs/architecture/2B19A3B-go-no-go-resolved-under-governance-v1.md`: canonical Philosopher-caused Dreamer DRUNK is R1, poisoned base Dreamer remains R4, and all 12 gate claims pass.
+- The exact bounded attribution is one `ABNORMAL / VORTOX_FALSE_INFORMATION / true` terminal fact with mandatory exact positive `ABILITY_IMPAIRMENT` evidence, no second cause/fact, and at-most-once Mathematician player counting.
+- Current gates are `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`, `designRound=0/2`, `repairRound=0/2`; current branch is `phase-3/dreamer-vortox-canonical-drunk-precedence`, current PR is `null`, and `phase2CStarted=false`.
+- Immutable conflict history remains recorded in the immediately following historical checkpoint and at `docs/rules/evidence/2B19A3B.md` plus `docs/architecture/2B19A3B-go-no-go-under-governance-v1.md`; it was not rewritten.
+- The only blocker is `PENDING_INDEPENDENT_DESIGN_ROUND_1`. No production code, test, role matrix, push, PR, merge, or next Slice is authorized before independent `RULE_DESIGN_PASS`.
+
+### Historical pre-override checkpoint preserved below
+
+The following `2B19A3B HUMAN_BLOCKED` section is immutable conflict history and no longer represents the active project state.
+
 ## Current gated Slice — 2B19A3B HUMAN_BLOCKED
 
 - `2B19A3B Canonical Drunk Base Dreamer under Effective Vortox` reached the mandatory rule-truth gate under `USER_AUTHORIZED_2B19A3B_CANONICAL_DRUNK_DREAMER_VORTOX_PRECEDENCE`.

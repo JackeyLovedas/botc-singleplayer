@@ -94,6 +94,22 @@ supersededBy:
 
 Base Mathematician resolves before gained Mathematician. Later gained holders follow the accepted V2 tie-break. A later resolution may count an earlier completed resolution; an earlier resolution cannot count a future result and is never recomputed after later delivery. This temporal contract must not create a circular dependency.
 
+### BOTC-SIM-DREAMER-VORTOX-DRUNK-LEDGER-ATTRIBUTION-V1
+
+```text
+overrideId: BOTC-SIM-DREAMER-VORTOX-DRUNK-LEDGER-ATTRIBUTION-V1
+status: APPROVED
+approvedAt: 2026-07-18
+approvedBy: user
+affectedRoles: dreamer, vortox, philosopher, mathematician
+ruleStatement: When a canonical base Dreamer is DRUNK because an accepted Philosopher duplicate ability is active, and that Dreamer resolves while the current Vortox is canonically effective, the simulator records exactly one Dreamer terminal outcome fact. The canonical audit attribution is outcomeStatus=ABNORMAL, causeKind=VORTOX_FALSE_INFORMATION, causedByAnotherCharacterAbility=true. The exact Philosopher-produced DRUNK impairment remains mandatory positive ABILITY_IMPAIRMENT evidence, but it does not create a second cause entry or second terminal fact. The existing Mathematician distinct-player model counts the Dreamer source at most once.
+scope: Fixed first-night base-Dreamer simulation only, limited to one canonical Philosopher-produced DRUNK impairment and one canonically effective current Vortox. It does not define POISONED plus Vortox, multiple or conflicting impairments, an impaired Vortox, No Dashii, gained Dreamer, later nights, death, or a general multi-cause outcome model.
+sourceClaimsOverridden: none; external rules determine the forced-false behavior and player-count result but do not specify internal ledger cause cardinality. This record supplies a deterministic simulator audit-attribution policy.
+rationale: Effective Vortox is the rule constraint that makes both delivered Dreamer roles necessarily false. Philosopher-produced drunkenness remains fully preserved as canonical historical evidence. One terminal fact matches the existing one-outcome-per-ability-instance ledger and Mathematician distinct-player counting, while retaining sufficient provenance for a future richer causality model without rewriting accepted history.
+approvalEvidence: Explicit user authorization USER_AUTHORIZED_BOTC_SIM_DREAMER_VORTOX_DRUNK_LEDGER_ATTRIBUTION_V1, recorded in AUTOPILOT_LOG; no private conversation transcript copied
+supersededBy:
+```
+
 ## Controlled Record Format
 
 Each future override must be one discrete record with all fields completed:

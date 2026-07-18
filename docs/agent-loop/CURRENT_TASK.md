@@ -1,5 +1,21 @@
 # Current Task
 
+## Phase 3 Slice 2B19A3B — RUNNING / RULE_READY / PENDING DESIGN ROUND 1
+
+- Current control state: `status=RUNNING`, current Slice `2B19A3B`, branch `phase-3/dreamer-vortox-canonical-drunk-precedence`, PR `null`.
+- Rule gate: `RULE_READY`; `ruleReady=true`, `ruleDesignPass=false`, `implementationAuthorized=false`, `designRound=0/2`, `repairRound=0/2`, and `phase2CStarted=false`.
+- Approved policy: `BOTC-SIM-DREAMER-VORTOX-DRUNK-LEDGER-ATTRIBUTION-V1` under `USER_AUTHORIZED_BOTC_SIM_DREAMER_VORTOX_DRUNK_LEDGER_ATTRIBUTION_V1`; it changes no BOTC behavior truth and only freezes internal audit attribution.
+- Resolved evidence: `docs/rules/evidence/2B19A3B-resolved.md`; retrieval `2026-07-18T15:30:38+08:00`; `ruleCoverageStatus=PARTIAL`; all mandatory live sources were available and no snapshot was used.
+- Resolved governance precheck: `docs/architecture/2B19A3B-go-no-go-resolved-under-governance-v1.md`; canonical DRUNK is R1, poisoned base Dreamer remains R4, and all 12 gate claims pass.
+- Frozen audit attribution: exactly one terminal fact with `ABNORMAL / VORTOX_FALSE_INFORMATION / causedByAnotherCharacterAbility=true`; exact positive Philosopher-produced `ABILITY_IMPAIRMENT` evidence remains mandatory; no second cause or fact; Mathematician counts the Dreamer player at most once.
+- Immutable conflict history remains in the immediately following historical checkpoint and in `docs/rules/evidence/2B19A3B.md` plus `docs/architecture/2B19A3B-go-no-go-under-governance-v1.md`; it was not rewritten.
+- The only remaining blocker is `PENDING_INDEPENDENT_DESIGN_ROUND_1`.
+- No production/test/matrix edit, push, PR, merge, tag, 2B19A3C, 2B19B, or Phase 2C work is authorized before independent `RULE_DESIGN_PASS`.
+
+### Historical pre-override checkpoint preserved below
+
+The following `HUMAN_BLOCKED / RESLICE_REQUIRED` section is immutable conflict history and no longer represents the active control state.
+
 ## Phase 3 Slice 2B19A3B — HUMAN_BLOCKED / RESLICE_REQUIRED
 
 - Authorization: `USER_AUTHORIZED_2B19A3B_CANONICAL_DRUNK_DREAMER_VORTOX_PRECEDENCE`.
