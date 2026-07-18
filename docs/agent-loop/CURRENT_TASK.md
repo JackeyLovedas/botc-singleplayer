@@ -11,8 +11,9 @@
 - Immutable conflict history remains in the immediately following historical checkpoint and in `docs/rules/evidence/2B19A3B.md` plus `docs/architecture/2B19A3B-go-no-go-under-governance-v1.md`; it was not rewritten.
 - Complete read-only architect Design Round 1: `docs/implementation/phase-3-slice-2b19a3b-design.md`, SHA-256 `4937f3dbc741c638d7715502e64a79d603c78b2500dec06ca928cb638c00ce4b`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`.
 - Independent Design Review Round 1: `docs/implementation/phase-3-slice-2b19a3b-design-review-round-1.md`, SHA-256 `6fc6b954f4f4e976ae672971efdd05beb5e5cfa04c4f5e66fbf5a58c15a676ba`, verdict and terminal `RULE_DESIGN_FIX_REQUIRED`.
-- Remaining blockers are exactly `A3B_TEST_OWNERSHIP_VERIFIER_PREREQUISITE`, `C07_DIRECT_STRUCTURAL_REACHABILITY_MISCLASSIFIED`, `C34_COMPOUND_REACHABILITY_TRUST_CLASSIFICATION`, `S01_S17_UNMATERIALIZED_AND_MIXED_TRACEABILITY`, `C15_C16_HOSTILE_REPLAY_TRUST_MISMATCH`, and `C39_HISTORICAL_MUTATION_AUTHORITY_UNDEFINED`.
-- Required next action: separately authorize and accept the A3B test-ownership-verifier infrastructure prerequisite. Only afterward may Design Round 2 correct all classification and traceability blockers.
+- The separately governed test-ownership prerequisite is `ACCEPTED`: PR `#39`, frozen feature HEAD `aac30f6a3efad3132dfd547541a9bd01077c48db`, merge `92dc77548c407371e2cd00198fa11a5acab06143`, closeout `868cf259c3400ab182c09eb4d9be95202fb22de1`, and exact closeout CI `29639997378 / SUCCESS / 22 of 22 jobs`.
+- Remaining blockers are exactly `PENDING_DESIGN_ROUND_2_CLASSIFICATION_AND_TRACEABILITY_REPAIR`.
+- Required next action: await explicit Design Round 2 work to repair only the already-reviewed classification and traceability findings against the accepted ownership prerequisite.
 - No production/test/matrix edit, push, PR, merge, tag, 2B19A3C, 2B19B, or Phase 2C work is authorized before independent `RULE_DESIGN_PASS`.
 
 ### Historical pre-override checkpoint preserved below
@@ -31,6 +32,18 @@ The following `HUMAN_BLOCKED / RESLICE_REQUIRED` section is immutable conflict h
 - Required disposition: `RESLICE_REQUIRED`. A narrower Slice must isolate mechanical behavior from attribution, or the user must approve a discrete ledger-cause override followed by fresh evidence.
 - No architect design, feature branch, production/test/matrix edit, commit, PR, merge, tag, 2B19A3C, 2B19B, or Phase 2C work is authorized.
 - Phase 3 Slice 2B19A3A remains `COMPLETED / ACCEPTED`; its history below is unchanged.
+
+## Vitest Multi-Slice Test Ownership Contract Registry V1 — COMPLETED / ACCEPTED
+
+- Authorization: `USER_AUTHORIZED_VITEST_MULTI_SLICE_OWNERSHIP_CONTRACT_REGISTRY_V1`; task type: `CI_TEST_INFRASTRUCTURE`; current status: `COMPLETED / ACCEPTED`.
+- PR [#39](https://github.com/JackeyLovedas/botc-singleplayer/pull/39) merged as `92dc77548c407371e2cd00198fa11a5acab06143`; frozen feature HEAD is `aac30f6a3efad3132dfd547541a9bd01077c48db`; accepted tag is `infrastructure-vitest-multi-slice-ownership-contract-registry-v1`.
+- Infrastructure repair is exhausted and accepted at `1/1`; no further infrastructure repair round is authorized or required.
+- Product-head push/PR CI `29639177439 / 29639178760` succeeded with `22/22` jobs on the exact frozen feature HEAD. Merge-main CI `29639670444` and accepted-tag CI `29639687007` separately succeeded with `22/22` jobs on the exact merge SHA.
+- Complete independent review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, with `remainingBlockers=[]`. The exact original GitHub comments are archived verbatim at `docs/reviews/pr-39-code-review-final.md` and `docs/reviews/pr-39-rule-review-final.md`.
+- The active registry contains only the accepted `2B19A3A` contract. No provisional or empty `2B19A3B` contract was registered, and this closeout does not claim that 2B19A3B Design 2 exists on `main`.
+- `ruleSemanticsChanged=false`; no game production code, conventional test file, workspace topology, dependency, timeout, coverage profile, event schema, replay behavior, projection, receipt, or role-coverage status changed.
+- The accepted docs-only closeout is `868cf259c3400ab182c09eb4d9be95202fb22de1`; exact closeout CI `29639997378` completed `SUCCESS / 22 of 22 jobs` and inherits no product-head, merge-main, or tag CI status.
+- Current branch is `phase-3/dreamer-vortox-canonical-drunk-precedence`; `currentSlice=2B19A3B`, `currentPR=null`, `implementationAuthorized=false`, and `phase2CStarted=false`. This synchronized history does not create Design Round 2, product implementation, an A3B PR, or a push.
 
 ## Phase 3 Slice 2B19A3A — COMPLETED / ACCEPTED / PENDING CLOSEOUT COMMIT CI
 

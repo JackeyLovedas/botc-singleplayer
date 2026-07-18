@@ -10,8 +10,8 @@
 - Immutable conflict history remains recorded in the immediately following historical checkpoint and at `docs/rules/evidence/2B19A3B.md` plus `docs/architecture/2B19A3B-go-no-go-under-governance-v1.md`; it was not rewritten.
 - Complete read-only architect Design Round 1 is `docs/implementation/phase-3-slice-2b19a3b-design.md`, SHA-256 `4937f3dbc741c638d7715502e64a79d603c78b2500dec06ca928cb638c00ce4b`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`.
 - Independent Design Review Round 1 is `docs/implementation/phase-3-slice-2b19a3b-design-review-round-1.md`, SHA-256 `6fc6b954f4f4e976ae672971efdd05beb5e5cfa04c4f5e66fbf5a58c15a676ba`, verdict and terminal `RULE_DESIGN_FIX_REQUIRED`.
-- Remaining blockers are exactly `A3B_TEST_OWNERSHIP_VERIFIER_PREREQUISITE`, `C07_DIRECT_STRUCTURAL_REACHABILITY_MISCLASSIFIED`, `C34_COMPOUND_REACHABILITY_TRUST_CLASSIFICATION`, `S01_S17_UNMATERIALIZED_AND_MIXED_TRACEABILITY`, `C15_C16_HOSTILE_REPLAY_TRUST_MISMATCH`, and `C39_HISTORICAL_MUTATION_AUTHORITY_UNDEFINED`.
-- Required next action is a separately authorized and accepted A3B test-ownership-verifier infrastructure prerequisite. Design Round 2 may begin only after that prerequisite and must correct every remaining classification and traceability blocker. No production code, test, role matrix, push, PR, merge, or next Slice is authorized before independent `RULE_DESIGN_PASS`.
+- The separately governed ownership prerequisite is accepted through PR `#39`, merge `92dc77548c407371e2cd00198fa11a5acab06143`, closeout `868cf259c3400ab182c09eb4d9be95202fb22de1`, and exact closeout CI `29639997378 / SUCCESS / 22 of 22 jobs`.
+- Remaining blockers are exactly `PENDING_DESIGN_ROUND_2_CLASSIFICATION_AND_TRACEABILITY_REPAIR`. No production code, test, role matrix, push, PR, or next Slice is authorized before a future Design Round 2 independently returns `RULE_DESIGN_PASS`.
 
 ### Historical pre-override checkpoint preserved below
 
@@ -26,6 +26,16 @@ The following `2B19A3B HUMAN_BLOCKED` section is immutable conflict history and 
 - Current gates are `ruleReady=false`, `ruleDesignPass=false`, `implementationAuthorized=false`, `designRound=0/2`, `repairRound=0/2`; current branch context is `main`, current PR is `null`, and `phase2CStarted=false`.
 - No design, feature branch, production code, test, role matrix, commit, PR, merge or next Slice was created. Resolution requires a separately authorized narrower reslice or a discrete approved rule override followed by fresh evidence.
 - The accepted 2B19A3A product state below remains unchanged and is not reopened.
+
+## Latest accepted infrastructure — Vitest Multi-Slice Test Ownership Contract Registry V1
+
+- `USER_AUTHORIZED_VITEST_MULTI_SLICE_OWNERSHIP_CONTRACT_REGISTRY_V1` completed and is accepted independently of product Slice repair accounting.
+- PR [#39](https://github.com/JackeyLovedas/botc-singleplayer/pull/39) merged as `92dc77548c407371e2cd00198fa11a5acab06143`; frozen feature HEAD `aac30f6a3efad3132dfd547541a9bd01077c48db`; accepted tag `infrastructure-vitest-multi-slice-ownership-contract-registry-v1`; infrastructure repair `1/1`.
+- Exact feature-head push/PR CI `29639177439 / 29639178760`, merge-main CI `29639670444`, and accepted-tag CI `29639687007` each completed `SUCCESS / 22 of 22 jobs` on their separately recorded SHAs.
+- Complete independent final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`. Original GitHub comment bodies are archived verbatim in `docs/reviews/pr-39-code-review-final.md` and `docs/reviews/pr-39-rule-review-final.md` with SHA-256 `a716c2673a966caedab6e00ddef9122fc1af8d4496a560b014ec22aa89520544` and `f5ee535c7ac04e4d4844a31a41c4d5a70171c93c0cfafbe70c961f12200a4bd0`.
+- The active registry contains exactly the accepted `2B19A3A` contract and does not contain a planned, empty, or provisional `2B19A3B` contract. `ruleSemanticsChanged=false`; product behavior, production code, conventional tests, workspace, dependencies, timeouts, coverage profile, and role coverage are unchanged.
+- The docs-only closeout commit `868cf259c3400ab182c09eb4d9be95202fb22de1` passed exact CI `29639997378 / SUCCESS / 22 of 22 jobs`; it inherits no earlier CI result.
+- Current product control remains `HUMAN_BLOCKED / PRODUCT_SLICE` on `phase-3/dreamer-vortox-canonical-drunk-precedence`; `currentSlice=2B19A3B`; `currentPR=null`; `implementationAuthorized=false`; `phase2CStarted=false`. The accepted infrastructure was synchronized as history only and does not create or perform Design Round 2.
 
 ## Latest accepted product Slice — 2B19A3A
 
