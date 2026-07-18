@@ -10,6 +10,10 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
+import {
+  OWNERSHIP_CONTRACTS,
+  auditOwnershipContracts
+} from "./vitest-ownership-contracts.mjs";
 
 const COVERAGE_GROUPS = Object.freeze([
   Object.freeze({ id: "domain-core-rebuild", projects: Object.freeze(["domain-core-rebuild"]) }),
@@ -49,32 +53,12 @@ const COVERAGE_GROUPS = Object.freeze([
   })
 ]);
 
-const APPLICATION_SERVICE_TEST_FILE =
-  "packages/application/src/game-application-service.test.ts";
-const DREAMER_VORTOX_MARKER = "[2B19A3A-";
-const DREAMER_VORTOX_OWNER_PROJECT = "application-service-dreamer-vortox";
 const LEGACY_APPLICATION_SERVICE_PROJECTS = Object.freeze([
   "application-service-core",
   "application-service-role-actions",
   "application-service-information-and-later-actions",
   "application-service-compatibility-and-failure-boundaries"
 ]);
-const TRACEABILITY_FILE =
-  "docs/implementation/phase-3-slice-2b19a3a-test-traceability.md";
-const FROZEN_BASELINE = Object.freeze({
-  markerProjectExecutions: 34,
-  markerProjectInventorySha256:
-    "3829eb2a26e28e22a568d7e393e22c68aedb8979021a3e3b4522b9e53b6d3c8e",
-  markerSemanticInventorySha256:
-    "5e544f734381f99f20ac715513b7af7e5a33af6726ca9cad8a0c6d8c1fe7b2cb",
-  markerAuthorityInventorySha256:
-    "e098696e88ed4f3d050b6d24511b05522aa26afed43d4f8d09d668c81309f676",
-  nonMarkerOwnershipSha256:
-    "92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c",
-  physicalTestFileSetSha256:
-    "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab"
-});
-
 function parseArguments(argv) {
   const options = {
     workspace: "vitest.workspace.ts",
@@ -166,62 +150,6 @@ function identityKey(identity) {
   ]);
 }
 
-function semanticIdentityKey(identity) {
-  return JSON.stringify([identity.file, identity.ancestorPath, identity.title]);
-}
-
-function ordinalCompare(left, right) {
-  return left < right ? -1 : left > right ? 1 : 0;
-}
-
-function sha256CanonicalLines(lines) {
-  return createHash("sha256")
-    .update(`${[...lines].sort(ordinalCompare).join("\n")}\n`, "utf8")
-    .digest("hex");
-}
-
-function tabIdentity(identity, includeProject) {
-  const fields = includeProject
-    ? [identity.project, identity.file, identity.ancestorPath.join(" > "), identity.title]
-    : [identity.file, identity.ancestorPath.join(" > "), identity.title];
-  return fields.join("\t");
-}
-
-function extractAuthorityMarker(title) {
-  const match = /^\[([^\]]+)\]/u.exec(title);
-  if (match === null || !match[1].includes("2B19A3A-")) {
-    throw new Error(`2B19A3A title has no exact authority marker: ${title}`);
-  }
-  return match[1];
-}
-
-function extractCodeSpan(value) {
-  const match = /`([^`]*)`/u.exec(value);
-  return match?.[1] ?? value.trim();
-}
-
-function traceTitleMatches(actualTitle, inventoryTitle) {
-  const fragments = actualTitle.split("...").filter((fragment) => fragment.length > 0);
-  let offset = 0;
-  for (const fragment of fragments) {
-    const next = inventoryTitle.indexOf(fragment, offset);
-    if (next < 0) return false;
-    offset = next + fragment.length;
-  }
-  return true;
-}
-
-function expectedTraceabilityIds() {
-  const ids = [];
-  for (let index = 1; index <= 53; index += 1) {
-    ids.push(`C${String(index).padStart(2, "0")}`);
-  }
-  for (let index = 1; index <= 39; index += 1) {
-    ids.push(`S${String(index).padStart(2, "0")}`);
-  }
-  return ids;
-}
-
 function reportLookupKey(file, ancestorPath, title) {
   return JSON.stringify([file, [...ancestorPath, title].join(" > ")]);
 }
@@ -275,215 +203,6 @@ function keysWithCount(counts, predicate) {
 
 function sha256Keys(keys) {
   return createHash("sha256").update([...keys].sort().join("\n"), "utf8").digest("hex");
-}
-
-function auditOwnershipAndTraceability(repoRoot, fullInventory) {
-  const applicationInventory = fullInventory.filter(
-    (identity) => identity.file === APPLICATION_SERVICE_TEST_FILE
-  );
-  const markerInventory = applicationInventory.filter((identity) =>
-    identity.title.includes(DREAMER_VORTOX_MARKER)
-  );
-  const nonMarkerInventory = applicationInventory.filter(
-    (identity) => !identity.title.includes(DREAMER_VORTOX_MARKER)
-  );
-
-  const markerSemanticOwners = new Map();
-  for (const identity of markerInventory) {
-    const key = semanticIdentityKey(identity);
-    const owners = markerSemanticOwners.get(key) ?? new Set();
-    owners.add(identity.project);
-    markerSemanticOwners.set(key, owners);
-  }
-  for (const [key, owners] of markerSemanticOwners) {
-    if (owners.size !== 1 || !owners.has(DREAMER_VORTOX_OWNER_PROJECT)) {
-      throw new Error(
-        `2B19A3A semantic ownership mismatch for ${key}: ${[...owners].sort(ordinalCompare).join(",") || "none"}`
-      );
-    }
-  }
-  if (markerInventory.length !== markerSemanticOwners.size) {
-    throw new Error(
-      `2B19A3A semantic execution mismatch: semantic=${markerSemanticOwners.size}, executions=${markerInventory.length}`
-    );
-  }
-
-  const markerSemanticLines = [...markerSemanticOwners.keys()].map((key) => {
-    const [file, ancestorPath, title] = JSON.parse(key);
-    return [file, ancestorPath.join(" > "), title].join("\t");
-  });
-  const markerSemanticInventorySha256 = sha256CanonicalLines(markerSemanticLines);
-  if (
-    markerSemanticInventorySha256 !== FROZEN_BASELINE.markerSemanticInventorySha256
-  ) {
-    throw new Error(
-      `2B19A3A physical semantic inventory changed: expected=${FROZEN_BASELINE.markerSemanticInventorySha256}, actual=${markerSemanticInventorySha256}`
-    );
-  }
-
-  const markerAuthorities = new Set(
-    markerInventory.map((identity) => extractAuthorityMarker(identity.title))
-  );
-  const markerAuthorityInventorySha256 = sha256CanonicalLines(markerAuthorities);
-  if (
-    markerAuthorityInventorySha256 !== FROZEN_BASELINE.markerAuthorityInventorySha256
-  ) {
-    throw new Error(
-      `2B19A3A authority inventory changed: expected=${FROZEN_BASELINE.markerAuthorityInventorySha256}, actual=${markerAuthorityInventorySha256}`
-    );
-  }
-
-  const nonMarkerOwners = new Map();
-  for (const identity of nonMarkerInventory) {
-    const key = semanticIdentityKey(identity);
-    const owners = nonMarkerOwners.get(key) ?? new Set();
-    owners.add(identity.project);
-    nonMarkerOwners.set(key, owners);
-  }
-  const nonMarkerOwnershipLines = [...nonMarkerOwners].map(([key, owners]) => {
-    const [file, ancestorPath, title] = JSON.parse(key);
-    return [
-      file,
-      ancestorPath.join(" > "),
-      title,
-      [...owners].sort(ordinalCompare).join(",")
-    ].join("\t");
-  });
-  const nonMarkerOwnershipSha256 = sha256CanonicalLines(nonMarkerOwnershipLines);
-  if (nonMarkerOwnershipSha256 !== FROZEN_BASELINE.nonMarkerOwnershipSha256) {
-    throw new Error(
-      `Non-2B19A3A application ownership changed: expected=${FROZEN_BASELINE.nonMarkerOwnershipSha256}, actual=${nonMarkerOwnershipSha256}`
-    );
-  }
-
-  const physicalTestFiles = new Set(fullInventory.map((identity) => identity.file));
-  const physicalTestFileSetSha256 = sha256CanonicalLines(physicalTestFiles);
-  if (physicalTestFileSetSha256 !== FROZEN_BASELINE.physicalTestFileSetSha256) {
-    throw new Error(
-      `Physical test-file inventory changed: expected=${FROZEN_BASELINE.physicalTestFileSetSha256}, actual=${physicalTestFileSetSha256}`
-    );
-  }
-
-  const traceabilityPath = path.resolve(repoRoot, TRACEABILITY_FILE);
-  if (!existsSync(traceabilityPath)) {
-    throw new Error(`Traceability file does not exist: ${traceabilityPath}`);
-  }
-  const traceabilityLines = readFileSync(traceabilityPath, "utf8").split(/\r?\n/u);
-  const traceabilityRows = new Map();
-  for (const line of traceabilityLines) {
-    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
-    if (!/^[CS]\d{2}$/u.test(cells[0] ?? "")) continue;
-    if (traceabilityRows.has(cells[0])) {
-      throw new Error(`Duplicate traceability criterion row: ${cells[0]}`);
-    }
-    traceabilityRows.set(cells[0], cells);
-  }
-  const expectedIds = expectedTraceabilityIds();
-  const missingTraceabilityIds = expectedIds.filter((id) => !traceabilityRows.has(id));
-  const unexpectedTraceabilityIds = [...traceabilityRows.keys()].filter(
-    (id) => !expectedIds.includes(id)
-  );
-  if (missingTraceabilityIds.length > 0 || unexpectedTraceabilityIds.length > 0) {
-    throw new Error(
-      `Traceability criterion mismatch: missing=${missingTraceabilityIds.join(",") || "none"}; unexpected=${unexpectedTraceabilityIds.join(",") || "none"}`
-    );
-  }
-
-  const semanticInventory = new Map();
-  for (const identity of fullInventory) {
-    semanticInventory.set(semanticIdentityKey(identity), identity);
-  }
-  let dynamicTestAuthorityRows = 0;
-  for (const id of expectedIds) {
-    const cells = traceabilityRows.get(id);
-    if (cells.length !== 9 || cells[7] !== "PASS") {
-      throw new Error(
-        `Traceability row ${id} must have nine fields and MechanismMatch=PASS`
-      );
-    }
-    const actualTestFile = extractCodeSpan(cells[1]);
-    const actualTestTitle = extractCodeSpan(cells[2]);
-    if (actualTestFile.length === 0 || actualTestTitle.length === 0) {
-      throw new Error(`Traceability row ${id} has an empty actual binding`);
-    }
-    if (!actualTestFile.endsWith(".test.ts")) continue;
-    const candidates = [...semanticInventory.values()].filter(
-      (identity) =>
-        identity.file === actualTestFile &&
-        traceTitleMatches(actualTestTitle, identity.title)
-    );
-    const semanticCandidates = new Set(candidates.map(semanticIdentityKey));
-    if (semanticCandidates.size !== 1) {
-      throw new Error(
-        `Traceability row ${id} resolves to ${semanticCandidates.size} semantic tests in ${actualTestFile}`
-      );
-    }
-    dynamicTestAuthorityRows += 1;
-  }
-
-  const registryIds = new Set();
-  for (const line of traceabilityLines) {
-    const match = /^\| `?(SUP-2B19A3A-\d{3})`? \|/u.exec(line);
-    if (match === null) continue;
-    if (registryIds.has(match[1])) {
-      throw new Error(`Duplicate supporting authority registry row: ${match[1]}`);
-    }
-    registryIds.add(match[1]);
-  }
-  const referencedSupportingIds = new Set();
-  for (const cells of traceabilityRows.values()) {
-    for (const match of cells[6].matchAll(/SUP-2B19A3A-\d{3}/gu)) {
-      referencedSupportingIds.add(match[0]);
-    }
-  }
-  const missingSupportingIds = [...referencedSupportingIds].filter(
-    (id) => !registryIds.has(id)
-  );
-  const unusedSupportingIds = [...registryIds].filter(
-    (id) => !referencedSupportingIds.has(id)
-  );
-  if (missingSupportingIds.length > 0 || unusedSupportingIds.length > 0) {
-    throw new Error(
-      `Supporting authority mismatch: missing=${missingSupportingIds.join(",") || "none"}; unused=${unusedSupportingIds.join(",") || "none"}`
-    );
-  }
-
-  const perProject = Object.fromEntries(
-    [...LEGACY_APPLICATION_SERVICE_PROJECTS, DREAMER_VORTOX_OWNER_PROJECT].map(
-      (project) => [
-        project,
-        markerInventory.filter((identity) => identity.project === project).length
-      ]
-    )
-  );
-  for (const project of LEGACY_APPLICATION_SERVICE_PROJECTS) {
-    if (perProject[project] !== 0) {
-      throw new Error(`${project} still owns ${perProject[project]} 2B19A3A tests`);
-    }
-  }
-
-  return {
-    semanticTests: markerSemanticOwners.size,
-    projectExecutionsBefore: FROZEN_BASELINE.markerProjectExecutions,
-    projectExecutionsAfter: markerInventory.length,
-    removedDuplicateExecutions:
-      FROZEN_BASELINE.markerProjectExecutions - markerInventory.length,
-    ownerProject: DREAMER_VORTOX_OWNER_PROJECT,
-    perProject,
-    baselineProjectInventorySha256:
-      FROZEN_BASELINE.markerProjectInventorySha256,
-    currentProjectInventorySha256: sha256CanonicalLines(
-      markerInventory.map((identity) => tabIdentity(identity, true))
-    ),
-    semanticInventorySha256: markerSemanticInventorySha256,
-    authorityInventorySha256: markerAuthorityInventorySha256,
-    nonMarkerOwnershipSha256,
-    physicalTestFileSetSha256,
-    traceabilityRows: traceabilityRows.size,
-    traceabilityRowsResolved: expectedIds.length,
-    dynamicTestAuthorityRows,
-    supportingAuthorityIds: registryIds.size
-  };
 }
 
 function assertCompletePassedReport(report, context) {
@@ -754,7 +473,20 @@ function main() {
     const projectFileExecutions = new Set(
       fullInventory.map((identity) => JSON.stringify([identity.project, identity.file]))
     );
-    const ownership = auditOwnershipAndTraceability(repoRoot, fullInventory);
+    const ownershipAudits = auditOwnershipContracts({
+      repoRoot,
+      contracts: OWNERSHIP_CONTRACTS,
+      fullInventory,
+      legacyApplicationServiceProjects: LEGACY_APPLICATION_SERVICE_PROJECTS
+    });
+    const ownership =
+      ownershipAudits.length === 1
+        ? Object.fromEntries(
+            Object.entries(ownershipAudits[0]).filter(
+              ([key]) => key !== "contractId"
+            )
+          )
+        : { contracts: ownershipAudits };
     let mergedReport = null;
     if (options.mergedGroupReports.length > 0) {
       if (!options.mergedReport) {

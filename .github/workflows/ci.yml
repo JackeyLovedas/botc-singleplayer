@@ -33,6 +33,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Verify Vitest ownership contract registry
+        run: node scripts/verify-vitest-ownership-contracts.mjs --self-test
+
   test-shard:
     name: test shard (${{ matrix.group }})
     runs-on: ubuntu-latest
