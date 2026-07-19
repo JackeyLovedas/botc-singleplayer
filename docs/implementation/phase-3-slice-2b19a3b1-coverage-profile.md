@@ -73,3 +73,75 @@ The next gate is push and PR creation followed by exact profile-only HEAD CI. No
 - full coverage gate with `VITEST_MAX_FORKS=1`: `35 files / 1494 tests PASS / 138.06s`, statements/lines `79.03%`, branches `82.58%`, functions `97.45%`;
 - candidate inventory verification: all nine groups and global inventory `PASS` in all three runs;
 - JSON and diff checks: `PASS`.
+
+## Repair Round 1 superseding exact profile
+
+The original `00160fc` profile above remains immutable historical evidence. Repair Round 1 adds a separate exact profile without changing or deleting the original entry.
+
+- repair source HEAD: `bf9f170590d90733a3bd5de810e0096fc40f4e84`
+- profile ID: `phase-3-slice-2b19a3b1-bf9f170-repair1-ownership-v2-1`
+- source kind: `REPAIR_ROUND_1_STABLE_NINE_PROCESS_BASELINE`
+- supersedes for the current topology: `phase-3-slice-2b19a3b1-00160fc-ownership-v2-1`
+- supersession reason: `REPAIR_ROUND_1_TEST_AUTHORITY_AND_OWNERSHIP_REFRESH`
+- profile status: `EXACT_PROFILE_FROZEN_PENDING_PROFILE_ONLY_HEAD_CI`
+- environment: Node `24.15.0`, pnpm `11.7.0`, Vitest `3.2.6`, `VITEST_MAX_FORKS=1`
+
+The source HEAD contains the Repair Round 1 test authority, the projection ownership microfix, and the refreshed exact A3B1 ownership snapshot. It changes no production code relative to the frozen Repair Round 1 product behavior. The profile-only child may change only the approved profile registry, explicit CI profile selection, traceability, profile evidence, and control records.
+
+### Fresh independent candidates
+
+These are three new, strictly serial candidates. The earlier `f523` and `851` attempts are excluded from this success set.
+
+| Run | Window (Asia/Shanghai) | Shards | Tests | Merged coverage SHA-256 | Inventory audit SHA-256 | Obligation discovery SHA-256 | Manifest SHA-256 |
+|---|---|---:|---:|---|---|---|---|
+| candidate-run-1 | `2026-07-19T11:03:35.3216370+08:00` to `11:06:58.9345554+08:00` | 9/9 | 1499/1499 | `82995b96bd66261fffa5f4786fb39dc60865534b72ab5e5c0d46c28e9546d9b3` | `b39a38f050d522a16a594435456e0edbd45c002c467c98e424d6be4d946961c0` | `985f5c0e52586b3278726e05abd07af70e3fb222e10147c6a57d665dd0bb46c9` | `0e96877a9d06000a1e5d0af398f54fd135ef4bb3cebf905f978f22b840cad782` |
+| candidate-run-2 | `2026-07-19T11:07:42.3419839+08:00` to `11:11:07.0458660+08:00` | 9/9 | 1499/1499 | `e783a4cf18847255d1405f2ae8788cf063a2a77440d4b0c27a83604220fc569a` | `b39a38f050d522a16a594435456e0edbd45c002c467c98e424d6be4d946961c0` | `985f5c0e52586b3278726e05abd07af70e3fb222e10147c6a57d665dd0bb46c9` | `6b85f7e052c57b479b8941b0e541acd2fa5e8833221ea14f78e3c45529239c5c` |
+| candidate-run-3 | `2026-07-19T11:11:49.5547832+08:00` to `11:15:17.4201493+08:00` | 9/9 | 1499/1499 | `9e1aa147b9fa589be5a7eeb5873a43bc6d0621420ebec9bc4a2298108895482e` | `b39a38f050d522a16a594435456e0edbd45c002c467c98e424d6be4d946961c0` | `985f5c0e52586b3278726e05abd07af70e3fb222e10147c6a57d665dd0bb46c9` | `c634a477c9b6d784d444bb7effe79bf43725faa1dbef928098742133c1ab1cde` |
+
+Every run reports 31 physical test files, 35 workspace project-file executions, and group counts `207, 346, 456, 90, 52, 73, 20, 16, 239`. All nine groups and the global report have zero failed, missing, duplicate, unexpected, ambiguous, or wrong-owner entries.
+
+### Repair Round 1 frozen obligation five-tuple
+
+| Obligation | Count | Canonical identity SHA-256 |
+|---|---:|---|
+| sourceFiles | 63 | `f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691` |
+| zeroHitStatements | 3184 | `cfc7bc76d6a025779ddd2d1ca0937f68519a3ff10e13b2d586948d5840cd0202` |
+| zeroHitFunctions | 23 | `0b8011b10d4293987c00e4f76c2d734c481b8d9878a70e59be15913d938cad5c` |
+| zeroHitLines | 3184 | `02529a665486258e5f856799d9511752afe88a978b5dac78bf7c422affbc59bf` |
+| zeroHitBranchArms | 1773 | `d54322bb82c9e86ee67f4b2164a36cf60f4f7f04c123f025003d97a4884ee6b6` |
+
+### Inventory and ownership identity
+
+- global inventory SHA-256: `c68a2e4c70b36464282d4227007da2cae95e9d91bc36cb9519aafb014f3234ef`
+- A3B1 baseline/current project inventory: `9d8726005537db396683c3701546a85f0094b3e84ca062f1d7113a66b3eef189`
+- A3B1 semantic inventory: `bd194c778f83c42c4bc46307f028e1a289b01c50a49c2169ce2a07c267a317f4`
+- A3B1 authority inventory: `c42fc09726d54c1e9ea6f7d88756435340f7e329cd5fd45f00c9030979e574c6`
+- A3B1 ownership: six semantic tests, six owner-project executions, `60/60` traceability rows, 58 dynamic rows, four supporting authorities, zero ambiguity
+
+### External repair evidence
+
+Root: `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverage-experiments\2b19a3b1-bf9f170-repair1`
+
+- each `candidate-run-N` retains all nine blobs, nine group reports, global merged report and coverage map, inventory audit, obligation result, logs, and manifest;
+- `three-candidate-stability.md`, SHA-256 `8b127a8b54ae0c887b226e8081881fa24f96ad97473a5e930cea3dfbabc39ef0`;
+- all three repaired-head candidates return `COVERAGE_APPROVED_PROFILE_MATCH` for the exact new profile after registry materialization.
+
+### Fail-closed attempts retained but excluded
+
+- `f523f7c4457cc52261044323a4db9634879c8ddb`: rejected a duplicate mixed C30 ownership binding;
+- `851743b36c0f58372b49aad67a511dfd1b5ae11e`: rejected the stale pre-repair three-test frozen A3B1 ownership baseline;
+- the first bf9f harness invocation stopped before completing shard 1 because Windows PowerShell treated Vitest deprecation stderr as a terminating native-command error.
+
+These are diagnostic evidence only and do not count toward the successful `3/3`. No production, test, fixture, ownership topology, timeout, threshold, or `onTaskUpdate` behavior changed while establishing the profile.
+
+### Repair profile worktree validation
+
+- exact requested-profile verifier: `3/3 COVERAGE_APPROVED_PROFILE_MATCH`;
+- ownership registry load: `PASS`;
+- ownership verifier self-test: `22/22 PASS`;
+- formal candidate inventory: `1499` tests, A3B1 `6` semantic / `6` owner executions / `60/60` rows / `58` dynamic / `4` support, every mismatch count zero;
+- typecheck: `PASS`;
+- lint: `PASS`, zero warnings;
+- full ordinary with `VITEST_MAX_FORKS=1`: `35 files / 1499 tests PASS / 99.50s`;
+- full coverage with `VITEST_MAX_FORKS=1`: `35 files / 1499 tests PASS / 147.67s`, statements/lines `78.95%`, branches `82.71%`, functions `97.45%`;
+- JSON, whitespace, source-parent, and scoped-diff checks: `PASS` before commit.

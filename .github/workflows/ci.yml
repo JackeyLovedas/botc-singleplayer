@@ -378,7 +378,7 @@ jobs:
         run: >-
           node scripts/verify-coverage-obligations.mjs
           --validate-candidate .vitest-coverage/merged-coverage/coverage-final.json
-          --profile phase-3-slice-2b19a3b1-00160fc-ownership-v2-1
+          --profile phase-3-slice-2b19a3b1-bf9f170-repair1-ownership-v2-1
 
   deterministic-windows:
     name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch/dreamer/clockmaker

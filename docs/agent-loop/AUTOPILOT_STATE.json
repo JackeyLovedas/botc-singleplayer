@@ -97,7 +97,7 @@
   },
   "slice2B19A3B1Gate": {
     "authorization": "USER_AUTHORIZED_2B19A3B_RESLICE_TO_CORE_AND_DEFER_COMBINED_MATHEMATICIAN_INTEGRATION",
-    "status": "REPAIR_ROUND_1_OWNERSHIP_REGISTRY_REFRESHED_PENDING_FRESH_PROFILE_AND_PR_BODY",
+    "status": "REPAIR_ROUND_1_EXACT_PROFILE_FROZEN_PENDING_PR_BODY_AND_EXACT_HEAD_CI",
     "title": "Canonical Drunk Dreamer Vortox Core",
     "scopeMode": "CANONICAL_DRUNK_BASE_DREAMER_VORTOX_CORE",
     "coverageTarget": "PARTIAL / CANONICAL_DRUNK_VORTOX_CORE_ONLY",
@@ -132,7 +132,7 @@
       "criteria": 60,
       "dynamicBindings": 58,
       "supportingAuthorities": 4,
-      "verification": "FORMAL_851_CANDIDATE_VERIFIER_PASS / 6 SEMANTIC / 6 AUTHORITY / 60 OF 60 / 58 DYNAMIC / 4 SUPPORT / ZERO MISSING DUPLICATE UNEXPECTED AMBIGUOUS WRONG_OWNER"
+      "verification": "THREE_FRESH_BF9F_CANDIDATES_PASS / 1499 TESTS EACH / 6 SEMANTIC / 6 AUTHORITY / 60 OF 60 / 58 DYNAMIC / 4 SUPPORT / ZERO MISSING DUPLICATE UNEXPECTED AMBIGUOUS WRONG_OWNER"
     },
     "focusedTests": "7 projects / 542 tests PASS",
     "ownershipVerification": "registry load PASS / verifier self-test 22/22 PASS",
@@ -163,6 +163,38 @@
       "ordinaryTests": "35 files / 1494 tests PASS / 93.89s",
       "fullCoverageGate": "35 files / 1494 tests PASS / 138.06s / statements-lines 79.03 / branches 82.58 / functions 97.45",
       "nextGate": "IMMUTABLE_HISTORICAL_PROFILE_TO_BE_SUPERSEDED_BY_REPAIRED_HEAD_EVIDENCE"
+    },
+    "repairRound1CoverageProfile": {
+      "status": "EXACT_PROFILE_FROZEN_PENDING_PROFILE_ONLY_HEAD_CI",
+      "profileId": "phase-3-slice-2b19a3b1-bf9f170-repair1-ownership-v2-1",
+      "sourceHead": "bf9f170590d90733a3bd5de810e0096fc40f4e84",
+      "sourceKind": "REPAIR_ROUND_1_STABLE_NINE_PROCESS_BASELINE",
+      "supersedesForTopology": "phase-3-slice-2b19a3b1-00160fc-ownership-v2-1",
+      "candidateRuns": 3,
+      "shardsPerRun": 9,
+      "testsPerRun": 1499,
+      "groupTests": [207, 346, 456, 90, 52, 73, 20, 16, 239],
+      "inventorySha256": "c68a2e4c70b36464282d4227007da2cae95e9d91bc36cb9519aafb014f3234ef",
+      "projectInventorySha256": "9d8726005537db396683c3701546a85f0094b3e84ca062f1d7113a66b3eef189",
+      "semanticInventorySha256": "bd194c778f83c42c4bc46307f028e1a289b01c50a49c2169ce2a07c267a317f4",
+      "authorityInventorySha256": "c42fc09726d54c1e9ea6f7d88756435340f7e329cd5fd45f00c9030979e574c6",
+      "obligationFiveTuple": "63 / 3184 / 23 / 3184 / 1773",
+      "stabilityEvidencePath": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\2b19a3b1-bf9f170-repair1\\three-candidate-stability.md",
+      "stabilityEvidenceSha256": "8b127a8b54ae0c887b226e8081881fa24f96ad97473a5e930cea3dfbabc39ef0",
+      "repositoryEvidencePath": "docs/implementation/phase-3-slice-2b19a3b1-coverage-profile.md",
+      "verifier": "COVERAGE_APPROVED_PROFILE_MATCH / 3 of 3",
+      "ownership": "6 SEMANTIC / 6 OWNER EXECUTIONS / 60 OF 60 / 58 DYNAMIC / 4 SUPPORT / ZERO AMBIGUITY",
+      "ownershipSelfTest": "22/22 PASS",
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "ordinaryTests": "35 files / 1499 tests PASS / 99.50s",
+      "fullCoverageGate": "35 files / 1499 tests PASS / 147.67s / statements-lines 78.95 / branches 82.71 / functions 97.45",
+      "earlyFailClosedAttempts": [
+        "f523f7c4457cc52261044323a4db9634879c8ddb / DUPLICATE C30 OWNERSHIP BINDING",
+        "851743b36c0f58372b49aad67a511dfd1b5ae11e / STALE PRE-REPAIR THREE-TEST FROZEN BASELINE",
+        "bf9f harness pre-candidate / POWERSHELL NATIVE STDERR TERMINATION"
+      ],
+      "nextGate": "PROFILE_ONLY_COMMIT_THEN_PUSH_PR_BODY_RECONCILIATION_EXACT_HEAD_CI_AND_FRESH_FINAL_REVIEW"
     },
     "ruleResearchStarted": true,
     "ruleResearchCompleted": true,
@@ -204,7 +236,7 @@
       ]
     },
     "repairRound1Repository": {
-      "status": "OWNERSHIP_REGISTRY_REFRESHED_PENDING_FRESH_PROFILE_AND_PR_BODY",
+      "status": "EXACT_REPAIRED_HEAD_PROFILE_FROZEN_PENDING_PR_BODY_AND_EXACT_HEAD_CI",
       "productionFilesChanged": 0,
       "testFilesChanged": [
         "packages/application/src/game-application-service.test.ts",
@@ -220,7 +252,7 @@
         "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI"
       ],
       "focusedTests": "7 projects / 542 tests PASS",
-      "ownershipVerification": "registry load PASS / verifier self-test 22/22 PASS / formal 851 candidate PASS / 1499 tests / missing duplicate unexpected ambiguous wrong-owner all zero",
+      "ownershipVerification": "registry load PASS / verifier self-test 22/22 PASS / three fresh bf9f candidates PASS / 1499 tests each / missing duplicate unexpected ambiguous wrong-owner all zero",
       "typecheck": "PASS",
       "lint": "PASS",
       "ordinaryTests": "35 files / 1499 tests PASS / 28.09s",
@@ -243,7 +275,11 @@
       },
       "repairAuthorityCommit": "f523f7c4457cc52261044323a4db9634879c8ddb",
       "ownershipMicrofixCommit": "851743b36c0f58372b49aad67a511dfd1b5ae11e",
-      "registryRefreshCommit": "PENDING",
+      "registryRefreshCommit": "bf9f170590d90733a3bd5de810e0096fc40f4e84",
+      "coverageProfileId": "phase-3-slice-2b19a3b1-bf9f170-repair1-ownership-v2-1",
+      "coverageProfileSourceHead": "bf9f170590d90733a3bd5de810e0096fc40f4e84",
+      "coverageProfileCandidates": "3 OF 3 MATCH / 9 OF 9 SHARDS / 1499 OF 1499 TESTS EACH",
+      "coverageProfileStabilitySha256": "8b127a8b54ae0c887b226e8081881fa24f96ad97473a5e930cea3dfbabc39ef0",
       "push": false,
       "prBodyUpdated": false,
       "newExactHeadCI": null,
@@ -1689,8 +1725,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-18T21:45:00+08:00",
-  "lastAction": "Recorded both fail-closed repaired-head profile attempts and refreshed only the A3B1 actual frozen ownership snapshot from the 851 candidate; registry load, self-test 22/22, and formal 1499-test inventory verification pass with all mismatch counts zero.",
+  "lastAction": "Ran three fresh complete nine-shard coverage candidates on exact repaired source HEAD bf9f170590d90733a3bd5de810e0096fc40f4e84; all 3/3 passed 1499/1499 with identical inventory, ownership, and five-obligation identities; materialized the new exact repair profile without changing the historical profile.",
   "lastError": "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI",
   "requiredNextAction": "CREATE_REGISTRY_REFRESH_COMMIT_THEN_RUN_FRESH_REPAIRED_HEAD_PROFILE_AND_RECONCILE_PR_BODY",
-  "nextAction": "CREATE_REGISTRY_REFRESH_COMMIT_THEN_RUN_FRESH_REPAIRED_HEAD_PROFILE_AND_RECONCILE_PR_BODY"
+  "nextAction": "CREATE_PROFILE_ONLY_COMMIT_THEN_CONTROLLER_PUSH_RECONCILE_PR_BODY_WAIT_EXACT_HEAD_CI_AND_REQUEST_FRESH_FINAL_REVIEW"
 }
