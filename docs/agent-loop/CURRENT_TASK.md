@@ -1,14 +1,12 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B1 — RUNNING / REPAIR ROUND 2 EXACT PROFILE FROZEN
+## Phase 3 Slice 2B19A3B1 — COMPLETED / ACCEPTED / PENDING CLOSEOUT COMMIT CI
 
-- Repair Round 2 remains the final authorized repair: `repairRound=2/2`, `status=RUNNING`, `implementationAuthorized=true`, `productRepairRoundConsumed=true`, and `phase2CStarted=false`. F01-F03 and the repository-side Windows test-structure issue are closed; the sole remaining blocker is `F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI`.
-- Exact Repair Round 2 source HEAD is `c384c60add75211bd20139b9e289da8fd6e15bb5`. It preserves the exact single Seamstress title and inventory while running four independent Human/AI/Storyteller/System cases through `Promise.all`. Parent push CI `29671838025` attempts `1/2` and `2/2` timed out only that Windows test; parent PR CI `29671838696` passed `22/22`.
-- Three fresh strictly serial complete nine-shard candidates each pass `9/9` and `1499/1499`. Every candidate has global inventory `c68a2e4c70b36464282d4227007da2cae95e9d91bc36cb9519aafb014f3234ef`, non-marker ownership `92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c`, A3B1 `6/6` owner tests, `60/60` rows, `58` dynamic rows, four support authorities, and zero failed/missing/duplicate/unexpected/ambiguous/wrong-owner results.
-- Exact five-tuple is identical in all three runs: `63 / 3184 / 23 / 3184 / 1773`, with identical canonical hashes. Profile `phase-3-slice-2b19a3b1-c384c60-repair2-ownership-v2-1` returns `COVERAGE_APPROVED_PROFILE_MATCH` for `3/3` explicit selections.
-- External stability evidence is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverage-experiments\2b19a3b1-c384c60-repair2\three-candidate-stability.md`, SHA-256 `792e5097c6ab11c6140f36abb7b86ac0d6e7d25abf2d80f6e83c6f7df68bcf8c`. A pre-candidate PowerShell native-stderr harness stop is retained separately and excluded; all older profiles and failed attempts remain immutable and are not counted.
-- Profile changes are confined to the verifier registry, explicit CI profile selection, C37, profile evidence, and four control records. No production, test, fixture, ownership snapshot/topology, timeout, `onTaskUpdate`, dependency, or rule semantics changed.
-- Complete local profile-head validation passes: exact verifier `3/3`; registry load; ownership self-test `22/22`; formal inventory `1499`; typecheck; lint; ordinary `35/1499` in `104.02s`; coverage `35/1499` in `149.03s` at `78.85 / 82.71 / 97.45 / 78.85`. This materialization is the sole attributed profile-only child of `c384c60`; the controller then owns push, PR-body reconciliation, fresh exact-head CI, and fresh independent final review. No push or PR edit is authorized in this task.
+- PR [#40](https://github.com/JackeyLovedas/botc-singleplayer/pull/40) is merged. Frozen feature HEAD `2e3d47bbe6f3ee10353cab76d52f79f2ca5c4769` passed product push CI `29673297570` and PR CI `29673298371`, each `SUCCESS / 22 of 22 jobs`.
+- The complete independent final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`. GitHub comments `5014387772` and `5014388034` were re-read after merge and archived verbatim at `docs/reviews/pr-40-code-review-final.md` and `docs/reviews/pr-40-rule-review-final.md`.
+- Merge commit `a77f6b6da60628a8166e439bda4520e249448876` passed main CI `29674062305 / SUCCESS / 22 of 22`. Accepted tag `phase-3-slice-2b19a3b1-dreamer-drunk-vortox-core` points to the same commit and passed CI `29674107281 / SUCCESS / 22 of 22`.
+- Control is `status=COMPLETED`, disposition `ACCEPTED`, `implementationAuthorized=false`, design `2/2`, repair `2/2`, `productRepairRoundConsumed=true`, `currentSlice=null`, `currentBranch=main`, `currentPR=null`, `remainingBlockers=[]`, and `phase2CStarted=false`.
+- Closeout is docs-only. Its exact commit and CI run are intentionally `PENDING_CLOSEOUT_COMMIT_CI` until this closeout commit is pushed. Do not start 2B19A3B2, 2B19B, Phase 2C, or any next Slice from this record.
 
 ### Repair Round 1 history
 
