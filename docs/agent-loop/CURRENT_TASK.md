@@ -1,6 +1,6 @@
 # Current Task
 
-## Phase 3 Slice 2B19B — RUNNING / PRODUCT IMPLEMENTATION MATERIALIZED
+## Phase 3 Slice 2B19B — RUNNING / EXACT COVERAGE PROFILE FROZEN
 
 - Authorization: `USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION`.
 - Active bounded product Slice: `2B19B / Philosopher-gained Dreamer Effective Source`; branch `phase-3/philosopher-gained-dreamer-effective-source`; PR `null`.
@@ -12,10 +12,12 @@
 - The bounded product implementation is materialized across exactly the six approved production files with `1,110` added production lines. It implements exact gained-Dreamer V4 opportunity, V3 target, V5/V6 delivery, atomic batch, 11/13-reference ledger facts, replay-safe projection, real fault/retry boundaries, and the pre-Mathematician stop boundary.
 - Traceability is `docs/implementation/phase-3-slice-2b19b-test-traceability.md`: exact `C01-C60` and `S01-S20`, 80/80 rows, 78 dynamic bindings, and ten supporting authorities. Status is `docs/implementation/phase-3-slice-2b19b-status.md`.
 - Active ownership contract `2B19B` has exactly three semantic tests and three executions, all in `application-service-dreamer-vortox`; four legacy shards own zero. Fresh formal inventory is `31` physical files, `35` project-file executions, `1,509` tests, nine disjoint groups, and zero missing/duplicate/unexpected/ambiguous/wrong-owner identities. A3A, A3B1, non-marker, and physical-file baselines remain unchanged.
-- Current validation: typecheck `PASS`, full lint `PASS`, ownership self-test `22/22 PASS`, formal inventory/ownership `1,509/1,509 PASS`, ordinary tests `35/1,509 PASS` in `29.11s`, and coverage `35/1,509 PASS` in `43.58s` at `79.24 / 83.25 / 97.49`.
+- Product commit `P` is `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`. Three fresh complete exact-P candidates each passed `9/9` coverage processes and `1,509/1,509` tests with identical canonical five-obligation tuple, inventory, and ownership identities; external stability evidence SHA-256 is `d5bdf7c35ad8b059b738c767271aa7fa881ce93b1bece015b27fba5ffcb661d8`.
+- Exact profile `phase-3-slice-2b19b-84aebe5-ownership-v2-1` is frozen with source kind `PRODUCT_IMPLEMENTATION_STABLE_NINE_PROCESS_BASELINE` and topology `NINE_PROCESS_COVERAGE_OWNERSHIP_V2_1`. Exact requested verification passes `3/3`; old exact selection remains valid and absent/wrong/ambiguous/duplicate cases fail closed.
+- Current product validation: typecheck `PASS`, full lint `PASS`, ownership self-test `22/22 PASS`, formal inventory/ownership `1,509/1,509 PASS`, ordinary tests `35/1,509 PASS` in `29.11s`, and coverage `35/1,509 PASS` in `43.58s` at `79.24 / 83.25 / 97.49`.
 - Control state is `status=RUNNING`, `taskType=PRODUCT_SLICE`, `ruleResearchCompleted=true`, `ruleReady=true`, `ruleDesignPass=true`, `implementationAuthorized=true`, design `2/2`, repair `0/2`, `productRepairRoundConsumed=false`, `slice2B19BStarted=true`, and `phase2CStarted=false`.
 - Remaining blockers are exactly `[]`.
-- Required next action is `CREATE_PRODUCT_COMMIT_P`, then three exact-P coverage candidates and the separately scoped profile-only child `Q`. Do not push before the required staged evidence, expand scope, start a later Slice, consume a repair round, or begin 2B19A3B2/Phase 2C.
+- Required next action is `CREATE_PROFILE_ONLY_COMMIT_Q`, then controller-owned push/PR metadata, exact-Q CI, and a complete independent final review. Do not broaden Q, start a later Slice, consume a repair round, or begin 2B19A3B2/Phase 2C.
 - Accepted 2B19A3B1 remains `COMPLETED / ACCEPTED`; its product, review, merge, tag, closeout, and CI history below is unchanged and supplies no implementation authority for 2B19B.
 
 ## Phase 3 Slice 2B19A3B1 — COMPLETED / ACCEPTED / CLOSEOUT CI SUCCESS

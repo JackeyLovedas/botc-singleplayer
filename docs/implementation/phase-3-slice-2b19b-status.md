@@ -8,7 +8,9 @@
 - Design review: `docs/implementation/phase-3-slice-2b19b-design-review-round-2.md`, SHA-256 `aa80221f77f766f6e730b3e46897a24180f7f4061917f59e9f4f3353a68d88c5`, verdict `RULE_DESIGN_PASS`
 - Design round: `2 / 2`; repair round: `0 / 2`
 - Role coverage: `PARTIAL`
-- Product status: `RUNNING / PRODUCT_IMPLEMENTATION_FULL_GATES_PASS / PROFILE_CHILD_PENDING`
+- Product status: `RUNNING / EXACT_PROFILE_FROZEN / PROFILE_ONLY_CHILD_PUSH_PENDING`
+- Product commit `P`: `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`
+- Exact coverage profile: `phase-3-slice-2b19b-84aebe5-ownership-v2-1`, source kind `PRODUCT_IMPLEMENTATION_STABLE_NINE_PROCESS_BASELINE`, topology `NINE_PROCESS_COVERAGE_OWNERSHIP_V2_1`
 
 ## Implemented behavior
 
@@ -54,7 +56,10 @@ No event type, event version, `GameState` field, evidence-union member, workflow
 - Full lint: `PASS`.
 - Full ordinary tests: `35 files / 1,509 tests PASS`; `29.11s`.
 - Full coverage: `35 files / 1,509 tests PASS`; `43.58s`; statements/lines `79.24%`, branches `83.25%`, functions `97.49%`.
-- Product commit `P`, three exact-P coverage candidates, profile-only child `Q`, push/PR CI, PR metadata, and independent final review remain pending.
+- Product commit `P` is frozen at `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`.
+- Three fresh complete exact-P nine-process candidates each passed `9/9` shards and `1,509/1,509` tests with identical inventory, ownership, and canonical obligation five-tuple. External stability evidence SHA-256 is `d5bdf7c35ad8b059b738c767271aa7fa881ce93b1bece015b27fba5ffcb661d8`.
+- Exact requested profile verification passes `3/3`; the old exact profile still matches its old candidate, while absent, wrong, ambiguous, and duplicate selections fail closed.
+- Profile-only child `Q` is frozen for commit. Push, PR creation/body, exact-Q CI, and complete independent final review remain pending.
 
 ## Explicitly unsupported
 
