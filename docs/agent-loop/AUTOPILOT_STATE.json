@@ -64,7 +64,7 @@
     "repairRound": 2,
     "maxRepairRounds": 2,
     "productRepairRoundConsumed": true,
-    "implementationStatus": "PRODUCT_REPAIR_ROUND_2_LOCAL_GATES_PASS",
+    "implementationStatus": "PRODUCT_REPAIR_ROUND_2_EXACT_PROFILE_FROZEN_PROFILE_CHILD_GATES_PASS",
     "statusPath": "docs/implementation/phase-3-slice-2b19b-status.md",
     "traceabilityPath": "docs/implementation/phase-3-slice-2b19b-test-traceability.md",
     "productionFilesChanged": 6,
@@ -99,7 +99,7 @@
       "fullCoverage": "35 FILES / 1520 TESTS PASS / 59.8S SHELL WALL / STATEMENTS-LINES 79.09 / BRANCHES 83.26 / FUNCTIONS 97.49"
     },
     "productImplementationCommit": "84aebe559cc9fd6d85571ec5753d4e36bdbfcb21",
-    "coverageProfileStatus": "REPAIR_ROUND_1_EXACT_PROFILE_FROZEN / PROFILE_CHILD_COMMIT_PENDING",
+    "coverageProfileStatus": "REPAIR_ROUND_2_EXACT_PROFILE_FROZEN / PROFILE_CHILD_R2Q_IS_THIS_TREE",
     "coverageProfile": {
       "profileId": "phase-3-slice-2b19b-84aebe5-ownership-v2-1",
       "sourceHead": "84aebe559cc9fd6d85571ec5753d4e36bdbfcb21",
@@ -192,7 +192,7 @@
       "repairHeadCI": "NONE / REPAIR PRODUCT AND PROFILE CHILD HAVE NOT BEEN PUSHED"
     },
     "productRepairRound2": {
-      "status": "LOCAL_GATES_PASS / ATTRIBUTED_R2P_COMMIT_IS_THIS_TREE",
+      "status": "R2P_COMMITTED / EXACT_REPAIR_ROUND_2_PROFILE_FROZEN / PROFILE_CHILD_GATES_PASS",
       "scope": "TEST_EXECUTION_COST_ONLY",
       "authorization": "FINAL_ALLOWED_PRODUCT_REPAIR_ROUND_2_OF_2",
       "sourceHead": "f6c71b73b98fbdfd9935ca462f74676cf58d11ee",
@@ -216,11 +216,39 @@
       "inventoryIdentity": "SIX ORDINARY AND COVERAGE REPORTS / 26 OF 26 / IDENTICAL FULL TITLES; THREE WINDOWS PACKAGE RUNS / 7 FILES / 270 OF 270",
       "formalValidation": "9 OF 9 PROCESSES / 1520 OF 1520 / ZERO MISSING DUPLICATE UNEXPECTED AMBIGUOUS WRONG_OWNER",
       "fullGates": "TYPECHECK PASS / LINT PASS / TEST 35 FILES 1520 OF 1520 39.612S / COVERAGE 35 FILES 1520 OF 1520 57.521S / 79.09 83.26 97.49",
-      "productionRulesTraceabilityProfileSelectorChanged": false
+      "productionRulesTraceabilityChanged": false,
+      "profileSelectorChanged": true,
+      "repairProductHead": "c7313e253331505b163d4abe26c0c04c72afac88"
+    },
+    "repairRound2CoverageProfile": {
+      "profileId": "phase-3-slice-2b19b-c7313e2-ownership-v2-1",
+      "sourceHead": "c7313e253331505b163d4abe26c0c04c72afac88",
+      "sourceKind": "REPAIR_ROUND_2_STABLE_NINE_PROCESS_BASELINE",
+      "topology": "NINE_PROCESS_COVERAGE_OWNERSHIP_V2_1",
+      "candidateRuns": 3,
+      "candidateResult": "3 OF 3 / 9 OF 9 SHARDS / 1520 OF 1520 TESTS / ZERO FAILURES / ZERO RISK HITS",
+      "selectedCandidate": "CANDIDATE RUN 1 / SHORTEST COMPLETE WALL 231.171S",
+      "groupTests": "207 / 357 / 456 / 90 / 52 / 73 / 20 / 26 / 239",
+      "stabilityEvidencePath": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\2b19b-c7313e2-repair2\\three-candidate-stability.md",
+      "stabilityEvidenceSha256": "46319feaa819e40875f2354e13db1db101cbceaab4475139d10ef025892768f2",
+      "repositoryEvidencePath": "docs/implementation/phase-3-slice-2b19b-repair-round-2-coverage-profile.md",
+      "manifestSha256": [
+        "44016a73ece15eb82fb77b2b456a686c4a64767d680dad248512e34b395489ff",
+        "fe5d589d95ff222c9ace6de46b06e728425df1657c22415e0df719bd328d14da",
+        "aff6668d0901652175002d261d39b103152c801266d41196694e18f0d0e9c31f"
+      ],
+      "sourceFiles": 63,
+      "zeroHitStatements": 3204,
+      "zeroHitFunctions": 23,
+      "zeroHitLines": 3204,
+      "zeroHitBranchArms": 1799,
+      "ownership": "10 TO 10 / REMOVED 0 / INVENTORY 684c9186...150f / PROJECT 92bcddf3...32c8 / SEMANTIC 8121c6d1...482 / AUTHORITY e7e88b9d...e81",
+      "freshness": "3 NEW EXACT MATCH / OLD EXACT MATCH / WRONG MISSING AUTOMATIC_AMBIGUOUS DUPLICATE FAIL CLOSED",
+      "localGates": "OWNERSHIP 22 OF 22 / FORMAL 1520 OF 1520 / TYPECHECK LINT PASS / TEST 35 OF 1520 39.227S / COVERAGE 35 OF 1520 56.696S / 79.01 83.26 97.49"
     },
     "phase2CStarted": false,
     "remainingBlockers": [
-      "PENDING_NEW_R2P_PUSH_CI_AND_FRESH_FINAL_REVIEW"
+      "PENDING_R2Q_PUSH_CI_AND_FRESH_FINAL_REVIEW"
     ]
   },
   "slice2B19A3BGate": {
@@ -730,7 +758,7 @@
   "reviewedHead": "5256216b22e62dbb992d1a678dfc9c597b5227c7",
   "currentReviewHeadAuthority": "The complete independent PR #41 final review is bound only to reviewed HEAD 5256216b22e62dbb992d1a678dfc9c597b5227c7 and returned CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED with six exact blockers. Any repair commit invalidates its CI and requires new exact-head CI plus fresh complete independent review.",
   "exactHeadCIAuthority": "R1Q HEAD f6c71b73b98fbdfd9935ca462f74676cf58d11ee failed push run 29686451621 attempts 1 and 2 and PR run 29686452785 attempts 1 and 2. Dreamer-Vortox coverage wrote its blob then exited 1 in every attempt; push Windows completed 270 of 270 then timed out calling onTaskUpdate in both attempts. Same-head retry is prohibited.",
-  "currentFeatureHead": "f6c71b73b98fbdfd9935ca462f74676cf58d11ee",
+  "currentFeatureHead": "c7313e253331505b163d4abe26c0c04c72afac88",
   "repairRound": 2,
   "designRound": 2,
   "maxDesignRounds": 2,
@@ -1299,7 +1327,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_NEW_R2P_PUSH_CI_AND_FRESH_FINAL_REVIEW"
+    "PENDING_R2Q_PUSH_CI_AND_FRESH_FINAL_REVIEW"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
@@ -2064,8 +2092,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-19T15:21:53+08:00",
-  "lastAction": "Reduced only repeated 2B19B accepted-stream fixture construction. Three CI-equivalent stability rounds passed ordinary Dreamer-Vortox, coverage blob, and Windows application package execution with identical 26-test and 270-test inventories and zero onTaskUpdate, timeout, or unhandled-error hits. Formal nine-process inventory passed 1520 of 1520; typecheck, lint, full tests, and full coverage all pass. The old R1Q CI blocker is closed locally pending new exact-head CI.",
+  "lastAction": "Bound three wholly fresh nine-process coverage candidates to exact R2P c7313e253331505b163d4abe26c0c04c72afac88. Each passed 9 of 9, 1520 of 1520, ownership and the exact five-tuple with zero risk hits. Froze phase-3-slice-2b19b-c7313e2-ownership-v2-1, changed only the explicit workflow profile selector, and passed freshness, ownership, formal inventory, typecheck, lint, full tests, and full coverage.",
   "lastError": null,
-  "requiredNextAction": "CREATE_ATTRIBUTED_2B19B_PRODUCT_REPAIR_ROUND_2_R2P_THEN_STOP_WITHOUT_PUSH",
-  "nextAction": "STOP_AFTER_ATTRIBUTED_R2P_WITHOUT_PUSH_OR_PR_EDIT"
+  "requiredNextAction": "CREATE_ATTRIBUTED_2B19B_REPAIR_ROUND_2_PROFILE_CHILD_R2Q_THEN_STOP_WITHOUT_PUSH",
+  "nextAction": "STOP_AFTER_ATTRIBUTED_R2Q_WITHOUT_PUSH_OR_PR_EDIT"
 }

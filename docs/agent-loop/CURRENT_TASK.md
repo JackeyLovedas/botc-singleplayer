@@ -1,10 +1,10 @@
 # Current Task
 
-## Phase 3 Slice 2B19B — RUNNING / PRODUCT REPAIR ROUND 2 LOCAL GATES PASS
+## Phase 3 Slice 2B19B — RUNNING / REPAIR ROUND 2 EXACT PROFILE FROZEN
 
 - Authorization: `USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION`.
 - Active bounded product Slice: `2B19B / Philosopher-gained Dreamer Effective Source`; branch `phase-3/philosopher-gained-dreamer-effective-source`; PR [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41).
-- Final Product Repair Round `2 / 2` has passed all local gates against source HEAD `f6c71b73b98fbdfd9935ca462f74676cf58d11ee`; the attributed R2P commit is this tree, and no push or PR edit is authorized in this handoff.
+- Final Product Repair Round `2 / 2` product commit is R2P `c7313e253331505b163d4abe26c0c04c72afac88`. Exact profile-only child R2Q is this tree; no push or PR edit is authorized in this handoff.
 - Fresh rule research is complete with verdict `RULE_READY`, `unresolvedConflicts=[]`, and `ruleCoverageStatus=PARTIAL`. Evidence is `docs/rules/evidence/2B19B.md`, SHA-256 `e1f038f32171d7cea1f89345b1cac958e30a79f47005ca444a0dc2633abe3187`, retrieved from `2026-07-19T07:26:30Z` through `2026-07-19T07:29:03Z`.
 - Governance is complete at `docs/architecture/2B19B-go-no-go-under-governance-v1.md`, canonical LF SHA-256 `8584df7cad510bd00a49d69b9a2d794d6a4443d7be2fc9bf3dbfd7bc79128da1`, with terminal verdict `GO`. It freezes a six-production-file design allowlist and estimates `1,050–1,400` added production LOC without authorizing implementation.
 - Historical Design Round 1 remains immutable at `docs/implementation/phase-3-slice-2b19b-design.md`, SHA-256 `dca87df75bebcc9b44d396043ab03d0afcfd1f17417d1355f97c72778ec4d181`; its immutable independent review is `docs/implementation/phase-3-slice-2b19b-design-review-round-1.md`, SHA-256 `937af88b24ab5b5cac8ba9dd1657d344b5af73e12359382a6df416d33089a1fb`, verdict `RULE_DESIGN_FIX_REQUIRED`.
@@ -24,6 +24,8 @@
 - Round 2 shares one real accepted Philosopher-gained Vortox Dreamer settlement build across C13/C46/S18 and gives each consumer a structured clone. All titles, primary layers, assertions, ownership identities, F01-F05 authorities, production, rules, traceability semantics, profiles, selector, CI topology, timeout/RPC behavior, and dependencies remain unchanged.
 - Three CI-equivalent rounds passed ordinary Dreamer-Vortox (`32.869s`, `31.447s`, `31.302s`), coverage blob (`45.483s`, `44.088s`, `45.428s`), and Windows application package (`34.599s`, `34.715s`, `34.703s`) with all exits `0`, identical `26/26` and `270/270` inventories, and zero `onTaskUpdate`, timeout, or unhandled-error hits.
 - Fresh formal inventory is `9/9` processes and `1,520/1,520` tests with zero mismatch. Typecheck and lint pass; ordinary is `35/1,520` in `39.612s`; coverage is `35/1,520` in `57.521s` at `79.09 / 83.26 / 97.49`. The old R1Q blocker is closed locally; remaining external gate is `PENDING_NEW_R2P_PUSH_CI_AND_FRESH_FINAL_REVIEW`.
+- Exact R2P profile `phase-3-slice-2b19b-c7313e2-ownership-v2-1` is frozen in `docs/implementation/phase-3-slice-2b19b-repair-round-2-coverage-profile.md`. Three fresh candidates passed `9/9`, `1,520/1,520`, risk hits `0`, and identical ownership/five-tuple identities; stability SHA-256 is `46319feaa819e40875f2354e13db1db101cbceaab4475139d10ef025892768f2`.
+- Profile freshness is new exact `3/3 MATCH`, old exact `MATCH`, and wrong/missing/automatic ambiguous/duplicate fail closed. Profile-child gates pass: ownership `22/22`, formal `1,520/1,520`, typecheck/lint, ordinary `35/1,520` in `39.227s`, coverage `35/1,520` in `56.696s` at `79.01 / 83.26 / 97.49`. Remaining external gate: `PENDING_R2Q_PUSH_CI_AND_FRESH_FINAL_REVIEW`.
 - Accepted 2B19A3B1 remains `COMPLETED / ACCEPTED`; its product, review, merge, tag, closeout, and CI history below is unchanged and supplies no implementation authority for 2B19B.
 
 ## Phase 3 Slice 2B19A3B1 — COMPLETED / ACCEPTED / CLOSEOUT CI SUCCESS

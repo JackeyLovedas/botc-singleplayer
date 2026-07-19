@@ -8,7 +8,7 @@
 - Design review: `docs/implementation/phase-3-slice-2b19b-design-review-round-2.md`, SHA-256 `aa80221f77f766f6e730b3e46897a24180f7f4061917f59e9f4f3353a68d88c5`, verdict `RULE_DESIGN_PASS`
 - Design round: `2 / 2`; repair round: `2 / 2`
 - Role coverage: `PARTIAL`
-- Product status: `RUNNING / PRODUCT_REPAIR_ROUND_2_LOCAL_GATES_PASS`
+- Product status: `RUNNING / PRODUCT_REPAIR_ROUND_2_EXACT_PROFILE_FROZEN`
 - PR: [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41)
 - Round 1 reviewed HEAD: `5256216b22e62dbb992d1a678dfc9c597b5227c7`
 - Immutable final review: `docs/implementation/phase-3-slice-2b19b-final-review-round-1.md`, canonical UTF-8 LF SHA-256 `d4fc89843939153a5562e42a0a5425010988257340bd974bdf9e324db8247e97`, `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`
@@ -98,3 +98,12 @@ Dreamer, Philosopher, and Mathematician remain `PARTIAL`; Vortox remains `NOT_ST
 - Ownership self-test: `22/22 PASS`. Fresh formal ordinary isolation: `9/9`, `1,520/1,520`, zero missing, duplicate, unexpected, ambiguous, wrong-owner, or multi-primary identity.
 - Full gates: typecheck `PASS`; lint `PASS`; ordinary `35 files / 1,520 tests / 39.612s`; coverage `35 files / 1,520 tests / 57.521s`, statements/lines `79.09`, branches `83.26`, functions `97.49`.
 - The R1Q failure is closed locally. New exact-R2P push/PR CI and a fresh complete independent review are still mandatory; old CI and review authority are not inherited.
+
+## Repair Round 2 exact profile
+
+- R2P: `c7313e253331505b163d4abe26c0c04c72afac88`.
+- Exact profile: `phase-3-slice-2b19b-c7313e2-ownership-v2-1`; immutable manifest: `docs/implementation/phase-3-slice-2b19b-repair-round-2-coverage-profile.md`.
+- Three fresh candidates each passed `9/9` and `1,520/1,520`, with zero risk-log hits and identical inventory, ownership, group counts, and five-tuple. External stability SHA-256: `46319feaa819e40875f2354e13db1db101cbceaab4475139d10ef025892768f2`.
+- Candidate 1 is selected by shortest complete wall time. Freshness: new exact `3/3 MATCH`; old exact `MATCH`; wrong, missing, automatic ambiguous, and duplicate selector cases fail closed.
+- Profile-child gates: ownership `22/22`; formal `1,520/1,520`; typecheck/lint pass; ordinary `35/1,520` in `39.227s`; coverage `35/1,520` in `56.696s` at `79.01 / 83.26 / 97.49`.
+- Only the immutable profile entry, one workflow selector token, this manifest, and necessary control/status records change. Production, tests, traceability, ownership registry, verifier behavior, CI topology, dependencies, timeouts, thresholds, rules, matrix, and product semantics remain unchanged.
