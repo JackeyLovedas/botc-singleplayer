@@ -403,10 +403,11 @@
       "scope": "ACCEPTED_TAG"
     },
     "closeoutCommitCI": {
-      "commitSha": null,
-      "run": null,
-      "url": null,
-      "status": "PENDING_CLOSEOUT_COMMIT_CI",
+      "commitSha": "99b08a036522acf33c02849ab370d00358f84f41",
+      "run": 29674404555,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29674404555",
+      "status": "SUCCESS",
+      "jobs": "22/22",
       "scope": "DOCS_ONLY_CLOSEOUT"
     }
   },
@@ -520,7 +521,7 @@
   },
   "reviewedHead": "2e3d47bbe6f3ee10353cab76d52f79f2ca5c4769",
   "currentReviewHeadAuthority": "Complete independent PR #40 final review is bound to frozen feature HEAD 2e3d47bbe6f3ee10353cab76d52f79f2ca5c4769 and returned CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[].",
-  "exactHeadCIAuthority": "Product push CI 29673297570 and PR CI 29673298371 are SUCCESS / 22 of 22 for exact frozen feature HEAD 2e3d47bbe6f3ee10353cab76d52f79f2ca5c4769. Merge CI 29674062305 and accepted-tag CI 29674107281 are SUCCESS / 22 of 22 for merge commit a77f6b6da60628a8166e439bda4520e249448876. Docs-only closeout CI remains pending for the forthcoming closeout commit.",
+  "exactHeadCIAuthority": "Product push CI 29673297570 and PR CI 29673298371 are SUCCESS / 22 of 22 for exact frozen feature HEAD 2e3d47bbe6f3ee10353cab76d52f79f2ca5c4769. Merge CI 29674062305 and accepted-tag CI 29674107281 are SUCCESS / 22 of 22 for merge commit a77f6b6da60628a8166e439bda4520e249448876. Docs-only closeout CI 29674404555 is SUCCESS / 22 of 22 for exact closeout commit 99b08a036522acf33c02849ab370d00358f84f41.",
   "currentFeatureHead": "2e3d47bbe6f3ee10353cab76d52f79f2ca5c4769 / ACCEPTED",
   "repairRound": 2,
   "designRound": 2,
@@ -1081,9 +1082,7 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [
-    "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI"
-  ],
+  "remainingBlockers": [],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
     "sha256": "fb9dc655ba718030dde3208f2a3f3fc51e9582fcef0f3b2db4cccbaabfa9c794",
@@ -1847,8 +1846,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-18T21:45:00+08:00",
-  "lastAction": "Ran three fresh complete nine-shard coverage candidates on exact Repair Round 2 source HEAD c384c60add75211bd20139b9e289da8fd6e15bb5; all 3/3 passed 1499/1499 with identical inventory, ownership, and five-obligation identities; materialized a new exact profile while preserving every older profile and failed attempt.",
-  "lastError": "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI",
-  "requiredNextAction": "CREATE_PROFILE_ONLY_COMMIT_THEN_CONTROLLER_PUSHES_AND_RECONCILES_PR_BODY",
-  "nextAction": "CONTROLLER_PUSHES_PROFILE_ONLY_COMMIT_RECONCILES_PR_BODY_WAITS_EXACT_HEAD_CI_AND_REQUESTS_FRESH_FINAL_REVIEW"
+  "lastAction": "Recorded exact docs-only closeout commit 99b08a036522acf33c02849ab370d00358f84f41 and GitHub CI run 29674404555 as SUCCESS / 22 of 22; reconciled current 2B19A3B1 control authority without changing historical repair records.",
+  "lastError": null,
+  "requiredNextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED",
+  "nextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED"
 }

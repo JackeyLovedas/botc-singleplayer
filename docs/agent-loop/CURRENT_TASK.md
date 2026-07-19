@@ -1,12 +1,12 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B1 — COMPLETED / ACCEPTED / PENDING CLOSEOUT COMMIT CI
+## Phase 3 Slice 2B19A3B1 — COMPLETED / ACCEPTED / CLOSEOUT CI SUCCESS
 
 - PR [#40](https://github.com/JackeyLovedas/botc-singleplayer/pull/40) is merged. Frozen feature HEAD `2e3d47bbe6f3ee10353cab76d52f79f2ca5c4769` passed product push CI `29673297570` and PR CI `29673298371`, each `SUCCESS / 22 of 22 jobs`.
 - The complete independent final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`. GitHub comments `5014387772` and `5014388034` were re-read after merge and archived verbatim at `docs/reviews/pr-40-code-review-final.md` and `docs/reviews/pr-40-rule-review-final.md`.
 - Merge commit `a77f6b6da60628a8166e439bda4520e249448876` passed main CI `29674062305 / SUCCESS / 22 of 22`. Accepted tag `phase-3-slice-2b19a3b1-dreamer-drunk-vortox-core` points to the same commit and passed CI `29674107281 / SUCCESS / 22 of 22`.
 - Control is `status=COMPLETED`, disposition `ACCEPTED`, `implementationAuthorized=false`, design `2/2`, repair `2/2`, `productRepairRoundConsumed=true`, `currentSlice=null`, `currentBranch=main`, `currentPR=null`, `remainingBlockers=[]`, and `phase2CStarted=false`.
-- Closeout is docs-only. Its exact commit and CI run are intentionally `PENDING_CLOSEOUT_COMMIT_CI` until this closeout commit is pushed. Do not start 2B19A3B2, 2B19B, Phase 2C, or any next Slice from this record.
+- Docs-only closeout commit `99b08a036522acf33c02849ab370d00358f84f41` passed exact CI `29674404555 / SUCCESS / 22 of 22 jobs`; this authority is scoped only to that closeout commit. Required next action is `STOP_NO_NEXT_SLICE_AUTHORIZED`. Do not start 2B19A3B2, 2B19B, Phase 2C, or any next Slice from this record.
 
 ### Repair Round 1 history
 
