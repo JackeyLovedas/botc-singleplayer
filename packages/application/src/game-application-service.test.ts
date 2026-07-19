@@ -9034,12 +9034,14 @@ describeApplicationServiceShard("compatibility-and-failure-boundaries", "GameApp
   });
 
   it("accepts Seamstress DEFER from source Human, source AI, Storyteller, and System actors", async () => {
-    for (const [actorName, actorFactory] of [
+    const cases = [
       ["human", (sourcePlayerId: ReturnType<typeof playerId>) => ({ kind: "human", playerId: sourcePlayerId } as const)],
       ["ai", (sourcePlayerId: ReturnType<typeof playerId>) => ({ kind: "ai", playerId: sourcePlayerId } as const)],
       ["storyteller", () => storytellerActor],
       ["system", () => systemActor]
-    ] as const) {
+    ] as const;
+
+    await Promise.all(cases.map(async ([actorName, actorFactory]) => {
       const commandStore = new MemoryCommandCommitStore();
       const { service } = makeService(commandStore);
       const { seamstressTask, opportunity } = await reachOpenSeamstressActionOpportunity(service, commandStore);
@@ -9061,7 +9063,7 @@ describeApplicationServiceShard("compatibility-and-failure-boundaries", "GameApp
         eventCount: 2,
         eventTypes: ["SeamstressActionDeferred", "ScheduledTaskSettled"]
       });
-    }
+    }));
   });
 
   it("rejects malformed, future, mismatched, and non-source Seamstress submissions without domain events", async () => {

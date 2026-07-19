@@ -1,6 +1,14 @@
 # Project State
 
-## Current gated Slice — 2B19A3B1 RUNNING / REPAIR ROUND 1 EXACT PROFILE FROZEN
+## Current gated Slice — 2B19A3B1 RUNNING / REPAIR ROUND 2 WINDOWS TEST-STRUCTURE GATES PASS
+
+- Final authorized Repair Round 2 is `RUNNING`, `repairRound=2/2`, `implementationAuthorized=true`, and `productRepairRoundConsumed=true`. F01-F03 remain closed; `F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI` is the sole remaining blocker.
+- On exact pre-Round-2 HEAD `c33e7e47d194d56506af17814504aab62925fd35`, PR CI `29671838696` passed `22/22`, while push CI `29671838025` attempts `1/2` and `2/2` each failed only the deterministic Windows job on the same existing four-actor Seamstress test's default 5-second budget.
+- A temporary `it.each` split was rejected because it changed the frozen non-marker inventory to 1502 tests. It was fully discarded without changing A3A, A3B1, registry, profile, traceability, workflow, timeout, `onTaskUpdate`, production, or rule semantics. The accepted local fix preserves the exact single title and runs its four independent actor setups concurrently with `Promise.all`.
+- Five focused commands pass in `4929 / 4963 / 4905 / 4913 / 4934ms`; compatibility passes `20/20`; the application package passes `260/260`. Formal inventory is again exactly `1499`, global hash `c68a2e4c70b36464282d4227007da2cae95e9d91bc36cb9519aafb014f3234ef`, non-marker hash `92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c`, A3B1 `6/6 / 60/60 / 58 / 4`, with every mismatch count zero and all A3A/A3B1 snapshot fields unchanged.
+- Round 2 local gates pass: typecheck; lint; ordinary `35/1499` in `29.47s`; coverage `35/1499` in `42.50s` at `78.95 / 82.71 / 97.45`. The next step is the attributed test-structure commit, then fresh exact-head profile, controller push, PR-body reconciliation, exact-head CI, and fresh independent review.
+
+### Repair Round 1 history
 
 - PR [#40](https://github.com/JackeyLovedas/botc-singleplayer/pull/40) is open. Exact-head push CI `29650271580` and PR CI `29650302623` completed `SUCCESS / 22 of 22 jobs` only for pre-repair HEAD `17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d`; fresh CI is required after the profile-only child of repaired source HEAD `bf9f170590d90733a3bd5de810e0096fc40f4e84`.
 - The complete independent report is preserved verbatim at `docs/implementation/phase-3-slice-2b19a3b1-final-review-round-1.md`, SHA-256 `9182de58144b00661f95c2beb82efe0f3555b914211a24d88ac94a6f60e79ff6`; verdicts are `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`.

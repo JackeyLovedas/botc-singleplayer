@@ -1,6 +1,16 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B1 — RUNNING / REPAIR ROUND 1 EXACT PROFILE FROZEN
+## Phase 3 Slice 2B19A3B1 — RUNNING / REPAIR ROUND 2 WINDOWS TEST-STRUCTURE GATES PASS
+
+- Repair Round 2 is the final authorized repair: `repairRound=2/2`, `status=RUNNING`, `implementationAuthorized=true`, `productRepairRoundConsumed=true`, and `phase2CStarted=false`. F01-F03 remain closed; the only remaining blocker is `F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI`.
+- Current pre-Round-2 HEAD is `c33e7e47d194d56506af17814504aab62925fd35`. PR CI `29671838696` passed `22/22`; push CI `29671838025` attempts `1/2` and `2/2` each failed only the deterministic Windows job when the same existing test `accepts Seamstress DEFER from source Human, source AI, Storyteller, and System actors` exceeded its default 5-second budget. No assertion, rule, production, coverage-threshold, or ownership failure occurred.
+- The first attempted `it.each` split was discarded because it changed the globally frozen non-marker ownership inventory from `1499` to `1502`. No registry snapshot was changed. The final mechanical fix preserves the exact single test title and inventory while running the four Human/AI/Storyteller/System cases through `Promise.all`, with one independent `MemoryCommandCommitStore`, service, setup, command, and unchanged assertion per case.
+- Five focused executions pass with complete command wall times `4929 / 4963 / 4905 / 4913 / 4934ms`, all below 5 seconds. The compatibility project passes `20/20` with the target at `1.646s`; the application package passes `260/260` with the target at `1.847s`.
+- Formal nine-shard inventory returns `1499` tests, global inventory `c68a2e4c70b36464282d4227007da2cae95e9d91bc36cb9519aafb014f3234ef`, original non-marker ownership `92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c`, A3B1 `6/6` owner tests, `60/60` traceability rows, `58` dynamic rows, four support authorities, and zero failed, missing, duplicate, unexpected, ambiguous, or wrong-owner results. A3A and every A3B1 snapshot remain exact.
+- Local gates pass: typecheck; lint; ordinary `35 files / 1499 tests` in `29.47s`; coverage `35 / 1499` in `42.50s` at `78.95%` statements/lines, `82.71%` branches, and `97.45%` functions. No timeout, global timeout, workflow, `onTaskUpdate`, production, traceability, profile, registry, or rule change is included.
+- The next gate is one attributed commit `test: parallelize Seamstress actor cases for Windows`, then a fresh exact-head profile, controller-owned push, PR-body reconciliation, new exact-head CI, and fresh independent final review. No push or PR edit is authorized in this task.
+
+### Repair Round 1 history
 
 - PR [#40](https://github.com/JackeyLovedas/botc-singleplayer/pull/40) remains open. Push CI `29650271580` and PR CI `29650302623` completed `SUCCESS / 22 of 22 jobs` only for pre-repair HEAD `17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d`; that CI authority does not transfer to the forthcoming profile-only child of repaired source HEAD `bf9f170590d90733a3bd5de810e0096fc40f4e84`.
 - The complete independent first final-review report is preserved verbatim at `docs/implementation/phase-3-slice-2b19a3b1-final-review-round-1.md`, SHA-256 `9182de58144b00661f95c2beb82efe0f3555b914211a24d88ac94a6f60e79ff6`. It returned `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`.
