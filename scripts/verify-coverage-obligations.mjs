@@ -213,6 +213,35 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
         sha256: "8f9427be3ed6e81b5bf818b648dc61a6601b9b67f936517c2c50fea16a7c02ef"
       })
     })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b19b-274036a-ownership-v2-1",
+    sourceHead: "274036a09b96012a1bb5ddb08eabab9e6ad84214",
+    sourceKind: "REPAIR_ROUND_1_STABLE_NINE_PROCESS_BASELINE",
+    supersedesForTopology: "phase-3-slice-2b19b-84aebe5-ownership-v2-1",
+    supersessionReason: "REPAIR_ROUND_1_TEST_EVIDENCE_AND_OWNERSHIP_REFRESH",
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3204,
+        sha256: "aa2a04c353a155cf09b64abf887e404e22f639ed9179ca7c3daaf1b18dec3f70"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "1bd2399498399a94848b2fc51a717fa9cd89c6429a09d6d97ce87f7f6f274c1e"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3204,
+        sha256: "f531da265036cb033c62e09249d6e899993333148b0e4b9bb9487cb447d30a75"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1799,
+        sha256: "8f9427be3ed6e81b5bf818b648dc61a6601b9b67f936517c2c50fea16a7c02ef"
+      })
+    })
   })
 ]);
 

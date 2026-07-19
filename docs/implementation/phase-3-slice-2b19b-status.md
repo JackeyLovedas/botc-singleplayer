@@ -13,7 +13,9 @@
 - Round 1 reviewed HEAD: `5256216b22e62dbb992d1a678dfc9c597b5227c7`
 - Immutable final review: `docs/implementation/phase-3-slice-2b19b-final-review-round-1.md`, canonical UTF-8 LF SHA-256 `d4fc89843939153a5562e42a0a5425010988257340bd974bdf9e324db8247e97`, `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`
 - Product commit `P`: `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`
-- Historical exact coverage profile: `phase-3-slice-2b19b-84aebe5-ownership-v2-1`, authority only for product `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`; no repair-head profile is authorized or claimed.
+- Product Repair Round 1 commit `R1P`: `274036a09b96012a1bb5ddb08eabab9e6ad84214`
+- Exact repair profile: `phase-3-slice-2b19b-274036a-ownership-v2-1`, source HEAD `274036a09b96012a1bb5ddb08eabab9e6ad84214`; profile-only child `R1Q` is pending.
+- Historical exact profile `phase-3-slice-2b19b-84aebe5-ownership-v2-1` remains authority only for old product `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`.
 
 ## Implemented behavior
 
@@ -57,11 +59,11 @@ No event type, event version, `GameState` field, evidence-union member, workflow
 - Formal nine-group inventory and ownership audit: `1,520 / 1,520 PASS`; 80 unique rows, all mechanism matches `PASS`, single-primary conflicts `0`.
 - Full typecheck: `PASS`.
 - Full lint: `PASS`.
-- Full ordinary tests: `35 files / 1,520 tests PASS`; `40.53s`.
-- Full coverage: `35 files / 1,520 tests PASS`; `58.94s`; statements/lines `79.17%`, branches `83.26%`, functions `97.49%`.
+- Final profile-child ordinary tests: `35 files / 1,520 tests PASS`; `40.51s`.
+- Final profile-child coverage: `35 files / 1,520 tests PASS`; shell wall `59.8s`; statements/lines `79.09%`, branches `83.26%`, functions `97.49%`.
 - Product commit `P` is frozen at `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`.
 - Three fresh complete exact-P nine-process candidates each passed `9/9` shards and `1,509/1,509` tests with identical inventory, ownership, and canonical obligation five-tuple. External stability evidence SHA-256 is `d5bdf7c35ad8b059b738c767271aa7fa881ce93b1bece015b27fba5ffcb661d8`.
-- Exact requested profile verification passes `3/3`; the old exact profile still matches its old candidate, while absent, wrong, ambiguous, and duplicate selections fail closed.
+- Exact repair profile verification passes `3/3`; the old exact profile still matches its old candidate, while missing, wrong, ambiguous automatic, and duplicate selector inputs fail closed.
 - Reviewed HEAD push CI `29683875777` and PR CI `29683914351` passed `22/22`; these results remain authority only for reviewed HEAD `5256216b22e62dbb992d1a678dfc9c597b5227c7` and are invalidated for any repair commit.
 - Product Repair Round 1 is limited to tests, traceability, ownership metadata, status/control documents, and the immutable review report. No production, profile, selector, rule, event, projection, or receipt semantic change is authorized.
 
@@ -69,7 +71,8 @@ No event type, event version, `GameState` field, evidence-union member, workflow
 
 - F01-F06 are closed locally by dedicated single-layer test authorities, real accepted-stream V5/V6 and settlement-revision coverage, exact frozen assertions, gained-command receipt/rebuild fault coverage, a dedicated S20 static audit, and honest old-head CI/profile scoping.
 - C58 records the real sequence: gained Dreamer settles, the intervening terminal Seamstress action is opened and accepted as `DEFER`, then Mathematician is next with no Math event, result, or count.
-- All four full local gates pass on the completed repair bytes. Remaining gates are the attributed R1P commit and separately authorized repair-head coverage candidates/profile refresh. No old CI or profile is inherited by the repair.
+- Attributed `R1P` is `274036a09b96012a1bb5ddb08eabab9e6ad84214`. Three fresh exact-R1P nine-process candidates each passed `9/9` and `1,520/1,520`; group counts, global/project/semantic/authority inventories, ownership `10 -> 10`, and the canonical five-tuple are identical. External stability SHA-256 is `6530bc6e6117feeac1776b27b31467904d80618e2006cfc142e1a0502d8c234a`.
+- The new immutable exact profile is documented in `docs/implementation/phase-3-slice-2b19b-repair-round-1-coverage-profile.md`. Only the explicit CI profile selector changes; old product/profile and CI authority are not inherited. Remaining gate is the attributed profile-only child `R1Q`, followed by separately authorized push/CI/final review.
 
 ## Explicitly unsupported
 

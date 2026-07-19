@@ -64,7 +64,7 @@
     "repairRound": 1,
     "maxRepairRounds": 2,
     "productRepairRoundConsumed": true,
-    "implementationStatus": "PRODUCT_REPAIR_ROUND_1_RUNNING",
+    "implementationStatus": "PRODUCT_REPAIR_ROUND_1_PROFILE_CHILD_RUNNING",
     "statusPath": "docs/implementation/phase-3-slice-2b19b-status.md",
     "traceabilityPath": "docs/implementation/phase-3-slice-2b19b-test-traceability.md",
     "productionFilesChanged": 6,
@@ -95,11 +95,11 @@
       "focusedTests": "7 FILES / 338 TESTS PASS",
       "fullTypecheck": "PASS",
       "fullLint": "PASS",
-      "fullOrdinaryTests": "35 FILES / 1520 TESTS PASS / 40.53S",
-      "fullCoverage": "35 FILES / 1520 TESTS PASS / 58.94S / STATEMENTS-LINES 79.17 / BRANCHES 83.26 / FUNCTIONS 97.49"
+      "fullOrdinaryTests": "35 FILES / 1520 TESTS PASS / 40.51S",
+      "fullCoverage": "35 FILES / 1520 TESTS PASS / 59.8S SHELL WALL / STATEMENTS-LINES 79.09 / BRANCHES 83.26 / FUNCTIONS 97.49"
     },
     "productImplementationCommit": "84aebe559cc9fd6d85571ec5753d4e36bdbfcb21",
-    "coverageProfileStatus": "HISTORICAL_OLD_HEAD_ONLY / REPAIR PROFILE NOT AUTHORIZED",
+    "coverageProfileStatus": "REPAIR_ROUND_1_EXACT_PROFILE_FROZEN / PROFILE_CHILD_COMMIT_PENDING",
     "coverageProfile": {
       "profileId": "phase-3-slice-2b19b-84aebe5-ownership-v2-1",
       "sourceHead": "84aebe559cc9fd6d85571ec5753d4e36bdbfcb21",
@@ -119,6 +119,36 @@
       "zeroHitBranchArms": 1799,
       "zeroHitBranchArmsSha256": "8f9427be3ed6e81b5bf818b648dc61a6601b9b67f936517c2c50fea16a7c02ef",
       "verifierMatrix": "3 NEW EXACT MATCH / OLD EXACT MATCH / ABSENT WRONG AMBIGUOUS DUPLICATE FAIL CLOSED"
+    },
+    "repairCoverageProfile": {
+      "profileId": "phase-3-slice-2b19b-274036a-ownership-v2-1",
+      "sourceHead": "274036a09b96012a1bb5ddb08eabab9e6ad84214",
+      "sourceKind": "REPAIR_ROUND_1_STABLE_NINE_PROCESS_BASELINE",
+      "topology": "NINE_PROCESS_COVERAGE_OWNERSHIP_V2_1",
+      "candidateRuns": 3,
+      "candidateResult": "3 OF 3 / 9 OF 9 SHARDS / 1520 OF 1520 TESTS / ZERO FAILURES",
+      "groupTests": "207 / 357 / 456 / 90 / 52 / 73 / 20 / 26 / 239",
+      "stabilityEvidencePath": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\2b19b-274036a-repair1\\three-candidate-stability.md",
+      "stabilityEvidenceSha256": "6530bc6e6117feeac1776b27b31467904d80618e2006cfc142e1a0502d8c234a",
+      "repositoryEvidencePath": "docs/implementation/phase-3-slice-2b19b-repair-round-1-coverage-profile.md",
+      "manifestSha256": [
+        "17f10b0b4c27d4475502dcc7abcc42510803a7597e994fae0d39d390f21153a8",
+        "6b713bbacac9fb7f56f37a1e841a33705cc10bdafaced15727fb4dc4abc7e076",
+        "426c9ecb6f6f213c0c60b9c699ce79b01c9d58252bd872a18c7ea61c937ef507"
+      ],
+      "sourceFiles": 63,
+      "sourceFilesSha256": "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691",
+      "zeroHitStatements": 3204,
+      "zeroHitStatementsSha256": "aa2a04c353a155cf09b64abf887e404e22f639ed9179ca7c3daaf1b18dec3f70",
+      "zeroHitFunctions": 23,
+      "zeroHitFunctionsSha256": "1bd2399498399a94848b2fc51a717fa9cd89c6429a09d6d97ce87f7f6f274c1e",
+      "zeroHitLines": 3204,
+      "zeroHitLinesSha256": "f531da265036cb033c62e09249d6e899993333148b0e4b9bb9487cb447d30a75",
+      "zeroHitBranchArms": 1799,
+      "zeroHitBranchArmsSha256": "8f9427be3ed6e81b5bf818b648dc61a6601b9b67f936517c2c50fea16a7c02ef",
+      "ownership": "10 TO 10 / REMOVED 0 / GLOBAL 684c9186...150f / PROJECT 92bcddf3...32c8 / SEMANTIC 8121c6d1...482 / AUTHORITY e7e88b9d...e81",
+      "historicalTupleMatch": "OLD 84aebe5 PROFILE MATCHES OBLIGATION TUPLE ONLY / OLD SOURCE HEAD IS NOT REPAIR SOURCE-HEAD AUTHORITY",
+      "verifierMatrix": "3 NEW EXACT MATCH / OLD EXACT MATCH / MISSING WRONG AMBIGUOUS DUPLICATE FAIL CLOSED"
     },
     "finalReviewRound1": {
       "path": "docs/implementation/phase-3-slice-2b19b-final-review-round-1.md",
@@ -141,7 +171,7 @@
       ]
     },
     "productRepairRound1": {
-      "status": "LOCAL_BLOCKERS_CLOSED_ALL_FOUR_GATES_PASS_PENDING_COMMIT",
+      "status": "R1P_COMMITTED / EXACT_REPAIR_PROFILE_FROZEN / PROFILE_CHILD_ALL_GATES_PASS_PENDING_COMMIT",
       "scope": "TESTS_TRACEABILITY_OWNERSHIP_CONTROL_DOCS_ONLY",
       "productionChanged": false,
       "coverageProfileChanged": false,
@@ -158,12 +188,13 @@
         "F06_STALE_CONTROL_AND_PR_CI_METADATA"
       ],
       "oldCIAuthority": "29683875777 AND 29683914351 APPLY ONLY TO 5256216b22e62dbb992d1a678dfc9c597b5227c7",
-      "repairHeadCI": "NONE / REPAIR COMMIT NOT YET CREATED"
+      "repairProductHead": "274036a09b96012a1bb5ddb08eabab9e6ad84214",
+      "repairHeadCI": "NONE / REPAIR PRODUCT AND PROFILE CHILD HAVE NOT BEEN PUSHED"
     },
     "phase2CStarted": false,
     "remainingBlockers": [
-      "PENDING_ATTRIBUTED_PRODUCT_REPAIR_COMMIT",
-      "PENDING_SEPARATE_PROFILE_REFRESH_AUTHORIZATION"
+      "PENDING_ATTRIBUTED_REPAIR_PROFILE_CHILD_COMMIT",
+      "PENDING_REPAIR_HEAD_PUSH_CI_AND_FRESH_FINAL_REVIEW"
     ]
   },
   "slice2B19A3BGate": {
@@ -672,7 +703,7 @@
   },
   "reviewedHead": "5256216b22e62dbb992d1a678dfc9c597b5227c7",
   "currentReviewHeadAuthority": "The complete independent PR #41 final review is bound only to reviewed HEAD 5256216b22e62dbb992d1a678dfc9c597b5227c7 and returned CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED with six exact blockers. Any repair commit invalidates its CI and requires new exact-head CI plus fresh complete independent review.",
-  "exactHeadCIAuthority": "Push CI 29683875777 and PR CI 29683914351 are SUCCESS / 22 of 22 only for reviewed HEAD 5256216b22e62dbb992d1a678dfc9c597b5227c7. No CI result exists yet for the pending Product Repair Round 1 commit.",
+  "exactHeadCIAuthority": "Push CI 29683875777 and PR CI 29683914351 are SUCCESS / 22 of 22 only for obsolete reviewed HEAD 5256216b22e62dbb992d1a678dfc9c597b5227c7. No CI result exists for repair product R1P 274036a09b96012a1bb5ddb08eabab9e6ad84214 or its pending profile-only child R1Q.",
   "currentFeatureHead": "5256216b22e62dbb992d1a678dfc9c597b5227c7",
   "repairRound": 1,
   "designRound": 2,
@@ -2007,8 +2038,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-19T15:21:53+08:00",
-  "lastAction": "Closed all six immutable Product Repair Round 1 findings F01-F06 locally using only tests, traceability, ownership metadata, control/status documents, and the verbatim review artifact. Focused tests, ownership self-test, formal inventory, typecheck, lint, ordinary tests, and coverage all pass; production semantics, the old exact profile, and the CI selector remain unchanged. The attributed repair commit is pending and no repair-head profile or CI authority is claimed.",
+  "lastAction": "Committed Product Repair Round 1 as exact R1P 274036a09b96012a1bb5ddb08eabab9e6ad84214, ran three fresh complete exact-R1P nine-process candidates with stability SHA-256 6530bc6e6117feeac1776b27b31467904d80618e2006cfc142e1a0502d8c234a, and materialized the exact repair profile plus single CI selector token. New exact 3 of 3 and old exact verification pass; missing, wrong, ambiguous and duplicate selectors fail closed. Ownership self-test 22 of 22, formal inventory, typecheck, lint, ordinary tests and coverage all pass; only the attributed profile-child commit remains before the mandated no-push stop.",
   "lastError": null,
   "requiredNextAction": "IMPLEMENT_2B19B_PRODUCT_REPAIR_ROUND_1_TEST_EVIDENCE_ONLY",
-  "nextAction": "CREATE_ATTRIBUTED_2B19B_PRODUCT_REPAIR_ROUND_1_COMMIT_THEN_STOP_FOR_SEPARATE_PROFILE_REFRESH_AUTHORIZATION"
+  "nextAction": "CREATE_ATTRIBUTED_2B19B_REPAIR_PROFILE_CHILD_R1Q_THEN_STOP_WITHOUT_PUSH"
 }
