@@ -1696,7 +1696,7 @@ describe("private knowledge projections", () => {
     expect(JSON.stringify(aiView)).not.toContain("goodTwinPlayer");
   });
 
-  it("[2B19A3B1-C30-PROJECTION][2B19A3A-C03][2B19A2-C24] projects settled V1 DREAMER_INFORMATION only to the source player", () => {
+  it("[2B19A3A-C03][2B19A2-C24] projects settled V1 DREAMER_INFORMATION only to the source player", () => {
     const state = stateWithDreamerInformation();
     const delivery = state.dreamerInformation?.deliveries[0];
     if (delivery === undefined) {

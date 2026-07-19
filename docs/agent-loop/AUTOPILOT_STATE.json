@@ -97,7 +97,7 @@
   },
   "slice2B19A3B1Gate": {
     "authorization": "USER_AUTHORIZED_2B19A3B_RESLICE_TO_CORE_AND_DEFER_COMBINED_MATHEMATICIAN_INTEGRATION",
-    "status": "REPAIR_ROUND_1_REPOSITORY_GATES_PASS_PENDING_PR_BODY_AND_EXACT_HEAD_CI",
+    "status": "REPAIR_ROUND_1_OWNERSHIP_AMBIGUITY_CLOSED_PENDING_FRESH_PROFILE_AND_PR_BODY",
     "title": "Canonical Drunk Dreamer Vortox Core",
     "scopeMode": "CANONICAL_DRUNK_BASE_DREAMER_VORTOX_CORE",
     "coverageTarget": "PARTIAL / CANONICAL_DRUNK_VORTOX_CORE_ONLY",
@@ -132,7 +132,7 @@
       "criteria": 60,
       "dynamicBindings": 58,
       "supportingAuthorities": 4,
-      "verification": "PASS"
+      "verification": "TRACEABILITY_PARSER_PASS_WITH_DYNAMIC_CANDIDATE_BASELINE / 60 OF 60 / 58 DYNAMIC / 4 SUPPORT / UNIQUE C30 PROJECTION AUTHORITY"
     },
     "focusedTests": "7 projects / 542 tests PASS",
     "ownershipVerification": "registry load PASS / verifier self-test 22/22 PASS",
@@ -204,7 +204,7 @@
       ]
     },
     "repairRound1Repository": {
-      "status": "LOCAL_GATES_PASS",
+      "status": "OWNERSHIP_AMBIGUITY_CLOSED_PENDING_FRESH_PROFILE_AND_PR_BODY",
       "productionFilesChanged": 0,
       "testFilesChanged": [
         "packages/application/src/game-application-service.test.ts",
@@ -225,7 +225,18 @@
       "lint": "PASS",
       "ordinaryTests": "35 files / 1499 tests PASS / 28.09s",
       "coverage": "35 files / 1499 tests PASS / 42.8s / statements-lines 79.04 / branches 82.72 / functions 97.46",
-      "commit": "PENDING_CURRENT_REPAIR_COMMIT",
+      "ownershipAmbiguity": {
+        "profileCandidateRun1": "FAIL_CLOSED / TRACEABILITY_BINDING_NOT_UNIQUE",
+        "repair": "Removed only redundant [2B19A3B1-C30-PROJECTION] from the mixed legacy V1 title; body and assertions unchanged",
+        "canonicalAuthority": "Independent [2B19A3B1-C30-PROJECTION] V2/V3 projection test remains the C30 binding",
+        "focusedProjection": "1 file / 84 tests PASS",
+        "ownershipRegistryLoad": "PASS / A3A and A3B1 ACTIVE",
+        "ownershipSelfTest": "22/22 PASS",
+        "traceabilityParser": "PASS WITH DYNAMIC CANDIDATE BASELINE / 60 OF 60 / 58 DYNAMIC / 4 SUPPORT / 6 UNIQUE OWNER TESTS",
+        "acceptedRegistryAndProfileChanged": false,
+        "disposition": "CLOSED_PENDING_FRESH_REPAIRED_HEAD_PROFILE"
+      },
+      "commit": "f523f7c4457cc52261044323a4db9634879c8ddb / REPAIR AUTHORITY; PENDING_OWNERSHIP_MICROFIX_COMMIT",
       "push": false,
       "prBodyUpdated": false,
       "newExactHeadCI": null,
@@ -343,7 +354,7 @@
   "reviewedHead": "17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d",
   "currentReviewHeadAuthority": "Complete independent PR #40 final review round 1 remains immutable history bound only to pre-repair HEAD 17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d. It cannot authorize the pending Repair Round 1 commit or any later HEAD.",
   "exactHeadCIAuthority": "Push CI 29650271580 and PR CI 29650302623 are historical evidence only for pre-repair HEAD 17472c7d2ac3d7bd52f5a9f0713fcd94b2f5f78d. Fresh exact-head CI is mandatory after the Repair Round 1 commit.",
-  "currentFeatureHead": "PENDING_REPAIR_ROUND_1_COMMIT",
+  "currentFeatureHead": "PENDING_REPAIR_ROUND_1_OWNERSHIP_MICROFIX_COMMIT",
   "repairRound": 1,
   "designRound": 2,
   "maxDesignRounds": 2,
@@ -370,7 +381,7 @@
     "ruleSemanticsChanged": false
   },
   "scopeMode": "CANONICAL_DRUNK_BASE_DREAMER_VORTOX_CORE",
-  "sliceCoverage": "PARTIAL / CANONICAL_DRUNK_VORTOX_CORE_ONLY / REPAIR_ROUND_1_REPOSITORY_GATES_PASS",
+  "sliceCoverage": "PARTIAL / CANONICAL_DRUNK_VORTOX_CORE_ONLY / REPAIR_ROUND_1_OWNERSHIP_AMBIGUITY_CLOSED_PENDING_FRESH_PROFILE",
   "dreamerRoleCoverage": "PARTIAL",
   "governancePrecheck": "GO",
   "governancePrecheckPath": "docs/architecture/2B19A3B1-go-no-go-under-governance-v1.md",
@@ -1671,8 +1682,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-18T21:45:00+08:00",
-  "lastAction": "Closed repository blockers F01-F03 with physical tests and exact traceability; all focused, ownership, typecheck, lint, ordinary, and coverage gates pass locally without production changes.",
+  "lastAction": "Closed the sole profile candidate-run-1 ownership ambiguity by removing only the redundant A3B1 C30 marker from the mixed legacy projection title; focused projection, registry load, self-test, candidate-baseline traceability parser, typecheck, and lint pass.",
   "lastError": "F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI",
-  "requiredNextAction": "CREATE_REPAIR_ROUND_1_COMMIT_THEN_RECONCILE_PR_BODY_AND_RUN_NEW_EXACT_HEAD_CI",
-  "nextAction": "CREATE_REPAIR_ROUND_1_COMMIT_THEN_RECONCILE_PR_BODY_AND_RUN_NEW_EXACT_HEAD_CI"
+  "requiredNextAction": "CREATE_OWNERSHIP_MICROFIX_COMMIT_THEN_RUN_FRESH_REPAIRED_HEAD_PROFILE_AND_RECONCILE_PR_BODY",
+  "nextAction": "CREATE_OWNERSHIP_MICROFIX_COMMIT_THEN_RUN_FRESH_REPAIRED_HEAD_PROFILE_AND_RECONCILE_PR_BODY"
 }
