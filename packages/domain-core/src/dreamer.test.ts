@@ -1455,7 +1455,7 @@ describe("Phase 3 Slice 2B19B gained Dreamer target and delivery contracts", () 
     roleTenures: facts.roleTenures
   });
 
-  it("[2B19B-C07/C08/C21/C22/C23/C24/C25/C26/C27/C28/C29/C55/C56-S07/S08/S09/S10/S11/S13/S16] validates exact V3/V5/V6 payloads and deterministic native categories", () => {
+  it("[2B19B-C55/C56-S07/S08/S09/S10/S11/S13/S16] validates exact V3/V5/V6 payload shapes and native categories", () => {
     const normalGood = gainedDreamerFacts(false, flowergirlRole);
     const normalEvil = gainedDreamerFacts(false, witchRole);
     const vortoxGood = gainedDreamerFacts(true, flowergirlRole);
@@ -1533,7 +1533,52 @@ describe("Phase 3 Slice 2B19B gained Dreamer target and delivery contracts", () 
     })).toThrowError(DomainError);
   });
 
-  it("[2B19B-C19/C20] uses settlement-time target truth and rejects a represented Traveller policy input", () => {
+  it("[2B19B-C27/C28] selects deterministic gained roles independently of catalog insertion order", () => {
+    const canonical = gainedDreamerFacts(true, flowergirlRole);
+    const reversedSetup = setup([...canonical.setup.roleCatalogSnapshot.roles].reverse());
+    const reversed = createPhilosopherGainedDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      targetChoice: canonical.choice,
+      setup: reversedSetup,
+      currentCharacterState: canonical.state,
+      capability: canonical.capability
+    });
+    expect([reversed.goodRole, reversed.evilRole]).toStrictEqual([
+      canonical.delivery.goodRole,
+      canonical.delivery.evilRole
+    ]);
+  });
+
+  it("[2B19B-C29] rejects a starved native role category instead of inventing a pair", () => {
+    const facts = gainedDreamerFacts(false, flowergirlRole);
+    expect(() => createPhilosopherGainedDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      targetChoice: facts.choice,
+      setup: setup([philosopherRole, dreamerRole, flowergirlRole]),
+      currentCharacterState: facts.state,
+      capability: facts.capability
+    })).toThrowError(DomainError);
+  });
+
+  it("[2B19B-S20] statically forbids nondeterministic Dreamer primitives and requires stable sorting", () => {
+    const source = readFileSync(new URL("./dreamer.ts", import.meta.url), "utf8");
+    for (const forbidden of [
+      "localeCompare",
+      "Intl.Collator",
+      "Date.now",
+      "Math.random",
+      "randomUUID",
+      "crypto.randomUUID",
+      "uuidv4",
+      "uuid.v4"
+    ]) {
+      expect(source, forbidden).not.toContain(forbidden);
+    }
+    expect(source).toContain(".sort(compareRoleId)");
+    expect(source).toMatch(/\.sort\(\(left, right\) => compareStableId\(/u);
+  });
+
+  it("[2B19B-C19] rejects a represented Traveller policy input at the pure seam", () => {
     const opened = gainedDreamerFacts(false, flowergirlRole);
     const changedState: CurrentCharacterStateSet = {
       revision: 2,
@@ -1606,7 +1651,7 @@ describe("Phase 3 Slice 2B19B gained Dreamer target and delivery contracts", () 
     })).toThrowError(DomainError);
   });
 
-  it("[2B19B-C30/C31/C32/C33/C34/C35/C36-S12] fails hostile data and unsupported capability contexts closed", () => {
+  it("[2B19B-C33/C34/C36] keeps unsupported capability contexts fail-closed at the pure seam", () => {
     const normal = gainedDreamerFacts(false);
     const vortox = gainedDreamerFacts(true);
     let getterCalls = 0;

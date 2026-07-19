@@ -6,11 +6,14 @@
 - Rule evidence: `docs/rules/evidence/2B19B.md`, SHA-256 `e1f038f32171d7cea1f89345b1cac958e30a79f47005ca444a0dc2633abe3187`, verdict `RULE_READY`, coverage `PARTIAL`
 - Final design: `docs/implementation/phase-3-slice-2b19b-design-round-2.md`, SHA-256 `f915fd4c51c21cd7d43a873cf6345bccd97462431ba6631f161ae58077ece10b`
 - Design review: `docs/implementation/phase-3-slice-2b19b-design-review-round-2.md`, SHA-256 `aa80221f77f766f6e730b3e46897a24180f7f4061917f59e9f4f3353a68d88c5`, verdict `RULE_DESIGN_PASS`
-- Design round: `2 / 2`; repair round: `0 / 2`
+- Design round: `2 / 2`; repair round: `1 / 2`
 - Role coverage: `PARTIAL`
-- Product status: `RUNNING / EXACT_PROFILE_FROZEN / PROFILE_ONLY_CHILD_PUSH_PENDING`
+- Product status: `RUNNING / PRODUCT_REPAIR_ROUND_1`
+- PR: [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41)
+- Round 1 reviewed HEAD: `5256216b22e62dbb992d1a678dfc9c597b5227c7`
+- Immutable final review: `docs/implementation/phase-3-slice-2b19b-final-review-round-1.md`, canonical UTF-8 LF SHA-256 `d4fc89843939153a5562e42a0a5425010988257340bd974bdf9e324db8247e97`, `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`
 - Product commit `P`: `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`
-- Exact coverage profile: `phase-3-slice-2b19b-84aebe5-ownership-v2-1`, source kind `PRODUCT_IMPLEMENTATION_STABLE_NINE_PROCESS_BASELINE`, topology `NINE_PROCESS_COVERAGE_OWNERSHIP_V2_1`
+- Historical exact coverage profile: `phase-3-slice-2b19b-84aebe5-ownership-v2-1`, authority only for product `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`; no repair-head profile is authorized or claimed.
 
 ## Implemented behavior
 
@@ -39,27 +42,34 @@ No event type, event version, `GameState` field, evidence-union member, workflow
 
 - Traceability: `docs/implementation/phase-3-slice-2b19b-test-traceability.md`; exactly `C01-C60` and `S01-S20`, 80/80 rows, 78 dynamic bindings, and ten supporting authorities.
 - Active marker: `[2B19B-`; unique owner: `application-service-dreamer-vortox`.
-- Exact 2B19B inventory: three semantic tests and three owner executions; every legacy application-service shard owns zero.
-- Project/current inventory SHA-256: `29842f323daadfd182150229b5abedaea335e9fdf051ce19e6011795f7562890`.
-- Semantic inventory SHA-256: `58809068381d2ba741279abb45b1408800413abbd9a11813eb36b7734e34ed4b`.
-- Authority inventory SHA-256: `a74b71853434c3a44ddd9ce957e05af2aa758f627591107169cb34276e6356e7`.
+- Exact 2B19B inventory: ten semantic tests, `10 -> 10` owner executions, and zero removed duplicates; every legacy application-service shard owns zero.
+- Project/current inventory SHA-256: `92bcddf3603962ff040338874429f43b98f711a0dd4fa02adfbc0ed80bec32c8`.
+- Semantic inventory SHA-256: `8121c6d14bb462f9c0dfe31750bc77890f53d600ff542b1a13450d231e42f482`.
+- Authority inventory SHA-256: `e7e88b9d6be6771d351ac8665b05dcaec305516f402d1a92655b845cba942e81`.
 - Frozen non-marker SHA-256 remains `92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c`; A3A and A3B1 records remain unchanged.
-- Fresh formal inventory: 31 physical files, 35 workspace project-file executions, 1,509 tests, nine disjoint groups, and zero missing, duplicate, unexpected, ambiguous, or wrong-owner identities.
+- Fresh formal inventory: 31 physical files, 35 workspace project-file executions, 1,520 tests, nine disjoint groups, and zero missing, duplicate, unexpected, ambiguous, wrong-owner, or multi-primary identities.
 
 ## Validation state
 
 - Targeted typecheck: `PASS`.
 - Changed-path ESLint: `PASS`.
 - Ownership self-test: `22 / 22 PASS`.
-- Formal nine-group inventory and ownership audit: `1,509 / 1,509 PASS`.
+- Formal nine-group inventory and ownership audit: `1,520 / 1,520 PASS`; 80 unique rows, all mechanism matches `PASS`, single-primary conflicts `0`.
 - Full typecheck: `PASS`.
 - Full lint: `PASS`.
-- Full ordinary tests: `35 files / 1,509 tests PASS`; `29.11s`.
-- Full coverage: `35 files / 1,509 tests PASS`; `43.58s`; statements/lines `79.24%`, branches `83.25%`, functions `97.49%`.
+- Full ordinary tests: `35 files / 1,520 tests PASS`; `40.53s`.
+- Full coverage: `35 files / 1,520 tests PASS`; `58.94s`; statements/lines `79.17%`, branches `83.26%`, functions `97.49%`.
 - Product commit `P` is frozen at `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`.
 - Three fresh complete exact-P nine-process candidates each passed `9/9` shards and `1,509/1,509` tests with identical inventory, ownership, and canonical obligation five-tuple. External stability evidence SHA-256 is `d5bdf7c35ad8b059b738c767271aa7fa881ce93b1bece015b27fba5ffcb661d8`.
 - Exact requested profile verification passes `3/3`; the old exact profile still matches its old candidate, while absent, wrong, ambiguous, and duplicate selections fail closed.
-- Profile-only child `Q` is frozen for commit. Push, PR creation/body, exact-Q CI, and complete independent final review remain pending.
+- Reviewed HEAD push CI `29683875777` and PR CI `29683914351` passed `22/22`; these results remain authority only for reviewed HEAD `5256216b22e62dbb992d1a678dfc9c597b5227c7` and are invalidated for any repair commit.
+- Product Repair Round 1 is limited to tests, traceability, ownership metadata, status/control documents, and the immutable review report. No production, profile, selector, rule, event, projection, or receipt semantic change is authorized.
+
+## Product Repair Round 1 closure
+
+- F01-F06 are closed locally by dedicated single-layer test authorities, real accepted-stream V5/V6 and settlement-revision coverage, exact frozen assertions, gained-command receipt/rebuild fault coverage, a dedicated S20 static audit, and honest old-head CI/profile scoping.
+- C58 records the real sequence: gained Dreamer settles, the intervening terminal Seamstress action is opened and accepted as `DEFER`, then Mathematician is next with no Math event, result, or count.
+- All four full local gates pass on the completed repair bytes. Remaining gates are the attributed R1P commit and separately authorized repair-head coverage candidates/profile refresh. No old CI or profile is inherited by the repair.
 
 ## Explicitly unsupported
 

@@ -22,9 +22,14 @@ import type {
 } from "./first-night-action-opportunity.js";
 import {
   formatBaseFirstNightAbilityInstanceId,
-  formatPhilosopherGainedV2AbilityInstanceId
+  formatPhilosopherGainedV2AbilityInstanceId,
+  parseFirstNightAbilityInstanceId
 } from "./first-night-ability-outcome-ledger.js";
 import { actionOpportunityId, grantedAbilityId, playerId, roleId, scheduledTaskId } from "./ids.js";
+import {
+  formatPhilosopherGainedFirstNightTaskIdV2,
+  formatPhilosopherGrantId
+} from "./philosopher-ability.js";
 import { seatNumber } from "./player-roster.js";
 import { formatRoleTenureId } from "./seamstress.js";
 
@@ -313,7 +318,41 @@ describe("base Dreamer V3 action opportunity", () => {
 });
 
 describe("Phase 3 Slice 2B19B gained Dreamer V4 opportunity contract", () => {
-  it("[2B19B-C06/C08/C10/C13/C14/C15/C55/C56-S01/S02/S03/S04/S05/S06/S10/S11/S13/S16] accepts only the exact closed V4 chain", () => {
+  it("[2B19B-C04/C05/C11] round-trips canonical gained task, grant, and ability identities", () => {
+    const formattedTaskId = formatPhilosopherGainedFirstNightTaskIdV2({
+      taskType: "DREAMER_ACTION",
+      sourceSeatNumber: seatNumber(1),
+      chosenRoleId: roleId("dreamer")
+    });
+    const formattedGrantId = formatPhilosopherGrantId({
+      sourceSeatNumber: seatNumber(1),
+      chosenRoleId: roleId("dreamer")
+    });
+    const formattedAbilityId = formatPhilosopherGainedV2AbilityInstanceId({
+      taskId: formattedTaskId,
+      grantId: formattedGrantId
+    });
+
+    expect(formattedTaskId).toBe(gainedTaskId);
+    expect(formattedGrantId).toBe(dreamerGrantId);
+    expect(parseFirstNightAbilityInstanceId(formattedAbilityId)).toStrictEqual({
+      valid: true,
+      canonicalId: formattedAbilityId,
+      kind: "PHILOSOPHER_GAINED_TASK_V2",
+      taskId: formattedTaskId,
+      grantId: formattedGrantId,
+      generation: "V2",
+      taskType: "DREAMER_ACTION",
+      embeddedSeat: 1,
+      embeddedRoleId: "dreamer"
+    });
+    expect(parseFirstNightAbilityInstanceId(formatPhilosopherGainedV2AbilityInstanceId({
+      taskId: formattedTaskId,
+      grantId: grantedAbilityId("philosopher-grant-v1:seat-02:from-dreamer")
+    }))).toMatchObject({ valid: false });
+  });
+
+  it("[2B19B-C06/C08/C55/C56-S01/S02/S03/S04/S05/S06/S10/S11/S13/S16] accepts only the exact closed V4 chain", () => {
     const base = canonicalV4();
     expect(valid(base)).toBe(true);
     expect(valid({ ...base, opportunityStatus: "CLOSED" })).toBe(true);
