@@ -1,17 +1,30 @@
 import { describe, expect, it } from "vitest";
 import {
   DREAMER_BASE_SOURCE_CONTRACT_VERSION,
+  DREAMER_PHILOSOPHER_GAINED_SOURCE_CONTRACT_VERSION,
   DREAMER_V2_OPPORTUNITY_SCHEMA_VERSION,
   DREAMER_V2_VISIBILITY_SCHEMA_VERSION,
   DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION,
   DREAMER_V3_VISIBILITY_SCHEMA_VERSION,
+  DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION,
+  DREAMER_V4_VISIBILITY_SCHEMA_VERSION,
+  cloneFirstNightActionOpportunityState,
   formatBaseDreamerV2FirstNightActionOpportunityId,
+  hasExactPhilosopherGainedDreamerSourceContractV1Shape,
   parseBaseDreamerV2FirstNightActionOpportunityId,
+  sameOpportunityCore,
   validateFirstNightActionOpportunityStateShape
 } from "./first-night-action-opportunity.js";
-import type { DreamerActionOpportunityV2, DreamerActionOpportunityV3 } from "./first-night-action-opportunity.js";
-import { formatBaseFirstNightAbilityInstanceId } from "./first-night-ability-outcome-ledger.js";
-import { playerId, roleId, scheduledTaskId } from "./ids.js";
+import type {
+  DreamerActionOpportunityV2,
+  DreamerActionOpportunityV3,
+  DreamerActionOpportunityV4
+} from "./first-night-action-opportunity.js";
+import {
+  formatBaseFirstNightAbilityInstanceId,
+  formatPhilosopherGainedV2AbilityInstanceId
+} from "./first-night-ability-outcome-ledger.js";
+import { actionOpportunityId, grantedAbilityId, playerId, roleId, scheduledTaskId } from "./ids.js";
 import { seatNumber } from "./player-roster.js";
 import { formatRoleTenureId } from "./seamstress.js";
 
@@ -22,6 +35,11 @@ const dreamerRole = {
   defaultAlignment: "GOOD",
   edition: "sects-and-violets",
   setupModifier: { outsiderDelta: 0, townsfolkDelta: 0 }
+} as const;
+
+const philosopherRole = {
+  ...dreamerRole,
+  roleId: roleId("philosopher")
 } as const;
 
 const canonicalV3 = (): DreamerActionOpportunityV3 => ({
@@ -75,6 +93,93 @@ const canonicalV2 = (): DreamerActionOpportunityV2 => {
 };
 
 const valid = (value: unknown): boolean => validateFirstNightActionOpportunityStateShape({ opportunities: [value] }).valid;
+
+const gainedTaskId = scheduledTaskId("first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-01:from-dreamer");
+const philosopherOpportunityId = actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-01:opportunity-01");
+const dreamerGrantId = grantedAbilityId("philosopher-grant-v1:seat-01:from-dreamer");
+const gainedAbilityInstanceId = formatPhilosopherGainedV2AbilityInstanceId({
+  taskId: gainedTaskId,
+  grantId: dreamerGrantId
+});
+
+const canonicalV4 = (): DreamerActionOpportunityV4 => ({
+  opportunitySchemaVersion: DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION,
+  nightNumber: 1,
+  opportunityId: actionOpportunityId(`${gainedTaskId}:opportunity-01`),
+  opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V4",
+  opportunityStatus: "OPEN",
+  taskId: gainedTaskId,
+  taskType: "DREAMER_ACTION",
+  sourcePlayerId: playerId("philosopher-player"),
+  sourceSeatNumber: seatNumber(1),
+  sourceRole: philosopherRole,
+  sourceCharacterStateRevision: 1,
+  sourceContract: {
+    sourceContractVersion: DREAMER_PHILOSOPHER_GAINED_SOURCE_CONTRACT_VERSION,
+    kind: "PHILOSOPHER_GAINED_V2",
+    taskPlanVersion: "first-night-task-plan-v2",
+    schedulingVersion: "philosopher-gained-first-night-scheduling-v2",
+    taskId: gainedTaskId,
+    taskType: "DREAMER_ACTION",
+    taskSourceKind: "PHILOSOPHER_GAINED_ABILITY",
+    sourcePlayerId: playerId("philosopher-player"),
+    sourceSeatNumber: seatNumber(1),
+    sourceRoleId: "philosopher",
+    chosenRoleId: "dreamer",
+    sourceRoleTenureId: formatRoleTenureId({
+      seatNumber: seatNumber(1),
+      roleId: "philosopher",
+      acquiredCharacterStateRevision: 1
+    }),
+    sourceCharacterStateRevision: 1,
+    philosopherOpportunityId,
+    grantId: dreamerGrantId,
+    sourceAbilityInstanceId: gainedAbilityInstanceId,
+    abilityInstance: {
+      provenanceVersion: "first-night-ability-instance-provenance-v1",
+      kind: "PHILOSOPHER_GAINED_TASK_V2",
+      abilityInstanceId: gainedAbilityInstanceId,
+      abilityRoleId: "dreamer",
+      taskId: gainedTaskId,
+      sourcePlayerId: playerId("philosopher-player"),
+      sourceSeatNumber: seatNumber(1),
+      philosopherOpportunityId,
+      grantId: dreamerGrantId,
+      sourceCharacterStateRevision: 1,
+      schedulingVersion: "philosopher-gained-first-night-scheduling-v2"
+    },
+    grantReference: {
+      kind: "PHILOSOPHER_GRANT_V1",
+      grantId: dreamerGrantId,
+      philosopherOpportunityId,
+      sourcePlayerId: playerId("philosopher-player"),
+      sourceSeatNumber: seatNumber(1),
+      sourceRoleId: "philosopher",
+      chosenRoleId: "dreamer",
+      sourceCharacterStateRevision: 1
+    },
+    taskInsertionReference: {
+      kind: "FIRST_NIGHT_TASK_INSERTION_V2",
+      taskId: gainedTaskId,
+      taskPlanVersion: "first-night-task-plan-v2",
+      schedulingVersion: "philosopher-gained-first-night-scheduling-v2",
+      philosopherOpportunityId,
+      grantId: dreamerGrantId,
+      sourcePlayerId: playerId("philosopher-player"),
+      sourceSeatNumber: seatNumber(1),
+      sourceRoleId: "philosopher",
+      chosenRoleId: "dreamer",
+      sourceCharacterStateRevision: 1
+    }
+  },
+  visibility: {
+    visibilitySchemaVersion: DREAMER_V4_VISIBILITY_SCHEMA_VERSION,
+    canChooseTarget: true,
+    supportedDecisionKinds: ["CHOOSE_PLAYER"],
+    futureUnsupportedDecisionKinds: [],
+    targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER"
+  }
+});
 
 describe("base Dreamer V3 action opportunity", () => {
   it("[2B19A2-C04] enforces the exact closed V3 opportunity, visibility, and source-contract shape", () => {
@@ -204,5 +309,144 @@ describe("base Dreamer V3 action opportunity", () => {
       "first-night-v1:DREAMER_ACTION:seat-01:opportunity-01",
       " first-night-v2:DREAMER_ACTION:seat-01:opportunity-01"
     ]) expect(parseBaseDreamerV2FirstNightActionOpportunityId(alias)).toMatchObject({ valid: false });
+  });
+});
+
+describe("Phase 3 Slice 2B19B gained Dreamer V4 opportunity contract", () => {
+  it("[2B19B-C06/C08/C10/C13/C14/C15/C55/C56-S01/S02/S03/S04/S05/S06/S10/S11/S13/S16] accepts only the exact closed V4 chain", () => {
+    const base = canonicalV4();
+    expect(valid(base)).toBe(true);
+    expect(valid({ ...base, opportunityStatus: "CLOSED" })).toBe(true);
+    expect(Object.keys(base)).toHaveLength(13);
+    expect(Object.keys(base.sourceContract)).toHaveLength(19);
+    expect(Object.keys(base.sourceContract.abilityInstance)).toHaveLength(11);
+    expect(Object.keys(base.sourceContract.grantReference)).toHaveLength(8);
+    expect(Object.keys(base.sourceContract.taskInsertionReference)).toHaveLength(11);
+    expect(Object.keys(base.visibility)).toHaveLength(5);
+    expect(hasExactPhilosopherGainedDreamerSourceContractV1Shape(base.sourceContract)).toBe(true);
+
+    for (const key of Object.keys(base)) {
+      const missing = structuredClone(base) as unknown as Record<string, unknown>;
+      delete missing[key];
+      expect(valid(missing), `opportunity.${key}`).toBe(false);
+    }
+    expect(valid({ ...base, extra: true })).toBe(false);
+
+    for (const [name, record] of [
+      ["sourceContract", base.sourceContract],
+      ["abilityInstance", base.sourceContract.abilityInstance],
+      ["grantReference", base.sourceContract.grantReference],
+      ["taskInsertionReference", base.sourceContract.taskInsertionReference],
+      ["visibility", base.visibility]
+    ] as const) {
+      for (const key of Object.keys(record)) {
+        const mutated = structuredClone(base) as unknown as Record<string, unknown>;
+        const sourceContract = mutated.sourceContract as Record<string, unknown>;
+        const target = name === "sourceContract"
+          ? sourceContract
+          : name === "visibility"
+            ? mutated.visibility as Record<string, unknown>
+            : sourceContract[name] as Record<string, unknown>;
+        delete target[key];
+        expect(valid(mutated), `${name}.${key}`).toBe(false);
+      }
+      const mutated = structuredClone(base) as unknown as Record<string, unknown>;
+      const sourceContract = mutated.sourceContract as Record<string, unknown>;
+      const target = name === "sourceContract"
+        ? sourceContract
+        : name === "visibility"
+          ? mutated.visibility as Record<string, unknown>
+          : sourceContract[name] as Record<string, unknown>;
+      target.extra = true;
+      expect(valid(mutated), `${name}.extra`).toBe(false);
+    }
+
+    for (const candidate of [
+      { ...base, opportunitySchemaVersion: DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION },
+      { ...base, opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V3" },
+      { ...base, opportunityId: actionOpportunityId(`${gainedTaskId}:opportunity-02`) },
+      { ...base, taskId: scheduledTaskId("first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-02:from-dreamer") },
+      { ...base, sourceRole: dreamerRole },
+      { ...base, sourceSeatNumber: 0 },
+      { ...base, sourceCharacterStateRevision: Number.MAX_SAFE_INTEGER + 1 },
+      { ...base, visibility: { ...base.visibility, canChooseTarget: false } },
+      { ...base, visibility: { ...base.visibility, supportedDecisionKinds: ["DEFER"] } },
+      { ...base, sourceContract: { ...base.sourceContract, kind: "BASE" } },
+      { ...base, sourceContract: { ...base.sourceContract, chosenRoleId: "artist" } },
+      { ...base, sourceContract: { ...base.sourceContract,
+        abilityInstance: { ...base.sourceContract.abilityInstance, abilityRoleId: "artist" } } },
+      { ...base, sourceContract: { ...base.sourceContract,
+        grantReference: { ...base.sourceContract.grantReference, grantId: grantedAbilityId("other") } } },
+      { ...base, sourceContract: { ...base.sourceContract,
+        taskInsertionReference: { ...base.sourceContract.taskInsertionReference,
+          philosopherOpportunityId: actionOpportunityId("other") } } }
+    ]) expect(valid(candidate)).toBe(false);
+
+    expect(valid(canonicalV3())).toBe(true);
+    expect(valid({ ...canonicalV3(), sourceContract: base.sourceContract })).toBe(false);
+    expect(valid({ ...base, sourceContract: canonicalV3().sourceContract })).toBe(false);
+  });
+
+  it("[2B19B-S12] fails closed for hostile V4 objects without invoking getters", () => {
+    const base = canonicalV4();
+    let getterCalls = 0;
+    const withAccessor = (path: "top" | "source" | "ability" | "visibility"): unknown => {
+      const value = structuredClone(base) as unknown as Record<string, unknown>;
+      const target = path === "top" ? value
+        : path === "visibility" ? value.visibility as Record<string, unknown>
+        : path === "source" ? value.sourceContract as Record<string, unknown>
+        : (value.sourceContract as Record<string, unknown>).abilityInstance as Record<string, unknown>;
+      const key = path === "top" ? "opportunityKind" : path === "visibility" ? "canChooseTarget"
+        : path === "source" ? "kind" : "abilityRoleId";
+      Object.defineProperty(target, key, { enumerable: true, get: () => {
+        getterCalls += 1;
+        throw new Error("getter");
+      } });
+      return value;
+    };
+    const throwing = new Proxy(base, { ownKeys: () => { throw new Error("proxy"); } });
+    const revoked = Proxy.revocable(base, {}); revoked.revoke();
+    const symbol = structuredClone(base);
+    Object.defineProperty(symbol, Symbol("hidden"), { enumerable: true, value: true });
+    const cycle = structuredClone(base) as unknown as Record<string, unknown>;
+    cycle.self = cycle;
+    const nonplain = Object.assign(Object.create({ inherited: true }) as object, base);
+    for (const candidate of [throwing, revoked.proxy, symbol, cycle, nonplain,
+      withAccessor("top"), withAccessor("source"), withAccessor("ability"), withAccessor("visibility")]) {
+      expect(valid(candidate)).toBe(false);
+    }
+    expect(getterCalls).toBe(0);
+  });
+
+  it("[2B19B-S14/S15] clones every nested V4 record and compares every source field", () => {
+    const base = canonicalV4();
+    const clone = cloneFirstNightActionOpportunityState({ opportunities: [base] }).opportunities[0];
+    expect(clone).toStrictEqual(base);
+    expect(clone).not.toBe(base);
+    if (clone?.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V4") throw new Error("Expected V4 clone");
+    expect(clone.sourceContract).not.toBe(base.sourceContract);
+    expect(clone.sourceContract.abilityInstance).not.toBe(base.sourceContract.abilityInstance);
+    expect(clone.sourceContract.grantReference).not.toBe(base.sourceContract.grantReference);
+    expect(clone.sourceContract.taskInsertionReference).not.toBe(base.sourceContract.taskInsertionReference);
+    expect(clone.visibility).not.toBe(base.visibility);
+    expect(sameOpportunityCore(base, clone)).toBe(true);
+
+    for (const [section, record] of [
+      ["sourceContract", base.sourceContract],
+      ["abilityInstance", base.sourceContract.abilityInstance],
+      ["grantReference", base.sourceContract.grantReference],
+      ["taskInsertionReference", base.sourceContract.taskInsertionReference]
+    ] as const) {
+      for (const key of Object.keys(record)) {
+        const mutated = structuredClone(base) as unknown as Record<string, unknown>;
+        const contract = mutated.sourceContract as Record<string, unknown>;
+        const target = section === "sourceContract" ? contract : contract[section] as Record<string, unknown>;
+        const original = target[key];
+        target[key] = typeof original === "number" ? original + 1 : `${String(original)}-mutated`;
+        expect(sameOpportunityCore(base, mutated as unknown as DreamerActionOpportunityV4), `${section}.${key}`).toBe(false);
+      }
+    }
+    const closed = { ...base, opportunityStatus: "CLOSED" } as const;
+    expect(sameOpportunityCore(base, closed)).toBe(false);
   });
 });
