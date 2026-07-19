@@ -145,3 +145,68 @@ These are diagnostic evidence only and do not count toward the successful `3/3`.
 - full ordinary with `VITEST_MAX_FORKS=1`: `35 files / 1499 tests PASS / 99.50s`;
 - full coverage with `VITEST_MAX_FORKS=1`: `35 files / 1499 tests PASS / 147.67s`, statements/lines `78.95%`, branches `82.71%`, functions `97.45%`;
 - JSON, whitespace, source-parent, and scoped-diff checks: `PASS` before commit.
+
+## Repair Round 2 Windows test-structure exact profile
+
+The original `00160fc` profile and Repair Round 1 `bf9f170` profile above remain immutable historical evidence. Repair Round 2 adds one separate exact profile for the same-title `Promise.all` test-structure source HEAD; it changes neither the frozen ownership topology nor any coverage obligation.
+
+- repair source HEAD: `c384c60add75211bd20139b9e289da8fd6e15bb5`
+- profile ID: `phase-3-slice-2b19a3b1-c384c60-repair2-ownership-v2-1`
+- source kind: `REPAIR_ROUND_2_WINDOWS_TEST_STRUCTURE_STABLE_NINE_PROCESS_BASELINE`
+- supersedes for the current topology: `phase-3-slice-2b19a3b1-bf9f170-repair1-ownership-v2-1`
+- supersession reason: `REPAIR_ROUND_2_WINDOWS_SAME_TITLE_PROMISE_ALL_PROFILE_REFRESH`
+- profile status: `EXACT_PROFILE_FROZEN_PENDING_PROFILE_ONLY_HEAD_CI`
+- environment: Node `24.15.0`, pnpm `11.7.0`, Vitest `3.2.6`, `VITEST_MAX_FORKS=1`
+
+The source HEAD preserves the exact single Seamstress test title and inventory while executing four independent actor cases with `Promise.all`. It changes no production code, fixture, ownership contract or snapshot, workspace topology, global or single-test timeout, `onTaskUpdate`, dependency, or rule semantics. Push CI `29671838025` attempts `1/2` and `2/2` on the parent HEAD timed out only that Windows test; PR CI `29671838696` passed `22/22` on the same parent.
+
+### Fresh independent Repair Round 2 candidates
+
+These three new candidates ran strictly serially from the exact `c384c60` source. No earlier profile or failed attempt is counted.
+
+| Run | Window (Asia/Shanghai) | Shards | Tests | Merged coverage SHA-256 | Inventory audit SHA-256 | Obligation discovery SHA-256 | Manifest SHA-256 |
+|---|---|---:|---:|---|---|---|---|
+| candidate-run-1 | `2026-07-19T11:59:11.4247210+08:00` to `12:02:58.2122507+08:00` | 9/9 | 1499/1499 | `b407011e404b0eaa4f0f93dd9a3b4469312a66b12b4b5707d71f9b60409a9648` | `b39a38f050d522a16a594435456e0edbd45c002c467c98e424d6be4d946961c0` | `19cfb4335ef73a73060f07966707809253f2b55edc3750659285eb3ef51c767f` | `6c75fb86f8b87518ba430650550fe27388a689919a88d5101bdc0fa12ce943b1` |
+| candidate-run-2 | `2026-07-19T12:03:43.4036832+08:00` to `12:07:32.2140007+08:00` | 9/9 | 1499/1499 | `d3c731759f91eca3e4ca94b4fe08b0ba285320b87e655bd7a29d18b1a3fffcb5` | `b39a38f050d522a16a594435456e0edbd45c002c467c98e424d6be4d946961c0` | `19cfb4335ef73a73060f07966707809253f2b55edc3750659285eb3ef51c767f` | `9a3523ec64ba20f234741b72838b91919e4d07465c9e5db52fe1a7dfcc0f61c8` |
+| candidate-run-3 | `2026-07-19T12:07:32.3607068+08:00` to `12:11:21.0178265+08:00` | 9/9 | 1499/1499 | `74f332ecf65436280d46358bd5f66132d9f6c493e1b63d44efa36914aa211390` | `b39a38f050d522a16a594435456e0edbd45c002c467c98e424d6be4d946961c0` | `19cfb4335ef73a73060f07966707809253f2b55edc3750659285eb3ef51c767f` | `54a678636ce73716c378dd5c89818420170e1e7d10cc0da633bf6acbdf066434` |
+
+Every run reports 31 physical test files, 35 workspace project-file executions, and group counts `207, 346, 456, 90, 52, 73, 20, 16, 239`. All nine groups and the global report have zero failed, missing, duplicate, unexpected, ambiguous, or wrong-owner entries.
+
+### Repair Round 2 frozen obligation five-tuple
+
+| Obligation | Count | Canonical identity SHA-256 |
+|---|---:|---|
+| sourceFiles | 63 | `f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691` |
+| zeroHitStatements | 3184 | `cfc7bc76d6a025779ddd2d1ca0937f68519a3ff10e13b2d586948d5840cd0202` |
+| zeroHitFunctions | 23 | `0b8011b10d4293987c00e4f76c2d734c481b8d9878a70e59be15913d938cad5c` |
+| zeroHitLines | 3184 | `02529a665486258e5f856799d9511752afe88a978b5dac78bf7c422affbc59bf` |
+| zeroHitBranchArms | 1773 | `d54322bb82c9e86ee67f4b2164a36cf60f4f7f04c123f025003d97a4884ee6b6` |
+
+### Repair Round 2 inventory and ownership identity
+
+- global inventory SHA-256: `c68a2e4c70b36464282d4227007da2cae95e9d91bc36cb9519aafb014f3234ef`
+- non-marker ownership SHA-256: `92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c`
+- A3B1 project inventory SHA-256: `9d8726005537db396683c3701546a85f0094b3e84ca062f1d7113a66b3eef189`
+- A3B1 semantic inventory SHA-256: `bd194c778f83c42c4bc46307f028e1a289b01c50a49c2169ce2a07c267a317f4`
+- A3B1 authority inventory SHA-256: `c42fc09726d54c1e9ea6f7d88756435340f7e329cd5fd45f00c9030979e574c6`
+- A3B1 ownership: six semantic tests, six owner-project executions, `60/60` traceability rows, 58 dynamic rows, four supporting authorities, zero mismatch
+
+### External Repair Round 2 evidence
+
+Root: `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverage-experiments\2b19a3b1-c384c60-repair2`
+
+- each `candidate-run-N` retains all nine shard blobs, nine official per-group reports, the official global merged report and coverage map, inventory audit, obligation discovery result, logs, equality evidence, and manifest;
+- `three-candidate-stability.md`, SHA-256 `792e5097c6ab11c6140f36abb7b86ac0d6e7d25abf2d80f6e83c6f7df68bcf8c`;
+- `harness-failed-pre-candidate-run-1-native-stderr` is retained but excluded because it stopped before completing shard 1 on the known PowerShell stderr harness issue;
+- all older profiles and failed attempts remain unchanged and are excluded from the new `3/3`.
+
+### Repair Round 2 profile worktree gate
+
+- exact requested-profile verifier: `3/3 COVERAGE_APPROVED_PROFILE_MATCH`; explicit requested-profile selection remains fail-closed on a mismatch even though Repair Round 1 and Round 2 intentionally share the same semantic tuple;
+- ownership registry load: `PASS`; ownership verifier self-test: `22/22 PASS`; formal inventory: `1499` tests with A3B1 `6/6 / 60/60 / 58 / 4`, non-marker `92f7e419...852c`, and zero mismatch;
+- typecheck: `PASS / 4.08s`; lint: `PASS / 10.13s`, zero warnings;
+- full ordinary with `VITEST_MAX_FORKS=1`: `35 files / 1499 tests PASS / 104.02s Vitest / 106.00s wall`;
+- full coverage with `VITEST_MAX_FORKS=1`: `35 files / 1499 tests PASS / 149.03s Vitest / 151.40s wall`, statements/lines `78.85%`, branches `82.71%`, functions `97.45%`;
+- the profile-only child may change only the approved profile registry, explicit CI profile selection, C37 traceability, profile evidence, and four control records;
+- JSON, whitespace, exact-parent, authorized-path, and scoped-diff checks are required immediately before commit;
+- fresh push/PR CI, PR-body reconciliation, and fresh independent final review remain required. No prior CI or review transfers to the profile-only child.

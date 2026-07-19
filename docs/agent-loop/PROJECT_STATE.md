@@ -1,12 +1,12 @@
 # Project State
 
-## Current gated Slice — 2B19A3B1 RUNNING / REPAIR ROUND 2 WINDOWS TEST-STRUCTURE GATES PASS
+## Current gated Slice — 2B19A3B1 RUNNING / REPAIR ROUND 2 EXACT PROFILE FROZEN
 
-- Final authorized Repair Round 2 is `RUNNING`, `repairRound=2/2`, `implementationAuthorized=true`, and `productRepairRoundConsumed=true`. F01-F03 remain closed; `F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI` is the sole remaining blocker.
-- On exact pre-Round-2 HEAD `c33e7e47d194d56506af17814504aab62925fd35`, PR CI `29671838696` passed `22/22`, while push CI `29671838025` attempts `1/2` and `2/2` each failed only the deterministic Windows job on the same existing four-actor Seamstress test's default 5-second budget.
-- A temporary `it.each` split was rejected because it changed the frozen non-marker inventory to 1502 tests. It was fully discarded without changing A3A, A3B1, registry, profile, traceability, workflow, timeout, `onTaskUpdate`, production, or rule semantics. The accepted local fix preserves the exact single title and runs its four independent actor setups concurrently with `Promise.all`.
-- Five focused commands pass in `4929 / 4963 / 4905 / 4913 / 4934ms`; compatibility passes `20/20`; the application package passes `260/260`. Formal inventory is again exactly `1499`, global hash `c68a2e4c70b36464282d4227007da2cae95e9d91bc36cb9519aafb014f3234ef`, non-marker hash `92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c`, A3B1 `6/6 / 60/60 / 58 / 4`, with every mismatch count zero and all A3A/A3B1 snapshot fields unchanged.
-- Round 2 local gates pass: typecheck; lint; ordinary `35/1499` in `29.47s`; coverage `35/1499` in `42.50s` at `78.95 / 82.71 / 97.45`. The next step is the attributed test-structure commit, then fresh exact-head profile, controller push, PR-body reconciliation, exact-head CI, and fresh independent review.
+- Final authorized Repair Round 2 is `RUNNING`, `repairRound=2/2`, `implementationAuthorized=true`, and `productRepairRoundConsumed=true`. F01-F03 and the repository-side Windows test-structure issue are closed; `F-04_PR_BODY_STALE_AFTER_EXACT_HEAD_CI` is the sole remaining blocker.
+- Exact Repair Round 2 source HEAD `c384c60add75211bd20139b9e289da8fd6e15bb5` contains the same-title `Promise.all` mechanical test structure. Parent push CI `29671838025` attempts `1/2` and `2/2` timed out only that Windows test; parent PR CI `29671838696` passed `22/22`.
+- Three fresh complete candidates each pass `9/9` shards and `1499/1499` tests with group counts `207/346/456/90/52/73/20/16/239`. Inventory `c68a2e4c...34ef`, non-marker `92f7e419...852c`, project/semantic/authority identities, A3B1 `6/6 / 60/60 / 58 / 4`, and five-tuple `63/3184/23/3184/1773` are identical in all runs with zero mismatch.
+- New exact profile `phase-3-slice-2b19a3b1-c384c60-repair2-ownership-v2-1` explicitly supersedes only the current topology selection and returns `3/3 COVERAGE_APPROVED_PROFILE_MATCH`. Older entries remain unchanged. External stability SHA-256 is `792e5097c6ab11c6140f36abb7b86ac0d6e7d25abf2d80f6e83c6f7df68bcf8c`.
+- Complete profile-head gates pass: exact verifier `3/3`; registry load; self-test `22/22`; formal inventory `1499`; typecheck; lint; ordinary `35/1499` in `104.02s`; coverage `35/1499` in `149.03s` at `78.85 / 82.71 / 97.45 / 78.85`. No production, test, fixture, ownership snapshot/topology, timeout, `onTaskUpdate`, dependency, or rule semantics changed. After the profile-only commit, the controller must push, reconcile the PR body, wait for fresh exact-head CI, and request a fresh complete independent review.
 
 ### Repair Round 1 history
 
