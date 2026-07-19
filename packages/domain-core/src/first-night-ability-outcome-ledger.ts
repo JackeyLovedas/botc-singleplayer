@@ -34,12 +34,18 @@ import type { MathematicianCount, MathematicianDeliveryId } from "./mathematicia
 import { parseRoleTenureId } from "./seamstress.js";
 import {
   DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION,
+  DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION,
   DREAMER_TARGET_CHOSEN_V2_SCHEMA_VERSION,
+  createDreamerCanonicalDrunkVortoxInformationDeliveredPayload,
   createDreamerVortoxInformationDeliveredPayload,
   resolveBaseDreamerV2NormalCapability,
   sameDreamerInformationDelivery
 } from "./dreamer.js";
-import type { DreamerInformationDeliveredPayloadV3, DreamerTargetChosenPayloadV2 } from "./dreamer.js";
+import type {
+  DreamerInformationDeliveredPayloadV3,
+  DreamerInformationDeliveredPayloadV4,
+  DreamerTargetChosenPayloadV2
+} from "./dreamer.js";
 
 export const FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION = "first-night-ability-outcome-ledger-v1" as const;
 export const FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION = "first-night-ability-outcome-audit-v1" as const;
@@ -396,7 +402,7 @@ export const validateFirstNightAbilityOutcomeFactShape = (value: unknown): Outco
     if(fact.causeKind==="VORTOX_APPLICABILITY_NOT_PROVEN"&&(!roles.some((role)=>role.roleId==="vortox")||kinds("ROLE_TENURE").some((entry)=>(entry as RoleTenureEvidence).roleId==="vortox"&&(entry as RoleTenureEvidence).statusAtEvaluation==="ACTIVE")))setValid=false;
     const impairmentEvidence=kinds("ABILITY_IMPAIRMENT") as AbilityImpairmentEvidence[];const sourceImpairmentEvidence=sourceEvent.eventType==="MathematicianInformationDelivered"?impairmentEvidence.filter((entry)=>entry.affectedPlayerId===fact.sourcePlayerId&&entry.affectedSeatNumber===fact.sourceSeatNumber):impairmentEvidence;if(fact.causeKind==="SOURCE_DRUNKENNESS"&&(sourceImpairmentEvidence.length!==1||sourceImpairmentEvidence[0]?.impairmentKind!=="DRUNK"))setValid=false;if(fact.causeKind==="SOURCE_POISONING"&&(sourceImpairmentEvidence.length!==1||sourceImpairmentEvidence[0]?.impairmentKind!=="POISONED"))setValid=false;
     const clockmaker=kinds("CLOCKMAKER_DELIVERY")[0] as ClockmakerDeliveryEvidence|undefined;if(clockmaker!==undefined){const correct=clockmaker.ruleCorrectDistance===clockmaker.selectedDistance;if((correct&&fact.outcomeStatus!=="NORMAL")||(!correct&&fact.outcomeStatus!=="ABNORMAL")||(fact.outcomeStatus==="NORMAL"&&fact.causeKind!=="NO_OTHER_CHARACTER_ABILITY"))setValid=false;}
-    const dreamer=kinds("DREAMER_DELIVERY")[0] as DreamerDeliveryEvidence|undefined;if(dreamer!==undefined){const targetRole=roleOf(dreamer.targetPlayerId);const containsTruth=targetRole!==undefined&&(targetRole.roleId===dreamer.deliveredGoodRoleId||targetRole.roleId===dreamer.deliveredEvilRoleId);if(fact.outcomeStatus==="NORMAL"&&!containsTruth)setValid=false;if(fact.outcomeStatus==="ABNORMAL"&&(containsTruth||(fact.causeKind==="VORTOX_FALSE_INFORMATION"?kinds("ABILITY_IMPAIRMENT").length!==0:kinds("ABILITY_IMPAIRMENT").length===0)))setValid=false;if(fact.outcomeStatus==="UNRESOLVED"&&!["DREAMER_VORTOX_CONSTRAINT_UNRECORDED","VORTOX_APPLICABILITY_NOT_PROVEN","CAUSE_NOT_PROVEN"].includes(fact.causeKind))setValid=false;if(fact.causeKind==="VORTOX_FALSE_INFORMATION"){const tenures=kinds("ROLE_TENURE") as RoleTenureEvidence[];const vortoxRole=roles.find((entry)=>entry.roleId==="vortox");const expectedRoleCount=vortoxRole===undefined?0:new Set([fact.sourcePlayerId,dreamer.targetPlayerId,vortoxRole.playerId]).size;if(tenures.length!==2||roles.length!==expectedRoleCount||!tenures.some((entry)=>entry.playerId===fact.sourcePlayerId&&entry.seatNumber===fact.sourceSeatNumber&&entry.roleId==="dreamer"&&entry.statusAtEvaluation==="ACTIVE")||vortoxRole===undefined||!tenures.some((entry)=>entry.playerId===vortoxRole.playerId&&entry.seatNumber===vortoxRole.seatNumber&&entry.roleId==="vortox"&&entry.statusAtEvaluation==="ACTIVE"))setValid=false;}}
+    const dreamer=kinds("DREAMER_DELIVERY")[0] as DreamerDeliveryEvidence|undefined;if(dreamer!==undefined){const targetRole=roleOf(dreamer.targetPlayerId);const containsTruth=targetRole!==undefined&&(targetRole.roleId===dreamer.deliveredGoodRoleId||targetRole.roleId===dreamer.deliveredEvilRoleId);const dreamerImpairments=kinds("ABILITY_IMPAIRMENT") as AbilityImpairmentEvidence[];const invalidAbnormalEvidence=fact.causeKind==="VORTOX_FALSE_INFORMATION"?(dreamerImpairments.length>1||dreamerImpairments.some((entry)=>entry.impairmentKind!=="DRUNK")):dreamerImpairments.length===0;if(fact.outcomeStatus==="NORMAL"&&!containsTruth)setValid=false;if(fact.outcomeStatus==="ABNORMAL"&&(containsTruth||invalidAbnormalEvidence))setValid=false;if(fact.outcomeStatus==="UNRESOLVED"&&!["DREAMER_VORTOX_CONSTRAINT_UNRECORDED","VORTOX_APPLICABILITY_NOT_PROVEN","CAUSE_NOT_PROVEN"].includes(fact.causeKind))setValid=false;if(fact.causeKind==="VORTOX_FALSE_INFORMATION"){const tenures=kinds("ROLE_TENURE") as RoleTenureEvidence[];const vortoxRole=roles.find((entry)=>entry.roleId==="vortox");const expectedRoleCount=vortoxRole===undefined?0:new Set([fact.sourcePlayerId,dreamer.targetPlayerId,vortoxRole.playerId]).size;if(tenures.length!==2||roles.length!==expectedRoleCount||!tenures.some((entry)=>entry.playerId===fact.sourcePlayerId&&entry.seatNumber===fact.sourceSeatNumber&&entry.roleId==="dreamer"&&entry.statusAtEvaluation==="ACTIVE")||vortoxRole===undefined||!tenures.some((entry)=>entry.playerId===vortoxRole.playerId&&entry.seatNumber===vortoxRole.seatNumber&&entry.roleId==="vortox"&&entry.statusAtEvaluation==="ACTIVE"))setValid=false;}}
     const seamstress=kinds("SEAMSTRESS_DELIVERY")[0] as SeamstressDeliveryEvidence|undefined;if(seamstress!==undefined){const correct=seamstress.ruleCorrectAnswer===seamstress.deliveredAnswer;if((correct&&fact.outcomeStatus!=="NORMAL")||(!correct&&fact.outcomeStatus!=="ABNORMAL"))setValid=false;}
     const mathematician=kinds("MATHEMATICIAN_DELIVERY")[0] as MathematicianDeliveryEvidence|undefined;if(mathematician!==undefined){
       const correct=mathematician.trueCount===mathematician.selectedCount;
@@ -472,25 +478,31 @@ type HistoricalVortoxApplicability={readonly kind:"NONE"}|{readonly kind:"PROVEN
 const historicalVortoxApplicability=(state:GameState,revision:number):HistoricalVortoxApplicability=>{
   const current=state.currentCharacterState?.entries.filter((entry)=>entry.role.roleId==="vortox")??[];if(current.length===0)return {kind:"NONE"};if(current.length!==1)return {kind:"UNRESOLVED"};const entry=current[0]!;const tenures=state.seamstressRoleTenureState?.records.filter((record)=>record.roleId==="vortox"&&record.playerId===entry.playerId&&record.seatNumber===entry.seatNumber&&record.acquiredCharacterStateRevision<=revision&&(record.endedCharacterStateRevision===undefined||record.endedCharacterStateRevision>revision))??[];return tenures.length===1&&tenures[0]!==undefined?{kind:"PROVEN",playerId:entry.playerId,seatNumber:entry.seatNumber,tenureId:tenures[0].roleTenureId}:{kind:"UNRESOLVED",playerId:entry.playerId};
 };
-const validateCanonicalDreamerVortoxDelivery=(state:GameState,delivery:DreamerInformationDeliveredPayloadV3):void=>{
+const validateCanonicalDreamerVortoxDelivery=(state:GameState,delivery:DreamerInformationDeliveredPayloadV3|DreamerInformationDeliveredPayloadV4):void=>{
   const opportunity=state.firstNightActionOpportunities?.opportunities.find((entry)=>entry.opportunityId===delivery.opportunityId);
   if(opportunity===undefined||!isDreamerActionOpportunityV3(opportunity)||state.firstNightTaskPlan===undefined||
     state.firstNightActionOpportunities===undefined||state.currentCharacterState===undefined||state.setup===undefined||
-    state.seamstressRoleTenureState===undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","V3 Dreamer delivery requires complete canonical V3 source state");
+    state.seamstressRoleTenureState===undefined)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Versioned Vortox Dreamer delivery requires complete canonical source state");
   const capability=resolveBaseDreamerV2NormalCapability({opportunity,firstNightTaskPlan:state.firstNightTaskPlan,
     firstNightTaskProgress:state.firstNightTaskProgress,firstNightActionOpportunities:state.firstNightActionOpportunities,
     currentCharacterState:state.currentCharacterState,setup:state.setup,roleTenures:state.seamstressRoleTenureState,
     abilityImpairments:state.abilityImpairments});
-  if(capability.kind!=="VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED")throw new DomainError("InvalidFirstNightAbilityOutcomeFact","V3 Dreamer delivery requires proven effective-source Vortox capability");
   const targetChoice:DreamerTargetChosenPayloadV2={rulesBaselineVersion:delivery.rulesBaselineVersion,
     targetSchemaVersion:DREAMER_TARGET_CHOSEN_V2_SCHEMA_VERSION,nightNumber:1,taskId:delivery.taskId,
     taskType:"DREAMER_ACTION",opportunityId:delivery.opportunityId,opportunitySchemaVersion:delivery.opportunitySchemaVersion,
     decisionKind:"CHOOSE_PLAYER",sourcePlayerId:delivery.sourcePlayerId,sourceSeatNumber:delivery.sourceSeatNumber,
     sourceRole:opportunity.sourceRole,sourceCharacterStateRevision:delivery.sourceCharacterStateRevision,
     sourceContract:delivery.sourceContract,targetPlayerId:delivery.targetPlayerId,targetSeatNumber:delivery.targetSeatNumber};
-  const expected=createDreamerVortoxInformationDeliveredPayload({rulesBaselineVersion:delivery.rulesBaselineVersion,
-    targetChoice,setup:state.setup,currentCharacterState:state.currentCharacterState,capability});
-  if(!sameDreamerInformationDelivery(delivery,expected))throw new DomainError("InvalidFirstNightAbilityOutcomeFact","V3 Dreamer delivery must equal the canonical Vortox false pair");
+  const expected=delivery.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION
+    ? capability.kind==="CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
+      ? createDreamerCanonicalDrunkVortoxInformationDeliveredPayload({rulesBaselineVersion:delivery.rulesBaselineVersion,
+          targetChoice,setup:state.setup,currentCharacterState:state.currentCharacterState,capability})
+      : undefined
+    : capability.kind==="VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
+      ? createDreamerVortoxInformationDeliveredPayload({rulesBaselineVersion:delivery.rulesBaselineVersion,
+          targetChoice,setup:state.setup,currentCharacterState:state.currentCharacterState,capability})
+      : undefined;
+  if(expected===undefined||!sameDreamerInformationDelivery(delivery,expected))throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Versioned Vortox Dreamer delivery must equal its canonical false pair");
 };
 const opportunityKindForTask=(taskType:FirstNightTaskType):ActionOpportunityKind|undefined=>{
   switch(taskType){
@@ -651,20 +663,20 @@ export const deriveFirstNightAbilityOutcomeFact=(input:{readonly stateBefore:Gam
     status="ABNORMAL";cause=first.impairmentKind==="POISONED"?"SOURCE_POISONING":"SOURCE_DRUNKENNESS";caused=true;
   }
   else if(input.event.eventType==="DreamerInformationDelivered"&&plain(p.informationReliability)){
-    const target=input.stateBefore.currentCharacterState?.entries.find((entry)=>entry.playerId===p.targetPlayerId&&entry.seatNumber===p.targetSeatNumber);const good=p.goodRole as Record<string,unknown>;const evil=p.evilRole as Record<string,unknown>;const containsTruth=target!==undefined&&(target.role.roleId===good.roleId||target.role.roleId===evil.roleId);const dreamerV2=p.deliverySchemaVersion==="dreamer-information-delivered-v2";const dreamerV3=p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION;
-    if(dreamerV3){validateCanonicalDreamerVortoxDelivery(input.stateBefore,input.event.payload as DreamerInformationDeliveredPayloadV3);if(target===undefined||containsTruth||p.informationReliability.kind!=="VORTOX_FORCED_FALSE")throw new DomainError("InvalidFirstNightAbilityOutcomeFact","V3 Vortox Dreamer delivery must contain a false pair");status="ABNORMAL";cause="VORTOX_FALSE_INFORMATION";caused=true;}
+    const target=input.stateBefore.currentCharacterState?.entries.find((entry)=>entry.playerId===p.targetPlayerId&&entry.seatNumber===p.targetSeatNumber);const good=p.goodRole as Record<string,unknown>;const evil=p.evilRole as Record<string,unknown>;const containsTruth=target!==undefined&&(target.role.roleId===good.roleId||target.role.roleId===evil.roleId);const dreamerV2=p.deliverySchemaVersion==="dreamer-information-delivered-v2";const dreamerV3=p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION;const dreamerV4=p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION;
+    if(dreamerV3||dreamerV4){validateCanonicalDreamerVortoxDelivery(input.stateBefore,input.event.payload as DreamerInformationDeliveredPayloadV3|DreamerInformationDeliveredPayloadV4);const expectedReliability=dreamerV4?"VORTOX_FORCED_FALSE_WITH_CANONICAL_SOURCE_DRUNK":"VORTOX_FORCED_FALSE";if(target===undefined||containsTruth||p.informationReliability.kind!==expectedReliability)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Versioned Vortox Dreamer delivery must contain a false pair");status="ABNORMAL";cause="VORTOX_FALSE_INFORMATION";caused=true;}
     else if(dreamerV2){if(target===undefined||p.informationReliability.kind!=="EFFECTIVE"||!containsTruth)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","V2 normal Dreamer delivery must contain settlement-time truth");}
     else {const vortox=historicalVortoxApplicability(input.stateBefore,revision);if(vortox.kind==="PROVEN"){status="UNRESOLVED";cause="DREAMER_VORTOX_CONSTRAINT_UNRECORDED";}else if(vortox.kind==="UNRESOLVED"){status="UNRESOLVED";cause="VORTOX_APPLICABILITY_NOT_PROVEN";}else if(target===undefined){status="UNRESOLVED";cause="CAUSE_NOT_PROVEN";}else if(p.informationReliability.kind==="EFFECTIVE"&&!containsTruth)throw new DomainError("InvalidFirstNightAbilityOutcomeFact","Effective Dreamer false pair without Vortox is invalid");else if(p.informationReliability.kind==="SOURCE_IMPAIRED"&&!containsTruth){status="ABNORMAL";cause=p.informationReliability.sourceImpairmentKind==="POISONED"?"SOURCE_POISONING":"SOURCE_DRUNKENNESS";caused=true;}}
   }
   const evidence:AbilityOutcomeEvidenceReference[]=[{kind:"SOURCE_EVENT",eventId:input.event.eventId,eventType:input.event.eventType as TerminalAbilityOutcomeEventType,eventSequence:input.event.eventSequence,batchId:input.event.batchId},{kind:"TASK",taskId:task.taskId,taskType:task.taskType},{kind:"CHARACTER_STATE",characterStateRevision:revision},roleEvidenceFor(input.stateBefore,source.playerId,revision)];
-  if(p.opportunityId!==undefined)evidence.push(opportunityEvidenceFor(input.stateBefore,p.opportunityId,task,source,input.event.eventType as TerminalAbilityOutcomeEventType,instance,input.event.eventType==="DreamerInformationDelivered"&&(p.deliverySchemaVersion==="dreamer-information-delivered-v2"||p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION)));
+  if(p.opportunityId!==undefined)evidence.push(opportunityEvidenceFor(input.stateBefore,p.opportunityId,task,source,input.event.eventType as TerminalAbilityOutcomeEventType,instance,input.event.eventType==="DreamerInformationDelivered"&&(p.deliverySchemaVersion==="dreamer-information-delivered-v2"||p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION||p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION)));
   if(instance.kind==="EXPLICIT_DOMAIN_INSTANCE")evidence.push(tenureEvidenceFor(input.stateBefore,instance.sourceRoleTenureId,revision));
   if(input.event.eventType==="MathematicianInformationDelivered"){
     const sourceContract=p.sourceContract;
     if(!plain(sourceContract)||!plain(sourceContract.sourceRoleTenure)||!nonEmpty(sourceContract.sourceRoleTenure.roleTenureId))throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","Mathematician source requires one carried active tenure");
     evidence.push(tenureEvidenceFor(input.stateBefore,sourceContract.sourceRoleTenure.roleTenureId as RoleTenureId,revision));
   }
-  if(input.event.eventType==="DreamerInformationDelivered"&&(p.deliverySchemaVersion==="dreamer-information-delivered-v2"||p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION)){
+  if(input.event.eventType==="DreamerInformationDelivered"&&(p.deliverySchemaVersion==="dreamer-information-delivered-v2"||p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION||p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION)){
     const sourceContract=p.sourceContract;if(!plain(sourceContract)||sourceContract.sourceContractVersion!=="dreamer-base-source-contract-v1"||sourceContract.taskPlanVersion!=="first-night-task-plan-v2"||sourceContract.taskId!==task.taskId||sourceContract.sourcePlayerId!==source.playerId||sourceContract.sourceSeatNumber!==source.seatNumber||sourceContract.sourceRoleId!=="dreamer"||!nonEmpty(sourceContract.sourceRoleTenureId)||sourceContract.sourceAbilityInstanceId!==instance.abilityInstanceId)throw new DomainError("InvalidFirstNightAbilityOutcomeEvidence","V2 Dreamer source contract must bind task, tenure, source, and base ability instance");
     evidence.push(tenureEvidenceFor(input.stateBefore,sourceContract.sourceRoleTenureId as RoleTenureId,revision));
   }
@@ -674,6 +686,7 @@ export const deriveFirstNightAbilityOutcomeFact=(input:{readonly stateBefore:Gam
   if(input.event.eventType==="SeamstressInformationDelivered"&&plain(p.sourceEffectiveness)&&isDenseCanonicalArray(p.sourceEffectiveness.representedImpairments))for(const represented of p.sourceEffectiveness.representedImpairments)if(plain(represented))evidence.push(impairmentEvidenceFor(input.stateBefore,represented.impairmentId,source));
   if(input.event.eventType==="MathematicianInformationDelivered"&&plain(p.sourceEffectiveness)&&isDenseCanonicalArray(p.sourceEffectiveness.representedImpairments))for(const represented of p.sourceEffectiveness.representedImpairments)if(plain(represented))evidence.push(impairmentEvidenceFor(input.stateBefore,represented.impairmentId,source));
   if(input.event.eventType==="DreamerInformationDelivered"&&plain(p.informationReliability)&&p.informationReliability.kind==="SOURCE_IMPAIRED")evidence.push(impairmentEvidenceFor(input.stateBefore,p.informationReliability.sourceImpairmentId,source));
+  if(input.event.eventType==="DreamerInformationDelivered"&&p.deliverySchemaVersion===DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION&&plain(p.sourceImpairment))evidence.push(impairmentEvidenceFor(input.stateBefore,p.sourceImpairment.impairmentId,source));
   if(input.event.eventType==="DreamerInformationDelivered"&&p.deliverySchemaVersion!=="dreamer-information-delivered-v2"){const vortox=historicalVortoxApplicability(input.stateBefore,revision);if(vortox.kind==="PROVEN")evidence.push(roleEvidenceFor(input.stateBefore,vortox.playerId,revision),tenureEvidenceFor(input.stateBefore,vortox.tenureId,revision));else if(vortox.kind==="UNRESOLVED"&&vortox.playerId!==undefined)evidence.push(roleEvidenceFor(input.stateBefore,vortox.playerId,revision));}
   if((input.event.eventType==="ClockmakerInformationDelivered"||input.event.eventType==="SeamstressInformationDelivered")){const constraint=(input.event.eventType==="ClockmakerInformationDelivered"?p.vortoxConstraint:p.deliveryConstraint);if(plain(constraint)&&constraint.kind==="VORTOX_FALSE_REQUIRED")evidence.push(roleEvidenceFor(input.stateBefore,constraint.vortoxPlayerId as PlayerId,revision),tenureEvidenceFor(input.stateBefore,constraint.vortoxRoleTenureId as RoleTenureId,revision));}
   if(input.event.eventType==="MathematicianInformationDelivered"&&plain(p.vortoxConstraint)&&(p.vortoxConstraint.kind==="VORTOX_FALSE_REQUIRED"||p.vortoxConstraint.kind==="NONE_CURRENT_VORTOX_KNOWN_IMPAIRED")&&plain(p.vortoxConstraint.vortoxRoleTenure)){

@@ -2396,6 +2396,29 @@ describe("private knowledge projections", () => {
 });
 
 describe("Phase 3 Slice 2B19A3A accepted-stream Dreamer projection", () => {
+  it("[2B19A3B1-C30-PROJECTION] projects accepted V2 and V3 histories exactly without version reinterpretation", () => {
+    for (const captured of [
+      loadAcceptedBaseDreamerV3NormalStreamFixture(),
+      loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD")
+    ]) {
+      const delivery = captured.events[captured.deliveryEventIndex];
+      if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected Dreamer delivery");
+      const playerView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+        captured.events, delivery.payload.sourcePlayerId
+      );
+      const aiView = buildAiPrivateKnowledgeViewFromAcceptedEventStream(
+        captured.events, delivery.payload.sourcePlayerId
+      );
+      expect(playerView.dreamerInformation).toStrictEqual({
+        target: { playerId: delivery.payload.targetPlayerId, seatNumber: delivery.payload.targetSeatNumber },
+        goodRole: delivery.payload.goodRole,
+        evilRole: delivery.payload.evilRole
+      });
+      expect(aiView).toStrictEqual(playerView);
+      expect(JSON.stringify(playerView)).not.toMatch(/deliverySchemaVersion|informationReliability|vortoxConstraint/i);
+    }
+  }, 15_000);
+
   it("[2B19A3A-C04] keeps normal V2 history accepted by the state-only private projection", () => {
     const captured = loadAcceptedBaseDreamerV3NormalStreamFixture();
     const state = rebuildGameState(captured.events);
@@ -2449,4 +2472,18 @@ describe("Phase 3 Slice 2B19A3A accepted-stream Dreamer projection", () => {
     buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(captured.events, delivery.payload.sourcePlayerId);
     expect(captured.events[captured.deliveryEventIndex]?.payload).toStrictEqual(before);
   }, 15_000);
-});
+  });
+
+  it("[2B19A3B1-C38] rejects V4 from the state-only player and AI projection boundaries", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const state = structuredClone(captured.finalState);
+    const delivery = state.dreamerInformation?.deliveries[0];
+    if (delivery === undefined || !("deliverySchemaVersion" in delivery)) {
+      throw new Error("Expected versioned Dreamer delivery");
+    }
+    (delivery as unknown as Record<string, unknown>).deliverySchemaVersion = "dreamer-information-delivered-v4";
+    expect(() => buildPlayerPrivateKnowledgeView(state, delivery.sourcePlayerId))
+      .toThrowError(DomainError);
+    expect(() => buildAiPrivateKnowledgeView(state, delivery.sourcePlayerId))
+      .toThrowError(DomainError);
+  });

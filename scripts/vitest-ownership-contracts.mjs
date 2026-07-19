@@ -926,7 +926,42 @@ for (let index = 1; index <= 39; index += 1) {
   A3A_CRITERION_IDS.push(`S${String(index).padStart(2, "0")}`);
 }
 
+const A3B1_CRITERION_IDS = [];
+for (let index = 1; index <= 41; index += 1) {
+  if (index !== 24) A3B1_CRITERION_IDS.push(`C${String(index).padStart(2, "0")}`);
+}
+for (let index = 1; index <= 20; index += 1) {
+  A3B1_CRITERION_IDS.push(`S${String(index).padStart(2, "0")}`);
+}
+
 const RAW_OWNERSHIP_CONTRACTS = Object.freeze([
+  Object.freeze({
+    contractId: "2B19A3B1",
+    markerPrefix: "[2B19A3B1-",
+    markerPattern: "^\\[2B19A3B1-[^\\]]+\\]",
+    applicationTestFile:
+      "packages/application/src/game-application-service.test.ts",
+    ownerProject: "application-service-dreamer-vortox",
+    traceabilityFile:
+      "docs/implementation/phase-3-slice-2b19a3b1-test-traceability.md",
+    criterionIds: Object.freeze(A3B1_CRITERION_IDS),
+    supportingAuthorityPrefix: "SUP-2B19A3B1-",
+    frozenBaseline: Object.freeze({
+      projectExecutionsBefore: 6,
+      projectExecutionsAfter: 6,
+      projectInventorySha256: "9d8726005537db396683c3701546a85f0094b3e84ca062f1d7113a66b3eef189",
+      currentProjectInventorySha256: "9d8726005537db396683c3701546a85f0094b3e84ca062f1d7113a66b3eef189",
+      semanticInventorySha256: "bd194c778f83c42c4bc46307f028e1a289b01c50a49c2169ce2a07c267a317f4",
+      authorityInventorySha256: "c42fc09726d54c1e9ea6f7d88756435340f7e329cd5fd45f00c9030979e574c6",
+      nonOwnedInventoryPolicy: NON_OWNED_POLICY,
+      nonMarkerOwnershipSha256: "92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c",
+      physicalTestFileSetSha256: "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab",
+      traceabilityRowCount: 60,
+      dynamicTestAuthorityRows: 58,
+      supportingAuthorityCount: 4
+    }),
+    status: ACTIVE_STATUS
+  }),
   Object.freeze({
     contractId: "2B19A3A",
     markerPrefix: "[2B19A3A-",

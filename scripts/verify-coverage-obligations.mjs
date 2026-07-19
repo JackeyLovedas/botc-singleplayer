@@ -101,6 +101,91 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
         sha256: "86729bdd6cab5519cbeab5f3e270955237f9832199f8d8bf5ae95fd38114b8f7"
       })
     })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b19a3b1-00160fc-ownership-v2-1",
+    sourceHead: "00160fc342487506f33d713667d404d4ace734c4",
+    sourceKind: "PRODUCT_IMPLEMENTATION_STABLE_NINE_PROCESS_BASELINE",
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3185,
+        sha256: "0cfec8ab5ed6c823b7fc0aa7647b61c7354c7fc279e49d08469afa46bdd51817"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "0b8011b10d4293987c00e4f76c2d734c481b8d9878a70e59be15913d938cad5c"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3185,
+        sha256: "c05c6e1960772a445430df01689249053b8ec169f62c40d4f494068e259b1d6a"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1781,
+        sha256: "e2da7c5d301b86c069a33bbca78f0454ff3e131b78cab23e646707521c9ebac0"
+      })
+    })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b19a3b1-bf9f170-repair1-ownership-v2-1",
+    sourceHead: "bf9f170590d90733a3bd5de810e0096fc40f4e84",
+    sourceKind: "REPAIR_ROUND_1_STABLE_NINE_PROCESS_BASELINE",
+    supersedesForTopology: "phase-3-slice-2b19a3b1-00160fc-ownership-v2-1",
+    supersessionReason: "REPAIR_ROUND_1_TEST_AUTHORITY_AND_OWNERSHIP_REFRESH",
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3184,
+        sha256: "cfc7bc76d6a025779ddd2d1ca0937f68519a3ff10e13b2d586948d5840cd0202"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "0b8011b10d4293987c00e4f76c2d734c481b8d9878a70e59be15913d938cad5c"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3184,
+        sha256: "02529a665486258e5f856799d9511752afe88a978b5dac78bf7c422affbc59bf"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1773,
+        sha256: "d54322bb82c9e86ee67f4b2164a36cf60f4f7f04c123f025003d97a4884ee6b6"
+      })
+    })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b19a3b1-c384c60-repair2-ownership-v2-1",
+    sourceHead: "c384c60add75211bd20139b9e289da8fd6e15bb5",
+    sourceKind: "REPAIR_ROUND_2_WINDOWS_TEST_STRUCTURE_STABLE_NINE_PROCESS_BASELINE",
+    supersedesForTopology: "phase-3-slice-2b19a3b1-bf9f170-repair1-ownership-v2-1",
+    supersessionReason: "REPAIR_ROUND_2_WINDOWS_SAME_TITLE_PROMISE_ALL_PROFILE_REFRESH",
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3184,
+        sha256: "cfc7bc76d6a025779ddd2d1ca0937f68519a3ff10e13b2d586948d5840cd0202"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "0b8011b10d4293987c00e4f76c2d734c481b8d9878a70e59be15913d938cad5c"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3184,
+        sha256: "02529a665486258e5f856799d9511752afe88a978b5dac78bf7c422affbc59bf"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1773,
+        sha256: "d54322bb82c9e86ee67f4b2164a36cf60f4f7f04c123f025003d97a4884ee6b6"
+      })
+    })
   })
 ]);
 
@@ -539,20 +624,26 @@ function main() {
       throw new Error(`Unknown approved coverage profile: ${options.profileId}`);
     }
     const verdict =
-      matches.length === 1 &&
-      (requestedProfile === null || matches[0].profileId === requestedProfile.profileId)
-        ? "COVERAGE_APPROVED_PROFILE_MATCH"
-        : matches.length === 0
-          ? "COVERAGE_APPROVED_PROFILE_MISMATCH"
-          : requestedProfile !== null && !requestedProfile.matches
-            ? "COVERAGE_REQUESTED_PROFILE_MISMATCH"
-          : "COVERAGE_APPROVED_PROFILE_AMBIGUOUS";
+      requestedProfile !== null
+        ? requestedProfile.matches
+          ? "COVERAGE_APPROVED_PROFILE_MATCH"
+          : "COVERAGE_REQUESTED_PROFILE_MISMATCH"
+        : matches.length === 1
+          ? "COVERAGE_APPROVED_PROFILE_MATCH"
+          : matches.length === 0
+            ? "COVERAGE_APPROVED_PROFILE_MISMATCH"
+            : "COVERAGE_APPROVED_PROFILE_AMBIGUOUS";
     process.stdout.write(
       `${JSON.stringify(
         {
           verdict,
           requestedProfileId: options.profileId,
-          matchedProfileId: matches.length === 1 ? matches[0].profileId : null,
+          matchedProfileId:
+            requestedProfile !== null && requestedProfile.matches
+              ? requestedProfile.profileId
+              : matches.length === 1
+                ? matches[0].profileId
+                : null,
           candidate: summarizeForOutput(candidate, requiredPackages),
           profiles
         },

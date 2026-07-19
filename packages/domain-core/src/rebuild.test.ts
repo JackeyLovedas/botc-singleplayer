@@ -4695,6 +4695,32 @@ describe("domain event rebuild", () => {
     expect(state.gameVersion).toBe(16);
   }, 15_000);
 
+  it("[2B19A3B1-C08/C30] rebuilds accepted V1 V2 and V3 histories without reinterpretation", () => {
+    const legacyV1 = acceptedLegacyDreamerV1();
+    const normalV2 = loadAcceptedBaseDreamerV3NormalStreamFixture();
+    const vortoxV3 = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const states = [
+      legacyV1.state,
+      rebuildGameState(structuredClone(normalV2.events)),
+      rebuildGameState(structuredClone(vortoxV3.events))
+    ];
+    const deliveries = states.map((state) => state.dreamerInformation?.deliveries[0]);
+    expect(deliveries[0]).not.toHaveProperty("deliverySchemaVersion");
+    expect(deliveries[1]).toMatchObject({ deliverySchemaVersion: "dreamer-information-delivered-v2" });
+    expect(deliveries[2]).toMatchObject({ deliverySchemaVersion: "dreamer-information-delivered-v3" });
+    for (const state of states) {
+      expect(state.dreamerTargetChoices?.choices).toHaveLength(1);
+      expect(state.dreamerInformation?.deliveries).toHaveLength(1);
+      expect(state.firstNightTaskProgress?.settlements.at(-1)?.outcomeType)
+        .toBe("DREAMER_INFORMATION_DELIVERED");
+    }
+    const v3Fact = vortoxV3.finalState.firstNightAbilityOutcomeLedger?.facts.find((fact) =>
+      fact.sourceEventId === vortoxV3.events[vortoxV3.deliveryEventIndex]?.eventId
+    );
+    expect(v3Fact?.evidenceReferences.filter((entry) => entry.kind === "ABILITY_IMPAIRMENT"))
+      .toHaveLength(0);
+  }, 15_000);
+
   it("[2B19A2-C02] replays the frozen accepted 2B19A1 V2 open opportunity without migration", () => {
     const stream = [...dreamerV2PlanReadyStream(), dreamerV2OrV3OpportunityEvent("V2")];
     const state = rebuildGameState(stream);

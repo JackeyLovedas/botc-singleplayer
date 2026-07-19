@@ -99,7 +99,12 @@ import {
   captureAcceptedBaseDreamerVortoxV3Stream
 } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream.js";
 import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
-import { buildAiPrivateKnowledgeView, buildPlayerPrivateKnowledgeView } from "@botc/projections";
+import {
+  buildAiPrivateKnowledgeView,
+  buildAiPrivateKnowledgeViewFromAcceptedEventStream,
+  buildPlayerPrivateKnowledgeView,
+  buildPlayerPrivateKnowledgeViewFromAcceptedEventStream
+} from "@botc/projections";
 import { deriveFirstNightAbilityOutcomeFact } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "../../domain-core/src/role-tenure-replay.js";
 
@@ -510,9 +515,10 @@ const convertStoredDreamerOpportunityToAcceptedV2 = async (
 
 const reachOpenExactPhilosopherOpportunity = async (
   service: GameApplicationService,
-  store: MemoryCommandCommitStore
+  store: MemoryCommandCommitStore,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = philosopherClockmakerExactRoleIds
 ) => {
-  await reachNoPhilosopherFirstNightTaskPlan(service, philosopherClockmakerExactRoleIds);
+  await reachNoPhilosopherFirstNightTaskPlan(service, exactRoleIds);
   const planned = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
   const task = planned?.firstNightTaskPlan?.tasks.find((entry) => entry.taskType === "PHILOSOPHER_ACTION");
   if (planned === undefined || task === undefined) throw new Error("Expected exact Philosopher task");
@@ -576,7 +582,6 @@ const philosopherClockmakerExactRoleIds = clockmakerExactRoleIds.map((id) =>
 const philosopherClockmakerVortoxExactRoleIds = philosopherClockmakerExactRoleIds.map((id) =>
   id === "fang_gu" ? roleId("vortox") : id === "barber" ? roleId("artist") : id
 );
-
 const reachNextCerenovusActionTask = async (
   service: GameApplicationService,
   commandStore: MemoryCommandCommitStore
@@ -1153,6 +1158,626 @@ const reachOpenDreamerV3ActionOpportunity = async (
   return { beforeDreamer, dreamerTask, opportunity, state, openCommand, openResult };
 };
 
+const reachCanonicalDrunkVortoxDreamerOpportunity = async (
+  service: GameApplicationService,
+  commandStore: MemoryCommandCommitStore,
+  idPrefix: string,
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = philosopherClockmakerVortoxExactRoleIds
+) => {
+  const philosopher = await reachOpenExactPhilosopherOpportunity(
+    service,
+    commandStore,
+    exactRoleIds
+  );
+  expectAcceptedResult(await service.execute(
+    chooseExactPhilosopherRole("dreamer", philosopher, `${idPrefix}-choose-dreamer`)
+  ));
+  const afterChoice = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const dreamerTask = afterChoice?.firstNightTaskPlan?.tasks.find((task) =>
+    task.taskType === "DREAMER_ACTION" && task.source.kind === "ROLE"
+  );
+  if (dreamerTask === undefined) throw new Error("Expected canonical-drunk base Dreamer task");
+  const ready = await advanceToScheduledTask(
+    service,
+    commandStore,
+    dreamerTask.taskId,
+    `${idPrefix}-advance`
+  );
+  expectAcceptedResult(await service.execute(openFirstNightRoleActionOpportunityCommand({
+    commandId: commandId(`${idPrefix}-open-dreamer`),
+    expectedGameVersion: ready.gameVersion,
+    payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: dreamerTask.taskId }
+  })));
+  const state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const opportunity = state?.firstNightActionOpportunities?.opportunities.find((entry) =>
+    entry.taskId === dreamerTask.taskId
+  );
+  if (state === undefined || opportunity === undefined || !domainCore.isDreamerActionOpportunityV3(opportunity)) {
+    throw new Error("Expected canonical-drunk Vortox Dreamer V3 opportunity");
+  }
+  return { state, dreamerTask, opportunity };
+};
+
+describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer", () => {
+  const prepareCanonicalDrunkVortoxSubmission = async (
+    store: MemoryCommandCommitStore = new MemoryCommandCommitStore(),
+    idGenerator: IdGenerator = new FixedIdGenerator(),
+    clock: Clock = new FixedClock(),
+    suffix = "authority"
+  ) => {
+    const { service } = makeService(store, testSetupGenerator, idGenerator, clock);
+    const opened = await reachCanonicalDrunkVortoxDreamerOpportunity(
+      service,
+      store,
+      `2b19a3b1-${suffix}`
+    );
+    const target = opened.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== opened.opportunity.sourcePlayerId && entry.role.roleId !== "vortox"
+    );
+    if (target === undefined) throw new Error("Expected canonical-drunk Vortox target");
+    const command = submitDreamerActionCommand({
+      commandId: commandId(`2b19a3b1-${suffix}-submit`),
+      expectedGameVersion: opened.state.gameVersion,
+      actor: { kind: "ai", playerId: opened.opportunity.sourcePlayerId },
+      payload: {
+        commandType: "SubmitDreamerAction",
+        taskId: opened.dreamerTask.taskId,
+        opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId }
+      }
+    });
+    return { service, store, opened, target, command };
+  };
+
+  const captureAcceptedV4Stream = async (suffix: string) => {
+    const context = await prepareCanonicalDrunkVortoxSubmission(
+      new MemoryCommandCommitStore(), new FixedIdGenerator(), new FixedClock(), suffix
+    );
+    const result = await context.service.execute(context.command);
+    expectAcceptedResult(result);
+    const events = await context.store.loadDomainEvents(ids.game);
+    const deliveryIndex = events.findIndex((event) =>
+      event.eventType === "DreamerInformationDelivered" &&
+      "deliverySchemaVersion" in event.payload &&
+      event.payload.deliverySchemaVersion === "dreamer-information-delivered-v4"
+    );
+    if (deliveryIndex < 1 || events[deliveryIndex - 1]?.eventType !== "DreamerTargetChosen" ||
+        events[deliveryIndex + 1]?.eventType !== "ScheduledTaskSettled") {
+      throw new Error("Expected exact accepted V4 terminal batch");
+    }
+    return { ...context, result, events, targetIndex: deliveryIndex - 1,
+      deliveryIndex, settlementIndex: deliveryIndex + 1 };
+  };
+
+  it("[2B19A3B1-C01/C02/C03/C04/C05/C09/C10/C19/C20/C21/C22/C23/C25/C26/C27/C29/C36/C39] accepts exact GOOD and EVIL V4 chains without leaking audit metadata", async () => {
+    for (const targetAlignment of ["GOOD", "EVIL"] as const) {
+      const { service, commandStore } = makeService();
+      const opened = await reachCanonicalDrunkVortoxDreamerOpportunity(
+        service,
+        commandStore,
+        `2b19a3b1-${targetAlignment.toLowerCase()}`
+      );
+      const target = opened.state.currentCharacterState?.entries.find((entry) =>
+        entry.playerId !== opened.opportunity.sourcePlayerId &&
+        entry.role.defaultAlignment === targetAlignment &&
+        entry.role.roleId !== "vortox"
+      );
+      if (target === undefined) throw new Error(`Expected ${targetAlignment} V4 target`);
+      const command = submitDreamerActionCommand({
+        commandId: commandId(`2b19a3b1-submit-${targetAlignment.toLowerCase()}`),
+        expectedGameVersion: opened.state.gameVersion,
+        actor: { kind: "ai", playerId: opened.opportunity.sourcePlayerId },
+        payload: {
+          commandType: "SubmitDreamerAction",
+          taskId: opened.dreamerTask.taskId,
+          opportunityId: opened.opportunity.opportunityId,
+          decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId }
+        }
+      });
+      const result = await service.execute(command);
+      expectAcceptedResult(result);
+      expect(result.events.map((event) => event.eventType)).toStrictEqual([
+        "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
+      ]);
+      const delivery = result.events[1];
+      if (delivery?.eventType !== "DreamerInformationDelivered" ||
+          !("deliverySchemaVersion" in delivery.payload) ||
+          delivery.payload.deliverySchemaVersion !== "dreamer-information-delivered-v4") {
+        throw new Error("Expected accepted Dreamer V4 delivery");
+      }
+      expect(Object.keys(delivery.payload)).toHaveLength(22);
+      expect(delivery.payload.informationReliability).toStrictEqual({
+        kind: "VORTOX_FORCED_FALSE_WITH_CANONICAL_SOURCE_DRUNK"
+      });
+      expect(delivery.payload.sourceImpairment).toMatchObject({
+        kind: "DRUNK",
+        sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+        affectedPlayerId: opened.opportunity.sourcePlayerId,
+        chosenRoleId: "dreamer"
+      });
+      expect(delivery.payload.goodRole.roleId).not.toBe(target.role.roleId);
+      expect(delivery.payload.evilRole.roleId).not.toBe(target.role.roleId);
+      const events = await commandStore.loadDomainEvents(ids.game);
+      const state = rebuildOptionalGameState(events);
+      const facts = state?.firstNightAbilityOutcomeLedger?.facts.filter((fact) =>
+        fact.sourceEventId === delivery.eventId
+      ) ?? [];
+      expect(facts).toHaveLength(1);
+      expect(facts[0]).toMatchObject({
+        outcomeStatus: "ABNORMAL",
+        causeKind: "VORTOX_FALSE_INFORMATION",
+        causedByAnotherCharacterAbility: true
+      });
+      expect(facts[0]?.evidenceReferences.filter((entry) => entry.kind === "ABILITY_IMPAIRMENT"))
+        .toStrictEqual([expect.objectContaining({ impairmentKind: "DRUNK" })]);
+      expect(facts[0]?.evidenceReferences).toHaveLength(11);
+      expect(facts.some((fact) => fact.causeKind === "SOURCE_DRUNKENNESS")).toBe(false);
+      const sourcePlayerView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+        events,
+        opened.opportunity.sourcePlayerId
+      );
+      const sourceAiView = buildAiPrivateKnowledgeViewFromAcceptedEventStream(
+        events,
+        opened.opportunity.sourcePlayerId
+      );
+      expect(sourceAiView).toStrictEqual(sourcePlayerView);
+      expect(sourcePlayerView.dreamerInformation).toStrictEqual({
+        target: { playerId: target.playerId, seatNumber: target.seatNumber },
+        goodRole: delivery.payload.goodRole,
+        evilRole: delivery.payload.evilRole
+      });
+      const serialized = JSON.stringify(sourcePlayerView);
+      for (const secret of ["DRUNK", "philosopher", "vortox", "sourceImpairment", "sourceContract"]) {
+        expect(serialized).not.toContain(secret);
+      }
+      const otherPlayers = state?.roster?.entries.filter((entry) =>
+        entry.playerId !== opened.opportunity.sourcePlayerId
+      ) ?? [];
+      for (const viewer of otherPlayers) {
+        expect(buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(events, viewer.playerId)
+          .dreamerInformation).toBeUndefined();
+        expect(buildAiPrivateKnowledgeViewFromAcceptedEventStream(events, viewer.playerId)
+          .dreamerInformation).toBeUndefined();
+      }
+      const firstReturned = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+        events,
+        opened.opportunity.sourcePlayerId
+      );
+      if (firstReturned.dreamerInformation === undefined) throw new Error("Expected source Dreamer knowledge");
+      (firstReturned.dreamerInformation.goodRole as unknown as { roleId: string }).roleId = "mutated";
+      expect(buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+        events,
+        opened.opportunity.sourcePlayerId
+      )).toStrictEqual(sourcePlayerView);
+      const beforeRetry = await commandStore.loadDomainEvents(ids.game);
+      await expect(service.execute(command)).resolves.toMatchObject({ status: "accepted", idempotent: true });
+      expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(beforeRetry);
+    }
+  }, 30_000);
+
+  it("[2B19A3B1-C18/C28] keeps canonical DRUNK without effective Vortox receipt-free, OPEN, and retryable", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachCanonicalDrunkVortoxDreamerOpportunity(
+      service,
+      commandStore,
+      "2b19a3b1-no-vortox",
+      philosopherClockmakerExactRoleIds
+    );
+    const target = opened.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== opened.opportunity.sourcePlayerId
+    );
+    if (target === undefined) throw new Error("Expected no-Vortox target");
+    const command = submitDreamerActionCommand({
+      commandId: commandId("2b19a3b1-no-vortox-submit"),
+      expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
+        opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+    });
+    const before = await commandStore.loadDomainEvents(ids.game);
+    await expect(service.execute(command)).resolves.toMatchObject({
+      status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action",
+      retryable: true, currentGameVersion: opened.state.gameVersion
+    });
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(rebuildOptionalGameState(before)?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === opened.opportunity.opportunityId)?.opportunityStatus).toBe("OPEN");
+  }, 15_000);
+
+  it("[2B19A3B1-C31/C40] stops with the Philosopher-gained Dreamer task next and unsettled", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachCanonicalDrunkVortoxDreamerOpportunity(
+      service, commandStore, "2b19a3b1-boundary"
+    );
+    const target = opened.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== opened.opportunity.sourcePlayerId && entry.role.roleId !== "vortox"
+    );
+    if (target === undefined) throw new Error("Expected V4 boundary target");
+    expectAcceptedResult(await service.execute(submitDreamerActionCommand({
+      commandId: commandId("2b19a3b1-boundary-submit-dreamer"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
+        opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+    })));
+    const afterDreamer = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const gainedDreamerTask = afterDreamer?.firstNightTaskPlan?.tasks.find((task) =>
+      task.taskType === "DREAMER_ACTION" && task.source.kind === "PHILOSOPHER_GAINED_ABILITY"
+    );
+    if (afterDreamer === undefined || gainedDreamerTask === undefined) {
+      throw new Error("Expected next Philosopher-gained Dreamer boundary");
+    }
+    const unsettled = afterDreamer.firstNightTaskPlan?.tasks.find((task) =>
+      !afterDreamer.firstNightTaskProgress?.settlements.some((settlement) => settlement.taskId === task.taskId)
+    );
+    expect(unsettled?.taskId).toBe(gainedDreamerTask.taskId);
+    expect(afterDreamer.firstNightTaskProgress?.settlements.some((entry) =>
+      entry.taskId === gainedDreamerTask.taskId)).toBe(false);
+    expect(afterDreamer.dreamerInformation?.deliveries).toHaveLength(1);
+    expect(afterDreamer.mathematicianInformation?.deliveries ?? []).toHaveLength(0);
+  }, 20_000);
+
+  it("[2B19A3B1-C11/C12/C13/C14/C15/C16/C32/C41-S15] rejects persisted V4 provenance and batch mutations at real rebuild and projection boundaries", async () => {
+    const captured = await captureAcceptedV4Stream("hostile-replay");
+    const canonical = structuredClone(captured.events);
+    const delivery = canonical[captured.deliveryIndex];
+    if (delivery?.eventType !== "DreamerInformationDelivered" ||
+        !("sourceImpairment" in delivery.payload) || !("vortoxConstraint" in delivery.payload)) {
+      throw new Error("Expected canonical V4 delivery authority");
+    }
+
+    const mutateDelivery = (
+      name: string,
+      mutate: (payload: Record<string, unknown>) => void
+    ): readonly [string, readonly AnyDomainEventEnvelope[]] => {
+      const stream = [...structuredClone(canonical)];
+      const candidate = stream[captured.deliveryIndex];
+      if (candidate?.eventType !== "DreamerInformationDelivered") throw new Error("Expected V4 delivery");
+      mutate(candidate.payload);
+      return [name, stream];
+    };
+    const mutateImpairment = (name: string, field: string, value: unknown) =>
+      mutateDelivery(name, (payload) => {
+        const impairment = payload.sourceImpairment as Record<string, unknown>;
+        impairment[field] = value;
+      });
+    const mutateVortox = (name: string, field: string, value: unknown) =>
+      mutateDelivery(name, (payload) => {
+        const constraint = payload.vortoxConstraint as Record<string, unknown>;
+        constraint[field] = value;
+      });
+    const sourceContract = delivery.payload.sourceContract;
+    const hostile: Array<readonly [string, readonly AnyDomainEventEnvelope[]]> = [
+      mutateImpairment("wrong impairment id", "impairmentId", abilityImpairmentId("wrong-impairment")),
+      mutateImpairment("wrong affected player", "affectedPlayerId", playerId("wrong-player")),
+      mutateImpairment("wrong affected seat", "affectedSeatNumber", 12),
+      mutateImpairment("wrong affected role", "affectedRole", { ...delivery.payload.goodRole }),
+      mutateImpairment("wrong impairment source kind", "sourceKind", "SNAKE_CHARMER_DEMON_HIT"),
+      mutateImpairment("wrong philosopher source", "sourcePlayerId", playerId("wrong-philosopher")),
+      mutateImpairment("wrong chosen role", "chosenRoleId", roleId("artist")),
+      mutateImpairment("wrong impairment revision", "sourceCharacterStateRevision", 99),
+      mutateDelivery("wrong source tenure", (payload) => {
+        (payload.sourceContract as Record<string, unknown>).sourceRoleTenureId =
+          "role-tenure-v1:seat-12:vortox:revision-000001";
+      }),
+      mutateDelivery("wrong source contract identity", (payload) => {
+        (payload.sourceContract as Record<string, unknown>).sourceAbilityInstanceId = "wrong-ability-instance";
+      }),
+      mutateDelivery("independent reliability carrier", (payload) => {
+        payload.informationReliability = { kind: "VORTOX_FORCED_FALSE" };
+      }),
+      mutateDelivery("independent good semantic carrier", (payload) => {
+        payload.goodRole = structuredClone(payload.evilRole);
+      }),
+      mutateVortox("wrong Vortox player", "vortoxPlayerId", playerId("wrong-vortox")),
+      mutateVortox("wrong Vortox seat", "vortoxSeatNumber", 11),
+      mutateVortox("wrong Vortox tenure", "vortoxRoleTenureId", sourceContract.sourceRoleTenureId),
+      mutateVortox("wrong Vortox revision", "evaluatedCharacterStateRevision", 99),
+      mutateVortox("wrong Vortox catalog linkage", "vortoxRoleId", roleId("fang_gu"))
+    ];
+
+    const impairmentEventIndex = canonical.findIndex((event) => event.eventType === "AbilityImpairmentApplied");
+    if (impairmentEventIndex < 0) throw new Error("Expected canonical DRUNK provenance event");
+    for (const [name, kind, sourceKind] of [
+      ["duplicate DRUNK", "DRUNK", "PHILOSOPHER_CHOSEN_DUPLICATE"],
+      ["DRUNK plus POISONED", "POISONED", "SNAKE_CHARMER_DEMON_HIT"]
+    ] as const) {
+      const stream = [...structuredClone(canonical)];
+      const original = stream[impairmentEventIndex];
+      if (original?.eventType !== "AbilityImpairmentApplied") throw new Error("Expected impairment event");
+      const duplicate = structuredClone(original) as AnyDomainEventEnvelope;
+      (duplicate as unknown as { eventId: string }).eventId = `event-${name.replaceAll(" ", "-")}`;
+      (duplicate as unknown as { payload: Record<string, unknown> }).payload = {
+        ...structuredClone(original.payload),
+        impairmentId: abilityImpairmentId(`hostile-${name.replaceAll(" ", "-")}`),
+        kind,
+        sourceKind
+      };
+      stream.splice(impairmentEventIndex + 1, 0, duplicate);
+      hostile.push([name, stream]);
+    }
+
+    const prefix = canonical.slice(0, captured.targetIndex);
+    const target = canonical[captured.targetIndex]!;
+    const v4 = canonical[captured.deliveryIndex]!;
+    const settlement = canonical[captured.settlementIndex]!;
+    hostile.push(
+      ["partial", [...prefix, target, v4]],
+      ["orphan", [...prefix, v4]],
+      ["duplicate", [...prefix, target, v4, structuredClone(v4), settlement]],
+      ["reordered", [...prefix, v4, target, settlement]],
+      ["split", [...prefix, target, { ...v4, batchId: batchId("split-v4") }, settlement]],
+      ["cross-batch", [...prefix, target, { ...v4, commandId: commandId("cross-command") }, settlement]],
+      ["noncontiguous", [...prefix, target, { ...v4, eventSequence: v4.eventSequence + 2 }, settlement]],
+      ["mixed V2/V3/V4", [...prefix, target, {
+        ...v4,
+        payload: { ...v4.payload, deliverySchemaVersion: "dreamer-information-delivered-v3" }
+      } as AnyDomainEventEnvelope, settlement]]
+    );
+
+    for (const [name, stream] of hostile) {
+      expect(() => rebuildOptionalGameState(stream), `${name}: rebuild`).toThrowError(DomainError);
+      expect(() => buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+        stream, captured.opened.opportunity.sourcePlayerId
+      ), `${name}: projection`).toThrowError(DomainError);
+      const persistedStore = new PersistedEventMutationStore(stream);
+      const persistedService = makeService(persistedStore).service;
+      const probe = createGameCommand({
+        commandId: commandId(`persisted-${name.replaceAll(" ", "-").replaceAll("/", "-")}`),
+        expectedGameVersion: captured.opened.state.gameVersion
+      });
+      await expect(persistedService.execute(probe), `${name}: persisted import`).resolves.toMatchObject({
+        status: "failed", code: "CanonicalStateRebuildFailed", failureStage: "state-rebuild", retryable: true
+      });
+      expect(await persistedStore.findCommandReceipt(ids.game, probe.commandId), `${name}: no receipt`).toBeUndefined();
+    }
+  }, 60_000);
+
+  it("[2B19A3B1-C28/C29] proves every V4 failure stage is atomic retryable and converges exactly once", async () => {
+    type FaultContext = Awaited<ReturnType<typeof prepareCanonicalDrunkVortoxSubmission>>;
+    type FaultCase = {
+      readonly name: string;
+      readonly store: MemoryCommandCommitStore;
+      readonly ids?: FaultInjectingIdGenerator;
+      readonly clock?: FaultInjectingClock;
+      readonly code: CommandExecutionFailed["code"];
+      readonly stage: CommandExecutionFailed["failureStage"];
+      readonly install: (context: FaultContext) => () => void;
+    };
+    const receiptStore = new OneShotAcceptedReceiptPersistenceFailureStore();
+    const metadataIds = new FaultInjectingIdGenerator();
+    const cases: readonly FaultCase[] = [
+      {
+        name: "dependency", store: new MemoryCommandCommitStore(),
+        code: "DependencyExecutionFailed", stage: "first-night-role-action",
+        install: (context) => {
+          const boundary = context.service as unknown as {
+            resolveDreamerCapability: (...args: readonly unknown[]) => ReturnType<typeof domainCore.resolveBaseDreamerV2NormalCapability>;
+          };
+          const original = boundary.resolveDreamerCapability.bind(context.service);
+          boundary.resolveDreamerCapability = () => ({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "SOURCE_PROVENANCE_INVALID" });
+          return () => { boundary.resolveDreamerCapability = original; };
+        }
+      },
+      {
+        name: "candidate-construction", store: new MemoryCommandCommitStore(),
+        code: "DependencyExecutionFailed", stage: "first-night-role-action",
+        install: (context) => {
+          const boundary = context.service as unknown as {
+            createDreamerCanonicalDrunkVortoxDelivery: (...args: readonly unknown[]) => never;
+          };
+          const original = boundary.createDreamerCanonicalDrunkVortoxDelivery.bind(context.service);
+          boundary.createDreamerCanonicalDrunkVortoxDelivery = () => { throw new Error("injected V4 construction failure"); };
+          return () => { boundary.createDreamerCanonicalDrunkVortoxDelivery = original; };
+        }
+      },
+      {
+        name: "metadata", store: new MemoryCommandCommitStore(), ids: metadataIds,
+        code: "MetadataGenerationFailed", stage: "event-metadata",
+        install: () => { metadataIds.failNextBatchId = true; return () => undefined; }
+      },
+      {
+        name: "prospective", store: new MemoryCommandCommitStore(),
+        code: "DependencyExecutionFailed", stage: "first-night-role-action",
+        install: (context) => {
+          const boundary = context.service as unknown as { createBatch: (...args: readonly unknown[]) => DomainEventBatch };
+          const original = boundary.createBatch.bind(context.service);
+          boundary.createBatch = (...args: readonly unknown[]): DomainEventBatch => {
+            const batch = original(...args);
+            return { ...batch, events: batch.events.map((event) => event.eventType === "DreamerInformationDelivered"
+              ? { ...event, payload: { ...event.payload, sourcePlayerId: playerId("hostile-prospective-source") } }
+              : event) };
+          };
+          return () => { boundary.createBatch = original; };
+        }
+      },
+      {
+        name: "append", store: new MemoryCommandCommitStore(),
+        code: "EventStoreAppendFailed", stage: "accepted-commit",
+        install: (context) => { context.store.failBeforeCommit = true; return () => undefined; }
+      },
+      {
+        name: "commit", store: new MemoryCommandCommitStore(),
+        code: "EventStoreAppendFailed", stage: "accepted-commit",
+        install: (context) => { context.store.failDuringCommit = true; return () => undefined; }
+      },
+      {
+        name: "receipt-persistence", store: receiptStore,
+        code: "EventStoreAppendFailed", stage: "accepted-commit",
+        install: () => { receiptStore.failAcceptedReceiptPersistence = true; return () => undefined; }
+      }
+    ];
+
+    for (const fault of cases) {
+      const context = await prepareCanonicalDrunkVortoxSubmission(
+        fault.store,
+        fault.ids ?? new FixedIdGenerator(),
+        fault.clock ?? new FixedClock(),
+        `fault-${fault.name}`
+      );
+      const beforeEvents = await context.store.loadDomainEvents(ids.game);
+      const beforeState = rebuildOptionalGameState(beforeEvents);
+      const beforeAcceptedCount = context.store.acceptedCount;
+      const beforeReceiptCount = context.store.getReceiptCount();
+      const uninstall = fault.install(context);
+      const failure = await context.service.execute(context.command);
+      expect(failure, fault.name).toMatchObject({
+        status: "failed",
+        gameId: ids.game,
+        code: fault.code,
+        failureStage: fault.stage,
+        retryable: true,
+        currentGameVersion: context.opened.state.gameVersion
+      });
+      expectFailedResult(failure);
+      expect(failure.message, fault.name).not.toHaveLength(0);
+      expect(failure, `${fault.name}: no event authority`).not.toHaveProperty("events");
+      expect(await context.store.loadDomainEvents(ids.game), `${fault.name}: atomic events`).toStrictEqual(beforeEvents);
+      expect(rebuildOptionalGameState(await context.store.loadDomainEvents(ids.game)), `${fault.name}: atomic state`)
+        .toStrictEqual(beforeState);
+      expect(await context.store.findCommandReceipt(ids.game, context.command.commandId), `${fault.name}: no receipt`)
+        .toBeUndefined();
+      expect(beforeState?.firstNightActionOpportunities?.opportunities.find((entry) =>
+        entry.opportunityId === context.opened.opportunity.opportunityId)?.opportunityStatus,
+      `${fault.name}: opportunity remains open`).toBe("OPEN");
+
+      uninstall();
+      const success = await context.service.execute(context.command);
+      expectAcceptedResult(success);
+      expect(success.idempotent, fault.name).toBe(false);
+      expect(success.events.map((event) => event.eventType), fault.name).toStrictEqual([
+        "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
+      ]);
+      expect(new Set(success.events.map((event) => event.batchId)).size, fault.name).toBe(1);
+      expect(context.store.acceptedCount, `${fault.name}: one commit`).toBe(beforeAcceptedCount + 1);
+      expect(context.store.getReceiptCount(), `${fault.name}: one receipt`).toBe(beforeReceiptCount + 1);
+      expect(await context.store.findCommandReceipt(ids.game, context.command.commandId), fault.name).toBeDefined();
+      const afterSuccess = await context.store.loadDomainEvents(ids.game);
+      expect(afterSuccess.length, fault.name).toBe(beforeEvents.length + 3);
+
+      const retry = await context.service.execute(context.command);
+      expectAcceptedResult(retry);
+      expect(retry.idempotent, `${fault.name}: idempotent retry`).toBe(true);
+      expect(retry.events.map((event) => event.eventType), `${fault.name}: retry event authority`).toStrictEqual([
+        "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
+      ]);
+      expect(await context.store.loadDomainEvents(ids.game), `${fault.name}: retry no append`).toStrictEqual(afterSuccess);
+      expect(context.store.acceptedCount, `${fault.name}: retry no commit`).toBe(beforeAcceptedCount + 1);
+      expect(context.store.getReceiptCount(), `${fault.name}: retry no receipt`).toBe(beforeReceiptCount + 1);
+    }
+  }, 120_000);
+
+  it("[2B19A3B1-C08/C30/C36-S14/S16/S17] rebuilds legacy generations and rejects V4 envelopes evidence and ledger mutations", async () => {
+    const normalV2 = loadAcceptedBaseDreamerV3NormalStreamFixture();
+    const vortoxV3 = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    for (const [name, stream, deliveryIndex] of [
+      ["V2", normalV2.events, normalV2.deliveryEventIndex],
+      ["V3", vortoxV3.events, vortoxV3.deliveryEventIndex]
+    ] as const) {
+      const rebuilt = rebuildOptionalGameState(structuredClone(stream));
+      const event = stream[deliveryIndex];
+      if (rebuilt === undefined || event?.eventType !== "DreamerInformationDelivered") {
+        throw new Error(`Expected accepted ${name} history`);
+      }
+      const sourceView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(stream, event.payload.sourcePlayerId);
+      expect(sourceView.dreamerInformation, name).toStrictEqual({
+        target: { playerId: event.payload.targetPlayerId, seatNumber: event.payload.targetSeatNumber },
+        goodRole: event.payload.goodRole,
+        evilRole: event.payload.evilRole
+      });
+      const facts = rebuilt.firstNightAbilityOutcomeLedger?.facts.filter((fact) => fact.sourceEventId === event.eventId) ?? [];
+      expect(facts, name).toHaveLength(1);
+      expect(facts[0]?.evidenceReferences.filter((entry) => entry.kind === "ABILITY_IMPAIRMENT"), name).toHaveLength(0);
+    }
+
+    const captured = await captureAcceptedV4Stream("event-ledger-matrix");
+    const canonicalState = rebuildOptionalGameState(captured.events);
+    const canonicalDelivery = captured.events[captured.deliveryIndex];
+    const canonicalFact = canonicalState?.firstNightAbilityOutcomeLedger?.facts.find((fact) =>
+      fact.sourceEventId === canonicalDelivery?.eventId
+    );
+    if (canonicalState === undefined || canonicalDelivery?.eventType !== "DreamerInformationDelivered" ||
+        canonicalFact === undefined || canonicalState.firstNightAbilityOutcomeLedger === undefined) {
+      throw new Error("Expected canonical V4 fact and ledger");
+    }
+    expect(canonicalFact.evidenceReferences.filter((entry) => entry.kind === "ABILITY_IMPAIRMENT")).toHaveLength(1);
+    expect(validateFirstNightAbilityOutcomeFactShape(canonicalFact)).toStrictEqual({ valid: true });
+    expect(domainCore.validateFirstNightAbilityOutcomeLedgerShape(canonicalState.firstNightAbilityOutcomeLedger))
+      .toStrictEqual({ valid: true });
+    expect(domainCore.cloneFirstNightAbilityOutcomeLedger(canonicalState.firstNightAbilityOutcomeLedger))
+      .toStrictEqual(canonicalState.firstNightAbilityOutcomeLedger);
+
+    const target = captured.events[captured.targetIndex]!;
+    const settlement = captured.events[captured.settlementIndex]!;
+    const envelopeCases: readonly [string, number, (event: AnyDomainEventEnvelope) => AnyDomainEventEnvelope][] = [
+      ["target id", captured.targetIndex, (event) => ({ ...event, eventId: captured.events[0]!.eventId })],
+      ["delivery id", captured.deliveryIndex, (event) => ({ ...event, eventId: captured.events[0]!.eventId })],
+      ["settlement id", captured.settlementIndex, (event) => ({ ...event, eventId: captured.events[0]!.eventId })],
+      ["delivery command", captured.deliveryIndex, (event) => ({ ...event, commandId: commandId("wrong-delivery-command") })],
+      ["settlement batch", captured.settlementIndex, (event) => ({ ...event, batchId: batchId("wrong-settlement-batch") })],
+      ["target sequence", captured.targetIndex, (event) => ({ ...event, eventSequence: event.eventSequence + 1 })],
+      ["delivery game version", captured.deliveryIndex, (event) => ({ ...event, gameVersion: event.gameVersion + 1 })],
+      ["settlement event version", captured.settlementIndex, (event) => ({ ...event, eventVersion: 2 as 1 })],
+      ["delivery rules baseline", captured.deliveryIndex, (event) => ({ ...event, rulesBaselineVersion: "Phase One v2.0" })],
+      ["settlement task revision", captured.settlementIndex, (event) => ({ ...event,
+        payload: { ...event.payload, characterStateRevision: 99 } as never })]
+    ];
+    expect(() => validateDomainBatchSemantics(
+      rebuildOptionalGameState(captured.events.slice(0, captured.targetIndex)), [target, canonicalDelivery, settlement]
+    )).not.toThrow();
+    for (const [name, index, mutate] of envelopeCases) {
+      const stream = [...structuredClone(captured.events)];
+      stream[index] = mutate(stream[index]!);
+      expect(() => rebuildOptionalGameState(stream), name).toThrowError(DomainError);
+    }
+
+    const impairment = canonicalFact.evidenceReferences.find((entry) => entry.kind === "ABILITY_IMPAIRMENT");
+    if (impairment?.kind !== "ABILITY_IMPAIRMENT") throw new Error("Expected canonical DRUNK evidence");
+    const substituteEvidence = (field: string, value: unknown) => ({
+      ...canonicalFact,
+      evidenceReferences: canonicalFact.evidenceReferences.map((entry) =>
+        entry.kind === "ABILITY_IMPAIRMENT" ? { ...entry, [field]: value } : entry)
+    });
+    const factCases = [
+      ["wrong evidence key", { ...impairment, hidden: true }],
+      ["wrong evidence id", { ...impairment, impairmentId: "" }],
+      ["wrong evidence player", { ...impairment, affectedPlayerId: "" }],
+      ["wrong evidence seat", { ...impairment, affectedSeatNumber: 0 }],
+      ["wrong evidence role", { ...impairment, affectedRoleId: "" }],
+      ["wrong evidence source", { ...impairment, sourcePlayerId: "" }],
+      ["wrong evidence chosen role", { ...impairment, chosenRoleId: "" }],
+      ["wrong evidence revision", { ...impairment, sourceCharacterStateRevision: 0 }]
+    ] as const;
+    for (const [name, replacement] of factCases) {
+      const candidate = { ...canonicalFact, evidenceReferences: canonicalFact.evidenceReferences.map((entry) =>
+        entry.kind === "ABILITY_IMPAIRMENT" ? replacement : entry) };
+      expect(validateFirstNightAbilityOutcomeFactShape(candidate).valid, name).toBe(false);
+      expect(() => domainCore.cloneFirstNightAbilityOutcomeLedger({
+        ...canonicalState.firstNightAbilityOutcomeLedger!,
+        facts: canonicalState.firstNightAbilityOutcomeLedger!.facts.map((fact) =>
+          fact.auditFactId === canonicalFact.auditFactId ? candidate : fact)
+      } as unknown as Parameters<typeof domainCore.cloneFirstNightAbilityOutcomeLedger>[0]), name)
+        .toThrowError(DomainError);
+    }
+    for (const [name, candidate] of [
+      ["duplicate evidence", { ...canonicalFact, evidenceReferences: [...canonicalFact.evidenceReferences, impairment] }],
+      ["conflicting evidence", { ...canonicalFact, evidenceReferences: [...canonicalFact.evidenceReferences,
+        { ...impairment, impairmentId: abilityImpairmentId("conflict") }] }],
+      ["evidence order", { ...canonicalFact, evidenceReferences: [...canonicalFact.evidenceReferences].reverse() }],
+      ["audit identity", { ...canonicalFact, auditFactId: "wrong-audit-fact" }],
+      ["source event", { ...canonicalFact, sourceEventId: eventId("wrong-source-event") }],
+      ["source task", { ...canonicalFact, taskId: scheduledTaskId("wrong-task") }],
+      ["ability instance", { ...canonicalFact, abilityInstance: { ...canonicalFact.abilityInstance,
+        sourceAbilityInstanceId: "wrong-ability-instance" } }],
+      ["semantic triple", { ...canonicalFact, causedByAnotherCharacterAbility: false }]
+    ] as const) {
+      expect(validateFirstNightAbilityOutcomeFactShape(candidate).valid, name).toBe(false);
+    }
+    expect(validateFirstNightAbilityOutcomeFactShape(substituteEvidence("impairmentKind", "POISONED")).valid)
+      .toBe(false);
+  }, 60_000);
+});
+
 const reachDreamerV2PayloadValidationAuthority = async (
   service: GameApplicationService,
   commandStore: MemoryCommandCommitStore
@@ -1337,6 +1962,31 @@ class OneShotDomainEventLoadFailureStore extends MemoryCommandCommitStore {
       throw new Error("injected domain event dependency failure");
     }
     return super.loadDomainEvents(gameIdValue);
+  }
+}
+
+class PersistedEventMutationStore extends MemoryCommandCommitStore {
+  public constructor(private readonly persistedEvents: readonly AnyDomainEventEnvelope[]) {
+    super();
+  }
+
+  public override loadDomainEvents(gameIdValue: GameId): Promise<readonly AnyDomainEventEnvelope[]> {
+    void gameIdValue;
+    return Promise.resolve(structuredClone(this.persistedEvents));
+  }
+}
+
+class OneShotAcceptedReceiptPersistenceFailureStore extends MemoryCommandCommitStore {
+  public failAcceptedReceiptPersistence = false;
+
+  public override commitAcceptedCommand(
+    input: Parameters<MemoryCommandCommitStore["commitAcceptedCommand"]>[0]
+  ): Promise<void> {
+    if (this.failAcceptedReceiptPersistence) {
+      this.failAcceptedReceiptPersistence = false;
+      return Promise.reject(new Error("injected accepted receipt persistence failure"));
+    }
+    return super.commitAcceptedCommand(input);
   }
 }
 
@@ -8384,12 +9034,14 @@ describeApplicationServiceShard("compatibility-and-failure-boundaries", "GameApp
   });
 
   it("accepts Seamstress DEFER from source Human, source AI, Storyteller, and System actors", async () => {
-    for (const [actorName, actorFactory] of [
+    const cases = [
       ["human", (sourcePlayerId: ReturnType<typeof playerId>) => ({ kind: "human", playerId: sourcePlayerId } as const)],
       ["ai", (sourcePlayerId: ReturnType<typeof playerId>) => ({ kind: "ai", playerId: sourcePlayerId } as const)],
       ["storyteller", () => storytellerActor],
       ["system", () => systemActor]
-    ] as const) {
+    ] as const;
+
+    await Promise.all(cases.map(async ([actorName, actorFactory]) => {
       const commandStore = new MemoryCommandCommitStore();
       const { service } = makeService(commandStore);
       const { seamstressTask, opportunity } = await reachOpenSeamstressActionOpportunity(service, commandStore);
@@ -8411,7 +9063,7 @@ describeApplicationServiceShard("compatibility-and-failure-boundaries", "GameApp
         eventCount: 2,
         eventTypes: ["SeamstressActionDeferred", "ScheduledTaskSettled"]
       });
-    }
+    }));
   });
 
   it("rejects malformed, future, mismatched, and non-source Seamstress submissions without domain events", async () => {

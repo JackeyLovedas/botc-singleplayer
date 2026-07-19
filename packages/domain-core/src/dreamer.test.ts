@@ -7,6 +7,7 @@ import {
   SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
   createDreamerTargetChosenPayload,
   createDreamerInformationDeliveredPayload,
+  createDreamerCanonicalDrunkVortoxInformationDeliveredPayload,
   createDreamerVortoxInformationDeliveredPayload,
   cloneDreamerInformationSet,
   evaluateDreamerEffectiveness,
@@ -234,6 +235,136 @@ describe("Phase 3 Slice 2B19A3A Vortox payload contracts", () => {
   });
 });
 
+describe("Phase 3 Slice 2B19A3B1 canonical-drunk Vortox payload contracts", () => {
+  const validationInput = () => {
+    const facts = v4VortoxFacts();
+    return { facts, input: { choices: { choices: [facts.choice] }, deliveries: undefined,
+      setup: facts.setup, currentCharacterState: facts.state, abilityImpairments: facts.abilityImpairments,
+      firstNightActionOpportunities: facts.opportunities, firstNightTaskPlan: facts.plan,
+      roleTenures: facts.roleTenures } };
+  };
+
+  it("[2B19A3B1-C06/C07/C11/C12/C13/C14/C15/C16/C17/C30/C32/C34/C35/C41-S01/S02/S03/S04/S05/S06/S07/S08/S12/S13/S15/S16/S19/S20] validates only the exact deterministic V4 contract", () => {
+    const { facts, input } = validationInput();
+    expect(validateDreamerInformationDeliveredPayload(facts.delivery, input)).toStrictEqual({ valid: true });
+    expect(Object.keys(facts.delivery)).toHaveLength(22);
+    for (const key of Object.keys(facts.delivery)) {
+      const missing = structuredClone(facts.delivery) as unknown as Record<string, unknown>;
+      delete missing[key];
+      expect(validateDreamerInformationDeliveredPayload(missing, input).valid, key).toBe(false);
+    }
+    expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery, extra: true }, input).valid).toBe(false);
+    for (const [field, value] of [
+      ["deliverySchemaVersion", "dreamer-information-delivered-v3"],
+      ["nightNumber", 2], ["taskType", "SEAMSTRESS_ACTION"],
+      ["opportunitySchemaVersion", "future"], ["knowledgeModelVersion", "future"],
+      ["knowledgeStage", "future"], ["falseRolePolicyVersion", "future"]
+    ] as const) {
+      expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery, [field]: value }, input).valid, field).toBe(false);
+    }
+    const nested = ["sourceContract", "informationReliability", "sourceImpairment", "vortoxConstraint"] as const;
+    for (const field of nested) {
+      const value = structuredClone(facts.delivery[field]) as unknown as Record<string, unknown>;
+      const firstKey = Object.keys(value)[0]!;
+      const missing = { ...facts.delivery, [field]: { ...value } } as unknown as Record<string, unknown>;
+      delete (missing[field] as Record<string, unknown>)[firstKey];
+      expect(validateDreamerInformationDeliveredPayload(missing, input).valid, `${field}-missing`).toBe(false);
+      expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery,
+        [field]: { ...value, extra: true } }, input).valid, `${field}-extra`).toBe(false);
+    }
+    for (const [field, value] of [
+      ["impairmentId", abilityImpairmentId("wrong-impairment")],
+      ["affectedPlayerId", playerId("wrong-player")],
+      ["affectedSeatNumber", seatNumber(2)],
+      ["affectedRole", flowergirlRole],
+      ["sourceKind", "SNAKE_CHARMER_DEMON_HIT"],
+      ["sourcePlayerId", playerId("wrong-source")],
+      ["chosenRoleId", "artist"],
+      ["sourceCharacterStateRevision", 0]
+    ] as const) {
+      expect(validateDreamerInformationDeliveredPayload({
+        ...facts.delivery,
+        sourceImpairment: { ...facts.delivery.sourceImpairment, [field]: value }
+      }, input).valid, `sourceImpairment.${field}`).toBe(false);
+    }
+    for (const [field, value] of [
+      ["vortoxPlayerId", playerId("wrong-vortox")],
+      ["vortoxSeatNumber", seatNumber(2)],
+      ["vortoxRoleTenureId", "role-tenure-v1:seat-02:vortox:revision-000001"],
+      ["evaluatedCharacterStateRevision", 2]
+    ] as const) {
+      expect(validateDreamerInformationDeliveredPayload({
+        ...facts.delivery,
+        vortoxConstraint: { ...facts.delivery.vortoxConstraint, [field]: value }
+      }, input).valid, `vortoxConstraint.${field}`).toBe(false);
+    }
+    const reversed = v4VortoxFacts([...facts.setup.roleCatalogSnapshot.roles].reverse());
+    expect([reversed.delivery.goodRole, reversed.delivery.evilRole])
+      .toStrictEqual([facts.delivery.goodRole, facts.delivery.evilRole]);
+    const poisoned = { impairments: [{ ...facts.abilityImpairments.impairments[0]!, kind: "POISONED" as const,
+      sourceKind: "SNAKE_CHARMER_DEMON_HIT" as const }] } as AbilityImpairmentSet;
+    expect(resolveBaseDreamerV2NormalCapability({ opportunity: facts.opportunity, firstNightTaskPlan: facts.plan,
+      firstNightTaskProgress: undefined, firstNightActionOpportunities: facts.opportunities,
+      currentCharacterState: facts.state, setup: facts.setup, roleTenures: facts.roleTenures,
+      abilityImpairments: poisoned })).not.toMatchObject({
+        kind: "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
+      });
+    const duplicate = { impairments: [facts.abilityImpairments.impairments[0]!,
+      { ...facts.abilityImpairments.impairments[0]! }] } as AbilityImpairmentSet;
+    expect(resolveBaseDreamerV2NormalCapability({ opportunity: facts.opportunity, firstNightTaskPlan: facts.plan,
+      firstNightTaskProgress: undefined, firstNightActionOpportunities: facts.opportunities,
+      currentCharacterState: facts.state, setup: facts.setup, roleTenures: facts.roleTenures,
+      abilityImpairments: duplicate })).toMatchObject({
+        kind: "EFFECTIVENESS_UNRESOLVED", reason: "SOURCE_IMPAIRMENT_CONFLICT"
+      });
+    const conflicting = { impairments: [facts.abilityImpairments.impairments[0]!,
+      { ...facts.abilityImpairments.impairments[0]!, impairmentId: abilityImpairmentId("conflicting-poison"),
+        kind: "POISONED" as const, sourceKind: "SNAKE_CHARMER_DEMON_HIT" as const }] } as AbilityImpairmentSet;
+    expect(resolveBaseDreamerV2NormalCapability({ opportunity: facts.opportunity, firstNightTaskPlan: facts.plan,
+      firstNightTaskProgress: undefined, firstNightActionOpportunities: facts.opportunities,
+      currentCharacterState: facts.state, setup: facts.setup, roleTenures: facts.roleTenures,
+      abilityImpairments: conflicting })).toMatchObject({
+        kind: "EFFECTIVENESS_UNRESOLVED", reason: "SOURCE_IMPAIRMENT_CONFLICT"
+      });
+  });
+
+  it("[2B19A3B1-C08-S09/S10/S11/S14/S17/S18] fails hostile inputs closed and keeps every version clone/equality isolated", () => {
+    const { facts, input } = validationInput();
+    let getterCalls = 0;
+    const topAccessor = structuredClone(facts.delivery) as unknown as Record<string, unknown>;
+    Object.defineProperty(topAccessor, "sourceImpairment", { enumerable: true,
+      get: () => { getterCalls += 1; throw new Error("getter"); } });
+    expect(validateDreamerInformationDeliveredPayload(topAccessor, input).valid).toBe(false);
+    const nestedAccessor = structuredClone(facts.delivery) as unknown as Record<string, unknown>;
+    Object.defineProperty(nestedAccessor.sourceImpairment as object, "impairmentId", { enumerable: true,
+      get: () => { getterCalls += 1; throw new Error("getter"); } });
+    expect(validateDreamerInformationDeliveredPayload(nestedAccessor, input).valid).toBe(false);
+    expect(getterCalls).toBe(0);
+    const throwing = new Proxy(facts.delivery, { ownKeys: () => { throw new Error("proxy"); } });
+    expect(validateDreamerInformationDeliveredPayload(throwing, input).valid).toBe(false);
+    const revoked = Proxy.revocable(facts.delivery, {}); revoked.revoke();
+    expect(validateDreamerInformationDeliveredPayload(revoked.proxy, input).valid).toBe(false);
+    const symbol = structuredClone(facts.delivery) as typeof facts.delivery & { [key: symbol]: boolean };
+    symbol[Symbol("hidden")] = true;
+    expect(validateDreamerInformationDeliveredPayload(symbol, input).valid).toBe(false);
+    const cycle = structuredClone(facts.delivery) as unknown as Record<string, unknown>; cycle.self = cycle;
+    expect(validateDreamerInformationDeliveredPayload(cycle, input).valid).toBe(false);
+    expect(validateDreamerInformationDeliveredPayload(
+      Object.assign(Object.create({ inherited: true }) as object, facts.delivery), input
+    ).valid).toBe(false);
+    const legacy = [storedDelivery(), v3Facts().delivery, v3VortoxFacts().delivery];
+    const clones = cloneDreamerInformationSet({ deliveries: [...legacy, facts.delivery] }).deliveries;
+    expect(clones).toStrictEqual([...legacy, facts.delivery]);
+    expect(clones[3]).not.toBe(facts.delivery);
+    expect((clones[3] as typeof facts.delivery).sourceImpairment).not.toBe(facts.delivery.sourceImpairment);
+    expect(sameDreamerInformationDelivery(facts.delivery, structuredClone(facts.delivery))).toBe(true);
+    expect(sameDreamerInformationDelivery(facts.delivery, {
+      ...facts.delivery, evaluatedCharacterStateRevision: facts.delivery.evaluatedCharacterStateRevision + 1
+    })).toBe(false);
+    for (const prior of legacy) expect(sameDreamerInformationDelivery(facts.delivery, prior)).toBe(false);
+  });
+});
+
 const dreamerRole = role("dreamer", "TOWNSFOLK", "GOOD");
 const flowergirlRole = role("flowergirl", "TOWNSFOLK", "GOOD");
 const snakeCharmerRole = role("snake_charmer", "TOWNSFOLK", "GOOD");
@@ -380,6 +511,43 @@ const v3VortoxFacts = (targetRole: RoleSetupSnapshot = flowergirlRole) => {
   const delivery = createDreamerVortoxInformationDeliveredPayload({ rulesBaselineVersion: "Phase One v2.1",
     targetChoice: choice, setup: setupFacts, currentCharacterState: state, capability });
   return { opportunity, state, plan, opportunities, roleTenures, setup: setupFacts, roster, choice, capability, delivery };
+};
+
+const v4VortoxFacts = (roles?: readonly RoleSetupSnapshot[]) => {
+  const base = v3VortoxFacts();
+  const setupFacts = setup(roles ?? base.setup.roleCatalogSnapshot.roles);
+  const abilityImpairments: AbilityImpairmentSet = { impairments: [{
+    impairmentId: abilityImpairmentId("philosopher-seat-04:drunks-dreamer-seat-01"),
+    kind: "DRUNK",
+    sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+    sourcePlayerId: playerId("philosopher-player"),
+    affectedPlayerId: base.opportunity.sourcePlayerId,
+    affectedSeatNumber: base.opportunity.sourceSeatNumber,
+    affectedRole: dreamerRole,
+    chosenRoleId: roleId("dreamer"),
+    sourceCharacterStateRevision: 1
+  }] };
+  const capability = resolveBaseDreamerV2NormalCapability({
+    opportunity: base.opportunity,
+    firstNightTaskPlan: base.plan,
+    firstNightTaskProgress: undefined,
+    firstNightActionOpportunities: base.opportunities,
+    currentCharacterState: base.state,
+    setup: setupFacts,
+    roleTenures: base.roleTenures,
+    abilityImpairments
+  });
+  if (capability.kind !== "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED") {
+    throw new Error("Expected canonical-drunk Vortox capability");
+  }
+  const delivery = createDreamerCanonicalDrunkVortoxInformationDeliveredPayload({
+    rulesBaselineVersion: "Phase One v2.1",
+    targetChoice: base.choice,
+    setup: setupFacts,
+    currentCharacterState: base.state,
+    capability
+  });
+  return { ...base, setup: setupFacts, abilityImpairments, capability, delivery };
 };
 
 const setup = (roles: readonly RoleSetupSnapshot[]): Pick<GeneratedSetup, "roleCatalogSnapshot"> => ({

@@ -6,6 +6,7 @@ import {
   DEMON_INFORMATION_KNOWLEDGE_STAGE,
   DREAMER_INFORMATION_STAGE,
   DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION,
+  DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION,
   CERENOVUS_INFORMATION_STAGE,
   CERENOVUS_MADNESS_INSTRUCTION_MODEL_VERSION,
   CLOCKMAKER_INFORMATION_MODEL_VERSION,
@@ -597,9 +598,10 @@ const buildPlayerPrivateKnowledgeViewInternal = (
   if (!allowAcceptedStreamOnlyHistory && state.dreamerInformation?.deliveries.some((delivery) =>
     isPlainRecord(delivery) &&
     "deliverySchemaVersion" in delivery &&
-    delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION
+    (delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION ||
+      delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION)
   ) === true) {
-    throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate Dreamer V3 history; use the accepted-event-stream builder");
+    throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate versioned Vortox Dreamer history; use the accepted-event-stream builder");
   }
   const privateKnowledge = requireInitialPrivateKnowledge(state);
   const rosterEntry = state.roster?.entries.find((entry) => entry.playerId === viewerPlayerId);
