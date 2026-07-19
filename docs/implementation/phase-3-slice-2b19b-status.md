@@ -6,9 +6,9 @@
 - Rule evidence: `docs/rules/evidence/2B19B.md`, SHA-256 `e1f038f32171d7cea1f89345b1cac958e30a79f47005ca444a0dc2633abe3187`, verdict `RULE_READY`, coverage `PARTIAL`
 - Final design: `docs/implementation/phase-3-slice-2b19b-design-round-2.md`, SHA-256 `f915fd4c51c21cd7d43a873cf6345bccd97462431ba6631f161ae58077ece10b`
 - Design review: `docs/implementation/phase-3-slice-2b19b-design-review-round-2.md`, SHA-256 `aa80221f77f766f6e730b3e46897a24180f7f4061917f59e9f4f3353a68d88c5`, verdict `RULE_DESIGN_PASS`
-- Design round: `2 / 2`; repair round: `1 / 2`
+- Design round: `2 / 2`; repair round: `2 / 2`
 - Role coverage: `PARTIAL`
-- Product status: `RUNNING / PRODUCT_REPAIR_ROUND_1`
+- Product status: `RUNNING / PRODUCT_REPAIR_ROUND_2_LOCAL_GATES_PASS`
 - PR: [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41)
 - Round 1 reviewed HEAD: `5256216b22e62dbb992d1a678dfc9c597b5227c7`
 - Immutable final review: `docs/implementation/phase-3-slice-2b19b-final-review-round-1.md`, canonical UTF-8 LF SHA-256 `d4fc89843939153a5562e42a0a5425010988257340bd974bdf9e324db8247e97`, `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`
@@ -81,3 +81,20 @@ No event type, event version, `GameState` field, evidence-union member, workflow
 - Storyteller discretionary false-role choice, Traveller targets, other-night behavior, death/lifecycle behavior, FIRST_NIGHT completion, DAY, Phase 2C, or 2B19A3B2.
 
 Dreamer, Philosopher, and Mathematician remain `PARTIAL`; Vortox remains `NOT_STARTED`; no role is `COMPLETE`.
+
+## Product Repair Round 2 CI blocker
+
+- Exact source HEAD: `f6c71b73b98fbdfd9935ca462f74676cf58d11ee`.
+- Push run `29686451621` attempts 1 and 2 failed: Dreamer-Vortox coverage wrote its blob then exited 1; Windows passed `270/270` then raised `Timeout calling "onTaskUpdate"`.
+- PR run `29686452785` attempts 1 and 2 failed: Dreamer-Vortox coverage wrote its blob then exited 1.
+- Same-head retry is prohibited. The sole blocker is `DREAMER_VORTOX_CI_WORKER_RPC_TIMEOUT_REPEATED`.
+- Round 2 may reduce only existing 2B19B test execution cost while preserving every title, primary mechanism, assertion, ownership identity, and F01-F05 authority. Production, rules, traceability semantics, CI topology, timeouts, RPC behavior, dependencies, profiles, and selectors are frozen.
+
+## Product Repair Round 2 local closure
+
+- Optimization: build one real accepted Philosopher-gained Vortox Dreamer settled stream, then return a fresh `structuredClone` to each C13 hostile-batch, C46 accepted-stream projection, and S18 evidence-shape consumer. No cached assertion, result, fault port, or command authority was introduced.
+- Before: ordinary Dreamer-Vortox `34.347s`; coverage blob `48.150s`.
+- Three after rounds: ordinary `32.869s / 31.447s / 31.302s`; coverage `45.483s / 44.088s / 45.428s`; Windows application package `34.599s / 34.715s / 34.703s`. Every command exited `0`; all six shard reports contain identical `26/26` full titles; all three package runs contain `7 files / 270/270`; risk-keyword hits are zero.
+- Ownership self-test: `22/22 PASS`. Fresh formal ordinary isolation: `9/9`, `1,520/1,520`, zero missing, duplicate, unexpected, ambiguous, wrong-owner, or multi-primary identity.
+- Full gates: typecheck `PASS`; lint `PASS`; ordinary `35 files / 1,520 tests / 39.612s`; coverage `35 files / 1,520 tests / 57.521s`, statements/lines `79.09`, branches `83.26`, functions `97.49`.
+- The R1Q failure is closed locally. New exact-R2P push/PR CI and a fresh complete independent review are still mandatory; old CI and review authority are not inherited.

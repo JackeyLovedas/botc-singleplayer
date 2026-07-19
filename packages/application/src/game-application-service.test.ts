@@ -1285,6 +1285,26 @@ const settlePhilosopherGainedVortoxDreamer = async (
   return { events, state, opened, opportunity, target, task, beforeSubmitCount };
 };
 
+type SettledPhilosopherGainedVortoxDreamer = Awaited<
+  ReturnType<typeof settlePhilosopherGainedVortoxDreamer>
+>;
+
+let acceptedPhilosopherGainedVortoxDreamerStream:
+  | Promise<SettledPhilosopherGainedVortoxDreamer>
+  | undefined;
+
+const captureAcceptedPhilosopherGainedVortoxDreamerStream = async () => {
+  acceptedPhilosopherGainedVortoxDreamerStream ??= (() => {
+    const store = new MemoryCommandCommitStore();
+    return settlePhilosopherGainedVortoxDreamer(
+      makeService(store).service,
+      store,
+      "2b19b-shared-accepted-stream"
+    );
+  })();
+  return structuredClone(await acceptedPhilosopherGainedVortoxDreamerStream);
+};
+
 describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer", () => {
   it("[2B19B-C01/C09/C10/C42] opens one exact gained Dreamer V4 opportunity and preserves base Snake Charmer", async () => {
     const dreamerStore = new MemoryCommandCommitStore();
@@ -1747,8 +1767,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
   }, 30_000);
 
   it("[2B19B-C13/C14/C15/C16/C23/C35/C38/C39/C41-S17] rejects hostile accepted gained prefixes and batches", async () => {
-    const store = new MemoryCommandCommitStore();
-    const captured = await settlePhilosopherGainedVortoxDreamer(makeService(store).service, store, "2b19b-hostile");
+    const captured = await captureAcceptedPhilosopherGainedVortoxDreamerStream();
     const targetEvent = captured.events[captured.beforeSubmitCount];
     const deliveryEvent = captured.events[captured.beforeSubmitCount + 1];
     const settlementEvent = captured.events[captured.beforeSubmitCount + 2];
@@ -1802,8 +1821,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
   }, 30_000);
 
   it("[2B19B-C46/C47/C48/C49/C50-S19] projects gained information only from accepted history", async () => {
-    const store = new MemoryCommandCommitStore();
-    const captured = await settlePhilosopherGainedVortoxDreamer(makeService(store).service, store, "2b19b-projection");
+    const captured = await captureAcceptedPhilosopherGainedVortoxDreamerStream();
     const delivery = captured.state.dreamerInformation?.deliveries.find((entry) => entry.taskId === captured.task.taskId);
     const playerView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(captured.events, captured.opportunity.sourcePlayerId);
     const aiView = buildAiPrivateKnowledgeViewFromAcceptedEventStream(captured.events, captured.opportunity.sourcePlayerId);
@@ -1829,8 +1847,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
   }, 30_000);
 
   it("[2B19B-S18] rejects missing and duplicate gained Dreamer evidence references", async () => {
-    const store = new MemoryCommandCommitStore();
-    const captured = await settlePhilosopherGainedVortoxDreamer(makeService(store).service, store, "2b19b-evidence");
+    const captured = await captureAcceptedPhilosopherGainedVortoxDreamerStream();
     const fact = captured.state.firstNightAbilityOutcomeLedger?.facts.find((entry) => entry.abilityTaskId === captured.task.taskId);
     if (fact === undefined) throw new Error("Expected gained Dreamer evidence fact");
     expect(validateFirstNightAbilityOutcomeFactShape(fact)).toStrictEqual({ valid: true });
