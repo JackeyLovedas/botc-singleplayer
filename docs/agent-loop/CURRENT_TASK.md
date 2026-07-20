@@ -1,15 +1,16 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B2 — PREREQUISITE ACCEPTED / PENDING DESIGN RELEASE REVIEW
+## Phase 3 Slice 2B19A3B2 — READY FOR IMPLEMENTATION
 
-- Control status: `status=PREREQUISITE_REQUIRED`; `taskType=PRODUCT_SLICE`; `disposition=UNACCEPTED`; `currentSlice=2B19A3B2`; `currentBranch=phase-3/combined-dreamer-mathematician-integration`; `currentPR=null`; `implementationAuthorized=false`; `phase2CStarted=false`.
+- Control status: `status=READY_FOR_IMPLEMENTATION`; `taskType=PRODUCT_SLICE`; `disposition=UNACCEPTED`; `currentSlice=2B19A3B2`; `currentBranch=phase-3/combined-dreamer-mathematician-integration`; `currentPR=null`; `implementationAuthorized=true`; `phase2CStarted=false`.
 - Original rule evidence remains `RULE_READY` and Design Round 1 remains `RULE_DESIGN_PASS`: `ruleReady=true`; `ruleDesignPass=true`; `designRound=1/2`; `repairRound=0/2`; `productRepairRoundConsumed=false`. Behavior design, rule semantics, Mathematician schema, Dreamer facts/window/count, and unsupported scope are unchanged; no Design Round 2 is created.
 - Design-gate commit remains `cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a`; design SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`; independent design-review SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`.
-- Shared prerequisite `COMMAND_CAPTURE_PROXY_REJECTION_V1` is accepted on `origin/main` at closeout SHA `9262a2a271c7e4f704c90eca67ce4087a316c252`. Its zero-trap Proxy rejection, production/tests, exact profile, workflow selector, final-review archives, accepted tag, and commit-specific CI history are synchronized without changing A3B2 behavior design.
+- Shared prerequisite `COMMAND_CAPTURE_PROXY_REJECTION_V1` is independently accepted: PR #43 merged as `300933d8d50123b5bbf198e0945d9b581be2042b`, accepted tag `foundation-command-capture-proxy-rejection-v1`, merge CI `29737798440`, closeout SHA `9262a2a271c7e4f704c90eca67ce4087a316c252`, and closeout CI `29738772588`. Sync merge `3ef896942fc278bfd3b4484f74f5cfcc55c67ce2` has exact parents `e411efe967c37dff0030f2bd9e52eb5b8171712e` and `9262a2a271c7e4f704c90eca67ce4087a316c252`.
+- Independent release review `docs/implementation/phase-3-slice-2b19a3b2-design-release-review-after-command-capture-v1.md`, SHA-256 `c0c742aa142772530e83837ac7b4e3c6f2ca4daddf395d57b73452e54dd43485`, bound that exact synchronized HEAD and parents, passed all `12 / 12` checks, and returned `DESIGN_RELEASE_PASS`, `behaviorDesignChanged=false`, `ruleSemanticsChanged=false`, and `remainingBlockers=[PENDING_IMPLEMENTATION_RESUME]`. This is not Design Round 2.
 - The seven unaccepted A3B2 test identities remain absent. Preservation authority is external patch SHA-256 `9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50` and local archive branch `archive/2b19a3b2-pre-command-proxy-hardening-test-wip` at `d356cfbf45f64be1aacc1fc042648a318fcacdd5`; neither was restored or accepted.
-- No A3B2 implementation traceability, ownership activation, coverage profile, pull request, product CI, accepted tag, or implementation merge exists. A3B2 remains unaccepted and unauthorized.
-- Sole blocker: `PENDING_DESIGN_RELEASE_REVIEW`.
-- Required next action: `RUN_A3B2_DESIGN_RELEASE_REVIEW`. Only exact `DESIGN_RELEASE_PASS` may authorize later implementation; this synchronization does not create that review or resume implementation.
+- No A3B2 implementation traceability, ownership activation, coverage profile, pull request, product CI, accepted tag, or implementation merge exists. This release-review materialization performs no A3B2 implementation and does not restore or execute WIP.
+- Sole blocker: `PENDING_IMPLEMENTATION_RESUME`.
+- Required next action: `RESUME_A3B2_IMPLEMENTATION` in a separate controller/implementer turn under unchanged Design Round 1.
 
 ## Historical accepted Foundation — Command Capture Proxy Rejection V1
 
