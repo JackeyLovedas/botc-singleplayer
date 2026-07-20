@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 const REQUIRED_ARGUMENTS = [
   "--group",
   "--projects",
+  "--test-name-pattern",
   "--blob",
   "--coverage-json",
   "--output",
@@ -44,8 +45,12 @@ function fail(message) {
   throw new Error(message);
 }
 
+function isSingleLine(value) {
+  return !value.includes("\u0000") && !value.includes("\r") && !value.includes("\n");
+}
+
 function isSingleNonEmptyLine(value) {
-  return value.length > 0 && !value.includes("\u0000") && !value.includes("\r") && !value.includes("\n");
+  return value.length > 0 && isSingleLine(value);
 }
 
 function parseArguments(argv) {
@@ -70,7 +75,10 @@ function parseArguments(argv) {
     if (parsed.has(name)) {
       fail(`duplicate argument: ${name}`);
     }
-    if (typeof value !== "string" || value.length === 0) {
+    if (
+      typeof value !== "string" ||
+      (value.length === 0 && name !== "--test-name-pattern")
+    ) {
       fail(`missing value for argument: ${name}`);
     }
     parsed.set(name, value);
@@ -86,6 +94,7 @@ function parseArguments(argv) {
     selfTest: false,
     group: parsed.get("--group"),
     projects: parsed.get("--projects"),
+    testNamePattern: parsed.get("--test-name-pattern"),
     blob: parsed.get("--blob"),
     coverageJson: parsed.get("--coverage-json"),
     output: parsed.get("--output"),
@@ -150,6 +159,9 @@ function validateInvocation(options) {
   const projectArguments = options.projects.trim().split(/\s+/u);
   if (projectArguments.length === 0 || projectArguments.some((item) => !PROJECT_PATTERN.test(item))) {
     fail("--projects must contain only one or more --project=<name> arguments");
+  }
+  if (!isSingleLine(options.testNamePattern)) {
+    fail("--test-name-pattern must be one line without NUL characters");
   }
   for (const [name, value] of [
     ["--pnpm-version", options.pnpmVersion],
@@ -316,6 +328,7 @@ function collectDiagnostics(rawOptions, repositoryRoot = process.cwd()) {
     schemaVersion: 1,
     group: options.group,
     projectArguments: options.projectArguments,
+    testNamePattern: options.testNamePattern,
     originalStepOutcome: options.originalOutcome,
     runtime: {
       nodeVersion: process.version,
@@ -409,6 +422,7 @@ function selfTest() {
       selfTest: false,
       group: "sample",
       projects: "--project=alpha --project=beta",
+      testNamePattern: "\\[(?:alpha|beta)-",
       blob: ".vitest-coverage/sample/sample.blob",
       coverageJson: "coverage/coverage-final.json",
       pnpmVersion: "11.7.0",
@@ -432,6 +446,10 @@ function selfTest() {
     expect(first.manifest.coverageJson.coverageJsonBytes === coverageBytes.byteLength, "coverage bytes must be exact");
     expect(first.manifest.coverageJson.coverageJsonSha256 === sha256(coverageBytes), "coverage hash must be exact");
     expect(first.manifest.originalStepOutcome === "failure", "non-success outcome must remain data");
+    expect(
+      first.manifest.testNamePattern === baseOptions.testNamePattern,
+      "test-name pattern must be recorded exactly",
+    );
     expect(first.manifestText === second.manifestText, "manifest serialization must be deterministic");
     expect(first.manifestHash === second.manifestHash, "manifest hashes must be deterministic");
     expect(first.manifestText.endsWith("\n") && !first.manifestText.endsWith("\n\n"), "manifest must have one trailing LF");
@@ -460,6 +478,19 @@ function selfTest() {
     expect(missing.manifest.blob.blobPresent === false, "missing blob must record blobPresent=false");
     expect(missing.manifest.blob.blobSha256 === null, "missing blob hash must be null");
     expect(missing.manifest.blob.diagnosticCopyPath === null, "missing blob must not claim a copy");
+
+    const emptyFilter = collectDiagnostics(
+      {
+        ...baseOptions,
+        testNamePattern: "",
+        output: ".diagnostics/empty-filter",
+      },
+      temporaryRoot,
+    );
+    expect(
+      emptyFilter.manifest.testNamePattern === "",
+      "explicit empty test-name pattern must remain distinct diagnostic data",
+    );
 
     expectThrows(
       () => validateCanonicalRepositoryPath("../outside", "--blob"),

@@ -210,20 +210,31 @@ jobs:
         include:
           - group: domain-core-rebuild
             projects: --project=domain-core-rebuild
+            testNamePattern: ""
           - group: domain-core-rest
             projects: --project=domain-core
+            testNamePattern: ""
           - group: application
             projects: --project=application
+            testNamePattern: ""
           - group: application-service-core
             projects: --project=application-service-core
+            testNamePattern: ""
           - group: application-service-role-actions
             projects: --project=application-service-role-actions
+            testNamePattern: ""
           - group: application-service-information-and-later-actions
             projects: --project=application-service-information-and-later-actions
+            testNamePattern: ""
           - group: application-service-compatibility-and-failure-boundaries
             projects: --project=application-service-compatibility-and-failure-boundaries
-          - group: application-service-dreamer-vortox
+            testNamePattern: ""
+          - group: application-service-dreamer-vortox-core
             projects: --project=application-service-dreamer-vortox
+            testNamePattern: '\[(?:2B19A3A|2B19A3B1)-'
+          - group: application-service-dreamer-vortox-gained
+            projects: --project=application-service-dreamer-vortox
+            testNamePattern: '\[2B19B-'
           - group: engines-and-projections
             projects: >-
               --project=assignment-engine
@@ -233,6 +244,7 @@ jobs:
               --project=setup-engine
               --project=task-engine
               --project=test-harness
+            testNamePattern: ""
 
     steps:
       - name: Checkout
@@ -258,15 +270,32 @@ jobs:
         continue-on-error: true
         env:
           VITEST_MAX_FORKS: "1"
-        run: >-
-          pnpm exec vitest run
-          --coverage
-          --coverage.include='packages/*/src/**/*.ts'
-          --coverage.reporter=json
-          --workspace vitest.workspace.ts
-          ${{ matrix.projects }}
-          --reporter=blob
-          --outputFile=.vitest-coverage/${{ matrix.group }}/${{ matrix.group }}.blob
+          COVERAGE_PROJECTS: ${{ matrix.projects }}
+          COVERAGE_TEST_NAME_PATTERN: ${{ matrix.testNamePattern }}
+        shell: bash
+        run: |
+          read -r -a project_arguments <<< "$COVERAGE_PROJECTS"
+          if [ "${#project_arguments[@]}" -eq 0 ]; then
+            echo "Coverage group has no project arguments" >&2
+            exit 1
+          fi
+          arguments=(
+            run
+            --coverage
+            "--coverage.include=packages/*/src/**/*.ts"
+            --coverage.reporter=json
+            --workspace
+            vitest.workspace.ts
+            "${project_arguments[@]}"
+          )
+          if [ -n "$COVERAGE_TEST_NAME_PATTERN" ]; then
+            arguments+=("--testNamePattern=$COVERAGE_TEST_NAME_PATTERN")
+          fi
+          arguments+=(
+            --reporter=blob
+            "--outputFile=.vitest-coverage/${{ matrix.group }}/${{ matrix.group }}.blob"
+          )
+          pnpm exec vitest "${arguments[@]}"
 
       - name: Collect coverage shard diagnostics
         if: always()
@@ -274,6 +303,7 @@ jobs:
           node scripts/collect-vitest-shard-diagnostics.mjs
           --group "${{ matrix.group }}"
           --projects "${{ matrix.projects }}"
+          --test-name-pattern "${{ matrix.testNamePattern }}"
           --blob ".vitest-coverage/${{ matrix.group }}/${{ matrix.group }}.blob"
           --coverage-json "coverage/coverage-final.json"
           --output ".vitest-coverage-diagnostics/${{ matrix.group }}"
@@ -361,7 +391,8 @@ jobs:
             application-service-role-actions
             application-service-information-and-later-actions
             application-service-compatibility-and-failure-boundaries
-            application-service-dreamer-vortox
+            application-service-dreamer-vortox-core
+            application-service-dreamer-vortox-gained
             engines-and-projections
           )
           test "$(find .vitest-coverage/merged-blobs -maxdepth 1 -type f -name '*.blob' | wc -l)" -eq "${#groups[@]}"
@@ -381,7 +412,8 @@ jobs:
             application-service-role-actions \
             application-service-information-and-later-actions \
             application-service-compatibility-and-failure-boundaries \
-            application-service-dreamer-vortox \
+            application-service-dreamer-vortox-core \
+            application-service-dreamer-vortox-gained \
             engines-and-projections
           do
             mkdir -p ".vitest-coverage/group-blobs/${group}"
@@ -415,7 +447,8 @@ jobs:
           --merged-group-report application-service-role-actions=.vitest-coverage/group-reports/application-service-role-actions.json
           --merged-group-report application-service-information-and-later-actions=.vitest-coverage/group-reports/application-service-information-and-later-actions.json
           --merged-group-report application-service-compatibility-and-failure-boundaries=.vitest-coverage/group-reports/application-service-compatibility-and-failure-boundaries.json
-          --merged-group-report application-service-dreamer-vortox=.vitest-coverage/group-reports/application-service-dreamer-vortox.json
+          --merged-group-report application-service-dreamer-vortox-core=.vitest-coverage/group-reports/application-service-dreamer-vortox-core.json
+          --merged-group-report application-service-dreamer-vortox-gained=.vitest-coverage/group-reports/application-service-dreamer-vortox-gained.json
           --merged-group-report engines-and-projections=.vitest-coverage/group-reports/engines-and-projections.json
           --output .vitest-coverage/inventory-audit.json
 

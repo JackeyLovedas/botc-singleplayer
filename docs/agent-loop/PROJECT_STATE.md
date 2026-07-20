@@ -1,5 +1,21 @@
 # Project State
 
+## Current infrastructure prerequisite — PR #41 COVERAGE PROCESS SPLIT ROUND 2
+
+- Authorization is `USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2`; task type is `CI_TEST_INFRASTRUCTURE` and scope is `DREAMER_VORTOX_COVERAGE_PROCESS_SPLIT_ONLY`.
+- Active branch is `infra/pr41-dreamer-vortox-coverage-observability-v1`; stacked PR [#42](https://github.com/JackeyLovedas/botc-singleplayer/pull/42) is based on frozen product branch `phase-3/philosopher-gained-dreamer-effective-source`. Round 1 infrastructure HEAD is `ee2f1aae24e7698250c5abf04268c7fd9410854f`; frozen product PR [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41) remains at `6e7b0d752750bc00f64309ed5e4f59c39b93255e`.
+- Infrastructure control is `infrastructureRepairRound=2 / maxInfrastructureRepairRounds=2` with `round2Authorized=true`. Product repair remains exhausted at `2 / 2`; this infrastructure repair consumes no product repair round and creates no Product Repair Round 3.
+- The user-corrected classification is `POST_TEST_WORKER_RPC_FAILURE_WITH_COMPLETE_PASSING_BLOB`. Push run `29712319880` artifact `8449211759` SHA-256 `be454c9449af2b69bed4cb22b7b5a4b68a2e323e6b24cb0bcac7c0f3ac717f2c` and PR run `29712346934` artifact `8449223031` SHA-256 `07dbfda0e17b95af0bc1723a41a78f7363d3a61688f7b4f7c5a3ff94e930a2e6` each parse as one passed file, five passed suites, `26 / 26` passed tests, zero failed or pending tests, and exactly one unhandled `[vitest-worker]: Timeout calling \"onTaskUpdate\"`.
+- The historical single-blob merge exit `1` and zero-test JSON remain evidence about that merge attempt only; they do not override the direct Vitest 3.2.6 parser result. No unhandled error is ignored, retried, or converted into success.
+- The nine ordinary test groups remain unchanged. Coverage alone becomes ten groups: the existing `application-service-dreamer-vortox` project is partitioned into core filter `\[(?:2B19A3A|2B19A3B1)-` and gained filter `\[2B19B-`. Real list evidence is `26 = 16 + 10`, with zero intersection, missing, duplicate, unexpected, or wrong-owner identity.
+- The workflow passes explicit matrix filters through a quoted Bash argument array. Round 1 diagnostics, distinct artifacts, success-only formal blobs, and final original-outcome enforcement apply independently to all ten coverage groups. Timeouts, pools/workers, dependencies, coverage thresholds/subsets, exact profile and selector are unchanged.
+- Source validation passes: ordinary `9 / 9` processes and merges produce `1,520 / 1,520`; coverage `10 / 10` processes and single-group merges prove an authoritative `1,520` semantic passed union with exact core `16 + 10 skipped` and gained `10 + 16 skipped` complements; every process risk scan is `0`.
+- Vitest's global filtered-blob JSON collision is explicitly non-authoritative at `1,546` discovered / `1,514` passed assertions / `32` skipped / failed `0`. The independent merged coverage map matches unchanged exact profile `phase-3-slice-2b19b-c7313e2-ownership-v2-1` at tuple `63 / 3204 / 23 / 3204 / 1799` with all hashes exact.
+- Windows deterministic commands, collector and ownership self-tests, typecheck, lint, full `1,520` tests, full `1,520` coverage tests, workflow/JSON/scope checks all pass. No profile generation or push is authorized.
+- Remaining blocker is `PENDING_ATTRIBUTED_UNPUSHED_ROUND_2_SOURCE_COMMIT`; Infrastructure Repair Round 3 is forbidden.
+
+## Historical Round 1 infrastructure control (superseded by the authorized amendment above)
+
 ## Current infrastructure prerequisite — PR #41 COVERAGE OBSERVABILITY ROUND 1
 
 - Authorization is `USER_AUTHORIZED_PR41_COVERAGE_FAILURE_OBSERVABILITY_AND_CONDITIONAL_PROCESS_SPLIT`; task type is `CI_TEST_INFRASTRUCTURE`.
