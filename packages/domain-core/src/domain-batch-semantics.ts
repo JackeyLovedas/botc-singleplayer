@@ -4,9 +4,10 @@ import type { GameState } from "./game-state.js";
 import {
   findFirstNightActionOpportunityById,
   isDreamerActionOpportunityV3,
+  isDreamerActionOpportunityV4,
   validateCerenovusActionOpportunityShape
 } from "./first-night-action-opportunity.js";
-import type { DreamerActionOpportunityV3 } from "./first-night-action-opportunity.js";
+import type { DreamerActionOpportunityV3, DreamerActionOpportunityV4 } from "./first-night-action-opportunity.js";
 import {
   CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
   LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
@@ -37,11 +38,15 @@ import {
 import {
   DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION,
   DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION,
+  DREAMER_INFORMATION_DELIVERED_V5_SCHEMA_VERSION,
+  DREAMER_INFORMATION_DELIVERED_V6_SCHEMA_VERSION,
   createDreamerCanonicalDrunkVortoxInformationDeliveredPayload,
   createDreamerInformationDeliveredPayload,
+  createPhilosopherGainedDreamerInformationDeliveredPayload,
   createDreamerVortoxInformationDeliveredPayload,
   evaluateDreamerEffectiveness,
   resolveBaseDreamerV2NormalCapability,
+  resolvePhilosopherGainedDreamerCapability,
   sameDreamerInformationDelivery
 } from "./dreamer.js";
 import {
@@ -1098,7 +1103,38 @@ const validateIntegratedDreamerInformationBatch = (
   });
   let expectedInformation;
   if ("deliverySchemaVersion" in information.payload) {
+    if (information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V5_SCHEMA_VERSION ||
+        information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V6_SCHEMA_VERSION) {
+      const targetChoice = "targetSchemaVersion" in targetChosen.payload &&
+        targetChosen.payload.targetSchemaVersion === "dreamer-target-chosen-v3"
+        ? targetChosen.payload
+        : reject("Gained Dreamer information batch requires a V3 target choice");
+      const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, information.payload.opportunityId);
+      if (opportunity === undefined || !isDreamerActionOpportunityV4(opportunity) || state.seamstressRoleTenureState === undefined) {
+        reject("Gained Dreamer information batch requires one canonical open V4 opportunity and tenure state");
+      }
+      const capability = resolvePhilosopherGainedDreamerCapability({
+        opportunity: opportunity as DreamerActionOpportunityV4,
+        currentCharacterState: currentCharacterState!, setup: setup!,
+        roleTenures: state.seamstressRoleTenureState!, abilityImpairments: state.abilityImpairments
+      });
+      if ((information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V5_SCHEMA_VERSION &&
+           capability.kind !== "NORMAL_INFORMATION_SUPPORTED") ||
+          (information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V6_SCHEMA_VERSION &&
+           capability.kind !== "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED")) {
+        reject("Gained Dreamer information batch requires the matching settlement-time capability");
+      }
+      expectedInformation = createPhilosopherGainedDreamerInformationDeliveredPayload({
+        rulesBaselineVersion: information.payload.rulesBaselineVersion,
+        targetChoice,
+        setup: setup!, currentCharacterState: currentCharacterState!,
+        capability: capability as Extract<ReturnType<typeof resolvePhilosopherGainedDreamerCapability>, {
+          readonly kind: "NORMAL_INFORMATION_SUPPORTED" | "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED";
+        }>
+      });
+    } else {
     const targetChoice = "targetSchemaVersion" in targetChosen.payload
+      && targetChosen.payload.targetSchemaVersion === "dreamer-target-chosen-v2"
       ? targetChosen.payload
       : reject("Dreamer versioned information batch requires a V2 target choice");
     const opportunity = findFirstNightActionOpportunityById(state.firstNightActionOpportunities, information.payload.opportunityId);
@@ -1158,6 +1194,7 @@ const validateIntegratedDreamerInformationBatch = (
         currentCharacterState: currentCharacterState!,
         effectiveness: { effective: true }
       });
+    }
     }
   } else {
     expectedInformation = createDreamerInformationDeliveredPayload({

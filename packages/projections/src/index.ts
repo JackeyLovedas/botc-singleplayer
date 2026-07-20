@@ -7,6 +7,8 @@ import {
   DREAMER_INFORMATION_STAGE,
   DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION,
   DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION,
+  DREAMER_INFORMATION_DELIVERED_V5_SCHEMA_VERSION,
+  DREAMER_INFORMATION_DELIVERED_V6_SCHEMA_VERSION,
   CERENOVUS_INFORMATION_STAGE,
   CERENOVUS_MADNESS_INSTRUCTION_MODEL_VERSION,
   CLOCKMAKER_INFORMATION_MODEL_VERSION,
@@ -599,7 +601,9 @@ const buildPlayerPrivateKnowledgeViewInternal = (
     isPlainRecord(delivery) &&
     "deliverySchemaVersion" in delivery &&
     (delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION ||
-      delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION)
+      delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION ||
+      delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V5_SCHEMA_VERSION ||
+      delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V6_SCHEMA_VERSION)
   ) === true) {
     throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate versioned Vortox Dreamer history; use the accepted-event-stream builder");
   }

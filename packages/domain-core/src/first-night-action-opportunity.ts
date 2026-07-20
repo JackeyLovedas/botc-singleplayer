@@ -10,6 +10,7 @@ import {
 } from "./first-night-task-plan.js";
 import {
   formatBaseFirstNightAbilityInstanceId,
+  formatPhilosopherGainedV2AbilityInstanceId,
   parseFirstNightAbilityInstanceId
 } from "./first-night-ability-outcome-ledger.js";
 import type { FirstNightAbilityInstanceId } from "./first-night-ability-outcome-ledger.js";
@@ -67,6 +68,7 @@ export type ActionOpportunityKind =
   | "DREAMER_FIRST_NIGHT_ACTION"
   | "DREAMER_FIRST_NIGHT_ACTION_V2"
   | "DREAMER_FIRST_NIGHT_ACTION_V3"
+  | "DREAMER_FIRST_NIGHT_ACTION_V4"
   | "SEAMSTRESS_FIRST_NIGHT_ACTION";
 export type PhilosopherActionDecisionKind = "DEFER" | "CHOOSE_GOOD_CHARACTER";
 export type SnakeCharmerActionDecisionKind = "CHOOSE_PLAYER";
@@ -116,6 +118,12 @@ export const DREAMER_V3_VISIBILITY_SCHEMA_VERSION =
   "dreamer-first-night-action-visibility-v3" as const;
 export const DREAMER_BASE_SOURCE_CONTRACT_VERSION =
   "dreamer-base-source-contract-v1" as const;
+export const DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION =
+  "dreamer-first-night-action-opportunity-v4" as const;
+export const DREAMER_V4_VISIBILITY_SCHEMA_VERSION =
+  "dreamer-first-night-action-visibility-v4" as const;
+export const DREAMER_PHILOSOPHER_GAINED_SOURCE_CONTRACT_VERSION =
+  "dreamer-philosopher-gained-source-contract-v1" as const;
 export type DreamerActionOpportunityVisibilityV1 = {
   readonly canChooseTarget: true;
   readonly supportedDecisionKinds: readonly ["CHOOSE_PLAYER"];
@@ -138,10 +146,19 @@ export type DreamerActionOpportunityVisibilityV3 = {
   readonly targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER";
 };
 
+export type DreamerActionOpportunityVisibilityV4 = {
+  readonly visibilitySchemaVersion: typeof DREAMER_V4_VISIBILITY_SCHEMA_VERSION;
+  readonly canChooseTarget: true;
+  readonly supportedDecisionKinds: readonly ["CHOOSE_PLAYER"];
+  readonly futureUnsupportedDecisionKinds: readonly [];
+  readonly targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER";
+};
+
 export type DreamerActionOpportunityVisibility =
   | DreamerActionOpportunityVisibilityV1
   | DreamerActionOpportunityVisibilityV2
-  | DreamerActionOpportunityVisibilityV3;
+  | DreamerActionOpportunityVisibilityV3
+  | DreamerActionOpportunityVisibilityV4;
 
 export type CerenovusActionOpportunityVisibility = {
   readonly canChooseTarget: true;
@@ -271,6 +288,67 @@ export type BaseDreamerV2SourceContract = {
   readonly sourceAbilityInstanceId: FirstNightAbilityInstanceId;
 };
 
+export type PhilosopherGainedDreamerAbilityInstanceV2 = {
+  readonly provenanceVersion: "first-night-ability-instance-provenance-v1";
+  readonly kind: "PHILOSOPHER_GAINED_TASK_V2";
+  readonly abilityInstanceId: FirstNightAbilityInstanceId;
+  readonly abilityRoleId: "dreamer";
+  readonly taskId: ScheduledTaskId;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly philosopherOpportunityId: ActionOpportunityId;
+  readonly grantId: GrantedAbilityId;
+  readonly sourceCharacterStateRevision: number;
+  readonly schedulingVersion: "philosopher-gained-first-night-scheduling-v2";
+};
+
+export type PhilosopherGainedDreamerGrantReferenceV1 = {
+  readonly kind: "PHILOSOPHER_GRANT_V1";
+  readonly grantId: GrantedAbilityId;
+  readonly philosopherOpportunityId: ActionOpportunityId;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly sourceRoleId: "philosopher";
+  readonly chosenRoleId: "dreamer";
+  readonly sourceCharacterStateRevision: number;
+};
+
+export type PhilosopherGainedDreamerTaskInsertionReferenceV1 = {
+  readonly kind: "FIRST_NIGHT_TASK_INSERTION_V2";
+  readonly taskId: ScheduledTaskId;
+  readonly taskPlanVersion: "first-night-task-plan-v2";
+  readonly schedulingVersion: "philosopher-gained-first-night-scheduling-v2";
+  readonly philosopherOpportunityId: ActionOpportunityId;
+  readonly grantId: GrantedAbilityId;
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly sourceRoleId: "philosopher";
+  readonly chosenRoleId: "dreamer";
+  readonly sourceCharacterStateRevision: number;
+};
+
+export type PhilosopherGainedDreamerSourceContractV1 = {
+  readonly sourceContractVersion: typeof DREAMER_PHILOSOPHER_GAINED_SOURCE_CONTRACT_VERSION;
+  readonly kind: "PHILOSOPHER_GAINED_V2";
+  readonly taskPlanVersion: "first-night-task-plan-v2";
+  readonly schedulingVersion: "philosopher-gained-first-night-scheduling-v2";
+  readonly taskId: ScheduledTaskId;
+  readonly taskType: "DREAMER_ACTION";
+  readonly taskSourceKind: "PHILOSOPHER_GAINED_ABILITY";
+  readonly sourcePlayerId: PlayerId;
+  readonly sourceSeatNumber: SeatNumber;
+  readonly sourceRoleId: "philosopher";
+  readonly chosenRoleId: "dreamer";
+  readonly sourceRoleTenureId: RoleTenureId;
+  readonly sourceCharacterStateRevision: number;
+  readonly philosopherOpportunityId: ActionOpportunityId;
+  readonly grantId: GrantedAbilityId;
+  readonly sourceAbilityInstanceId: FirstNightAbilityInstanceId;
+  readonly abilityInstance: PhilosopherGainedDreamerAbilityInstanceV2;
+  readonly grantReference: PhilosopherGainedDreamerGrantReferenceV1;
+  readonly taskInsertionReference: PhilosopherGainedDreamerTaskInsertionReferenceV1;
+};
+
 export type DreamerActionOpportunityV1 = DreamerActionOpportunitySource & {
   readonly nightNumber: 1;
   readonly opportunityId: ActionOpportunityId;
@@ -299,10 +377,21 @@ export type DreamerActionOpportunityV3 = DreamerActionOpportunitySource & {
   readonly visibility: DreamerActionOpportunityVisibilityV3;
 };
 
+export type DreamerActionOpportunityV4 = DreamerActionOpportunitySource & {
+  readonly opportunitySchemaVersion: typeof DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION;
+  readonly nightNumber: 1;
+  readonly opportunityId: ActionOpportunityId;
+  readonly opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V4";
+  readonly opportunityStatus: ActionOpportunityStatus;
+  readonly sourceContract: PhilosopherGainedDreamerSourceContractV1;
+  readonly visibility: DreamerActionOpportunityVisibilityV4;
+};
+
 export type DreamerActionOpportunity =
   | DreamerActionOpportunityV1
   | DreamerActionOpportunityV2
-  | DreamerActionOpportunityV3;
+  | DreamerActionOpportunityV3
+  | DreamerActionOpportunityV4;
 
 export type CerenovusActionOpportunity = CerenovusActionOpportunitySource & {
   readonly nightNumber: 1;
@@ -473,6 +562,7 @@ const DREAMER_V3_ACTION_OPPORTUNITY_VISIBILITY_KEYS = [
   "targetSchema",
   "visibilitySchemaVersion"
 ] as const;
+const DREAMER_V4_ACTION_OPPORTUNITY_VISIBILITY_KEYS = DREAMER_V3_ACTION_OPPORTUNITY_VISIBILITY_KEYS;
 const DREAMER_V2_SOURCE_CONTRACT_KEYS = [
   "kind",
   "sourceAbilityInstanceId",
@@ -548,6 +638,28 @@ const DREAMER_V2_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS = [
 ] as const;
 const DREAMER_V3_ACTION_OPPORTUNITY_KEYS = DREAMER_V2_ACTION_OPPORTUNITY_KEYS;
 const DREAMER_V3_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS = DREAMER_V2_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS;
+const DREAMER_V4_ACTION_OPPORTUNITY_KEYS = DREAMER_V2_ACTION_OPPORTUNITY_KEYS;
+const DREAMER_V4_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS = DREAMER_V2_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS;
+const PHILOSOPHER_GAINED_DREAMER_ABILITY_INSTANCE_V2_KEYS = [
+  "abilityInstanceId", "abilityRoleId", "grantId", "kind", "philosopherOpportunityId",
+  "provenanceVersion", "schedulingVersion", "sourceCharacterStateRevision", "sourcePlayerId",
+  "sourceSeatNumber", "taskId"
+] as const;
+const PHILOSOPHER_GAINED_DREAMER_GRANT_REFERENCE_V1_KEYS = [
+  "chosenRoleId", "grantId", "kind", "philosopherOpportunityId", "sourceCharacterStateRevision",
+  "sourcePlayerId", "sourceRoleId", "sourceSeatNumber"
+] as const;
+const PHILOSOPHER_GAINED_DREAMER_INSERTION_REFERENCE_V1_KEYS = [
+  "chosenRoleId", "grantId", "kind", "philosopherOpportunityId", "schedulingVersion",
+  "sourceCharacterStateRevision", "sourcePlayerId", "sourceRoleId", "sourceSeatNumber",
+  "taskId", "taskPlanVersion"
+] as const;
+const PHILOSOPHER_GAINED_DREAMER_SOURCE_CONTRACT_V1_KEYS = [
+  "abilityInstance", "chosenRoleId", "grantId", "grantReference", "kind", "philosopherOpportunityId",
+  "schedulingVersion", "sourceAbilityInstanceId", "sourceCharacterStateRevision", "sourceContractVersion",
+  "sourcePlayerId", "sourceRoleId", "sourceRoleTenureId", "sourceSeatNumber", "taskId",
+  "taskInsertionReference", "taskPlanVersion", "taskSourceKind", "taskType"
+] as const;
 const SEAMSTRESS_ACTION_OPPORTUNITY_V2_KEYS = [
   ...FIRST_NIGHT_ACTION_OPPORTUNITY_KEYS,
   "abilityInstanceId",
@@ -689,6 +801,14 @@ const createDreamerActionOpportunityVisibilityV3 = (): DreamerActionOpportunityV
   targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER"
 });
 
+const createDreamerActionOpportunityVisibilityV4 = (): DreamerActionOpportunityVisibilityV4 => ({
+  visibilitySchemaVersion: DREAMER_V4_VISIBILITY_SCHEMA_VERSION,
+  canChooseTarget: true,
+  supportedDecisionKinds: ["CHOOSE_PLAYER"],
+  futureUnsupportedDecisionKinds: [],
+  targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER"
+});
+
 const createSeamstressActionOpportunityVisibilityV1 = (): SeamstressActionOpportunityVisibilityV1 => ({
   canDefer: true,
   supportedDecisionKinds: ["DEFER"],
@@ -795,6 +915,52 @@ const hasExactDreamerActionOpportunityVisibilityV3Shape = (value: unknown): valu
   value.futureUnsupportedDecisionKinds.length === 0 &&
   value.targetSchema === "OTHER_NON_TRAVELLER_MODELED_PLAYER";
 
+const hasExactDreamerActionOpportunityVisibilityV4Shape = (value: unknown): value is DreamerActionOpportunityVisibilityV4 =>
+  isPlainRecord(value) && hasExactEnumerableKeys(value, DREAMER_V4_ACTION_OPPORTUNITY_VISIBILITY_KEYS) &&
+  value.visibilitySchemaVersion === DREAMER_V4_VISIBILITY_SCHEMA_VERSION && value.canChooseTarget === true &&
+  Array.isArray(value.supportedDecisionKinds) && isDenseArray(value.supportedDecisionKinds) &&
+  value.supportedDecisionKinds.length === 1 && value.supportedDecisionKinds[0] === "CHOOSE_PLAYER" &&
+  Array.isArray(value.futureUnsupportedDecisionKinds) && isDenseArray(value.futureUnsupportedDecisionKinds) &&
+  value.futureUnsupportedDecisionKinds.length === 0 && value.targetSchema === "OTHER_NON_TRAVELLER_MODELED_PLAYER";
+
+export const hasExactPhilosopherGainedDreamerSourceContractV1Shape = (
+  value: unknown
+): value is PhilosopherGainedDreamerSourceContractV1 => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, PHILOSOPHER_GAINED_DREAMER_SOURCE_CONTRACT_V1_KEYS) ||
+      !isPlainRecord(value.abilityInstance) || !isPlainRecord(value.grantReference) ||
+      !isPlainRecord(value.taskInsertionReference) ||
+      !hasExactEnumerableKeys(value.abilityInstance, PHILOSOPHER_GAINED_DREAMER_ABILITY_INSTANCE_V2_KEYS) ||
+      !hasExactEnumerableKeys(value.grantReference, PHILOSOPHER_GAINED_DREAMER_GRANT_REFERENCE_V1_KEYS) ||
+      !hasExactEnumerableKeys(value.taskInsertionReference, PHILOSOPHER_GAINED_DREAMER_INSERTION_REFERENCE_V1_KEYS)) return false;
+  const common = value.sourceContractVersion === DREAMER_PHILOSOPHER_GAINED_SOURCE_CONTRACT_VERSION &&
+    value.kind === "PHILOSOPHER_GAINED_V2" && value.taskPlanVersion === "first-night-task-plan-v2" &&
+    value.schedulingVersion === "philosopher-gained-first-night-scheduling-v2" && value.taskType === "DREAMER_ACTION" &&
+    value.taskSourceKind === "PHILOSOPHER_GAINED_ABILITY" && value.sourceRoleId === "philosopher" &&
+    value.chosenRoleId === "dreamer" && typeof value.taskId === "string" && typeof value.sourcePlayerId === "string" &&
+    Number.isSafeInteger(value.sourceSeatNumber) && (value.sourceSeatNumber as number) >= 1 && (value.sourceSeatNumber as number) <= 12 &&
+    Number.isSafeInteger(value.sourceCharacterStateRevision) && (value.sourceCharacterStateRevision as number) > 0 &&
+    typeof value.sourceRoleTenureId === "string" && typeof value.philosopherOpportunityId === "string" &&
+    typeof value.grantId === "string" && typeof value.sourceAbilityInstanceId === "string";
+  if (!common) return false;
+  const ability = value.abilityInstance; const grant = value.grantReference; const insertion = value.taskInsertionReference;
+  return ability.provenanceVersion === "first-night-ability-instance-provenance-v1" && ability.kind === "PHILOSOPHER_GAINED_TASK_V2" &&
+    ability.abilityRoleId === "dreamer" && ability.schedulingVersion === value.schedulingVersion &&
+    ability.abilityInstanceId === value.sourceAbilityInstanceId && ability.taskId === value.taskId &&
+    ability.sourcePlayerId === value.sourcePlayerId && ability.sourceSeatNumber === value.sourceSeatNumber &&
+    ability.philosopherOpportunityId === value.philosopherOpportunityId && ability.grantId === value.grantId &&
+    ability.sourceCharacterStateRevision === value.sourceCharacterStateRevision &&
+    grant.kind === "PHILOSOPHER_GRANT_V1" && grant.sourceRoleId === "philosopher" && grant.chosenRoleId === "dreamer" &&
+    grant.grantId === value.grantId && grant.philosopherOpportunityId === value.philosopherOpportunityId &&
+    grant.sourcePlayerId === value.sourcePlayerId && grant.sourceSeatNumber === value.sourceSeatNumber &&
+    grant.sourceCharacterStateRevision === value.sourceCharacterStateRevision &&
+    insertion.kind === "FIRST_NIGHT_TASK_INSERTION_V2" && insertion.taskPlanVersion === value.taskPlanVersion &&
+    insertion.schedulingVersion === value.schedulingVersion && insertion.taskId === value.taskId &&
+    insertion.grantId === value.grantId && insertion.philosopherOpportunityId === value.philosopherOpportunityId &&
+    insertion.sourcePlayerId === value.sourcePlayerId && insertion.sourceSeatNumber === value.sourceSeatNumber &&
+    insertion.sourceRoleId === "philosopher" && insertion.chosenRoleId === "dreamer" &&
+    insertion.sourceCharacterStateRevision === value.sourceCharacterStateRevision;
+};
+
 const hasExactBaseDreamerV2SourceContractShape = (value: unknown): value is BaseDreamerV2SourceContract =>
   isPlainRecord(value) &&
   hasExactEnumerableKeys(value, DREAMER_V2_SOURCE_CONTRACT_KEYS) &&
@@ -880,6 +1046,13 @@ export const isDreamerActionOpportunityV3 = (
   Object.hasOwn(value, "opportunitySchemaVersion") &&
   value.opportunitySchemaVersion === DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION;
 
+export const isDreamerActionOpportunityV4 = (
+  value: DreamerActionOpportunity | FirstNightActionOpportunity
+): value is DreamerActionOpportunityV4 =>
+  value.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V4" &&
+  Object.hasOwn(value, "opportunitySchemaVersion") &&
+  value.opportunitySchemaVersion === DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION;
+
 const hasExactFirstNightActionOpportunityShape = (value: unknown): value is FirstNightActionOpportunity => {
   if (!isPlainRecord(value)) {
     return false;
@@ -889,7 +1062,10 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
   const cerenovus = value.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION";
   const dreamerV2 = value.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2";
   const dreamerV3 = value.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3";
-  if (!hasExactEnumerableKeys(value, dreamerV3
+  const dreamerV4 = value.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V4";
+  if (!hasExactEnumerableKeys(value, dreamerV4
+    ? DREAMER_V4_ACTION_OPPORTUNITY_KEYS
+    : dreamerV3
     ? DREAMER_V3_ACTION_OPPORTUNITY_KEYS
     : dreamerV2 ? DREAMER_V2_ACTION_OPPORTUNITY_KEYS
     : cerenovus
@@ -903,8 +1079,10 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
   const commonFieldsValid =
     value.nightNumber === 1 &&
     typeof value.opportunityId === "string" &&
-    (dreamerV2 || dreamerV3
-      ? parseBaseDreamerV2FirstNightActionOpportunityId(value.opportunityId).valid
+    (dreamerV2 || dreamerV3 || dreamerV4
+      ? dreamerV4
+        ? /^first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-(0[1-9]|1[0-2]):from-dreamer:opportunity-01$/.test(value.opportunityId)
+        : parseBaseDreamerV2FirstNightActionOpportunityId(value.opportunityId).valid
       : parseFirstNightActionOpportunityId(actionOpportunityId(value.opportunityId)).valid) &&
     (value.opportunityStatus === "OPEN" || value.opportunityStatus === "CLOSED") &&
     typeof value.taskId === "string" &&
@@ -923,6 +1101,16 @@ const hasExactFirstNightActionOpportunityShape = (value: unknown): value is Firs
     return false;
   }
 
+  if (dreamerV4) {
+    const sourceRole = value.sourceRole as RoleSetupSnapshot;
+    return value.opportunitySchemaVersion === DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION &&
+      value.taskType === "DREAMER_ACTION" && sourceRole.roleId === "philosopher" &&
+      hasExactPhilosopherGainedDreamerSourceContractV1Shape(value.sourceContract) &&
+      value.sourceContract.taskId === value.taskId && value.sourceContract.sourcePlayerId === value.sourcePlayerId &&
+      value.sourceContract.sourceSeatNumber === value.sourceSeatNumber &&
+      value.sourceContract.sourceCharacterStateRevision === value.sourceCharacterStateRevision &&
+      hasExactDreamerActionOpportunityVisibilityV4Shape(value.visibility);
+  }
   if (dreamerV2 || dreamerV3) {
     const parsedV2Id = parseBaseDreamerV2FirstNightActionOpportunityId(value.opportunityId);
     if (!hasExactBaseDreamerV2SourceContractShape(value.sourceContract)) return false;
@@ -1110,6 +1298,9 @@ const cloneVisibility = (visibility: ActionOpportunityVisibility): ActionOpportu
     if ((visibility as { readonly visibilitySchemaVersion?: unknown }).visibilitySchemaVersion === DREAMER_V3_VISIBILITY_SCHEMA_VERSION) {
       return createDreamerActionOpportunityVisibilityV3();
     }
+    if ((visibility as { readonly visibilitySchemaVersion?: unknown }).visibilitySchemaVersion === DREAMER_V4_VISIBILITY_SCHEMA_VERSION) {
+      return createDreamerActionOpportunityVisibilityV4();
+    }
     const seamstress = visibility as SeamstressActionOpportunityVisibilityV2;
     return {
       visibilitySchemaVersion: seamstress.visibilitySchemaVersion,
@@ -1175,6 +1366,15 @@ const sameVisibility = (left: ActionOpportunityVisibility, right: ActionOpportun
       if (leftVersion !== DREAMER_V3_VISIBILITY_SCHEMA_VERSION || rightVersion !== DREAMER_V3_VISIBILITY_SCHEMA_VERSION) return false;
       const a = left as DreamerActionOpportunityVisibilityV3;
       const b = right as DreamerActionOpportunityVisibilityV3;
+      return a.canChooseTarget === b.canChooseTarget && a.targetSchema === b.targetSchema &&
+        a.supportedDecisionKinds.length === b.supportedDecisionKinds.length &&
+        a.supportedDecisionKinds[0] === b.supportedDecisionKinds[0] &&
+        a.futureUnsupportedDecisionKinds.length === b.futureUnsupportedDecisionKinds.length;
+    }
+    if (leftVersion === DREAMER_V4_VISIBILITY_SCHEMA_VERSION || rightVersion === DREAMER_V4_VISIBILITY_SCHEMA_VERSION) {
+      if (leftVersion !== DREAMER_V4_VISIBILITY_SCHEMA_VERSION || rightVersion !== DREAMER_V4_VISIBILITY_SCHEMA_VERSION) return false;
+      const a = left as DreamerActionOpportunityVisibilityV4;
+      const b = right as DreamerActionOpportunityVisibilityV4;
       return a.canChooseTarget === b.canChooseTarget && a.targetSchema === b.targetSchema &&
         a.supportedDecisionKinds.length === b.supportedDecisionKinds.length &&
         a.supportedDecisionKinds[0] === b.supportedDecisionKinds[0] &&
@@ -1319,6 +1519,29 @@ const cloneFirstNightActionOpportunity = (
     };
   }
 
+  if (opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V4") {
+    return {
+      opportunitySchemaVersion: opportunity.opportunitySchemaVersion,
+      nightNumber: opportunity.nightNumber,
+      opportunityId: opportunity.opportunityId,
+      opportunityKind: opportunity.opportunityKind,
+      opportunityStatus: opportunity.opportunityStatus,
+      taskId: opportunity.taskId,
+      taskType: opportunity.taskType,
+      sourcePlayerId: opportunity.sourcePlayerId,
+      sourceSeatNumber: opportunity.sourceSeatNumber,
+      sourceRole: cloneRoleSetupSnapshot(opportunity.sourceRole),
+      sourceCharacterStateRevision: opportunity.sourceCharacterStateRevision,
+      sourceContract: {
+        ...opportunity.sourceContract,
+        abilityInstance: { ...opportunity.sourceContract.abilityInstance },
+        grantReference: { ...opportunity.sourceContract.grantReference },
+        taskInsertionReference: { ...opportunity.sourceContract.taskInsertionReference }
+      },
+      visibility: createDreamerActionOpportunityVisibilityV4()
+    };
+  }
+
   if (opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION") {
     return {
       nightNumber: opportunity.nightNumber,
@@ -1370,6 +1593,49 @@ const cloneFirstNightActionOpportunity = (
   };
 };
 
+const samePhilosopherGainedDreamerSourceContract = (
+  left: PhilosopherGainedDreamerSourceContractV1,
+  right: PhilosopherGainedDreamerSourceContractV1
+): boolean =>
+  left.sourceContractVersion === right.sourceContractVersion && left.kind === right.kind &&
+  left.taskPlanVersion === right.taskPlanVersion && left.schedulingVersion === right.schedulingVersion &&
+  left.taskId === right.taskId && left.taskType === right.taskType && left.taskSourceKind === right.taskSourceKind &&
+  left.sourcePlayerId === right.sourcePlayerId && left.sourceSeatNumber === right.sourceSeatNumber &&
+  left.sourceRoleId === right.sourceRoleId && left.chosenRoleId === right.chosenRoleId &&
+  left.sourceRoleTenureId === right.sourceRoleTenureId &&
+  left.sourceCharacterStateRevision === right.sourceCharacterStateRevision &&
+  left.philosopherOpportunityId === right.philosopherOpportunityId && left.grantId === right.grantId &&
+  left.sourceAbilityInstanceId === right.sourceAbilityInstanceId &&
+  left.abilityInstance.provenanceVersion === right.abilityInstance.provenanceVersion &&
+  left.abilityInstance.kind === right.abilityInstance.kind &&
+  left.abilityInstance.abilityInstanceId === right.abilityInstance.abilityInstanceId &&
+  left.abilityInstance.abilityRoleId === right.abilityInstance.abilityRoleId &&
+  left.abilityInstance.taskId === right.abilityInstance.taskId &&
+  left.abilityInstance.sourcePlayerId === right.abilityInstance.sourcePlayerId &&
+  left.abilityInstance.sourceSeatNumber === right.abilityInstance.sourceSeatNumber &&
+  left.abilityInstance.philosopherOpportunityId === right.abilityInstance.philosopherOpportunityId &&
+  left.abilityInstance.grantId === right.abilityInstance.grantId &&
+  left.abilityInstance.sourceCharacterStateRevision === right.abilityInstance.sourceCharacterStateRevision &&
+  left.abilityInstance.schedulingVersion === right.abilityInstance.schedulingVersion &&
+  left.grantReference.kind === right.grantReference.kind && left.grantReference.grantId === right.grantReference.grantId &&
+  left.grantReference.philosopherOpportunityId === right.grantReference.philosopherOpportunityId &&
+  left.grantReference.sourcePlayerId === right.grantReference.sourcePlayerId &&
+  left.grantReference.sourceSeatNumber === right.grantReference.sourceSeatNumber &&
+  left.grantReference.sourceRoleId === right.grantReference.sourceRoleId &&
+  left.grantReference.chosenRoleId === right.grantReference.chosenRoleId &&
+  left.grantReference.sourceCharacterStateRevision === right.grantReference.sourceCharacterStateRevision &&
+  left.taskInsertionReference.kind === right.taskInsertionReference.kind &&
+  left.taskInsertionReference.taskId === right.taskInsertionReference.taskId &&
+  left.taskInsertionReference.taskPlanVersion === right.taskInsertionReference.taskPlanVersion &&
+  left.taskInsertionReference.schedulingVersion === right.taskInsertionReference.schedulingVersion &&
+  left.taskInsertionReference.philosopherOpportunityId === right.taskInsertionReference.philosopherOpportunityId &&
+  left.taskInsertionReference.grantId === right.taskInsertionReference.grantId &&
+  left.taskInsertionReference.sourcePlayerId === right.taskInsertionReference.sourcePlayerId &&
+  left.taskInsertionReference.sourceSeatNumber === right.taskInsertionReference.sourceSeatNumber &&
+  left.taskInsertionReference.sourceRoleId === right.taskInsertionReference.sourceRoleId &&
+  left.taskInsertionReference.chosenRoleId === right.taskInsertionReference.chosenRoleId &&
+  left.taskInsertionReference.sourceCharacterStateRevision === right.taskInsertionReference.sourceCharacterStateRevision;
+
 export const sameOpportunityCore = (
   left: FirstNightActionOpportunity,
   right: FirstNightActionOpportunity
@@ -1389,6 +1655,9 @@ export const sameOpportunityCore = (
        left.sourceContract.sourceRoleTenureId !== right.sourceContract.sourceRoleTenureId ||
        left.sourceContract.sourceCharacterStateRevision !== right.sourceContract.sourceCharacterStateRevision ||
        left.sourceContract.sourceAbilityInstanceId !== right.sourceContract.sourceAbilityInstanceId)) return false;
+  if (left.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V4" && right.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V4" &&
+      (left.opportunitySchemaVersion !== right.opportunitySchemaVersion ||
+       !samePhilosopherGainedDreamerSourceContract(left.sourceContract, right.sourceContract))) return false;
   if (left.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION" && right.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION" &&
       (left.sourceRoleTenureId !== right.sourceRoleTenureId || left.sourceAbilityInstanceId !== right.sourceAbilityInstanceId ||
        left.abilitySource.kind !== right.abilitySource.kind || left.abilitySource.abilityRoleId !== right.abilitySource.abilityRoleId ||
@@ -2194,11 +2463,80 @@ const tryCreateBaseDreamerV3FirstNightActionOpportunity = (
   };
 };
 
+const tryCreatePhilosopherGainedDreamerV4FirstNightActionOpportunity = (
+  input: OpportunityValidationInput
+): CreateDreamerOpportunityResult => {
+  const common = validateCommonOpportunityTarget(input);
+  if (!common.valid) return common;
+  const task = common.targetTask;
+  const source = task.source;
+  if (input.firstNightTaskPlan.taskPlanVersion !== "first-night-task-plan-v2" || task.taskType !== "DREAMER_ACTION" ||
+      source.kind !== "PHILOSOPHER_GAINED_ABILITY" || source.sourceRole.roleId !== "philosopher" ||
+      source.chosenRole.roleId !== "dreamer" || input.seamstressRoleTenureState === undefined) {
+    return { valid: false, reason: "Gained Dreamer V4 requires one canonical V2 Philosopher-gained task" };
+  }
+  const current = input.currentCharacterState.entries.filter((entry) =>
+    entry.playerId === source.playerId && entry.seatNumber === source.seatNumber && entry.role.roleId === "philosopher");
+  const grants = input.philosopherGrantedAbilities?.abilities.filter((grant) =>
+    grant.sourcePlayerId === source.playerId && grant.sourceSeatNumber === source.seatNumber &&
+    grant.sourceCharacterStateRevision === source.sourceCharacterStateRevision &&
+    grant.grantedAtOpportunityId === source.opportunityId && grant.chosenRoleId === "dreamer") ?? [];
+  if (current.length !== 1 || current[0] === undefined || grants.length !== 1 || grants[0] === undefined ||
+      !sameRoleSetupSnapshot(current[0].role, source.sourceRole)) {
+    return { valid: false, reason: "Gained Dreamer V4 requires one exact current Philosopher source and grant" };
+  }
+  const grant = grants[0];
+  let tenure;
+  try {
+    tenure = findUniqueActiveRoleTenure({ state: input.seamstressRoleTenureState, playerId: source.playerId,
+      seatNumber: source.seatNumber, roleId: "philosopher", revision: input.currentCharacterState.revision });
+  } catch { return { valid: false, reason: "Gained Dreamer V4 Philosopher tenure is invalid" }; }
+  if (tenure === undefined) return { valid: false, reason: "Gained Dreamer V4 requires one active Philosopher tenure" };
+  const abilityInstanceId = formatPhilosopherGainedV2AbilityInstanceId({ taskId: task.taskId, grantId: grant.grantId });
+  const abilityInstance: PhilosopherGainedDreamerAbilityInstanceV2 = {
+    provenanceVersion: "first-night-ability-instance-provenance-v1", kind: "PHILOSOPHER_GAINED_TASK_V2",
+    abilityInstanceId, abilityRoleId: "dreamer", taskId: task.taskId, sourcePlayerId: source.playerId,
+    sourceSeatNumber: source.seatNumber, philosopherOpportunityId: source.opportunityId, grantId: grant.grantId,
+    sourceCharacterStateRevision: source.sourceCharacterStateRevision,
+    schedulingVersion: "philosopher-gained-first-night-scheduling-v2"
+  };
+  const grantReference: PhilosopherGainedDreamerGrantReferenceV1 = {
+    kind: "PHILOSOPHER_GRANT_V1", grantId: grant.grantId, philosopherOpportunityId: source.opportunityId,
+    sourcePlayerId: source.playerId, sourceSeatNumber: source.seatNumber, sourceRoleId: "philosopher",
+    chosenRoleId: "dreamer", sourceCharacterStateRevision: source.sourceCharacterStateRevision
+  };
+  const taskInsertionReference: PhilosopherGainedDreamerTaskInsertionReferenceV1 = {
+    kind: "FIRST_NIGHT_TASK_INSERTION_V2", taskId: task.taskId, taskPlanVersion: "first-night-task-plan-v2",
+    schedulingVersion: "philosopher-gained-first-night-scheduling-v2", philosopherOpportunityId: source.opportunityId,
+    grantId: grant.grantId, sourcePlayerId: source.playerId, sourceSeatNumber: source.seatNumber,
+    sourceRoleId: "philosopher", chosenRoleId: "dreamer", sourceCharacterStateRevision: source.sourceCharacterStateRevision
+  };
+  const sourceContract: PhilosopherGainedDreamerSourceContractV1 = {
+    sourceContractVersion: DREAMER_PHILOSOPHER_GAINED_SOURCE_CONTRACT_VERSION, kind: "PHILOSOPHER_GAINED_V2",
+    taskPlanVersion: "first-night-task-plan-v2", schedulingVersion: "philosopher-gained-first-night-scheduling-v2",
+    taskId: task.taskId, taskType: "DREAMER_ACTION", taskSourceKind: "PHILOSOPHER_GAINED_ABILITY",
+    sourcePlayerId: source.playerId, sourceSeatNumber: source.seatNumber, sourceRoleId: "philosopher",
+    chosenRoleId: "dreamer", sourceRoleTenureId: tenure.roleTenureId,
+    sourceCharacterStateRevision: source.sourceCharacterStateRevision, philosopherOpportunityId: source.opportunityId,
+    grantId: grant.grantId, sourceAbilityInstanceId: abilityInstanceId, abilityInstance, grantReference, taskInsertionReference
+  };
+  return { valid: true, opportunity: {
+    opportunitySchemaVersion: DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION, nightNumber: 1,
+    opportunityId: actionOpportunityId(`${task.taskId}:opportunity-01`), opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V4",
+    opportunityStatus: "OPEN", taskId: task.taskId, taskType: "DREAMER_ACTION", sourcePlayerId: source.playerId,
+    sourceSeatNumber: source.seatNumber, sourceRole: cloneRoleSetupSnapshot(current[0].role),
+    sourceCharacterStateRevision: source.sourceCharacterStateRevision, sourceContract,
+    visibility: createDreamerActionOpportunityVisibilityV4()
+  } };
+};
+
 export const tryCreateDreamerFirstNightActionOpportunity = (
   input: OpportunityValidationInput
 ): CreateDreamerOpportunityResult =>
   input.firstNightTaskPlan.taskPlanVersion === "first-night-task-plan-v2"
-    ? tryCreateBaseDreamerV3FirstNightActionOpportunity(input)
+    ? input.firstNightTaskPlan.tasks.find((task) => task.taskId === input.taskId)?.source.kind === "PHILOSOPHER_GAINED_ABILITY"
+      ? tryCreatePhilosopherGainedDreamerV4FirstNightActionOpportunity(input)
+      : tryCreateBaseDreamerV3FirstNightActionOpportunity(input)
     : tryCreateLegacyDreamerFirstNightActionOpportunity(input);
 
 export const tryCreateSeamstressFirstNightActionOpportunity = (
@@ -2358,7 +2696,10 @@ const validateFirstNightActionOpportunityCreatedPayloadInternal = (
   const cerenovus = payload.opportunityKind === "CERENOVUS_FIRST_NIGHT_ACTION";
   const dreamerV2 = payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V2";
   const dreamerV3 = payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3";
-  if (!hasExactEnumerableKeys(payload, dreamerV3
+  const dreamerV4 = payload.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V4";
+  if (!hasExactEnumerableKeys(payload, dreamerV4
+    ? DREAMER_V4_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS
+    : dreamerV3
     ? DREAMER_V3_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS
     : dreamerV2 ? DREAMER_V2_ACTION_OPPORTUNITY_CREATED_PAYLOAD_KEYS
     : cerenovus
@@ -2385,7 +2726,7 @@ const validateFirstNightActionOpportunityCreatedPayloadInternal = (
     taskId: payload.taskId,
     taskType: payload.taskType,
     visibility: payload.visibility,
-    ...(dreamerV2 || dreamerV3 ? {
+    ...(dreamerV2 || dreamerV3 || dreamerV4 ? {
       opportunitySchemaVersion: payload.opportunitySchemaVersion,
       sourceContract: payload.sourceContract
     } : cerenovus ? {

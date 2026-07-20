@@ -8,10 +8,14 @@ import {
   createDreamerTargetChosenPayload,
   createDreamerInformationDeliveredPayload,
   createDreamerCanonicalDrunkVortoxInformationDeliveredPayload,
+  createPhilosopherGainedDreamerInformationDeliveredPayload,
+  createPhilosopherGainedDreamerTargetChosenPayload,
   createDreamerVortoxInformationDeliveredPayload,
   cloneDreamerInformationSet,
+  cloneDreamerTargetChoiceSet,
   evaluateDreamerEffectiveness,
   resolveBaseDreamerV2NormalCapability,
+  resolvePhilosopherGainedDreamerCapability,
   sameDreamerInformationDelivery,
   validateDreamerInformationDeliveredPayload,
   validateDreamerTargetChosenPayload,
@@ -24,19 +28,34 @@ import type {
 import { DomainError } from "./errors.js";
 import type { CurrentCharacterStateSet } from "./current-character-state.js";
 import type { FirstNightTaskPlan } from "./first-night-task-plan.js";
-import { abilityImpairmentId, actionOpportunityId, eventId, playerId, roleId, scheduledTaskId } from "./ids.js";
+import {
+  abilityImpairmentId,
+  actionOpportunityId,
+  eventId,
+  grantedAbilityId,
+  playerId,
+  roleId,
+  scheduledTaskId
+} from "./ids.js";
 import type { AbilityImpairmentSet } from "./philosopher-ability.js";
 import { seatNumber } from "./player-roster.js";
 import type { PlayerRoster } from "./player-roster.js";
 import {
   DREAMER_BASE_SOURCE_CONTRACT_VERSION,
+  DREAMER_PHILOSOPHER_GAINED_SOURCE_CONTRACT_VERSION,
   DREAMER_V3_OPPORTUNITY_SCHEMA_VERSION,
   DREAMER_V3_VISIBILITY_SCHEMA_VERSION,
+  DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION,
+  DREAMER_V4_VISIBILITY_SCHEMA_VERSION,
   formatBaseDreamerV2FirstNightActionOpportunityId
 } from "./first-night-action-opportunity.js";
-import type { DreamerActionOpportunityV3 } from "./first-night-action-opportunity.js";
-import { formatBaseFirstNightAbilityInstanceId } from "./first-night-ability-outcome-ledger.js";
+import type { DreamerActionOpportunityV3, DreamerActionOpportunityV4 } from "./first-night-action-opportunity.js";
+import {
+  formatBaseFirstNightAbilityInstanceId,
+  formatPhilosopherGainedV2AbilityInstanceId
+} from "./first-night-ability-outcome-ledger.js";
 import { formatRoleTenureId } from "./seamstress.js";
+import type { RoleTenureState } from "./seamstress.js";
 import type { GeneratedSetup, RoleSetupSnapshot } from "./setup-types.js";
 
 const role = (
@@ -366,6 +385,7 @@ describe("Phase 3 Slice 2B19A3B1 canonical-drunk Vortox payload contracts", () =
 });
 
 const dreamerRole = role("dreamer", "TOWNSFOLK", "GOOD");
+const philosopherRole = role("philosopher", "TOWNSFOLK", "GOOD");
 const flowergirlRole = role("flowergirl", "TOWNSFOLK", "GOOD");
 const snakeCharmerRole = role("snake_charmer", "TOWNSFOLK", "GOOD");
 const witchRole = role("witch", "MINION", "EVIL");
@@ -559,6 +579,189 @@ const setup = (roles: readonly RoleSetupSnapshot[]): Pick<GeneratedSetup, "roleC
     roles
   }
 });
+
+const gainedDreamerFacts = (withVortox: boolean, targetRole: RoleSetupSnapshot = flowergirlRole) => {
+  const taskId = scheduledTaskId("first-night-v2:PHILOSOPHER_GAINED:DREAMER_ACTION:seat-01:from-dreamer");
+  const philosopherOpportunityId = actionOpportunityId("first-night-v1:PHILOSOPHER_ACTION:seat-01:opportunity-01");
+  const grantId = grantedAbilityId("philosopher-grant-v1:seat-01:from-dreamer");
+  const abilityInstanceId = formatPhilosopherGainedV2AbilityInstanceId({ taskId, grantId });
+  const philosopherTenureId = formatRoleTenureId({
+    seatNumber: seatNumber(1),
+    roleId: "philosopher",
+    acquiredCharacterStateRevision: 1
+  });
+  const sourceContract = {
+    sourceContractVersion: DREAMER_PHILOSOPHER_GAINED_SOURCE_CONTRACT_VERSION,
+    kind: "PHILOSOPHER_GAINED_V2",
+    taskPlanVersion: "first-night-task-plan-v2",
+    schedulingVersion: "philosopher-gained-first-night-scheduling-v2",
+    taskId,
+    taskType: "DREAMER_ACTION",
+    taskSourceKind: "PHILOSOPHER_GAINED_ABILITY",
+    sourcePlayerId: playerId("philosopher-player"),
+    sourceSeatNumber: seatNumber(1),
+    sourceRoleId: "philosopher",
+    chosenRoleId: "dreamer",
+    sourceRoleTenureId: philosopherTenureId,
+    sourceCharacterStateRevision: 1,
+    philosopherOpportunityId,
+    grantId,
+    sourceAbilityInstanceId: abilityInstanceId,
+    abilityInstance: {
+      provenanceVersion: "first-night-ability-instance-provenance-v1",
+      kind: "PHILOSOPHER_GAINED_TASK_V2",
+      abilityInstanceId,
+      abilityRoleId: "dreamer",
+      taskId,
+      sourcePlayerId: playerId("philosopher-player"),
+      sourceSeatNumber: seatNumber(1),
+      philosopherOpportunityId,
+      grantId,
+      sourceCharacterStateRevision: 1,
+      schedulingVersion: "philosopher-gained-first-night-scheduling-v2"
+    },
+    grantReference: {
+      kind: "PHILOSOPHER_GRANT_V1",
+      grantId,
+      philosopherOpportunityId,
+      sourcePlayerId: playerId("philosopher-player"),
+      sourceSeatNumber: seatNumber(1),
+      sourceRoleId: "philosopher",
+      chosenRoleId: "dreamer",
+      sourceCharacterStateRevision: 1
+    },
+    taskInsertionReference: {
+      kind: "FIRST_NIGHT_TASK_INSERTION_V2",
+      taskId,
+      taskPlanVersion: "first-night-task-plan-v2",
+      schedulingVersion: "philosopher-gained-first-night-scheduling-v2",
+      philosopherOpportunityId,
+      grantId,
+      sourcePlayerId: playerId("philosopher-player"),
+      sourceSeatNumber: seatNumber(1),
+      sourceRoleId: "philosopher",
+      chosenRoleId: "dreamer",
+      sourceCharacterStateRevision: 1
+    }
+  } as const;
+  const opportunity: DreamerActionOpportunityV4 = {
+    opportunitySchemaVersion: DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION,
+    nightNumber: 1,
+    opportunityId: actionOpportunityId(`${taskId}:opportunity-01`),
+    opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V4",
+    opportunityStatus: "OPEN",
+    taskId,
+    taskType: "DREAMER_ACTION",
+    sourcePlayerId: playerId("philosopher-player"),
+    sourceSeatNumber: seatNumber(1),
+    sourceRole: philosopherRole,
+    sourceCharacterStateRevision: 1,
+    sourceContract,
+    visibility: {
+      visibilitySchemaVersion: DREAMER_V4_VISIBILITY_SCHEMA_VERSION,
+      canChooseTarget: true,
+      supportedDecisionKinds: ["CHOOSE_PLAYER"],
+      futureUnsupportedDecisionKinds: [],
+      targetSchema: "OTHER_NON_TRAVELLER_MODELED_PLAYER"
+    }
+  };
+  const demonRole = withVortox ? vortoxRole : fangGuRole;
+  const state: CurrentCharacterStateSet = {
+    revision: 1,
+    entries: [
+      { playerId: playerId("philosopher-player"), seatNumber: seatNumber(1), role: philosopherRole,
+        currentAlignment: "GOOD" },
+      { playerId: playerId("target-player"), seatNumber: seatNumber(2), role: targetRole,
+        currentAlignment: targetRole.defaultAlignment },
+      { playerId: playerId("demon-player"), seatNumber: seatNumber(3), role: demonRole,
+        currentAlignment: "EVIL" }
+    ]
+  };
+  const roster: PlayerRoster = state.entries.map((entry) => ({
+    playerId: entry.playerId,
+    seatNumber: entry.seatNumber,
+    playerKind: "AI",
+    displayName: entry.playerId
+  }));
+  const task = {
+    taskId,
+    taskType: "DREAMER_ACTION",
+    taskClass: "ROLE_ACTION",
+    orderKey: { baseOrder: 900, insertionOrder: 1 },
+    source: {
+      kind: "PHILOSOPHER_GAINED_ABILITY",
+      playerId: opportunity.sourcePlayerId,
+      seatNumber: opportunity.sourceSeatNumber,
+      sourceRole: philosopherRole,
+      chosenRole: dreamerRole,
+      opportunityId: philosopherOpportunityId,
+      sourceCharacterStateRevision: 1
+    },
+    status: "PENDING",
+    settlementPolicy: "REEVALUATE_SOURCE_AT_SETTLEMENT"
+  } as const;
+  const plan: FirstNightTaskPlan = { ...v3Plan(), tasks: [task] };
+  const vortoxTenureId = formatRoleTenureId({
+    seatNumber: seatNumber(3),
+    roleId: "vortox",
+    acquiredCharacterStateRevision: 1
+  });
+  const roleTenures: RoleTenureState = {
+    records: [
+      {
+        roleTenureId: philosopherTenureId,
+        playerId: opportunity.sourcePlayerId,
+        seatNumber: opportunity.sourceSeatNumber,
+        roleId: "philosopher",
+        acquiredCharacterStateRevision: 1,
+        startedBy: { kind: "CHARACTERS_ASSIGNED", sourceEventId: eventId("event-1"),
+          sourceEventSequence: 1, characterStateRevision: 1 }
+      },
+      ...(withVortox ? [{
+        roleTenureId: vortoxTenureId,
+        playerId: playerId("demon-player"),
+        seatNumber: seatNumber(3),
+        roleId: "vortox" as const,
+        acquiredCharacterStateRevision: 1,
+        startedBy: { kind: "CHARACTERS_ASSIGNED" as const, sourceEventId: eventId("event-1"),
+          sourceEventSequence: 1, characterStateRevision: 1 as const }
+      }] : [])
+    ],
+    processedTransitionFactIds: []
+  };
+  const setupFacts = setup([philosopherRole, dreamerRole, flowergirlRole, snakeCharmerRole, witchRole, demonRole]);
+  const opportunities = { opportunities: [opportunity] } as const;
+  const choice = createPhilosopherGainedDreamerTargetChosenPayload({
+    rulesBaselineVersion: "Phase One v2.1",
+    taskId,
+    opportunityId: opportunity.opportunityId,
+    targetPlayerId: playerId("target-player"),
+    firstNightActionOpportunities: opportunities,
+    roster,
+    currentCharacterState: state
+  });
+  const capability = resolvePhilosopherGainedDreamerCapability({
+    opportunity,
+    currentCharacterState: state,
+    setup: setupFacts,
+    roleTenures,
+    abilityImpairments: undefined
+  });
+  if (capability.kind !== (withVortox
+    ? "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
+    : "NORMAL_INFORMATION_SUPPORTED")) throw new Error("Expected gained Dreamer capability");
+  if (capability.kind !== "NORMAL_INFORMATION_SUPPORTED" &&
+      capability.kind !== "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED") throw new Error("Expected supported capability");
+  const delivery = createPhilosopherGainedDreamerInformationDeliveredPayload({
+    rulesBaselineVersion: "Phase One v2.1",
+    targetChoice: choice,
+    setup: setupFacts,
+    currentCharacterState: state,
+    capability
+  });
+  return { taskId, opportunity, opportunities, sourceContract, state, roster, task, plan, roleTenures,
+    setup: setupFacts, choice, capability, delivery };
+};
 
 const currentState = (targetRole: RoleSetupSnapshot): CurrentCharacterStateSet => ({
   revision: 1,
@@ -1229,5 +1432,323 @@ describe("Dreamer information model", () => {
 
   it.each(sourceFactTamperingCases)("rejects stored Dreamer source-fact tampering: %s", (_name, tamper) => {
     expectStoredDeliveryRejected(storedDelivery(), tamper(storedSourceFacts()));
+  });
+});
+
+describe("Phase 3 Slice 2B19B gained Dreamer target and delivery contracts", () => {
+  const targetInput = (facts: ReturnType<typeof gainedDreamerFacts>) => ({
+    taskId: facts.taskId,
+    firstNightTaskPlan: facts.plan,
+    firstNightTaskProgress: undefined,
+    currentCharacterState: facts.state,
+    firstNightActionOpportunities: facts.opportunities,
+    roster: facts.roster
+  });
+  const deliveryInput = (facts: ReturnType<typeof gainedDreamerFacts>) => ({
+    choices: { choices: [facts.choice] },
+    deliveries: undefined,
+    setup: facts.setup,
+    currentCharacterState: facts.state,
+    abilityImpairments: undefined,
+    firstNightActionOpportunities: facts.opportunities,
+    firstNightTaskPlan: facts.plan,
+    roleTenures: facts.roleTenures
+  });
+
+  it("[2B19B-C55/C56-S07/S08/S09/S10/S11/S13/S16] validates exact V3/V5/V6 payload shapes and native categories", () => {
+    const normalGood = gainedDreamerFacts(false, flowergirlRole);
+    const normalEvil = gainedDreamerFacts(false, witchRole);
+    const vortoxGood = gainedDreamerFacts(true, flowergirlRole);
+    const vortoxEvil = gainedDreamerFacts(true, witchRole);
+    expect(Object.keys(normalGood.choice)).toHaveLength(17);
+    expect(Object.keys(normalGood.delivery)).toHaveLength(21);
+    expect(Object.keys(vortoxGood.delivery)).toHaveLength(22);
+    expect(validateDreamerTargetChosenPayload(normalGood.choice, targetInput(normalGood))).toStrictEqual({ valid: true });
+    for (const facts of [normalGood, normalEvil, vortoxGood, vortoxEvil]) {
+      expect(validateDreamerInformationDeliveredPayload(facts.delivery, deliveryInput(facts))).toStrictEqual({ valid: true });
+    }
+    expect(normalGood.delivery.deliverySchemaVersion).toBe("dreamer-information-delivered-v5");
+    expect(normalGood.delivery.goodRole.roleId).toBe(flowergirlRole.roleId);
+    expect(normalEvil.delivery.evilRole.roleId).toBe(witchRole.roleId);
+    expect(vortoxGood.delivery.deliverySchemaVersion).toBe("dreamer-information-delivered-v6");
+    expect([vortoxGood.delivery.goodRole.roleId, vortoxGood.delivery.evilRole.roleId]).not.toContain(flowergirlRole.roleId);
+    expect([vortoxEvil.delivery.goodRole.roleId, vortoxEvil.delivery.evilRole.roleId]).not.toContain(witchRole.roleId);
+    expect(vortoxGood.delivery.goodRole.characterType).toMatch(/^(TOWNSFOLK|OUTSIDER)$/u);
+    expect(vortoxGood.delivery.evilRole.characterType).toMatch(/^(MINION|DEMON)$/u);
+
+    for (const key of Object.keys(normalGood.choice)) {
+      const missing = structuredClone(normalGood.choice) as unknown as Record<string, unknown>;
+      delete missing[key];
+      expect(validateDreamerTargetChosenPayload(missing, targetInput(normalGood)).valid, `target.${key}`).toBe(false);
+    }
+    expect(validateDreamerTargetChosenPayload({ ...normalGood.choice, extra: true }, targetInput(normalGood)).valid).toBe(false);
+
+    for (const facts of [normalGood, vortoxGood]) {
+      for (const key of Object.keys(facts.delivery)) {
+        const missing = structuredClone(facts.delivery) as unknown as Record<string, unknown>;
+        delete missing[key];
+        expect(validateDreamerInformationDeliveredPayload(missing, deliveryInput(facts)).valid,
+          `${facts.delivery.deliverySchemaVersion}.${key}`).toBe(false);
+      }
+      expect(validateDreamerInformationDeliveredPayload({ ...facts.delivery, extra: true }, deliveryInput(facts)).valid).toBe(false);
+      for (const roleKey of Object.keys(facts.delivery.goodRole)) {
+        const payload = structuredClone(facts.delivery) as unknown as Record<string, unknown>;
+        delete (payload.goodRole as Record<string, unknown>)[roleKey];
+        expect(validateDreamerInformationDeliveredPayload(payload, deliveryInput(facts)).valid,
+          `${facts.delivery.deliverySchemaVersion}.goodRole.${roleKey}`).toBe(false);
+      }
+    }
+
+    expect(validateDreamerInformationDeliveredPayload({
+      ...normalGood.delivery,
+      deliverySchemaVersion: "dreamer-information-delivered-v6"
+    }, deliveryInput(normalGood)).valid).toBe(false);
+    expect(validateDreamerInformationDeliveredPayload({
+      ...vortoxGood.delivery,
+      deliverySchemaVersion: "dreamer-information-delivered-v5"
+    }, deliveryInput(vortoxGood)).valid).toBe(false);
+    expect(validateDreamerTargetChosenPayload(v3Facts().choice, targetInput(normalGood)).valid).toBe(false);
+    expect(validateDreamerTargetChosenPayload(normalGood.choice, {
+      ...targetInput(normalGood), taskId: v3TaskId, firstNightTaskPlan: v3Plan()
+    }).valid).toBe(false);
+
+    const reversed = gainedDreamerFacts(true, flowergirlRole);
+    const reverseSetup = setup([...reversed.setup.roleCatalogSnapshot.roles].reverse());
+    const reverseDelivery = createPhilosopherGainedDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      targetChoice: reversed.choice,
+      setup: reverseSetup,
+      currentCharacterState: reversed.state,
+      capability: reversed.capability
+    });
+    expect([reverseDelivery.goodRole, reverseDelivery.evilRole])
+      .toStrictEqual([reversed.delivery.goodRole, reversed.delivery.evilRole]);
+    const starved = setup([philosopherRole, dreamerRole, flowergirlRole]);
+    expect(() => createPhilosopherGainedDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      targetChoice: normalGood.choice,
+      setup: starved,
+      currentCharacterState: normalGood.state,
+      capability: normalGood.capability
+    })).toThrowError(DomainError);
+  });
+
+  it("[2B19B-C27/C28] selects deterministic gained roles independently of catalog insertion order", () => {
+    const canonical = gainedDreamerFacts(true, flowergirlRole);
+    const reversedSetup = setup([...canonical.setup.roleCatalogSnapshot.roles].reverse());
+    const reversed = createPhilosopherGainedDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      targetChoice: canonical.choice,
+      setup: reversedSetup,
+      currentCharacterState: canonical.state,
+      capability: canonical.capability
+    });
+    expect([reversed.goodRole, reversed.evilRole]).toStrictEqual([
+      canonical.delivery.goodRole,
+      canonical.delivery.evilRole
+    ]);
+  });
+
+  it("[2B19B-C29] rejects a starved native role category instead of inventing a pair", () => {
+    const facts = gainedDreamerFacts(false, flowergirlRole);
+    expect(() => createPhilosopherGainedDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      targetChoice: facts.choice,
+      setup: setup([philosopherRole, dreamerRole, flowergirlRole]),
+      currentCharacterState: facts.state,
+      capability: facts.capability
+    })).toThrowError(DomainError);
+  });
+
+  it("[2B19B-S20] statically forbids nondeterministic Dreamer primitives and requires stable sorting", () => {
+    const source = readFileSync(new URL("./dreamer.ts", import.meta.url), "utf8");
+    for (const forbidden of [
+      "localeCompare",
+      "Intl.Collator",
+      "Date.now",
+      "Math.random",
+      "randomUUID",
+      "crypto.randomUUID",
+      "uuidv4",
+      "uuid.v4"
+    ]) {
+      expect(source, forbidden).not.toContain(forbidden);
+    }
+    expect(source).toContain(".sort(compareRoleId)");
+    expect(source).toMatch(/\.sort\(\(left, right\) => compareStableId\(/u);
+  });
+
+  it("[2B19B-C19] rejects a represented Traveller policy input at the pure seam", () => {
+    const opened = gainedDreamerFacts(false, flowergirlRole);
+    const changedState: CurrentCharacterStateSet = {
+      revision: 2,
+      entries: opened.state.entries.map((entry) => entry.playerId === opened.choice.targetPlayerId
+        ? { ...entry, role: witchRole, currentAlignment: "EVIL" }
+        : entry)
+    };
+    const changedChoice = createPhilosopherGainedDreamerTargetChosenPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      taskId: opened.taskId,
+      opportunityId: opened.opportunity.opportunityId,
+      targetPlayerId: opened.choice.targetPlayerId,
+      firstNightActionOpportunities: opened.opportunities,
+      roster: opened.roster,
+      currentCharacterState: changedState
+    });
+    const changedCapability = resolvePhilosopherGainedDreamerCapability({
+      opportunity: opened.opportunity,
+      currentCharacterState: changedState,
+      setup: opened.setup,
+      roleTenures: opened.roleTenures,
+      abilityImpairments: undefined
+    });
+    if (changedCapability.kind !== "NORMAL_INFORMATION_SUPPORTED") throw new Error("Expected changed-state capability");
+    const changedDelivery = createPhilosopherGainedDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      targetChoice: changedChoice,
+      setup: opened.setup,
+      currentCharacterState: changedState,
+      capability: changedCapability
+    });
+    expect(changedDelivery.evilRole.roleId).toBe(witchRole.roleId);
+    expect(changedDelivery.evaluatedCharacterStateRevision).toBe(2);
+
+    const representedTraveller = {
+      ...flowergirlRole,
+      roleId: roleId("represented_traveller"),
+      characterType: "TRAVELLER"
+    } as unknown as RoleSetupSnapshot;
+    const travellerState: CurrentCharacterStateSet = {
+      ...opened.state,
+      entries: opened.state.entries.map((entry) => entry.playerId === opened.choice.targetPlayerId
+        ? { ...entry, role: representedTraveller }
+        : entry)
+    };
+    const travellerSetup = setup([...opened.setup.roleCatalogSnapshot.roles, representedTraveller]);
+    const travellerChoice = createPhilosopherGainedDreamerTargetChosenPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      taskId: opened.taskId,
+      opportunityId: opened.opportunity.opportunityId,
+      targetPlayerId: opened.choice.targetPlayerId,
+      firstNightActionOpportunities: opened.opportunities,
+      roster: opened.roster,
+      currentCharacterState: travellerState
+    });
+    const travellerCapability = resolvePhilosopherGainedDreamerCapability({
+      opportunity: opened.opportunity,
+      currentCharacterState: travellerState,
+      setup: travellerSetup,
+      roleTenures: opened.roleTenures,
+      abilityImpairments: undefined
+    });
+    if (travellerCapability.kind !== "NORMAL_INFORMATION_SUPPORTED") throw new Error("Expected Traveller seam capability");
+    expect(() => createPhilosopherGainedDreamerInformationDeliveredPayload({
+      rulesBaselineVersion: "Phase One v2.1",
+      targetChoice: travellerChoice,
+      setup: travellerSetup,
+      currentCharacterState: travellerState,
+      capability: travellerCapability
+    })).toThrowError(DomainError);
+  });
+
+  it("[2B19B-C33/C34/C36] keeps unsupported capability contexts fail-closed at the pure seam", () => {
+    const normal = gainedDreamerFacts(false);
+    const vortox = gainedDreamerFacts(true);
+    let getterCalls = 0;
+    const accessor = (value: object, key: string): unknown => {
+      const copy = structuredClone(value) as Record<string, unknown>;
+      Object.defineProperty(copy, key, { enumerable: true, get: () => {
+        getterCalls += 1;
+        throw new Error("getter");
+      } });
+      return copy;
+    };
+    const hostile = (value: object): readonly unknown[] => {
+      const throwing = new Proxy(value, { ownKeys: () => { throw new Error("proxy"); } });
+      const revoked = Proxy.revocable(value, {}); revoked.revoke();
+      const symbol = structuredClone(value);
+      Object.defineProperty(symbol, Symbol("hidden"), { enumerable: true, value: true });
+      const cycle = structuredClone(value) as Record<string, unknown>; cycle.self = cycle;
+      const nonplain = Object.assign(Object.create({ inherited: true }) as object, value);
+      return [throwing, revoked.proxy, symbol, cycle, nonplain];
+    };
+    for (const payload of [...hostile(normal.choice), accessor(normal.choice, "sourceContract")]) {
+      expect(validateDreamerTargetChosenPayload(payload, targetInput(normal)).valid).toBe(false);
+    }
+    for (const payload of [...hostile(vortox.delivery), accessor(vortox.delivery, "sourceContract")]) {
+      expect(validateDreamerInformationDeliveredPayload(payload, deliveryInput(vortox)).valid).toBe(false);
+    }
+    const nested = structuredClone(vortox.delivery) as unknown as Record<string, unknown>;
+    Object.defineProperty(nested.sourceContract as object, "kind", { enumerable: true, get: () => {
+      getterCalls += 1;
+      throw new Error("getter");
+    } });
+    expect(validateDreamerInformationDeliveredPayload(nested, deliveryInput(vortox)).valid).toBe(false);
+    expect(getterCalls).toBe(0);
+
+    const sourceImpairment = (kind: "DRUNK" | "POISONED"): AbilityImpairmentSet => ({ impairments: [{
+      impairmentId: abilityImpairmentId(`philosopher-${kind.toLowerCase()}`),
+      kind,
+      sourceKind: kind === "DRUNK" ? "PHILOSOPHER_CHOSEN_DUPLICATE" : "SNAKE_CHARMER_DEMON_HIT",
+      sourcePlayerId: playerId("impairment-source"),
+      affectedPlayerId: normal.opportunity.sourcePlayerId,
+      affectedSeatNumber: normal.opportunity.sourceSeatNumber,
+      affectedRole: philosopherRole,
+      ...(kind === "DRUNK" ? { chosenRoleId: roleId("philosopher") } : {}),
+      sourceCharacterStateRevision: 1
+    }] } as AbilityImpairmentSet);
+    for (const kind of ["DRUNK", "POISONED"] as const) {
+      expect(resolvePhilosopherGainedDreamerCapability({ opportunity: normal.opportunity,
+        currentCharacterState: normal.state, setup: normal.setup, roleTenures: normal.roleTenures,
+        abilityImpairments: sourceImpairment(kind) })).toMatchObject({ kind: "SOURCE_REPRESENTED_IMPAIRED" });
+    }
+    const impairedVortox: AbilityImpairmentSet = { impairments: [{
+      impairmentId: abilityImpairmentId("vortox-poisoned"),
+      kind: "POISONED",
+      sourceKind: "SNAKE_CHARMER_DEMON_HIT",
+      sourcePlayerId: playerId("snake-player"),
+      affectedPlayerId: playerId("demon-player"),
+      affectedSeatNumber: seatNumber(3),
+      affectedRole: vortoxRole,
+      sourceCharacterStateRevision: 1
+    }] };
+    expect(resolvePhilosopherGainedDreamerCapability({ opportunity: vortox.opportunity,
+      currentCharacterState: vortox.state, setup: vortox.setup, roleTenures: vortox.roleTenures,
+      abilityImpairments: impairedVortox })).toMatchObject({ kind: "EFFECTIVENESS_UNRESOLVED" });
+    const missingTenure = { ...normal.roleTenures, records: [] };
+    expect(resolvePhilosopherGainedDreamerCapability({ opportunity: normal.opportunity,
+      currentCharacterState: normal.state, setup: normal.setup, roleTenures: missingTenure,
+      abilityImpairments: undefined })).toMatchObject({ kind: "EFFECTIVENESS_UNRESOLVED" });
+  });
+
+  it("[2B19B-S14/S15] deep-clones gained target and deliveries and compares every delivery field", () => {
+    const normal = gainedDreamerFacts(false);
+    const vortox = gainedDreamerFacts(true);
+    const choiceClone = cloneDreamerTargetChoiceSet({ choices: [normal.choice] }).choices[0];
+    const deliveryClones = cloneDreamerInformationSet({ deliveries: [normal.delivery, vortox.delivery] }).deliveries;
+    expect(choiceClone).toStrictEqual(normal.choice);
+    expect(choiceClone).not.toBe(normal.choice);
+    expect(deliveryClones).toStrictEqual([normal.delivery, vortox.delivery]);
+    expect(deliveryClones[0]).not.toBe(normal.delivery);
+    expect(deliveryClones[1]).not.toBe(vortox.delivery);
+    expect(sameDreamerInformationDelivery(normal.delivery, structuredClone(normal.delivery))).toBe(true);
+    expect(sameDreamerInformationDelivery(vortox.delivery, structuredClone(vortox.delivery))).toBe(true);
+    for (const delivery of [normal.delivery, vortox.delivery]) {
+      for (const key of Object.keys(delivery)) {
+        const mutated = structuredClone(delivery) as unknown as Record<string, unknown>;
+        const original = mutated[key];
+        mutated[key] = typeof original === "number" ? original + 1
+          : typeof original === "string" ? `${original}-mutated`
+            : key === "sourceContract"
+              ? { ...(original as Record<string, unknown>), sourceCharacterStateRevision: 2 }
+              : key === "informationReliability"
+                ? { ...(original as Record<string, unknown>), kind: "mutated" }
+                : key === "vortoxConstraint"
+                  ? { ...(original as Record<string, unknown>), evaluatedCharacterStateRevision: 2 }
+                  : { ...(original as Record<string, unknown>), roleId: roleId("mutated") };
+        expect(sameDreamerInformationDelivery(delivery, mutated as never),
+          `${delivery.deliverySchemaVersion}.${key}`).toBe(false);
+      }
+    }
   });
 });

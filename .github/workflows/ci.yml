@@ -210,20 +210,31 @@ jobs:
         include:
           - group: domain-core-rebuild
             projects: --project=domain-core-rebuild
+            testNamePattern: ""
           - group: domain-core-rest
             projects: --project=domain-core
+            testNamePattern: ""
           - group: application
             projects: --project=application
+            testNamePattern: ""
           - group: application-service-core
             projects: --project=application-service-core
+            testNamePattern: ""
           - group: application-service-role-actions
             projects: --project=application-service-role-actions
+            testNamePattern: ""
           - group: application-service-information-and-later-actions
             projects: --project=application-service-information-and-later-actions
+            testNamePattern: ""
           - group: application-service-compatibility-and-failure-boundaries
             projects: --project=application-service-compatibility-and-failure-boundaries
-          - group: application-service-dreamer-vortox
+            testNamePattern: ""
+          - group: application-service-dreamer-vortox-core
             projects: --project=application-service-dreamer-vortox
+            testNamePattern: '\[(?:2B19A3A|2B19A3B1)-'
+          - group: application-service-dreamer-vortox-gained
+            projects: --project=application-service-dreamer-vortox
+            testNamePattern: '\[2B19B-'
           - group: engines-and-projections
             projects: >-
               --project=assignment-engine
@@ -233,6 +244,7 @@ jobs:
               --project=setup-engine
               --project=task-engine
               --project=test-harness
+            testNamePattern: ""
 
     steps:
       - name: Checkout
@@ -254,19 +266,65 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Coverage shard
+        id: coverage-shard
+        continue-on-error: true
         env:
           VITEST_MAX_FORKS: "1"
+          COVERAGE_PROJECTS: ${{ matrix.projects }}
+          COVERAGE_TEST_NAME_PATTERN: ${{ matrix.testNamePattern }}
+        shell: bash
+        run: |
+          read -r -a project_arguments <<< "$COVERAGE_PROJECTS"
+          if [ "${#project_arguments[@]}" -eq 0 ]; then
+            echo "Coverage group has no project arguments" >&2
+            exit 1
+          fi
+          arguments=(
+            run
+            --coverage
+            "--coverage.include=packages/*/src/**/*.ts"
+            --coverage.reporter=json
+            --workspace
+            vitest.workspace.ts
+            "${project_arguments[@]}"
+          )
+          if [ -n "$COVERAGE_TEST_NAME_PATTERN" ]; then
+            arguments+=("--testNamePattern=$COVERAGE_TEST_NAME_PATTERN")
+          fi
+          arguments+=(
+            --reporter=blob
+            "--outputFile=.vitest-coverage/${{ matrix.group }}/${{ matrix.group }}.blob"
+          )
+          pnpm exec vitest "${arguments[@]}"
+
+      - name: Collect coverage shard diagnostics
+        if: always()
         run: >-
-          pnpm exec vitest run
-          --coverage
-          --coverage.include='packages/*/src/**/*.ts'
-          --coverage.reporter=json
-          --workspace vitest.workspace.ts
-          ${{ matrix.projects }}
-          --reporter=blob
-          --outputFile=.vitest-coverage/${{ matrix.group }}/${{ matrix.group }}.blob
+          node scripts/collect-vitest-shard-diagnostics.mjs
+          --group "${{ matrix.group }}"
+          --projects "${{ matrix.projects }}"
+          --test-name-pattern "${{ matrix.testNamePattern }}"
+          --blob ".vitest-coverage/${{ matrix.group }}/${{ matrix.group }}.blob"
+          --coverage-json "coverage/coverage-final.json"
+          --output ".vitest-coverage-diagnostics/${{ matrix.group }}"
+          --pnpm-version "$(pnpm --version)"
+          --vitest-version "$(pnpm exec vitest --version)"
+          --runner-os "${{ runner.os }}"
+          --vitest-max-forks "1"
+          --original-outcome "${{ steps.coverage-shard.outcome }}"
+
+      - name: Upload coverage shard diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-diagnostics-${{ matrix.group }}
+          path: .vitest-coverage-diagnostics/${{ matrix.group }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
 
       - name: Upload coverage blob
+        if: always() && steps.coverage-shard.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-blob-${{ matrix.group }}
@@ -274,6 +332,23 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 1
+
+      - name: Enforce coverage shard result
+        if: always()
+        shell: bash
+        run: |
+          case "${{ steps.coverage-shard.outcome }}" in
+            success)
+              exit 0
+              ;;
+            failure|cancelled)
+              exit 1
+              ;;
+            *)
+              echo "Unexpected coverage shard outcome: ${{ steps.coverage-shard.outcome }}" >&2
+              exit 1
+              ;;
+          esac
 
   coverage-merge:
     name: coverage merge and semantic gates
@@ -316,7 +391,8 @@ jobs:
             application-service-role-actions
             application-service-information-and-later-actions
             application-service-compatibility-and-failure-boundaries
-            application-service-dreamer-vortox
+            application-service-dreamer-vortox-core
+            application-service-dreamer-vortox-gained
             engines-and-projections
           )
           test "$(find .vitest-coverage/merged-blobs -maxdepth 1 -type f -name '*.blob' | wc -l)" -eq "${#groups[@]}"
@@ -336,7 +412,8 @@ jobs:
             application-service-role-actions \
             application-service-information-and-later-actions \
             application-service-compatibility-and-failure-boundaries \
-            application-service-dreamer-vortox \
+            application-service-dreamer-vortox-core \
+            application-service-dreamer-vortox-gained \
             engines-and-projections
           do
             mkdir -p ".vitest-coverage/group-blobs/${group}"
@@ -370,7 +447,8 @@ jobs:
           --merged-group-report application-service-role-actions=.vitest-coverage/group-reports/application-service-role-actions.json
           --merged-group-report application-service-information-and-later-actions=.vitest-coverage/group-reports/application-service-information-and-later-actions.json
           --merged-group-report application-service-compatibility-and-failure-boundaries=.vitest-coverage/group-reports/application-service-compatibility-and-failure-boundaries.json
-          --merged-group-report application-service-dreamer-vortox=.vitest-coverage/group-reports/application-service-dreamer-vortox.json
+          --merged-group-report application-service-dreamer-vortox-core=.vitest-coverage/group-reports/application-service-dreamer-vortox-core.json
+          --merged-group-report application-service-dreamer-vortox-gained=.vitest-coverage/group-reports/application-service-dreamer-vortox-gained.json
           --merged-group-report engines-and-projections=.vitest-coverage/group-reports/engines-and-projections.json
           --output .vitest-coverage/inventory-audit.json
 
@@ -378,7 +456,7 @@ jobs:
         run: >-
           node scripts/verify-coverage-obligations.mjs
           --validate-candidate .vitest-coverage/merged-coverage/coverage-final.json
-          --profile phase-3-slice-2b19a3b1-c384c60-repair2-ownership-v2-1
+          --profile phase-3-slice-2b19b-dcfa530-split-coverage-v1
 
   deterministic-windows:
     name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch/dreamer/clockmaker

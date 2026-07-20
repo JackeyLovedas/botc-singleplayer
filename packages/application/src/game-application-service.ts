@@ -48,6 +48,8 @@ import {
   createDreamerVortoxInformationDeliveredPayload,
   createDreamerInformationDeliveredScheduledTaskSettlement,
   createDreamerTargetChosenPayload,
+  createPhilosopherGainedDreamerTargetChosenPayload,
+  createPhilosopherGainedDreamerInformationDeliveredPayload,
   createSeamstressDeferredScheduledTaskSettlement,
   createSeamstressActionDeferredPayloadV2,
   createSeamstressTargetsChosenPayload,
@@ -72,6 +74,7 @@ import {
   isSupportedFirstNightRoleActionTask,
   isDreamerActionOpportunityV2,
   isDreamerActionOpportunityV3,
+  isDreamerActionOpportunityV4,
   isSeamstressActionOpportunityV2,
   isRoleTenureContinuousAcross,
   tryCreateFirstNightRoleActionOpportunity,
@@ -89,6 +92,7 @@ import {
   validateCerenovusActionOpportunityShape,
   validateDreamerActionDecision,
   resolveBaseDreamerV2NormalCapability,
+  resolvePhilosopherGainedDreamerCapability,
   validateSeamstressActionDecisionForOpportunity,
   canActorSettleClockmakerInformation,
   validateSettleClockmakerInformationCommandPayload,
@@ -153,7 +157,10 @@ import type {
   DreamerInformationDeliveredPayloadV2,
   DreamerInformationDeliveredPayloadV3,
   DreamerInformationDeliveredPayloadV4,
+  DreamerInformationDeliveredPayloadV5,
+  DreamerInformationDeliveredPayloadV6,
   DreamerTargetChosenPayloadV2,
+  DreamerTargetChosenPayloadV3,
   BaseDreamerV2NormalCapability,
   DreamerTargetChosenPayload,
   WitchDeathPendingPayload,
@@ -561,6 +568,18 @@ type PreparedBaseDreamerSubmission =
       readonly targetChoice: DreamerTargetChosenPayloadV2;
       readonly delivery: DreamerInformationDeliveredPayloadV4;
       readonly settlement: ScheduledTaskSettlement;
+    }
+  | {
+      readonly kind: "PHILOSOPHER_GAINED_DREAMER_NORMAL_V5";
+      readonly targetChoice: DreamerTargetChosenPayloadV3;
+      readonly delivery: DreamerInformationDeliveredPayloadV5;
+      readonly settlement: ScheduledTaskSettlement;
+    }
+  | {
+      readonly kind: "PHILOSOPHER_GAINED_DREAMER_VORTOX_FALSE_V6";
+      readonly targetChoice: DreamerTargetChosenPayloadV3;
+      readonly delivery: DreamerInformationDeliveredPayloadV6;
+      readonly settlement: ScheduledTaskSettlement;
     };
 
 export class GameApplicationService {
@@ -662,21 +681,6 @@ export class GameApplicationService {
     const nextFirstNightTask = state?.firstNightTaskPlan === undefined
       ? undefined
       : getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress);
-    if (
-      command.payload.commandType === "OpenFirstNightRoleActionOpportunity" &&
-      state?.firstNightTaskPlan?.taskPlanVersion === "first-night-task-plan-v2" &&
-      nextFirstNightTask?.taskId === command.payload.taskId &&
-      nextFirstNightTask.taskType === "DREAMER_ACTION" &&
-      nextFirstNightTask.source.kind === "PHILOSOPHER_GAINED_ABILITY"
-    ) {
-      return failed(
-        command.gameId,
-        "ApplicationNotConfigured",
-        "Philosopher-gained Dreamer V2 opportunity is not configured in Slice 2B19A1",
-        "first-night-role-action",
-        currentGameVersion
-      );
-    }
     let preparedDreamerSubmission: PreparedBaseDreamerSubmission | undefined;
     if (command.payload.commandType === "SubmitDreamerAction") {
       const opportunity = findFirstNightActionOpportunityById(
@@ -798,6 +802,42 @@ export class GameApplicationService {
               };
         } catch {
           return failed(command.gameId, "DependencyExecutionFailed", "Dreamer normal information dependencies could not produce a canonical result", "first-night-role-action", currentGameVersion);
+        }
+      }
+      if (opportunity !== undefined && isDreamerActionOpportunityV4(opportunity)) {
+        if (state?.currentCharacterState === undefined || state.setup === undefined || state.roster === undefined ||
+            state.firstNightActionOpportunities === undefined || state.seamstressRoleTenureState === undefined) {
+          return failed(command.gameId, "DependencyExecutionFailed", "Gained Dreamer dependencies are unavailable", "first-night-role-action", currentGameVersion);
+        }
+        const capability = resolvePhilosopherGainedDreamerCapability({ opportunity,
+          currentCharacterState: state.currentCharacterState, setup: state.setup,
+          roleTenures: state.seamstressRoleTenureState, abilityImpairments: state.abilityImpairments });
+        if (capability.kind === "SOURCE_REPRESENTED_IMPAIRED") {
+          return failed(command.gameId, "ApplicationNotConfigured", "Gained Dreamer source is not effective", "first-night-role-action", currentGameVersion);
+        }
+        if (capability.kind !== "NORMAL_INFORMATION_SUPPORTED" &&
+            capability.kind !== "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED") {
+          return failed(command.gameId, "DependencyExecutionFailed", "Gained Dreamer capability could not be proven", "first-night-role-action", currentGameVersion);
+        }
+        try {
+          const targetChoice = createPhilosopherGainedDreamerTargetChosenPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION, taskId: command.payload.taskId,
+            opportunityId: command.payload.opportunityId, targetPlayerId: command.payload.decision.targetPlayerId,
+            firstNightActionOpportunities: state.firstNightActionOpportunities, roster: state.roster.entries,
+            currentCharacterState: state.currentCharacterState
+          });
+          const delivery = createPhilosopherGainedDreamerInformationDeliveredPayload({
+            rulesBaselineVersion: RULES_BASELINE_VERSION, targetChoice, setup: state.setup,
+            currentCharacterState: state.currentCharacterState, capability
+          });
+          const settlement = createDreamerInformationDeliveredScheduledTaskSettlement({
+            taskId: opportunity.taskId, characterStateRevision: targetChoice.evaluatedCharacterStateRevision
+          });
+          preparedDreamerSubmission = delivery.deliverySchemaVersion === "dreamer-information-delivered-v6"
+            ? { kind: "PHILOSOPHER_GAINED_DREAMER_VORTOX_FALSE_V6", targetChoice, delivery, settlement }
+            : { kind: "PHILOSOPHER_GAINED_DREAMER_NORMAL_V5", targetChoice, delivery, settlement };
+        } catch {
+          return failed(command.gameId, "DependencyExecutionFailed", "Gained Dreamer dependencies could not produce a canonical result", "first-night-role-action", currentGameVersion);
         }
       }
     }
@@ -1426,7 +1466,10 @@ export class GameApplicationService {
           };
         }
 
-        if (!isSupportedFirstNightRoleActionTask(targetTask)) {
+        const supportedGainedDreamerV2 = state.firstNightTaskPlan.taskPlanVersion === "first-night-task-plan-v2" &&
+          targetTask.taskType === "DREAMER_ACTION" && targetTask.source.kind === "PHILOSOPHER_GAINED_ABILITY" &&
+          targetTask.source.sourceRole.roleId === "philosopher" && targetTask.source.chosenRole.roleId === "dreamer";
+        if (!isSupportedFirstNightRoleActionTask(targetTask) && !supportedGainedDreamerV2) {
           return {
             code: "UnsupportedRoleActionOpportunity",
             message: `OpenFirstNightRoleActionOpportunity cannot open ${targetTask.taskType}`
@@ -1999,7 +2042,8 @@ export class GameApplicationService {
 
         if (
           (opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION" &&
-            opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V3") ||
+            opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V3" &&
+            opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V4") ||
           opportunity.taskType !== "DREAMER_ACTION"
         ) {
           return {
@@ -2059,8 +2103,15 @@ export class GameApplicationService {
           entry.playerId === opportunity.sourcePlayerId &&
           entry.seatNumber === opportunity.sourceSeatNumber
         );
-        const dreamerSourceValid =
-          targetTask.source.kind === "ROLE" &&
+        const dreamerSourceValid = opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V4"
+          ? targetTask.source.kind === "PHILOSOPHER_GAINED_ABILITY" &&
+            targetTask.source.sourceRole.roleId === "philosopher" && targetTask.source.chosenRole.roleId === "dreamer" &&
+            targetTask.source.playerId === opportunity.sourcePlayerId && targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
+            currentSourceEntry !== undefined && currentSourceEntry.role.roleId === "philosopher" &&
+            sameRoleSetupSnapshot(currentSourceEntry.role, targetTask.source.sourceRole) &&
+            sameRoleSetupSnapshot(currentSourceEntry.role, opportunity.sourceRole) &&
+            state.currentCharacterState.revision >= opportunity.sourceCharacterStateRevision
+          : targetTask.source.kind === "ROLE" &&
           targetTask.source.role.roleId === "dreamer" &&
           targetTask.source.playerId === opportunity.sourcePlayerId &&
           targetTask.source.seatNumber === opportunity.sourceSeatNumber &&
@@ -3676,7 +3727,8 @@ export class GameApplicationService {
           opportunity === undefined ||
           opportunity.opportunityStatus !== "OPEN" ||
           (opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION" &&
-            opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V3") ||
+            opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V3" &&
+            opportunity.opportunityKind !== "DREAMER_FIRST_NIGHT_ACTION_V4") ||
           opportunity.taskType !== "DREAMER_ACTION"
         ) {
           throw new DomainError(
@@ -3685,7 +3737,9 @@ export class GameApplicationService {
           );
         }
 
-        const targetChoicePayload = opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
+        const versionedOpportunity = opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3" ||
+          opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V4";
+        const targetChoicePayload = versionedOpportunity
           ? preparedDreamerSubmission?.targetChoice
           : createDreamerTargetChosenPayload({
               rulesBaselineVersion: RULES_BASELINE_VERSION,
@@ -3709,7 +3763,7 @@ export class GameApplicationService {
           payload: targetChoicePayload satisfies DreamerTargetChosenPayload
         };
 
-        const informationPayload = opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
+        const informationPayload = versionedOpportunity
           ? preparedDreamerSubmission?.delivery
           : createDreamerInformationDeliveredPayload({
               rulesBaselineVersion: RULES_BASELINE_VERSION,
@@ -3734,7 +3788,7 @@ export class GameApplicationService {
           payload: informationPayload satisfies DreamerInformationDeliveredPayload
         };
 
-        const settlement = opportunity.opportunityKind === "DREAMER_FIRST_NIGHT_ACTION_V3"
+        const settlement = versionedOpportunity
           ? preparedDreamerSubmission?.settlement
           : createDreamerInformationDeliveredScheduledTaskSettlement({
               taskId: opportunity.taskId,
