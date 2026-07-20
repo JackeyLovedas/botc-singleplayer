@@ -107,3 +107,11 @@ The candidate tuple is `63 / 3206 / 23 / 3206 / 1800`; the selected old tuple is
 ## Delivery boundary
 
 The next action is one attributed source commit named `fix: reject Proxy values at command capture`. It must include this status, the governance/design/review records, the four control records, the two production files, the two primary test files, and the conditional ownership hash update only. It must not include generated artifacts, profiles, workflow changes, or paused A3B2 WIP. No push or pull request is authorized in this stage.
+
+## Profile-stage continuation
+
+The exact source commit is `ea08ddd979bc8d3e825efdf5b290bd0c3e85942f`. Three effective fresh ten-process candidates pass all shards, merges, inventory/semantic audits and obligation comparisons with `1535/1535` tests, identical canonical source/zero-hit hashes and risk hits `0`. Profile `foundation-command-capture-proxy-rejection-v1-ea08ddd` is ready at `docs/implementation/command-capture-proxy-rejection-v1-coverage-profile.md`; its `sourceHead` remains the source commit rather than the future profile commit.
+
+`coverageHarnessCorrection=2` is retained transparently: `PRE_CANDIDATE_POWERSHELL_STDERR_CLASSIFICATION_ERROR` occurred before Vitest produced any result, and `CANDIDATE_MERGE_LOG_COLOCATION_HARNESS_ERROR` occurred when an empty redirected log was mistakenly placed in a merge-input directory. Neither run counts toward the three effective candidates; all evidence is preserved externally. Neither correction changed repository/configuration bytes or consumes Foundation repair capacity, which remains `0/2`.
+
+Profile-stage state is `EXACT_PROFILE_READY_PENDING_COMMIT`; the sole blocker is `PENDING_PROFILE_COMMIT`. The profile-only commit must change no production or test bytes and must not be pushed in this handoff.

@@ -346,6 +346,80 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
         sha256: "8f9427be3ed6e81b5bf818b648dc61a6601b9b67f936517c2c50fea16a7c02ef"
       })
     })
+  }),
+  Object.freeze({
+    id: "foundation-command-capture-proxy-rejection-v1-ea08ddd",
+    sourceHead: "ea08ddd979bc8d3e825efdf5b290bd0c3e85942f",
+    sourceKind: "TEN_PROCESS_COMMAND_CAPTURE_PROXY_REJECTION_V1",
+    topology: Object.freeze({
+      id: "TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION",
+      ordinaryGroups: 9,
+      coverageGroups: Object.freeze([
+        Object.freeze({ id: "domain-core-rebuild", tests: 207 }),
+        Object.freeze({ id: "domain-core-rest", tests: 357 }),
+        Object.freeze({ id: "application", tests: 465 }),
+        Object.freeze({ id: "application-service-core", tests: 90 }),
+        Object.freeze({ id: "application-service-role-actions", tests: 52 }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions",
+          tests: 73
+        }),
+        Object.freeze({
+          id: "application-service-compatibility-and-failure-boundaries",
+          tests: 26
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-core",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[(?:2B19A3A|2B19A3B1)-",
+          tests: 16,
+          skippedComplement: 10
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-gained",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[2B19B-",
+          tests: 10,
+          skippedComplement: 16
+        }),
+        Object.freeze({ id: "engines-and-projections", tests: 239 })
+      ]),
+      physicalTestFiles: 31,
+      workspaceProjectFileExecutions: 35,
+      semanticTests: 1535,
+      ordinaryProjectInventorySha256:
+        "f764c30ac1baaaf56aa0c2e7ad8c712ebeac38e65d42fb574146f58eafed3a18",
+      semanticInventorySha256:
+        "c002db40d8d188aed38e37ba2ebad67d7a4821e9cdf0266d680436601f77167f",
+      coverageExecutionSha256:
+        "f98832bbc0c7b878c10b5db0dec98fd202b1ad35177a55812dc75c949c1483b3",
+      stabilityCandidates: 3,
+      coverageHarnessCorrection: 2,
+      stabilityEvidenceSha256:
+        "09e629e96f4643e933d0220cef10973e1712e1689df170057fc32f2db77992de"
+    }),
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3206,
+        sha256: "e92487ebecdb3e1d91878ea849682a399e53bad1be3fe90afd8dbc4e28276307"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "4fdf762b692b151aed1686a73441f38a913ed796a6d5193021d127ed6703dbec"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3206,
+        sha256: "20b968074484d3f6e6745aa340eef2164141a60056d7b15b53c0bfbf4a187b27"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1800,
+        sha256: "a85b196fe4da848fd32ac824c09ef6247f0a5a27ddea94abed9b790a0bfaad63"
+      })
+    })
   })
 ]);
 

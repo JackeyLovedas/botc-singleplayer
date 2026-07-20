@@ -21,7 +21,7 @@
   "infrastructureRepairRound": 0,
   "maxInfrastructureRepairRounds": 2,
   "commandCaptureProxyRejectionV1": {
-    "status": "SOURCE_READY_PENDING_COMMIT",
+    "status": "EXACT_PROFILE_READY_PENDING_COMMIT",
     "taskType": "SHARED_TRUST_BOUNDARY_HARDENING",
     "authorization": "USER_AUTHORIZED_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE",
     "foundation": "COMMAND_CAPTURE_PROXY_REJECTION_V1",
@@ -58,8 +58,20 @@
     "productionDeletedLines": 5,
     "primaryTestFilesChanged": 2,
     "nonMarkerOwnershipSha256": "764888ea567eb545303c17d0cc89706d0b871360a5271912910257397f2829a8",
-    "coverageProfileCreated": false,
-    "workflowSelectorChanged": false,
+    "coverageProfileCreated": true,
+    "workflowSelectorChanged": true,
+    "sourceHead": "ea08ddd979bc8d3e825efdf5b290bd0c3e85942f",
+    "coverageHarnessCorrection": 2,
+    "coverageProfile": {
+      "profileId": "foundation-command-capture-proxy-rejection-v1-ea08ddd",
+      "sourceHead": "ea08ddd979bc8d3e825efdf5b290bd0c3e85942f",
+      "sourceKind": "TEN_PROCESS_COMMAND_CAPTURE_PROXY_REJECTION_V1",
+      "effectiveCandidates": 3,
+      "candidateResult": "3 OF 3 / 10 OF 10 / 1535 OF 1535 / ZERO RISK HITS / CANONICAL IDENTITIES EQUAL",
+      "stabilityEvidenceSha256": "09e629e96f4643e933d0220cef10973e1712e1689df170057fc32f2db77992de",
+      "profilePath": "docs/implementation/command-capture-proxy-rejection-v1-coverage-profile.md",
+      "profileSha256": "6aaa0cacc25bba595a1a91056151a9da3ecfa98133a64a1a161d8d5a3650894a"
+    },
     "localValidation": {
       "typecheck": "PASS",
       "fullLint": "PASS",
@@ -73,10 +85,10 @@
     "infrastructureRepairRound": 0,
     "maxInfrastructureRepairRounds": 2,
     "remainingBlockers": [
-      "PENDING_SOURCE_COMMIT"
+      "PENDING_PROFILE_COMMIT"
     ],
-    "requiredNextAction": "CREATE_FOUNDATION_SOURCE_COMMIT",
-    "nextAction": "CREATE_FOUNDATION_SOURCE_COMMIT"
+    "requiredNextAction": "CREATE_FOUNDATION_PROFILE_COMMIT",
+    "nextAction": "CREATE_FOUNDATION_PROFILE_COMMIT"
   },
   "pr41CoverageFailureObservabilityV1": {
     "authorization": "USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2",
