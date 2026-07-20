@@ -1,6 +1,21 @@
 # Current Task
 
-## PR #41 Split Coverage Exact Profile - RUNNING / INFRASTRUCTURE REPAIR ROUND 2 OF 2
+## Phase 3 Slice 2B19B — COMPLETED / ACCEPTED
+
+- Control status: `COMPLETED`; `currentSlice=null`; `currentBranch=main`; `currentPR=null`; `implementationAuthorized=false`; `remainingBlockers=[]`.
+- Product Slice: `2B19B — Philosopher-gained Dreamer Effective Source`; authorization remains `USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION`.
+- Product repair is exhausted and complete at `2 / 2`; no Product Repair Round 3 exists. Frozen feature HEAD `f90b4909c3883c3853d93cc444a823ce07078e61` passed exact push CI `29718224532` and pull-request CI `29718226419`, each `SUCCESS / 23 of 23 jobs`.
+- The complete independent PR #41 final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`. Its exact GitHub comments are archived verbatim at `docs/reviews/pr-41-code-review-final.md` and `docs/reviews/pr-41-rule-review-final.md`.
+- PR [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41) merged as `319c93d057359eaa542507c48f9d0f74ecda6b88`; exact merge-main CI `29719408848` is `SUCCESS / 23 of 23 jobs`; accepted tag `phase-3-slice-2b19b-philosopher-gained-dreamer-execution` points to that merge.
+- Infrastructure Repair Round `2 / 2` is complete. Corrected stacked PR [#42](https://github.com/JackeyLovedas/botc-singleplayer/pull/42) froze HEAD `87d0ab3d7dc3dc9f0b8472d569a731d4a2b2e744`, passed exact push/PR CI `29717007667 / 29717009467`, received independent dual-pass review, and merged as `f90b4909c3883c3853d93cc444a823ce07078e61`. Its exact comments are archived at `docs/reviews/pr-42-code-review-final.md` and `docs/reviews/pr-42-rule-review-final.md`.
+- The user-authorized classification amendment is `POST_TEST_WORKER_RPC_FAILURE_WITH_COMPLETE_PASSING_BLOB` for the two exact Infrastructure Round 1 diagnostic blobs only. Round 1 observability and failed-run history remain immutable; Round 2 split only the Dreamer-Vortox coverage process and added exact profile `phase-3-slice-2b19b-dcfa530-split-coverage-v1` without changing product behavior, tests, timeouts, dependencies, coverage thresholds, or rule semantics.
+- Accepted topology is nine ordinary and ten coverage processes. Exact merge authority is `1,520 / 1,520`, core `16 passed + 10 skipped`, gained `10 passed + 16 skipped`, with zero timeout, `onTaskUpdate`, exit-1, missing, duplicate, unexpected, or wrong-owner result.
+- Role coverage remains exact: Dreamer `PARTIAL`, Philosopher `PARTIAL`, Mathematician `PARTIAL`, Vortox `NOT_STARTED`; no role is `COMPLETE`. The role coverage matrix already records this accepted boundary and needs no promotion.
+- CI provenance is commit-specific: `productHeadCI=f90b490...` with push `29718224532` and PR `29718226419`; `mergeCommitCI=319c93d...` with run `29719408848`; `closeoutCommitCI=PENDING` for the future exact docs-only closeout SHA and inherits no earlier status.
+- Slice `2B19A3B2`, any next role Slice, FIRST_NIGHT completion, DAY, and Phase 2C have not started.
+- Required next action: `STOP_NO_NEXT_SLICE_AUTHORIZED`. Push the single docs-only closeout commit and do not start another slice.
+
+## Historical PR #41 Split Coverage Exact Profile — Infrastructure Repair Round 2 of 2
 
 - Authorization: `USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2`; profile-only continuation is bound to clean source HEAD `dcfa530540a57ce7b03e97958dd7de9926f71bbd`.
 - New immutable profile ID is `phase-3-slice-2b19b-dcfa530-split-coverage-v1`; source kind is `TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION`. It supersedes only the topology authority of `phase-3-slice-2b19b-c7313e2-ownership-v2-1`.

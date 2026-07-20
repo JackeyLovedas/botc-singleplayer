@@ -2,20 +2,35 @@
 
 - Slice: `2B19B — Philosopher-gained Dreamer Effective Source`
 - Authorization: `USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION`
-- Branch: `phase-3/philosopher-gained-dreamer-effective-source`
+- Branch: `main`
 - Rule evidence: `docs/rules/evidence/2B19B.md`, SHA-256 `e1f038f32171d7cea1f89345b1cac958e30a79f47005ca444a0dc2633abe3187`, verdict `RULE_READY`, coverage `PARTIAL`
 - Final design: `docs/implementation/phase-3-slice-2b19b-design-round-2.md`, SHA-256 `f915fd4c51c21cd7d43a873cf6345bccd97462431ba6631f161ae58077ece10b`
 - Design review: `docs/implementation/phase-3-slice-2b19b-design-review-round-2.md`, SHA-256 `aa80221f77f766f6e730b3e46897a24180f7f4061917f59e9f4f3353a68d88c5`, verdict `RULE_DESIGN_PASS`
 - Design round: `2 / 2`; repair round: `2 / 2`
 - Role coverage: `PARTIAL`
-- Product status: `RUNNING / PRODUCT_REPAIR_ROUND_2_EXACT_PROFILE_FROZEN`
-- PR: [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41)
+- Product status: `COMPLETED / ACCEPTED`
+- PR: [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41), merged
 - Round 1 reviewed HEAD: `5256216b22e62dbb992d1a678dfc9c597b5227c7`
 - Immutable final review: `docs/implementation/phase-3-slice-2b19b-final-review-round-1.md`, canonical UTF-8 LF SHA-256 `d4fc89843939153a5562e42a0a5425010988257340bd974bdf9e324db8247e97`, `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`
 - Product commit `P`: `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`
 - Product Repair Round 1 commit `R1P`: `274036a09b96012a1bb5ddb08eabab9e6ad84214`
-- Exact repair profile: `phase-3-slice-2b19b-274036a-ownership-v2-1`, source HEAD `274036a09b96012a1bb5ddb08eabab9e6ad84214`; profile-only child `R1Q` is pending.
+- Exact repair profile history: `phase-3-slice-2b19b-274036a-ownership-v2-1` at Repair Round 1, `phase-3-slice-2b19b-c7313e2-ownership-v2-1` at Repair Round 2, and accepted split-topology profile `phase-3-slice-2b19b-dcfa530-split-coverage-v1`.
 - Historical exact profile `phase-3-slice-2b19b-84aebe5-ownership-v2-1` remains authority only for old product `84aebe559cc9fd6d85571ec5753d4e36bdbfcb21`.
+
+## Acceptance closeout
+
+- Control state: `status=COMPLETED`, `currentSlice=null`, `currentBranch=main`, `currentPR=null`, `implementationAuthorized=false`, `remainingBlockers=[]`.
+- Frozen final feature HEAD: `f90b4909c3883c3853d93cc444a823ce07078e61`; product repair remains exactly `2 / 2` and no Product Repair Round 3 exists.
+- `productHeadCI`: push run [29718224532](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29718224532) and pull-request run [29718226419](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29718226419), both `SUCCESS / 23 of 23 jobs` for frozen feature HEAD `f90b4909c3883c3853d93cc444a823ce07078e61` only.
+- Complete independent final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`; exact original comments are archived verbatim at `docs/reviews/pr-41-code-review-final.md` and `docs/reviews/pr-41-rule-review-final.md`.
+- PR #41 merged as `319c93d057359eaa542507c48f9d0f74ecda6b88`; `mergeCommitCI` run [29719408848](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29719408848) is `SUCCESS / 23 of 23 jobs` for that merge SHA only.
+- Accepted tag: `phase-3-slice-2b19b-philosopher-gained-dreamer-execution` at `319c93d057359eaa542507c48f9d0f74ecda6b88`.
+- `closeoutCommitCI`: `PENDING`; its future exact commit SHA and run cannot be self-recorded here and inherit no product-head or merge-commit status.
+- Infrastructure Repair Round `2 / 2` completed through corrected PR #42: frozen infrastructure HEAD `87d0ab3d7dc3dc9f0b8472d569a731d4a2b2e744`, exact push/PR CI `29717007667 / 29717009467`, independent dual-pass review, and merge `f90b4909c3883c3853d93cc444a823ce07078e61`. Exact comments are archived at `docs/reviews/pr-42-code-review-final.md` and `docs/reviews/pr-42-rule-review-final.md`.
+- Classification amendment `POST_TEST_WORKER_RPC_FAILURE_WITH_COMPLETE_PASSING_BLOB` applies only to the two exact Infrastructure Round 1 diagnostic blobs. Round 1 observability and failure history remain immutable. Round 2 split the single Dreamer-Vortox coverage process into core and gained processes and changed no product behavior, production code, tests, timeout, dependency, threshold, or rule semantics.
+- Accepted CI topology remains nine ordinary processes and ten coverage processes. Exact merged authority is `1,520 / 1,520`; core is `16 passed + 10 skipped`; gained is `10 passed + 16 skipped`; risk hits and missing/duplicate/unexpected/wrong-owner counts are zero.
+- Role coverage remains Dreamer `PARTIAL`, Philosopher `PARTIAL`, Mathematician `PARTIAL`, and Vortox `NOT_STARTED`; no role is `COMPLETE`.
+- Slice `2B19A3B2`, any next role Slice, FIRST_NIGHT completion, DAY, and Phase 2C are not started. Required next action is `STOP_NO_NEXT_SLICE_AUTHORIZED`.
 
 ## Implemented behavior
 
