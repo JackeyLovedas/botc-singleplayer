@@ -1,16 +1,14 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B19A3B2 PREREQUISITE_REQUIRED / IMPLEMENTATION UNACCEPTED
+## Current state — Phase 3 Slice 2B19A3B2 PREREQUISITE ACCEPTED / PENDING DESIGN RELEASE REVIEW
 
-- Control is `status=PREREQUISITE_REQUIRED`, `taskType=PRODUCT_SLICE`, `disposition=UNACCEPTED`, `currentSlice=2B19A3B2`, `currentBranch=phase-3/combined-dreamer-mathematician-integration`, `currentPR=null`, `implementationAuthorized=false`, and `phase2CStarted=false`.
-- Gate evidence remains exact for the unchanged behavior design: `ruleReady=true`, `ruleDesignPass=true`, `designRound=1/2`, `repairRound=0/2`, and `productRepairRoundConsumed=false`. No Design Round 2 is created.
-- The documentation-only design-gate commit is `cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a`. Design SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e` and independent review SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13` remain historical gate records.
-- Focused 2B19A3B2 execution produced `5 passed / 2 failed / 73 skipped`. S06 proves `captureSupportedCommand` accepts a non-revoked Proxy because `packages/application/src/command-fingerprint.ts::captureNode` lacks an incoming `utilTypes.isProxy(value)` rejection.
-- S06 is a shared T1 command-capture prerequisite, not a product reslice, rule conflict, Mathematician defect, Dreamer defect, or A3B2 behavior-design change. The A3B2 production allowlist stays empty.
-- Sole blocker: `COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`.
-- Seven physical application-test identities remain unaccepted and are not restored. Preservation authority is external patch SHA-256 `9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50` under `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\product-experiments\phase-3-slice-2b19a3b2-pre-command-proxy-hardening`, plus local archive branch `archive/2b19a3b2-pre-command-proxy-hardening-test-wip` commit `d356cfbf45f64be1aacc1fc042648a318fcacdd5`.
-- No production change, implementation traceability, ownership activation, coverage profile, pull request, product CI, accepted tag, or merge exists for 2B19A3B2.
-- Required next action is `RUN_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`. After its merge, a release review must explicitly clear A3B2 before unaccepted implementation can resume.
+- Control is `status=PREREQUISITE_REQUIRED`, `taskType=PRODUCT_SLICE`, `disposition=UNACCEPTED`, `currentSlice=2B19A3B2`, `currentBranch=phase-3/combined-dreamer-mathematician-integration`, `currentPR=null`, `implementationAuthorized=false`, `phase2CStarted=false`, and `remainingBlockers=[PENDING_DESIGN_RELEASE_REVIEW]`.
+- Original evidence/design authority remains `RULE_READY / RULE_DESIGN_PASS`, design Round `1 / 2`, repair Round `0 / 2`, with behavior design and rule semantics unchanged. Design SHA-256 remains `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`; independent review SHA-256 remains `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`.
+- Accepted Foundation closeout `9262a2a271c7e4f704c90eca67ce4087a316c252` supplies the shared S06 Proxy rejection prerequisite without changing A3B2 production, rules, Mathematician schema, Dreamer facts/window/count, design, or unsupported scope.
+- Foundation product-head CI `29736077724 / 29736079454`, merge `300933d8d50123b5bbf198e0945d9b581be2042b`, merge CI `29737798440`, tag `foundation-command-capture-proxy-rejection-v1`, exact review archives, and closeout CI `29738772588` are retained as accepted history.
+- Seven unaccepted A3B2 test identities remain absent. External patch SHA-256 remains `9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50`; local archive branch remains `d356cfbf45f64be1aacc1fc042648a318fcacdd5`.
+- A3B2 has no implementation traceability, ownership activation, coverage profile, PR, product CI, accepted tag, or implementation merge. It remains unaccepted and unauthorized.
+- Sole blocker is `PENDING_DESIGN_RELEASE_REVIEW`; required next action is `RUN_A3B2_DESIGN_RELEASE_REVIEW`. No release review or implementation resume is performed by this synchronization.
 
 ## Historical accepted state — Phase 3 Slice 2B19B COMPLETED / ACCEPTED
 

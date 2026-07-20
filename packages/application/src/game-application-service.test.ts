@@ -232,6 +232,62 @@ const expectFailedResult: (result: CommandResult) => asserts result is CommandEx
   expect(result.status).toBe("failed");
 };
 
+const commandProxyTrapNames = [
+  "getPrototypeOf",
+  "setPrototypeOf",
+  "isExtensible",
+  "preventExtensions",
+  "getOwnPropertyDescriptor",
+  "defineProperty",
+  "has",
+  "get",
+  "set",
+  "deleteProperty",
+  "ownKeys"
+] as const;
+
+type CommandProxyTrapName = (typeof commandProxyTrapNames)[number];
+type CommandProxyTrapCounts = Record<CommandProxyTrapName, number>;
+
+const createCommandProxyTrapHarness = <T extends object>(): {
+  readonly counts: CommandProxyTrapCounts;
+  readonly handler: ProxyHandler<T>;
+} => {
+  const counts = Object.fromEntries(commandProxyTrapNames.map((name) => [name, 0])) as CommandProxyTrapCounts;
+  const hit = (name: CommandProxyTrapName): void => {
+    counts[name] += 1;
+  };
+  return {
+    counts,
+    handler: {
+      getPrototypeOf: (target) => { hit("getPrototypeOf"); return Reflect.getPrototypeOf(target); },
+      setPrototypeOf: (target, prototype) => { hit("setPrototypeOf"); return Reflect.setPrototypeOf(target, prototype); },
+      isExtensible: (target) => { hit("isExtensible"); return Reflect.isExtensible(target); },
+      preventExtensions: (target) => { hit("preventExtensions"); return Reflect.preventExtensions(target); },
+      getOwnPropertyDescriptor: (target, property) => {
+        hit("getOwnPropertyDescriptor");
+        return Reflect.getOwnPropertyDescriptor(target, property);
+      },
+      defineProperty: (target, property, attributes) => {
+        hit("defineProperty");
+        return Reflect.defineProperty(target, property, attributes);
+      },
+      has: (target, property) => { hit("has"); return Reflect.has(target, property); },
+      get: (target, property, receiver) => { hit("get"); return Reflect.get(target, property, receiver) as unknown; },
+      set: (target, property, value, receiver) => {
+        hit("set");
+        return Reflect.set(target, property, value, receiver);
+      },
+      deleteProperty: (target, property) => { hit("deleteProperty"); return Reflect.deleteProperty(target, property); },
+      ownKeys: (target) => { hit("ownKeys"); return Reflect.ownKeys(target); }
+    }
+  };
+};
+
+const expectZeroCommandProxyTraps = (counts: CommandProxyTrapCounts): void => {
+  expect(counts).toStrictEqual(Object.fromEntries(commandProxyTrapNames.map((name) => [name, 0])));
+};
+
 const reachFirstNight = async (service: GameApplicationService): Promise<void> => {
   await service.execute(createGameCommand());
   await service.execute(selectScriptCommand());
@@ -2838,6 +2894,41 @@ class ReceiptOverrideCommandStore extends MemoryCommandCommitStore {
       return Promise.resolve(this.receiptOverride);
     }
     return super.findCommandReceipt(gameIdValue, commandIdValue);
+  }
+}
+
+class AuditingCommandStore extends MemoryCommandCommitStore {
+  public receiptReadCount = 0;
+  public eventReadCount = 0;
+  public acceptedWriteCount = 0;
+  public rejectedWriteCount = 0;
+
+  public override findCommandReceipt(
+    ...args: Parameters<MemoryCommandCommitStore["findCommandReceipt"]>
+  ): ReturnType<MemoryCommandCommitStore["findCommandReceipt"]> {
+    this.receiptReadCount += 1;
+    return super.findCommandReceipt(...args);
+  }
+
+  public override loadDomainEvents(
+    ...args: Parameters<MemoryCommandCommitStore["loadDomainEvents"]>
+  ): ReturnType<MemoryCommandCommitStore["loadDomainEvents"]> {
+    this.eventReadCount += 1;
+    return super.loadDomainEvents(...args);
+  }
+
+  public override commitAcceptedCommand(
+    ...args: Parameters<MemoryCommandCommitStore["commitAcceptedCommand"]>
+  ): ReturnType<MemoryCommandCommitStore["commitAcceptedCommand"]> {
+    this.acceptedWriteCount += 1;
+    return super.commitAcceptedCommand(...args);
+  }
+
+  public override recordRejectedCommand(
+    ...args: Parameters<MemoryCommandCommitStore["recordRejectedCommand"]>
+  ): ReturnType<MemoryCommandCommitStore["recordRejectedCommand"]> {
+    this.rejectedWriteCount += 1;
+    return super.recordRejectedCommand(...args);
   }
 }
 
@@ -9524,6 +9615,114 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
 });
 
 describeApplicationServiceShard("compatibility-and-failure-boundaries", "GameApplicationService", () => {
+  const executeNestedProxyCommand = async () => {
+    const commandStore = new AuditingCommandStore();
+    const { service } = makeService(commandStore);
+    const harness = createCommandProxyTrapHarness<Record<string, unknown>>();
+    const nestedProxy = new Proxy({ hidden: true }, harness.handler);
+    const plainCommand = {
+      ...createGameCommand(),
+      extra: { nestedProxy }
+    } as SupportedCommandEnvelope;
+    const result = await service.execute(plainCommand);
+    return { commandStore, harness, plainCommand, result };
+  };
+
+  it("C09 rejects top-level live, revoked, and throwing Proxies without traps", async () => {
+    const liveHarness = createCommandProxyTrapHarness<Record<string, unknown>>();
+    const liveProxy = new Proxy({ gameId: ids.game }, liveHarness.handler);
+    const throwingHarness = createCommandProxyTrapHarness<Record<string, unknown>>();
+    const throwingProxy = new Proxy({ gameId: ids.game }, {
+      ...throwingHarness.handler,
+      getOwnPropertyDescriptor: () => {
+        throwingHarness.counts.getOwnPropertyDescriptor += 1;
+        throw new Error("descriptor trap must not run");
+      }
+    });
+    const revokedHarness = createCommandProxyTrapHarness<Record<string, unknown>>();
+    const revoked = Proxy.revocable({ gameId: ids.game }, revokedHarness.handler);
+    revoked.revoke();
+
+    for (const [proxy, counts] of [
+      [liveProxy, liveHarness.counts],
+      [throwingProxy, throwingHarness.counts],
+      [revoked.proxy, revokedHarness.counts]
+    ] as const) {
+      const { service } = makeService(new AuditingCommandStore());
+      let thrown: unknown;
+      try {
+        await service.execute(proxy as unknown as SupportedCommandEnvelope);
+      } catch (error: unknown) {
+        thrown = error;
+      }
+      expect(thrown).toBeInstanceOf(TypeError);
+      expect((thrown as Error).message).toBe("GameApplicationService requires an own data-property gameId");
+      expectZeroCommandProxyTraps(counts);
+    }
+  });
+
+  it("C10 stops a top-level Proxy before every command-store port", async () => {
+    const commandStore = new AuditingCommandStore();
+    const { service } = makeService(commandStore);
+    const harness = createCommandProxyTrapHarness<Record<string, unknown>>();
+    const proxy = new Proxy({ gameId: ids.game }, harness.handler);
+
+    await expect(service.execute(proxy as unknown as SupportedCommandEnvelope)).rejects.toThrow(
+      "GameApplicationService requires an own data-property gameId"
+    );
+    expectZeroCommandProxyTraps(harness.counts);
+    expect({
+      receiptReads: commandStore.receiptReadCount,
+      eventReads: commandStore.eventReadCount,
+      acceptedWrites: commandStore.acceptedWriteCount,
+      rejectedWrites: commandStore.rejectedWriteCount
+    }).toStrictEqual({ receiptReads: 0, eventReads: 0, acceptedWrites: 0, rejectedWrites: 0 });
+    expect(commandStore.getReceiptCount()).toBe(0);
+    expect(commandStore.getGameVersion(ids.game)).toBe(0);
+  });
+
+  it("C11 returns the exact retryable command-validation failure for a nested Proxy", async () => {
+    const { commandStore, harness, plainCommand, result } = await executeNestedProxyCommand();
+
+    expect(result).toStrictEqual({
+      status: "failed",
+      gameId: plainCommand.gameId,
+      code: "DependencyExecutionFailed",
+      message: "Command snapshot validation failed: Command values must not be Proxy objects",
+      failureStage: "command-validation",
+      retryable: true
+    });
+    expect("currentGameVersion" in result).toBe(false);
+    expectZeroCommandProxyTraps(harness.counts);
+    expect(commandStore.getReceiptCount()).toBe(0);
+  });
+
+  it("C12 performs zero receipt and event reads for a nested Proxy failure", async () => {
+    const { commandStore, harness } = await executeNestedProxyCommand();
+
+    expect(commandStore.receiptReadCount).toBe(0);
+    expect(commandStore.eventReadCount).toBe(0);
+    expectZeroCommandProxyTraps(harness.counts);
+  });
+
+  it("C13 performs zero accepted or rejected receipt writes for a nested Proxy failure", async () => {
+    const { commandStore, harness } = await executeNestedProxyCommand();
+
+    expect(commandStore.acceptedWriteCount).toBe(0);
+    expect(commandStore.rejectedWriteCount).toBe(0);
+    expect(commandStore.getReceiptCount()).toBe(0);
+    expectZeroCommandProxyTraps(harness.counts);
+  });
+
+  it("C14 performs zero event writes and leaves the initial game version unchanged", async () => {
+    const { commandStore, harness, plainCommand } = await executeNestedProxyCommand();
+
+    expect(commandStore.acceptedWriteCount).toBe(0);
+    expect(commandStore.eventReadCount).toBe(0);
+    expect(commandStore.getGameVersion(plainCommand.gameId)).toBe(0);
+    expectZeroCommandProxyTraps(harness.counts);
+  });
+
   it("treats reordered own data properties as the same structural command", async () => {
     const { service, commandStore } = makeService();
     const original = createGameCommand();
@@ -9546,6 +9745,7 @@ describeApplicationServiceShard("compatibility-and-failure-boundaries", "GameApp
     } satisfies typeof original;
 
     const first = await service.execute(original);
+    const originalReceipt = await commandStore.findCommandReceipt(original.gameId, original.commandId);
     const retry = await service.execute(reordered);
 
     expectAcceptedResult(first);
@@ -9553,6 +9753,7 @@ describeApplicationServiceShard("compatibility-and-failure-boundaries", "GameApp
     expect(retry).toStrictEqual({ ...first, idempotent: true });
     expect(await commandStore.loadDomainEvents(original.gameId)).toHaveLength(1);
     expect(commandStore.getReceiptCount()).toBe(1);
+    expect(await commandStore.findCommandReceipt(original.gameId, original.commandId)).toStrictEqual(originalReceipt);
   });
 
   it.each([

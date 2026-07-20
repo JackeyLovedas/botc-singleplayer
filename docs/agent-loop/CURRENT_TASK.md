@@ -1,16 +1,22 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B2 — PREREQUISITE_REQUIRED / IMPLEMENTATION UNACCEPTED
+## Phase 3 Slice 2B19A3B2 — PREREQUISITE ACCEPTED / PENDING DESIGN RELEASE REVIEW
 
 - Control status: `status=PREREQUISITE_REQUIRED`; `taskType=PRODUCT_SLICE`; `disposition=UNACCEPTED`; `currentSlice=2B19A3B2`; `currentBranch=phase-3/combined-dreamer-mathematician-integration`; `currentPR=null`; `implementationAuthorized=false`; `phase2CStarted=false`.
-- Rule evidence remains `RULE_READY` and Design Round 1 remains `RULE_DESIGN_PASS`: `ruleReady=true`; `ruleDesignPass=true`; `designRound=1/2`; `repairRound=0/2`; `productRepairRoundConsumed=false`. The A3B2 behavior design is unchanged and no Design Round 2 is created.
-- Design-gate commit is `cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a`. Design SHA-256 is `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`; independent design-review SHA-256 is `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`.
-- Focused command `pnpm exec vitest run --workspace vitest.workspace.ts --project application-service-information-and-later-actions packages/application/src/game-application-service.test.ts -t 2B19A3B2` produced `5 passed / 2 failed / 73 skipped`. The substantive failure is the mandatory S06 non-revoked Proxy rejection.
-- Exact root cause: `packages/application/src/command-fingerprint.ts::captureNode` lacks an incoming `utilTypes.isProxy(value)` rejection, so `captureSupportedCommand` accepts a non-revoked Proxy. S06 is the shared T1 command-capture boundary, not an A3B2 rule, Mathematician, Dreamer, or behavior-design defect. A3B2 production remains frozen.
-- Sole blocker: `COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`.
-- The unaccepted test WIP is preserved only at external patch `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\product-experiments\phase-3-slice-2b19a3b2-pre-command-proxy-hardening\2b19a3b2-test-wip.patch`, SHA-256 `9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50`, and local archive branch `archive/2b19a3b2-pre-command-proxy-hardening-test-wip` commit `d356cfbf45f64be1aacc1fc042648a318fcacdd5`. It is not restored or accepted.
-- No implementation traceability, ownership contract, coverage profile, pull request, CI authority, accepted tag, or merge was created or activated for 2B19A3B2.
-- Required next action: `RUN_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`. After that prerequisite merges, require release review before resuming any still-unaccepted A3B2 implementation.
+- Original rule evidence remains `RULE_READY` and Design Round 1 remains `RULE_DESIGN_PASS`: `ruleReady=true`; `ruleDesignPass=true`; `designRound=1/2`; `repairRound=0/2`; `productRepairRoundConsumed=false`. Behavior design, rule semantics, Mathematician schema, Dreamer facts/window/count, and unsupported scope are unchanged; no Design Round 2 is created.
+- Design-gate commit remains `cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a`; design SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`; independent design-review SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`.
+- Shared prerequisite `COMMAND_CAPTURE_PROXY_REJECTION_V1` is accepted on `origin/main` at closeout SHA `9262a2a271c7e4f704c90eca67ce4087a316c252`. Its zero-trap Proxy rejection, production/tests, exact profile, workflow selector, final-review archives, accepted tag, and commit-specific CI history are synchronized without changing A3B2 behavior design.
+- The seven unaccepted A3B2 test identities remain absent. Preservation authority is external patch SHA-256 `9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50` and local archive branch `archive/2b19a3b2-pre-command-proxy-hardening-test-wip` at `d356cfbf45f64be1aacc1fc042648a318fcacdd5`; neither was restored or accepted.
+- No A3B2 implementation traceability, ownership activation, coverage profile, pull request, product CI, accepted tag, or implementation merge exists. A3B2 remains unaccepted and unauthorized.
+- Sole blocker: `PENDING_DESIGN_RELEASE_REVIEW`.
+- Required next action: `RUN_A3B2_DESIGN_RELEASE_REVIEW`. Only exact `DESIGN_RELEASE_PASS` may authorize later implementation; this synchronization does not create that review or resume implementation.
+
+## Historical accepted Foundation — Command Capture Proxy Rejection V1
+
+- Frozen final feature HEAD `863b63588c1faaac3994618dc894735c3f951705` passed exact push/PR CI `29736077724 / 29736079454`, each `SUCCESS / 23 of 23 jobs`; independent final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`.
+- Exact comments are archived verbatim at `docs/reviews/pr-43-code-review-final.md` and `docs/reviews/pr-43-rule-review-final.md`; body SHA-256 values are `1aceaaf773e00c27d5bc90d9c17ece9783f36df8d2498fe37c5da3cd515838ef / ea2f0873f32803de20bb49409ca300ba46e1b1f4b8232c477515f1db4140f20a`.
+- PR #43 merged as `300933d8d50123b5bbf198e0945d9b581be2042b`; accepted tag `foundation-command-capture-proxy-rejection-v1` points to it; merge-main CI `29737798440` passed `23 / 23 jobs`.
+- Docs-only closeout SHA `9262a2a271c7e4f704c90eca67ce4087a316c252` passed its own exact main CI [29738772588](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29738772588), `SUCCESS / 23 of 23 jobs / 296 of 296 steps`. Foundation is `COMPLETED / ACCEPTED`; its remote feature branch is deleted.
 
 ## Historical Phase 3 Slice 2B19B — COMPLETED / ACCEPTED
 

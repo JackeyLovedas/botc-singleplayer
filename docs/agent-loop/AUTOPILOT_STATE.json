@@ -7,6 +7,7 @@
   "currentPRUrl": null,
   "currentBranch": "phase-3/combined-dreamer-mathematician-integration",
   "currentSlice": "2B19A3B2",
+  "currentFoundation": null,
   "slice2B19A1Started": false,
   "slice2B19A2Started": false,
   "slice2B19A3Started": false,
@@ -18,8 +19,171 @@
   "slice2B19BStarted": true,
   "nextRoleSliceStarted": false,
   "phase2CStarted": false,
-  "infrastructureRepairRound": 2,
+  "infrastructureRepairRound": 1,
   "maxInfrastructureRepairRounds": 2,
+  "commandCaptureProxyRejectionV1": {
+    "status": "COMPLETED_ACCEPTED",
+    "taskType": "SHARED_TRUST_BOUNDARY_HARDENING",
+    "authorization": "USER_AUTHORIZED_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE",
+    "foundation": "COMMAND_CAPTURE_PROXY_REJECTION_V1",
+    "branch": "main",
+    "baseBranch": "main",
+    "currentPR": null,
+    "currentPRUrl": null,
+    "repairBaseHead": "456027283f884d634ed3925d610fb0410d0d8e87",
+    "priorReviewedHead": "456027283f884d634ed3925d610fb0410d0d8e87",
+    "acceptedBase": "c0c0cdfef1c1aa4cebb841f9867007a319701459",
+    "pausedA3B2Branch": "phase-3/combined-dreamer-mathematician-integration",
+    "pausedA3B2ClassificationCommit": "e411efe967c37dff0030f2bd9e52eb5b8171712e",
+    "pausedA3B2Status": "PREREQUISITE_REQUIRED / UNACCEPTED / UNPUSHED",
+    "archivedWipPatch": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\product-experiments\\phase-3-slice-2b19a3b2-pre-command-proxy-hardening\\2b19a3b2-test-wip.patch",
+    "archivedWipPatchSha256": "9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50",
+    "archivedWipBranch": "archive/2b19a3b2-pre-command-proxy-hardening-test-wip",
+    "archivedWipCommit": "d356cfbf45f64be1aacc1fc042648a318fcacdd5",
+    "implementationAuthorized": false,
+    "implementationAuthorizationScope": "REVIEW_ONLY_PRODUCT_FROZEN",
+    "productionChangesAuthorized": false,
+    "testChangesAuthorized": false,
+    "governanceVerdict": "GO",
+    "governancePath": "docs/architecture/command-capture-proxy-rejection-v1-go-no-go.md",
+    "governanceSha256": "dcbe7d3b9f5ca1538066a10f56a6561d1c1cf601a567fb50d00b6e125e29a083",
+    "tenGoConditions": "10/10",
+    "ruleEvidence": "BOTC_RULE_EVIDENCE_NOT_APPLICABLE",
+    "designPath": "docs/implementation/command-capture-proxy-rejection-v1-design.md",
+    "designSha256": "4693cddf74159c1cf310781effd74154a0d6ede8615ad873b0576dd36c68c220",
+    "designStatus": "READY_FOR_SECURITY_DESIGN_REVIEW",
+    "designCriteria": "20/20",
+    "designReviewPath": "docs/implementation/command-capture-proxy-rejection-v1-design-review.md",
+    "designReviewSha256": "247b302d22aca5dc6249a541cc2d8a5d712b89002d685250a862226553406cd8",
+    "designReviewVerdict": "SECURITY_DESIGN_PASS",
+    "securityDesignPass": true,
+    "designReviewFindings": [],
+    "ruleDesignPass": true,
+    "ruleDesignReviewPath": "docs/implementation/command-capture-proxy-rejection-v1-rule-design-review.md",
+    "ruleDesignReviewSha256": "dd72d59fca6f534f37c14b7001e917f4b679274d4a3915e99d79fc9be243dc97",
+    "ruleDesignReviewVerdict": "RULE_DESIGN_PASS",
+    "ruleDesignReviewFindings": [],
+    "ruleDesignReviewRemainingBlockers": [],
+    "ruleDesignRecoveryClassification": "GOVERNANCE_ONLY_RECOVERY / NOT_DESIGN_ROUND_2 / NO_BEHAVIOR_OR_RULE_CHANGE",
+    "implementationStatusPath": "docs/implementation/command-capture-proxy-rejection-v1-status.md",
+    "testTraceabilityPath": "docs/implementation/command-capture-proxy-rejection-v1-test-traceability.md",
+    "testTraceabilitySha256": "b12fadae603db71d6a1a8c6efb8756661bd6f5b84d13ce50bf0aadc8ab706f8d",
+    "testTraceabilityVerification": "TRACEABILITY_MECHANICAL_PASS / EXPECTED 20 / ACTUAL 20 / PRIMARY IDENTITIES 20 / SUPPORTING AUTHORITIES 19 / FAILURES 0",
+    "productionFilesChanged": 2,
+    "productionAddedLines": 29,
+    "productionDeletedLines": 5,
+    "primaryTestFilesChanged": 2,
+    "nonMarkerOwnershipSha256": "764888ea567eb545303c17d0cc89706d0b871360a5271912910257397f2829a8",
+    "coverageProfileCreated": true,
+    "workflowSelectorChanged": true,
+    "sourceHead": "ea08ddd979bc8d3e825efdf5b290bd0c3e85942f",
+    "profileCommit": "456027283f884d634ed3925d610fb0410d0d8e87",
+    "coverageHarnessCorrection": 2,
+    "coverageProfile": {
+      "profileId": "foundation-command-capture-proxy-rejection-v1-ea08ddd",
+      "sourceHead": "ea08ddd979bc8d3e825efdf5b290bd0c3e85942f",
+      "sourceKind": "TEN_PROCESS_COMMAND_CAPTURE_PROXY_REJECTION_V1",
+      "effectiveCandidates": 3,
+      "candidateResult": "3 OF 3 / 10 OF 10 / 1535 OF 1535 / ZERO RISK HITS / CANONICAL IDENTITIES EQUAL",
+      "stabilityEvidenceSha256": "09e629e96f4643e933d0220cef10973e1712e1689df170057fc32f2db77992de",
+      "profilePath": "docs/implementation/command-capture-proxy-rejection-v1-coverage-profile.md",
+      "profileSha256": "1c379dd53c9919c898e8909c66b4cdf39adbbaf32fd81f8dd221797b230e34cc"
+    },
+    "localValidation": {
+      "typecheck": "PASS",
+      "fullLint": "PASS",
+      "ownershipSelfTest": "22 OF 22 PASS",
+      "focusedTests": "COMMAND FINGERPRINT 32 OF 32 / SERVICE COMPATIBILITY 26 OF 26 PASS",
+      "ordinary": "9 OF 9 GROUPS / 1535 OF 1535 / ZERO MISMATCH PASS",
+      "coverageSubstance": "10 OF 10 GROUPS / AUTHORITATIVE 1535 / ZERO MISMATCH PASS",
+      "coverageProfile": "EXPECTED COVERAGE_REQUESTED_PROFILE_MISMATCH / NO SOURCE-STAGE PROFILE CHANGE",
+      "windowsDeterministicEquivalent": "7 OF 7 COMMANDS PASS"
+    },
+    "finalReviewRepairRound": 1,
+    "infrastructureRepairRound": 1,
+    "maxInfrastructureRepairRounds": 2,
+    "finalReviewRound1": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEWER",
+      "externalReport": "%LOCALAPPDATA%\\BOTCRepoVisibility\\reviews\\pr43-final-review.txt",
+      "externalReportSha256": "1ce50eb00c0e3d72f47e8ed6adf4ec2141559336ea71fdb39bc1054f1cd6e0f0",
+      "externalReportBytes": 14737,
+      "externalReportLines": 79,
+      "reviewedHead": "456027283f884d634ed3925d610fb0410d0d8e87",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_FIX_REQUIRED",
+      "remainingBlockers": [
+        "F01_MISSING_REQUIRED_RULE_DESIGN_PASS_GATE",
+        "F02_INCOMPLETE_IMPLEMENTATION_TIME_TRACEABILITY",
+        "F03_STALE_AND_CONTRADICTORY_FINAL_CONTROL_METADATA"
+      ]
+    },
+    "finalReviewRound2": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEWER",
+      "externalReport": "%LOCALAPPDATA%\\BOTCRepoVisibility\\reviews\\pr43-final-review-round-2.txt",
+      "externalReportSha256": "b68279fa4b9b27d55bfde9dc2e2ce0029a1adb1a924a490df4b1b366b181f45a",
+      "externalReportBytes": 14603,
+      "externalReportLines": 57,
+      "reviewedPR": 43,
+      "reviewedHead": "863b63588c1faaac3994618dc894735c3f951705",
+      "reviewTimestamp": "2026-07-20T19:01:04.7280621+08:00",
+      "codeVerdict": "CODE_REVIEW_PASS",
+      "ruleVerdict": "RULE_REVIEW_PASS",
+      "remainingBlockers": []
+    },
+    "finalFeatureHead": "863b63588c1faaac3994618dc894735c3f951705",
+    "productHeadCI": {
+      "commitSha": "863b63588c1faaac3994618dc894735c3f951705",
+      "pushRun": 29736077724,
+      "pullRequestRun": 29736079454,
+      "status": "SUCCESS",
+      "jobs": "23/23",
+      "scope": "FROZEN FINAL FEATURE HEAD ONLY"
+    },
+    "finalReviewArchives": {
+      "code": {
+        "commentId": 5021549099,
+        "commentUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/43#issuecomment-5021549099",
+        "createdAt": "2026-07-20T11:07:13Z",
+        "bodyBytes": 14689,
+        "bodySha256": "1aceaaf773e00c27d5bc90d9c17ece9783f36df8d2498fe37c5da3cd515838ef",
+        "reportSuffixSha256": "b68279fa4b9b27d55bfde9dc2e2ce0029a1adb1a924a490df4b1b366b181f45a",
+        "archive": "docs/reviews/pr-43-code-review-final.md"
+      },
+      "rule": {
+        "commentId": 5021551286,
+        "commentUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/43#issuecomment-5021551286",
+        "createdAt": "2026-07-20T11:07:29Z",
+        "bodyBytes": 14689,
+        "bodySha256": "ea2f0873f32803de20bb49409ca300ba46e1b1f4b8232c477515f1db4140f20a",
+        "reportSuffixSha256": "b68279fa4b9b27d55bfde9dc2e2ce0029a1adb1a924a490df4b1b366b181f45a",
+        "archive": "docs/reviews/pr-43-rule-review-final.md"
+      }
+    },
+    "mergeCommit": "300933d8d50123b5bbf198e0945d9b581be2042b",
+    "mergedAt": "2026-07-20T11:13:27Z",
+    "acceptedTag": "foundation-command-capture-proxy-rejection-v1",
+    "mergeCommitCI": {
+      "commitSha": "300933d8d50123b5bbf198e0945d9b581be2042b",
+      "mainPushRun": 29737798440,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29737798440",
+      "status": "SUCCESS",
+      "jobs": "23/23",
+      "steps": "296/296",
+      "scope": "EXACT MERGE COMMIT ONLY"
+    },
+    "closeoutCommitCI": {
+      "commitSha": "9262a2a271c7e4f704c90eca67ce4087a316c252",
+      "run": 29738772588,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29738772588",
+      "status": "SUCCESS",
+      "jobs": "23/23",
+      "steps": "296/296",
+      "scope": "EXACT FOUNDATION DOCS-ONLY CLOSEOUT COMMIT ONLY"
+    },
+    "remainingBlockers": [],
+    "requiredNextAction": "STOP_FOUNDATION_COMPLETE",
+    "nextAction": "STOP_FOUNDATION_COMPLETE"
+  },
   "pr41CoverageFailureObservabilityV1": {
     "authorization": "USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2",
     "round1Authorization": "USER_AUTHORIZED_PR41_COVERAGE_FAILURE_OBSERVABILITY_AND_CONDITIONAL_PROCESS_SPLIT",
@@ -934,8 +1098,8 @@
     "remainingBlockers": []
   },
   "reviewedHead": null,
-  "currentReviewHeadAuthority": "Phase 3 Slice 2B19A3B2 remains RULE_READY and RULE_DESIGN_PASS on unchanged behavior Design Round 1. Implementation is gated only by the shared T1 COMMAND_CAPTURE_PROXY_REJECTION_V1 prerequisite and remains unaccepted; no Design Round 2 is created.",
-  "exactHeadCIAuthority": "No Phase 3 Slice 2B19A3B2 product-head, PR, merge, tag, or CI authority exists. Pre-classification control HEAD 50437b4a0fa59813d6a87671586ecf71811b8b33 and this docs-only classification carry no product CI authority; design-gate commit cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a remains behavior-design history.",
+  "currentReviewHeadAuthority": "Phase 3 Slice 2B19A3B2 remains RULE_READY and RULE_DESIGN_PASS on unchanged behavior Design Round 1. The accepted COMMAND_CAPTURE_PROXY_REJECTION_V1 Foundation prerequisite and its successful closeout CI are synchronized; implementation remains unaccepted and unauthorized pending the required design release review, and no Design Round 2 is created.",
+  "exactHeadCIAuthority": "The accepted Foundation product-head CI runs 29736077724 and 29736079454, merge CI run 29737798440, and closeout CI run 29738772588 are prerequisite history only. No Phase 3 Slice 2B19A3B2 product-head, PR, merge, tag, or CI authority exists.",
   "currentFeatureHead": "cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a",
   "repairRound": 0,
   "designRound": 1,
@@ -944,7 +1108,7 @@
   "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
   "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
   "authorization": "USER_AUTHORIZED_2B19A3B2_COMBINED_DREAMER_MATHEMATICIAN_INTEGRATION",
-  "implementationAuthorization": "CLOSED_PENDING_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE",
+  "implementationAuthorization": "CLOSED_PENDING_DESIGN_RELEASE_REVIEW",
   "classificationOnlyDesignCorrectionAuthorization": "USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3",
   "designCorrectionScope": "REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY",
   "resliceAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
@@ -985,6 +1149,9 @@
   "currentDesignReviewHash": "16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13",
   "currentDesignReviewVerdict": "RULE_DESIGN_PASS",
   "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
+  "historicalSecurityDesignReviewPath": "docs/implementation/command-capture-proxy-rejection-v1-design-review.md",
+  "historicalSecurityDesignReviewHash": "247b302d22aca5dc6249a541cc2d8a5d712b89002d685250a862226553406cd8",
+  "historicalSecurityDesignReviewVerdict": "SECURITY_DESIGN_PASS",
   "ruleDesignVerdict": "RULE_DESIGN_PASS",
   "slice2B19A3AReleaseReview": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design-release-review-under-governance-v1-1.md",
@@ -998,16 +1165,18 @@
     "designRound4Created": false,
     "remainingBlockers": []
   },
-  "rootCauseClassification": "RESLICED_TO_CANONICAL_DRUNK_VORTOX_CORE",
-  "knownBlockers": [],
-  "implementationPaused": false,
+  "rootCauseClassification": "INCOMING_COMMAND_CAPTURE_ACCEPTS_NON_REVOKED_PROXY",
+  "knownBlockers": [
+    "PENDING_DESIGN_RELEASE_REVIEW"
+  ],
+  "implementationPaused": true,
   "vortoxBehaviorConflict": false,
   "provenanceConflict": false,
   "eventSchemaConflict": false,
   "ledgerSchemaConflict": false,
   "ruleConflict": false,
   "productResliceRequired": false,
-  "nextGovernanceTask": "STOP_NO_NEXT_SLICE_AUTHORIZED",
+  "nextGovernanceTask": "RUN_A3B2_DESIGN_RELEASE_REVIEW",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",
@@ -1083,7 +1252,7 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": false,
-  "implementationStatus": "PREREQUISITE_REQUIRED_UNACCEPTED",
+  "implementationStatus": "PREREQUISITE_ACCEPTED_PENDING_DESIGN_RELEASE_REVIEW",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -1413,27 +1582,27 @@
   "finalReviewRepairRound1CodeVerdict": "CODE_REVIEW_FIX_REQUIRED",
   "finalReviewRepairRound1RuleVerdict": "RULE_REVIEW_FIX_REQUIRED",
   "finalReviewAcceptance": {
-    "reviewedPR": 41,
-    "reviewedHead": "f90b4909c3883c3853d93cc444a823ce07078e61",
+    "reviewedPR": 43,
+    "reviewedHead": "863b63588c1faaac3994618dc894735c3f951705",
     "codeVerdict": "CODE_REVIEW_PASS",
     "ruleVerdict": "RULE_REVIEW_PASS",
     "remainingBlockers": [],
     "ruleSemanticsChanged": false,
     "codeReviewComment": {
-      "id": 5019079987,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/41#issuecomment-5019079987",
-      "createdAt": "2026-07-20T05:29:50Z",
-      "bodyBytes": 16147,
-      "bodySha256": "b523f53590fb163c05e03d727538f374e189be02d6a4feab2c699781de98bec9",
-      "archive": "docs/reviews/pr-41-code-review-final.md"
+      "id": 5021549099,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/43#issuecomment-5021549099",
+      "createdAt": "2026-07-20T11:07:13Z",
+      "bodyBytes": 14689,
+      "bodySha256": "1aceaaf773e00c27d5bc90d9c17ece9783f36df8d2498fe37c5da3cd515838ef",
+      "archive": "docs/reviews/pr-43-code-review-final.md"
     },
     "ruleReviewComment": {
-      "id": 5019081759,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/41#issuecomment-5019081759",
-      "createdAt": "2026-07-20T05:30:10Z",
-      "bodyBytes": 16147,
-      "bodySha256": "24c6e5f07820f8e173fdd04572bda48064573d700b7e9ecf3537c82f7a5cc1f5",
-      "archive": "docs/reviews/pr-41-rule-review-final.md"
+      "id": 5021551286,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/pull/43#issuecomment-5021551286",
+      "createdAt": "2026-07-20T11:07:29Z",
+      "bodyBytes": 14689,
+      "bodySha256": "ea2f0873f32803de20bb49409ca300ba46e1b1f4b8232c477515f1db4140f20a",
+      "archive": "docs/reviews/pr-43-rule-review-final.md"
     }
   },
   "priorProductHeadPushCI": 29251259989,
@@ -1489,7 +1658,7 @@
     "round3DesignSha256": "c06ed0fc61c6b10d0838f1d826021d2113fae037089f8571fe084eeaa7993881",
     "round3Status": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_3"
   },
-  "ruleResearchStarted": true,
+  "ruleResearchStarted": false,
   "ruleResearchCompleted": true,
   "ruleResearchVerdict": "RULE_READY",
   "ruleEvidencePath": "docs/rules/evidence/2B19A3B2.md",
@@ -1507,7 +1676,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE"
+    "PENDING_DESIGN_RELEASE_REVIEW"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
@@ -1759,38 +1928,40 @@
   },
   "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2", "2B17.3", "2B18A", "2B18B", "2B19T", "2B19A1", "2B19A2", "2B19A3A", "2B19A3B1", "2B19B"],
   "productHeadCI": {
-    "commitSha": "f90b4909c3883c3853d93cc444a823ce07078e61",
+    "commitSha": "863b63588c1faaac3994618dc894735c3f951705",
     "push": {
-      "run": 29718224532,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29718224532",
+      "run": 29736077724,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29736077724",
       "status": "SUCCESS",
       "jobs": "23/23"
     },
     "pullRequest": {
-      "run": 29718226419,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29718226419",
+      "run": 29736079454,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29736079454",
       "status": "SUCCESS",
       "jobs": "23/23"
     },
-    "scope": "Frozen Phase 3 Slice 2B19B product HEAD only"
+    "scope": "Frozen Command Capture Proxy Rejection V1 final feature HEAD only"
   },
   "mergeCommitCI": {
-    "commitSha": "319c93d057359eaa542507c48f9d0f74ecda6b88",
+    "commitSha": "300933d8d50123b5bbf198e0945d9b581be2042b",
     "mainPush": {
-      "run": 29719408848,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29719408848",
+      "run": 29737798440,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29737798440",
       "status": "SUCCESS",
       "jobs": "23/23"
     },
-    "acceptedTag": "phase-3-slice-2b19b-philosopher-gained-dreamer-execution",
+    "acceptedTag": "foundation-command-capture-proxy-rejection-v1",
     "scope": "Exact merge SHA only"
   },
   "closeoutCommitCI": {
-    "commitSha": null,
-    "run": null,
-    "url": null,
-    "status": "PENDING",
-    "scope": "Future exact Phase 3 Slice 2B19B docs-only closeout commit only; no prior CI status is inherited"
+    "commitSha": "9262a2a271c7e4f704c90eca67ce4087a316c252",
+    "run": 29738772588,
+    "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29738772588",
+    "status": "SUCCESS",
+    "jobs": "23/23",
+    "steps": "296/296",
+    "scope": "Exact Foundation docs-only closeout SHA only"
   },
   "slice2B17ProductImplementation": {
     "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
@@ -2272,8 +2443,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-20T14:45:28.4521528+08:00",
-  "lastAction": "Classified the S06 discovery as the shared T1 COMMAND_CAPTURE_PROXY_REJECTION_V1 prerequisite rather than a product reslice, rule conflict, Mathematician defect, or Dreamer defect. A3B2 behavior Design Round 1 remains unchanged and RULE_DESIGN_PASS; implementation remains unaccepted and unauthorized pending the prerequisite and its merge release review. The unaccepted test WIP remains archived only at external patch SHA-256 9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50 and local archive commit d356cfbf45f64be1aacc1fc042648a318fcacdd5.",
+  "lastAction": "Synchronized accepted COMMAND_CAPTURE_PROXY_REJECTION_V1 Foundation history from origin/main into the A3B2 branch without restoring archived WIP or changing A3B2 behavior, rules, or Design Round 1. Foundation closeout commit 9262a2a271c7e4f704c90eca67ce4087a316c252 passed exact CI run 29738772588. A3B2 remains RULE_READY and RULE_DESIGN_PASS but implementation is unaccepted and unauthorized pending the required design release review. The unaccepted test WIP remains archived only at external patch SHA-256 9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50 and local archive commit d356cfbf45f64be1aacc1fc042648a318fcacdd5.",
   "lastError": null,
-  "requiredNextAction": "RUN_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE",
-  "nextAction": "RUN_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE"
+  "requiredNextAction": "RUN_A3B2_DESIGN_RELEASE_REVIEW",
+  "nextAction": "RUN_A3B2_DESIGN_RELEASE_REVIEW"
 }
