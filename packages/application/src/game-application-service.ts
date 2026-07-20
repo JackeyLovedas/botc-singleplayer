@@ -1,3 +1,4 @@
+import { types as utilTypes } from "node:util";
 import {
   RULES_BASELINE_VERSION,
   SUPPORTED_DOMAIN_EVENT_VERSION,
@@ -238,6 +239,29 @@ class EventMetadataGenerationError extends Error {
 
 const errorMessage = (error: unknown, fallback: string): string =>
   error instanceof Error ? error.message : fallback;
+
+const requireSafeUncapturedGameId = (
+  incomingCommand: unknown
+): SupportedCommandEnvelope["gameId"] => {
+  if (
+    incomingCommand === null ||
+    typeof incomingCommand !== "object" ||
+    utilTypes.isProxy(incomingCommand)
+  ) {
+    throw new TypeError("GameApplicationService requires an own data-property gameId");
+  }
+
+  let descriptor: PropertyDescriptor | undefined;
+  try {
+    descriptor = Object.getOwnPropertyDescriptor(incomingCommand, "gameId");
+  } catch {
+    throw new TypeError("GameApplicationService requires an own data-property gameId");
+  }
+  if (descriptor === undefined || !("value" in descriptor) || typeof descriptor.value !== "string") {
+    throw new TypeError("GameApplicationService requires an own data-property gameId");
+  }
+  return descriptor.value as SupportedCommandEnvelope["gameId"];
+};
 
 const firstNightTaskPlanningFailureMessage = (failure: FirstNightTaskPlanningFailure): string =>
   [
@@ -606,12 +630,9 @@ export class GameApplicationService {
   public async execute(incomingCommand: SupportedCommandEnvelope): Promise<CommandResult> {
     const capturedResult = captureSupportedCommand(incomingCommand);
     if (!capturedResult.valid) {
-      const descriptor = Object.getOwnPropertyDescriptor(incomingCommand, "gameId");
-      if (descriptor === undefined || !("value" in descriptor) || typeof descriptor.value !== "string") {
-        throw new TypeError("GameApplicationService requires an own data-property gameId");
-      }
+      const gameId = requireSafeUncapturedGameId(incomingCommand);
       return failed(
-        descriptor.value as SupportedCommandEnvelope["gameId"],
+        gameId,
         "DependencyExecutionFailed",
         `Command snapshot validation failed: ${capturedResult.reason}`,
         "command-validation"

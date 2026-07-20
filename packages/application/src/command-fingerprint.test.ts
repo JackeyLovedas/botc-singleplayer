@@ -19,7 +19,189 @@ const requireCapture = (value: unknown) => {
   return result.captured;
 };
 
+const proxyRejectionReason = "Command values must not be Proxy objects";
+
+const proxyTrapNames = [
+  "getPrototypeOf",
+  "setPrototypeOf",
+  "isExtensible",
+  "preventExtensions",
+  "getOwnPropertyDescriptor",
+  "defineProperty",
+  "has",
+  "get",
+  "set",
+  "deleteProperty",
+  "ownKeys"
+] as const;
+
+type ProxyTrapName = (typeof proxyTrapNames)[number];
+type ProxyTrapCounts = Record<ProxyTrapName, number>;
+
+const createProxyTrapHarness = <T extends object>(): {
+  readonly counts: ProxyTrapCounts;
+  readonly handler: ProxyHandler<T>;
+} => {
+  const counts = Object.fromEntries(proxyTrapNames.map((name) => [name, 0])) as ProxyTrapCounts;
+  const hit = (name: ProxyTrapName): void => {
+    counts[name] += 1;
+  };
+  return {
+    counts,
+    handler: {
+      getPrototypeOf: (target) => { hit("getPrototypeOf"); return Reflect.getPrototypeOf(target); },
+      setPrototypeOf: (target, prototype) => { hit("setPrototypeOf"); return Reflect.setPrototypeOf(target, prototype); },
+      isExtensible: (target) => { hit("isExtensible"); return Reflect.isExtensible(target); },
+      preventExtensions: (target) => { hit("preventExtensions"); return Reflect.preventExtensions(target); },
+      getOwnPropertyDescriptor: (target, property) => {
+        hit("getOwnPropertyDescriptor");
+        return Reflect.getOwnPropertyDescriptor(target, property);
+      },
+      defineProperty: (target, property, attributes) => {
+        hit("defineProperty");
+        return Reflect.defineProperty(target, property, attributes);
+      },
+      has: (target, property) => { hit("has"); return Reflect.has(target, property); },
+      get: (target, property, receiver) => { hit("get"); return Reflect.get(target, property, receiver) as unknown; },
+      set: (target, property, value, receiver) => {
+        hit("set");
+        return Reflect.set(target, property, value, receiver);
+      },
+      deleteProperty: (target, property) => { hit("deleteProperty"); return Reflect.deleteProperty(target, property); },
+      ownKeys: (target) => { hit("ownKeys"); return Reflect.ownKeys(target); }
+    }
+  };
+};
+
+const expectZeroProxyTraps = (counts: ProxyTrapCounts): void => {
+  expect(counts).toStrictEqual(Object.fromEntries(proxyTrapNames.map((name) => [name, 0])));
+};
+
+const expectProxyCaptureRejected = (value: unknown): void => {
+  expect(capture(value)).toStrictEqual({ valid: false, reason: proxyRejectionReason });
+};
+
 describe("supported command structural fingerprints", () => {
+  it("C01 rejects a transparent top-level object Proxy before every installed object trap", () => {
+    const harness = createProxyTrapHarness<Record<string, unknown>>();
+    const proxy = new Proxy({ gameId: "game" }, harness.handler);
+
+    expectProxyCaptureRejected(proxy);
+    expectZeroProxyTraps(harness.counts);
+  });
+
+  it("C02 rejects a nested object Proxy before every installed object trap", () => {
+    const harness = createProxyTrapHarness<Record<string, unknown>>();
+    const proxy = new Proxy({ hidden: true }, harness.handler);
+
+    expectProxyCaptureRejected({ gameId: "game", payload: { nested: proxy } });
+    expectZeroProxyTraps(harness.counts);
+  });
+
+  it("C03 rejects a Proxy-wrapped array before Array.isArray, descriptors, or traps", () => {
+    const harness = createProxyTrapHarness<number[]>();
+    const proxy = new Proxy([1, 2], harness.handler);
+
+    expectProxyCaptureRejected({ gameId: "game", values: proxy });
+    expectZeroProxyTraps(harness.counts);
+    expect(requireCapture({ gameId: "game", values: [1, 2] }).snapshot).toStrictEqual({
+      gameId: "game",
+      values: [1, 2]
+    });
+  });
+
+  it("C04 rejects a revoked Proxy with the exact reason and without invoking its handler", () => {
+    const harness = createProxyTrapHarness<Record<string, unknown>>();
+    const revocable = Proxy.revocable({ gameId: "game" }, harness.handler);
+    revocable.revoke();
+
+    expectProxyCaptureRejected(revocable.proxy);
+    expectZeroProxyTraps(harness.counts);
+  });
+
+  it("C05 rejects null-target and throwing-prototype Proxies before getPrototypeOf", () => {
+    const nullTargetHarness = createProxyTrapHarness<Record<string, unknown>>();
+    const nullTarget = new Proxy(Object.create(null) as Record<string, unknown>, nullTargetHarness.handler);
+    const throwingHarness = createProxyTrapHarness<Record<string, unknown>>();
+    const throwing = new Proxy({}, {
+      ...throwingHarness.handler,
+      getPrototypeOf: () => {
+        throwingHarness.counts.getPrototypeOf += 1;
+        throw new Error("getPrototypeOf trap must not run");
+      }
+    });
+
+    expectProxyCaptureRejected(nullTarget);
+    expectProxyCaptureRejected(throwing);
+    expectZeroProxyTraps(nullTargetHarness.counts);
+    expectZeroProxyTraps(throwingHarness.counts);
+  });
+
+  it("C06 rejects an ownKeys-throwing Proxy before key reflection", () => {
+    const harness = createProxyTrapHarness<Record<string, unknown>>();
+    const proxy = new Proxy({ gameId: "game" }, {
+      ...harness.handler,
+      ownKeys: () => {
+        harness.counts.ownKeys += 1;
+        throw new Error("ownKeys trap must not run");
+      }
+    });
+
+    expectProxyCaptureRejected(proxy);
+    expectZeroProxyTraps(harness.counts);
+  });
+
+  it("C07 rejects throwing and descriptor-changing Proxies before descriptor reflection", () => {
+    const throwingHarness = createProxyTrapHarness<Record<string, unknown>>();
+    const throwing = new Proxy({ gameId: "game" }, {
+      ...throwingHarness.handler,
+      getOwnPropertyDescriptor: () => {
+        throwingHarness.counts.getOwnPropertyDescriptor += 1;
+        throw new Error("descriptor trap must not run");
+      }
+    });
+    const changingHarness = createProxyTrapHarness<Record<string, unknown>>();
+    let changingValue = false;
+    const changing = new Proxy({ gameId: "game" }, {
+      ...changingHarness.handler,
+      getOwnPropertyDescriptor: (_target, property) => {
+        changingHarness.counts.getOwnPropertyDescriptor += 1;
+        changingValue = !changingValue;
+        return { configurable: true, enumerable: true, writable: true, value: `${String(property)}-${changingValue}` };
+      }
+    });
+
+    expectProxyCaptureRejected(throwing);
+    expectProxyCaptureRejected(changing);
+    expectZeroProxyTraps(throwingHarness.counts);
+    expectZeroProxyTraps(changingHarness.counts);
+    expect(changingValue).toBe(false);
+  });
+
+  it("C08 rejects throwing and transparent Proxies before property reads", () => {
+    const throwingHarness = createProxyTrapHarness<Record<string, unknown>>();
+    const throwing = new Proxy({ gameId: "game" }, {
+      ...throwingHarness.handler,
+      get: () => {
+        throwingHarness.counts.get += 1;
+        throw new Error("get trap must not run");
+      }
+    });
+    const transparentHarness = createProxyTrapHarness<Record<string, unknown>>();
+    const transparent = new Proxy({ gameId: "game" }, transparentHarness.handler);
+
+    expectProxyCaptureRejected(throwing);
+    expectProxyCaptureRejected(transparent);
+    expectZeroProxyTraps(throwingHarness.counts);
+    expectZeroProxyTraps(transparentHarness.counts);
+  });
+
+  it("C20 freezes the exact fingerprint schema, canonicalization, and digest literals", () => {
+    expect(COMMAND_FINGERPRINT_SCHEMA_VERSION).toBe("supported-command-structural-fingerprint-v1");
+    expect(COMMAND_CANONICALIZATION_ALGORITHM).toBe("plain-data-tagged-tree-code-unit-keys-v1");
+    expect(COMMAND_FINGERPRINT_DIGEST_ALGORITHM).toBe("SHA-256");
+  });
+
   it("uses the exact tagged canonical tree, six-key fingerprint, UTF-8 length, and SHA-256 vector", () => {
     const value = {
       ownUndefined: undefined,
