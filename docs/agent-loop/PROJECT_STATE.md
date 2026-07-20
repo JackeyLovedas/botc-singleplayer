@@ -1,6 +1,21 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B19B COMPLETED / ACCEPTED
+## Current state — Command Capture Proxy Rejection V1 SOURCE READY
+
+- Independent Foundation control is `status=RUNNING`, `taskType=SHARED_TRUST_BOUNDARY_HARDENING`, `currentFoundation=COMMAND_CAPTURE_PROXY_REJECTION_V1`, `currentSlice=null`, `currentBranch=infra/command-capture-proxy-rejection-v1`, `currentPR=null`, `implementationAuthorized=true`, `phase2CStarted=false`, and source state `SOURCE_READY_PENDING_COMMIT`.
+- Authorization is `USER_AUTHORIZED_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`.
+- Accepted base `c0c0cdfef1c1aa4cebb841f9867007a319701459` was verified identically at local `main`, `origin/main`, and GitHub `main`; the source worktree was clean and independent GitHub queries reported zero open pull requests.
+- The complete read-only architect handoff contains `12 / 12` numbered blocks and its completion marker. Governance SHA-256 `dcbe7d3b9f5ca1538066a10f56a6561d1c1cf601a567fb50d00b6e125e29a083` returns `GO` with `10 / 10` conditions; standalone design SHA-256 `4693cddf74159c1cf310781effd74154a0d6ede8615ad873b0576dd36c68c220` contains 20 criteria and ends `READY_FOR_SECURITY_DESIGN_REVIEW`.
+- The design freezes zero-trap Proxy rejection on Node `24.15.0`, exact fingerprint constants and legal canonical bytes, top-level/nested service failure contracts, zero store access, two production files, two primary test files, a ≤120 added-production-LOC ceiling, and separate source/profile stages.
+- Complete independent security design review SHA-256 `247b302d22aca5dc6249a541cc2d8a5d712b89002d685250a862226553406cd8` preserves the full `4 / 4` reviewer report and completion marker. It reviewed the exact current governance/design hashes and returned `SECURITY_DESIGN_PASS`, `findings=[]`, and `remainingBlockers=[]`.
+- Source implementation is recorded at `docs/implementation/command-capture-proxy-rejection-v1-status.md`: two production files `+29/-5`, two primary test files, and only the conditional shared active non-marker ownership hash update. The three fingerprint constants, legal golden bytes, receipt/result schemas, domain, rules, matrix, profiles, and workflow selector remain frozen.
+- Source gates pass: typecheck, full lint, ownership self-test `22/22`, focused `32 + 26`, ordinary `9/9 / 1535`, coverage substance `10/10 / authoritative 1535`, and Windows deterministic `7/7`. The selected old profile returns the expected fail-closed `COVERAGE_REQUESTED_PROFILE_MISMATCH`; no profile is created in the source stage.
+- Infrastructure repair control is `0 / 2`. This Foundation consumes no product repair round.
+- The only blocker is `PENDING_SOURCE_COMMIT`; next action is `CREATE_FOUNDATION_SOURCE_COMMIT` with no push or PR.
+- A3B2 is paused, unaccepted, and unpushed on `phase-3/combined-dreamer-mathematician-integration` at classification commit `e411efe967c37dff0030f2bd9e52eb5b8171712e`. Its prerequisite classification is preserved, not superseded by this Foundation initialization.
+- The unaccepted A3B2 WIP remains preserved only by external patch SHA-256 `9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50` under `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\product-experiments\phase-3-slice-2b19a3b2-pre-command-proxy-hardening`, plus local archive branch `archive/2b19a3b2-pre-command-proxy-hardening-test-wip` commit `d356cfbf45f64be1aacc1fc042648a318fcacdd5`. Nothing is restored or accepted.
+
+## Historical accepted state — Phase 3 Slice 2B19B COMPLETED / ACCEPTED
 
 - Control is `status=COMPLETED`, `currentSlice=null`, `currentBranch=main`, `currentPR=null`, `implementationAuthorized=false`, and `remainingBlockers=[]`.
 - Product repair is complete and exhausted at `2 / 2`; Infrastructure Repair is complete and exhausted at `2 / 2`. No third round exists for either track.

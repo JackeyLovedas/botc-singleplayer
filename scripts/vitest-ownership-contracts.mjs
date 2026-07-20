@@ -962,7 +962,7 @@ const RAW_OWNERSHIP_CONTRACTS = Object.freeze([
       semanticInventorySha256: "8121c6d14bb462f9c0dfe31750bc77890f53d600ff542b1a13450d231e42f482",
       authorityInventorySha256: "e7e88b9d6be6771d351ac8665b05dcaec305516f402d1a92655b845cba942e81",
       nonOwnedInventoryPolicy: NON_OWNED_POLICY,
-      nonMarkerOwnershipSha256: "92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c",
+      nonMarkerOwnershipSha256: "764888ea567eb545303c17d0cc89706d0b871360a5271912910257397f2829a8",
       physicalTestFileSetSha256: "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab",
       traceabilityRowCount: 80,
       dynamicTestAuthorityRows: 78,
@@ -989,7 +989,7 @@ const RAW_OWNERSHIP_CONTRACTS = Object.freeze([
       semanticInventorySha256: "bd194c778f83c42c4bc46307f028e1a289b01c50a49c2169ce2a07c267a317f4",
       authorityInventorySha256: "c42fc09726d54c1e9ea6f7d88756435340f7e329cd5fd45f00c9030979e574c6",
       nonOwnedInventoryPolicy: NON_OWNED_POLICY,
-      nonMarkerOwnershipSha256: "92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c",
+      nonMarkerOwnershipSha256: "764888ea567eb545303c17d0cc89706d0b871360a5271912910257397f2829a8",
       physicalTestFileSetSha256: "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab",
       traceabilityRowCount: 60,
       dynamicTestAuthorityRows: 58,
@@ -1021,7 +1021,7 @@ const RAW_OWNERSHIP_CONTRACTS = Object.freeze([
         "e098696e88ed4f3d050b6d24511b05522aa26afed43d4f8d09d668c81309f676",
       nonOwnedInventoryPolicy: NON_OWNED_POLICY,
       nonMarkerOwnershipSha256:
-        "92f7e4197bf07f2186bb98e0ce5627964189ceff6f56e286a5a091166f74852c",
+        "764888ea567eb545303c17d0cc89706d0b871360a5271912910257397f2829a8",
       physicalTestFileSetSha256:
         "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab",
       traceabilityRowCount: 92,

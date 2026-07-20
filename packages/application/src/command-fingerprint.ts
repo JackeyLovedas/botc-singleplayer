@@ -89,6 +89,9 @@ const captureNode = (
   if (typeof value !== "object") {
     throw new Error("Command values must be plain data");
   }
+  if (utilTypes.isProxy(value)) {
+    throw new Error("Command values must not be Proxy objects");
+  }
   if (ancestors.has(value)) throw new Error("Command object graph must not contain cycles");
   ancestors.add(value);
   try {

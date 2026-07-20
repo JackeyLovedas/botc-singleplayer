@@ -1,6 +1,24 @@
 # Current Task
 
-## Phase 3 Slice 2B19B — COMPLETED / ACCEPTED
+## Command Capture Proxy Rejection V1 — SOURCE READY / COMMIT PENDING
+
+- Control status: `status=RUNNING`; `taskType=SHARED_TRUST_BOUNDARY_HARDENING`; `currentFoundation=COMMAND_CAPTURE_PROXY_REJECTION_V1`; `currentSlice=null`; `currentBranch=infra/command-capture-proxy-rejection-v1`; `currentPR=null`; `implementationAuthorized=true`; `phase2CStarted=false`; source is `SOURCE_READY_PENDING_COMMIT`.
+- Authorization: `USER_AUTHORIZED_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`.
+- Accepted base: local `main`, `origin/main`, and GitHub `main` were independently verified equal to `c0c0cdfef1c1aa4cebb841f9867007a319701459`; the worktree was clean and both GitHub open-PR queries returned `0` before branch creation.
+- Complete architect handoff: `12/12` blocks plus `COMMAND_CAPTURE_ARCHITECT_HANDOFF_COMPLETE`; governance verdict `GO`; all `10/10` conditions pass.
+- Governance: `docs/architecture/command-capture-proxy-rejection-v1-go-no-go.md`, SHA-256 `dcbe7d3b9f5ca1538066a10f56a6561d1c1cf601a567fb50d00b6e125e29a083`, terminal `GO`.
+- Standalone design: `docs/implementation/command-capture-proxy-rejection-v1-design.md`, SHA-256 `4693cddf74159c1cf310781effd74154a0d6ede8615ad873b0576dd36c68c220`, 20 required criteria, terminal `READY_FOR_SECURITY_DESIGN_REVIEW`.
+- The exact design freezes the Node `24.15.0` zero-trap contract, three fingerprint constants, service failure contracts, 2 production / 2 primary-test allowlists, source/profile boundaries, and ≤120 added-production-LOC stop-loss.
+- Independent security design review: `docs/implementation/command-capture-proxy-rejection-v1-design-review.md`, SHA-256 `247b302d22aca5dc6249a541cc2d8a5d712b89002d685250a862226553406cd8`; complete `4/4` report plus handoff marker; exact verdict `SECURITY_DESIGN_PASS`; `findings=[]`; `remainingBlockers=[]`; reviewed governance/design hashes match current bytes.
+- Source implementation status: `docs/implementation/command-capture-proxy-rejection-v1-status.md`; exact production allowlist `2` files at `+29/-5`; exact primary test allowlist `2` files; ownership changed only the shared active `nonMarkerOwnershipSha256` to `764888ea567eb545303c17d0cc89706d0b871360a5271912910257397f2829a8`.
+- Local source gates: typecheck and full lint `PASS`; ownership self-test `22/22 PASS`; focused `32 + 26 PASS`; ordinary `9/9 / 1535/1535 PASS`; coverage substance `10/10 / authoritative 1535 PASS`; Windows deterministic `7/7 PASS`. The frozen old profile fails closed as expected with `COVERAGE_REQUESTED_PROFILE_MISMATCH`; no profile or workflow selector is changed.
+- Foundation repair control is `infrastructureRepairRound=0/2`; product repair is not consumed.
+- Sole blocker: `PENDING_SOURCE_COMMIT`.
+- Required next action: `CREATE_FOUNDATION_SOURCE_COMMIT` with exact message `fix: reject Proxy values at command capture`; do not push or create a PR.
+- Paused A3B2 remains `PREREQUISITE_REQUIRED / UNACCEPTED / UNPUSHED` on `phase-3/combined-dreamer-mathematician-integration` at classification commit `e411efe967c37dff0030f2bd9e52eb5b8171712e`. This Foundation does not accept, restore, or modify the A3B2 implementation WIP.
+- WIP preservation remains external patch `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\product-experiments\phase-3-slice-2b19a3b2-pre-command-proxy-hardening\2b19a3b2-test-wip.patch`, SHA-256 `9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50`, and local archive branch `archive/2b19a3b2-pre-command-proxy-hardening-test-wip` commit `d356cfbf45f64be1aacc1fc042648a318fcacdd5`.
+
+## Historical Phase 3 Slice 2B19B — COMPLETED / ACCEPTED
 
 - Control status: `COMPLETED`; `currentSlice=null`; `currentBranch=main`; `currentPR=null`; `implementationAuthorized=false`; `remainingBlockers=[]`.
 - Product Slice: `2B19B — Philosopher-gained Dreamer Effective Source`; authorization remains `USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION`.
