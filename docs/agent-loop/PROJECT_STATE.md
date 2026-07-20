@@ -1,16 +1,16 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B19A3B2 RESLICE_REQUIRED / UNACCEPTED
+## Current state — Phase 3 Slice 2B19A3B2 PREREQUISITE_REQUIRED / IMPLEMENTATION UNACCEPTED
 
-- Control is `status=RESLICE_REQUIRED`, `disposition=UNACCEPTED`, `currentSlice=null`, `currentPR=null`, `implementationAuthorized=false`, and `phase2CStarted=false`.
-- Historical gate evidence remains exact but is no longer implementation authority: `ruleReady=true`, `ruleDesignPass=true`, `designRound=1/2`, `repairRound=0/2`, and `productRepairRoundConsumed=false`.
+- Control is `status=PREREQUISITE_REQUIRED`, `taskType=PRODUCT_SLICE`, `disposition=UNACCEPTED`, `currentSlice=2B19A3B2`, `currentBranch=phase-3/combined-dreamer-mathematician-integration`, `currentPR=null`, `implementationAuthorized=false`, and `phase2CStarted=false`.
+- Gate evidence remains exact for the unchanged behavior design: `ruleReady=true`, `ruleDesignPass=true`, `designRound=1/2`, `repairRound=0/2`, and `productRepairRoundConsumed=false`. No Design Round 2 is created.
 - The documentation-only design-gate commit is `cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a`. Design SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e` and independent review SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13` remain historical gate records.
-- Focused 2B19A3B2 execution produced `5 passed / 2 failed / 73 skipped`. The approved S06 authority proves `captureSupportedCommand` accepts a non-revoked Proxy because `packages/application/src/command-fingerprint.ts::captureNode` lacks an incoming `utilTypes.isProxy(value)` rejection.
-- The approved production allowlist is empty. The required correction therefore crosses the design Stop-Loss and cannot be implemented in this Slice.
-- Sole blocker: `S06_NON_REVOKED_PROXY_CAPTURE_ACCEPTED_REQUIRES_PRODUCTION_COMMAND_FINGERPRINT_CHANGE`.
-- Seven physical application-test identities exist only as local unaccepted WIP. They remain unstaged, uncommitted, unowned, and untraced, and do not establish accepted product behavior.
+- Focused 2B19A3B2 execution produced `5 passed / 2 failed / 73 skipped`. S06 proves `captureSupportedCommand` accepts a non-revoked Proxy because `packages/application/src/command-fingerprint.ts::captureNode` lacks an incoming `utilTypes.isProxy(value)` rejection.
+- S06 is a shared T1 command-capture prerequisite, not a product reslice, rule conflict, Mathematician defect, Dreamer defect, or A3B2 behavior-design change. The A3B2 production allowlist stays empty.
+- Sole blocker: `COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`.
+- Seven physical application-test identities remain unaccepted and are not restored. Preservation authority is external patch SHA-256 `9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50` under `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\product-experiments\phase-3-slice-2b19a3b2-pre-command-proxy-hardening`, plus local archive branch `archive/2b19a3b2-pre-command-proxy-hardening-test-wip` commit `d356cfbf45f64be1aacc1fc042648a318fcacdd5`.
 - No production change, implementation traceability, ownership activation, coverage profile, pull request, product CI, accepted tag, or merge exists for 2B19A3B2.
-- Required next action is `AWAIT_USER_AUTHORIZED_RESLICE`; no repair design or implementation is authorized.
+- Required next action is `RUN_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`. After its merge, a release review must explicitly clear A3B2 before unaccepted implementation can resume.
 
 ## Historical accepted state — Phase 3 Slice 2B19B COMPLETED / ACCEPTED
 

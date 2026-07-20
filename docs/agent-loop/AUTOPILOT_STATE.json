@@ -1,12 +1,12 @@
 {
-  "status": "RESLICE_REQUIRED",
+  "status": "PREREQUISITE_REQUIRED",
   "disposition": "UNACCEPTED",
   "taskType": "PRODUCT_SLICE",
   "productRepairRoundConsumed": false,
   "currentPR": null,
   "currentPRUrl": null,
   "currentBranch": "phase-3/combined-dreamer-mathematician-integration",
-  "currentSlice": null,
+  "currentSlice": "2B19A3B2",
   "slice2B19A1Started": false,
   "slice2B19A2Started": false,
   "slice2B19A3Started": false,
@@ -934,8 +934,8 @@
     "remainingBlockers": []
   },
   "reviewedHead": null,
-  "currentReviewHeadAuthority": "Historical gate authority only: Phase 3 Slice 2B19A3B2 independent Design Round 1 review verified the exact design, governance, and rule-evidence hashes and returned RULE_DESIGN_PASS. The gate no longer authorizes implementation after RESLICE_REQUIRED.",
-  "exactHeadCIAuthority": "No Phase 3 Slice 2B19A3B2 product-head, PR, merge, tag, or CI authority exists. Design-gate commit cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a is documentation gate history only.",
+  "currentReviewHeadAuthority": "Phase 3 Slice 2B19A3B2 remains RULE_READY and RULE_DESIGN_PASS on unchanged behavior Design Round 1. Implementation is gated only by the shared T1 COMMAND_CAPTURE_PROXY_REJECTION_V1 prerequisite and remains unaccepted; no Design Round 2 is created.",
+  "exactHeadCIAuthority": "No Phase 3 Slice 2B19A3B2 product-head, PR, merge, tag, or CI authority exists. Pre-classification control HEAD 50437b4a0fa59813d6a87671586ecf71811b8b33 and this docs-only classification carry no product CI authority; design-gate commit cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a remains behavior-design history.",
   "currentFeatureHead": "cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a",
   "repairRound": 0,
   "designRound": 1,
@@ -944,7 +944,7 @@
   "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
   "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
   "authorization": "USER_AUTHORIZED_2B19A3B2_COMBINED_DREAMER_MATHEMATICIAN_INTEGRATION",
-  "implementationAuthorization": "CLOSED_BY_RESLICE_REQUIRED",
+  "implementationAuthorization": "CLOSED_PENDING_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE",
   "classificationOnlyDesignCorrectionAuthorization": "USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3",
   "designCorrectionScope": "REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY",
   "resliceAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
@@ -1083,7 +1083,7 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": false,
-  "implementationStatus": "RESLICE_REQUIRED",
+  "implementationStatus": "PREREQUISITE_REQUIRED_UNACCEPTED",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -1507,7 +1507,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "S06_NON_REVOKED_PROXY_CAPTURE_ACCEPTED_REQUIRES_PRODUCTION_COMMAND_FINGERPRINT_CHANGE"
+    "COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
@@ -2272,8 +2272,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-20T14:45:28.4521528+08:00",
-  "lastAction": "Stopped Phase 3 Slice 2B19A3B2 under the approved zero-production-change Stop-Loss after the S06 non-revoked Proxy test proved captureSupportedCommand accepts the incoming Proxy. The local test WIP is unaccepted and remains unstaged; traceability, ownership, profile, PR, CI, tag, and merge authority were not created.",
-  "lastError": "S06_NON_REVOKED_PROXY_CAPTURE_ACCEPTED_REQUIRES_PRODUCTION_COMMAND_FINGERPRINT_CHANGE",
-  "requiredNextAction": "AWAIT_USER_AUTHORIZED_RESLICE",
-  "nextAction": "AWAIT_USER_AUTHORIZED_RESLICE"
+  "lastAction": "Classified the S06 discovery as the shared T1 COMMAND_CAPTURE_PROXY_REJECTION_V1 prerequisite rather than a product reslice, rule conflict, Mathematician defect, or Dreamer defect. A3B2 behavior Design Round 1 remains unchanged and RULE_DESIGN_PASS; implementation remains unaccepted and unauthorized pending the prerequisite and its merge release review. The unaccepted test WIP remains archived only at external patch SHA-256 9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50 and local archive commit d356cfbf45f64be1aacc1fc042648a318fcacdd5.",
+  "lastError": null,
+  "requiredNextAction": "RUN_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE",
+  "nextAction": "RUN_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE"
 }
