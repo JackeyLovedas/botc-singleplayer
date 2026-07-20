@@ -1,6 +1,61 @@
 # Current Task
 
-## Phase 3 Slice 2B19B — RUNNING / REPAIR ROUND 2 EXACT PROFILE FROZEN
+## PR #41 Split Coverage Exact Profile - RUNNING / INFRASTRUCTURE REPAIR ROUND 2 OF 2
+
+- Authorization: `USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2`; profile-only continuation is bound to clean source HEAD `dcfa530540a57ce7b03e97958dd7de9926f71bbd`.
+- New immutable profile ID is `phase-3-slice-2b19b-dcfa530-split-coverage-v1`; source kind is `TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION`. It supersedes only the topology authority of `phase-3-slice-2b19b-c7313e2-ownership-v2-1`.
+- Three wholly fresh final candidates each pass `10 / 10` coverage processes, authoritative semantic union `1,520`, exact core `16 + 10 skipped` and gained `10 + 16 skipped` complements, and risk hits `0`.
+- Stable inventory hashes are ordinary/project `684c9186...150f`, coverage execution `f01b6bbd...059b`, and semantic `3624db27...f91c`; every mismatch count is `0`.
+- Stable authoritative coverage tuple is `63 / 3204 / 23 / 3204 / 1799` with unchanged source/zero-hit hashes. Raw merged artifacts and diagnostic full positive-hit hashes vary and are recorded as non-authoritative.
+- External stability evidence SHA-256 is `887065bb6511bc0b32b57b97907c441d1b142c111e18838936d37984204523c8`, verdict `THREE_FINAL_CANDIDATE_AUTHORITATIVE_IDENTITIES_MATCH`.
+- New exact profile returns `3 / 3 MATCH`; prior exact c7313e2 profile still matches; unknown, wrong, automatic ambiguous, and duplicate selector cases fail closed. Ownership self-test is `22 / 22`; formal verifier is `1,520 / 1,520` with zero mismatch.
+- Profile-only source scope is one appended registry record, one workflow selector token, one profile audit document, and necessary controls. Topology, verifier logic, collector, production, tests, fixtures, ownership, dependencies, timeout, threshold, and role matrix remain unchanged from parent `dcfa530`.
+- All four full gates pass on profile bytes with pnpm `11.7.0`: typecheck, lint, ordinary `35 / 1,520` in `40.34s`, and coverage `35 / 1,520` in `58.95s` at `75.94 / 83.26 / 97.40`, risk hits `0`.
+- Remaining work is exact JSON/YAML/diff/scope audit and one attributed unpushed commit `ci: record exact split Dreamer-Vortox coverage profile`.
+- Remaining blocker: `PENDING_ATTRIBUTED_UNPUSHED_SPLIT_COVERAGE_PROFILE_COMMIT`. No push or Infrastructure Repair Round 3 is authorized.
+
+## Historical Round 2 source control (superseded by the profile-only continuation above)
+
+## PR #41 Coverage Split - RUNNING / INFRASTRUCTURE REPAIR ROUND 2 OF 2
+
+- Authorization: `USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2`.
+- Task type: `CI_TEST_INFRASTRUCTURE`; scope is `DREAMER_VORTOX_COVERAGE_PROCESS_SPLIT_ONLY`.
+- Active stacked branch: `infra/pr41-dreamer-vortox-coverage-observability-v1`; stacked PR: [#42](https://github.com/JackeyLovedas/botc-singleplayer/pull/42); base branch: `phase-3/philosopher-gained-dreamer-effective-source`.
+- Round 1 infrastructure HEAD is `ee2f1aae24e7698250c5abf04268c7fd9410854f`. Frozen product PR [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41) and product HEAD remain `6e7b0d752750bc00f64309ed5e4f59c39b93255e`; accepted `origin/main` remains `5ddaa2fd02e0cb73e2a5363b222e7f08c353d389`.
+- Product repair remains exactly `repairRound=2`, `maxRepairRounds=2`, and exhausted. No Product Repair Round 3 exists. Infrastructure control is `infrastructureRepairRound=2`, `maxInfrastructureRepairRounds=2`, `round2Authorized=true`, and `productRepairRoundConsumed=false` for this infrastructure repair.
+- User-corrected exact classification is `POST_TEST_WORKER_RPC_FAILURE_WITH_COMPLETE_PASSING_BLOB`. It applies only to Round 1 push run `29712319880` blob `be454c9449af2b69bed4cb22b7b5a4b68a2e323e6b24cb0bcac7c0f3ac717f2c` and PR run `29712346934` blob `07dbfda0e17b95af0bc1723a41a78f7363d3a61688f7b4f7c5a3ff94e930a2e6`, each with one passed file, five passed suites, `26 / 26` passed tests, and exactly one unhandled `[vitest-worker]: Timeout calling "onTaskUpdate"`.
+- The historical single-blob merge exit `1` and zero-test JSON remain recorded but no longer override the direct Vitest 3.2.6 parser evidence. No unhandled error is ignored or converted to success.
+- Round 2 may change only `.github/workflows/ci.yml`, `scripts/verify-vitest-coverage-groups.mjs`, the diagnostic collector only to record the explicit filter, the infrastructure implementation record, and necessary infrastructure controls.
+- Production, tests, fixtures, ownership registry/contracts, rule evidence, design, product traceability, dependencies, timeouts, worker/pool semantics, coverage thresholds/subsets, current exact profile, and profile selector remain unchanged in the source stage.
+- The nine ordinary groups remain unchanged. Coverage becomes ten groups by splitting only `application-service-dreamer-vortox` into `application-service-dreamer-vortox-core` with `\[(?:2B19A3A|2B19A3B1)-` and `application-service-dreamer-vortox-gained` with `\[2B19B-`; both continue using the existing `application-service-dreamer-vortox` project.
+- Real Vitest 3.2.6 list evidence is full=`26`, core=`16`, gained=`10`, union=`26`, intersection=`0`, missing/duplicate/unexpected=`0`. The full workspace verifier reports `1,520` ordinary and coverage semantic identities with zero intersection, missing, duplicate, unexpected, or wrong-owner result.
+- The coverage command uses a quoted Bash array and adds `--testNamePattern=<pattern>` only for a non-empty explicit matrix pattern. It uses no `eval` or unquoted argument expansion. The Round 1 diagnostics, distinct artifacts, success-only formal blobs, and final original-outcome enforcement remain mandatory for all ten groups.
+- Source validation passes: ordinary `9 / 9` processes and merges produce `1,520 / 1,520`; coverage `10 / 10` processes and single-group merges prove an authoritative `1,520` passed semantic union with exact core `16 + 10 skipped` and gained `10 + 16 skipped` complements; all process risk scans are `0`.
+- The global filtered-blob JSON is explicitly non-authoritative because of the exact Vitest same-project task-ID collision (`1,546` discovered / `1,514` passed assertions / `32` skipped / failed `0`). The independently merged coverage map matches unchanged profile `phase-3-slice-2b19b-c7313e2-ownership-v2-1` at exact tuple `63 / 3204 / 23 / 3204 / 1799`.
+- Windows deterministic equivalent, collector and ownership self-tests, typecheck, lint, full tests, and full coverage pass. Finish exact scope/diff checks, then create one attributed source commit `ci: isolate gained Dreamer coverage process`. Do not create a profile or push in this stage.
+- Any remaining `onTaskUpdate`, exit `1`, assertion failure, test timeout, unstable obligation, inventory mismatch, or forbidden-scope requirement immediately returns `HUMAN_BLOCKED`; Infrastructure Repair Round 3 is forbidden.
+- Remaining blocker: `PENDING_ATTRIBUTED_UNPUSHED_ROUND_2_SOURCE_COMMIT`.
+
+## Historical Round 1 Control (superseded by the authorized amendment above)
+
+## PR #41 Coverage Failure Observability — RUNNING / INFRASTRUCTURE REPAIR ROUND 1 OF 2
+
+- Authorization: `USER_AUTHORIZED_PR41_COVERAGE_FAILURE_OBSERVABILITY_AND_CONDITIONAL_PROCESS_SPLIT`.
+- Task type: `CI_TEST_INFRASTRUCTURE`; scope is `DREAMER_VORTOX_COVERAGE_FAILURE_OBSERVABILITY_ONLY`.
+- Active stacked branch: `infra/pr41-dreamer-vortox-coverage-observability-v1`; base branch: `phase-3/philosopher-gained-dreamer-effective-source`; stacked PR: `null` until separately instructed.
+- Frozen product PR [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41), local product HEAD, remote product HEAD, and PR head all remain `6e7b0d752750bc00f64309ed5e4f59c39b93255e`. Accepted `origin/main` remains `5ddaa2fd02e0cb73e2a5363b222e7f08c353d389`.
+- Product repair remains exactly `repairRound=2`, `maxRepairRounds=2`, and exhausted. No Product Repair Round 3 exists. Infrastructure control is exactly `infrastructureRepairRound=1`, `maxInfrastructureRepairRounds=2`; this infrastructure task does not consume a product repair round.
+- Round 1 may change only `.github/workflows/ci.yml`, `scripts/collect-vitest-shard-diagnostics.mjs`, `docs/implementation/pr41-dreamer-vortox-coverage-observability-v1.md`, and strictly necessary infrastructure control records.
+- Coverage command arguments, nine ordinary groups, nine coverage groups, project membership, timeout, dependency, threshold, exact profile, profile selector, ownership contracts, production, tests, fixtures, rule evidence, frozen design, product traceability, and role coverage remain unchanged.
+- The coverage step uses step ID `coverage-shard` and step-level `continue-on-error: true` solely so diagnostics can be collected and uploaded. A final `always()` enforcement step exits zero only for the original `success` outcome and exits one for `failure`, `cancelled`, skipped, or unknown outcomes. Failure is not masked and `coverage-merge` remains dependent on the failed shard job.
+- A distinct `coverage-diagnostics-<group>` artifact is always attempted. It contains `manifest.json`, the exact-manifest checksum in `manifest.sha256`, and a byte-identical blob copy when the blob exists. Formal `coverage-blob-<group>` upload occurs only when the original coverage step succeeded.
+- The collector records only deterministic, non-secret metadata: group, exact project arguments, Node/pnpm/Vitest versions, runner OS, whitelisted `VITEST_MAX_FORKS`, original step outcome, canonical repository-relative input paths, stable directory listings, blob/coverage JSON presence and file metadata. Missing blob is valid diagnostic data with `blobPresent=false`.
+- Round 1 implementation is complete locally. Collector self-test, collector ESLint, control JSON parse, workflow YAML/structure, typecheck, full lint, full ordinary tests `35 / 35` and `1,520 / 1,520`, full coverage tests `35 / 35` and `1,520 / 1,520`, exact coverage-command comparison, exact matrix/topology comparison, exact merge/downstream comparison, forbidden-path audit, zero-test-diff audit, and `git diff --check` all pass. `actionlint` and Prettier are unavailable in the frozen dependency set and were not installed.
+- The Round 1 delivery boundary is one attributed, unpushed commit. Its SHA is reported to the controller out of band rather than self-referenced in feature-branch docs. Push and stacked PR creation are not authorized in this handoff.
+- Coverage-process splitting remains prohibited. Infrastructure Repair Round 2 may begin only after two exact-head diagnostic artifacts prove an authorized post-test process-failure classification.
+- Remaining blocker: `PENDING_STACKED_PR_EXACT_HEAD_DIAGNOSTIC_ARTIFACTS`.
+
+## Frozen Product Slice 2B19B — REPAIR ROUND 2 OF 2 / PR #41 BLOCKED
 
 - Authorization: `USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION`.
 - Active bounded product Slice: `2B19B / Philosopher-gained Dreamer Effective Source`; branch `phase-3/philosopher-gained-dreamer-effective-source`; PR [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41).
