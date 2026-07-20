@@ -1,6 +1,22 @@
 # Current Task
 
-## Phase 3 Slice 2B19B — COMPLETED / ACCEPTED
+## Phase 3 Slice 2B19A3B2 — RUNNING / GOVERNANCE AND RULE-DESIGN GATES PENDING
+
+- Authorization: `USER_AUTHORIZED_2B19A3B2_COMBINED_DREAMER_MATHEMATICIAN_INTEGRATION`.
+- Control status: `RUNNING`; `taskType=PRODUCT_SLICE`; `currentSlice=2B19A3B2`; `currentBranch=phase-3/combined-dreamer-mathematician-integration`; `currentPR=null`.
+- Accepted parent is clean `main` at `c0c0cdfef1c1aa4cebb841f9867007a319701459`; local `main`, `origin/main`, and GitHub `main` matched before branch creation, with zero open pull requests.
+- Bounded objective: integrate the accepted native/base Dreamer and Philosopher-gained Dreamer terminal facts into the existing first-night base Mathematician distinct-player count path without changing accepted Dreamer behavior.
+- Fresh rule evidence is materialized at `docs/rules/evidence/2B19A3B2.md`, UTF-8 SHA-256 `64607c71c5d9b947b78063cdc8e914f684b975748cb2c183fe2e4119b4036eb0`, with terminal verdict `RULE_READY`, `ruleCoverageStatus=PARTIAL`, and `unresolvedConflicts=[]`.
+- Governance precheck `docs/architecture/2B19A3B2-go-no-go-under-governance-v1.md` is terminal `GO`, UTF-8 SHA-256 `000964cc050c86d427fe198dc01d782f6eda8fa15c58fb561140de9bc27d88d7`.
+- Read-only architect Design Round `1 / 2` is materialized at `docs/implementation/phase-3-slice-2b19a3b2-design.md`, UTF-8 SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`.
+- Complete independent review `docs/implementation/phase-3-slice-2b19a3b2-design-review-round-1.md`, UTF-8 SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`, verified those exact design/governance/evidence hashes and returned `RULE_DESIGN_PASS / remainingBlockers=[]`.
+- Gate authorization is open: `implementationAuthorized=true`; `ruleReady=true`; `ruleDesignPass=true`; `designRound=1/2`; `repairRound=0/2`; `productRepairRoundConsumed=false`. This handoff still stops before any production or test edit.
+- No production, test, traceability, ownership, coverage-profile, commit, push, or pull-request work has started.
+- `phase2CStarted=false`; FIRST_NIGHT completion, DAY, Phase 2C, and any later Slice remain out of scope and unstarted.
+- Remaining blocker: `PENDING_DESIGN_GATE_COMMIT`.
+- Required next action: create the single attributed design-gate commit only when instructed; no production or test edit belongs to this review-materialization step.
+
+## Historical Phase 3 Slice 2B19B — COMPLETED / ACCEPTED
 
 - Control status: `COMPLETED`; `currentSlice=null`; `currentBranch=main`; `currentPR=null`; `implementationAuthorized=false`; `remainingBlockers=[]`.
 - Product Slice: `2B19B — Philosopher-gained Dreamer Effective Source`; authorization remains `USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION`.
