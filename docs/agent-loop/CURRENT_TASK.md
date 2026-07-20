@@ -1,20 +1,16 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B2 — RUNNING / GOVERNANCE AND RULE-DESIGN GATES PENDING
+## Phase 3 Slice 2B19A3B2 — RESLICE_REQUIRED / UNACCEPTED
 
-- Authorization: `USER_AUTHORIZED_2B19A3B2_COMBINED_DREAMER_MATHEMATICIAN_INTEGRATION`.
-- Control status: `RUNNING`; `taskType=PRODUCT_SLICE`; `currentSlice=2B19A3B2`; `currentBranch=phase-3/combined-dreamer-mathematician-integration`; `currentPR=null`.
-- Accepted parent is clean `main` at `c0c0cdfef1c1aa4cebb841f9867007a319701459`; local `main`, `origin/main`, and GitHub `main` matched before branch creation, with zero open pull requests.
-- Bounded objective: integrate the accepted native/base Dreamer and Philosopher-gained Dreamer terminal facts into the existing first-night base Mathematician distinct-player count path without changing accepted Dreamer behavior.
-- Fresh rule evidence is materialized at `docs/rules/evidence/2B19A3B2.md`, UTF-8 SHA-256 `64607c71c5d9b947b78063cdc8e914f684b975748cb2c183fe2e4119b4036eb0`, with terminal verdict `RULE_READY`, `ruleCoverageStatus=PARTIAL`, and `unresolvedConflicts=[]`.
-- Governance precheck `docs/architecture/2B19A3B2-go-no-go-under-governance-v1.md` is terminal `GO`, UTF-8 SHA-256 `000964cc050c86d427fe198dc01d782f6eda8fa15c58fb561140de9bc27d88d7`.
-- Read-only architect Design Round `1 / 2` is materialized at `docs/implementation/phase-3-slice-2b19a3b2-design.md`, UTF-8 SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`, terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_1`.
-- Complete independent review `docs/implementation/phase-3-slice-2b19a3b2-design-review-round-1.md`, UTF-8 SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`, verified those exact design/governance/evidence hashes and returned `RULE_DESIGN_PASS / remainingBlockers=[]`.
-- Gate authorization is open: `implementationAuthorized=true`; `ruleReady=true`; `ruleDesignPass=true`; `designRound=1/2`; `repairRound=0/2`; `productRepairRoundConsumed=false`. This handoff still stops before any production or test edit.
-- No production, test, traceability, ownership, coverage-profile, commit, push, or pull-request work has started.
-- `phase2CStarted=false`; FIRST_NIGHT completion, DAY, Phase 2C, and any later Slice remain out of scope and unstarted.
-- Remaining blocker: `PENDING_DESIGN_GATE_COMMIT`.
-- Required next action: create the single attributed design-gate commit only when instructed; no production or test edit belongs to this review-materialization step.
+- Control status: `status=RESLICE_REQUIRED`; `disposition=UNACCEPTED`; `currentSlice=null`; `currentPR=null`; `implementationAuthorized=false`; `phase2CStarted=false`.
+- The rule and design gates remain historical facts only: `ruleReady=true`; `ruleDesignPass=true`; `designRound=1/2`; `repairRound=0/2`; `productRepairRoundConsumed=false`. They no longer authorize implementation.
+- Design-gate commit is `cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a`. Design SHA-256 is `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`; independent design-review SHA-256 is `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`.
+- Focused command `pnpm exec vitest run --workspace vitest.workspace.ts --project application-service-information-and-later-actions packages/application/src/game-application-service.test.ts -t 2B19A3B2` produced `5 passed / 2 failed / 73 skipped`. The substantive failure is the mandatory S06 non-revoked Proxy rejection.
+- Exact root cause: `packages/application/src/command-fingerprint.ts::captureNode` lacks an incoming `utilTypes.isProxy(value)` rejection, so `captureSupportedCommand` accepts a non-revoked Proxy. Correcting it requires a production change while the approved production allowlist is empty.
+- Sole blocker: `S06_NON_REVOKED_PROXY_CAPTURE_ACCEPTED_REQUIRES_PRODUCTION_COMMAND_FINGERPRINT_CHANGE`.
+- The current application-test WIP is local, unaccepted, and must not be treated as product behavior. It remains unstaged and is neither deleted nor weakened by this closeout.
+- No implementation traceability, ownership contract, coverage profile, pull request, CI authority, accepted tag, or merge was created or activated for 2B19A3B2.
+- Required next action: `AWAIT_USER_AUTHORIZED_RESLICE`. Do not propose or implement a repair design without new user authorization and fresh gates.
 
 ## Historical Phase 3 Slice 2B19B — COMPLETED / ACCEPTED
 
