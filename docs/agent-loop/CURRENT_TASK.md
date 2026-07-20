@@ -1,5 +1,21 @@
 # Current Task
 
+## PR #41 Split Coverage Exact Profile - RUNNING / INFRASTRUCTURE REPAIR ROUND 2 OF 2
+
+- Authorization: `USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2`; profile-only continuation is bound to clean source HEAD `dcfa530540a57ce7b03e97958dd7de9926f71bbd`.
+- New immutable profile ID is `phase-3-slice-2b19b-dcfa530-split-coverage-v1`; source kind is `TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION`. It supersedes only the topology authority of `phase-3-slice-2b19b-c7313e2-ownership-v2-1`.
+- Three wholly fresh final candidates each pass `10 / 10` coverage processes, authoritative semantic union `1,520`, exact core `16 + 10 skipped` and gained `10 + 16 skipped` complements, and risk hits `0`.
+- Stable inventory hashes are ordinary/project `684c9186...150f`, coverage execution `f01b6bbd...059b`, and semantic `3624db27...f91c`; every mismatch count is `0`.
+- Stable authoritative coverage tuple is `63 / 3204 / 23 / 3204 / 1799` with unchanged source/zero-hit hashes. Raw merged artifacts and diagnostic full positive-hit hashes vary and are recorded as non-authoritative.
+- External stability evidence SHA-256 is `887065bb6511bc0b32b57b97907c441d1b142c111e18838936d37984204523c8`, verdict `THREE_FINAL_CANDIDATE_AUTHORITATIVE_IDENTITIES_MATCH`.
+- New exact profile returns `3 / 3 MATCH`; prior exact c7313e2 profile still matches; unknown, wrong, automatic ambiguous, and duplicate selector cases fail closed. Ownership self-test is `22 / 22`; formal verifier is `1,520 / 1,520` with zero mismatch.
+- Profile-only source scope is one appended registry record, one workflow selector token, one profile audit document, and necessary controls. Topology, verifier logic, collector, production, tests, fixtures, ownership, dependencies, timeout, threshold, and role matrix remain unchanged from parent `dcfa530`.
+- All four full gates pass on profile bytes with pnpm `11.7.0`: typecheck, lint, ordinary `35 / 1,520` in `40.34s`, and coverage `35 / 1,520` in `58.95s` at `75.94 / 83.26 / 97.40`, risk hits `0`.
+- Remaining work is exact JSON/YAML/diff/scope audit and one attributed unpushed commit `ci: record exact split Dreamer-Vortox coverage profile`.
+- Remaining blocker: `PENDING_ATTRIBUTED_UNPUSHED_SPLIT_COVERAGE_PROFILE_COMMIT`. No push or Infrastructure Repair Round 3 is authorized.
+
+## Historical Round 2 source control (superseded by the profile-only continuation above)
+
 ## PR #41 Coverage Split - RUNNING / INFRASTRUCTURE REPAIR ROUND 2 OF 2
 
 - Authorization: `USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2`.

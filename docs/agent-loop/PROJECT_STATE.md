@@ -1,5 +1,18 @@
 # Project State
 
+## Current infrastructure prerequisite — PR #41 SPLIT COVERAGE EXACT PROFILE
+
+- Profile-only continuation is authorized by `USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2` on clean exact source HEAD `dcfa530540a57ce7b03e97958dd7de9926f71bbd`.
+- Immutable profile `phase-3-slice-2b19b-dcfa530-split-coverage-v1`, source kind `TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION`, freezes the already committed ten-process coverage topology without modifying that topology or its verifier/collector behavior.
+- Three final fresh candidates pass `10 / 10`, authoritative `1,520 / 1,520`, risk hits `0`, exact filtered complements, identical inventory/ownership identities, and identical source/zero-hit tuple `63 / 3204 / 23 / 3204 / 1799` plus all canonical hashes.
+- Raw merged coverage and diagnostic full positive-hit hashes vary and are retained only as non-authoritative artifacts. External stability evidence SHA-256 `887065bb6511bc0b32b57b97907c441d1b142c111e18838936d37984204523c8` returns `THREE_FINAL_CANDIDATE_AUTHORITATIVE_IDENTITIES_MATCH`.
+- New exact profile matches all three candidates; prior exact profile remains valid; missing, wrong, automatic ambiguous, and duplicate selector forms fail closed. Ownership self-test `22 / 22` and canonical coverage verifier `1,520 / 1,520` pass.
+- Only the appended profile data, explicit selector, profile audit document, and necessary controls may differ from source HEAD `dcfa530`. No profile-stage push is authorized.
+- All four full gates pass on profile bytes: typecheck, lint, ordinary `35 / 1,520` in `40.34s`, and coverage `35 / 1,520` in `58.95s` at `75.94 / 83.26 / 97.40`, with risk hits `0`.
+- Remaining blocker is `PENDING_ATTRIBUTED_UNPUSHED_SPLIT_COVERAGE_PROFILE_COMMIT`.
+
+## Historical Round 2 source state (superseded by the profile-only continuation above)
+
 ## Current infrastructure prerequisite — PR #41 COVERAGE PROCESS SPLIT ROUND 2
 
 - Authorization is `USER_AUTHORIZED_PR41_COMPLETE_PASSING_BLOB_CLASSIFICATION_AND_COVERAGE_SPLIT_ROUND_2`; task type is `CI_TEST_INFRASTRUCTURE` and scope is `DREAMER_VORTOX_COVERAGE_PROCESS_SPLIT_ONLY`.
