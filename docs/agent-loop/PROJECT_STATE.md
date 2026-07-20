@@ -1,6 +1,18 @@
 # Project State
 
-## Current gated Slice — 2B19B RUNNING / PRODUCT REPAIR ROUND 1
+## Current infrastructure prerequisite — PR #41 COVERAGE OBSERVABILITY ROUND 1
+
+- Authorization is `USER_AUTHORIZED_PR41_COVERAGE_FAILURE_OBSERVABILITY_AND_CONDITIONAL_PROCESS_SPLIT`; task type is `CI_TEST_INFRASTRUCTURE`.
+- Active branch is `infra/pr41-dreamer-vortox-coverage-observability-v1`, stacked on frozen product branch `phase-3/philosopher-gained-dreamer-effective-source` at exact HEAD `6e7b0d752750bc00f64309ed5e4f59c39b93255e`. No stacked PR has been created.
+- Infrastructure control is `infrastructureRepairRound=1 / maxInfrastructureRepairRounds=2`. Product Slice 2B19B remains frozen at `repairRound=2 / maxRepairRounds=2`; no Product Repair Round 3 is authorized and this infrastructure round consumes no product repair.
+- Round 1 adds failure observability only. The original coverage command, process groups, project arguments, timeout, dependency graph, coverage threshold, exact profile, profile selector, production, tests, fixtures, ownership, traceability, evidence, design, and role coverage are unchanged.
+- The workflow preserves a nonzero coverage result long enough to run an always-on deterministic collector and upload a distinct diagnostic artifact, uploads the formal merge blob only for the original successful outcome, and then fails the job accurately through an independent enforcement step.
+- The collector uses Node standard-library modules only, rejects unknown/duplicate/missing arguments, rejects noncanonical or escaping paths, records only whitelisted non-secret configuration, does not modify blob or coverage JSON inputs, and writes stable UTF-8 LF JSON plus a separate exact-manifest SHA-256 checksum file. Missing blob produces `blobPresent=false` rather than suppressing the manifest.
+- Coverage process splitting is not authorized in Round 1. It remains gated on two new exact-head diagnostic artifacts and one permitted post-test process-failure classification.
+- Local validation passes: collector self-test and ESLint, JSON and YAML parsing, workflow structure, typecheck, full lint, `35 / 35` and `1,520 / 1,520` ordinary tests, `35 / 35` and `1,520 / 1,520` coverage tests, exact command/topology/downstream comparisons, forbidden-path and zero-test-diff audits, and diff check. `actionlint` and Prettier are unavailable and no dependency was added.
+- The Round 1 delivery is one attributed, unpushed commit whose SHA is reported out of band. The remaining blocker is `PENDING_STACKED_PR_EXACT_HEAD_DIAGNOSTIC_ARTIFACTS`; push and stacked PR creation are outside this handoff.
+
+## Frozen product Slice — 2B19B PRODUCT REPAIR ROUND 2 OF 2
 
 - User authorization is `USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION` for the bounded `Philosopher-gained Dreamer Effective Source` product Slice.
 - Active branch is `phase-3/philosopher-gained-dreamer-effective-source`; current PR is [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41). Control is `status=RUNNING`, `taskType=PRODUCT_SLICE`, `currentSlice=2B19B`, `slice2B19BStarted=true`, and `phase2CStarted=false`.

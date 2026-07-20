@@ -1,10 +1,10 @@
 {
   "status": "RUNNING",
-  "taskType": "PRODUCT_SLICE",
+  "taskType": "CI_TEST_INFRASTRUCTURE",
   "productRepairRoundConsumed": true,
-  "currentPR": 41,
-  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/41",
-  "currentBranch": "phase-3/philosopher-gained-dreamer-effective-source",
+  "currentPR": null,
+  "currentPRUrl": null,
+  "currentBranch": "infra/pr41-dreamer-vortox-coverage-observability-v1",
   "currentSlice": "2B19B",
   "slice2B19A1Started": false,
   "slice2B19A2Started": false,
@@ -15,9 +15,62 @@
   "slice2B19A4Started": false,
   "slice2B19BStarted": true,
   "phase2CStarted": false,
+  "infrastructureRepairRound": 1,
+  "maxInfrastructureRepairRounds": 2,
+  "pr41CoverageFailureObservabilityV1": {
+    "authorization": "USER_AUTHORIZED_PR41_COVERAGE_FAILURE_OBSERVABILITY_AND_CONDITIONAL_PROCESS_SPLIT",
+    "status": "RUNNING",
+    "taskType": "CI_TEST_INFRASTRUCTURE",
+    "classification": "CI_TEST_INFRASTRUCTURE_FAILURE",
+    "scopeMode": "DREAMER_VORTOX_COVERAGE_FAILURE_OBSERVABILITY_ONLY",
+    "branch": "infra/pr41-dreamer-vortox-coverage-observability-v1",
+    "baseBranch": "phase-3/philosopher-gained-dreamer-effective-source",
+    "baseHead": "6e7b0d752750bc00f64309ed5e4f59c39b93255e",
+    "stackedPR": null,
+    "frozenProductPR": 41,
+    "frozenProductHead": "6e7b0d752750bc00f64309ed5e4f59c39b93255e",
+    "repairRound": 2,
+    "maxRepairRounds": 2,
+    "infrastructureRepairRound": 1,
+    "maxInfrastructureRepairRounds": 2,
+    "productRepairRoundConsumed": false,
+    "coverageProcessSplitAuthorized": false,
+    "coverageCommandChanged": false,
+    "ordinaryTopologyChanged": false,
+    "coverageTopologyChanged": false,
+    "timeoutChanged": false,
+    "dependencyChanged": false,
+    "productionChanged": false,
+    "testsChanged": false,
+    "ruleSemanticsChanged": false,
+    "implementationPath": "docs/implementation/pr41-dreamer-vortox-coverage-observability-v1.md",
+    "collectorPath": "scripts/collect-vitest-shard-diagnostics.mjs",
+    "workflowPath": ".github/workflows/ci.yml",
+    "localValidation": {
+      "collectorSelfTest": "PASS",
+      "collectorEslint": "PASS",
+      "workflowYamlParse": "PASS / PYYAML",
+      "workflowStructuralAudit": "PASS",
+      "actionlint": "UNAVAILABLE / NOT INSTALLED",
+      "prettier": "UNAVAILABLE / NOT INSTALLED",
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "test": "35 FILES / 1520 OF 1520 PASS / 41.08S",
+      "coverage": "35 FILES / 1520 OF 1520 PASS / 58.70S",
+      "coverageCommandExactComparison": "PASS",
+      "coverageMatrixTopologyExactComparison": "PASS",
+      "coverageMergeDownstreamExactComparison": "PASS",
+      "forbiddenPathDiff": "PASS / ZERO",
+      "testDiff": "PASS / ZERO",
+      "diffCheck": "PASS"
+    },
+    "remainingBlockers": [
+      "PENDING_STACKED_PR_EXACT_HEAD_DIAGNOSTIC_ARTIFACTS"
+    ]
+  },
   "slice2B19BGate": {
     "authorization": "USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION",
-    "status": "RUNNING",
+    "status": "HUMAN_BLOCKED_PENDING_CI_TEST_INFRASTRUCTURE",
     "taskType": "PRODUCT_SLICE",
     "scopeMode": "PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE",
     "currentBranch": "phase-3/philosopher-gained-dreamer-effective-source",
@@ -39,7 +92,7 @@
     "governanceSha256": "8584df7cad510bd00a49d69b9a2d794d6a4443d7be2fc9bf3dbfd7bc79128da1",
     "ruleReady": true,
     "ruleDesignPass": true,
-    "implementationAuthorized": true,
+    "implementationAuthorized": false,
     "designStarted": true,
     "round1DesignPath": "docs/implementation/phase-3-slice-2b19b-design.md",
     "round1DesignSha256": "dca87df75bebcc9b44d396043ab03d0afcfd1f17417d1355f97c72778ec4d181",
@@ -64,7 +117,7 @@
     "repairRound": 2,
     "maxRepairRounds": 2,
     "productRepairRoundConsumed": true,
-    "implementationStatus": "PRODUCT_REPAIR_ROUND_2_EXACT_PROFILE_FROZEN_PROFILE_CHILD_GATES_PASS",
+    "implementationStatus": "PRODUCT_REPAIR_ROUND_2_OF_2_EXHAUSTED_PR41_FROZEN_PENDING_COVERAGE_OBSERVABILITY",
     "statusPath": "docs/implementation/phase-3-slice-2b19b-status.md",
     "traceabilityPath": "docs/implementation/phase-3-slice-2b19b-test-traceability.md",
     "productionFilesChanged": 6,
@@ -246,9 +299,13 @@
       "freshness": "3 NEW EXACT MATCH / OLD EXACT MATCH / WRONG MISSING AUTOMATIC_AMBIGUOUS DUPLICATE FAIL CLOSED",
       "localGates": "OWNERSHIP 22 OF 22 / FORMAL 1520 OF 1520 / TYPECHECK LINT PASS / TEST 35 OF 1520 39.227S / COVERAGE 35 OF 1520 56.696S / 79.01 83.26 97.49"
     },
+    "finalProductHead": "6e7b0d752750bc00f64309ed5e4f59c39b93255e",
+    "finalProductPushCI": "29688504471 / FAILURE / DREAMER_VORTOX_COVERAGE_BLOB_REPORTED THEN GENERIC EXIT 1",
+    "finalProductPullRequestCI": "29688505872 / FAILURE / DREAMER_VORTOX_COVERAGE_BLOB_REPORTED THEN GENERIC EXIT 1",
+    "productBranchFrozen": true,
     "phase2CStarted": false,
     "remainingBlockers": [
-      "PENDING_R2Q_PUSH_CI_AND_FRESH_FINAL_REVIEW"
+      "DREAMER_VORTOX_COVERAGE_PROCESS_EXIT_1_AFTER_BLOB_ON_EXACT_HEAD_REPAIR2_EXHAUSTED"
     ]
   },
   "slice2B19A3BGate": {
@@ -757,16 +814,16 @@
   },
   "reviewedHead": "5256216b22e62dbb992d1a678dfc9c597b5227c7",
   "currentReviewHeadAuthority": "The complete independent PR #41 final review is bound only to reviewed HEAD 5256216b22e62dbb992d1a678dfc9c597b5227c7 and returned CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED with six exact blockers. Any repair commit invalidates its CI and requires new exact-head CI plus fresh complete independent review.",
-  "exactHeadCIAuthority": "R1Q HEAD f6c71b73b98fbdfd9935ca462f74676cf58d11ee failed push run 29686451621 attempts 1 and 2 and PR run 29686452785 attempts 1 and 2. Dreamer-Vortox coverage wrote its blob then exited 1 in every attempt; push Windows completed 270 of 270 then timed out calling onTaskUpdate in both attempts. Same-head retry is prohibited.",
-  "currentFeatureHead": "c7313e253331505b163d4abe26c0c04c72afac88",
+  "exactHeadCIAuthority": "Frozen product HEAD 6e7b0d752750bc00f64309ed5e4f59c39b93255e failed push run 29688504471 and pull-request run 29688505872 only in coverage shard application-service-dreamer-vortox after the blob report, with generic process exit 1. Old artifacts are unavailable; no complete-passing-blob or Round 2 split authority exists.",
+  "currentFeatureHead": "6e7b0d752750bc00f64309ed5e4f59c39b93255e",
   "repairRound": 2,
   "designRound": 2,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": "USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE",
   "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
   "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
-  "authorization": "USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION",
-  "implementationAuthorization": "USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION / FINAL_PRODUCT_REPAIR_ROUND_2_TEST_EXECUTION_COST_ONLY",
+  "authorization": "USER_AUTHORIZED_PR41_COVERAGE_FAILURE_OBSERVABILITY_AND_CONDITIONAL_PROCESS_SPLIT",
+  "implementationAuthorization": "INFRASTRUCTURE_REPAIR_ROUND_1_COVERAGE_FAILURE_OBSERVABILITY_ONLY",
   "classificationOnlyDesignCorrectionAuthorization": "USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3",
   "designCorrectionScope": "REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY",
   "resliceAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
@@ -784,7 +841,7 @@
     "featureMergeCommit": "72a7883248f66d53e65102c26788d73b93b56651",
     "ruleSemanticsChanged": false
   },
-  "scopeMode": "PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE",
+  "scopeMode": "DREAMER_VORTOX_COVERAGE_FAILURE_OBSERVABILITY_ONLY",
   "sliceCoverage": "PARTIAL / PHILOSOPHER_GAINED_EFFECTIVE_SOURCE_FIRST_NIGHT_ONLY",
   "dreamerRoleCoverage": "PARTIAL",
   "governancePrecheck": "GO",
@@ -1327,7 +1384,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_R2Q_PUSH_CI_AND_FRESH_FINAL_REVIEW"
+    "PENDING_STACKED_PR_EXACT_HEAD_DIAGNOSTIC_ARTIFACTS"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
@@ -2092,8 +2149,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-19T15:21:53+08:00",
-  "lastAction": "Bound three wholly fresh nine-process coverage candidates to exact R2P c7313e253331505b163d4abe26c0c04c72afac88. Each passed 9 of 9, 1520 of 1520, ownership and the exact five-tuple with zero risk hits. Froze phase-3-slice-2b19b-c7313e2-ownership-v2-1, changed only the explicit workflow profile selector, and passed freshness, ownership, formal inventory, typecheck, lint, full tests, and full coverage.",
+  "lastAction": "Completed authorized Infrastructure Repair Round 1 observability locally from frozen PR #41 HEAD 6e7b0d752750bc00f64309ed5e4f59c39b93255e. Collector self-test, YAML and workflow structure, typecheck, lint, 1520 ordinary tests, 1520 coverage tests, exact coverage-command and topology comparisons, forbidden-scope audit, and diff check pass. Product repair remains exhausted at 2 of 2 and no coverage process split is authorized.",
   "lastError": null,
-  "requiredNextAction": "CREATE_ATTRIBUTED_2B19B_REPAIR_ROUND_2_PROFILE_CHILD_R2Q_THEN_STOP_WITHOUT_PUSH",
-  "nextAction": "STOP_AFTER_ATTRIBUTED_R2Q_WITHOUT_PUSH_OR_PR_EDIT"
+  "requiredNextAction": "STOP_WITH_ATTRIBUTED_UNPUSHED_ROUND_1_INFRASTRUCTURE_COMMIT_AND_AWAIT_CONTROLLER_DIRECTION",
+  "nextAction": "STOP_AFTER_ATTRIBUTED_ROUND_1_COMMIT_WITHOUT_PUSH_OR_PR_CREATION"
 }

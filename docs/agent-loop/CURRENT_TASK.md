@@ -1,6 +1,23 @@
 # Current Task
 
-## Phase 3 Slice 2B19B — RUNNING / REPAIR ROUND 2 EXACT PROFILE FROZEN
+## PR #41 Coverage Failure Observability — RUNNING / INFRASTRUCTURE REPAIR ROUND 1 OF 2
+
+- Authorization: `USER_AUTHORIZED_PR41_COVERAGE_FAILURE_OBSERVABILITY_AND_CONDITIONAL_PROCESS_SPLIT`.
+- Task type: `CI_TEST_INFRASTRUCTURE`; scope is `DREAMER_VORTOX_COVERAGE_FAILURE_OBSERVABILITY_ONLY`.
+- Active stacked branch: `infra/pr41-dreamer-vortox-coverage-observability-v1`; base branch: `phase-3/philosopher-gained-dreamer-effective-source`; stacked PR: `null` until separately instructed.
+- Frozen product PR [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41), local product HEAD, remote product HEAD, and PR head all remain `6e7b0d752750bc00f64309ed5e4f59c39b93255e`. Accepted `origin/main` remains `5ddaa2fd02e0cb73e2a5363b222e7f08c353d389`.
+- Product repair remains exactly `repairRound=2`, `maxRepairRounds=2`, and exhausted. No Product Repair Round 3 exists. Infrastructure control is exactly `infrastructureRepairRound=1`, `maxInfrastructureRepairRounds=2`; this infrastructure task does not consume a product repair round.
+- Round 1 may change only `.github/workflows/ci.yml`, `scripts/collect-vitest-shard-diagnostics.mjs`, `docs/implementation/pr41-dreamer-vortox-coverage-observability-v1.md`, and strictly necessary infrastructure control records.
+- Coverage command arguments, nine ordinary groups, nine coverage groups, project membership, timeout, dependency, threshold, exact profile, profile selector, ownership contracts, production, tests, fixtures, rule evidence, frozen design, product traceability, and role coverage remain unchanged.
+- The coverage step uses step ID `coverage-shard` and step-level `continue-on-error: true` solely so diagnostics can be collected and uploaded. A final `always()` enforcement step exits zero only for the original `success` outcome and exits one for `failure`, `cancelled`, skipped, or unknown outcomes. Failure is not masked and `coverage-merge` remains dependent on the failed shard job.
+- A distinct `coverage-diagnostics-<group>` artifact is always attempted. It contains `manifest.json`, the exact-manifest checksum in `manifest.sha256`, and a byte-identical blob copy when the blob exists. Formal `coverage-blob-<group>` upload occurs only when the original coverage step succeeded.
+- The collector records only deterministic, non-secret metadata: group, exact project arguments, Node/pnpm/Vitest versions, runner OS, whitelisted `VITEST_MAX_FORKS`, original step outcome, canonical repository-relative input paths, stable directory listings, blob/coverage JSON presence and file metadata. Missing blob is valid diagnostic data with `blobPresent=false`.
+- Round 1 implementation is complete locally. Collector self-test, collector ESLint, control JSON parse, workflow YAML/structure, typecheck, full lint, full ordinary tests `35 / 35` and `1,520 / 1,520`, full coverage tests `35 / 35` and `1,520 / 1,520`, exact coverage-command comparison, exact matrix/topology comparison, exact merge/downstream comparison, forbidden-path audit, zero-test-diff audit, and `git diff --check` all pass. `actionlint` and Prettier are unavailable in the frozen dependency set and were not installed.
+- The Round 1 delivery boundary is one attributed, unpushed commit. Its SHA is reported to the controller out of band rather than self-referenced in feature-branch docs. Push and stacked PR creation are not authorized in this handoff.
+- Coverage-process splitting remains prohibited. Infrastructure Repair Round 2 may begin only after two exact-head diagnostic artifacts prove an authorized post-test process-failure classification.
+- Remaining blocker: `PENDING_STACKED_PR_EXACT_HEAD_DIAGNOSTIC_ARTIFACTS`.
+
+## Frozen Product Slice 2B19B — REPAIR ROUND 2 OF 2 / PR #41 BLOCKED
 
 - Authorization: `USER_AUTHORIZED_2B19B_PHILOSOPHER_GAINED_DREAMER_EFFECTIVE_SOURCE_EXECUTION`.
 - Active bounded product Slice: `2B19B / Philosopher-gained Dreamer Effective Source`; branch `phase-3/philosopher-gained-dreamer-effective-source`; PR [#41](https://github.com/JackeyLovedas/botc-singleplayer/pull/41).

@@ -254,6 +254,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Coverage shard
+        id: coverage-shard
+        continue-on-error: true
         env:
           VITEST_MAX_FORKS: "1"
         run: >-
@@ -266,7 +268,33 @@ jobs:
           --reporter=blob
           --outputFile=.vitest-coverage/${{ matrix.group }}/${{ matrix.group }}.blob
 
+      - name: Collect coverage shard diagnostics
+        if: always()
+        run: >-
+          node scripts/collect-vitest-shard-diagnostics.mjs
+          --group "${{ matrix.group }}"
+          --projects "${{ matrix.projects }}"
+          --blob ".vitest-coverage/${{ matrix.group }}/${{ matrix.group }}.blob"
+          --coverage-json "coverage/coverage-final.json"
+          --output ".vitest-coverage-diagnostics/${{ matrix.group }}"
+          --pnpm-version "$(pnpm --version)"
+          --vitest-version "$(pnpm exec vitest --version)"
+          --runner-os "${{ runner.os }}"
+          --vitest-max-forks "1"
+          --original-outcome "${{ steps.coverage-shard.outcome }}"
+
+      - name: Upload coverage shard diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-diagnostics-${{ matrix.group }}
+          path: .vitest-coverage-diagnostics/${{ matrix.group }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
+
       - name: Upload coverage blob
+        if: always() && steps.coverage-shard.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-blob-${{ matrix.group }}
@@ -274,6 +302,23 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 1
+
+      - name: Enforce coverage shard result
+        if: always()
+        shell: bash
+        run: |
+          case "${{ steps.coverage-shard.outcome }}" in
+            success)
+              exit 0
+              ;;
+            failure|cancelled)
+              exit 1
+              ;;
+            *)
+              echo "Unexpected coverage shard outcome: ${{ steps.coverage-shard.outcome }}" >&2
+              exit 1
+              ;;
+          esac
 
   coverage-merge:
     name: coverage merge and semantic gates
