@@ -7,14 +7,16 @@
 - Source kind: `TEN_PROCESS_COMMAND_CAPTURE_PROXY_REJECTION_V1`
 - Source commit: `fix: reject Proxy values at command capture`
 - Profile commit: `456027283f884d634ed3925d610fb0410d0d8e87`
-- Foundation state: `FINAL_REVIEW_REPAIR_ROUND_1_FROZEN`
-- Profile state: `RECORDED_SELECTOR_ACTIVE`
-- Pull request: `#43`, `https://github.com/JackeyLovedas/botc-singleplayer/pull/43`
+- Foundation state: `MERGED_PENDING_CLOSEOUT_CI`
+- Profile state: `ACCEPTED_SELECTOR_ACTIVE`
+- Pull request: `#43`, `https://github.com/JackeyLovedas/botc-singleplayer/pull/43`, merged
 - Repair base / prior reviewed HEAD: `456027283f884d634ed3925d610fb0410d0d8e87`; this is not the unknown repair commit HEAD
-- Prior-reviewed-head CI: push `29733785911` and pull request `29733791099`, both `SUCCESS / 23 of 23`; fresh repair-head CI is required
-- Foundation repair: `repairRound=1/2`; `infrastructureRepairRound=1/2`; implementation is unauthorized and frozen for review
-- Current blocker: `PENDING_EXACT_HEAD_FINAL_REVIEW`
-- Required next action: `PUSH_WAIT_EXACT_HEAD_CI_AND_RUN_FINAL_REVIEW`
+- Frozen final feature HEAD: `863b63588c1faaac3994618dc894735c3f951705`; exact push/PR CI `29736077724 / 29736079454`, both `SUCCESS / 23 of 23`
+- Foundation repair: closed at `repairRound=1/2`; `infrastructureRepairRound=1/2`; implementation remains unauthorized
+- Merge/tag: `300933d8d50123b5bbf198e0945d9b581be2042b`; `foundation-command-capture-proxy-rejection-v1`
+- Merge-main CI: `29737798440 / SUCCESS / 23 of 23 jobs / 296 of 296 steps`
+- Current blocker: `PENDING_CLOSEOUT_COMMIT_AND_CI`
+- Required next action: `CREATE_PUSH_AND_VERIFY_CLOSEOUT_COMMIT_CI`
 
 The profile remains bound to the source commit, not to its profile commit. It appends one exact approved profile, preserves every older profile, and changed only the workflow's explicit profile selector in the already-existing profile commit. Production, tests, ownership, topology, commands, timeouts, dependencies and thresholds are unchanged from the source HEAD.
 
@@ -62,3 +64,7 @@ The corrected harness placed logs in sibling `logs/` directories and prevalidate
 The registry change is append-only. The workflow diff changes only the exact selector from `phase-3-slice-2b19b-dcfa530-split-coverage-v1` to `foundation-command-capture-proxy-rejection-v1-ea08ddd`. No product/test byte changes exist relative to source HEAD.
 
 The attributed profile commit `456027283f884d634ed3925d610fb0410d0d8e87` already has exact source HEAD `ea08ddd979bc8d3e825efdf5b290bd0c3e85942f` as its parent. The profile's `sourceHead` remains that source HEAD and does not self-reference the profile commit. This docs-only repair does not change the profile tuple, registry record, workflow selector, topology, thresholds, source kind, or any canonical identity.
+
+## Acceptance provenance
+
+The frozen final feature HEAD, complete independent dual-pass review, exact audit-comment archives, merge commit, accepted tag, and exact merge-main CI are recorded above. `productHeadCI`, `mergeCommitCI`, and the pending future `closeoutCommitCI` are separate authorities. This closeout metadata changes no profile tuple, registry record, workflow selector, topology, threshold, source kind, canonical identity, production file, test, rule, or role coverage.

@@ -3,26 +3,35 @@
 ## Status
 
 - Task: `COMMAND_CAPTURE_PROXY_REJECTION_V1`
-- Branch: `infra/command-capture-proxy-rejection-v1`
+- Branch: `main`
 - Accepted base: `c0c0cdfef1c1aa4cebb841f9867007a319701459`
 - Authorization: `USER_AUTHORIZED_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`
 - Governance: `GO`, `10/10`
 - Independent security design review: `SECURITY_DESIGN_PASS`, findings `[]`, remaining blockers `[]`
-- Source state: `FINAL_REVIEW_REPAIR_ROUND_1_FROZEN`
+- Source state: `MERGED_PENDING_CLOSEOUT_CI`
 - Source commit: `ea08ddd979bc8d3e825efdf5b290bd0c3e85942f`
 - Profile commit: `456027283f884d634ed3925d610fb0410d0d8e87`
 - Repair base / prior reviewed HEAD: `456027283f884d634ed3925d610fb0410d0d8e87`; this is not the unknown repair commit HEAD
-- Pull request: `#43`, `https://github.com/JackeyLovedas/botc-singleplayer/pull/43`
-- Prior-reviewed-head CI: push `29733785911` and pull request `29733791099`, both `SUCCESS / 23 of 23`; fresh repair-head CI is required
-- Foundation repair: `repairRound=1/2`; `infrastructureRepairRound=1/2`; product repair is not consumed
+- Pull request: `#43`, `https://github.com/JackeyLovedas/botc-singleplayer/pull/43`, merged
+- Frozen final feature HEAD: `863b63588c1faaac3994618dc894735c3f951705`
+- Foundation repair: closed at `repairRound=1/2`; `infrastructureRepairRound=1/2`; product repair is not consumed
 - Independent final-review round 1: external report SHA-256 `1ce50eb00c0e3d72f47e8ed6adf4ec2141559336ea71fdb39bc1054f1cd6e0f0`; `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`
 - Rule-design-gate recovery: `docs/implementation/command-capture-proxy-rejection-v1-rule-design-review.md`, SHA-256 `dd72d59fca6f534f37c14b7001e917f4b679274d4a3915e99d79fc9be243dc97`; exact `RULE_DESIGN_PASS`; `findings=[]`; `remainingBlockers=[]`; unchanged design SHA-256 `4693cddf74159c1cf310781effd74154a0d6ede8615ad873b0576dd36c68c220`; not Design Round 2
-- Implementation authorization: `false`; product is frozen for review
-- Current blocker: `PENDING_EXACT_HEAD_FINAL_REVIEW`
-- Required next action: `PUSH_WAIT_EXACT_HEAD_CI_AND_RUN_FINAL_REVIEW`
+- Implementation authorization: `false`
+- Current blocker: `PENDING_CLOSEOUT_COMMIT_AND_CI`
+- Required next action: `CREATE_PUSH_AND_VERIFY_CLOSEOUT_COMMIT_CI`
 - BOTC rule evidence: `BOTC_RULE_EVIDENCE_NOT_APPLICABLE`
 
-This Foundation changes command-capture trust-boundary handling only. The current authorization is limited to docs-only final-review repair and does not start or accept Slice 2B19A3B2, change domain events or state, modify rule evidence or role coverage, change the exact profile tuple or workflow selector, or alter production/tests/ownership.
+This Foundation changes command-capture trust-boundary handling only. The current authorization is limited to the docs-only post-merge closeout and does not start or accept Slice 2B19A3B2, change domain events or state, modify rule evidence or role coverage, change the exact profile tuple or workflow selector, or alter production/tests/ownership.
+
+## Merge and closeout provenance
+
+- `productHeadCI`: frozen final feature HEAD `863b63588c1faaac3994618dc894735c3f951705`; push run [29736077724](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29736077724) and pull-request run [29736079454](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29736079454), both `SUCCESS / 23 of 23 jobs`; scope is that feature HEAD only.
+- Complete independent final review: `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`; exact comments are archived at `docs/reviews/pr-43-code-review-final.md` and `docs/reviews/pr-43-rule-review-final.md`.
+- PR #43 merged at `2026-07-20T11:13:27Z` as `300933d8d50123b5bbf198e0945d9b581be2042b`; accepted tag `foundation-command-capture-proxy-rejection-v1` points exactly to that merge.
+- `mergeCommitCI`: main push run [29737798440](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/29737798440), `SUCCESS / 23 of 23 jobs / 296 of 296 steps`; scope is merge SHA `300933d8d50123b5bbf198e0945d9b581be2042b` only.
+- `closeoutCommitCI`: `PENDING`; its future exact docs-only closeout SHA/run cannot be self-recorded and inherit no product-head or merge-commit status.
+- Foundation state is `MERGED_PENDING_CLOSEOUT_CI`; `currentPR=null`; `implementationAuthorized=false`; the only blocker is `PENDING_CLOSEOUT_COMMIT_AND_CI`.
 
 ## Implemented boundary
 
@@ -102,4 +111,4 @@ The exact source commit is `ea08ddd979bc8d3e825efdf5b290bd0c3e85942f`. Three eff
 
 `coverageHarnessCorrection=2` is retained transparently: `PRE_CANDIDATE_POWERSHELL_STDERR_CLASSIFICATION_ERROR` occurred before Vitest produced any result, and `CANDIDATE_MERGE_LOG_COLOCATION_HARNESS_ERROR` occurred when an empty redirected log was mistakenly placed in a merge-input directory. Neither run counts toward the three effective candidates; all evidence is preserved externally. Neither correction changed repository/configuration bytes or consumed a repair round. The current Foundation final-review repair is separately `1/2`.
 
-Profile-stage state is `RECORDED_SELECTOR_ACTIVE` at profile commit `456027283f884d634ed3925d610fb0410d0d8e87`. Push CI `29733785911` and pull-request CI `29733791099` both completed `SUCCESS / 23 of 23` on that prior reviewed/repair-base HEAD. The current sole blocker is `PENDING_EXACT_HEAD_FINAL_REVIEW`; the old CI and review cannot be inherited by the repair commit.
+Historical profile-stage state was `RECORDED_SELECTOR_ACTIVE` at profile commit `456027283f884d634ed3925d610fb0410d0d8e87`. Push CI `29733785911` and pull-request CI `29733791099` both completed `SUCCESS / 23 of 23` on that prior reviewed/repair-base HEAD and remain historical evidence only. Current acceptance and commit-specific CI provenance are recorded in the merge and closeout section above.
