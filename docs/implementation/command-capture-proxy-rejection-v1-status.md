@@ -8,12 +8,21 @@
 - Authorization: `USER_AUTHORIZED_COMMAND_CAPTURE_PROXY_REJECTION_V1_PREREQUISITE`
 - Governance: `GO`, `10/10`
 - Independent security design review: `SECURITY_DESIGN_PASS`, findings `[]`, remaining blockers `[]`
-- Source state: `SOURCE_READY_PENDING_COMMIT`
-- Infrastructure repair: `0/2`
-- Sole blocker: `PENDING_SOURCE_COMMIT`
+- Source state: `FINAL_REVIEW_REPAIR_ROUND_1_FROZEN`
+- Source commit: `ea08ddd979bc8d3e825efdf5b290bd0c3e85942f`
+- Profile commit: `456027283f884d634ed3925d610fb0410d0d8e87`
+- Repair base / prior reviewed HEAD: `456027283f884d634ed3925d610fb0410d0d8e87`; this is not the unknown repair commit HEAD
+- Pull request: `#43`, `https://github.com/JackeyLovedas/botc-singleplayer/pull/43`
+- Prior-reviewed-head CI: push `29733785911` and pull request `29733791099`, both `SUCCESS / 23 of 23`; fresh repair-head CI is required
+- Foundation repair: `repairRound=1/2`; `infrastructureRepairRound=1/2`; product repair is not consumed
+- Independent final-review round 1: external report SHA-256 `1ce50eb00c0e3d72f47e8ed6adf4ec2141559336ea71fdb39bc1054f1cd6e0f0`; `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`
+- Rule-design-gate recovery: `docs/implementation/command-capture-proxy-rejection-v1-rule-design-review.md`, SHA-256 `dd72d59fca6f534f37c14b7001e917f4b679274d4a3915e99d79fc9be243dc97`; exact `RULE_DESIGN_PASS`; `findings=[]`; `remainingBlockers=[]`; unchanged design SHA-256 `4693cddf74159c1cf310781effd74154a0d6ede8615ad873b0576dd36c68c220`; not Design Round 2
+- Implementation authorization: `false`; product is frozen for review
+- Current blocker: `PENDING_EXACT_HEAD_FINAL_REVIEW`
+- Required next action: `PUSH_WAIT_EXACT_HEAD_CI_AND_RUN_FINAL_REVIEW`
 - BOTC rule evidence: `BOTC_RULE_EVIDENCE_NOT_APPLICABLE`
 
-This Foundation changes command-capture trust-boundary handling only. It does not start or accept Slice 2B19A3B2, change domain events or state, modify rule evidence or role coverage, create a coverage profile, change the workflow selector, push, or create a pull request.
+This Foundation changes command-capture trust-boundary handling only. The current authorization is limited to docs-only final-review repair and does not start or accept Slice 2B19A3B2, change domain events or state, modify rule evidence or role coverage, change the exact profile tuple or workflow selector, or alter production/tests/ownership.
 
 ## Implemented boundary
 
@@ -41,32 +50,11 @@ The existing legal-data golden vector remains exact: UTF-8 length `111`, digest 
 
 ## C01-C20 implementation traceability
 
-Every new Foundation test title is non-marker and stays in its pre-existing physical owner.
+The complete authoritative implementation-time mapping is `docs/implementation/command-capture-proxy-rejection-v1-test-traceability.md`, SHA-256 `b12fadae603db71d6a1a8c6efb8756661bd6f5b84d13ce50bf0aadc8ab706f8d`. It retains all nine frozen expected fields for C01-C20, binds every criterion to one exact current physical test identity and one primary layer, records actual reachability/trust/main assertion/production entry/fault mechanism, and resolves every supporting authority exactly once.
 
-| Criterion | Physical authority and result |
-|---|---|
-| C01 | `command-fingerprint.test.ts` - `C01 rejects a transparent top-level object Proxy before every installed object trap`: exact invalid reason; 11 trap counters zero. |
-| C02 | `command-fingerprint.test.ts` - `C02 rejects a nested object Proxy before every installed object trap`: exact invalid reason; target unchanged; counters zero. |
-| C03 | `command-fingerprint.test.ts` - `C03 rejects a Proxy-wrapped array before Array.isArray, descriptors, or traps`: exact rejection plus plain dense-array positive regression. |
-| C04 | `command-fingerprint.test.ts` - `C04 rejects a revoked Proxy with the exact reason and without invoking its handler`: no escaped revocation error. |
-| C05 | `command-fingerprint.test.ts` - `C05 rejects null-target and throwing getPrototypeOf Proxies before traps`: exact reason; counters zero. |
-| C06 | `command-fingerprint.test.ts` - `C06 rejects a throwing ownKeys Proxy before its trap`: exact reason; counters zero. |
-| C07 | `command-fingerprint.test.ts` - `C07 rejects throwing and descriptor-changing Proxies before descriptor traps`: both exact-invalid; counters zero. |
-| C08 | `command-fingerprint.test.ts` - `C08 rejects throwing and transparent get Proxies before property reads`: both exact-invalid; counters zero. |
-| C09 | `game-application-service.test.ts` compatibility shard - `C09 rejects top-level live, revoked, and throwing Proxies without traps`: exact TypeError; all counters zero. |
-| C10 | same shard - `C10 stops a top-level Proxy before every command-store port`: receipt/event reads and accepted/rejected writes all zero; receipt count and version zero. |
-| C11 | same shard - `C11 returns the exact retryable command-validation failure for a nested Proxy`: complete result shape exact; `currentGameVersion` absent; traps zero. |
-| C12 | same shard - `C12 performs zero receipt and event reads for a nested Proxy failure`: both read counters zero. |
-| C13 | same shard - `C13 performs zero accepted or rejected receipt writes for a nested Proxy failure`: both write counters and receipt count zero. |
-| C14 | same shard - `C14 performs zero event writes and leaves the initial game version unchanged`: accepted commit count zero; event reads zero; version zero. |
-| C15 | unchanged existing `rejects unsupported command structure: revoked proxy` authority plus C04 exact-reason authority both pass. |
-| C16 | unchanged stored-fingerprint authorities `rejects every stored fingerprint Proxy...`, revoked stored fingerprint service conflict, and changing stored fingerprint service conflict all pass. |
-| C17 | unchanged `uses the exact tagged canonical tree, six-key fingerprint, UTF-8 length, and SHA-256 vector` authority passes. |
-| C18 | unchanged direct key-order authority and service `treats reordered own data properties as the same structural command` both pass. |
-| C19 | reordered service authority now also captures the original stored receipt before retry and proves the post-retry receipt is exactly unchanged. |
-| C20 | `command-fingerprint.test.ts` - `C20 keeps the three fingerprint identity constants exact`, plus production diff audit and C17 golden authority, pass. |
+The read-only external verifier `%LOCALAPPDATA%\BOTCRepoVisibility\reviews\verify-pr43-command-capture-traceability.mjs` returned `TRACEABILITY_MECHANICAL_PASS`: expected rows `20`, actual rows `20`, unique primary identities `20`, supporting authorities `19`, referenced authorities `19`, failures `[]`, and frozen design SHA-256 `4693cddf74159c1cf310781effd74154a0d6ede8615ad873b0576dd36c68c220`. C18 explicitly retains `ExpectedPrimaryLayer=APPLICATION_COMMAND_INTEGRATION`, records its direct physical primary as `STRUCTURAL_VALIDATION`, and uses the exact reordered-service identity only as C18 support and as C19 primary; the unchanged required mechanism is proved by that primary-plus-support chain.
 
-Focused validation passed `command-fingerprint.test.ts` at `1 file / 32 tests` and the compatibility/failure-boundaries shard at `1 file / 26 tests`. Those assertions prove all installed Proxy trap counters are zero and top-level/nested service store read, write, receipt, event, and version invariants are zero as specified.
+Focused validation on the pre-repair product HEAD passed `command-fingerprint.test.ts` at `1 file / 32 tests` and the compatibility/failure-boundaries shard at `1 file / 26 tests`. The repair changes no test or production byte.
 
 ## Ownership contract preservation
 
@@ -91,9 +79,9 @@ That same value appears only in the three existing active records `2B19A3A`, `2B
 - Windows deterministic workflow equivalent: all seven commands `PASS`; setup `50`, assignment `13`, information `15`, selected domain `66`, projections `95`, task `9`, application `276`.
 - `git diff --check`, final JSON parse, final allowlist and staged-scope checks are required immediately before commit.
 
-## Expected source-stage profile result
+## Historical source-stage profile result
 
-No profile or workflow selector was created or edited. Validation against the frozen selector `phase-3-slice-2b19b-dcfa530-split-coverage-v1` exited `1` with the expected fail-closed verdict `COVERAGE_REQUESTED_PROFILE_MISMATCH`.
+At exact source HEAD `ea08ddd979bc8d3e825efdf5b290bd0c3e85942f`, no profile or workflow selector had yet been created or edited. Validation against the then-frozen selector `phase-3-slice-2b19b-dcfa530-split-coverage-v1` exited `1` with the expected fail-closed verdict `COVERAGE_REQUESTED_PROFILE_MISMATCH`.
 
 The candidate tuple is `63 / 3206 / 23 / 3206 / 1800`; the selected old tuple is `63 / 3204 / 23 / 3204 / 1799`. Source-file count and SHA-256 remain exact. The difference is the expected new-source/test coverage-obligation identity and is not concealed or promoted to an approved profile.
 
@@ -106,12 +94,12 @@ The candidate tuple is `63 / 3206 / 23 / 3206 / 1800`; the selected old tuple is
 
 ## Delivery boundary
 
-The next action is one attributed source commit named `fix: reject Proxy values at command capture`. It must include this status, the governance/design/review records, the four control records, the two production files, the two primary test files, and the conditional ownership hash update only. It must not include generated artifacts, profiles, workflow changes, or paused A3B2 WIP. No push or pull request is authorized in this stage.
+Source commit `ea08ddd979bc8d3e825efdf5b290bd0c3e85942f` and profile commit `456027283f884d634ed3925d610fb0410d0d8e87` already exist on PR #43. This repair is limited to docs/control reconciliation, the independent rule-design-gate recovery report, and implementation traceability. Its next action is one attributed repair commit followed by fresh exact-head push and pull-request CI; no final pass, comment, merge, tag, closeout, or A3B2 continuation is inferred.
 
 ## Profile-stage continuation
 
-The exact source commit is `ea08ddd979bc8d3e825efdf5b290bd0c3e85942f`. Three effective fresh ten-process candidates pass all shards, merges, inventory/semantic audits and obligation comparisons with `1535/1535` tests, identical canonical source/zero-hit hashes and risk hits `0`. Profile `foundation-command-capture-proxy-rejection-v1-ea08ddd` is ready at `docs/implementation/command-capture-proxy-rejection-v1-coverage-profile.md`; its `sourceHead` remains the source commit rather than the future profile commit.
+The exact source commit is `ea08ddd979bc8d3e825efdf5b290bd0c3e85942f`. Three effective fresh ten-process candidates pass all shards, merges, inventory/semantic audits and obligation comparisons with `1535/1535` tests, identical canonical source/zero-hit hashes and risk hits `0`. Profile `foundation-command-capture-proxy-rejection-v1-ea08ddd` is committed at exact profile commit `456027283f884d634ed3925d610fb0410d0d8e87`; its `sourceHead` correctly remains the source commit rather than self-referencing the profile commit.
 
-`coverageHarnessCorrection=2` is retained transparently: `PRE_CANDIDATE_POWERSHELL_STDERR_CLASSIFICATION_ERROR` occurred before Vitest produced any result, and `CANDIDATE_MERGE_LOG_COLOCATION_HARNESS_ERROR` occurred when an empty redirected log was mistakenly placed in a merge-input directory. Neither run counts toward the three effective candidates; all evidence is preserved externally. Neither correction changed repository/configuration bytes or consumes Foundation repair capacity, which remains `0/2`.
+`coverageHarnessCorrection=2` is retained transparently: `PRE_CANDIDATE_POWERSHELL_STDERR_CLASSIFICATION_ERROR` occurred before Vitest produced any result, and `CANDIDATE_MERGE_LOG_COLOCATION_HARNESS_ERROR` occurred when an empty redirected log was mistakenly placed in a merge-input directory. Neither run counts toward the three effective candidates; all evidence is preserved externally. Neither correction changed repository/configuration bytes or consumed a repair round. The current Foundation final-review repair is separately `1/2`.
 
-Profile-stage state is `EXACT_PROFILE_READY_PENDING_COMMIT`; the sole blocker is `PENDING_PROFILE_COMMIT`. The profile-only commit must change no production or test bytes and must not be pushed in this handoff.
+Profile-stage state is `RECORDED_SELECTOR_ACTIVE` at profile commit `456027283f884d634ed3925d610fb0410d0d8e87`. Push CI `29733785911` and pull-request CI `29733791099` both completed `SUCCESS / 23 of 23` on that prior reviewed/repair-base HEAD. The current sole blocker is `PENDING_EXACT_HEAD_FINAL_REVIEW`; the old CI and review cannot be inherited by the repair commit.
