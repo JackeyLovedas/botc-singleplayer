@@ -1,5 +1,5 @@
 {
-  "status": "RR1_SOURCE_REPAIR_LOCAL_GATES_PASS_PENDING_ATTRIBUTED_COMMIT",
+  "status": "RR1_EXACT_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE",
   "productRepairRoundConsumed": false,
@@ -1245,7 +1245,7 @@
     "usableForRepairSource": false
   },
   "slice2B19A3B2CiTestEvidenceRepairRound1": {
-    "status": "LOCAL_GATES_PASS_PENDING_ATTRIBUTED_COMMIT",
+    "status": "EXACT_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT",
     "classification": "CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE",
     "repairRound": 1,
     "maxRepairRounds": 2,
@@ -1273,12 +1273,54 @@
     "windowsApplicationStability": "3/3 / 285 of 285 / child exit 0 / risk 0 / walls 77.848,76.275,77.266s",
     "excludedHarnessAttempt": "PRE_CANDIDATE_POWERSHELL_STDERR_CLASSIFICATION_ERROR",
     "localCombinedGateHarness": "300s aggregate tool budget expired after ordinary success while single-fork coverage was running; separately rerun formal full gates pass",
-    "repairSourceCommit": null,
-    "remainingBlockers": ["PENDING_ATTRIBUTED_RR1_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI"]
+    "repairSourceCommit": "cfd6982652960096c552950cc94ac41c5f220824",
+    "remainingBlockers": ["PENDING_ATTRIBUTED_RR1_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_CI"]
+  },
+  "slice2B19A3B2RepairRound1CoverageProfile": {
+    "status": "EXACT_PROFILE_FROZEN_PENDING_ATTRIBUTED_COMMIT",
+    "profileId": "phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1",
+    "sourceHead": "cfd6982652960096c552950cc94ac41c5f220824",
+    "sourceKind": "REPAIR_ROUND_1_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS",
+    "historicalProfilePreserved": "phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1",
+    "ordinaryGroups": 9,
+    "coverageGroups": 10,
+    "coverageGroupCounts": "207/357/465/90/52/82/26/16/10/239",
+    "semanticTests": 1544,
+    "physicalTestFiles": 31,
+    "workspaceProjectFileExecutions": 35,
+    "coverageExecutionSha256": "1e11e13f1549363109a223026f4191664fe8c26ce66d5f2219ca46b141bfadf0",
+    "semanticInventorySha256": "a56e28357c80e156709c3c1d714040d58c85a61a7c2b6fbc3e6c737738a12cf6",
+    "coverageObligationTuple": "63/3204/23/3204/1795",
+    "sourceFilesSha256": "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691",
+    "zeroHitStatementsSha256": "d535141afb3c60331af1ca6dcd7cab6dff5df2e2f8db75e943a72ab1963d1644",
+    "zeroHitFunctionsSha256": "4fdf762b692b151aed1686a73441f38a913ed796a6d5193021d127ed6703dbec",
+    "zeroHitLinesSha256": "fc2ec99a8cbafa2b2a4bb6fef99430a72d83bdf1da74cca00b38000400c5691e",
+    "zeroHitBranchArmsSha256": "6d8ba5d94a86dddf1b045f73e58e4e2c826bcf7c6d004a8ed7fd8d575aa315f5",
+    "comparisonSha256": "eaff423265e4c95b06651109f6005765f4c7859b67ebdbd73484d7156a8d84b1",
+    "stabilityCandidates": 3,
+    "effectiveCandidateRiskHits": 0,
+    "coverageHarnessCorrections": [
+      "EXCLUDED_PRE_CANDIDATE_POWERSHELL_EXITCODE_READ_ERROR",
+      "EXCLUDED_PRE_CANDIDATE_POWERSHELL_EXITCODE_REFRESH_ERROR"
+    ],
+    "candidateElapsedSeconds": [194.601, 192.337, 192.019],
+    "candidateGroupWallTotalsSeconds": [228.961, 229.245, 227.333],
+    "stabilityEvidencePath": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1\\three-candidate-stability.md",
+    "stabilityEvidenceSha256": "fa4a73140d5c320788ac516eec2f331f857578b9a0b5e3b78fa9ec6f7b3b40e8",
+    "profileValidation": "3/3 COVERAGE_APPROVED_PROFILE_MATCH",
+    "profileValidationSha256": "71ffa980708d27f07d38cab1b7a466f5bfbf3625901207e1fb063e7e1b1dbce8",
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "ownershipSelfTest": "22/22 PASS",
+    "fullTests": "35 files / 1544 tests PASS",
+    "coverageTests": "35 files / 1544 tests PASS",
+    "jsonYamlScriptDiffScope": "PASS",
+    "profileCommit": null,
+    "remainingBlockers": ["PENDING_ATTRIBUTED_RR1_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_CI"]
   },
   "rootCauseClassification": "CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE",
   "knownBlockers": [
-    "PENDING_ATTRIBUTED_RR1_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI"
+    "PENDING_ATTRIBUTED_RR1_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_CI"
   ],
   "implementationPaused": false,
   "vortoxBehaviorConflict": false,
@@ -1287,7 +1329,7 @@
   "ledgerSchemaConflict": false,
   "ruleConflict": false,
   "productResliceRequired": false,
-  "nextGovernanceTask": "CREATE_ATTRIBUTED_UNPUSHED_RR1_SOURCE_COMMIT_THEN_FRESH_EXACT_HEAD_CI",
+  "nextGovernanceTask": "CREATE_ATTRIBUTED_UNPUSHED_RR1_PROFILE_COMMIT_THEN_CONTROLLER_EXACT_HEAD_CI",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",

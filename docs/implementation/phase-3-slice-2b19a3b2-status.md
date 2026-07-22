@@ -100,11 +100,15 @@ Source commit `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6` is frozen with producti
 
 Historical profile `phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1` binds source commit `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6`, not its profile-only child and not the RR1 source. Its three historical candidates return `COVERAGE_APPROVED_PROFILE_MATCH`. External stability evidence remains `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverage-experiments\phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1\three-candidate-stability.md`, SHA-256 `ad08f0f86efdfd53dc2e8faa6328e3519a07bf504eae3b810abf1122a554444f`. It must not be selected for the RR1 source.
 
+RR1 source commit `cfd6982652960096c552950cc94ac41c5f220824` has three new complete ten-process candidates. Each passes `10 / 10`, `1,544 / 1,544`, exact group counts `207 / 357 / 465 / 90 / 52 / 82 / 26 / 16 / 10 / 239`, and mismatch/risk counts zero. Canonical tuple `63 / 3204 / 23 / 3204 / 1795`, the five obligation hashes, coverage execution `1e11e13f...78a`, and semantic inventory `a56e2835...cf6` are identical. All self and pairwise comparisons return `COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL` with byte-identical SHA-256 `eaff423265e4c95b06651109f6005765f4c7859b67ebdbd73484d7156a8d84b1`.
+
+New profile `phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1`, source kind `REPAIR_ROUND_1_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS`, binds only the exact RR1 source. External stability evidence SHA-256 is `fa4a73140d5c320788ac516eec2f331f857578b9a0b5e3b78fa9ec6f7b3b40e8`. The historical profile record remains unchanged and the workflow selector alone moves to the RR1 profile.
+
 The profile stage changes only one appended exact profile, the explicit workflow selector, the profile document, and necessary status/control metadata. Production, tests, ownership, traceability semantics, topology, commands, dependencies, timeouts, thresholds, group membership, and role coverage are unchanged.
 
 ## Control state
 
-- `status=RR1_SOURCE_REPAIR_LOCAL_GATES_PASS_PENDING_ATTRIBUTED_COMMIT`
+- `status=RR1_EXACT_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`
 - `disposition=UNACCEPTED`
 - `taskType=CI_TEST_INFRASTRUCTURE`
 - `currentSlice=2B19A3B2`
@@ -120,9 +124,9 @@ The profile stage changes only one appended exact profile, the explicit workflow
 Remaining blocker:
 
 ```text
-PENDING_ATTRIBUTED_RR1_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI
+PENDING_ATTRIBUTED_RR1_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_CI
 ```
 
 ## Disposition
 
-RR1 local source repair is ready for exactly one attributed, unpushed commit. The existing PR remains unaccepted until a later authorized push, fresh exact-head CI, a new complete independent final review, both verbatim GitHub audit comments, merge, and post-merge closeout complete. Dreamer, Philosopher, and Mathematician remain `PARTIAL`; Vortox remains `NOT_STARTED`; no role is `COMPLETE`.
+RR1 exact profile evidence is ready for exactly one attributed, unpushed profile-only commit. The existing PR remains unaccepted until a later authorized push, fresh exact-head CI, a new complete independent final review, both verbatim GitHub audit comments, merge, and post-merge closeout complete. Dreamer, Philosopher, and Mathematician remain `PARTIAL`; Vortox remains `NOT_STARTED`; no role is `COMPLETE`.

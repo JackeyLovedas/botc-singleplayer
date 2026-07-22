@@ -1,14 +1,13 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B19A3B2 RR1 SOURCE REPAIR LOCAL GATES PASS
+## Current state — Phase 3 Slice 2B19A3B2 RR1 EXACT PROFILE READY
 
-- PR [#44](https://github.com/JackeyLovedas/botc-singleplayer/pull/44) failed on frozen HEAD `7b426edce01cc2c136e1198e6a3e1688afe9a1ba`; push/PR runs are `29903822622 / 29903913422`. The exact classification is `CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE`; repair Round is `1 / 2`; `productRepairRoundConsumed=false`; same-HEAD rerun is forbidden.
-- Direct blobs prove both Linux owner-coverage executions reached `82 / 82`, failed `0`, and complete coverage/blob output before a single identical `Timeout calling onTaskUpdate`; PR Windows reached `285 / 285` before two identical worker RPC timeouts. This is test-evidence execution structure, not a product/rule/assertion failure.
-- RR1 shares only defensive structured clones of one lazily built plain accepted-stream authority across the five read-only A3B2 consumers. No mutable store/service crosses tests; FAULT and RECOVERY remain independent live authority; NO-VORTOX and LEGACY are untouched.
-- Focused/regression/ownership/formal/full gates pass. Three owner-coverage walls are `46.029 / 46.617 / 48.091s`; three Windows-equivalent walls are `77.848 / 76.275 / 77.266s`; every effective run has child exit `0` and RPC/unhandled risk `0`.
-- The nine titles, `82` inventory, `58 / 58` criteria, assertions, layers, owner and frozen hashes are unchanged; formal inventory remains `1,544` with every mismatch count zero. Production, traceability, workflow, profile/verifier, rules, role matrix, dependency, timeout, threshold, and topology are unchanged.
-- Historical profile `phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1` remains exact only for source `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6`; it cannot authorize the new RR1 source.
-- Control is `status=RR1_SOURCE_REPAIR_LOCAL_GATES_PASS_PENDING_ATTRIBUTED_COMMIT`, `taskType=CI_TEST_INFRASTRUCTURE`, `disposition=UNACCEPTED`, `currentSlice=2B19A3B2`, `currentBranch=phase-3/combined-dreamer-mathematician-integration`, `currentPR=44`, `implementationAuthorized=true`, `phase2CStarted=false`, and `remainingBlockers=[PENDING_ATTRIBUTED_RR1_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI]`.
+- Exact RR1 source is `cfd6982652960096c552950cc94ac41c5f220824`; frozen failed HEAD `7b426edce01cc2c136e1198e6a3e1688afe9a1ba` and failed runs `29903822622 / 29903913422` remain historical and are not rerun.
+- New profile `phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1` binds only the RR1 source with kind `REPAIR_ROUND_1_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS`; the historical `2c5f2f6` profile remains immutable old-source authority.
+- Three fresh complete candidates pass `10 / 10`, `1,544 / 1,544`, exact group counts `207 / 357 / 465 / 90 / 52 / 82 / 26 / 16 / 10 / 239`, and all mismatch/risk counts zero. Canonical tuple is `63 / 3204 / 23 / 3204 / 1795`; all self/pairwise comparisons are equal at SHA-256 `eaff4232...84b1`.
+- External stability evidence SHA-256 is `fa4a73140d5c320788ac516eec2f331f857578b9a0b5e3b78fa9ec6f7b3b40e8`. Two partial PowerShell exit-status harness attempts are explicitly excluded, preserved, and changed no repository byte.
+- Profile scope is one appended verifier record, one selector token, the existing profile document, and necessary controls/status/log. Production, tests, fixtures, ownership, traceability, rules, role matrix, topology, patterns, commands, dependencies, timeouts, thresholds, groups, collectors, diagnostics, and merge behavior are unchanged.
+- Control is `status=RR1_EXACT_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`, `taskType=CI_TEST_INFRASTRUCTURE`, `disposition=UNACCEPTED`, `currentSlice=2B19A3B2`, `currentBranch=phase-3/combined-dreamer-mathematician-integration`, `currentPR=44`, `implementationAuthorized=true`, `phase2CStarted=false`, and `remainingBlockers=[PENDING_ATTRIBUTED_RR1_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_CI]`.
 
 ## Historical pre-RR1 profile readiness
 

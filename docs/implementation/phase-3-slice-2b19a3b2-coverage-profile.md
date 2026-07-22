@@ -84,3 +84,29 @@ The workflow edit replaces only the explicit `--profile` selector. Existing nine
 - JSON/YAML/diff/scope audit: `PASS`.
 
 The next authorized action is one attributed, unpushed profile-only commit. No source/profile CI authority, PR, review, merge, tag, or acceptance is inferred.
+
+## RR1 exact profile
+
+- product/test source HEAD: `cfd6982652960096c552950cc94ac41c5f220824`
+- profile ID: `phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1`
+- source kind: `REPAIR_ROUND_1_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS`
+- topology: `TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION`
+- profile status: `RR1_EXACT_PROFILE_FROZEN_PENDING_ATTRIBUTED_PROFILE_COMMIT`
+
+The historical `phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1` record above remains byte-preserved in the registry and authoritative only for source `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6`. The RR1 record binds the exact repair source, never its profile-only child, and does not infer product CI or acceptance.
+
+Three brand-new complete ten-process candidates used the frozen group topology and exact Dreamer patterns. Each passed `10 / 10` processes, `1,544 / 1,544` semantic tests, group counts `207 / 357 / 465 / 90 / 52 / 82 / 26 / 16 / 10 / 239`, and missing / duplicate / unexpected / wrong-owner counts `0 / 0 / 0 / 0`.
+
+| Candidate | Window (Asia/Shanghai) | Group wall total | Effective elapsed | Raw coverage SHA-256 | Risk hits |
+|---|---|---:|---:|---|---:|
+| 1 | `2026-07-22T17:27:46.7241254+08:00` to `17:31:01.3248949+08:00` | `228.961s` | `194.601s` | `26b9c973329e7fee85fb701f4942520e0da9ea627bd9c3e9de73187836d00dd4` | 0 |
+| 2 | `2026-07-22T17:32:26.1568052+08:00` to `17:35:38.4938150+08:00` | `229.245s` | `192.337s` | `3f80e64051c8e0345c82f4bc8ad70821c63356b2ecf3075ffcb7ad0ead5f56a6` | 0 |
+| 3 | `2026-07-22T17:36:57.3081679+08:00` to `17:40:09.3276004+08:00` | `227.333s` | `192.019s` | `1d02642ac0593d366246414e07d60986e1d2b1d9d4eea25e4bebd7af1e1119d7` | 0 |
+
+Canonical authority is identical across all three candidates: coverage execution `1e11e13f1549363109a223026f4191664fe8c26ce66d5f2219ca46b141bfadf0`, semantic inventory `a56e28357c80e156709c3c1d714040d58c85a61a7c2b6fbc3e6c737738a12cf6`, and obligation tuple `63 / 3204 / 23 / 3204 / 1795` with the same five hashes frozen above. Every self and pairwise comparison returns `COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL`; the byte-identical comparison SHA-256 is `eaff423265e4c95b06651109f6005765f4c7859b67ebdbd73484d7156a8d84b1`.
+
+External evidence root is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverage-experiments\phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1`; `three-candidate-stability.md` SHA-256 is `fa4a73140d5c320788ac516eec2f331f857578b9a0b5e3b78fa9ec6f7b3b40e8`. Two partial first-batch harness attempts are preserved and explicitly excluded because this PowerShell host returned a null `Start-Process` exit status; the effective direct-process launcher was validated before use. No timeout, `onTaskUpdate`, unhandled error, worker exit, IPC closure, exit 1, mismatch, or hidden rerun exists in the three effective candidates.
+
+This profile-only continuation appends one registry record and changes only the explicit workflow selector plus necessary profile/status/control records. Production, tests, fixtures, ownership, traceability, rules, role matrix, topology, group membership, patterns, commands, dependencies, timeouts, thresholds, fork count, collectors, diagnostics, and merge algorithms remain unchanged.
+
+RR1 profile validation is `3 / 3 COVERAGE_APPROVED_PROFILE_MATCH`; the three validation artifacts are byte-identical at SHA-256 `71ffa980708d27f07d38cab1b7a466f5bfbf3625901207e1fb063e7e1b1dbce8`. Typecheck, full lint, ownership self-test `22 / 22`, full ordinary `35 files / 1,544 tests`, full coverage `35 files / 1,544 tests`, JSON, YAML, script syntax, diff, and exact eight-file scope checks pass.
