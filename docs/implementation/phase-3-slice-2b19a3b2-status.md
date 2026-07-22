@@ -8,9 +8,27 @@
 - Design: `docs/implementation/phase-3-slice-2b19a3b2-design.md`, SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`
 - Independent design review: `docs/implementation/phase-3-slice-2b19a3b2-design-review-round-1.md`, SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`, verdict `RULE_DESIGN_PASS`
 - Release review: `docs/implementation/phase-3-slice-2b19a3b2-design-release-review-after-command-capture-v1.md`, SHA-256 `c0c742aa142772530e83837ac7b4e3c6f2ca4daddf395d57b73452e54dd43485`, verdict `DESIGN_RELEASE_PASS`
-- Design round: `1 / 2`; repair round: `0 / 2`; `productRepairRoundConsumed=false`
-- Final profile status: `PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`
+- Design round: `1 / 2`; repair round: `1 / 2`; `productRepairRoundConsumed=false`
+- Historical profile status: `FROZEN_FOR_2C5F2F6_ONLY_NOT_AUTHORITY_FOR_RR1_SOURCE`
 - Disposition: `UNACCEPTED`
+
+## PR #44 CI test-evidence execution repair Round 1
+
+Frozen failed HEAD `7b426edce01cc2c136e1198e6a3e1688afe9a1ba` ran as push `29903822622` and PR `29903913422`. Direct diagnostic blobs establish that both Linux `application-service-information-and-later-actions` coverage children completed `82 / 82`, failed `0`, and wrote complete coverage/blob artifacts before one identical `[vitest-worker]: Timeout calling onTaskUpdate`. The PR Windows application child completed `285 / 285` before two identical RPC timeouts. The terminal classification is `CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE`; no same-HEAD rerun occurred.
+
+RR1 adds a defensive lazy accepted-stream capture inside the existing A3B2 describe. Its first consumer invokes the unchanged `settleCombinedDreamerMathematician()` real command/store/service path. The promise retains only structured-cloned plain accepted authority and no mutable store/service; every consumer receives `structuredClone(await promise)`. Only ACCEPTED, PURE, PROJECTION, HOSTILE-REPLAY, and STRUCTURAL use it. FAULT and RECOVERY still construct independent live stores/services, while NO-VORTOX and LEGACY are unchanged. No fixture was handwritten and no test was merged, renamed, skipped, reordered, or weakened.
+
+The nine A3B2 titles and order are byte-identical to the failed HEAD. Owner inventory remains `82`, A3B2 semantic identities remain `9`, traceability remains `58 / 58` with `51` dynamic rows and `10` supporting authorities, and all frozen ownership hashes remain exact. Production, traceability, ownership scripts, workflow, exact profile/verifier, rules, role matrix, dependency, timeout, threshold, group membership, and topology diffs are zero.
+
+Local RR1 evidence:
+
+- focused A3B2 `9 passed / 73 skipped`; Dreamer project `26 / 26`; filtered 2B19B `10 / 10`; ownership self-test `22 / 22`;
+- formal nine-group authority `1,544 / 1,544`, failed `0`, missing/duplicate/unexpected/wrong-owner `0 / 0 / 0 / 0`;
+- typecheck and full lint pass; ordinary `35 files / 1,544 tests` in `40.093s`; coverage `35 files / 1,544 tests` in `58.539s`;
+- CI-equivalent owner coverage: `46.029s / 46.617s / 48.091s`, each `82 / 82`, child exit `0`, risk `0`, complete blob plus `63`-file coverage JSON;
+- Windows-equivalent application: `77.848s / 76.275s / 77.266s`, each `285 / 285`, child exit `0`, risk `0`.
+
+Failed-head CI step walls were `94s / 91s` for the two Linux owner coverage runs and `85s` for the failed PR Windows application step. The external pre-candidate PowerShell native-stderr classification mistake is excluded as `PRE_CANDIDATE_POWERSHELL_STDERR_CLASSIFICATION_ERROR`; it occurred outside Vitest and contained no assertion, RPC, or unhandled failure. A later local combined-gate wrapper exhausted its own `300s` aggregate tool budget after ordinary succeeded and while single-fork coverage was still running; the formal full gates were rerun separately and passed as recorded above.
 
 ## Gate authority
 
@@ -80,29 +98,31 @@ The ownership self-test passes `22 / 22`. Focused A3B2 passes `9 / 9`; accepted 
 
 Source commit `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6` is frozen with production diff zero. One formal ordinary matrix passes `9 / 9` groups and `1,544 / 1,544` tests with every mismatch and risk count zero. Three complete existing ten-process coverage candidates pass with identical group counts `207 / 357 / 465 / 90 / 52 / 82 / 26 / 16 / 10 / 239`, canonical inventory hashes, and coverage-obligation tuple `63 / 3204 / 23 / 3204 / 1795`.
 
-Profile `phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1` binds that source commit, not the profile-only child. All three candidates return `COVERAGE_APPROVED_PROFILE_MATCH`. External stability evidence is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverage-experiments\phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1\three-candidate-stability.md`, SHA-256 `ad08f0f86efdfd53dc2e8faa6328e3519a07bf504eae3b810abf1122a554444f`.
+Historical profile `phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1` binds source commit `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6`, not its profile-only child and not the RR1 source. Its three historical candidates return `COVERAGE_APPROVED_PROFILE_MATCH`. External stability evidence remains `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverage-experiments\phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1\three-candidate-stability.md`, SHA-256 `ad08f0f86efdfd53dc2e8faa6328e3519a07bf504eae3b810abf1122a554444f`. It must not be selected for the RR1 source.
 
 The profile stage changes only one appended exact profile, the explicit workflow selector, the profile document, and necessary status/control metadata. Production, tests, ownership, traceability semantics, topology, commands, dependencies, timeouts, thresholds, group membership, and role coverage are unchanged.
 
 ## Control state
 
-- `status=PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`
+- `status=RR1_SOURCE_REPAIR_LOCAL_GATES_PASS_PENDING_ATTRIBUTED_COMMIT`
 - `disposition=UNACCEPTED`
-- `taskType=PRODUCT_SLICE`
+- `taskType=CI_TEST_INFRASTRUCTURE`
 - `currentSlice=2B19A3B2`
 - `currentBranch=phase-3/combined-dreamer-mathematician-integration`
-- `currentPR=null`
+- `currentPR=44`
 - `implementationAuthorized=true`
 - `ruleReady=true`
 - `ruleDesignPass=true`
+- `repairRound=1/2`
+- `productRepairRoundConsumed=false`
 - `phase2CStarted=false`
 
 Remaining blocker:
 
 ```text
-PENDING_ATTRIBUTED_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_GATES
+PENDING_ATTRIBUTED_RR1_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI
 ```
 
 ## Disposition
 
-The exact profile is ready for its single attributed, unpushed profile-only commit. It remains unaccepted until exact-head CI, complete independent final review, both verbatim GitHub audit comments, merge, and post-merge closeout complete. Dreamer, Philosopher, and Mathematician remain `PARTIAL`; Vortox remains `NOT_STARTED`; no role is `COMPLETE`.
+RR1 local source repair is ready for exactly one attributed, unpushed commit. The existing PR remains unaccepted until a later authorized push, fresh exact-head CI, a new complete independent final review, both verbatim GitHub audit comments, merge, and post-merge closeout complete. Dreamer, Philosopher, and Mathematician remain `PARTIAL`; Vortox remains `NOT_STARTED`; no role is `COMPLETE`.

@@ -1,10 +1,10 @@
 {
-  "status": "PROFILE_READY_PENDING_ATTRIBUTED_COMMIT",
+  "status": "RR1_SOURCE_REPAIR_LOCAL_GATES_PASS_PENDING_ATTRIBUTED_COMMIT",
   "disposition": "UNACCEPTED",
-  "taskType": "PRODUCT_SLICE",
+  "taskType": "CI_TEST_INFRASTRUCTURE",
   "productRepairRoundConsumed": false,
-  "currentPR": null,
-  "currentPRUrl": null,
+  "currentPR": 44,
+  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/44",
   "currentBranch": "phase-3/combined-dreamer-mathematician-integration",
   "currentSlice": "2B19A3B2",
   "currentFoundation": null,
@@ -1099,9 +1099,9 @@
   },
   "reviewedHead": "3ef896942fc278bfd3b4484f74f5cfcc55c67ce2",
   "currentReviewHeadAuthority": "Independent A3B2 design release review after accepted Command Capture Proxy Rejection V1 reviewed synchronized merge HEAD 3ef896942fc278bfd3b4484f74f5cfcc55c67ce2 with parents e411efe967c37dff0030f2bd9e52eb5b8171712e and 9262a2a271c7e4f704c90eca67ce4087a316c252. It returned DESIGN_RELEASE_PASS for unchanged Design Round 1, with 12 of 12 checks passing and all behavior/rule/schema/window change flags false. Source implementation is now materialized but remains unaccepted pending attributed commit and controller full gates. No Design Round 2 was created.",
-  "exactHeadCIAuthority": "The accepted Foundation product-head CI runs 29736077724 and 29736079454, merge CI run 29737798440, and closeout CI run 29738772588 are prerequisite history only. No Phase 3 Slice 2B19A3B2 product-head, PR, merge, tag, or CI authority exists.",
-  "currentFeatureHead": "c76eb765b69e09cc5f297cf69ed5d04bfb6663e1",
-  "repairRound": 0,
+  "exactHeadCIAuthority": "PR #44 frozen failed HEAD 7b426edce01cc2c136e1198e6a3e1688afe9a1ba has failed push/PR runs 29903822622 and 29903913422 classified CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE. They are failure evidence only and must not be rerun or inherited by the pending RR1 source.",
+  "currentFeatureHead": "7b426edce01cc2c136e1198e6a3e1688afe9a1ba",
+  "repairRound": 1,
   "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": "USER_AUTHORIZED_CERENOVUS_LONG_INTEGRATION_TEST_TIMEOUT_INFRA_PREREQUISITE",
@@ -1188,7 +1188,7 @@
     "remainingBlockers": []
   },
   "slice2B19A3B2SourceImplementation": {
-    "status": "SOURCE_COMMITTED_PROFILE_READY",
+    "status": "RR1_SOURCE_REPAIR_LOCAL_GATES_PASS_PENDING_ATTRIBUTED_COMMIT",
     "sourceBaseline": "c76eb765b69e09cc5f297cf69ed5d04bfb6663e1",
     "wipRecoveryExecutedOnce": true,
     "wipPatchSha256": "9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50",
@@ -1208,10 +1208,19 @@
     "coverage": "75.68% statements/lines / 83.35% branches / 97.40% functions",
     "productionDiff": 0,
     "coverageProfileCreated": true,
-    "sourceCommit": "2c5f2f62d8c07e83148242a8c5862c9d2019e9e6"
+    "sourceCommit": "2c5f2f62d8c07e83148242a8c5862c9d2019e9e6",
+    "frozenFailedHead": "7b426edce01cc2c136e1198e6a3e1688afe9a1ba",
+    "repairRound": 1,
+    "maxRepairRounds": 2,
+    "productRepairRoundConsumed": false,
+    "repairScope": "DEFENSIVE_LAZY_ACCEPTED_STREAM_CAPTURE_FOR_FIVE_READ_ONLY_CONSUMERS",
+    "repairSourceCommit": null,
+    "testTitlesChanged": false,
+    "ownerInventoryChanged": false,
+    "traceabilityChanged": false
   },
   "slice2B19A3B2CoverageProfile": {
-    "status": "PROFILE_READY_PENDING_ATTRIBUTED_COMMIT",
+    "status": "HISTORICAL_EXACT_FOR_SOURCE_2C5F2F6_NOT_AUTHORITY_FOR_RR1_SOURCE",
     "profileId": "phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1",
     "sourceHead": "2c5f2f62d8c07e83148242a8c5862c9d2019e9e6",
     "sourceKind": "TEN_PROCESS_2B19A3B2_OWNERSHIP_V1",
@@ -1232,11 +1241,44 @@
     "typecheck": "PASS",
     "lint": "PASS",
     "ownershipSelfTest": "22/22 PASS",
-    "profileCommit": null
+    "profileCommit": "7b426edce01cc2c136e1198e6a3e1688afe9a1ba",
+    "usableForRepairSource": false
   },
-  "rootCauseClassification": "INCOMING_COMMAND_CAPTURE_ACCEPTS_NON_REVOKED_PROXY",
+  "slice2B19A3B2CiTestEvidenceRepairRound1": {
+    "status": "LOCAL_GATES_PASS_PENDING_ATTRIBUTED_COMMIT",
+    "classification": "CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE",
+    "repairRound": 1,
+    "maxRepairRounds": 2,
+    "productRepairRoundConsumed": false,
+    "pr": 44,
+    "frozenFailedHead": "7b426edce01cc2c136e1198e6a3e1688afe9a1ba",
+    "pushRun": 29903822622,
+    "pullRequestRun": 29903913422,
+    "sameHeadRerunForbidden": true,
+    "sameHeadRerunPerformed": false,
+    "linuxCoverageBlobAuthority": "2 runs / 82 of 82 passed / 0 failed / complete coverage and blob / one identical [vitest-worker]: Timeout calling onTaskUpdate after completion",
+    "pullRequestWindowsAuthority": "285 of 285 passed / two identical worker RPC timeouts after completion",
+    "repair": "One lazy promise builds through settleCombinedDreamerMathematician; cached authority is structured-cloned plain data without store/service; every read-only consumer receives structuredClone(await promise).",
+    "readOnlyConsumers": ["ACCEPTED", "PURE", "PROJECTION", "HOSTILE-REPLAY", "STRUCTURAL"],
+    "independentLiveConsumers": ["FAULT", "RECOVERY"],
+    "unchangedConsumers": ["NO-VORTOX", "LEGACY"],
+    "focused": "9 passed / 73 skipped / 82 discovered",
+    "dreamerRegression": "26/26 PASS",
+    "gainedDreamerRegression": "10/10 PASS",
+    "ownershipSelfTest": "22/22 PASS",
+    "formalInventory": "9/9 groups / 1544/1544 / missing=0 duplicate=0 unexpected=0 wrongOwner=0",
+    "fullOrdinary": "35 files / 1544 tests PASS / 40.093s wall",
+    "fullCoverage": "35 files / 1544 tests PASS / 58.539s wall",
+    "ownerCoverageStability": "3/3 / 82 of 82 / child exit 0 / risk 0 / walls 46.029,46.617,48.091s",
+    "windowsApplicationStability": "3/3 / 285 of 285 / child exit 0 / risk 0 / walls 77.848,76.275,77.266s",
+    "excludedHarnessAttempt": "PRE_CANDIDATE_POWERSHELL_STDERR_CLASSIFICATION_ERROR",
+    "localCombinedGateHarness": "300s aggregate tool budget expired after ordinary success while single-fork coverage was running; separately rerun formal full gates pass",
+    "repairSourceCommit": null,
+    "remainingBlockers": ["PENDING_ATTRIBUTED_RR1_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI"]
+  },
+  "rootCauseClassification": "CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE",
   "knownBlockers": [
-    "PENDING_ATTRIBUTED_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_GATES"
+    "PENDING_ATTRIBUTED_RR1_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI"
   ],
   "implementationPaused": false,
   "vortoxBehaviorConflict": false,
@@ -1245,7 +1287,7 @@
   "ledgerSchemaConflict": false,
   "ruleConflict": false,
   "productResliceRequired": false,
-  "nextGovernanceTask": "CREATE_ATTRIBUTED_UNPUSHED_PROFILE_COMMIT_THEN_CONTROLLER_EXACT_HEAD_GATES",
+  "nextGovernanceTask": "CREATE_ATTRIBUTED_UNPUSHED_RR1_SOURCE_COMMIT_THEN_FRESH_EXACT_HEAD_CI",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",
@@ -2512,8 +2554,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-20T14:45:28.4521528+08:00",
-  "lastAction": "Materialized the complete independent A3B2 design release review after accepted Command Capture Proxy Rejection V1 at SHA-256 c0c742aa142772530e83837ac7b4e3c6f2ca4daddf395d57b73452e54dd43485. The reviewer bound synchronized HEAD 3ef896942fc278bfd3b4484f74f5cfcc55c67ce2 and its exact parents, passed all 12 release checks, returned DESIGN_RELEASE_PASS, and confirmed behaviorDesignChanged=false and ruleSemanticsChanged=false. Unchanged A3B2 Design Round 1 is ready for a later separately authorized implementation resume; no Design Round 2 or A3B2 implementation action occurred. Foundation accepted merge/tag/closeout CI history remains recorded, and archived WIP remains unrestored at patch SHA-256 9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50 and local archive commit d356cfbf45f64be1aacc1fc042648a318fcacdd5.",
-  "lastError": null,
-  "requiredNextAction": "RESUME_A3B2_IMPLEMENTATION",
-  "nextAction": "RESUME_A3B2_IMPLEMENTATION"
+  "lastAction": "Completed PR #44 A3B2 CI test-evidence execution Repair Round 1 locally. Five read-only consumers share defensive clones of one lazily built plain accepted-stream authority; FAULT/RECOVERY retain independent live stores and services. All focused, regression, ownership, formal inventory, full, and 3x owner-coverage plus 3x Windows-equivalent gates pass with zero worker risk. Production, identities, traceability, profile/verifier, workflow, rules, role coverage, topology, dependency, timeout, and threshold remain unchanged.",
+  "lastError": "Frozen failed HEAD 7b426edce01cc2c136e1198e6a3e1688afe9a1ba: CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE in runs 29903822622 / 29903913422; repair source commit and fresh exact-head CI pending.",
+  "requiredNextAction": "CREATE_ATTRIBUTED_UNPUSHED_RR1_SOURCE_COMMIT",
+  "nextAction": "CREATE_ATTRIBUTED_UNPUSHED_RR1_SOURCE_COMMIT"
 }

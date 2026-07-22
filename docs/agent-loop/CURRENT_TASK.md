@@ -1,6 +1,18 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B2 — PROFILE READY PENDING ATTRIBUTED COMMIT
+## Phase 3 Slice 2B19A3B2 — RR1 SOURCE REPAIR LOCAL GATES PASS
+
+- PR [#44](https://github.com/JackeyLovedas/botc-singleplayer/pull/44) froze failed HEAD `7b426edce01cc2c136e1198e6a3e1688afe9a1ba`. Exact push/PR runs `29903822622 / 29903913422` are failed and must not be rerun on the same HEAD.
+- Classification is `CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE`; `repairRound=1/2`; `productRepairRoundConsumed=false`. Direct blob authority proves both Linux owner-coverage executions completed `82 / 82`, failed `0`, and wrote complete coverage/blob artifacts before one identical `[vitest-worker]: Timeout calling onTaskUpdate`. The PR Windows application step completed `285 / 285` before two identical worker RPC timeouts.
+- The bounded RR1 source repair changes only `packages/application/src/game-application-service.test.ts`: one defensive lazy accepted-stream authority is built the first time through the existing real `settleCombinedDreamerMathematician()` path, caches no store/service, and returns `structuredClone(await promise)` to each read-only consumer. Only ACCEPTED, PURE, PROJECTION, HOSTILE-REPLAY, and STRUCTURAL consume it; FAULT/RECOVERY retain independent live stores/services; NO-VORTOX/LEGACY remain unchanged.
+- Nine A3B2 titles, order, owner, `82` owner inventory, all assertions, `58 / 58` criteria, `51` dynamic bindings, `10` supporting authorities, and every frozen ownership hash remain unchanged. Production, traceability, rules, role coverage, workflow, profile/verifier, dependency, timeout, threshold, and topology diffs are zero.
+- Focused A3B2 is `9 / 9`; A3A/A3B1 project authority is `26 / 26`; filtered 2B19B is `10 / 10`; ownership self-test is `22 / 22`. Formal nine-group inventory is `1,544 / 1,544` with missing/duplicate/unexpected/wrong-owner `0 / 0 / 0 / 0`. Typecheck, full lint, full ordinary `35 / 1,544`, and full coverage `35 / 1,544` pass.
+- Three consecutive CI-equivalent owner-coverage runs each pass `82 / 82`, child exit `0`, and risk hits `0`, with walls `46.029s / 46.617s / 48.091s`. Three consecutive Windows-equivalent application runs each pass `285 / 285`, child exit `0`, and risk hits `0`, with walls `77.848s / 76.275s / 77.266s`.
+- Historical exact profile `phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1` remains immutable evidence for source `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6`; it is not authority for the RR1 source and must not be selected or amended here.
+- Remaining blocker: `PENDING_ATTRIBUTED_RR1_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI`.
+- Required next action: create exactly one attributed, unpushed RR1 source commit `test: reduce repeated 2B19A3B2 accepted capture`, return its exact SHA and clean worktree, then stop. A later controller action may push the existing PR and require fresh exact-head CI; no profile creation or update is authorized.
+
+## Historical pre-RR1 profile readiness
 
 - Control status: `status=PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`; `taskType=PRODUCT_SLICE`; `disposition=UNACCEPTED`; `currentSlice=2B19A3B2`; `currentBranch=phase-3/combined-dreamer-mathematician-integration`; `currentPR=null`; `implementationAuthorized=true`; `phase2CStarted=false`.
 - Original rule evidence remains `RULE_READY` and Design Round 1 remains `RULE_DESIGN_PASS`: `ruleReady=true`; `ruleDesignPass=true`; `designRound=1/2`; `repairRound=0/2`; `productRepairRoundConsumed=false`. Behavior design, rule semantics, Mathematician schema, Dreamer facts/window/count, and unsupported scope are unchanged; no Design Round 2 is created.

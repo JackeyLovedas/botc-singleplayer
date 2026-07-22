@@ -11367,8 +11367,31 @@ describeApplicationServiceShard(
     };
   };
 
-  it("[2B19A3B2-ACCEPTED] formally counts the native V4 and gained V6 Dreamer players under effective Vortox", async () => {
+  const buildAcceptedCombinedDreamerMathematicianAuthority = async () => {
     const fixture = await settleCombinedDreamerMathematician();
+    return structuredClone({
+      result: fixture.result,
+      retry: fixture.retry,
+      firstEvents: fixture.firstEvents,
+      events: fixture.events,
+      state: fixture.state,
+      beforeMath: fixture.beforeMath,
+      native: { dreamerTask: fixture.native.dreamerTask },
+      gainedTask: fixture.gainedTask,
+      mathTask: fixture.mathTask,
+      command: fixture.command
+    });
+  };
+  let acceptedCombinedDreamerMathematicianAuthority:
+    ReturnType<typeof buildAcceptedCombinedDreamerMathematicianAuthority> | undefined;
+  const captureAcceptedCombinedDreamerMathematicianAuthority = async () => {
+    acceptedCombinedDreamerMathematicianAuthority ??=
+      buildAcceptedCombinedDreamerMathematicianAuthority();
+    return structuredClone(await acceptedCombinedDreamerMathematicianAuthority);
+  };
+
+  it("[2B19A3B2-ACCEPTED] formally counts the native V4 and gained V6 Dreamer players under effective Vortox", async () => {
+    const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
     expectEventSummaryAcceptedResult(fixture.result);
     expect(fixture.retry).toMatchObject({ status: "accepted", idempotent: true });
     expect(fixture.events).toStrictEqual(fixture.firstEvents);
@@ -11431,7 +11454,7 @@ describeApplicationServiceShard(
   }, 30_000);
 
   it("[2B19A3B2-PURE] preserves dynamic count, canonical order, same-player deduplication, and every non-counting class", async () => {
-    const fixture = await settleCombinedDreamerMathematician();
+    const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
     const deliveryEvent = fixture.events.at(-2);
     if (deliveryEvent?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected combined delivery");
     const delivery = deliveryEvent.payload;
@@ -11505,7 +11528,7 @@ describeApplicationServiceShard(
   }, 30_000);
 
   it("[2B19A3B2-PROJECTION] exposes only the selected count to the source and remains isolated from caller mutation", async () => {
-    const fixture = await settleCombinedDreamerMathematician();
+    const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
     const deliveryEvent = fixture.events.at(-2);
     if (deliveryEvent?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected combined delivery");
     const sourcePlayerId = deliveryEvent.payload.sourceContract.sourcePlayerId;
@@ -11535,7 +11558,7 @@ describeApplicationServiceShard(
   }, 30_000);
 
   it("[2B19A3B2-HOSTILE-REPLAY] rejects lying counts, windows, classifications, and provenance", async () => {
-    const fixture = await settleCombinedDreamerMathematician();
+    const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
     const deliveryIndex = fixture.events.length - 2;
     const acceptedDelivery = fixture.events[deliveryIndex];
     if (acceptedDelivery?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected accepted Math delivery");
@@ -11572,7 +11595,7 @@ describeApplicationServiceShard(
   }, 30_000);
 
   it("[2B19A3B2-STRUCTURAL] rejects malformed payloads, commands, and hostile T1 objects", async () => {
-    const fixture = await settleCombinedDreamerMathematician();
+    const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
     const acceptedDelivery = fixture.events.at(-2);
     if (acceptedDelivery?.eventType !== "MathematicianInformationDelivered") {
       throw new Error("Expected accepted Math delivery");

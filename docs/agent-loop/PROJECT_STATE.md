@@ -1,6 +1,16 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B19A3B2 PROFILE READY PENDING ATTRIBUTED COMMIT
+## Current state — Phase 3 Slice 2B19A3B2 RR1 SOURCE REPAIR LOCAL GATES PASS
+
+- PR [#44](https://github.com/JackeyLovedas/botc-singleplayer/pull/44) failed on frozen HEAD `7b426edce01cc2c136e1198e6a3e1688afe9a1ba`; push/PR runs are `29903822622 / 29903913422`. The exact classification is `CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE`; repair Round is `1 / 2`; `productRepairRoundConsumed=false`; same-HEAD rerun is forbidden.
+- Direct blobs prove both Linux owner-coverage executions reached `82 / 82`, failed `0`, and complete coverage/blob output before a single identical `Timeout calling onTaskUpdate`; PR Windows reached `285 / 285` before two identical worker RPC timeouts. This is test-evidence execution structure, not a product/rule/assertion failure.
+- RR1 shares only defensive structured clones of one lazily built plain accepted-stream authority across the five read-only A3B2 consumers. No mutable store/service crosses tests; FAULT and RECOVERY remain independent live authority; NO-VORTOX and LEGACY are untouched.
+- Focused/regression/ownership/formal/full gates pass. Three owner-coverage walls are `46.029 / 46.617 / 48.091s`; three Windows-equivalent walls are `77.848 / 76.275 / 77.266s`; every effective run has child exit `0` and RPC/unhandled risk `0`.
+- The nine titles, `82` inventory, `58 / 58` criteria, assertions, layers, owner and frozen hashes are unchanged; formal inventory remains `1,544` with every mismatch count zero. Production, traceability, workflow, profile/verifier, rules, role matrix, dependency, timeout, threshold, and topology are unchanged.
+- Historical profile `phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1` remains exact only for source `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6`; it cannot authorize the new RR1 source.
+- Control is `status=RR1_SOURCE_REPAIR_LOCAL_GATES_PASS_PENDING_ATTRIBUTED_COMMIT`, `taskType=CI_TEST_INFRASTRUCTURE`, `disposition=UNACCEPTED`, `currentSlice=2B19A3B2`, `currentBranch=phase-3/combined-dreamer-mathematician-integration`, `currentPR=44`, `implementationAuthorized=true`, `phase2CStarted=false`, and `remainingBlockers=[PENDING_ATTRIBUTED_RR1_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI]`.
+
+## Historical pre-RR1 profile readiness
 
 - Control is `status=PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`, `taskType=PRODUCT_SLICE`, `disposition=UNACCEPTED`, `currentSlice=2B19A3B2`, `currentBranch=phase-3/combined-dreamer-mathematician-integration`, `currentPR=null`, `implementationAuthorized=true`, `phase2CStarted=false`, and `remainingBlockers=[PENDING_ATTRIBUTED_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_GATES]`.
 - Original evidence/design authority remains `RULE_READY / RULE_DESIGN_PASS`, design Round `1 / 2`, repair Round `0 / 2`, with behavior design and rule semantics unchanged. Design SHA-256 remains `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`; independent review SHA-256 remains `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`.
