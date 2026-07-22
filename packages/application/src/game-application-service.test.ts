@@ -11382,16 +11382,32 @@ describeApplicationServiceShard(
       command: fixture.command
     });
   };
-  let acceptedCombinedDreamerMathematicianAuthority:
-    ReturnType<typeof buildAcceptedCombinedDreamerMathematicianAuthority> | undefined;
+  type AcceptedCombinedDreamerMathematicianAuthority =
+    Awaited<ReturnType<typeof buildAcceptedCombinedDreamerMathematicianAuthority>>;
+  let resolveAcceptedCombinedDreamerMathematicianAuthority!:
+    (authority: AcceptedCombinedDreamerMathematicianAuthority) => void;
+  let rejectAcceptedCombinedDreamerMathematicianAuthority!: (reason?: unknown) => void;
+  const acceptedCombinedDreamerMathematicianAuthority =
+    new Promise<AcceptedCombinedDreamerMathematicianAuthority>((resolve, reject) => {
+      resolveAcceptedCombinedDreamerMathematicianAuthority = resolve;
+      rejectAcceptedCombinedDreamerMathematicianAuthority = reject;
+    });
+  const produceAcceptedCombinedDreamerMathematicianAuthority = async () => {
+    try {
+      const authority = await buildAcceptedCombinedDreamerMathematicianAuthority();
+      resolveAcceptedCombinedDreamerMathematicianAuthority(authority);
+      return structuredClone(authority);
+    } catch (error) {
+      rejectAcceptedCombinedDreamerMathematicianAuthority(error);
+      throw error;
+    }
+  };
   const captureAcceptedCombinedDreamerMathematicianAuthority = async () => {
-    acceptedCombinedDreamerMathematicianAuthority ??=
-      buildAcceptedCombinedDreamerMathematicianAuthority();
     return structuredClone(await acceptedCombinedDreamerMathematicianAuthority);
   };
 
-  it("[2B19A3B2-ACCEPTED] formally counts the native V4 and gained V6 Dreamer players under effective Vortox", async () => {
-    const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
+  it.concurrent("[2B19A3B2-ACCEPTED] formally counts the native V4 and gained V6 Dreamer players under effective Vortox", async () => {
+    const fixture = await produceAcceptedCombinedDreamerMathematicianAuthority();
     expectEventSummaryAcceptedResult(fixture.result);
     expect(fixture.retry).toMatchObject({ status: "accepted", idempotent: true });
     expect(fixture.events).toStrictEqual(fixture.firstEvents);
@@ -11440,7 +11456,7 @@ describeApplicationServiceShard(
     expect(rebuildOptionalGameState(structuredClone(fixture.events))).toStrictEqual(fixture.state);
   }, 30_000);
 
-  it("[2B19A3B2-NO-VORTOX] returns the true count through a real formal base Mathematician command", async () => {
+  it.concurrent("[2B19A3B2-NO-VORTOX] returns the true count through a real formal base Mathematician command", async () => {
     const fixture = await settleBaseMathematician();
     expectEventSummaryAcceptedResult(fixture.result);
     const deliveryEvent = fixture.events.at(-2);
@@ -11453,7 +11469,7 @@ describeApplicationServiceShard(
     expect(deliveryEvent.payload.trueCount).toBe(deliveryEvent.payload.distinctAbnormalPlayers.length);
   }, 30_000);
 
-  it("[2B19A3B2-PURE] preserves dynamic count, canonical order, same-player deduplication, and every non-counting class", async () => {
+  it.concurrent("[2B19A3B2-PURE] preserves dynamic count, canonical order, same-player deduplication, and every non-counting class", async () => {
     const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
     const deliveryEvent = fixture.events.at(-2);
     if (deliveryEvent?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected combined delivery");
@@ -11527,7 +11543,7 @@ describeApplicationServiceShard(
     expect(partition).toStrictEqual(facts.map((fact) => fact.auditFactId).sort());
   }, 30_000);
 
-  it("[2B19A3B2-PROJECTION] exposes only the selected count to the source and remains isolated from caller mutation", async () => {
+  it.concurrent("[2B19A3B2-PROJECTION] exposes only the selected count to the source and remains isolated from caller mutation", async () => {
     const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
     const deliveryEvent = fixture.events.at(-2);
     if (deliveryEvent?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected combined delivery");
@@ -11557,7 +11573,7 @@ describeApplicationServiceShard(
     expect(() => buildAiPrivateKnowledgeView(fixture.state, sourcePlayerId)).toThrow("accepted-event-stream");
   }, 30_000);
 
-  it("[2B19A3B2-HOSTILE-REPLAY] rejects lying counts, windows, classifications, and provenance", async () => {
+  it.concurrent("[2B19A3B2-HOSTILE-REPLAY] rejects lying counts, windows, classifications, and provenance", async () => {
     const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
     const deliveryIndex = fixture.events.length - 2;
     const acceptedDelivery = fixture.events[deliveryIndex];
@@ -11594,7 +11610,7 @@ describeApplicationServiceShard(
     expect(() => rebuildOptionalGameState(duplicateEvent)).toThrow(DomainError);
   }, 30_000);
 
-  it("[2B19A3B2-STRUCTURAL] rejects malformed payloads, commands, and hostile T1 objects", async () => {
+  it.concurrent("[2B19A3B2-STRUCTURAL] rejects malformed payloads, commands, and hostile T1 objects", async () => {
     const fixture = await captureAcceptedCombinedDreamerMathematicianAuthority();
     const acceptedDelivery = fixture.events.at(-2);
     if (acceptedDelivery?.eventType !== "MathematicianInformationDelivered") {
@@ -11651,7 +11667,7 @@ describeApplicationServiceShard(
     expect(getterCalls).toBe(0);
   }, 30_000);
 
-  it("[2B19A3B2-FAULT] keeps real failure ports atomic and receipt-free", async () => {
+  it.concurrent("[2B19A3B2-FAULT] keeps real failure ports atomic and receipt-free", async () => {
     const fixture = await reachCombinedDreamerMathematician();
     const beforeEvents = structuredClone(fixture.beforeMathEvents);
     const beforeState = rebuildOptionalGameState(beforeEvents);
@@ -11693,7 +11709,7 @@ describeApplicationServiceShard(
     await expectAtomicFailure(fixture.service, "EventStoreAppendFailed", "accepted-commit");
   }, 30_000);
 
-  it("[2B19A3B2-RECOVERY] accepts the same command once after a one-shot commit fault and then replays idempotently", async () => {
+  it.concurrent("[2B19A3B2-RECOVERY] accepts the same command once after a one-shot commit fault and then replays idempotently", async () => {
     const fixture = await reachCombinedDreamerMathematician();
     const beforeEvents = structuredClone(fixture.beforeMathEvents);
     fixture.store.failBeforeCommit = true;
@@ -11716,7 +11732,7 @@ describeApplicationServiceShard(
     expect(await fixture.store.findCommandReceipt(ids.game, fixture.command.commandId)).toBeDefined();
   }, 30_000);
 
-  it("[2B19A3B2-LEGACY] preserves accepted legacy and prior Dreamer authorities without migration", async () => {
+  it.concurrent("[2B19A3B2-LEGACY] preserves accepted legacy and prior Dreamer authorities without migration", async () => {
     const normalV3 = loadAcceptedBaseDreamerV3NormalStreamFixture().events;
     const vortoxV3 = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD").events;
     const gainedV6 = await captureAcceptedPhilosopherGainedVortoxDreamerStream();

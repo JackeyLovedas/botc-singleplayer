@@ -1,5 +1,18 @@
 # Current Task
 
+## Phase 3 Slice 2B19A3B2 — RR2 SOURCE READY / FINAL REPAIR 2 OF 2
+
+- RR1 exact profile HEAD `c03697fd56062971899cdab971fb9f769e1bdfad` failed fresh push/PR runs `29909921258 / 29909925167`. Linux owner coverage completed `82 / 82` with complete blob/coverage artifacts before one `onTaskUpdate` timeout; both Windows application jobs completed `285 / 285` before two such timeouts. No product assertion failed.
+- Final repair Round `2 / 2` changes only `packages/application/src/game-application-service.test.ts`: all nine A3B2 identities are `it.concurrent`, ACCEPTED alone produces the unchanged real `settleCombinedDreamerMathematician` authority, and PURE/PROJECTION/HOSTILE-REPLAY/STRUCTURAL await defensive clones from its plain internal deferred value. NO-VORTOX, FAULT, RECOVERY, and LEGACY retain independent stores/services and formal behavior.
+- The nine title strings and order remain byte-identical at SHA-256 `06b7f88924c987006fa88155d672e36af7aeebdbe7793a59d14e243306104af`; inventory remains `82`, A3B2 remains `9` identities, traceability remains `58 / 58` with `51` dynamic rows and `10` supports, and production/ownership/traceability/profile/workflow/rules/matrix diffs are zero.
+- Focused A3B2 passes `5 / 5` (`9 passed / 73 skipped`) with effective walls `10.710 / 11.427 / 11.469 / 11.004 / 11.194s`. Owner ordinary passes `3 / 3` at `82 / 82` with reconstructed artifact walls `30.923 / 30.383 / 31.567s`; owner coverage passes `3 / 3` at `82 / 82` with walls `44.723 / 45.045 / 44.769s`; every child has exit `0` and risk `0`.
+- Windows-equivalent application passes `3 / 3` at `285 / 285`, exit/risk `0`, with walls `36.405 / 35.727 / 34.838s`, materially below RR1 local `77.848 / 76.275 / 77.266s`. A3A/B1 passes `26 / 26`, 2B19B passes `10 / 10`, and ownership self-test passes `22 / 22`.
+- Formal ordinary authority passes `9 / 9`, `1,544 / 1,544`, exact vector `207 / 357 / 465 / 90 / 52 / 82 / 26 / 26 / 239`, and all mismatch counters zero. Exact ten-process coverage passes `10 / 10`; its 63-source tuple `63 / 3204 / 23 / 3204 / 1795` and all five hashes return `COVERAGE_APPROVED_PROFILE_MATCH` against `phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1`.
+- All four full gates pass: typecheck; lint; ordinary `35 files / 1,544 tests` (`40.3s` command); coverage `35 files / 1,544 tests` (`57.9s` command, `75.32%` statements/lines, `83.34%` branches, `97.40%` functions).
+- Transparent harness exclusions are preserved: one focused PowerShell native-stderr classification attempt, one focused ANSI summary-parser miss, one formal-summary `-eq0` predicate typo after all reports were written, and one monolithic-vs-isolated coverage topology mismatch. None was a Vitest assertion, timeout, RPC, inventory, or obligation failure; direct artifacts and corrected repository-authority commands pass.
+- Control status is `RR2_SOURCE_READY_PENDING_ATTRIBUTED_COMMIT / UNACCEPTED`; `repairRound=2/2`; `productRepairRoundConsumed=false`; `currentPR=44`; `phase2CStarted=false`. Remaining blocker: `PENDING_ATTRIBUTED_RR2_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI`.
+- Required next action: create one attributed unpushed commit `test: parallelize 2B19A3B2 evidence execution`. Do not push, create a Round 3, review, merge, or start another slice. If the new exact HEAD fails, return `HUMAN_BLOCKED / RESLICE_REQUIRED`.
+
 ## Phase 3 Slice 2B19A3B2 — RR1 EXACT PROFILE READY
 
 - Exact RR1 source commit is `cfd6982652960096c552950cc94ac41c5f220824`; it contains the bounded test-evidence execution repair and remains unpushed on PR [#44](https://github.com/JackeyLovedas/botc-singleplayer/pull/44).

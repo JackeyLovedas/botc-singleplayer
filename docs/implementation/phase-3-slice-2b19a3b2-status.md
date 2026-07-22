@@ -8,9 +8,32 @@
 - Design: `docs/implementation/phase-3-slice-2b19a3b2-design.md`, SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`
 - Independent design review: `docs/implementation/phase-3-slice-2b19a3b2-design-review-round-1.md`, SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`, verdict `RULE_DESIGN_PASS`
 - Release review: `docs/implementation/phase-3-slice-2b19a3b2-design-release-review-after-command-capture-v1.md`, SHA-256 `c0c742aa142772530e83837ac7b4e3c6f2ca4daddf395d57b73452e54dd43485`, verdict `DESIGN_RELEASE_PASS`
-- Design round: `1 / 2`; repair round: `1 / 2`; `productRepairRoundConsumed=false`
+- Design round: `1 / 2`; repair round: `2 / 2`; `productRepairRoundConsumed=false`
 - Historical profile status: `FROZEN_FOR_2C5F2F6_ONLY_NOT_AUTHORITY_FOR_RR1_SOURCE`
 - Disposition: `UNACCEPTED`
+
+## PR #44 CI test-evidence execution repair Round 2 of 2
+
+RR1 final HEAD `c03697fd56062971899cdab971fb9f769e1bdfad` failed fresh push/PR runs `29909921258 / 29909925167`. Both Linux owner coverage children completed `82 / 82`, wrote complete blob/coverage artifacts, and then emitted one `onTaskUpdate` timeout. Both Windows application children completed `285 / 285` and then emitted two such timeouts. There was no product assertion failure. This is the final permitted repair round; no Round 3 exists.
+
+RR2 modifies only the A3B2 test execution structure. The nine unchanged test identities are concurrent. ACCEPTED alone invokes the unchanged real `settleCombinedDreamerMathematician` producer and resolves one internal deferred plain authority. PURE, PROJECTION, HOSTILE-REPLAY, and STRUCTURAL await and clone that authority. NO-VORTOX, FAULT, RECOVERY, and LEGACY retain independent stores/services and their formal assertions. This removes repeated accepted settlement work without introducing a consumer-selected producer, mutable shared service, handwritten fixture, skipped assertion, or changed primary layer.
+
+Frozen identities remain exact: title/order SHA-256 `06b7f88924c987006fa88155d672e36af7aeebdbe7793a59d14e243306104af`, owner inventory `82`, A3B2 identities `9`, traceability `58 / 58`, dynamic rows `51`, and supporting authorities `10`. Production, traceability, ownership, profile/verifier, workflow, rule, role-matrix, dependency, timeout, threshold, group, and topology diffs are zero.
+
+Local RR2 evidence:
+
+- focused A3B2 `5 / 5`, each `9 passed / 73 skipped`, walls `10.710 / 11.427 / 11.469 / 11.004 / 11.194s`;
+- owner ordinary `3 / 3`, each `82 / 82`, exit/risk `0`, reconstructed artifact walls `30.923 / 30.383 / 31.567s`;
+- owner coverage `3 / 3`, each `82 / 82`, exit/risk `0`, complete blob plus 63-source coverage JSON, walls `44.723 / 45.045 / 44.769s`;
+- Windows-equivalent application `3 / 3`, each `285 / 285`, exit/risk `0`, walls `36.405 / 35.727 / 34.838s`, versus RR1 `77.848 / 76.275 / 77.266s`;
+- A3A/B1 `26 / 26`, filtered 2B19B `10 / 10`, ownership self-test `22 / 22`;
+- formal ordinary `9 / 9`, `1,544 / 1,544`, vector `207 / 357 / 465 / 90 / 52 / 82 / 26 / 26 / 239`, mismatch counts all zero;
+- exact coverage `10 / 10`, semantic `1,544`, tuple `63 / 3204 / 23 / 3204 / 1795`, all hashes exact, verdict `COVERAGE_APPROVED_PROFILE_MATCH` for `phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1`;
+- typecheck, lint, full ordinary `35 files / 1,544 tests` in `40.3s`, and full coverage `35 files / 1,544 tests` in `57.9s` at `75.32 / 83.34 / 97.40` all pass.
+
+Excluded harness events remain visible: `EXCLUDED_FOCUSED_LOOP_POWERSHELL_NATIVE_STDERR_CLASSIFICATION_ERROR`, one corrected ANSI summary-parser miss, one formal wrapper `-eq0` summary predicate typo after complete reports were written, and one expected monolithic-68-source versus isolated-63-source profile topology mismatch. Direct reports and corrected authority commands prove these were not assertion, RPC, test-timeout, inventory, or coverage-obligation failures.
+
+Current status is `RR2_SOURCE_READY_PENDING_ATTRIBUTED_COMMIT / UNACCEPTED`; remaining blocker is `PENDING_ATTRIBUTED_RR2_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI`. The only authorized next action is the attributed unpushed commit `test: parallelize 2B19A3B2 evidence execution`. Any new exact-head failure returns `HUMAN_BLOCKED / RESLICE_REQUIRED`.
 
 ## PR #44 CI test-evidence execution repair Round 1
 
