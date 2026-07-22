@@ -1,5 +1,5 @@
 {
-  "status": "SOURCE_READY_PENDING_ATTRIBUTED_COMMIT",
+  "status": "PROFILE_READY_PENDING_ATTRIBUTED_COMMIT",
   "disposition": "UNACCEPTED",
   "taskType": "PRODUCT_SLICE",
   "productRepairRoundConsumed": false,
@@ -1188,7 +1188,7 @@
     "remainingBlockers": []
   },
   "slice2B19A3B2SourceImplementation": {
-    "status": "SOURCE_READY_PENDING_ATTRIBUTED_COMMIT",
+    "status": "SOURCE_COMMITTED_PROFILE_READY",
     "sourceBaseline": "c76eb765b69e09cc5f297cf69ed5d04bfb6663e1",
     "wipRecoveryExecutedOnce": true,
     "wipPatchSha256": "9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50",
@@ -1207,12 +1207,36 @@
     "coverageTests": "35 files / 1544 tests PASS",
     "coverage": "75.68% statements/lines / 83.35% branches / 97.40% functions",
     "productionDiff": 0,
-    "coverageProfileCreated": false,
-    "sourceCommit": null
+    "coverageProfileCreated": true,
+    "sourceCommit": "2c5f2f62d8c07e83148242a8c5862c9d2019e9e6"
+  },
+  "slice2B19A3B2CoverageProfile": {
+    "status": "PROFILE_READY_PENDING_ATTRIBUTED_COMMIT",
+    "profileId": "phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1",
+    "sourceHead": "2c5f2f62d8c07e83148242a8c5862c9d2019e9e6",
+    "sourceKind": "TEN_PROCESS_2B19A3B2_OWNERSHIP_V1",
+    "ordinaryGroups": 9,
+    "coverageGroups": 10,
+    "coverageGroupCounts": "207/357/465/90/52/82/26/16/10/239",
+    "semanticTests": 1544,
+    "ordinaryProjectInventorySha256": "f29bed32c2c644e31aa93666406b0a8e8f7072b13135ada18782a970c069878a",
+    "coverageExecutionSha256": "1e11e13f1549363109a223026f4191664fe8c26ce66d5f2219ca46b141bfadf0",
+    "semanticInventorySha256": "a56e28357c80e156709c3c1d714040d58c85a61a7c2b6fbc3e6c737738a12cf6",
+    "coverageObligationTuple": "63/3204/23/3204/1795",
+    "stabilityCandidates": 3,
+    "effectiveCandidateRiskHits": 0,
+    "ordinaryHarnessCorrection": "PRE_ORDINARY_POWERSHELL_PARSE_ERROR_BEFORE_NODE_OR_VITEST",
+    "stabilityEvidencePath": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1\\three-candidate-stability.md",
+    "stabilityEvidenceSha256": "ad08f0f86efdfd53dc2e8faa6328e3519a07bf504eae3b810abf1122a554444f",
+    "profileValidation": "3/3 COVERAGE_APPROVED_PROFILE_MATCH",
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "ownershipSelfTest": "22/22 PASS",
+    "profileCommit": null
   },
   "rootCauseClassification": "INCOMING_COMMAND_CAPTURE_ACCEPTS_NON_REVOKED_PROXY",
   "knownBlockers": [
-    "PENDING_ATTRIBUTED_SOURCE_COMMIT_AND_CONTROLLER_FULL_GATES"
+    "PENDING_ATTRIBUTED_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_GATES"
   ],
   "implementationPaused": false,
   "vortoxBehaviorConflict": false,
@@ -1221,7 +1245,7 @@
   "ledgerSchemaConflict": false,
   "ruleConflict": false,
   "productResliceRequired": false,
-  "nextGovernanceTask": "CREATE_ATTRIBUTED_UNPUSHED_SOURCE_COMMIT_THEN_CONTROLLER_FULL_GATES",
+  "nextGovernanceTask": "CREATE_ATTRIBUTED_UNPUSHED_PROFILE_COMMIT_THEN_CONTROLLER_EXACT_HEAD_GATES",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",
@@ -1297,7 +1321,7 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": true,
-  "implementationStatus": "SOURCE_READY_PENDING_ATTRIBUTED_COMMIT",
+  "implementationStatus": "PROFILE_READY_PENDING_ATTRIBUTED_COMMIT",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -1721,7 +1745,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_ATTRIBUTED_SOURCE_COMMIT_AND_CONTROLLER_FULL_GATES"
+    "PENDING_ATTRIBUTED_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_GATES"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",

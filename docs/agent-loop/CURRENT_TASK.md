@@ -1,16 +1,18 @@
 # Current Task
 
-## Phase 3 Slice 2B19A3B2 — SOURCE READY PENDING ATTRIBUTED COMMIT
+## Phase 3 Slice 2B19A3B2 — PROFILE READY PENDING ATTRIBUTED COMMIT
 
-- Control status: `status=SOURCE_READY_PENDING_ATTRIBUTED_COMMIT`; `taskType=PRODUCT_SLICE`; `disposition=UNACCEPTED`; `currentSlice=2B19A3B2`; `currentBranch=phase-3/combined-dreamer-mathematician-integration`; `currentPR=null`; `implementationAuthorized=true`; `phase2CStarted=false`.
+- Control status: `status=PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`; `taskType=PRODUCT_SLICE`; `disposition=UNACCEPTED`; `currentSlice=2B19A3B2`; `currentBranch=phase-3/combined-dreamer-mathematician-integration`; `currentPR=null`; `implementationAuthorized=true`; `phase2CStarted=false`.
 - Original rule evidence remains `RULE_READY` and Design Round 1 remains `RULE_DESIGN_PASS`: `ruleReady=true`; `ruleDesignPass=true`; `designRound=1/2`; `repairRound=0/2`; `productRepairRoundConsumed=false`. Behavior design, rule semantics, Mathematician schema, Dreamer facts/window/count, and unsupported scope are unchanged; no Design Round 2 is created.
 - Design-gate commit remains `cef878f2f0d6baa4a8e5989fb6a519da7afd0b3a`; design SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`; independent design-review SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`.
 - Shared prerequisite `COMMAND_CAPTURE_PROXY_REJECTION_V1` is independently accepted: PR #43 merged as `300933d8d50123b5bbf198e0945d9b581be2042b`, accepted tag `foundation-command-capture-proxy-rejection-v1`, merge CI `29737798440`, closeout SHA `9262a2a271c7e4f704c90eca67ce4087a316c252`, and closeout CI `29738772588`. Sync merge `3ef896942fc278bfd3b4484f74f5cfcc55c67ce2` has exact parents `e411efe967c37dff0030f2bd9e52eb5b8171712e` and `9262a2a271c7e4f704c90eca67ce4087a316c252`.
 - Independent release review `docs/implementation/phase-3-slice-2b19a3b2-design-release-review-after-command-capture-v1.md`, SHA-256 `c0c742aa142772530e83837ac7b4e3c6f2ca4daddf395d57b73452e54dd43485`, bound that exact synchronized HEAD and parents, passed all `12 / 12` checks, and returned `DESIGN_RELEASE_PASS`, `behaviorDesignChanged=false`, `ruleSemanticsChanged=false`, and `remainingBlockers=[PENDING_IMPLEMENTATION_RESUME]`. This is not Design Round 2.
 - The preserved A3B2 patch SHA-256 `9be34fd990065c3bf6c412d7689e2ed9a5c613e8d992654b9e9d5fc5d037eb50` was checked and applied exactly once. The original recovered run returned `6 passed / 1 failed / 73 skipped`; the failure was a test-only plain-dense-array misclassification against the frozen Foundation contract. The repaired and layer-split focused suite returns `9 passed / 73 skipped`.
-- Traceability resolves all `58 / 58` criteria through nine uniquely owned tests, `51` dynamic rows, and `10` supporting authorities. Full workspace inventory is `1,544` tests with zero missing, duplicate, unexpected, or wrong-owner identities. Production diff is zero and no coverage profile is created at source stage.
-- Remaining blocker: `PENDING_ATTRIBUTED_SOURCE_COMMIT_AND_CONTROLLER_FULL_GATES`.
-- Required next action: create the single attributed, unpushed source commit, then return exact HEAD and local gate evidence to the controller. Exact-head CI, independent final review, audit comments, merge, and closeout remain future gates.
+- Source commit `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6` has production diff zero. Traceability resolves all `58 / 58` criteria through nine uniquely owned tests, `51` dynamic rows, and `10` supporting authorities.
+- Formal ordinary authority passes `9 / 9` and `1,544 / 1,544`. Three complete ten-process coverage candidates have identical inventories and tuple `63 / 3204 / 23 / 3204 / 1795`, with all mismatch/risk counts zero. External stability SHA-256 is `ad08f0f86efdfd53dc2e8faa6328e3519a07bf504eae3b810abf1122a554444f`.
+- Exact profile `phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1` matches all `3 / 3` candidates. Typecheck, full lint, ownership self-test `22 / 22`, syntax, diff and profile checks pass.
+- Remaining blocker: `PENDING_ATTRIBUTED_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_GATES`.
+- Required next action: create the single attributed, unpushed profile-only commit, then return exact HEAD and evidence to the controller. Push, PR, exact-head CI, independent final review, audit comments, merge, and closeout remain future gates.
 
 ## Historical accepted Foundation — Command Capture Proxy Rejection V1
 

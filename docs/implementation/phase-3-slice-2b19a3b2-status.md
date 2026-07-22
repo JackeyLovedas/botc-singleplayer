@@ -9,7 +9,7 @@
 - Independent design review: `docs/implementation/phase-3-slice-2b19a3b2-design-review-round-1.md`, SHA-256 `16054dbfa5f9c45da9395c4d20cac2e89045edf2f78d490f6b2d9bc55135ce13`, verdict `RULE_DESIGN_PASS`
 - Release review: `docs/implementation/phase-3-slice-2b19a3b2-design-release-review-after-command-capture-v1.md`, SHA-256 `c0c742aa142772530e83837ac7b4e3c6f2ca4daddf395d57b73452e54dd43485`, verdict `DESIGN_RELEASE_PASS`
 - Design round: `1 / 2`; repair round: `0 / 2`; `productRepairRoundConsumed=false`
-- Final source status: `SOURCE_READY_PENDING_ATTRIBUTED_COMMIT`
+- Final profile status: `PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`
 - Disposition: `UNACCEPTED`
 
 ## Gate authority
@@ -76,9 +76,17 @@ All four required local gates pass on the completed source tree:
 
 The ownership self-test passes `22 / 22`. Focused A3B2 passes `9 / 9`; accepted A3A/A3B1 regression authority passes `26 / 26`; the filtered 2B19B authority passes `10 / 10`.
 
+## Exact coverage profile
+
+Source commit `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6` is frozen with production diff zero. One formal ordinary matrix passes `9 / 9` groups and `1,544 / 1,544` tests with every mismatch and risk count zero. Three complete existing ten-process coverage candidates pass with identical group counts `207 / 357 / 465 / 90 / 52 / 82 / 26 / 16 / 10 / 239`, canonical inventory hashes, and coverage-obligation tuple `63 / 3204 / 23 / 3204 / 1795`.
+
+Profile `phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1` binds that source commit, not the profile-only child. All three candidates return `COVERAGE_APPROVED_PROFILE_MATCH`. External stability evidence is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverage-experiments\phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1\three-candidate-stability.md`, SHA-256 `ad08f0f86efdfd53dc2e8faa6328e3519a07bf504eae3b810abf1122a554444f`.
+
+The profile stage changes only one appended exact profile, the explicit workflow selector, the profile document, and necessary status/control metadata. Production, tests, ownership, traceability semantics, topology, commands, dependencies, timeouts, thresholds, group membership, and role coverage are unchanged.
+
 ## Control state
 
-- `status=SOURCE_READY_PENDING_ATTRIBUTED_COMMIT`
+- `status=PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`
 - `disposition=UNACCEPTED`
 - `taskType=PRODUCT_SLICE`
 - `currentSlice=2B19A3B2`
@@ -92,9 +100,9 @@ The ownership self-test passes `22 / 22`. Focused A3B2 passes `9 / 9`; accepted 
 Remaining blocker:
 
 ```text
-PENDING_ATTRIBUTED_SOURCE_COMMIT_AND_CONTROLLER_FULL_GATES
+PENDING_ATTRIBUTED_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_GATES
 ```
 
 ## Disposition
 
-The bounded source implementation is ready for its single attributed, unpushed source commit. It remains unaccepted until exact-head CI, complete independent final review, both verbatim GitHub audit comments, merge, and post-merge closeout complete. Dreamer, Philosopher, and Mathematician remain `PARTIAL`; Vortox remains `NOT_STARTED`; no role is `COMPLETE`.
+The exact profile is ready for its single attributed, unpushed profile-only commit. It remains unaccepted until exact-head CI, complete independent final review, both verbatim GitHub audit comments, merge, and post-merge closeout complete. Dreamer, Philosopher, and Mathematician remain `PARTIAL`; Vortox remains `NOT_STARTED`; no role is `COMPLETE`.
