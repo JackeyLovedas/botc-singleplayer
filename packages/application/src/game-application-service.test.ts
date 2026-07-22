@@ -10,6 +10,7 @@ import {
   commandId,
   correlationId,
   eventId,
+  formatFirstNightAbilityOutcomeFactId,
   isSeamstressActionOpportunityV2,
   playerId,
   rebuildOptionalGameState,
@@ -17,7 +18,9 @@ import {
   scheduledTaskId,
   validateDomainBatchSemantics,
   validateDomainEventStream,
-  validateFirstNightAbilityOutcomeFactShape
+  validateFirstNightAbilityOutcomeFactShape,
+  validateMathematicianInformationDeliveredPayloadShape,
+  validateSettleMathematicianInformationCommandPayload
 } from "@botc/domain-core";
 import type {
   AnyDomainEventEnvelope,
@@ -34,7 +37,8 @@ import type {
   SupportedCommandEnvelope,
   AbilityImpairmentSet,
   DomainEventBatch,
-  SettleClockmakerInformationCommand
+  SettleClockmakerInformationCommand,
+  SettleMathematicianInformationCommand
 } from "@botc/domain-core";
 import {
   GameApplicationService,
@@ -107,6 +111,10 @@ import {
 } from "@botc/projections";
 import { deriveFirstNightAbilityOutcomeFact } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "../../domain-core/src/role-tenure-replay.js";
+import {
+  resolveMathematicianCountFromValidatedFactsForInternalValidation
+} from "../../domain-core/src/mathematician-internal.js";
+import { settleBaseMathematician } from "./mathematician-test-fixtures.js";
 
 const makeService = (
   commandStore = new MemoryCommandCommitStore(),
@@ -11250,4 +11258,463 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3A retryab
       await expectUnchangedFailure(context, "EventStoreAppendFailed", "accepted-commit");
     }
   }, 15_000);
+});
+
+describeApplicationServiceShard(
+  "information-and-later-actions",
+  "Phase 3 Slice 2B19A3B2 combined Dreamer count observability",
+  () => {
+  const philosopherBaseMathematicianVortoxExactRoleIds = noPhilosopherVortoxExactRoleIds.map((id) =>
+    id === roleId("flowergirl") ? roleId("philosopher") : id
+  );
+
+  const reachCombinedDreamerMathematician = async () => {
+    const store = new MemoryCommandCommitStore();
+    const { service } = makeService(store);
+    const native = await reachCanonicalDrunkVortoxDreamerOpportunity(
+      service, store, "2b19a3b2-combined", philosopherBaseMathematicianVortoxExactRoleIds
+    );
+    const nativeTarget = native.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== native.opportunity.sourcePlayerId && entry.role.roleId !== "vortox"
+    );
+    if (nativeTarget === undefined) throw new Error("Expected combined native Dreamer target");
+    expectAcceptedResult(await service.execute(submitDreamerActionCommand({
+      commandId: commandId("2b19a3b2-submit-native"), expectedGameVersion: native.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: native.dreamerTask.taskId,
+        opportunityId: native.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: nativeTarget.playerId } }
+    })));
+
+    const beforeGained = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const gainedTask = beforeGained?.firstNightTaskPlan?.tasks.find((task) =>
+      task.taskType === "DREAMER_ACTION" && task.source.kind === "PHILOSOPHER_GAINED_ABILITY"
+    );
+    if (beforeGained === undefined || gainedTask === undefined) throw new Error("Expected combined gained Dreamer task");
+    expectAcceptedResult(await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("2b19a3b2-open-gained"), expectedGameVersion: beforeGained.gameVersion,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: gainedTask.taskId }
+    })));
+    const gainedOpen = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const gainedOpportunity = gainedOpen?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.taskId === gainedTask.taskId
+    );
+    const gainedTarget = gainedOpen?.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== gainedOpportunity?.sourcePlayerId && entry.role.roleId !== "vortox"
+    );
+    if (gainedOpen === undefined || gainedOpportunity === undefined || gainedTarget === undefined) {
+      throw new Error("Expected combined gained Dreamer opportunity and target");
+    }
+    expectAcceptedResult(await service.execute(submitDreamerActionCommand({
+      commandId: commandId("2b19a3b2-submit-gained"), expectedGameVersion: gainedOpen.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: gainedTask.taskId,
+        opportunityId: gainedOpportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: gainedTarget.playerId } }
+    })));
+
+    const beforeSeamstress = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const seamstressTask = beforeSeamstress?.firstNightTaskPlan?.tasks.find((task) =>
+      !beforeSeamstress.firstNightTaskProgress?.settlements.some((settlement) => settlement.taskId === task.taskId)
+    );
+    if (beforeSeamstress === undefined || seamstressTask?.taskType !== "SEAMSTRESS_ACTION") {
+      throw new Error("Expected real Seamstress between gained Dreamer and Mathematician");
+    }
+    expectAcceptedResult(await service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("2b19a3b2-open-seamstress"), expectedGameVersion: beforeSeamstress.gameVersion,
+      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: seamstressTask.taskId }
+    })));
+    const seamstressOpen = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
+    const seamstressOpportunity = seamstressOpen?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.taskId === seamstressTask.taskId
+    );
+    if (seamstressOpen === undefined || seamstressOpportunity === undefined) throw new Error("Expected open Seamstress");
+    expectEventSummaryAcceptedResult(await service.execute(submitSeamstressActionCommand({
+      commandId: commandId("2b19a3b2-defer-seamstress"), expectedGameVersion: seamstressOpen.gameVersion,
+      actor: { kind: "ai", playerId: seamstressOpportunity.sourcePlayerId },
+      payload: { commandType: "SubmitSeamstressAction", taskId: seamstressTask.taskId,
+        opportunityId: seamstressOpportunity.opportunityId, decision: { kind: "DEFER" } }
+    })));
+
+    const beforeMathEvents = await store.loadDomainEvents(ids.game);
+    const beforeMath = rebuildOptionalGameState(beforeMathEvents);
+    const mathTask = beforeMath?.firstNightTaskPlan?.tasks.find((task) =>
+      !beforeMath.firstNightTaskProgress?.settlements.some((settlement) => settlement.taskId === task.taskId)
+    );
+    if (beforeMath === undefined || mathTask?.taskType !== "MATHEMATICIAN_INFORMATION" || mathTask.source.kind !== "ROLE") {
+      throw new Error("Expected unsettled base Mathematician after real Seamstress");
+    }
+    const command: SettleMathematicianInformationCommand = {
+      commandId: commandId("2b19a3b2-settle-mathematician"), gameId: ids.game,
+      expectedGameVersion: beforeMath.gameVersion, actor: systemActor,
+      issuedAt: "2026-07-20T00:00:00.000Z", correlationId: correlationId("2b19a3b2-settle-mathematician"),
+      payload: { commandType: "SettleMathematicianInformation", taskId: mathTask.taskId }
+    };
+    return {
+      store, service, native, nativeTarget, gainedTask, gainedOpportunity, gainedTarget,
+      seamstressTask, beforeMath, beforeMathEvents, mathTask, command
+    };
+  };
+
+  const settleCombinedDreamerMathematician = async () => {
+    const reached = await reachCombinedDreamerMathematician();
+    const result = await reached.service.execute(reached.command);
+    const firstEvents = await reached.store.loadDomainEvents(ids.game);
+    const retry = await reached.service.execute(reached.command);
+    const events = await reached.store.loadDomainEvents(ids.game);
+    const state = rebuildOptionalGameState(events);
+    if (state === undefined) throw new Error("Expected rebuilt combined Mathematician state");
+    return {
+      ...reached, result, retry, firstEvents, events, state
+    };
+  };
+
+  it("[2B19A3B2-ACCEPTED] formally counts the native V4 and gained V6 Dreamer players under effective Vortox", async () => {
+    const fixture = await settleCombinedDreamerMathematician();
+    expectEventSummaryAcceptedResult(fixture.result);
+    expect(fixture.retry).toMatchObject({ status: "accepted", idempotent: true });
+    expect(fixture.events).toStrictEqual(fixture.firstEvents);
+    const terminal = fixture.events.slice(-2);
+    expect(terminal.map((event) => event.eventType)).toStrictEqual([
+      "MathematicianInformationDelivered", "ScheduledTaskSettled"
+    ]);
+    expect(() => validateDomainBatchSemantics(fixture.beforeMath, terminal)).not.toThrow();
+    const deliveryEvent = terminal[0];
+    if (deliveryEvent?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected Math delivery");
+    const delivery = deliveryEvent.payload;
+    const dreamerFacts = fixture.beforeMath.firstNightAbilityOutcomeLedger?.facts.filter((fact) =>
+      fact.abilityRoleId === "dreamer" &&
+      (fact.abilityTaskId === fixture.native.dreamerTask.taskId || fact.abilityTaskId === fixture.gainedTask.taskId)
+    ) ?? [];
+    expect(dreamerFacts).toHaveLength(2);
+    expect(new Set(dreamerFacts.map((fact) => fact.auditFactId)).size).toBe(2);
+    expect(new Set(dreamerFacts.map((fact) => fact.sourcePlayerId)).size).toBe(2);
+    expect(new Set(dreamerFacts.map((fact) => fact.abilityInstance.abilityInstanceId)).size).toBe(2);
+    expect(dreamerFacts.map((fact) => fact.outcomeStatus)).toStrictEqual(["ABNORMAL", "ABNORMAL"]);
+    expect(dreamerFacts.every((fact) =>
+      fact.sourceEventSequence > delivery.windowSnapshot.startEventSequence &&
+      fact.sourceEventSequence <= delivery.windowSnapshot.endEventSequence
+    )).toBe(true);
+    expect(delivery.qualifyingAbnormalFactIds).toStrictEqual(dreamerFacts.map((fact) => fact.auditFactId).sort());
+    expect(delivery.distinctAbnormalPlayers.map((entry) => entry.playerId).sort())
+      .toStrictEqual(dreamerFacts.map((fact) => fact.sourcePlayerId).sort());
+    expect(delivery.distinctAbnormalPlayers).toHaveLength(2);
+    expect(delivery.distinctAbnormalPlayers.flatMap((entry) => entry.supportingFactIds).sort())
+      .toStrictEqual(delivery.qualifyingAbnormalFactIds);
+    expect(delivery).toMatchObject({
+      trueCount: 2,
+      selectedCount: 0,
+      informationReliability: "VORTOX_CONSTRAINED_FALSE",
+      vortoxConstraint: { kind: "VORTOX_FALSE_REQUIRED" }
+    });
+    expect(delivery.selectedCount).not.toBe(delivery.trueCount);
+    expect(fixture.state.mathematicianInformation?.deliveries).toHaveLength(1);
+    expect(fixture.state.firstNightTaskProgress?.settlements.some((entry) =>
+      entry.taskId === fixture.mathTask.taskId
+    )).toBe(true);
+    const mathFacts = fixture.state.firstNightAbilityOutcomeLedger?.facts.filter((fact) =>
+      fact.abilityTaskId === fixture.mathTask.taskId
+    ) ?? [];
+    expect(mathFacts).toHaveLength(1);
+    expect(rebuildOptionalGameState(structuredClone(fixture.events))).toStrictEqual(fixture.state);
+  }, 30_000);
+
+  it("[2B19A3B2-NO-VORTOX] returns the true count through a real formal base Mathematician command", async () => {
+    const fixture = await settleBaseMathematician();
+    expectEventSummaryAcceptedResult(fixture.result);
+    const deliveryEvent = fixture.events.at(-2);
+    if (deliveryEvent?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected no-Vortox delivery");
+    expect(deliveryEvent.payload).toMatchObject({
+      vortoxConstraint: { kind: "NONE_NO_CURRENT_VORTOX" },
+      informationReliability: "RULE_CORRECT"
+    });
+    expect(deliveryEvent.payload.selectedCount).toBe(deliveryEvent.payload.trueCount);
+    expect(deliveryEvent.payload.trueCount).toBe(deliveryEvent.payload.distinctAbnormalPlayers.length);
+  }, 30_000);
+
+  it("[2B19A3B2-PURE] preserves dynamic count, canonical order, same-player deduplication, and every non-counting class", async () => {
+    const fixture = await settleCombinedDreamerMathematician();
+    const deliveryEvent = fixture.events.at(-2);
+    if (deliveryEvent?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected combined delivery");
+    const delivery = deliveryEvent.payload;
+    const facts = fixture.beforeMath.firstNightAbilityOutcomeLedger?.facts ?? [];
+    const abnormal = facts.filter((fact) => delivery.qualifyingAbnormalFactIds.includes(fact.auditFactId));
+    expect(resolveMathematicianCountFromValidatedFactsForInternalValidation(
+      [], delivery.sourceContract.sourcePlayerId, delivery.resolvingAbilityInstanceId
+    ).trueCount).toBe(0);
+    expect(resolveMathematicianCountFromValidatedFactsForInternalValidation(
+      [abnormal[0]!], delivery.sourceContract.sourcePlayerId, delivery.resolvingAbilityInstanceId
+    ).trueCount).toBe(1);
+    expect(resolveMathematicianCountFromValidatedFactsForInternalValidation(
+      abnormal, delivery.sourceContract.sourcePlayerId, delivery.resolvingAbilityInstanceId
+    ).trueCount).toBe(2);
+
+    const samePlayer = structuredClone(abnormal[0]!);
+    (samePlayer as unknown as { auditFactId: typeof samePlayer.auditFactId }).auditFactId =
+      formatFirstNightAbilityOutcomeFactId(eventId("2b19a3b2-same-player-second"));
+    const deduped = resolveMathematicianCountFromValidatedFactsForInternalValidation(
+      [samePlayer, abnormal[0]!], delivery.sourceContract.sourcePlayerId, delivery.resolvingAbilityInstanceId
+    );
+    expect(deduped.trueCount).toBe(1);
+    expect(deduped.distinctAbnormalPlayers).toStrictEqual([{
+      playerId: abnormal[0]!.sourcePlayerId,
+      seatNumber: abnormal[0]!.sourceSeatNumber,
+      supportingFactIds: [abnormal[0]!.auditFactId, samePlayer.auditFactId].sort()
+    }]);
+    const forward = resolveMathematicianCountFromValidatedFactsForInternalValidation(
+      abnormal, delivery.sourceContract.sourcePlayerId, delivery.resolvingAbilityInstanceId
+    );
+    const reversed = resolveMathematicianCountFromValidatedFactsForInternalValidation(
+      [...abnormal].reverse(), delivery.sourceContract.sourcePlayerId, delivery.resolvingAbilityInstanceId
+    );
+    expect(reversed).toStrictEqual(forward);
+
+    const byId = new Map(facts.map((fact) => [fact.auditFactId, fact]));
+    expect(delivery.ignoredNormalFactIds.length).toBeGreaterThan(0);
+    expect(delivery.ignoredNormalFactIds.every((id) => byId.get(id)?.outcomeStatus === "NORMAL")).toBe(true);
+    expect(delivery.ignoredPendingFactIds.every((id) => byId.get(id)?.outcomeStatus === "PENDING_TRIGGER")).toBe(true);
+    const normal = facts.find((fact) => fact.outcomeStatus === "NORMAL");
+    if (normal === undefined) throw new Error("Expected a validated NORMAL control fact");
+    const pending = structuredClone(normal);
+    Object.assign(pending as unknown as Record<string, unknown>, {
+      auditFactId: formatFirstNightAbilityOutcomeFactId(eventId("2b19a3b2-pending-control")),
+      outcomeStatus: "PENDING_TRIGGER",
+      causeKind: "SOURCE_DRUNKENNESS",
+      causedByAnotherCharacterAbility: true
+    });
+    expect(resolveMathematicianCountFromValidatedFactsForInternalValidation(
+      [normal, pending], delivery.sourceContract.sourcePlayerId, delivery.resolvingAbilityInstanceId
+    )).toMatchObject({
+      trueCount: 0,
+      ignoredNormalFactIds: [normal.auditFactId],
+      ignoredPendingFactIds: [pending.auditFactId]
+    });
+    expect(delivery.excludedResolvingSourceFactIds.every((id) =>
+      byId.get(id)?.sourcePlayerId === delivery.sourceContract.sourcePlayerId
+    )).toBe(true);
+    expect(delivery.excludedOwnAbilityFactIds.every((id) =>
+      byId.get(id)?.abilityInstance.abilityInstanceId === delivery.resolvingAbilityInstanceId
+    )).toBe(true);
+    const partition = [
+      ...delivery.qualifyingAbnormalFactIds,
+      ...delivery.excludedResolvingSourceFactIds,
+      ...delivery.excludedOwnAbilityFactIds,
+      ...delivery.ignoredNormalFactIds,
+      ...delivery.ignoredPendingFactIds,
+      ...delivery.redundantUnresolvedFactIds
+    ].sort();
+    expect(partition).toStrictEqual(facts.map((fact) => fact.auditFactId).sort());
+  }, 30_000);
+
+  it("[2B19A3B2-PROJECTION] exposes only the selected count to the source and remains isolated from caller mutation", async () => {
+    const fixture = await settleCombinedDreamerMathematician();
+    const deliveryEvent = fixture.events.at(-2);
+    if (deliveryEvent?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected combined delivery");
+    const sourcePlayerId = deliveryEvent.payload.sourceContract.sourcePlayerId;
+    const playerView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(fixture.events, sourcePlayerId);
+    const aiView = buildAiPrivateKnowledgeViewFromAcceptedEventStream(fixture.events, sourcePlayerId);
+    expect(playerView.mathematicianInformation).toStrictEqual({ count: 0 });
+    expect(aiView.mathematicianInformation).toStrictEqual(playerView.mathematicianInformation);
+    const serialized = JSON.stringify({ player: playerView, ai: aiView });
+    for (const forbidden of [
+      "trueCount", "qualifyingAbnormalFactIds", "distinctAbnormalPlayers", "windowSnapshot",
+      "informationReliability", "vortoxConstraint", "dreamer-information-delivered-v4",
+      "dreamer-information-delivered-v6", "VORTOX_FALSE_INFORMATION"
+    ]) expect(serialized).not.toContain(forbidden);
+    for (const entry of fixture.state.currentCharacterState?.entries ?? []) {
+      if (entry.playerId === sourcePlayerId) continue;
+      expect(buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(fixture.events, entry.playerId)
+        .mathematicianInformation).toBeUndefined();
+      expect(buildAiPrivateKnowledgeViewFromAcceptedEventStream(fixture.events, entry.playerId)
+        .mathematicianInformation).toBeUndefined();
+    }
+    if (playerView.mathematicianInformation === undefined) throw new Error("Expected source Math view");
+    (playerView.mathematicianInformation as { count: number }).count = 11;
+    expect(buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(fixture.events, sourcePlayerId)
+      .mathematicianInformation).toStrictEqual({ count: 0 });
+    expect(() => buildPlayerPrivateKnowledgeView(fixture.state, sourcePlayerId)).toThrow("accepted-event-stream");
+    expect(() => buildAiPrivateKnowledgeView(fixture.state, sourcePlayerId)).toThrow("accepted-event-stream");
+  }, 30_000);
+
+  it("[2B19A3B2-HOSTILE-REPLAY] rejects lying counts, windows, classifications, and provenance", async () => {
+    const fixture = await settleCombinedDreamerMathematician();
+    const deliveryIndex = fixture.events.length - 2;
+    const acceptedDelivery = fixture.events[deliveryIndex];
+    if (acceptedDelivery?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected accepted Math delivery");
+    const hostileMutations: readonly ((payload: Record<string, unknown>) => void)[] = [
+      (payload) => { payload.trueCount = 1; },
+      (payload) => { payload.selectedCount = 2; },
+      (payload) => {
+        (payload.windowSnapshot as Record<string, unknown>).endEventSequence =
+          (payload.windowSnapshot as { endEventSequence: number }).endEventSequence - 1;
+      },
+      (payload) => { (payload.qualifyingAbnormalFactIds as unknown[]).pop(); },
+      (payload) => {
+        const rows = payload.distinctAbnormalPlayers as Array<{ supportingFactIds: unknown[] }>;
+        rows[0]!.supportingFactIds.push(rows[0]!.supportingFactIds[0]);
+      },
+      (payload) => { (payload.sourceContract as Record<string, unknown>).sourcePlayerId = "forged-math-source"; },
+      (payload) => { payload.resolvingAbilityInstanceId = "first-night-ability-instance-v1:forged"; },
+      (payload) => { (payload.vortoxConstraint as Record<string, unknown>).vortoxPlayerId = "forged-vortox"; }
+    ];
+    for (const mutate of hostileMutations) {
+      const hostile = structuredClone(fixture.events);
+      const candidate = hostile[deliveryIndex];
+      if (candidate?.eventType !== "MathematicianInformationDelivered") throw new Error("Expected mutable Math delivery");
+      mutate(candidate.payload);
+      expect(() => rebuildOptionalGameState(hostile)).toThrow(DomainError);
+    }
+    const wrongNight = structuredClone(fixture.events);
+    const dreamerDelivery = wrongNight.find((event) => event.eventType === "DreamerInformationDelivered");
+    if (dreamerDelivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected Dreamer delivery");
+    (dreamerDelivery.payload as unknown as Record<string, unknown>).nightNumber = 2;
+    expect(() => rebuildOptionalGameState(wrongNight)).toThrow(DomainError);
+    const duplicateEvent = [...fixture.events.slice(0, deliveryIndex), fixture.events[deliveryIndex - 1]!, ...fixture.events.slice(deliveryIndex)];
+    expect(() => rebuildOptionalGameState(duplicateEvent)).toThrow(DomainError);
+  }, 30_000);
+
+  it("[2B19A3B2-STRUCTURAL] rejects malformed payloads, commands, and hostile T1 objects", async () => {
+    const fixture = await settleCombinedDreamerMathematician();
+    const acceptedDelivery = fixture.events.at(-2);
+    if (acceptedDelivery?.eventType !== "MathematicianInformationDelivered") {
+      throw new Error("Expected accepted Math delivery");
+    }
+    expect(validateMathematicianInformationDeliveredPayloadShape(acceptedDelivery.payload)).toStrictEqual({ valid: true });
+    const malformedPayloads = [
+      { ...acceptedDelivery.payload, extra: true },
+      { ...acceptedDelivery.payload, distinctAbnormalPlayers: [...acceptedDelivery.payload.distinctAbnormalPlayers].reverse() },
+      { ...acceptedDelivery.payload, legalCandidateCounts: [0, 0] }
+    ];
+    for (const payload of malformedPayloads) {
+      expect(validateMathematicianInformationDeliveredPayloadShape(payload).valid).toBe(false);
+    }
+    expect(validateSettleMathematicianInformationCommandPayload(fixture.command.payload).valid).toBe(true);
+    for (const payload of [
+      {},
+      { commandType: "SettleMathematicianInformation" },
+      { commandType: "SettleMathematicianInformation", taskId: fixture.mathTask.taskId, extra: true },
+      { commandType: "SettleClockmakerInformation", taskId: fixture.mathTask.taskId },
+      { commandType: "SettleMathematicianInformation", taskId: "not-canonical" }
+    ]) expect(validateSettleMathematicianInformationCommandPayload(payload).valid).toBe(false);
+
+    let getterCalls = 0;
+    const accessorPayload = Object.defineProperty({}, "commandType", {
+      enumerable: true,
+      get: () => { getterCalls += 1; return "SettleMathematicianInformation"; }
+    });
+    Object.defineProperty(accessorPayload, "taskId", { enumerable: true, value: fixture.mathTask.taskId });
+    const cyclic = { ...fixture.command } as Record<string, unknown>;
+    cyclic.self = cyclic;
+    const symbolCommand = { ...fixture.command } as Record<PropertyKey, unknown>;
+    symbolCommand[Symbol("hostile")] = true;
+    class NonPlainCommand { public readonly value = fixture.command; }
+    const throwingProxy = new Proxy(fixture.command, {
+      get: () => { throw new Error("hostile getter"); }
+    });
+    const revoked = Proxy.revocable(fixture.command, {});
+    revoked.revoke();
+    for (const [name, value] of [
+      ["accessor", { ...fixture.command, payload: accessorPayload }],
+      ["cycle", cyclic],
+      ["symbol", symbolCommand],
+      ["nonplain", new NonPlainCommand()],
+      ["proxy", throwingProxy],
+      ["revoked", revoked.proxy],
+      ["array-extra-property", Object.assign([fixture.command], { extra: true })],
+      ["sparse", (() => { const sparse = [fixture.command]; Reflect.deleteProperty(sparse, "0"); return sparse; })()]
+    ] as const) {
+      let captured: ReturnType<typeof captureSupportedCommand> | undefined;
+      expect(() => { captured = captureSupportedCommand(value as SupportedCommandEnvelope); }).not.toThrow();
+      expect(captured?.valid, name).toBe(false);
+    }
+    expect(getterCalls).toBe(0);
+  }, 30_000);
+
+  it("[2B19A3B2-FAULT] keeps real failure ports atomic and receipt-free", async () => {
+    const fixture = await reachCombinedDreamerMathematician();
+    const beforeEvents = structuredClone(fixture.beforeMathEvents);
+    const beforeState = rebuildOptionalGameState(beforeEvents);
+    const expectAtomicFailure = async (
+      service: GameApplicationService,
+      code: CommandExecutionFailed["code"],
+      stage: CommandExecutionFailed["failureStage"]
+    ) => {
+      await expect(service.execute(fixture.command)).resolves.toMatchObject({
+        status: "failed", code, failureStage: stage, retryable: true
+      });
+      expect(await fixture.store.loadDomainEvents(ids.game)).toStrictEqual(beforeEvents);
+      expect(rebuildOptionalGameState(await fixture.store.loadDomainEvents(ids.game))).toStrictEqual(beforeState);
+      expect(await fixture.store.findCommandReceipt(ids.game, fixture.command.commandId)).toBeUndefined();
+    };
+
+    fixture.store.failReceiptRead = true;
+    await expectAtomicFailure(fixture.service, "CommandStoreReadFailed", "receipt-read");
+    fixture.store.failEventLoad = true;
+    await expectAtomicFailure(fixture.service, "CommandStoreReadFailed", "event-load");
+    const faultIds = new FaultInjectingIdGenerator();
+    const metadataService = makeService(fixture.store, testSetupGenerator, faultIds).service;
+    faultIds.failNextBatchId = true;
+    await expectAtomicFailure(metadataService, "MetadataGenerationFailed", "event-metadata");
+
+    const boundary = fixture.service as unknown as { createBatch: (...args: readonly unknown[]) => DomainEventBatch };
+    const originalCreateBatch = boundary.createBatch.bind(fixture.service);
+    boundary.createBatch = (...args: readonly unknown[]): DomainEventBatch => {
+      const batch = originalCreateBatch(...args);
+      return { ...batch, events: batch.events.map((event) => event.eventType === "MathematicianInformationDelivered"
+        ? { ...event, payload: { ...event.payload, trueCount: 1 } }
+        : event) };
+    };
+    await expectAtomicFailure(fixture.service, "DependencyExecutionFailed", "prospective-validation");
+    boundary.createBatch = originalCreateBatch;
+    fixture.store.failBeforeCommit = true;
+    await expectAtomicFailure(fixture.service, "EventStoreAppendFailed", "accepted-commit");
+    fixture.store.failDuringCommit = true;
+    await expectAtomicFailure(fixture.service, "EventStoreAppendFailed", "accepted-commit");
+  }, 30_000);
+
+  it("[2B19A3B2-RECOVERY] accepts the same command once after a one-shot commit fault and then replays idempotently", async () => {
+    const fixture = await reachCombinedDreamerMathematician();
+    const beforeEvents = structuredClone(fixture.beforeMathEvents);
+    fixture.store.failBeforeCommit = true;
+    await expect(fixture.service.execute(fixture.command)).resolves.toMatchObject({
+      status: "failed", code: "EventStoreAppendFailed", failureStage: "accepted-commit", retryable: true
+    });
+    expect(await fixture.store.loadDomainEvents(ids.game)).toStrictEqual(beforeEvents);
+    expect(await fixture.store.findCommandReceipt(ids.game, fixture.command.commandId)).toBeUndefined();
+    const acceptedResult = await fixture.service.execute(fixture.command);
+    expectEventSummaryAcceptedResult(acceptedResult);
+    await expect(fixture.service.execute(fixture.command)).resolves.toMatchObject({
+      status: "accepted", idempotent: true
+    });
+    const acceptedEvents = await fixture.store.loadDomainEvents(ids.game);
+    expect(acceptedEvents.length).toBe(beforeEvents.length + 2);
+    expect(acceptedEvents.slice(-2).map((event) => event.eventType)).toStrictEqual([
+      "MathematicianInformationDelivered", "ScheduledTaskSettled"
+    ]);
+    expect(fixture.store.acceptedCount).toBeGreaterThan(0);
+    expect(await fixture.store.findCommandReceipt(ids.game, fixture.command.commandId)).toBeDefined();
+  }, 30_000);
+
+  it("[2B19A3B2-LEGACY] preserves accepted legacy and prior Dreamer authorities without migration", async () => {
+    const normalV3 = loadAcceptedBaseDreamerV3NormalStreamFixture().events;
+    const vortoxV3 = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD").events;
+    const gainedV6 = await captureAcceptedPhilosopherGainedVortoxDreamerStream();
+    expect(rebuildOptionalGameState(structuredClone(normalV3))).toStrictEqual(rebuildOptionalGameState(normalV3));
+    expect(rebuildOptionalGameState(structuredClone(vortoxV3))).toStrictEqual(rebuildOptionalGameState(vortoxV3));
+    expect(rebuildOptionalGameState(structuredClone(gainedV6.events))).toStrictEqual(gainedV6.state);
+    const dreamerVersions = gainedV6.events.flatMap((event) => {
+      if (event.eventType !== "DreamerInformationDelivered") return [];
+      if (!("deliverySchemaVersion" in event.payload)) return [];
+      const version: unknown = event.payload.deliverySchemaVersion;
+      if (typeof version !== "string") throw new Error("Expected Dreamer delivery schema version");
+      return [version];
+    });
+    expect(dreamerVersions).toStrictEqual([
+      "dreamer-information-delivered-v4", "dreamer-information-delivered-v6"
+    ]);
+    expect(normalV3.some((event) => event.eventType === "DreamerInformationDelivered" &&
+      "deliverySchemaVersion" in event.payload &&
+      event.payload.deliverySchemaVersion === "dreamer-information-delivered-v2")).toBe(true);
+    expect(vortoxV3.some((event) => event.eventType === "DreamerInformationDelivered" &&
+      "deliverySchemaVersion" in event.payload &&
+      event.payload.deliverySchemaVersion === "dreamer-information-delivered-v3")).toBe(true);
+  }, 30_000);
 });
