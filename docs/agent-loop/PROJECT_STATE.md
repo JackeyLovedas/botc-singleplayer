@@ -1,5 +1,14 @@
 # Project State
 
+## Current state — Phase 3 Slice 2B19A3B2 RR2 FINAL EXACT PROFILE READY
+
+- Exact RR2 source `d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83` now has append-only profile `phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1`; only this new profile is selected by CI. Historical `2c5f2f6` and `cfd6982` profiles remain immutable and unselected.
+- Three fresh ten-process candidates pass `10 / 10`, authoritative `1,544`, zero mismatch/risk, exact counts `207 / 357 / 465 / 90 / 52 / 82 / 26 / 16 / 10 / 239`, and elapsed `170.791 / 167.989 / 171.632s`.
+- Canonical ordinary/coverage/semantic inventories and obligation tuple `63 / 3204 / 23 / 3204 / 1795` are identical pairwise. Exact new-profile validation is `3 / 3 MATCH`; evidence SHA-256 is `f927d6209c42f302166e664ad359936454bee7a554869ce76bdb3af7360cba46`.
+- Typecheck, lint, ownership `22 / 22`, ordinary `35 / 1,544`, and coverage `35 / 1,544` pass. The excluded pre-effective PowerShell native-stderr wrapper attempt is preserved and contains no candidate failure.
+- Scope is exactly eight profile-only files. Production, tests, ownership, traceability, rules, role matrix, topology, commands, timeouts, dependencies, thresholds, patterns, collectors, diagnostics, and merge algorithms are unchanged.
+- Control is `status=RR2_FINAL_EXACT_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`, `repairRound=2/2 FINAL`, `productRepairRoundConsumed=false`, `currentPR=44`, `disposition=UNACCEPTED`, and `remainingBlockers=[PENDING_ATTRIBUTED_RR2_PROFILE_COMMIT_AND_FRESH_EXACT_HEAD_CI]`. No Round 3 exists.
+
 ## Current state — Phase 3 Slice 2B19A3B2 RR2 SOURCE READY
 
 - RR1 final HEAD `c03697fd56062971899cdab971fb9f769e1bdfad` failed fresh push/PR runs `29909921258 / 29909925167` only after the Linux owner coverage children completed `82 / 82` and the Windows application children completed `285 / 285`; the observed terminal events were one/two `onTaskUpdate` timeouts, not product assertion failures.

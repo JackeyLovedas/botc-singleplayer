@@ -110,3 +110,32 @@ External evidence root is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverag
 This profile-only continuation appends one registry record and changes only the explicit workflow selector plus necessary profile/status/control records. Production, tests, fixtures, ownership, traceability, rules, role matrix, topology, group membership, patterns, commands, dependencies, timeouts, thresholds, fork count, collectors, diagnostics, and merge algorithms remain unchanged.
 
 RR1 profile validation is `3 / 3 COVERAGE_APPROVED_PROFILE_MATCH`; the three validation artifacts are byte-identical at SHA-256 `71ffa980708d27f07d38cab1b7a466f5bfbf3625901207e1fb063e7e1b1dbce8`. Typecheck, full lint, ownership self-test `22 / 22`, full ordinary `35 files / 1,544 tests`, full coverage `35 files / 1,544 tests`, JSON, YAML, script syntax, diff, and exact eight-file scope checks pass.
+
+## RR2 final exact profile
+
+- product/test source HEAD: `d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83`
+- profile ID: `phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1`
+- source kind: `REPAIR_ROUND_2_FINAL_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS`
+- topology: `TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION`
+- profile status: `RR2_FINAL_EXACT_PROFILE_FROZEN_PENDING_ATTRIBUTED_PROFILE_COMMIT`
+- repair: `2 / 2 FINAL`; `productRepairRoundConsumed=false`; no Round 3 exists
+
+The two historical profile records above remain byte-preserved and authoritative only for sources `2c5f2f62d8c07e83148242a8c5862c9d2019e9e6` and `cfd6982652960096c552950cc94ac41c5f220824`. RR2 appends one new record and changes only the explicit workflow selector plus this document and necessary controls/status/log. It changes no production, test, fixture, ownership, traceability, rule, matrix, topology, group, pattern, command, timeout, dependency, threshold, fork count, collector, diagnostic, or merge algorithm.
+
+Three wholly fresh complete ten-process candidates ran from the exact clean RR2 source. Each passed `10 / 10` children, authoritative semantic `1,544 / 1,544`, exact group counts `207 / 357 / 465 / 90 / 52 / 82 / 26 / 16 / 10 / 239`, and missing / duplicate / unexpected / wrong-owner / risk counts `0 / 0 / 0 / 0 / 0`.
+
+| Candidate | Window (Asia/Shanghai) | Group wall total | Effective elapsed | Raw coverage SHA-256 | Risk hits |
+|---|---|---:|---:|---|---:|
+| 1 | `2026-07-22T18:39:56.9053901+08:00` to `18:42:47.6996851+08:00` | `232.066s` | `170.791s` | `d9207fd0e147bac47cb90281c6e94435d22694a40c3e381625a456cbf8cfaacc` | 0 |
+| 2 | `2026-07-22T18:43:48.7828025+08:00` to `18:46:36.7743540+08:00` | `229.930s` | `167.989s` | `52f688688320da2e5e8eeae6d1fe32972d240c1391fb04a7ccf56e187408a3ee` | 0 |
+| 3 | `2026-07-22T18:46:36.8975908+08:00` to `18:49:28.5306844+08:00` | `234.148s` | `171.632s` | `8408b16f0d0602a68b4051b553d890391f5b626d93162eb4e89c020cbac65326` | 0 |
+
+Canonical authority is identical: ordinary/project execution `f29bed32c2c644e31aa93666406b0a8e8f7072b13135ada18782a970c069878a`, coverage execution `1e11e13f1549363109a223026f4191664fe8c26ce66d5f2219ca46b141bfadf0`, semantic inventory `a56e28357c80e156709c3c1d714040d58c85a61a7c2b6fbc3e6c737738a12cf6`, and obligation tuple `63 / 3204 / 23 / 3204 / 1795` with the five hashes frozen above. The all-three comparator returns `COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL`; comparison artifact SHA-256 is `f5767ef74496cd15befb6e20faedba8e31a820290db70310888007b4840ebdba`.
+
+External evidence root is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\coverage-experiments\phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1`. Its `three-candidate-stability.md` SHA-256 is `f927d6209c42f302166e664ad359936454bee7a554869ce76bdb3af7360cba46`; verdict is `THREE_FINAL_CANDIDATE_AUTHORITATIVE_IDENTITIES_MATCH`.
+
+One pre-effective harness attempt is preserved and excluded: all child shards completed, but PowerShell classified normal Vitest deprecation stderr as a terminating wrapper error during the first group merge. The effective launcher used explicit native exit-code checks. No effective candidate contains a timeout, `onTaskUpdate`, unhandled error, worker exit, IPC/RPC failure, exit 1, mismatch, or hidden rerun.
+
+The non-authoritative global blob JSON reports `1,538 / 1,550 / 1,550` passed and zero failed because of the existing same-project task-ID collision. The official per-group semantic verifier is authoritative and returns exact `1,544 / 1,544` for all three. No canonical test, ownership, or obligation identity varies.
+
+RR2 exact-profile validation is `3 / 3 COVERAGE_APPROVED_PROFILE_MATCH`; validation artifacts are byte-identical at SHA-256 `307cfcc0e884667d785b72a54801095886a14e3366101fd63ba3918c2d5a03f0`. Both historical profiles still match. Typecheck, full lint, ownership self-test `22 / 22`, full ordinary `35 files / 1,544 tests`, and full coverage `35 files / 1,544 tests` pass. JSON, YAML, script syntax, negative freshness, diff, and exact eight-file scope audits pass before the single attributed unpushed profile-only commit.

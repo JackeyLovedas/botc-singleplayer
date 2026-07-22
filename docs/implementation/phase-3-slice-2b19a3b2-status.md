@@ -12,6 +12,20 @@
 - Historical profile status: `FROZEN_FOR_2C5F2F6_ONLY_NOT_AUTHORITY_FOR_RR1_SOURCE`
 - Disposition: `UNACCEPTED`
 
+## RR2 final exact coverage profile
+
+Exact clean RR2 source `d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83` is bound by new profile `phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1`, source kind `REPAIR_ROUND_2_FINAL_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS`. The prior `2c5f2f6` and `cfd6982` records remain append-preserved, unchanged, and unselected.
+
+Three fresh isolated candidates each pass `10 / 10`, authoritative `1,544 / 1,544`, exact group counts `207 / 357 / 465 / 90 / 52 / 82 / 26 / 16 / 10 / 239`, and mismatch/risk counts zero. Effective elapsed is `170.791 / 167.989 / 171.632s`; group-wall totals are `232.066 / 229.930 / 234.148s`. Canonical ordinary `f29bed32...878a`, coverage `1e11e13f...adf0`, semantic `a56e2835...2cf6`, and obligation tuple `63 / 3204 / 23 / 3204 / 1795` are identical pairwise.
+
+External stability report SHA-256 is `f927d6209c42f302166e664ad359936454bee7a554869ce76bdb3af7360cba46`. One pre-effective PowerShell deprecation-stderr classification attempt is preserved and excluded; it is not a candidate. All effective logs contain zero timeout, `onTaskUpdate`, unhandled, worker-exit, IPC/RPC, or exit-1 risk hits.
+
+New exact-profile validation is `3 / 3 COVERAGE_APPROVED_PROFILE_MATCH`, with byte-identical validation SHA-256 `307cfcc0e884667d785b72a54801095886a14e3366101fd63ba3918c2d5a03f0`. Typecheck, lint, ownership self-test `22 / 22`, ordinary `35 / 1,544`, and coverage `35 / 1,544` pass.
+
+This stage changes exactly the appended verifier record, one selector token, the existing profile document, and five controls/status/log. Production, tests, ownership, traceability, rules, role matrix, topology, commands, timeout, dependencies, thresholds, patterns, collectors, diagnostics, and merge algorithms remain unchanged.
+
+Status is `RR2_FINAL_EXACT_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT / UNACCEPTED`; repair is `2 / 2 FINAL`; `productRepairRoundConsumed=false`; no Round 3 exists. Remaining blocker is `PENDING_ATTRIBUTED_RR2_PROFILE_COMMIT_AND_FRESH_EXACT_HEAD_CI`.
+
 ## PR #44 CI test-evidence execution repair Round 2 of 2
 
 RR1 final HEAD `c03697fd56062971899cdab971fb9f769e1bdfad` failed fresh push/PR runs `29909921258 / 29909925167`. Both Linux owner coverage children completed `82 / 82`, wrote complete blob/coverage artifacts, and then emitted one `onTaskUpdate` timeout. Both Windows application children completed `285 / 285` and then emitted two such timeouts. There was no product assertion failure. This is the final permitted repair round; no Round 3 exists.

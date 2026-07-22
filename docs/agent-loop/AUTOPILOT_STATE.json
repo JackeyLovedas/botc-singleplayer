@@ -1,5 +1,5 @@
 {
-  "status": "RR2_SOURCE_READY_PENDING_ATTRIBUTED_COMMIT",
+  "status": "RR2_FINAL_EXACT_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE",
   "productRepairRoundConsumed": false,
@@ -1099,8 +1099,8 @@
   },
   "reviewedHead": "3ef896942fc278bfd3b4484f74f5cfcc55c67ce2",
   "currentReviewHeadAuthority": "Independent A3B2 design release review after accepted Command Capture Proxy Rejection V1 reviewed synchronized merge HEAD 3ef896942fc278bfd3b4484f74f5cfcc55c67ce2 with parents e411efe967c37dff0030f2bd9e52eb5b8171712e and 9262a2a271c7e4f704c90eca67ce4087a316c252. It returned DESIGN_RELEASE_PASS for unchanged Design Round 1, with 12 of 12 checks passing and all behavior/rule/schema/window change flags false. Source implementation is now materialized but remains unaccepted pending attributed commit and controller full gates. No Design Round 2 was created.",
-  "exactHeadCIAuthority": "PR #44 RR1 final HEAD c03697fd56062971899cdab971fb9f769e1bdfad has failed push/PR runs 29909921258 and 29909925167 classified CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE. Linux completed 82/82 before one onTaskUpdate timeout and Windows completed 285/285 before two; these are failure evidence only and must not be rerun or inherited by the pending RR2 source.",
-  "currentFeatureHead": "c03697fd56062971899cdab971fb9f769e1bdfad",
+  "exactHeadCIAuthority": "Exact clean RR2 source d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83 has complete local final-profile authority but no fresh CI. RR1 failed runs 29909921258 and 29909925167 remain failure evidence only and cannot be inherited.",
+  "currentFeatureHead": "d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83",
   "repairRound": 2,
   "designRound": 1,
   "maxDesignRounds": 2,
@@ -1319,7 +1319,7 @@
     "remainingBlockers": ["PENDING_ATTRIBUTED_RR1_PROFILE_COMMIT_AND_CONTROLLER_EXACT_HEAD_CI"]
   },
   "slice2B19A3B2CiTestEvidenceRepairRound2": {
-    "status": "SOURCE_READY_PENDING_ATTRIBUTED_COMMIT",
+    "status": "SOURCE_COMMITTED_FINAL_EXACT_PROFILE_READY",
     "classification": "CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE",
     "repairRound": 2,
     "maxRepairRounds": 2,
@@ -1365,11 +1365,67 @@
     "workflowChanged": false,
     "ruleSemanticsChanged": false,
     "roleCoverageChanged": false,
-    "remainingBlockers": ["PENDING_ATTRIBUTED_RR2_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI"]
+    "remainingBlockers": ["PENDING_ATTRIBUTED_RR2_PROFILE_COMMIT_AND_FRESH_EXACT_HEAD_CI"]
+  },
+  "slice2B19A3B2RepairRound2CoverageProfile": {
+    "status": "FINAL_EXACT_PROFILE_FROZEN_PENDING_ATTRIBUTED_COMMIT",
+    "profileId": "phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1",
+    "sourceHead": "d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83",
+    "sourceKind": "REPAIR_ROUND_2_FINAL_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS",
+    "repairRound": 2,
+    "maxRepairRounds": 2,
+    "finalRepairRound": true,
+    "productRepairRoundConsumed": false,
+    "historicalProfilesPreserved": [
+      "phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1",
+      "phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1"
+    ],
+    "ordinaryGroups": 9,
+    "coverageGroups": 10,
+    "coverageGroupCounts": "207/357/465/90/52/82/26/16/10/239",
+    "semanticTests": 1544,
+    "physicalTestFiles": 31,
+    "workspaceProjectFileExecutions": 35,
+    "ordinaryProjectInventorySha256": "f29bed32c2c644e31aa93666406b0a8e8f7072b13135ada18782a970c069878a",
+    "coverageExecutionSha256": "1e11e13f1549363109a223026f4191664fe8c26ce66d5f2219ca46b141bfadf0",
+    "semanticInventorySha256": "a56e28357c80e156709c3c1d714040d58c85a61a7c2b6fbc3e6c737738a12cf6",
+    "coverageObligationTuple": "63/3204/23/3204/1795",
+    "sourceFilesSha256": "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691",
+    "zeroHitStatementsSha256": "d535141afb3c60331af1ca6dcd7cab6dff5df2e2f8db75e943a72ab1963d1644",
+    "zeroHitFunctionsSha256": "4fdf762b692b151aed1686a73441f38a913ed796a6d5193021d127ed6703dbec",
+    "zeroHitLinesSha256": "fc2ec99a8cbafa2b2a4bb6fef99430a72d83bdf1da74cca00b38000400c5691e",
+    "zeroHitBranchArmsSha256": "6d8ba5d94a86dddf1b045f73e58e4e2c826bcf7c6d004a8ed7fd8d575aa315f5",
+    "candidateElapsedSeconds": [170.791, 167.989, 171.632],
+    "candidateGroupWallTotalsSeconds": [232.066, 229.93, 234.148],
+    "candidateResult": "3/3 / 10/10 / authoritative 1544/1544 / mismatch 0 / risk 0",
+    "coverageHarnessCorrection": "EXCLUDED_PRE_EFFECTIVE_POWERSHELL_NATIVE_STDERR_CLASSIFICATION",
+    "comparisonVerdict": "COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL",
+    "comparisonSha256": "f5767ef74496cd15befb6e20faedba8e31a820290db70310888007b4840ebdba",
+    "stabilityEvidencePath": "C:\\Users\\wjl\\AppData\\Local\\BOTCRepoVisibility\\coverage-experiments\\phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1\\three-candidate-stability.md",
+    "stabilityEvidenceSha256": "f927d6209c42f302166e664ad359936454bee7a554869ce76bdb3af7360cba46",
+    "profileValidation": "3/3 COVERAGE_APPROVED_PROFILE_MATCH",
+    "profileValidationSha256": "307cfcc0e884667d785b72a54801095886a14e3366101fd63ba3918c2d5a03f0",
+    "historicalProfileValidation": "2c5f2f6 MATCH / cfd6982 MATCH",
+    "localGates": {
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "ownershipSelfTest": "22/22 PASS",
+      "test": "35 files / 1544 tests PASS / 40.8s command",
+      "coverage": "35 files / 1544 tests PASS / 57.1s command / 75.14 statements-lines / 83.34 branches / 97.40 functions"
+    },
+    "profileOnlyFiles": 8,
+    "productionChanged": false,
+    "testsChanged": false,
+    "ownershipChanged": false,
+    "traceabilityChanged": false,
+    "rulesChanged": false,
+    "roleMatrixChanged": false,
+    "topologyChanged": false,
+    "remainingBlockers": ["PENDING_ATTRIBUTED_RR2_PROFILE_COMMIT_AND_FRESH_EXACT_HEAD_CI"]
   },
   "rootCauseClassification": "CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE",
   "knownBlockers": [
-    "PENDING_ATTRIBUTED_RR2_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI"
+    "PENDING_ATTRIBUTED_RR2_PROFILE_COMMIT_AND_FRESH_EXACT_HEAD_CI"
   ],
   "implementationPaused": false,
   "vortoxBehaviorConflict": false,
@@ -1378,7 +1434,7 @@
   "ledgerSchemaConflict": false,
   "ruleConflict": false,
   "productResliceRequired": false,
-  "nextGovernanceTask": "CREATE_ATTRIBUTED_UNPUSHED_RR2_SOURCE_COMMIT_THEN_CONTROLLER_FRESH_EXACT_HEAD_CI",
+  "nextGovernanceTask": "CREATE_ATTRIBUTED_UNPUSHED_RR2_PROFILE_COMMIT_THEN_CONTROLLER_FRESH_EXACT_HEAD_CI",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",
@@ -1878,7 +1934,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_ATTRIBUTED_RR2_SOURCE_COMMIT_AND_FRESH_EXACT_HEAD_CI"
+    "PENDING_ATTRIBUTED_RR2_PROFILE_COMMIT_AND_FRESH_EXACT_HEAD_CI"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
@@ -2645,8 +2701,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-20T14:45:28.4521528+08:00",
-  "lastAction": "Completed PR #44 A3B2 CI test-evidence execution final Repair Round 2 locally. All nine identities run concurrently; ACCEPTED is the sole unchanged real producer and four read-only tests await defensive clones, while NO-VORTOX/FAULT/RECOVERY/LEGACY remain independent. Focused 5x, owner ordinary/coverage 3x, Windows 3x, regressions, formal inventory, exact frozen-profile obligations, and all four full gates pass with zero effective child risk. Production, identities, traceability, profile/verifier, workflow, rules, role coverage, topology, dependency, timeout, and threshold remain unchanged.",
-  "lastError": "RR1 final HEAD c03697fd56062971899cdab971fb9f769e1bdfad: CI_TEST_INFRASTRUCTURE_FAILURE / TEST_EVIDENCE_EXECUTION_STRUCTURE in runs 29909921258 / 29909925167 after passing test completion; final RR2 source commit and fresh exact-head CI pending. Any fresh-head failure requires HUMAN_BLOCKED / RESLICE_REQUIRED; no Round 3 exists.",
-  "requiredNextAction": "CREATE_ATTRIBUTED_UNPUSHED_RR2_SOURCE_COMMIT",
-  "nextAction": "CREATE_ATTRIBUTED_UNPUSHED_RR2_SOURCE_COMMIT"
+  "lastAction": "Completed the final RR2 exact profile locally for clean source d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83. Three fresh ten-process candidates pass authoritative 1544/1544 with zero mismatch/risk and identical canonical obligations; the new exact profile matches 3/3 while both historical profiles remain unchanged. Typecheck, lint, ownership, full test, and full coverage gates pass. Only the appended verifier record, selector, profile document, and five controls/status/log differ.",
+  "lastError": "RR1 final HEAD c03697fd56062971899cdab971fb9f769e1bdfad retains failed runs 29909921258 / 29909925167 as historical evidence. RR2 profile commit and fresh exact-head CI remain pending; any fresh-head failure requires HUMAN_BLOCKED / RESLICE_REQUIRED because no Round 3 exists.",
+  "requiredNextAction": "CREATE_ATTRIBUTED_UNPUSHED_RR2_PROFILE_COMMIT",
+  "nextAction": "CREATE_ATTRIBUTED_UNPUSHED_RR2_PROFILE_COMMIT"
 }
