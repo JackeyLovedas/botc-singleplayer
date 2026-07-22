@@ -16,6 +16,8 @@ import {
 } from "./vitest-ownership-contracts.mjs";
 
 const EMPTY_TEST_NAME_PATTERN = "";
+const INFORMATION_BASE_PATTERN = "^(?!.*\\[2B19A3B2-).*$";
+const INFORMATION_A3B2_PATTERN = "\\[2B19A3B2-";
 const DREAMER_VORTOX_CORE_PATTERN = "\\[(?:2B19A3A|2B19A3B1)-";
 const DREAMER_VORTOX_GAINED_PATTERN = "\\[2B19B-";
 
@@ -57,35 +59,45 @@ const ORDINARY_GROUPS = Object.freeze([
   })
 ]);
 
-const COVERAGE_GROUPS = Object.freeze([
-  ...ORDINARY_GROUPS.filter((group) => group.id !== "application-service-dreamer-vortox").map(
-    (group) =>
+const COVERAGE_GROUPS = Object.freeze(
+  ORDINARY_GROUPS.flatMap((group) => {
+    if (group.id === "application-service-information-and-later-actions") {
+      return [
+        Object.freeze({
+          id: "application-service-information-and-later-actions-base",
+          projects: group.projects,
+          testNamePattern: INFORMATION_BASE_PATTERN
+        }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions-a3b2",
+          projects: group.projects,
+          testNamePattern: INFORMATION_A3B2_PATTERN
+        })
+      ];
+    }
+    if (group.id === "application-service-dreamer-vortox") {
+      return [
+        Object.freeze({
+          id: "application-service-dreamer-vortox-core",
+          projects: group.projects,
+          testNamePattern: DREAMER_VORTOX_CORE_PATTERN
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-gained",
+          projects: group.projects,
+          testNamePattern: DREAMER_VORTOX_GAINED_PATTERN
+        })
+      ];
+    }
+    return [
       Object.freeze({
         id: group.id,
         projects: group.projects,
         testNamePattern: EMPTY_TEST_NAME_PATTERN
       })
-  ),
-  Object.freeze({
-    id: "application-service-dreamer-vortox-core",
-    projects: Object.freeze(["application-service-dreamer-vortox"]),
-    testNamePattern: DREAMER_VORTOX_CORE_PATTERN
-  }),
-  Object.freeze({
-    id: "application-service-dreamer-vortox-gained",
-    projects: Object.freeze(["application-service-dreamer-vortox"]),
-    testNamePattern: DREAMER_VORTOX_GAINED_PATTERN
+    ];
   })
-].sort((left, right) => {
-  const ordinaryOrder = ORDINARY_GROUPS.map((group) => group.id);
-  const order = [
-    ...ordinaryOrder.slice(0, ordinaryOrder.indexOf("application-service-dreamer-vortox")),
-    "application-service-dreamer-vortox-core",
-    "application-service-dreamer-vortox-gained",
-    ...ordinaryOrder.slice(ordinaryOrder.indexOf("application-service-dreamer-vortox") + 1)
-  ];
-  return order.indexOf(left.id) - order.indexOf(right.id);
-}));
+);
 
 const LEGACY_APPLICATION_SERVICE_PROJECTS = Object.freeze([
   "application-service-core",
@@ -577,9 +589,7 @@ function validateCoverageMergedReportCollision(
   repoRoot,
   mergedReportPath,
   fullInventory,
-  dreamerVortoxFull,
-  coreInventory,
-  gainedInventory
+  partitions
 ) {
   const report = JSON.parse(readFileSync(path.resolve(repoRoot, mergedReportPath), "utf8"));
   const context = "Merged Vitest coverage report";
@@ -648,9 +658,9 @@ function validateCoverageMergedReportCollision(
     }
   }
 
-  const dreamerKeys = new Set(dreamerVortoxFull.map(semanticIdentityKey));
-  const coreKeys = coreInventory.map(semanticIdentityKey);
-  const gainedKeys = gainedInventory.map(semanticIdentityKey);
+  const partitionKeys = new Set(
+    partitions.flatMap((partition) => partition.full.map(semanticIdentityKey))
+  );
   const missing = [];
   const invalid = [];
   for (const identity of fullInventory) {
@@ -660,7 +670,7 @@ function validateCoverageMergedReportCollision(
       missing.push(key);
       continue;
     }
-    if (!dreamerKeys.has(key) && (counts.passed !== 1 || counts.skipped !== 0)) {
+    if (!partitionKeys.has(key) && (counts.passed !== 1 || counts.skipped !== 0)) {
       invalid.push(key);
     }
   }
@@ -673,13 +683,30 @@ function validateCoverageMergedReportCollision(
     );
     return statuses.size === 1 ? [...statuses][0] : "MIXED";
   };
-  const coreSignature = partitionSignature(coreKeys);
-  const gainedSignature = partitionSignature(gainedKeys);
-  const collisionSignatureValid =
-    (coreSignature === "2/0" && gainedSignature === "0/2") ||
-    (coreSignature === "0/2" && gainedSignature === "2/0");
+  const partitionSummaries = partitions.map((partition) => {
+    const leftSignature = partitionSignature(partition.left.map(semanticIdentityKey));
+    const rightSignature = partitionSignature(partition.right.map(semanticIdentityKey));
+    const collisionSignatureValid =
+      (leftSignature === "2/0" && rightSignature === "0/2") ||
+      (leftSignature === "0/2" && rightSignature === "2/0");
+    return {
+      id: partition.id,
+      project: partition.project,
+      full: partition.full.length,
+      leftGroup: partition.leftGroup,
+      leftSignature,
+      rightGroup: partition.rightGroup,
+      rightSignature,
+      collisionSignatureValid
+    };
+  });
+  const expectedAssertionTotal =
+    fullInventory.length + partitions.reduce((total, partition) => total + partition.full.length, 0);
+  const invalidPartitionSignatures = partitionSummaries.filter(
+    (partition) => !partition.collisionSignatureValid
+  );
   if (
-    report.numTotalTests !== fullInventory.length + dreamerVortoxFull.length ||
+    report.numTotalTests !== expectedAssertionTotal ||
     assertionTotal !== report.numTotalTests ||
     passedAssertions !== report.numPassedTests ||
     skippedAssertions !== report.numPendingTests ||
@@ -687,10 +714,10 @@ function validateCoverageMergedReportCollision(
     invalid.length > 0 ||
     unexpected.length > 0 ||
     ambiguous.length > 0 ||
-    !collisionSignatureValid
+    invalidPartitionSignatures.length > 0
   ) {
     throw new Error(
-      `${context} does not match the exact Vitest same-project task-ID collision: report=${String(report.numPassedTests)}/${String(report.numTotalTests)}, assertions=${passedAssertions}/${assertionTotal}, skipped=${skippedAssertions}, core=${coreSignature}, gained=${gainedSignature}, missing=${missing.length}, invalid=${invalid.length}, unexpected=${unexpected.length}, ambiguous=${ambiguous.length}`
+      `${context} does not match the exact Vitest same-project task-ID collisions: report=${String(report.numPassedTests)}/${String(report.numTotalTests)}, assertions=${passedAssertions}/${assertionTotal}, skipped=${skippedAssertions}, partitions=${partitionSummaries.map((partition) => `${partition.id}:${partition.leftSignature}:${partition.rightSignature}`).join(",")}, missing=${missing.length}, invalid=${invalid.length}, unexpected=${unexpected.length}, ambiguous=${ambiguous.length}`
     );
   }
 
@@ -701,8 +728,7 @@ function validateCoverageMergedReportCollision(
     passedAssertions,
     skippedAssertions,
     failedTests: report.numFailedTests,
-    coreSignature,
-    gainedSignature,
+    partitions: partitionSummaries,
     semanticUnionAuthority: "EXACT_SINGLE_GROUP_REPORTS"
   };
 }
@@ -782,6 +808,14 @@ function main() {
   for (const group of COVERAGE_GROUPS) {
     if (typeof group.testNamePattern !== "string") {
       throw new Error(`Coverage group ${group.id} has no explicit testNamePattern`);
+    }
+    if (
+      group.testNamePattern !== EMPTY_TEST_NAME_PATTERN &&
+      (group.projects.length !== 1 || group.projects.includes(group.id))
+    ) {
+      throw new Error(
+        `Filtered coverage group ${group.id} must model its group ID separately from one ownership project`
+      );
     }
   }
   if (options.mergedReport) {
@@ -954,6 +988,35 @@ function main() {
       );
     }
 
+    const informationAndLaterActionsFull = fullInventory.filter(
+      (identity) => identity.project === "application-service-information-and-later-actions"
+    );
+    const informationAndLaterActionsA3B2 = informationAndLaterActionsFull.filter(
+      (identity) => identity.title.includes("[2B19A3B2-")
+    );
+    const informationAndLaterActionsA3B2Keys = new Set(
+      informationAndLaterActionsA3B2.map(semanticIdentityKey)
+    );
+    const informationAndLaterActionsBase = informationAndLaterActionsFull.filter(
+      (identity) => !informationAndLaterActionsA3B2Keys.has(semanticIdentityKey(identity))
+    );
+    const actualInformationBase = coverageGroupInventories.get(
+      "application-service-information-and-later-actions-base"
+    );
+    const actualInformationA3B2 = coverageGroupInventories.get(
+      "application-service-information-and-later-actions-a3b2"
+    );
+    assertExactKeySet(
+      actualInformationBase.map(semanticIdentityKey),
+      informationAndLaterActionsBase.map(semanticIdentityKey),
+      "Information-and-later-actions base filter"
+    );
+    assertExactKeySet(
+      actualInformationA3B2.map(semanticIdentityKey),
+      informationAndLaterActionsA3B2.map(semanticIdentityKey),
+      "Information-and-later-actions A3B2 filter"
+    );
+
     const dreamerVortoxFull = fullInventory.filter(
       (identity) => identity.project === "application-service-dreamer-vortox"
     );
@@ -1033,9 +1096,26 @@ function main() {
                 repoRoot,
                 options.mergedReport,
                 fullInventory,
-                dreamerVortoxFull,
-                actualCore,
-                actualGained
+                [
+                  {
+                    id: "information-and-later-actions",
+                    project: "application-service-information-and-later-actions",
+                    full: informationAndLaterActionsFull,
+                    leftGroup: "application-service-information-and-later-actions-base",
+                    left: actualInformationBase,
+                    rightGroup: "application-service-information-and-later-actions-a3b2",
+                    right: actualInformationA3B2
+                  },
+                  {
+                    id: "dreamer-vortox",
+                    project: "application-service-dreamer-vortox",
+                    full: dreamerVortoxFull,
+                    leftGroup: "application-service-dreamer-vortox-core",
+                    left: actualCore,
+                    rightGroup: "application-service-dreamer-vortox-gained",
+                    right: actualGained
+                  }
+                ]
               ),
         groups: topology.groups.map((group) => {
           const topologyGroup = topologyGroupById.get(group.id);
@@ -1044,8 +1124,13 @@ function main() {
             typeof topologyGroup?.testNamePattern === "string" &&
             topologyGroup.testNamePattern !== EMPTY_TEST_NAME_PATTERN;
           const selectedKeys = new Set(selectedInventory.map(semanticIdentityKey));
+          const filteredProjectInventory = filtered
+            ? fullInventory.filter((identity) =>
+                topologyGroup.projects.includes(identity.project)
+              )
+            : [];
           const skippedInventory = filtered
-            ? dreamerVortoxFull.filter(
+            ? filteredProjectInventory.filter(
                 (identity) => !selectedKeys.has(semanticIdentityKey(identity))
               )
             : [];
@@ -1098,6 +1183,15 @@ function main() {
         unexpected: unexpected.length,
         wrongOwner: wrongOwner.length,
         sha256: sha256Keys(fullSemanticKeys)
+      },
+      informationAndLaterActionsPartition: {
+        project: "application-service-information-and-later-actions",
+        full: informationAndLaterActionsFull.length,
+        base: actualInformationBase.length,
+        a3b2: actualInformationA3B2.length,
+        union: actualInformationBase.length + actualInformationA3B2.length,
+        intersection: 0,
+        a3b2Marker: "2B19A3B2"
       },
       dreamerVortoxPartition: {
         project: "application-service-dreamer-vortox",
