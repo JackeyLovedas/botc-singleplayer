@@ -12,6 +12,20 @@
 - Historical profile status: `FROZEN_FOR_2C5F2F6_ONLY_NOT_AUTHORITY_FOR_RR1_SOURCE`
 - Disposition: `UNACCEPTED`
 
+## PR #45 hosted stability profile V2
+
+Exact infrastructure source `6a4705c0a6685c6f954a1b0db9870457122f24f4` is bound by profile `phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2`, source kind `THREE_ARTIFACT_COMPLETE_GITHUB_HOSTED_EXECUTIONS`. All earlier A3B2 profiles remain append-preserved and unchanged.
+
+Hosted candidates H2 `30004324413/1`, H3 `30004295030/2`, and H4 `30007628335/1` each retain `32` artifacts and prove the same exact HEAD. H1 is excluded because artifacts became unretrievable after the full rerun, not because of any test failure. The single authorized close/reopen preserved PR metadata and exact HEAD.
+
+The hosted series proves `9` ordinary groups, `11` coverage groups, `1,544 / 1,544` semantic tests, Windows `285 / 285` with stable W1-W7 counts, zero mismatch/risk, canonical ordinary `f29bed32...878a`, coverage `1d6726c...cc3f`, semantic `a56e2835...2cf6`, and tuple `63 / 3204 / 23 / 3204 / 1795` with all five hashes exact. Raw `coverage-final.json` byte hashes are retained as non-authoritative artifacts.
+
+The complete audit is `docs/implementation/pr45-a3b2-hosted-stability-profile-v2.md`. External stability authority is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\github-hosted-evidence\pr45-6a4705c\hosted-stability-H2-H3-H4.json`, SHA-256 `008eb7bc033240bcf25311c717d033344ee9c831582b1a67071e0d873df828de`.
+
+Only the appended registry data, explicit selector, hosted audit/profile docs, and necessary controls change. Product, tests, fixtures, ownership, topology, verifier logic, timeouts, dependencies, thresholds, rules, role coverage, and accepted history remain unchanged.
+
+Status is `PR45_HOSTED_STABILITY_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT / UNACCEPTED`; remaining blocker is `PENDING_ATTRIBUTED_PR45_HOSTED_PROFILE_COMMIT_AND_FRESH_EXACT_HEAD_CI`.
+
 ## RR2 final exact coverage profile
 
 Exact clean RR2 source `d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83` is bound by new profile `phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1`, source kind `REPAIR_ROUND_2_FINAL_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS`. The prior `2c5f2f6` and `cfd6982` records remain append-preserved, unchanged, and unselected.

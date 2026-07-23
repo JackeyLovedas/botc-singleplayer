@@ -1,5 +1,16 @@
 # Current Task
 
+## PR #45 — A3B2 HOSTED STABILITY PROFILE V2 READY
+
+- Exact infrastructure source is `6a4705c0a6685c6f954a1b0db9870457122f24f4` on `infra/pr44-a3b2-evidence-process-isolation-v1`; authorized profile is `phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2` with source kind `THREE_ARTIFACT_COMPLETE_GITHUB_HOSTED_EXECUTIONS`.
+- Hosted candidates are H2 pull-request run `30004324413` attempt `1`, H3 push run `30004295030` attempt `2`, and H4 reopened pull-request run `30007628335` attempt `1`. Each has `32` artifacts and exact HEAD `6a4705c...`; the three complete catalogs and digests are SHA-constrained in `docs/implementation/pr45-a3b2-hosted-stability-profile-v2.md`.
+- H1 is excluded because its artifacts became unretrievable after the full rerun; this is not a test failure and H1 contributes no artifact hash. The one close/reopen operation preserved PR HEAD, base, body hash and metadata; exact timestamps are retained in the audit.
+- All three hosted candidates prove `9` ordinary groups, `11` coverage groups, `1,544 / 1,544` semantic tests, Windows `285 / 285` in W1-W7, zero mismatch/risk, canonical ordinary `f29bed32...878a`, coverage `1d6726c...cc3f`, semantic `a56e2835...2cf6`, and obligation tuple `63 / 3204 / 23 / 3204 / 1795` with all five hashes exact.
+- Raw `coverage-final.json` byte hashes vary and are non-authoritative; all pairwise canonical obligation comparisons return `COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL`. The authoritative stability report is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\github-hosted-evidence\pr45-6a4705c\hosted-stability-H2-H3-H4.json`, SHA-256 `008eb7bc033240bcf25311c717d033344ee9c831582b1a67071e0d873df828de`.
+- Scope is profile-only: append-preserve the registry, select the new profile explicitly, add hosted audit/profile docs, and update necessary controls. Product, tests, fixtures, ownership, topology, verifier logic, timeouts, dependencies, thresholds, and role coverage remain unchanged.
+- Control is `PR45_HOSTED_STABILITY_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT / UNACCEPTED`; remaining blocker is `PENDING_ATTRIBUTED_PR45_HOSTED_PROFILE_COMMIT_AND_FRESH_EXACT_HEAD_CI`.
+- Required action: create and push the single attributed commit `ci: record exact hosted A3B2 evidence profile`. Do not edit the PR body, rerun CI, merge, or begin another slice.
+
 ## Phase 3 Slice 2B19A3B2 — RR2 FINAL EXACT PROFILE READY
 
 - Exact clean RR2 source is `d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83`; new immutable profile is `phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1` with source kind `REPAIR_ROUND_2_FINAL_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS`.

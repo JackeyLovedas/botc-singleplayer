@@ -1,5 +1,15 @@
 # Project State
 
+## Current state — PR #45 A3B2 HOSTED STABILITY PROFILE V2 READY
+
+- Exact source HEAD `6a4705c0a6685c6f954a1b0db9870457122f24f4` is bound by append-only profile `phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2`, source kind `THREE_ARTIFACT_COMPLETE_GITHUB_HOSTED_EXECUTIONS`; all historical profiles remain unchanged.
+- Complete hosted candidates are H2 `30004324413/1`, H3 `30004295030/2`, and H4 `30007628335/1`, each with `32` cataloged artifacts. H1 is excluded only because its artifacts were no longer retrievable after the full rerun; it supplies no test-failure or hash authority.
+- The authorized one-time PR close/reopen preserved exact HEAD, base, body hash and metadata. The hosted series proves `9` ordinary / `11` coverage groups, semantic `1,544 / 1,544`, Windows `285 / 285` with stable W1-W7, and zero mismatch/risk.
+- Canonical ordinary/coverage/semantic hashes are `f29bed32...878a / 1d6726c...cc3f / a56e2835...2cf6`; tuple `63 / 3204 / 23 / 3204 / 1795` and all five obligation hashes are exact. Raw `coverage-final.json` byte hashes are retained but non-authoritative.
+- External authority is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\github-hosted-evidence\pr45-6a4705c\hosted-stability-H2-H3-H4.json`, SHA-256 `008eb7bc033240bcf25311c717d033344ee9c831582b1a67071e0d873df828de`; repository audit is `docs/implementation/pr45-a3b2-hosted-stability-profile-v2.md`.
+- Scope is profile-only. Product, tests, fixtures, ownership, topology, verifier logic, timeouts, dependencies, thresholds, rules, matrix, and accepted history do not change.
+- Control is `status=PR45_HOSTED_STABILITY_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`, `taskType=CI_TEST_INFRASTRUCTURE`, `currentPR=45`, `currentBranch=infra/pr44-a3b2-evidence-process-isolation-v1`, `disposition=UNACCEPTED`, and `remainingBlockers=[PENDING_ATTRIBUTED_PR45_HOSTED_PROFILE_COMMIT_AND_FRESH_EXACT_HEAD_CI]`.
+
 ## Current state — Phase 3 Slice 2B19A3B2 RR2 FINAL EXACT PROFILE READY
 
 - Exact RR2 source `d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83` now has append-only profile `phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1`; only this new profile is selected by CI. Historical `2c5f2f6` and `cfd6982` profiles remain immutable and unselected.

@@ -139,3 +139,20 @@ One pre-effective harness attempt is preserved and excluded: all child shards co
 The non-authoritative global blob JSON reports `1,538 / 1,550 / 1,550` passed and zero failed because of the existing same-project task-ID collision. The official per-group semantic verifier is authoritative and returns exact `1,544 / 1,544` for all three. No canonical test, ownership, or obligation identity varies.
 
 RR2 exact-profile validation is `3 / 3 COVERAGE_APPROVED_PROFILE_MATCH`; validation artifacts are byte-identical at SHA-256 `307cfcc0e884667d785b72a54801095886a14e3366101fd63ba3918c2d5a03f0`. Both historical profiles still match. Typecheck, full lint, ownership self-test `22 / 22`, full ordinary `35 files / 1,544 tests`, and full coverage `35 files / 1,544 tests` pass. JSON, YAML, script syntax, negative freshness, diff, and exact eight-file scope audits pass before the single attributed unpushed profile-only commit.
+
+## PR #45 hosted stability profile V2
+
+- infrastructure source HEAD: `6a4705c0a6685c6f954a1b0db9870457122f24f4`
+- profile ID: `phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2`
+- source kind: `THREE_ARTIFACT_COMPLETE_GITHUB_HOSTED_EXECUTIONS`
+- topology: `9` ordinary groups / `11` coverage groups / stable Windows `W1-W7`
+- hosted candidates: H2 run `30004324413` attempt `1`, H3 run `30004295030` attempt `2`, H4 run `30007628335` attempt `1`
+- profile status: `HOSTED_STABILITY_PROFILE_READY_PENDING_ATTRIBUTED_COMMIT`
+
+The three candidates are complete GitHub-hosted executions of the exact source HEAD and each retain `32` artifacts. H1 is excluded as `ARTIFACTS_NO_LONGER_RETRIEVABLE_AFTER_FULL_RERUN / NOT_A_TEST_FAILURE / NOT_INCLUDED_IN_ARTIFACT_HASH_SET`. The PR close/reopen operation executed once in each direction, preserved HEAD, base, body hash and metadata, and produced H4 as the authorized replacement pull-request event.
+
+All three candidates prove `1,544 / 1,544` ordinary and semantic coverage identities, Windows `285 / 285`, stable W1-W7 counts `9 / 90 / 52 / 73 / 9 / 26 / 26`, canonical ordinary `f29bed32...878a`, coverage `1d6726c...cc3f`, semantic `a56e2835...2cf6`, and exact obligation tuple `63 / 3204 / 23 / 3204 / 1795` with the existing five canonical hashes. Every pairwise obligation comparison is `COVERAGE_SEMANTIC_OBLIGATIONS_EQUAL`.
+
+The detailed audit, complete catalog paths and SHA-256 values, reopen timestamps, canonical hashes, raw non-authoritative `coverage-final.json` hashes, and profile boundary are recorded in `docs/implementation/pr45-a3b2-hosted-stability-profile-v2.md`. The authoritative external report is `C:\Users\wjl\AppData\Local\BOTCRepoVisibility\github-hosted-evidence\pr45-6a4705c\hosted-stability-H2-H3-H4.json`, SHA-256 `008eb7bc033240bcf25311c717d033344ee9c831582b1a67071e0d873df828de`.
+
+All earlier registry records and profile sections remain append-preserved. This continuation changes only the appended registry data, explicit workflow selector, hosted audit/profile documentation, and necessary control metadata. It changes no product, test, fixture, ownership, topology, verifier logic, timeout, dependency, threshold, or role coverage.
