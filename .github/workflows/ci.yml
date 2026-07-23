@@ -461,24 +461,10 @@ jobs:
           --output .vitest-coverage/inventory-audit.json
 
       - name: Verify merged coverage against exact source profile
-        shell: bash
-        run: |
-          profile_source_subject_regex='^ci: isolate A3B2 coverage and Windows evidence processes$'
-          profile_source_commits=()
-          while IFS=$'\t' read -r commit subject; do
-            if [[ "$subject" =~ $profile_source_subject_regex ]]; then
-              profile_source_commits+=("$commit")
-            fi
-          done < <(git log --format='%H%x09%s' HEAD)
-          if [ "${#profile_source_commits[@]}" -ne 1 ]; then
-            echo "Expected exactly one reachable profile source commit; found ${#profile_source_commits[@]}" >&2
-            exit 1
-          fi
-          profile_source_short="$(git rev-parse --short=7 "${profile_source_commits[0]}")"
-          profile="phase-3-slice-2b19a3b2-${profile_source_short}-split-evidence-v1"
-          node scripts/verify-coverage-obligations.mjs \
-            --validate-candidate .vitest-coverage/merged-coverage/coverage-final.json \
-            --profile "$profile"
+        run: >-
+          node scripts/verify-coverage-obligations.mjs
+          --validate-candidate .vitest-coverage/merged-coverage/coverage-final.json
+          --profile phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2
 
   deterministic-windows:
     name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch/dreamer/clockmaker
