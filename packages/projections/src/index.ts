@@ -9,6 +9,7 @@ import {
   DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION,
   DREAMER_INFORMATION_DELIVERED_V5_SCHEMA_VERSION,
   DREAMER_INFORMATION_DELIVERED_V6_SCHEMA_VERSION,
+  DREAMER_INFORMATION_DELIVERED_V7_SCHEMA_VERSION,
   CERENOVUS_INFORMATION_STAGE,
   CERENOVUS_MADNESS_INSTRUCTION_MODEL_VERSION,
   CLOCKMAKER_INFORMATION_MODEL_VERSION,
@@ -597,13 +598,25 @@ const buildPlayerPrivateKnowledgeViewInternal = (
       state.firstNightTaskProgress?.settlements.some((entry) => entry.outcomeType === "MATHEMATICIAN_INFORMATION_DELIVERED") === true)) {
     throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate Mathematician history; use the accepted-event-stream builder");
   }
-  if (!allowAcceptedStreamOnlyHistory && state.dreamerInformation?.deliveries.some((delivery) =>
-    isPlainRecord(delivery) &&
-    "deliverySchemaVersion" in delivery &&
-    (delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION ||
-      delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION ||
-      delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V5_SCHEMA_VERSION ||
-      delivery.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V6_SCHEMA_VERSION)
+  const requiresAcceptedDreamerHistory = (delivery: unknown): boolean => {
+    try {
+      if (delivery === null || typeof delivery !== "object" || Array.isArray(delivery) ||
+          (Object.getPrototypeOf(delivery) !== Object.prototype && Object.getPrototypeOf(delivery) !== null) ||
+          Reflect.ownKeys(delivery).some((key) => typeof key === "symbol")) return true;
+      const descriptor = Object.getOwnPropertyDescriptor(delivery, "deliverySchemaVersion");
+      if (descriptor === undefined) return false;
+      if (!descriptor.enumerable || !("value" in descriptor)) return true;
+      return descriptor.value === DREAMER_INFORMATION_DELIVERED_V3_SCHEMA_VERSION ||
+        descriptor.value === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION ||
+        descriptor.value === DREAMER_INFORMATION_DELIVERED_V5_SCHEMA_VERSION ||
+        descriptor.value === DREAMER_INFORMATION_DELIVERED_V6_SCHEMA_VERSION ||
+        descriptor.value === DREAMER_INFORMATION_DELIVERED_V7_SCHEMA_VERSION;
+    } catch {
+      return true;
+    }
+  };
+  if (!allowAcceptedStreamOnlyHistory && state.dreamerInformation?.deliveries.some(
+    requiresAcceptedDreamerHistory
   ) === true) {
     throw new DomainError("PrivateKnowledgeUnavailable", "State-only private projection cannot authenticate versioned Vortox Dreamer history; use the accepted-event-stream builder");
   }

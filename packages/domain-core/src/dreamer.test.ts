@@ -8,6 +8,9 @@ import {
   createDreamerTargetChosenPayload,
   createDreamerInformationDeliveredPayload,
   createDreamerCanonicalDrunkVortoxInformationDeliveredPayload,
+  createDreamerCanonicalDrunkApparentInformationDeliveredPayload,
+  formatDreamerApparentPairCandidateId,
+  parseDreamerApparentPairCandidateId,
   createPhilosopherGainedDreamerInformationDeliveredPayload,
   createPhilosopherGainedDreamerTargetChosenPayload,
   createDreamerVortoxInformationDeliveredPayload,
@@ -570,6 +573,43 @@ const v4VortoxFacts = (roles?: readonly RoleSetupSnapshot[]) => {
   return { ...base, setup: setupFacts, abilityImpairments, capability, delivery };
 };
 
+const v7FangGuFacts = (targetRole: RoleSetupSnapshot = flowergirlRole) => {
+  const base = v3Facts(targetRole);
+  const abilityImpairments: AbilityImpairmentSet = { impairments: [{
+    impairmentId: abilityImpairmentId("philosopher-seat-04:drunks-dreamer-seat-01"),
+    kind: "DRUNK",
+    sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+    sourcePlayerId: playerId("philosopher-player"),
+    affectedPlayerId: base.opportunity.sourcePlayerId,
+    affectedSeatNumber: base.opportunity.sourceSeatNumber,
+    affectedRole: dreamerRole,
+    chosenRoleId: roleId("dreamer"),
+    sourceCharacterStateRevision: 1
+  }] };
+  const capability = resolveBaseDreamerV2NormalCapability({
+    opportunity: base.opportunity,
+    firstNightTaskPlan: base.plan,
+    firstNightTaskProgress: undefined,
+    firstNightActionOpportunities: base.opportunities,
+    currentCharacterState: base.state,
+    setup: base.setup,
+    roleTenures: base.roleTenures,
+    abilityImpairments
+  });
+  if (capability.kind !== "CANONICAL_DRUNK_SOURCE_FANG_GU_APPARENT_INFORMATION_SUPPORTED") {
+    throw new Error("Expected canonical-drunk Fang Gu capability");
+  }
+  if (!("targetSchemaVersion" in base.choice)) throw new Error("Expected V2 target choice");
+  const delivery = createDreamerCanonicalDrunkApparentInformationDeliveredPayload({
+    rulesBaselineVersion: "Phase One v2.1",
+    targetChoice: base.choice,
+    setup: base.setup,
+    currentCharacterState: base.state,
+    capability
+  });
+  return { ...base, abilityImpairments, capability, delivery };
+};
+
 const setup = (roles: readonly RoleSetupSnapshot[]): Pick<GeneratedSetup, "roleCatalogSnapshot"> => ({
   roleCatalogSnapshot: {
     scriptId: "sects-and-violets",
@@ -578,6 +618,110 @@ const setup = (roles: readonly RoleSetupSnapshot[]): Pick<GeneratedSetup, "roleC
     canonicalSignature: "test-signature",
     roles
   }
+});
+
+describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
+  const validationInput = (facts: ReturnType<typeof v7FangGuFacts>) => ({
+    choices: { choices: [facts.choice] },
+    deliveries: undefined,
+    setup: facts.setup,
+    currentCharacterState: facts.state,
+    abilityImpairments: facts.abilityImpairments,
+    firstNightActionOpportunities: facts.opportunities,
+    firstNightTaskPlan: facts.plan,
+    roleTenures: facts.roleTenures
+  });
+
+  it("[2B20A-C34] resolves only the exact canonical-drunk Fang Gu capability", () => {
+    const facts = v7FangGuFacts();
+    expect(facts.capability).toMatchObject({
+      kind: "CANONICAL_DRUNK_SOURCE_FANG_GU_APPARENT_INFORMATION_SUPPORTED",
+      evaluatedCharacterStateRevision: 1,
+      currentDemonConstraint: { kind: "UNIQUE_CURRENT_FANG_GU", demonPlayerId: playerId("demon-player") }
+    });
+    expect(resolveBaseDreamerV2NormalCapability({
+      opportunity: facts.opportunity, firstNightTaskPlan: facts.plan, firstNightTaskProgress: undefined,
+      firstNightActionOpportunities: facts.opportunities, currentCharacterState: facts.state, setup: facts.setup,
+      roleTenures: facts.roleTenures, abilityImpairments: { impairments: [{
+        ...facts.abilityImpairments.impairments[0]!, kind: "POISONED", sourceKind: "SNAKE_CHARMER_DEMON_HIT"
+      }] }
+    })).toMatchObject({ kind: "EFFECTIVENESS_UNRESOLVED" });
+  });
+
+  it("[2B20A-C16] constructs the complete raw-UTF16 ordered GOOD by EVIL candidate product", () => {
+    const { delivery, setup: setupFacts } = v7FangGuFacts();
+    const goodCount = setupFacts.roleCatalogSnapshot.roles.filter((candidate) =>
+      candidate.characterType === "TOWNSFOLK" || candidate.characterType === "OUTSIDER").length;
+    const evilCount = setupFacts.roleCatalogSnapshot.roles.filter((candidate) =>
+      candidate.characterType === "MINION" || candidate.characterType === "DEMON").length;
+    expect(delivery.apparentPairDecision.legalCandidates).toHaveLength(goodCount * evilCount);
+    expect(delivery.apparentPairDecision.legalCandidates.map((candidate) => candidate.candidateId)).toStrictEqual(
+      [...delivery.apparentPairDecision.legalCandidates.map((candidate) => candidate.candidateId)].sort()
+    );
+    expect(new Set(delivery.apparentPairDecision.legalCandidates.map((candidate) =>
+      candidate.truthClassification))).toStrictEqual(new Set(["TRUE", "FALSE"]));
+  });
+
+  it("[2B20A-C17] selects the first candidate in the parity-selected truth class", () => {
+    const { delivery, abilityImpairments, choice, state } = v7FangGuFacts();
+    const targetRoleId = state.entries.find((entry) => entry.playerId === choice.targetPlayerId)!.role.roleId;
+    const material = `${abilityImpairments.impairments[0]!.impairmentId}\0${choice.targetPlayerId}\0${targetRoleId}`;
+    let sum = 0;
+    for (let index = 0; index < material.length; index += 1) sum += material.charCodeAt(index);
+    const expectedClass = sum % 2 === 0 ? "TRUE" : "FALSE";
+    const expected = delivery.apparentPairDecision.legalCandidates.find((candidate) =>
+      candidate.truthClassification === expectedClass);
+    expect(delivery.apparentPairDecision.selectedCandidateId).toBe(expected?.candidateId);
+    expect(formatDreamerApparentPairCandidateId(delivery.goodRole.roleId, delivery.evilRole.roleId))
+      .toBe(delivery.apparentPairDecision.selectedCandidateId);
+    expect(parseDreamerApparentPairCandidateId(delivery.apparentPairDecision.selectedCandidateId).valid).toBe(true);
+  });
+
+  it("[2B20A-C18] validates the exact 22-key V7 payload and selected top-level roles", () => {
+    const facts = v7FangGuFacts();
+    expect(validateDreamerInformationDeliveredPayload(facts.delivery, validationInput(facts))).toStrictEqual({ valid: true });
+    expect(Object.keys(facts.delivery)).toHaveLength(22);
+    expect(Object.hasOwn(facts.delivery, "falseRolePolicyVersion")).toBe(false);
+    expect(Object.hasOwn(facts.delivery, "vortoxConstraint")).toBe(false);
+    const extra = { ...facts.delivery, hidden: true };
+    expect(validateDreamerInformationDeliveredPayload(extra, validationInput(facts)).valid).toBe(false);
+  });
+
+  it("[2B20A-C19] deep-clones and compares every V7 nested canonical decision", () => {
+    const facts = v7FangGuFacts();
+    const clone = cloneDreamerInformationSet({ deliveries: [facts.delivery] }).deliveries[0]!;
+    expect(clone).toStrictEqual(facts.delivery);
+    expect(clone).not.toBe(facts.delivery);
+    expect(sameDreamerInformationDelivery(facts.delivery, clone)).toBe(true);
+    if (!("deliverySchemaVersion" in clone) || clone.deliverySchemaVersion !== "dreamer-information-delivered-v7") {
+      throw new Error("Expected cloned V7");
+    }
+    const mutated = structuredClone(clone);
+    const firstCandidate = mutated.apparentPairDecision.legalCandidates[0] as unknown as Record<string, unknown>;
+    firstCandidate.truthClassification = firstCandidate.truthClassification === "TRUE" ? "FALSE" : "TRUE";
+    expect(sameDreamerInformationDelivery(facts.delivery, mutated)).toBe(false);
+  });
+
+  it("[2B20A-C20] rejects getter Proxy symbol cycle sparse and nonplain V7 inputs with zero getter calls", () => {
+    const facts = v7FangGuFacts();
+    let getterCalls = 0;
+    const getter = structuredClone(facts.delivery) as unknown as Record<string, unknown>;
+    Object.defineProperty(getter, "sourceContract", { enumerable: true, get: () => {
+      getterCalls += 1; throw new Error("getter");
+    } });
+    const throwing = new Proxy(facts.delivery, { ownKeys: () => { throw new Error("proxy"); } });
+    const revoked = Proxy.revocable(facts.delivery, {}); revoked.revoke();
+    const symbol = structuredClone(facts.delivery) as object;
+    Object.defineProperty(symbol, Symbol("hidden"), { enumerable: true, value: true });
+    const cycle = structuredClone(facts.delivery) as unknown as Record<string, unknown>; cycle.self = cycle;
+    const nonplain = Object.assign(Object.create({ inherited: true }) as object, facts.delivery);
+    const sparse = structuredClone(facts.delivery);
+    expect(Reflect.deleteProperty(sparse.apparentPairDecision.legalCandidates, "0")).toBe(true);
+    for (const hostile of [getter, throwing, revoked.proxy, symbol, cycle, nonplain, sparse]) {
+      expect(validateDreamerInformationDeliveredPayload(hostile, validationInput(facts)).valid).toBe(false);
+    }
+    expect(getterCalls).toBe(0);
+  });
 });
 
 const gainedDreamerFacts = (withVortox: boolean, targetRole: RoleSetupSnapshot = flowergirlRole) => {

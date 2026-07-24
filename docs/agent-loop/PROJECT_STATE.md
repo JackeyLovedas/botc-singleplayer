@@ -1,5 +1,80 @@
 # Project State
 
+## Current state — Phase 3 Slice 2B20A PRODUCT CANDIDATE COMPLETE
+
+- The frozen design has been implemented without a Design Round 3, rule change,
+  scope expansion, or repair round.
+- Product changes are limited to the authorized Dreamer capability, prospective
+  batch semantics, first-night outcome ledger, application service, and private
+  projection files. Added V7 is replay-additive; `event-applier.ts`, event
+  versions, commands, top-level state, fixtures, workflow, dependencies,
+  timeouts, ownership, and coverage topology remain unchanged.
+- A real accepted command stream proves Dreamer `ai-seat-01`, Philosopher
+  `ai-seat-10`, canonical duplicate-choice drunkenness, Mathematician, unique
+  Fang Gu, no current Vortox/No Dashii, and natural TRUE/FALSE settlement.
+- The planned base Dreamer task now formally settles and its V3 opportunity
+  closes. TRUE yields no abnormal contribution; FALSE counts the base Dreamer
+  once and never Philosopher.
+- Player/AI accepted-history projection exposes only target and apparent pair to
+  the source. State-only, malformed, accessor, Proxy, forged, and mutated V7
+  inputs fail closed without leaking impairment or audit data.
+- Six focused suites, typecheck, lint, the full ordinary suite (`35 / 1572`),
+  ownership self-test (`22 / 22`), traceability inventory, scope, and
+  deterministic-source checks pass.
+- Full coverage passes all `35 / 1572` tests and generates its report but exits
+  `1` after one unhandled `[vitest-worker]: Timeout calling "onTaskUpdate"`.
+  The shell uses pnpm `11.9.0`, the repository pins `pnpm@11.7.0`, and Node is
+  `v24.15.0`. Independent classification is
+  `CONDITIONAL_PRODUCT_CANDIDATE_ALLOWED`; it consumes no repair round and
+  cannot satisfy C32, which remains pending exact-head CI.
+- The single attributed product candidate commit is the final local action.
+  Push, exact-head CI, PR final review, and merge remain controller work.
+- Traceability is `37/37`, coverage remains
+  `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`, Dreamer remains
+  `PARTIAL`, repair is `0/2`, and `FIRST_NIGHT -> DAY` is not implemented.
+- Remaining blocker:
+  `PENDING_CONTROLLER_PUSH_PR_EXACT_HEAD_CI_AND_FINAL_REVIEW`.
+
+All sections below are chronological preimplementation checkpoints retained as
+history; they do not override the active implementation state.
+
+## Current state — Phase 3 Slice 2B20A READY_FOR_IMPLEMENTATION
+
+- User authorization `USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE` archives 2B20 as `RESLICE_REQUIRED / UNACCEPTED` and opens only `2B20A — Reachable Base Dreamer Settleability Closure`.
+- 2B20A runs on `phase-3/reachable-base-dreamer-settleability-closure` from parent governance commit `2b56a9a0891de9fda9954d9d635bcbda9d4248a3`, whose parent is accepted main `5a69c90f2d3947556ff45c15c467902b1e28ca43`.
+- Governance record `docs/architecture/2B20A-go-no-go-under-governance-v1.md`, SHA-256 `9ab18f66a1a64372b3a629a8ab42fad1c8455de61647b11c167ef6d862ee2bf1`, returns `GO` only for fresh rule research and design gates.
+- Original rule evidence `docs/rules/evidence/2B20A.md`, SHA-256 `1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00`, remains immutable. Standalone attribution-only resolution `docs/rules/evidence/2B20A-resolved.md`, SHA-256 `47e6c5a70b1eae70f51e9a4e0d78c8ab0d2ddf272babb3f9c76e51970c893189`, preserves all pinned sources, returns `RULE_READY`, and keeps `unresolvedConflicts=[]`.
+- Complete standalone Round 1 design `docs/implementation/phase-3-slice-2b20a-design.md`, SHA-256 `9323681b5aa61106b81d1580c0502eaf085f56ee5f51801aaa7fe771e15cdf02`, freezes the V7 delivery, deterministic apparent-pair policy, exact Fang Gu capability, atomic batch/replay, unchanged ledger schema, projection privacy, file allowlists, RC-01 through RC-22, and stop conditions.
+- Independent Round 1 review `docs/implementation/phase-3-slice-2b20a-design-review-round-1.md`, SHA-256 `7a94445b31fb49b1c504d37fcb842d8c92ee96e78149ca3c50f9d0645a02543e`, returns `RULE_DESIGN_FIX_REQUIRED` against reviewed HEAD `257012175e2a21360c4fc9477ac52e6b7bbea0f4`.
+- Complete standalone Round 2 design `docs/implementation/phase-3-slice-2b20a-design-round-2.md`, SHA-256 `22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f`, closes the attribution, projection-provenance, and Governance Traceability V1.1 blockers without changing rule semantics or Round 1 behavior scope; state-only or hostile V7 projection is rejected with `PrivateKnowledgeUnavailable`.
+- Complete independent Round 2 review `docs/implementation/phase-3-slice-2b20a-design-review-round-2.md`, SHA-256 `4b8b24d65ebd8a806bcdeecc73d343780866b1526254706e053e101e6f1c44d3`, reviewed exact HEAD `08bea1108037e86d8e01a24bb4fcedc6601ccf8c` and returned `HUMAN_BLOCKED`.
+- Authorized classification appendix `docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md`, SHA-256 `ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb`, supersedes only original C02/C08/C09 with corrected C34–C40. It changes no behavior, rule, scope, override, production, test, or design round and returns `APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW`.
+- Complete independent design release review `docs/implementation/phase-3-slice-2b20a-design-release-review.md`, SHA-256 `72017917861325619bd6216f437ece3c8758922db51572306113d1d0a4eaae1f`, reviewed exact HEAD `313a39a614a2a46a1026e3a272879cbcdd49324b` and returned `DESIGN_RELEASE_PASS / findings=[] / remainingBlockers=[]`. This releases the historical classification blocker without asserting a new `RULE_DESIGN_PASS`.
+- Exact reachable authority is accepted test `[2B19A3A-C17]`: base Dreamer `ai-seat-01` / seat `1`; Philosopher `ai-seat-10` / seat `10`; accepted `AbilityImpairmentApplied` provenance `DRUNK / PHILOSOPHER_CHOSEN_DUPLICATE / chosenRoleId=dreamer`; current Demon `fang_gu`; current Vortox absent.
+- The planned base `DREAMER_ACTION` and open V3 opportunity are valid, but `SubmitDreamerAction` maps the unsupported source state to retryable `ApplicationNotConfigured`. No target, delivery, settlement, or receipt is committed, the opportunity remains `OPEN`, and the task remains pending.
+- Resolved evidence freezes true/false apparent pair legality, Storyteller discretion, privacy, and exact Mathematician semantics: TRUE produces a base-Dreamer NORMAL fact and `0`; FALSE produces a base-Dreamer ABNORMAL fact and counts that base Dreamer once; Philosopher is causal impairment provenance only; no delivery produces no fact and `0`.
+- Coverage target is `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`; Dreamer remains `PARTIAL`.
+- Control is `status=READY_FOR_IMPLEMENTATION`, `disposition=UNACCEPTED`, `taskType=PRODUCT_SLICE`, `currentSlice=2B20A`, `currentPR=null`, `ruleReady=true`, `ruleDesignPass=true` through the release-pass gate, `designReleasePass=true`, `designRound=2/2`, `repairRound=0/2`, `implementationAuthorized=true`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
+- No production, test, workflow, dependency, profile, ownership, or role-matrix change has been made.
+- Parent blocker `DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY` remains archived for a separate later authorization and is explicitly outside 2B20A.
+- Remaining blocker is `PENDING_IMPLEMENTATION`. No Round 3 is authorized; production/tests remain unchanged and `FIRST_NIGHT → DAY` is not implemented. Required next action is `IMPLEMENT_2B20A_FROZEN_SCOPE`.
+
+All sections below are chronological prior-slice checkpoints retained as history; they do not override the active 2B20A state.
+
+## Current state — Phase 3 Slice 2B20 RESLICE_REQUIRED / UNACCEPTED
+
+- Recovery authorization `USER_AUTHORIZED_2B20_ACCEPTED_MAIN_RECOVERY_AND_CONTINUE_EXISTING_AUTHORIZATION` and product authorization `USER_AUTHORIZED_2B20_FIRST_NIGHT_COMPLETION_AND_DAY_ENTRY` recovered accepted base `5a69c90f2d3947556ff45c15c467902b1e28ca43` on `phase-3/first-night-completion-day-entry`.
+- Complete governance precheck `docs/architecture/2B20-go-no-go-under-governance-v1.md`, SHA-256 `631fb1938189fac551407c016ac0632b7d2cf31a0afe3642f1ee7df034932af5`, returned `RESLICE_REQUIRED` after answering all 14 questions and inventorying all 11 first-night task types.
+- Current accepted product can plan and open base `DREAMER_ACTION` without guaranteeing settlement. `SOURCE_REPRESENTED_IMPAIRED` and `NO_DASHII_EFFECT_UNRESOLVED` map to retryable, receipt-free, mutation-free `ApplicationNotConfigured`; accepted application tests prove canonical Philosopher-caused `DRUNK` and current No Dashii reachability.
+- Existing phase policy requires two events and preserves exact counters: `FIRST_NIGHT (0/1) --FIRST_NIGHT_COMPLETED--> DAWN_RESOLUTION (0/1) --DAWN_COMPLETED--> DAY_DISCUSSION (1/1)`. A direct jump is not expressible, and both reasons remain outside `INTEGRATED_TRANSITION_REASONS`.
+- Remaining blockers are exactly `[PLANNED_BASE_DREAMER_CAN_REMAIN_UNSETTLEABLE, DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY]`.
+- Control is `status=RESLICE_REQUIRED`, `disposition=UNACCEPTED`, `taskType=PRODUCT_SLICE`, `currentSlice=2B20`, `currentPR=null`, `ruleReady=false`, `ruleDesignPass=false`, `designRound=0/2`, `repairRound=0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
+- Stop-loss fired before rule research and design. No 2B20 rule evidence, design, production, test, workflow, dependency, profile, ownership, or role-matrix change exists.
+- The minimum candidate reslice is exactly Base Dreamer Canonical-DRUNK Non-Vortox Settlement under fresh mandatory gates; No Dashii and later two-step completion remain separate and unauthorized.
+- Required next action is `STOP_REQUIRE_NEW_USER_RESLICE_AUTHORIZATION_NO_AUTOMATIC_NEXT_SLICE`.
+
+All sections below are chronological prior-slice checkpoints retained as history; they do not override the 2B20 governance stop above.
+
 ## Current state — Phase 3 Slice 2B19A3B2 COMPLETED / ACCEPTED
 
 - PR #44 frozen feature HEAD `8cb921c5130454c90c0a63fc4b03a1d24f789b0f` passed product-head push run `30011473350` on attempt 2 and pull-request run `30011477353` on attempt 1, each with `24 / 24` final successful jobs. Push attempt 1 remains recorded as `FAILURE`: the existing frozen Witch replay test exceeded 5,000 ms in `coverage shard (domain-core-rebuild)`.

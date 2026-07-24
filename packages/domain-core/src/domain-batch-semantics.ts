@@ -40,6 +40,8 @@ import {
   DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION,
   DREAMER_INFORMATION_DELIVERED_V5_SCHEMA_VERSION,
   DREAMER_INFORMATION_DELIVERED_V6_SCHEMA_VERSION,
+  DREAMER_INFORMATION_DELIVERED_V7_SCHEMA_VERSION,
+  createDreamerCanonicalDrunkApparentInformationDeliveredPayload,
   createDreamerCanonicalDrunkVortoxInformationDeliveredPayload,
   createDreamerInformationDeliveredPayload,
   createPhilosopherGainedDreamerInformationDeliveredPayload,
@@ -1160,7 +1162,19 @@ const validateIntegratedDreamerInformationBatch = (
       roleTenures: roleTenures!,
       abilityImpairments: state.abilityImpairments
     });
-    if (information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION) {
+    if (information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V7_SCHEMA_VERSION) {
+      const canonicalDrunkFangGuCapability = capability.kind ===
+        "CANONICAL_DRUNK_SOURCE_FANG_GU_APPARENT_INFORMATION_SUPPORTED"
+        ? capability
+        : reject("Dreamer V7 information batch requires proven canonical-drunk Fang Gu capability");
+      expectedInformation = createDreamerCanonicalDrunkApparentInformationDeliveredPayload({
+        rulesBaselineVersion: information.payload.rulesBaselineVersion,
+        targetChoice,
+        setup: setup!,
+        currentCharacterState: currentCharacterState!,
+        capability: canonicalDrunkFangGuCapability
+      });
+    } else if (information.payload.deliverySchemaVersion === DREAMER_INFORMATION_DELIVERED_V4_SCHEMA_VERSION) {
       const canonicalDrunkVortoxCapability = capability.kind ===
         "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED"
         ? capability
