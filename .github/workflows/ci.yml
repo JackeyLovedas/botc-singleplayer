@@ -223,9 +223,12 @@ jobs:
           - group: application-service-role-actions
             projects: --project=application-service-role-actions
             testNamePattern: ""
-          - group: application-service-information-and-later-actions
+          - group: application-service-information-and-later-actions-base
             projects: --project=application-service-information-and-later-actions
-            testNamePattern: ""
+            testNamePattern: '^(?!.*\[2B19A3B2-).*$'
+          - group: application-service-information-and-later-actions-a3b2
+            projects: --project=application-service-information-and-later-actions
+            testNamePattern: '\[2B19A3B2-'
           - group: application-service-compatibility-and-failure-boundaries
             projects: --project=application-service-compatibility-and-failure-boundaries
             testNamePattern: ""
@@ -358,6 +361,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -389,7 +394,8 @@ jobs:
             application
             application-service-core
             application-service-role-actions
-            application-service-information-and-later-actions
+            application-service-information-and-later-actions-base
+            application-service-information-and-later-actions-a3b2
             application-service-compatibility-and-failure-boundaries
             application-service-dreamer-vortox-core
             application-service-dreamer-vortox-gained
@@ -410,7 +416,8 @@ jobs:
             application \
             application-service-core \
             application-service-role-actions \
-            application-service-information-and-later-actions \
+            application-service-information-and-later-actions-base \
+            application-service-information-and-later-actions-a3b2 \
             application-service-compatibility-and-failure-boundaries \
             application-service-dreamer-vortox-core \
             application-service-dreamer-vortox-gained \
@@ -445,18 +452,19 @@ jobs:
           --merged-group-report application=.vitest-coverage/group-reports/application.json
           --merged-group-report application-service-core=.vitest-coverage/group-reports/application-service-core.json
           --merged-group-report application-service-role-actions=.vitest-coverage/group-reports/application-service-role-actions.json
-          --merged-group-report application-service-information-and-later-actions=.vitest-coverage/group-reports/application-service-information-and-later-actions.json
+          --merged-group-report application-service-information-and-later-actions-base=.vitest-coverage/group-reports/application-service-information-and-later-actions-base.json
+          --merged-group-report application-service-information-and-later-actions-a3b2=.vitest-coverage/group-reports/application-service-information-and-later-actions-a3b2.json
           --merged-group-report application-service-compatibility-and-failure-boundaries=.vitest-coverage/group-reports/application-service-compatibility-and-failure-boundaries.json
           --merged-group-report application-service-dreamer-vortox-core=.vitest-coverage/group-reports/application-service-dreamer-vortox-core.json
           --merged-group-report application-service-dreamer-vortox-gained=.vitest-coverage/group-reports/application-service-dreamer-vortox-gained.json
           --merged-group-report engines-and-projections=.vitest-coverage/group-reports/engines-and-projections.json
           --output .vitest-coverage/inventory-audit.json
 
-      - name: Verify merged coverage against approved profile
+      - name: Verify merged coverage against exact source profile
         run: >-
           node scripts/verify-coverage-obligations.mjs
           --validate-candidate .vitest-coverage/merged-coverage/coverage-final.json
-          --profile foundation-command-capture-proxy-rejection-v1-ea08ddd
+          --profile phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2
 
   deterministic-windows:
     name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch/dreamer/clockmaker
@@ -499,5 +507,15 @@ jobs:
       - name: First-night task plan tests
         run: pnpm --filter @botc/task-engine test
 
-      - name: First-night system information, role action, philosopher choice, snake-charmer, evil-twin, witch, and dreamer tests
-        run: pnpm --filter @botc/application test
+      - name: First-night application evidence groups
+        run: node scripts/verify-vitest-windows-application-groups.mjs run --output-dir "${{ github.workspace }}\.vitest-windows-application"
+
+      - name: Upload Windows application evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-application-evidence
+          path: .vitest-windows-application
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7

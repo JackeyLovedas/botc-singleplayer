@@ -420,6 +420,316 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
         sha256: "a85b196fe4da848fd32ac824c09ef6247f0a5a27ddea94abed9b790a0bfaad63"
       })
     })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b19a3b2-2c5f2f6-ownership-v1",
+    sourceHead: "2c5f2f62d8c07e83148242a8c5862c9d2019e9e6",
+    sourceKind: "TEN_PROCESS_2B19A3B2_OWNERSHIP_V1",
+    topology: Object.freeze({
+      id: "TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION",
+      ordinaryGroups: 9,
+      coverageGroups: Object.freeze([
+        Object.freeze({ id: "domain-core-rebuild", tests: 207 }),
+        Object.freeze({ id: "domain-core-rest", tests: 357 }),
+        Object.freeze({ id: "application", tests: 465 }),
+        Object.freeze({ id: "application-service-core", tests: 90 }),
+        Object.freeze({ id: "application-service-role-actions", tests: 52 }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions",
+          tests: 82
+        }),
+        Object.freeze({
+          id: "application-service-compatibility-and-failure-boundaries",
+          tests: 26
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-core",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[(?:2B19A3A|2B19A3B1)-",
+          tests: 16,
+          skippedComplement: 10
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-gained",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[2B19B-",
+          tests: 10,
+          skippedComplement: 16
+        }),
+        Object.freeze({ id: "engines-and-projections", tests: 239 })
+      ]),
+      physicalTestFiles: 31,
+      workspaceProjectFileExecutions: 35,
+      semanticTests: 1544,
+      ordinaryProjectInventorySha256:
+        "f29bed32c2c644e31aa93666406b0a8e8f7072b13135ada18782a970c069878a",
+      semanticInventorySha256:
+        "a56e28357c80e156709c3c1d714040d58c85a61a7c2b6fbc3e6c737738a12cf6",
+      coverageExecutionSha256:
+        "1e11e13f1549363109a223026f4191664fe8c26ce66d5f2219ca46b141bfadf0",
+      stabilityCandidates: 3,
+      ordinaryHarnessCorrection: 1,
+      stabilityEvidenceSha256:
+        "ad08f0f86efdfd53dc2e8faa6328e3519a07bf504eae3b810abf1122a554444f"
+    }),
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3204,
+        sha256: "d535141afb3c60331af1ca6dcd7cab6dff5df2e2f8db75e943a72ab1963d1644"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "4fdf762b692b151aed1686a73441f38a913ed796a6d5193021d127ed6703dbec"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3204,
+        sha256: "fc2ec99a8cbafa2b2a4bb6fef99430a72d83bdf1da74cca00b38000400c5691e"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1795,
+        sha256: "6d8ba5d94a86dddf1b045f73e58e4e2c826bcf7c6d004a8ed7fd8d575aa315f5"
+      })
+    })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b19a3b2-cfd6982-repair1-ownership-v1",
+    sourceHead: "cfd6982652960096c552950cc94ac41c5f220824",
+    sourceKind: "REPAIR_ROUND_1_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS",
+    topology: Object.freeze({
+      id: "TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION",
+      ordinaryGroups: 9,
+      coverageGroups: Object.freeze([
+        Object.freeze({ id: "domain-core-rebuild", tests: 207 }),
+        Object.freeze({ id: "domain-core-rest", tests: 357 }),
+        Object.freeze({ id: "application", tests: 465 }),
+        Object.freeze({ id: "application-service-core", tests: 90 }),
+        Object.freeze({ id: "application-service-role-actions", tests: 52 }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions",
+          tests: 82
+        }),
+        Object.freeze({
+          id: "application-service-compatibility-and-failure-boundaries",
+          tests: 26
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-core",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[(?:2B19A3A|2B19A3B1)-",
+          tests: 16,
+          skippedComplement: 10
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-gained",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[2B19B-",
+          tests: 10,
+          skippedComplement: 16
+        }),
+        Object.freeze({ id: "engines-and-projections", tests: 239 })
+      ]),
+      physicalTestFiles: 31,
+      workspaceProjectFileExecutions: 35,
+      semanticTests: 1544,
+      ordinaryProjectInventorySha256:
+        "f29bed32c2c644e31aa93666406b0a8e8f7072b13135ada18782a970c069878a",
+      semanticInventorySha256:
+        "a56e28357c80e156709c3c1d714040d58c85a61a7c2b6fbc3e6c737738a12cf6",
+      coverageExecutionSha256:
+        "1e11e13f1549363109a223026f4191664fe8c26ce66d5f2219ca46b141bfadf0",
+      stabilityCandidates: 3,
+      coverageHarnessCorrection: 2,
+      stabilityEvidenceSha256:
+        "fa4a73140d5c320788ac516eec2f331f857578b9a0b5e3b78fa9ec6f7b3b40e8"
+    }),
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3204,
+        sha256: "d535141afb3c60331af1ca6dcd7cab6dff5df2e2f8db75e943a72ab1963d1644"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "4fdf762b692b151aed1686a73441f38a913ed796a6d5193021d127ed6703dbec"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3204,
+        sha256: "fc2ec99a8cbafa2b2a4bb6fef99430a72d83bdf1da74cca00b38000400c5691e"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1795,
+        sha256: "6d8ba5d94a86dddf1b045f73e58e4e2c826bcf7c6d004a8ed7fd8d575aa315f5"
+      })
+    })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b19a3b2-d6e3964-repair2-ownership-v1",
+    sourceHead: "d6e3964fcd9a5ea2c57ceee4d9aaaf154de23b83",
+    sourceKind: "REPAIR_ROUND_2_FINAL_TEST_EVIDENCE_EXECUTION_STABLE_TEN_PROCESS",
+    topology: Object.freeze({
+      id: "TEN_PROCESS_COVERAGE_WITH_DREAMER_VORTOX_MARKER_PARTITION",
+      ordinaryGroups: 9,
+      coverageGroups: Object.freeze([
+        Object.freeze({ id: "domain-core-rebuild", tests: 207 }),
+        Object.freeze({ id: "domain-core-rest", tests: 357 }),
+        Object.freeze({ id: "application", tests: 465 }),
+        Object.freeze({ id: "application-service-core", tests: 90 }),
+        Object.freeze({ id: "application-service-role-actions", tests: 52 }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions",
+          tests: 82
+        }),
+        Object.freeze({
+          id: "application-service-compatibility-and-failure-boundaries",
+          tests: 26
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-core",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[(?:2B19A3A|2B19A3B1)-",
+          tests: 16,
+          skippedComplement: 10
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-gained",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[2B19B-",
+          tests: 10,
+          skippedComplement: 16
+        }),
+        Object.freeze({ id: "engines-and-projections", tests: 239 })
+      ]),
+      physicalTestFiles: 31,
+      workspaceProjectFileExecutions: 35,
+      semanticTests: 1544,
+      ordinaryProjectInventorySha256:
+        "f29bed32c2c644e31aa93666406b0a8e8f7072b13135ada18782a970c069878a",
+      semanticInventorySha256:
+        "a56e28357c80e156709c3c1d714040d58c85a61a7c2b6fbc3e6c737738a12cf6",
+      coverageExecutionSha256:
+        "1e11e13f1549363109a223026f4191664fe8c26ce66d5f2219ca46b141bfadf0",
+      stabilityCandidates: 3,
+      coverageHarnessCorrection: 1,
+      stabilityEvidenceSha256:
+        "f927d6209c42f302166e664ad359936454bee7a554869ce76bdb3af7360cba46"
+    }),
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3204,
+        sha256: "d535141afb3c60331af1ca6dcd7cab6dff5df2e2f8db75e943a72ab1963d1644"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "4fdf762b692b151aed1686a73441f38a913ed796a6d5193021d127ed6703dbec"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3204,
+        sha256: "fc2ec99a8cbafa2b2a4bb6fef99430a72d83bdf1da74cca00b38000400c5691e"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1795,
+        sha256: "6d8ba5d94a86dddf1b045f73e58e4e2c826bcf7c6d004a8ed7fd8d575aa315f5"
+      })
+    })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2",
+    sourceHead: "6a4705c0a6685c6f954a1b0db9870457122f24f4",
+    sourceKind: "THREE_ARTIFACT_COMPLETE_GITHUB_HOSTED_EXECUTIONS",
+    topology: Object.freeze({
+      id: "ELEVEN_PROCESS_COVERAGE_WITH_INFORMATION_A3B2_AND_DREAMER_VORTOX_MARKER_PARTITIONS",
+      ordinaryGroups: 9,
+      coverageGroups: Object.freeze([
+        Object.freeze({ id: "domain-core-rebuild", tests: 207 }),
+        Object.freeze({ id: "domain-core-rest", tests: 357 }),
+        Object.freeze({ id: "application", tests: 465 }),
+        Object.freeze({ id: "application-service-core", tests: 90 }),
+        Object.freeze({ id: "application-service-role-actions", tests: 52 }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions-base",
+          project: "application-service-information-and-later-actions",
+          testNamePattern: "^(?!.*\\[2B19A3B2-).*$",
+          tests: 73,
+          skippedComplement: 9
+        }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions-a3b2",
+          project: "application-service-information-and-later-actions",
+          testNamePattern: "\\[2B19A3B2-",
+          tests: 9,
+          skippedComplement: 73
+        }),
+        Object.freeze({
+          id: "application-service-compatibility-and-failure-boundaries",
+          tests: 26
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-core",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[(?:2B19A3A|2B19A3B1)-",
+          tests: 16,
+          skippedComplement: 10
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-gained",
+          project: "application-service-dreamer-vortox",
+          testNamePattern: "\\[2B19B-",
+          tests: 10,
+          skippedComplement: 16
+        }),
+        Object.freeze({ id: "engines-and-projections", tests: 239 })
+      ]),
+      physicalTestFiles: 31,
+      workspaceProjectFileExecutions: 35,
+      semanticTests: 1544,
+      ordinaryProjectInventorySha256:
+        "f29bed32c2c644e31aa93666406b0a8e8f7072b13135ada18782a970c069878a",
+      semanticInventorySha256:
+        "a56e28357c80e156709c3c1d714040d58c85a61a7c2b6fbc3e6c737738a12cf6",
+      coverageExecutionSha256:
+        "1d6726c01527d43edd6bc9e1473268b55af54756472fb64d713ff3590d61cc3f",
+      stabilityCandidates: 3,
+      hostedRuns: Object.freeze([
+        Object.freeze({ id: 30004324413, attempt: 1, event: "pull_request" }),
+        Object.freeze({ id: 30004295030, attempt: 2, event: "push" }),
+        Object.freeze({ id: 30007628335, attempt: 1, event: "pull_request" })
+      ]),
+      stabilityEvidenceSha256:
+        "008eb7bc033240bcf25311c717d033344ee9c831582b1a67071e0d873df828de"
+    }),
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3204,
+        sha256: "d535141afb3c60331af1ca6dcd7cab6dff5df2e2f8db75e943a72ab1963d1644"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "4fdf762b692b151aed1686a73441f38a913ed796a6d5193021d127ed6703dbec"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3204,
+        sha256: "fc2ec99a8cbafa2b2a4bb6fef99430a72d83bdf1da74cca00b38000400c5691e"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1795,
+        sha256: "6d8ba5d94a86dddf1b045f73e58e4e2c826bcf7c6d004a8ed7fd8d575aa315f5"
+      })
+    })
   })
 ]);
 

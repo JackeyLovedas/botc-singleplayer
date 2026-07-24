@@ -934,6 +934,14 @@ for (let index = 1; index <= 20; index += 1) {
   A3B1_CRITERION_IDS.push(`S${String(index).padStart(2, "0")}`);
 }
 
+const A3B2_CRITERION_IDS = [];
+for (let index = 1; index <= 46; index += 1) {
+  A3B2_CRITERION_IDS.push(`C${String(index).padStart(2, "0")}`);
+}
+for (let index = 1; index <= 12; index += 1) {
+  A3B2_CRITERION_IDS.push(`S${String(index).padStart(2, "0")}`);
+}
+
 const B19B_CRITERION_IDS = [];
 for (let index = 1; index <= 60; index += 1) {
   B19B_CRITERION_IDS.push(`C${String(index).padStart(2, "0")}`);
@@ -943,6 +951,33 @@ for (let index = 1; index <= 20; index += 1) {
 }
 
 const RAW_OWNERSHIP_CONTRACTS = Object.freeze([
+  Object.freeze({
+    contractId: "2B19A3B2",
+    markerPrefix: "[2B19A3B2-",
+    markerPattern: "^\\[2B19A3B2-[^\\]]+\\]",
+    applicationTestFile:
+      "packages/application/src/game-application-service.test.ts",
+    ownerProject: "application-service-information-and-later-actions",
+    traceabilityFile:
+      "docs/implementation/phase-3-slice-2b19a3b2-test-traceability.md",
+    criterionIds: Object.freeze(A3B2_CRITERION_IDS),
+    supportingAuthorityPrefix: "SUP-2B19A3B2-",
+    frozenBaseline: Object.freeze({
+      projectExecutionsBefore: 9,
+      projectExecutionsAfter: 9,
+      projectInventorySha256: "57a203ad425956791886c56ea8b906b2252186aaf8c5a66be19e7bcf7b0d718e",
+      currentProjectInventorySha256: "57a203ad425956791886c56ea8b906b2252186aaf8c5a66be19e7bcf7b0d718e",
+      semanticInventorySha256: "3379844b47a12a8053869a7db73a300030c0e6029acee9cadf54e64d2500c147",
+      authorityInventorySha256: "65adffd5fe6242cfc64d215629b39a0cf6c5f68bfbb30d1426fdb133f9c5a039",
+      nonOwnedInventoryPolicy: NON_OWNED_POLICY,
+      nonMarkerOwnershipSha256: "764888ea567eb545303c17d0cc89706d0b871360a5271912910257397f2829a8",
+      physicalTestFileSetSha256: "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab",
+      traceabilityRowCount: 58,
+      dynamicTestAuthorityRows: 51,
+      supportingAuthorityCount: 10
+    }),
+    status: ACTIVE_STATUS
+  }),
   Object.freeze({
     contractId: "2B19B",
     markerPrefix: "[2B19B-",
