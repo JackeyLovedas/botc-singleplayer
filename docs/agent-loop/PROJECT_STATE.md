@@ -1,18 +1,19 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A RUNNING / GOVERNANCE GO
+## Current state — Phase 3 Slice 2B20A RUNNING / RULE_READY
 
 - User authorization `USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE` archives 2B20 as `RESLICE_REQUIRED / UNACCEPTED` and opens only `2B20A — Reachable Base Dreamer Settleability Closure`.
 - 2B20A runs on `phase-3/reachable-base-dreamer-settleability-closure` from parent governance commit `2b56a9a0891de9fda9954d9d635bcbda9d4248a3`, whose parent is accepted main `5a69c90f2d3947556ff45c15c467902b1e28ca43`.
 - Governance record `docs/architecture/2B20A-go-no-go-under-governance-v1.md`, SHA-256 `9ab18f66a1a64372b3a629a8ab42fad1c8455de61647b11c167ef6d862ee2bf1`, returns `GO` only for fresh rule research and design gates.
+- Complete rule evidence `docs/rules/evidence/2B20A.md`, SHA-256 `1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00`, returns `RULE_READY`; all mandatory sources were live, no snapshot was used, and `unresolvedConflicts=[]`.
 - Exact reachable authority is accepted test `[2B19A3A-C17]`: base Dreamer `ai-seat-01` / seat `1`; Philosopher `ai-seat-10` / seat `10`; accepted `AbilityImpairmentApplied` provenance `DRUNK / PHILOSOPHER_CHOSEN_DUPLICATE / chosenRoleId=dreamer`; current Demon `fang_gu`; current Vortox absent.
 - The planned base `DREAMER_ACTION` and open V3 opportunity are valid, but `SubmitDreamerAction` maps the unsupported source state to retryable `ApplicationNotConfigured`. No target, delivery, settlement, or receipt is committed, the opportunity remains `OPEN`, and the task remains pending.
-- The primary missing product layer is a versioned non-Vortox canonical-drunk base Dreamer delivery capability. Exact information choice, Storyteller discretion, outcome-ledger representation, Mathematician classification, replay, and privacy contracts remain subject to fresh rule evidence and design.
+- Rule evidence freezes true/false apparent pair legality, Storyteller discretion, privacy, and exact Mathematician semantics: true pair `0`, false pair caused by Philosopher counts the Philosopher once, no delivery `0`, and no double count. A bounded design must now define the versioned delivery and ledger contracts.
 - Coverage target is `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`; Dreamer remains `PARTIAL`.
-- Control is `status=RUNNING`, `disposition=UNACCEPTED`, `taskType=PRODUCT_SLICE`, `currentSlice=2B20A`, `currentPR=null`, `ruleReady=false`, `ruleDesignPass=false`, `designRound=0/2`, `repairRound=0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
-- No rule evidence, design, production, test, workflow, dependency, profile, ownership, or role-matrix change has been made.
+- Control is `status=RUNNING`, `disposition=UNACCEPTED`, `taskType=PRODUCT_SLICE`, `currentSlice=2B20A`, `currentPR=null`, `ruleReady=true`, `ruleDesignPass=false`, `designRound=0/2`, `repairRound=0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
+- No design, production, test, workflow, dependency, profile, ownership, or role-matrix change has been made.
 - Parent blocker `DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY` remains archived for a separate later authorization and is explicitly outside 2B20A.
-- Required next action is `RUN_2B20A_RULE_RESEARCH`.
+- Remaining blockers are `PENDING_BOUNDED_2B20A_DESIGN` and `PENDING_INDEPENDENT_2B20A_RULE_DESIGN_PASS`; required next action is `RUN_BOUNDED_2B20A_DESIGN`.
 
 All sections below are chronological prior-slice checkpoints retained as history; they do not override the active 2B20A state.
 

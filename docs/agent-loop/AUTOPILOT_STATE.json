@@ -1178,7 +1178,7 @@
     "ledgerDecision": "PENDING_FRESH_RULE_RESEARCH_AND_DESIGN",
     "coverageTarget": "PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY",
     "dreamerRoleCoverage": "PARTIAL",
-    "ruleReady": false,
+    "ruleReady": true,
     "ruleDesignPass": false,
     "implementationAuthorized": false,
     "designRound": 0,
@@ -1188,9 +1188,11 @@
     "productionChanged": false,
     "testsChanged": false,
     "roleCoverageMatrixChanged": false,
+    "ruleResearchVerdict": "RULE_READY",
+    "ruleEvidencePath": "docs/rules/evidence/2B20A.md",
+    "ruleEvidenceSha256": "1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00",
+    "ruleEvidenceRetrievalDate": "2026-07-24T04:16:39Z",
     "remainingBlockers": [
-      "PENDING_FRESH_2B20A_RULE_RESEARCH",
-      "PENDING_2B20A_RULE_READY",
       "PENDING_BOUNDED_2B20A_DESIGN",
       "PENDING_INDEPENDENT_2B20A_RULE_DESIGN_PASS"
     ]
@@ -1713,7 +1715,7 @@
   "designReviewRound3Path": "docs/implementation/phase-3-slice-2b18a-design-review-round-3.md",
   "designReviewRound3Hash": "5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b",
   "designReviewRound3Verdict": "RULE_DESIGN_FIX_REQUIRED",
-  "ruleReady": false,
+  "ruleReady": true,
   "ruleDesignPass": false,
   "implementationAuthorized": false,
   "implementationStatus": "NOT_AUTHORIZED_GOVERNANCE_STOP_LOSS",
@@ -2122,14 +2124,14 @@
     "round3DesignSha256": "c06ed0fc61c6b10d0838f1d826021d2113fae037089f8571fe084eeaa7993881",
     "round3Status": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_3"
   },
-  "ruleResearchStarted": false,
-  "ruleResearchCompleted": false,
-  "ruleResearchVerdict": null,
-  "ruleEvidencePath": null,
-  "ruleEvidenceSha256": null,
-  "ruleEvidenceRetrievalWindow": null,
-  "ruleEvidenceRetrievalStart": null,
-  "ruleEvidenceRetrievalEnd": null,
+  "ruleResearchStarted": true,
+  "ruleResearchCompleted": true,
+  "ruleResearchVerdict": "RULE_READY",
+  "ruleEvidencePath": "docs/rules/evidence/2B20A.md",
+  "ruleEvidenceSha256": "1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00",
+  "ruleEvidenceRetrievalWindow": "2026-07-24T04:16:39Z",
+  "ruleEvidenceRetrievalStart": "2026-07-24T04:16:39Z",
+  "ruleEvidenceRetrievalEnd": "2026-07-24T04:16:39Z",
   "ruleCoverageStatus": "PARTIAL",
   "ruleConflict": false,
   "ruleSemanticsChanged": false,
@@ -2140,8 +2142,6 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_FRESH_2B20A_RULE_RESEARCH",
-    "PENDING_2B20A_RULE_READY",
     "PENDING_BOUNDED_2B20A_DESIGN",
     "PENDING_INDEPENDENT_2B20A_RULE_DESIGN_PASS"
   ],
@@ -2910,8 +2910,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived 2B20 as RESLICE_REQUIRED / UNACCEPTED and materialized the bounded 2B20A governance GO for the reachable canonical Philosopher-drunk base Dreamer without a current Vortox. No rule evidence, design, production, test, or role-matrix change was created.",
+  "lastAction": "Materialized complete fresh 2B20A four-source rule evidence for the reachable canonical Philosopher-drunk base Dreamer without current Vortox. Rule research returned RULE_READY; no design, production, test, or role-matrix change was created.",
   "lastError": null,
-  "requiredNextAction": "RUN_2B20A_RULE_RESEARCH",
-  "nextAction": "RUN_2B20A_RULE_RESEARCH"
+  "requiredNextAction": "RUN_BOUNDED_2B20A_DESIGN",
+  "nextAction": "RUN_BOUNDED_2B20A_DESIGN"
 }
