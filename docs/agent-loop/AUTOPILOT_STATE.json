@@ -1,5 +1,5 @@
 {
-  "status": "HUMAN_BLOCKED",
+  "status": "RUNNING_DESIGN_RELEASE_REVIEW_PENDING",
   "disposition": "UNACCEPTED",
   "taskType": "PRODUCT_SLICE",
   "productRepairRoundConsumed": false,
@@ -1100,10 +1100,10 @@
     },
     "remainingBlockers": []
   },
-  "reviewedHead": "08bea1108037e86d8e01a24bb4fcedc6601ccf8c",
-  "currentReviewHeadAuthority": "The independent Round 2 review is bound to HEAD 08bea1108037e86d8e01a24bb4fcedc6601ccf8c and design SHA-256 22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f.",
+  "reviewedHead": null,
+  "currentReviewHeadAuthority": "No 2B20A design release review exists yet. The historical Round 2 HUMAN_BLOCKED review remains bound to HEAD 08bea1108037e86d8e01a24bb4fcedc6601ccf8c and design SHA-256 22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f.",
   "exactHeadCIAuthority": "No 2B20A product HEAD or pull request exists. Accepted prior-slice CI remains historical and supplies no authority for 2B20A.",
-  "currentFeatureHead": "08bea1108037e86d8e01a24bb4fcedc6601ccf8c",
+  "currentFeatureHead": "5b5e05daa47f62fe9be2de1f17696f08a56aef83",
   "repairRound": 0,
   "designRound": 2,
   "maxDesignRounds": 2,
@@ -1155,7 +1155,7 @@
     ]
   },
   "slice2B20AGate": {
-    "status": "HUMAN_BLOCKED",
+    "status": "RUNNING_DESIGN_RELEASE_REVIEW_PENDING",
     "disposition": "UNACCEPTED",
     "authorization": "USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE",
     "scopeMode": "REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY",
@@ -1211,10 +1211,17 @@
     "designReviewReviewedHead": "08bea1108037e86d8e01a24bb4fcedc6601ccf8c",
     "designReviewTimestamp": "2026-07-24T05:27:31.655Z",
     "round3Authorized": false,
+    "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
+    "traceabilityClassificationCorrectionSha256": "ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb",
+    "traceabilityClassificationCorrectionStatus": "APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW",
+    "designReleasePass": false,
+    "designReleaseReviewPath": null,
+    "designReleaseReviewSha256": null,
+    "designReleaseReviewVerdict": null,
     "productionFileCeiling": 5,
     "addedProductionLocCeiling": 1000,
     "remainingBlockers": [
-      "2B20A_DESIGN_TRACEABILITY_V1_1_PRIMARY_CLASSIFICATION_STILL_INVALID"
+      "PENDING_INDEPENDENT_2B20A_DESIGN_RELEASE_REVIEW"
     ]
   },
   "behaviorDesignFrozen": false,
@@ -1234,6 +1241,13 @@
   "currentDesignReviewHash": "4b8b24d65ebd8a806bcdeecc73d343780866b1526254706e053e101e6f1c44d3",
   "currentDesignReviewVerdict": "HUMAN_BLOCKED",
   "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
+  "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
+  "traceabilityClassificationCorrectionHash": "ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb",
+  "traceabilityClassificationCorrectionStatus": "APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW",
+  "designReleasePass": false,
+  "currentDesignReleaseReviewPath": null,
+  "currentDesignReleaseReviewHash": null,
+  "currentDesignReleaseReviewVerdict": null,
   "historicalSecurityDesignReviewPath": "docs/implementation/command-capture-proxy-rejection-v1-design-review.md",
   "historicalSecurityDesignReviewHash": "247b302d22aca5dc6249a541cc2d8a5d712b89002d685250a862226553406cd8",
   "historicalSecurityDesignReviewVerdict": "SECURITY_DESIGN_PASS",
@@ -2162,7 +2176,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "2B20A_DESIGN_TRACEABILITY_V1_1_PRIMARY_CLASSIFICATION_STILL_INVALID"
+    "PENDING_INDEPENDENT_2B20A_DESIGN_RELEASE_REVIEW"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
@@ -2929,8 +2943,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent 2B20A Round 2 review. The review returned HUMAN_BLOCKED because C02, C09, and C08 still violate Governance Traceability V1.1 primary classification. No Round 3 is authorized and implementation did not begin.",
-  "lastError": "2B20A_DESIGN_TRACEABILITY_V1_1_PRIMARY_CLASSIFICATION_STILL_INVALID",
-  "requiredNextAction": "STOP_WAIT_FOR_EXPLICIT_USER_AUTHORIZATION",
-  "nextAction": "STOP_WAIT_FOR_EXPLICIT_USER_AUTHORIZATION"
+  "lastAction": "Materialized the authorized 2B20A traceability classification correction appendix. C02, C08, and C09 remain immutable history and are superseded by C34-C40 for design release review. No behavior, rule, scope, production, test, or design-round change occurred.",
+  "lastError": null,
+  "requiredNextAction": "RUN_INDEPENDENT_2B20A_DESIGN_RELEASE_REVIEW",
+  "nextAction": "RUN_INDEPENDENT_2B20A_DESIGN_RELEASE_REVIEW"
 }

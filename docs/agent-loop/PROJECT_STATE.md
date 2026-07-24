@@ -1,6 +1,6 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A HUMAN_BLOCKED / ROUND 2 FINAL
+## Current state — Phase 3 Slice 2B20A DESIGN RELEASE REVIEW PENDING
 
 - User authorization `USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE` archives 2B20 as `RESLICE_REQUIRED / UNACCEPTED` and opens only `2B20A — Reachable Base Dreamer Settleability Closure`.
 - 2B20A runs on `phase-3/reachable-base-dreamer-settleability-closure` from parent governance commit `2b56a9a0891de9fda9954d9d635bcbda9d4248a3`, whose parent is accepted main `5a69c90f2d3947556ff45c15c467902b1e28ca43`.
@@ -10,14 +10,15 @@
 - Independent Round 1 review `docs/implementation/phase-3-slice-2b20a-design-review-round-1.md`, SHA-256 `7a94445b31fb49b1c504d37fcb842d8c92ee96e78149ca3c50f9d0645a02543e`, returns `RULE_DESIGN_FIX_REQUIRED` against reviewed HEAD `257012175e2a21360c4fc9477ac52e6b7bbea0f4`.
 - Complete standalone Round 2 design `docs/implementation/phase-3-slice-2b20a-design-round-2.md`, SHA-256 `22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f`, closes the attribution, projection-provenance, and Governance Traceability V1.1 blockers without changing rule semantics or Round 1 behavior scope; state-only or hostile V7 projection is rejected with `PrivateKnowledgeUnavailable`.
 - Complete independent Round 2 review `docs/implementation/phase-3-slice-2b20a-design-review-round-2.md`, SHA-256 `4b8b24d65ebd8a806bcdeecc73d343780866b1526254706e053e101e6f1c44d3`, reviewed exact HEAD `08bea1108037e86d8e01a24bb4fcedc6601ccf8c` and returned `HUMAN_BLOCKED`.
+- Authorized classification appendix `docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md`, SHA-256 `ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb`, supersedes only original C02/C08/C09 with corrected C34–C40. It changes no behavior, rule, scope, override, production, test, or design round and returns `APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW`.
 - Exact reachable authority is accepted test `[2B19A3A-C17]`: base Dreamer `ai-seat-01` / seat `1`; Philosopher `ai-seat-10` / seat `10`; accepted `AbilityImpairmentApplied` provenance `DRUNK / PHILOSOPHER_CHOSEN_DUPLICATE / chosenRoleId=dreamer`; current Demon `fang_gu`; current Vortox absent.
 - The planned base `DREAMER_ACTION` and open V3 opportunity are valid, but `SubmitDreamerAction` maps the unsupported source state to retryable `ApplicationNotConfigured`. No target, delivery, settlement, or receipt is committed, the opportunity remains `OPEN`, and the task remains pending.
 - Resolved evidence freezes true/false apparent pair legality, Storyteller discretion, privacy, and exact Mathematician semantics: TRUE produces a base-Dreamer NORMAL fact and `0`; FALSE produces a base-Dreamer ABNORMAL fact and counts that base Dreamer once; Philosopher is causal impairment provenance only; no delivery produces no fact and `0`.
 - Coverage target is `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`; Dreamer remains `PARTIAL`.
-- Control is `status=HUMAN_BLOCKED`, `disposition=UNACCEPTED`, `taskType=PRODUCT_SLICE`, `currentSlice=2B20A`, `currentPR=null`, `ruleReady=true`, `ruleDesignPass=false`, `designRound=2/2`, `repairRound=0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
+- Control is `status=RUNNING_DESIGN_RELEASE_REVIEW_PENDING`, `disposition=UNACCEPTED`, `taskType=PRODUCT_SLICE`, `currentSlice=2B20A`, `currentPR=null`, `ruleReady=true`, `ruleDesignPass=false`, `designReleasePass=false`, `designRound=2/2`, `repairRound=0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
 - No production, test, workflow, dependency, profile, ownership, or role-matrix change has been made.
 - Parent blocker `DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY` remains archived for a separate later authorization and is explicitly outside 2B20A.
-- Remaining blocker is `2B20A_DESIGN_TRACEABILITY_V1_1_PRIMARY_CLASSIFICATION_STILL_INVALID`. No Round 3 is authorized; production/tests remain unchanged and `FIRST_NIGHT → DAY` is not implemented. Required next action is `STOP_WAIT_FOR_EXPLICIT_USER_AUTHORIZATION`.
+- Remaining blocker is `PENDING_INDEPENDENT_2B20A_DESIGN_RELEASE_REVIEW`. No Round 3 is authorized; production/tests remain unchanged and `FIRST_NIGHT → DAY` is not implemented. Required next action is `RUN_INDEPENDENT_2B20A_DESIGN_RELEASE_REVIEW`.
 
 All sections below are chronological prior-slice checkpoints retained as history; they do not override the active 2B20A state.
 
