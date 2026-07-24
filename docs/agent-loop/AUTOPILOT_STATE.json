@@ -1105,7 +1105,7 @@
   "exactHeadCIAuthority": "No 2B20A product HEAD or pull request exists. Accepted prior-slice CI remains historical and supplies no authority for 2B20A.",
   "currentFeatureHead": "2b56a9a0891de9fda9954d9d635bcbda9d4248a3",
   "repairRound": 0,
-  "designRound": 0,
+  "designRound": 1,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": "USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE",
   "recoveryAuthorization": "USER_AUTHORIZED_2B20_ACCEPTED_MAIN_RECOVERY_AND_CONTINUE_EXISTING_AUTHORIZATION",
@@ -1181,7 +1181,7 @@
     "ruleReady": true,
     "ruleDesignPass": false,
     "implementationAuthorized": false,
-    "designRound": 0,
+    "designRound": 1,
     "maxDesignRounds": 2,
     "repairRound": 0,
     "maxRepairRounds": 2,
@@ -1192,8 +1192,13 @@
     "ruleEvidencePath": "docs/rules/evidence/2B20A.md",
     "ruleEvidenceSha256": "1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00",
     "ruleEvidenceRetrievalDate": "2026-07-24T04:16:39Z",
+    "designPath": "docs/implementation/phase-3-slice-2b20a-design.md",
+    "designSha256": "9323681b5aa61106b81d1580c0502eaf085f56ee5f51801aaa7fe771e15cdf02",
+    "designStatus": "READY_FOR_RULE_DESIGN_REVIEW",
+    "designTerminal": "READY_FOR_RULE_DESIGN_REVIEW",
+    "productionFileCeiling": 5,
+    "addedProductionLocCeiling": 1000,
     "remainingBlockers": [
-      "PENDING_BOUNDED_2B20A_DESIGN",
       "PENDING_INDEPENDENT_2B20A_RULE_DESIGN_PASS"
     ]
   },
@@ -1204,12 +1209,12 @@
   "maxRepairRounds": 2,
   "candidateRole": "dreamer",
   "candidateScope": "CANONICAL_PHILOSOPHER_DRUNK_BASE_DREAMER_WITHOUT_CURRENT_VORTOX",
-  "designStarted": false,
-  "currentDesignPath": null,
-  "currentDesignHash": null,
-  "currentDesignStatus": "NOT_STARTED_PENDING_RULE_READY",
-  "currentDesignTerminal": null,
-  "currentDesignSource": null,
+  "designStarted": true,
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b20a-design.md",
+  "currentDesignHash": "9323681b5aa61106b81d1580c0502eaf085f56ee5f51801aaa7fe771e15cdf02",
+  "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW",
+  "currentDesignTerminal": "READY_FOR_RULE_DESIGN_REVIEW",
+  "currentDesignSource": "INDEPENDENT_READ_ONLY_ARCHITECT",
   "currentDesignReviewPath": null,
   "currentDesignReviewHash": null,
   "currentDesignReviewVerdict": null,
@@ -2142,7 +2147,6 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_BOUNDED_2B20A_DESIGN",
     "PENDING_INDEPENDENT_2B20A_RULE_DESIGN_PASS"
   ],
   "slice2B19A3ARound1Design": {
@@ -2910,8 +2914,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized complete fresh 2B20A four-source rule evidence for the reachable canonical Philosopher-drunk base Dreamer without current Vortox. Rule research returned RULE_READY; no design, production, test, or role-matrix change was created.",
+  "lastAction": "Materialized the complete bounded 2B20A Round 1 design for independent rule-design review. RULE_READY remains true; implementation remains unauthorized and no production, test, or role-matrix change was created.",
   "lastError": null,
-  "requiredNextAction": "RUN_BOUNDED_2B20A_DESIGN",
-  "nextAction": "RUN_BOUNDED_2B20A_DESIGN"
+  "requiredNextAction": "RUN_INDEPENDENT_2B20A_RULE_DESIGN_REVIEW",
+  "nextAction": "RUN_INDEPENDENT_2B20A_RULE_DESIGN_REVIEW"
 }
