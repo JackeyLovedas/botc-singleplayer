@@ -1202,7 +1202,7 @@
     "round1ReviewReviewedHead": "257012175e2a21360c4fc9477ac52e6b7bbea0f4",
     "round1ReviewTimestamp": "2026-07-24T04:52:39.579Z",
     "designPath": "docs/implementation/phase-3-slice-2b20a-design-round-2.md",
-    "designSha256": "e0708612ff00be37066d1ad14bcc25947ef5873f75f836aaf34ba3ae163dc9b6",
+    "designSha256": "22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f",
     "designStatus": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_2",
     "designTerminal": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_2",
     "designReviewPath": null,
@@ -1223,7 +1223,7 @@
   "candidateScope": "CANONICAL_PHILOSOPHER_DRUNK_BASE_DREAMER_WITHOUT_CURRENT_VORTOX",
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20a-design-round-2.md",
-  "currentDesignHash": "e0708612ff00be37066d1ad14bcc25947ef5873f75f836aaf34ba3ae163dc9b6",
+  "currentDesignHash": "22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f",
   "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_2",
   "currentDesignTerminal": "READY_FOR_RULE_DESIGN_REVIEW_ROUND_2",
   "currentDesignSource": "INDEPENDENT_READ_ONLY_ARCHITECT",
@@ -2926,7 +2926,7 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the complete standalone 2B20A Round 2 design, closing all three Round 1 blockers while preserving rule semantics and behavioral scope. Implementation remains unauthorized pending independent Round 2 review.",
+  "lastAction": "Aligned the unreviewed 2B20A Round 2 traceability vocabulary to the exact governance R1/R2/R3, T1/T2/T3, and eight-primary-layer contracts, and froze state-only/hostile V7 projection as PrivateKnowledgeUnavailable. Rule semantics, behavioral scope, and design round remain unchanged.",
   "lastError": null,
   "requiredNextAction": "RUN_INDEPENDENT_2B20A_ROUND_2_RULE_DESIGN_REVIEW",
   "nextAction": "RUN_INDEPENDENT_2B20A_ROUND_2_RULE_DESIGN_REVIEW"
