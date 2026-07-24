@@ -1,5 +1,22 @@
 # Current Task
 
+## Phase 3 Slice 2B20A — RUNNING / GOVERNANCE GO / RULE GATES PENDING
+
+- Authorization is `USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE`.
+- Parent 2B20 remains archived as `RESLICE_REQUIRED / UNACCEPTED` at commit `2b56a9a0891de9fda9954d9d635bcbda9d4248a3`; its blockers were `PLANNED_BASE_DREAMER_CAN_REMAIN_UNSETTLEABLE` and `DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY`.
+- 2B20A owns only the first blocker and only accepted path `[2B19A3A-C17]`: base Dreamer `ai-seat-01` / seat `1`, Philosopher `ai-seat-10` / seat `10`, canonical `DRUNK` provenance `PHILOSOPHER_CHOSEN_DUPLICATE`, current Demon `fang_gu`, and no current Vortox.
+- Governance `docs/architecture/2B20A-go-no-go-under-governance-v1.md`, SHA-256 `9ab18f66a1a64372b3a629a8ab42fad1c8455de61647b11c167ef6d862ee2bf1`, returns terminal `GO`.
+- The V3 opportunity and legal target path exist. Submission currently returns retryable, receipt-free, mutation-free `ApplicationNotConfigured`; no target, delivery, settlement, receipt, version change, or stream mutation is produced, so the opportunity remains `OPEN` and the task remains pending.
+- The primary missing capability is a versioned non-Vortox canonical-drunk base Dreamer information delivery integrated with existing target, atomic settlement, replay, receipt, idempotency, and private projection boundaries. Ledger requirements remain for fresh rule research and design; they are not inferred here.
+- Coverage target is `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`; Dreamer remains `PARTIAL`.
+- `ruleReady=false`, `ruleDesignPass=false`, design `0/2`, repair `0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, `phase2CStarted=false`, and `currentPR=null`.
+- No rule evidence or design exists yet. No production, test, workflow, dependency, profile, ownership, or role-matrix modification is permitted.
+- Explicitly excluded: poisoned success, No Dashii, gained Dreamer impairment, ineffective Vortox, generic impairment engine, other night, first-night completion/day entry, nomination, voting, execution, death, and Phase 2C.
+- Remaining blockers are `PENDING_FRESH_2B20A_RULE_RESEARCH`, `PENDING_2B20A_RULE_READY`, `PENDING_BOUNDED_2B20A_DESIGN`, and `PENDING_INDEPENDENT_2B20A_RULE_DESIGN_PASS`.
+- Required next action: `RUN_2B20A_RULE_RESEARCH`.
+
+All sections below are chronological prior-slice checkpoints retained as history; they do not override the active 2B20A governance state.
+
 ## Phase 3 Slice 2B20 — RESLICE_REQUIRED / UNACCEPTED
 
 - Recovery authorization is `USER_AUTHORIZED_2B20_ACCEPTED_MAIN_RECOVERY_AND_CONTINUE_EXISTING_AUTHORIZATION`; product authorization is `USER_AUTHORIZED_2B20_FIRST_NIGHT_COMPLETION_AND_DAY_ENTRY`.
