@@ -1,5 +1,20 @@
 # Current Task
 
+## Phase 3 Slice 2B20 — RESLICE_REQUIRED / UNACCEPTED
+
+- Recovery authorization is `USER_AUTHORIZED_2B20_ACCEPTED_MAIN_RECOVERY_AND_CONTINUE_EXISTING_AUTHORIZATION`; product authorization is `USER_AUTHORIZED_2B20_FIRST_NIGHT_COMPLETION_AND_DAY_ENTRY`.
+- Accepted base is `5a69c90f2d3947556ff45c15c467902b1e28ca43` on `phase-3/first-night-completion-day-entry`.
+- Governance record `docs/architecture/2B20-go-no-go-under-governance-v1.md`, SHA-256 `631fb1938189fac551407c016ac0632b7d2cf31a0afe3642f1ee7df034932af5`, returned exact terminal `RESLICE_REQUIRED`.
+- The eleven-task inventory shows `DREAMER_ACTION` is plannable but not total: accepted `[2B19A3A-C17]` leaves the canonical Philosopher-caused `DRUNK` base Dreamer opportunity open and unsettled, while `[2B19A2-C18]` and `[2B19A2-C20]` preserve current No Dashii as retryable `ApplicationNotConfigured`, receipt-free and mutation-free.
+- Existing phase authority permits only `FIRST_NIGHT --FIRST_NIGHT_COMPLETED--> DAWN_RESOLUTION --DAWN_COMPLETED--> DAY_DISCUSSION`, with counters `0/1` at first night and dawn, then `1/1` at day. Direct `FIRST_NIGHT` to `DAY_DISCUSSION` is illegal, and `validateDomainBatchSemantics` currently rejects both completion reasons as unintegrated.
+- Exact blockers are `PLANNED_BASE_DREAMER_CAN_REMAIN_UNSETTLEABLE` and `DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY`.
+- Stop-loss fired before rule/design gates: `ruleReady=false`, `ruleDesignPass=false`, design `0/2`, repair `0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, `phase2CStarted=false`, and `currentPR=null`.
+- No `docs/rules/evidence/2B20.md` or `docs/implementation/phase-3-slice-2b20-design.md` exists or is authorized. No production, test, workflow, dependency, profile, ownership, or role-matrix change is permitted.
+- Minimum candidate reslice is exactly **Base Dreamer Canonical-DRUNK Non-Vortox Settlement** under fresh rule evidence and design gates. It does not resolve No Dashii or authorize first-night completion.
+- Required next action: `STOP_REQUIRE_NEW_USER_RESLICE_AUTHORIZATION_NO_AUTOMATIC_NEXT_SLICE`.
+
+All sections below are chronological prior-slice checkpoints retained as history; they do not override the 2B20 governance stop above.
+
 ## Phase 3 Slice 2B19A3B2 — COMPLETED / ACCEPTED / CLOSEOUT CI PENDING
 
 - PR [#44](https://github.com/JackeyLovedas/botc-singleplayer/pull/44) froze feature HEAD `8cb921c5130454c90c0a63fc4b03a1d24f789b0f`. Product-head push run [30011473350](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30011473350) attempt 1 failed in `coverage shard (domain-core-rebuild)` after one frozen Witch replay test exceeded 5,000 ms; attempt 2 passed `24 / 24` final jobs. Pull-request run [30011477353](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30011477353) passed `24 / 24`.
