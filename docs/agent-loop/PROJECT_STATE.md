@@ -1,5 +1,17 @@
 # Project State
 
+## Current state — Phase 3 Slice 2B19A3B2 COMPLETED / ACCEPTED
+
+- PR #44 frozen feature HEAD `8cb921c5130454c90c0a63fc4b03a1d24f789b0f` passed product-head push run `30011473350` on attempt 2 and pull-request run `30011477353` on attempt 1, each with `24 / 24` final successful jobs. Push attempt 1 remains recorded as `FAILURE`: the existing frozen Witch replay test exceeded 5,000 ms in `coverage shard (domain-core-rebuild)`.
+- Independent final review returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`. PR #44 audit comments `5065379962 / 5065380191` and PR #45 prerequisite comments `5058969189 / 5058969870` are archived verbatim under `docs/reviews/` with their original timestamps, byte counts, URLs, and exact UTF-8 SHA-256 hashes.
+- Infrastructure PR #45 froze HEAD `a8f17e4d62b500550d1092ec1bff19fac05ebf9a`, independently passed both review verdicts, and merged into the product branch as `8cb921c5130454c90c0a63fc4b03a1d24f789b0f`.
+- PR #44 merged as `e247993e1b7ca8b651659f7b6cdeee6c2a58a070`. Main push run `30060339928` passed `24 / 24`; accepted tag `phase-3-slice-2b19a3b2-combined-dreamer-mathematician-integration` points to the same merge.
+- Commit-specific CI remains separate: `productHeadCI` applies only to `8cb921c...`; `mergeCommitCI` applies only to `e247993e...`; `closeoutCommitCI=PENDING` until an independent run exists for the exact docs-only closeout commit.
+- Accepted coverage is `PARTIAL / COMBINED_NATIVE_AND_GAINED_DREAMER_FIRST_NIGHT_COUNT_ONLY`. Dreamer, Mathematician, and Philosopher remain `PARTIAL`; Vortox remains `NOT_STARTED`; no role is promoted to `COMPLETE`.
+- Control is `status=COMPLETED`, `disposition=ACCEPTED`, `currentSlice=null`, `currentBranch=main`, `currentPR=null`, `implementationAuthorized=false`, `remainingBlockers=[]`, `phase2CStarted=false`, and `nextAction=STOP_NO_NEXT_SLICE_AUTHORIZED`.
+
+All sections below are chronological pre-acceptance checkpoints retained as history; they do not override the completed state above.
+
 ## Current state — PR #45 A3B2 HOSTED STABILITY PROFILE V2 READY
 
 - Exact source HEAD `6a4705c0a6685c6f954a1b0db9870457122f24f4` is bound by append-only profile `phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2`, source kind `THREE_ARTIFACT_COMPLETE_GITHUB_HOSTED_EXECUTIONS`; all historical profiles remain unchanged.

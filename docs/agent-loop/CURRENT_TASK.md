@@ -1,5 +1,18 @@
 # Current Task
 
+## Phase 3 Slice 2B19A3B2 — COMPLETED / ACCEPTED / CLOSEOUT CI PENDING
+
+- PR [#44](https://github.com/JackeyLovedas/botc-singleplayer/pull/44) froze feature HEAD `8cb921c5130454c90c0a63fc4b03a1d24f789b0f`. Product-head push run [30011473350](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30011473350) attempt 1 failed in `coverage shard (domain-core-rebuild)` after one frozen Witch replay test exceeded 5,000 ms; attempt 2 passed `24 / 24` final jobs. Pull-request run [30011477353](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30011477353) passed `24 / 24`.
+- The complete independent PR #44 report returned `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`. Its exact GitHub comments are archived verbatim at `docs/reviews/pr-44-code-review-final.md` and `docs/reviews/pr-44-rule-review-final.md`, with original body SHA-256 values `88f559dc9f55f5a9c189dd58115f9078ce239a98cc57340e3f30e5ae60d8a4d9 / 7cf2aba5780e41718c88ed86fcb52ddb6ae6dd89d226530cb6bb8630d19e1f0a`.
+- Infrastructure PR [#45](https://github.com/JackeyLovedas/botc-singleplayer/pull/45) froze HEAD `a8f17e4d62b500550d1092ec1bff19fac05ebf9a`, received `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`, and merged as `8cb921c5130454c90c0a63fc4b03a1d24f789b0f`. Its exact comments are archived at `docs/reviews/pr-45-code-review-final.md` and `docs/reviews/pr-45-rule-review-final.md`, with body SHA-256 values `ae63347db38f3d1db641acbdf8f8bd836b46641a425cb18a09a2efd3355bf3d5 / 87c7c4a12de7c460bbc4d74a6d1a539c0a9dbf576bf0ac5a878e18355294127d`.
+- PR #44 merged to `main` as `e247993e1b7ca8b651659f7b6cdeee6c2a58a070`. Exact merge-main run [30060339928](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30060339928) passed `24 / 24`. Accepted tag `phase-3-slice-2b19a3b2-combined-dreamer-mathematician-integration` points exactly to that merge.
+- CI provenance is commit-specific: `productHeadCI=8cb921c... / push 30011473350 attempt 1 FAILURE, attempt 2 SUCCESS / PR 30011477353 SUCCESS`; `mergeCommitCI=e247993e... / 30060339928 SUCCESS`; `closeoutCommitCI=PENDING` for the future exact docs-only closeout SHA and inherits no earlier result.
+- Slice coverage is `PARTIAL / COMBINED_NATIVE_AND_GAINED_DREAMER_FIRST_NIGHT_COUNT_ONLY`. Dreamer, Mathematician, and Philosopher remain `PARTIAL`; Vortox remains `NOT_STARTED`; no incomplete role is `COMPLETE`.
+- Control is `COMPLETED / ACCEPTED`: `currentSlice=null`, `currentBranch=main`, `currentPR=null`, `implementationAuthorized=false`, `remainingBlockers=[]`, and `phase2CStarted=false`.
+- Required next action: `STOP_NO_NEXT_SLICE_AUTHORIZED`. Do not begin another Slice or Phase 2C. The remote product branch remains until the controller observes successful exact closeout CI.
+
+All sections below are chronological pre-acceptance checkpoints retained as history; they do not override the completed state above.
+
 ## PR #45 — A3B2 HOSTED STABILITY PROFILE V2 READY
 
 - Exact infrastructure source is `6a4705c0a6685c6f954a1b0db9870457122f24f4` on `infra/pr44-a3b2-evidence-process-isolation-v1`; authorized profile is `phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2` with source kind `THREE_ARTIFACT_COMPLETE_GITHUB_HOSTED_EXECUTIONS`.

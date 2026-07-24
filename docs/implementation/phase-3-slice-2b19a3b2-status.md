@@ -2,7 +2,7 @@
 
 - Slice: `2B19A3B2 — Combined Native and Philosopher-Gained Dreamer Mathematician Integration`
 - Authorization: `USER_AUTHORIZED_2B19A3B2_COMBINED_DREAMER_MATHEMATICIAN_INTEGRATION`
-- Branch: `phase-3/combined-dreamer-mathematician-integration`
+- Branch: `main` (accepted feature branch: `phase-3/combined-dreamer-mathematician-integration`)
 - Source baseline: `c76eb765b69e09cc5f297cf69ed5d04bfb6663e1`
 - Rule evidence: `docs/rules/evidence/2B19A3B2.md`, SHA-256 `64607c71c5d9b947b78063cdc8e914f684b975748cb2c183fe2e4119b4036eb0`, verdict `RULE_READY`, coverage `PARTIAL`
 - Design: `docs/implementation/phase-3-slice-2b19a3b2-design.md`, SHA-256 `23c1912280c51a5a7fea08b0e35011fb24318160b8a79047ca9e85eddcb1306e`
@@ -10,7 +10,33 @@
 - Release review: `docs/implementation/phase-3-slice-2b19a3b2-design-release-review-after-command-capture-v1.md`, SHA-256 `c0c742aa142772530e83837ac7b4e3c6f2ca4daddf395d57b73452e54dd43485`, verdict `DESIGN_RELEASE_PASS`
 - Design round: `1 / 2`; repair round: `2 / 2`; `productRepairRoundConsumed=false`
 - Historical profile status: `FROZEN_FOR_2C5F2F6_ONLY_NOT_AUTHORITY_FOR_RR1_SOURCE`
-- Disposition: `UNACCEPTED`
+- Disposition: `ACCEPTED`
+
+## Post-merge acceptance and closeout
+
+PR #44 froze feature HEAD `8cb921c5130454c90c0a63fc4b03a1d24f789b0f`. Push run `30011473350` attempt 1 failed in `coverage shard (domain-core-rebuild)` on the existing frozen Witch replay test's 5,000 ms budget; attempt 2 completed `SUCCESS / 24 of 24 jobs`. Pull-request run `30011477353` completed `SUCCESS / 24 of 24 jobs`.
+
+The complete independent final review returned `CODE_REVIEW_PASS`, `RULE_REVIEW_PASS`, and `remainingBlockers=[]`. The exact PR #44 audit comments are archived verbatim at:
+
+- `docs/reviews/pr-44-code-review-final.md`: comment `5065379962`, timestamp `2026-07-24T01:56:02Z`, `10,529` UTF-8 bytes, SHA-256 `88f559dc9f55f5a9c189dd58115f9078ce239a98cc57340e3f30e5ae60d8a4d9`;
+- `docs/reviews/pr-44-rule-review-final.md`: comment `5065380191`, timestamp `2026-07-24T01:56:04Z`, `10,529` UTF-8 bytes, SHA-256 `7cf2aba5780e41718c88ed86fcb52ddb6ae6dd89d226530cb6bb8630d19e1f0a`.
+
+Infrastructure PR #45 froze HEAD `a8f17e4d62b500550d1092ec1bff19fac05ebf9a`, passed both independent review verdicts with empty blockers, and merged as `8cb921c5130454c90c0a63fc4b03a1d24f789b0f`. Its original comments are archived at:
+
+- `docs/reviews/pr-45-code-review-final.md`: comment `5058969189`, timestamp `2026-07-23T13:28:44Z`, `12,776` UTF-8 bytes, SHA-256 `ae63347db38f3d1db641acbdf8f8bd836b46641a425cb18a09a2efd3355bf3d5`;
+- `docs/reviews/pr-45-rule-review-final.md`: comment `5058969870`, timestamp `2026-07-23T13:28:48Z`, `12,776` UTF-8 bytes, SHA-256 `87c7c4a12de7c460bbc4d74a6d1a539c0a9dbf576bf0ac5a878e18355294127d`.
+
+PR #44 merged as `e247993e1b7ca8b651659f7b6cdeee6c2a58a070`. Main push run `30060339928` completed `SUCCESS / 24 of 24 jobs`. Accepted tag `phase-3-slice-2b19a3b2-combined-dreamer-mathematician-integration` points exactly to that merge.
+
+CI provenance is deliberately separate:
+
+- `productHeadCI`: feature HEAD `8cb921c5130454c90c0a63fc4b03a1d24f789b0f`; push `30011473350` attempt 1 `FAILURE`, attempt 2 `SUCCESS / 24 of 24`; pull request `30011477353` `SUCCESS / 24 of 24`; scope is the frozen product feature HEAD only.
+- `mergeCommitCI`: merge SHA `e247993e1b7ca8b651659f7b6cdeee6c2a58a070`; main push `30060339928` `SUCCESS / 24 of 24`; scope is the exact merge commit only.
+- `closeoutCommitCI`: `PENDING`; its future exact docs-only closeout SHA and run cannot be self-recorded and inherit no product-head or merge-commit result.
+
+Final Slice coverage is `PARTIAL / COMBINED_NATIVE_AND_GAINED_DREAMER_FIRST_NIGHT_COUNT_ONLY`. Dreamer, Mathematician, and Philosopher remain `PARTIAL`; Vortox remains `NOT_STARTED`; no role is `COMPLETE`. Control is `COMPLETED / ACCEPTED` with `currentSlice=null`, `currentBranch=main`, `currentPR=null`, `implementationAuthorized=false`, `remainingBlockers=[]`, and `phase2CStarted=false`. Required next action is `STOP_NO_NEXT_SLICE_AUTHORIZED`.
+
+All sections below are chronological pre-acceptance checkpoints retained as history; they do not override this post-merge disposition.
 
 ## PR #45 hosted stability profile V2
 
