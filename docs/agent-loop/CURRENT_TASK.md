@@ -1,21 +1,22 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — READY_FOR_RULE_DESIGN_REVIEW
+## Phase 3 Slice 2B20A — RULE_DESIGN_FIX_REQUIRED / ROUND 1
 
 - Authorization is `USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE`.
 - Parent 2B20 remains archived as `RESLICE_REQUIRED / UNACCEPTED` at commit `2b56a9a0891de9fda9954d9d635bcbda9d4248a3`; its blockers were `PLANNED_BASE_DREAMER_CAN_REMAIN_UNSETTLEABLE` and `DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY`.
 - 2B20A owns only the first blocker and only accepted path `[2B19A3A-C17]`: base Dreamer `ai-seat-01` / seat `1`, Philosopher `ai-seat-10` / seat `10`, canonical `DRUNK` provenance `PHILOSOPHER_CHOSEN_DUPLICATE`, current Demon `fang_gu`, and no current Vortox.
 - Governance `docs/architecture/2B20A-go-no-go-under-governance-v1.md`, SHA-256 `9ab18f66a1a64372b3a629a8ab42fad1c8455de61647b11c167ef6d862ee2bf1`, returns terminal `GO`.
-- Fresh rule evidence `docs/rules/evidence/2B20A.md`, SHA-256 `1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00`, records the mandatory live sources at `2026-07-24T04:16:39Z` and returns terminal `RULE_READY`.
+- Original rule evidence `docs/rules/evidence/2B20A.md`, SHA-256 `1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00`, remains immutable. Standalone attribution-only resolution `docs/rules/evidence/2B20A-resolved.md`, SHA-256 `47e6c5a70b1eae70f51e9a4e0d78c8ab0d2ddf272babb3f9c76e51970c893189`, preserves the pinned sources and returns terminal `RULE_READY`.
 - Frozen Round 1 design `docs/implementation/phase-3-slice-2b20a-design.md`, SHA-256 `9323681b5aa61106b81d1580c0502eaf085f56ee5f51801aaa7fe771e15cdf02`, returns terminal `READY_FOR_RULE_DESIGN_REVIEW` and caps implementation at five production files and 1000 added production LOC.
+- Independent Round 1 review `docs/implementation/phase-3-slice-2b20a-design-review-round-1.md`, SHA-256 `7a94445b31fb49b1c504d37fcb842d8c92ee96e78149ca3c50f9d0645a02543e`, is bound to reviewed HEAD `257012175e2a21360c4fc9477ac52e6b7bbea0f4` and returns `RULE_DESIGN_FIX_REQUIRED`.
 - The V3 opportunity and legal target path exist. Submission currently returns retryable, receipt-free, mutation-free `ApplicationNotConfigured`; no target, delivery, settlement, receipt, version change, or stream mutation is produced, so the opportunity remains `OPEN` and the task remains pending.
-- Rule truth permits a true or false apparent one-good/one-evil pair for this drunk non-Vortox Dreamer; a false pair is not mechanical inversion. The primary missing capability is a versioned delivery integrated with existing target, atomic settlement, replay, receipt, idempotency, private projection, and exact Mathematician attribution.
+- Rule truth permits a true or false apparent one-good/one-evil pair for this drunk non-Vortox Dreamer; a false pair is not mechanical inversion. The base Dreamer remains the outcome-fact source and counted player; the Philosopher is causal impairment provenance only.
 - Coverage target is `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`; Dreamer remains `PARTIAL`.
 - `ruleReady=true`, `ruleDesignPass=false`, design `1/2`, repair `0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, `phase2CStarted=false`, and `currentPR=null`.
 - No production, test, workflow, dependency, profile, ownership, or role-matrix modification is permitted before independent `RULE_DESIGN_PASS`.
 - Explicitly excluded: poisoned success, No Dashii, gained Dreamer impairment, ineffective Vortox, generic impairment engine, other night, first-night completion/day entry, nomination, voting, execution, death, and Phase 2C.
-- Remaining blocker is `PENDING_INDEPENDENT_2B20A_RULE_DESIGN_PASS`.
-- Required next action: `RUN_INDEPENDENT_2B20A_RULE_DESIGN_REVIEW`.
+- Remaining blockers are `2B20A_RULE_EVIDENCE_MATHEMATICIAN_COUNTED_PLAYER_ATTRIBUTION_CONFLICT`, `2B20A_V7_ACCEPTED_STREAM_PROJECTION_PROVENANCE_GATE_MISSING`, and `2B20A_DESIGN_TRACEABILITY_V1_1_FIELDS_AND_PRIMARY_CLASSIFICATION_MISSING`.
+- Required next action: `CREATE_COMPLETE_2B20A_ROUND_2_DESIGN`.
 
 All sections below are chronological prior-slice checkpoints retained as history; they do not override the active 2B20A governance state.
 

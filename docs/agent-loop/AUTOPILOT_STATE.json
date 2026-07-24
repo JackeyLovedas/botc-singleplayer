@@ -1100,10 +1100,10 @@
     },
     "remainingBlockers": []
   },
-  "reviewedHead": null,
-  "currentReviewHeadAuthority": "No 2B20A review exists because fresh rule research and bounded design have not started.",
+  "reviewedHead": "257012175e2a21360c4fc9477ac52e6b7bbea0f4",
+  "currentReviewHeadAuthority": "The independent 2B20A Round 1 rule-design review is bound to reviewed HEAD 257012175e2a21360c4fc9477ac52e6b7bbea0f4 and design SHA-256 9323681b5aa61106b81d1580c0502eaf085f56ee5f51801aaa7fe771e15cdf02.",
   "exactHeadCIAuthority": "No 2B20A product HEAD or pull request exists. Accepted prior-slice CI remains historical and supplies no authority for 2B20A.",
-  "currentFeatureHead": "2b56a9a0891de9fda9954d9d635bcbda9d4248a3",
+  "currentFeatureHead": "257012175e2a21360c4fc9477ac52e6b7bbea0f4",
   "repairRound": 0,
   "designRound": 1,
   "maxDesignRounds": 2,
@@ -1175,7 +1175,7 @@
     "currentDemonRoleId": "fang_gu",
     "currentVortox": "ABSENT",
     "missingCapability": "VERSIONED_NON_VORTOX_CANONICAL_DRUNK_BASE_DREAMER_INFORMATION_DELIVERY",
-    "ledgerDecision": "PENDING_FRESH_RULE_RESEARCH_AND_DESIGN",
+    "ledgerDecision": "BASE_DREAMER_IS_FACT_SOURCE_AND_COUNTED_PLAYER; PHILOSOPHER_IS_CAUSAL_IMPAIRMENT_PROVENANCE_ONLY",
     "coverageTarget": "PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY",
     "dreamerRoleCoverage": "PARTIAL",
     "ruleReady": true,
@@ -1189,17 +1189,26 @@
     "testsChanged": false,
     "roleCoverageMatrixChanged": false,
     "ruleResearchVerdict": "RULE_READY",
-    "ruleEvidencePath": "docs/rules/evidence/2B20A.md",
-    "ruleEvidenceSha256": "1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00",
+    "ruleEvidencePath": "docs/rules/evidence/2B20A-resolved.md",
+    "ruleEvidenceSha256": "47e6c5a70b1eae70f51e9a4e0d78c8ab0d2ddf272babb3f9c76e51970c893189",
+    "parentRuleEvidencePath": "docs/rules/evidence/2B20A.md",
+    "parentRuleEvidenceSha256": "1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00",
     "ruleEvidenceRetrievalDate": "2026-07-24T04:16:39Z",
     "designPath": "docs/implementation/phase-3-slice-2b20a-design.md",
     "designSha256": "9323681b5aa61106b81d1580c0502eaf085f56ee5f51801aaa7fe771e15cdf02",
     "designStatus": "READY_FOR_RULE_DESIGN_REVIEW",
     "designTerminal": "READY_FOR_RULE_DESIGN_REVIEW",
+    "designReviewPath": "docs/implementation/phase-3-slice-2b20a-design-review-round-1.md",
+    "designReviewSha256": "7a94445b31fb49b1c504d37fcb842d8c92ee96e78149ca3c50f9d0645a02543e",
+    "designReviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
+    "designReviewReviewedHead": "257012175e2a21360c4fc9477ac52e6b7bbea0f4",
+    "designReviewTimestamp": "2026-07-24T04:52:39.579Z",
     "productionFileCeiling": 5,
     "addedProductionLocCeiling": 1000,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_2B20A_RULE_DESIGN_PASS"
+      "2B20A_RULE_EVIDENCE_MATHEMATICIAN_COUNTED_PLAYER_ATTRIBUTION_CONFLICT",
+      "2B20A_V7_ACCEPTED_STREAM_PROJECTION_PROVENANCE_GATE_MISSING",
+      "2B20A_DESIGN_TRACEABILITY_V1_1_FIELDS_AND_PRIMARY_CLASSIFICATION_MISSING"
     ]
   },
   "behaviorDesignFrozen": false,
@@ -1215,14 +1224,14 @@
   "currentDesignStatus": "READY_FOR_RULE_DESIGN_REVIEW",
   "currentDesignTerminal": "READY_FOR_RULE_DESIGN_REVIEW",
   "currentDesignSource": "INDEPENDENT_READ_ONLY_ARCHITECT",
-  "currentDesignReviewPath": null,
-  "currentDesignReviewHash": null,
-  "currentDesignReviewVerdict": null,
-  "currentDesignReviewSource": null,
+  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20a-design-review-round-1.md",
+  "currentDesignReviewHash": "7a94445b31fb49b1c504d37fcb842d8c92ee96e78149ca3c50f9d0645a02543e",
+  "currentDesignReviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
+  "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
   "historicalSecurityDesignReviewPath": "docs/implementation/command-capture-proxy-rejection-v1-design-review.md",
   "historicalSecurityDesignReviewHash": "247b302d22aca5dc6249a541cc2d8a5d712b89002d685250a862226553406cd8",
   "historicalSecurityDesignReviewVerdict": "SECURITY_DESIGN_PASS",
-  "ruleDesignVerdict": null,
+  "ruleDesignVerdict": "RULE_DESIGN_FIX_REQUIRED",
   "slice2B19A3AReleaseReview": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design-release-review-under-governance-v1-1.md",
     "sha256": "cc5fb0b1443cd4a4b08ccedacfa038d8f51a2a358e22df49838ea01fe9b3ad6c",
@@ -2102,10 +2111,10 @@
     "localGates": "Prior pre-publish audit only; repair-round-1 local gates are Math 422/422, focused 8 files/1020, full and coverage 30 files/1408, 86.78% statements/lines, 81.52% branches, 97.78% functions"
   },
   "compatibilityDesignVerdict": null,
-  "designReviewPath": null,
-  "designReviewHash": null,
+  "designReviewPath": "docs/implementation/phase-3-slice-2b20a-design-review-round-1.md",
+  "designReviewHash": "7a94445b31fb49b1c504d37fcb842d8c92ee96e78149ca3c50f9d0645a02543e",
   "designReviewSourceBodyHash": null,
-  "designReviewVerdict": null,
+  "designReviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
   "slice2B19Prohibited": true,
   "slice2B19RuleGate": {
     "status": "RULE_READY",
@@ -2132,8 +2141,8 @@
   "ruleResearchStarted": true,
   "ruleResearchCompleted": true,
   "ruleResearchVerdict": "RULE_READY",
-  "ruleEvidencePath": "docs/rules/evidence/2B20A.md",
-  "ruleEvidenceSha256": "1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00",
+  "ruleEvidencePath": "docs/rules/evidence/2B20A-resolved.md",
+  "ruleEvidenceSha256": "47e6c5a70b1eae70f51e9a4e0d78c8ab0d2ddf272babb3f9c76e51970c893189",
   "ruleEvidenceRetrievalWindow": "2026-07-24T04:16:39Z",
   "ruleEvidenceRetrievalStart": "2026-07-24T04:16:39Z",
   "ruleEvidenceRetrievalEnd": "2026-07-24T04:16:39Z",
@@ -2147,7 +2156,9 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_2B20A_RULE_DESIGN_PASS"
+    "2B20A_RULE_EVIDENCE_MATHEMATICIAN_COUNTED_PLAYER_ATTRIBUTION_CONFLICT",
+    "2B20A_V7_ACCEPTED_STREAM_PROJECTION_PROVENANCE_GATE_MISSING",
+    "2B20A_DESIGN_TRACEABILITY_V1_1_FIELDS_AND_PRIMARY_CLASSIFICATION_MISSING"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
@@ -2914,8 +2925,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the complete bounded 2B20A Round 1 design for independent rule-design review. RULE_READY remains true; implementation remains unauthorized and no production, test, or role-matrix change was created.",
+  "lastAction": "Archived the complete independent 2B20A Round 1 rule-design review, resolved the attribution-only rule-evidence conflict without changing semantics, and recorded three exact Round 2 blockers. Implementation remains unauthorized.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_2B20A_RULE_DESIGN_REVIEW",
-  "nextAction": "RUN_INDEPENDENT_2B20A_RULE_DESIGN_REVIEW"
+  "requiredNextAction": "CREATE_COMPLETE_2B20A_ROUND_2_DESIGN",
+  "nextAction": "CREATE_COMPLETE_2B20A_ROUND_2_DESIGN"
 }
