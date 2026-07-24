@@ -1,5 +1,50 @@
 # Current Task
 
+## Phase 3 Slice 2B20A — PRODUCT CANDIDATE COMPLETE, EXACT-HEAD CI PENDING
+
+- The frozen V7 product implementation is complete inside the exact five-file
+  production allowlist. It recognizes only the canonical
+  Philosopher-caused-DRUNK base Dreamer with unique current Fang Gu and no
+  current Vortox/No Dashii.
+- Real accepted commands now produce the existing target event, additive V7
+  delivery, and existing task settlement atomically for both naturally
+  reachable TRUE and FALSE apparent pairs.
+- The exact accepted test stream uses Dreamer `ai-seat-01` / seat `1`,
+  Philosopher `ai-seat-10` / seat `10`, Mathematician, and Fang Gu.
+- TRUE derives a normal base-Dreamer fact and zero contribution. FALSE derives
+  one abnormal `SOURCE_DRUNKENNESS` base-Dreamer fact; Philosopher remains
+  causal provenance only.
+- Replay, exact nested validation, hostile-input fail-closed behavior,
+  accepted-history projection privacy, receipt/idempotency, and legacy V1-V6
+  compatibility are covered. `event-applier.ts` remains unchanged.
+- Traceability is materialized at
+  `docs/implementation/phase-3-slice-2b20a-test-traceability.md` with 37 active
+  criteria, 37 primary identities, and 37 unique supporting authorities.
+- Implementation status is
+  `docs/implementation/phase-3-slice-2b20a-status.md`.
+- Dreamer remains `PARTIAL`; exact coverage is
+  `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`.
+- Explicitly unsupported behavior remains unsupported, including poisoning,
+  No Dashii derivation, gained-Dreamer impairment, ineffective Vortox,
+  other-night Dreamer, and `FIRST_NIGHT -> DAY`.
+- Six focused files, typecheck, lint, the full ordinary suite (`35 / 1572`),
+  ownership self-test (`22 / 22`), traceability inventory (`37 / 37 / 37`),
+  scope, and deterministic-source checks pass.
+- Full coverage executes all `35 / 1572` tests successfully and generates the
+  report, but exits `1` after one unhandled
+  `[vitest-worker]: Timeout calling "onTaskUpdate"`. The shell uses pnpm
+  `11.9.0` while the repository pins `pnpm@11.7.0`; Node is `v24.15.0`.
+- Independent governance classification is
+  `CONDITIONAL_PRODUCT_CANDIDATE_ALLOWED`. This local infrastructure result is
+  not relabeled as a pass, consumes no repair round, and leaves C32 pending
+  exact-head CI.
+- Control is
+  `PRODUCT_CANDIDATE_COMPLETE_PENDING_CONTROLLER_PUSH_EXACT_HEAD_CI_AND_FINAL_REVIEW`;
+  repair remains `0/2`, no product repair round is consumed, and no PR exists.
+
+All sections below are chronological preimplementation checkpoints retained as
+history; they do not override the active implementation state.
+
 ## Phase 3 Slice 2B20A — READY_FOR_IMPLEMENTATION
 
 - Authorization is `USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE`.

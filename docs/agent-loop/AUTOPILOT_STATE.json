@@ -1,5 +1,5 @@
 {
-  "status": "READY_FOR_IMPLEMENTATION",
+  "status": "PRODUCT_CANDIDATE_COMPLETE_PENDING_CONTROLLER_PUSH_EXACT_HEAD_CI_AND_FINAL_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "PRODUCT_SLICE",
   "productRepairRoundConsumed": false,
@@ -1155,7 +1155,7 @@
     ]
   },
   "slice2B20AGate": {
-    "status": "READY_FOR_IMPLEMENTATION",
+    "status": "PRODUCT_CANDIDATE_COMPLETE_PENDING_CONTROLLER_PUSH_EXACT_HEAD_CI_AND_FINAL_REVIEW",
     "disposition": "UNACCEPTED",
     "authorization": "USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE",
     "scopeMode": "REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY",
@@ -1185,9 +1185,9 @@
     "maxDesignRounds": 2,
     "repairRound": 0,
     "maxRepairRounds": 2,
-    "productionChanged": false,
-    "testsChanged": false,
-    "roleCoverageMatrixChanged": false,
+    "productionChanged": true,
+    "testsChanged": true,
+    "roleCoverageMatrixChanged": true,
     "ruleResearchVerdict": "RULE_READY",
     "ruleEvidencePath": "docs/rules/evidence/2B20A-resolved.md",
     "ruleEvidenceSha256": "47e6c5a70b1eae70f51e9a4e0d78c8ab0d2ddf272babb3f9c76e51970c893189",
@@ -1220,10 +1220,34 @@
     "designReleaseReviewVerdict": "DESIGN_RELEASE_PASS",
     "designReleaseReviewedHead": "313a39a614a2a46a1026e3a272879cbcdd49324b",
     "designReleaseReviewTimestamp": "2026-07-24T06:57:19.3439717Z",
+    "implementationStatusPath": "docs/implementation/phase-3-slice-2b20a-status.md",
+    "testTraceabilityPath": "docs/implementation/phase-3-slice-2b20a-test-traceability.md",
+    "testTraceabilityStatus": "37 ACTIVE / 37 PRIMARY / 37 SUPPORTING / ZERO DUPLICATE / C32 PENDING EXACT-HEAD CI",
+    "deliverySchemaVersion": "dreamer-information-delivered-v7",
+    "implementedCapability": "CANONICAL_DRUNK_SOURCE_FANG_GU_APPARENT_INFORMATION_SUPPORTED",
+    "productionFilesChanged": 5,
+    "testFilesChanged": 3,
+    "eventApplierChanged": false,
+    "firstNightToDayImplemented": false,
     "productionFileCeiling": 5,
     "addedProductionLocCeiling": 1000,
+    "addedProductionLoc": 572,
+    "localFocusedTests": "PASS",
+    "localTypecheck": "PASS",
+    "localLint": "PASS",
+    "localFullOrdinary": "PASS / 35 files / 1572 tests",
+    "localFullCoverageAssertions": "PASS / 35 files / 1572 tests",
+    "localCoverageReportGenerated": true,
+    "localCoverageProcess": "FAIL / exit 1 / one unhandled [vitest-worker]: Timeout calling \"onTaskUpdate\"",
+    "localNodeVersion": "v24.15.0",
+    "localShellPnpmVersion": "11.9.0",
+    "repositoryPnpmVersion": "11.7.0",
+    "coverageProcessClassification": "CONDITIONAL_PRODUCT_CANDIDATE_ALLOWED",
+    "coverageProcessFailureConsumedRepairRound": false,
+    "ownershipSelfTest": "PASS / 22 of 22",
+    "traceabilityInventory": "PASS / 37 active / 37 unique primary / 37 unique supporting authority",
     "remainingBlockers": [
-      "PENDING_IMPLEMENTATION"
+      "PENDING_CONTROLLER_PUSH_PR_EXACT_HEAD_CI_AND_FINAL_REVIEW"
     ]
   },
   "behaviorDesignFrozen": false,
@@ -2178,7 +2202,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_IMPLEMENTATION"
+    "PENDING_CONTROLLER_PUSH_PR_EXACT_HEAD_CI_AND_FINAL_REVIEW"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
@@ -2945,8 +2969,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent 2B20A design release review. DESIGN_RELEASE_PASS closes the sole traceability-classification blocker without creating a new RULE_DESIGN_PASS or Design Round 3 and authorizes only the frozen implementation scope.",
+  "lastAction": "Completed the frozen 2B20A product candidate, local gates, scope and deterministic audits, and recorded the single local coverage-process onTaskUpdate failure without consuming a repair round.",
   "lastError": null,
-  "requiredNextAction": "IMPLEMENT_2B20A_FROZEN_SCOPE",
-  "nextAction": "IMPLEMENT_2B20A_FROZEN_SCOPE"
+  "requiredNextAction": "CONTROLLER_PUSH_CREATE_OR_UPDATE_PR_RUN_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+  "nextAction": "CONTROLLER_PUSH_CREATE_OR_UPDATE_PR_RUN_EXACT_HEAD_CI_AND_FINAL_REVIEW"
 }

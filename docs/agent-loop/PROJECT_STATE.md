@@ -1,5 +1,43 @@
 # Project State
 
+## Current state — Phase 3 Slice 2B20A PRODUCT CANDIDATE COMPLETE
+
+- The frozen design has been implemented without a Design Round 3, rule change,
+  scope expansion, or repair round.
+- Product changes are limited to the authorized Dreamer capability, prospective
+  batch semantics, first-night outcome ledger, application service, and private
+  projection files. Added V7 is replay-additive; `event-applier.ts`, event
+  versions, commands, top-level state, fixtures, workflow, dependencies,
+  timeouts, ownership, and coverage topology remain unchanged.
+- A real accepted command stream proves Dreamer `ai-seat-01`, Philosopher
+  `ai-seat-10`, canonical duplicate-choice drunkenness, Mathematician, unique
+  Fang Gu, no current Vortox/No Dashii, and natural TRUE/FALSE settlement.
+- The planned base Dreamer task now formally settles and its V3 opportunity
+  closes. TRUE yields no abnormal contribution; FALSE counts the base Dreamer
+  once and never Philosopher.
+- Player/AI accepted-history projection exposes only target and apparent pair to
+  the source. State-only, malformed, accessor, Proxy, forged, and mutated V7
+  inputs fail closed without leaking impairment or audit data.
+- Six focused suites, typecheck, lint, the full ordinary suite (`35 / 1572`),
+  ownership self-test (`22 / 22`), traceability inventory, scope, and
+  deterministic-source checks pass.
+- Full coverage passes all `35 / 1572` tests and generates its report but exits
+  `1` after one unhandled `[vitest-worker]: Timeout calling "onTaskUpdate"`.
+  The shell uses pnpm `11.9.0`, the repository pins `pnpm@11.7.0`, and Node is
+  `v24.15.0`. Independent classification is
+  `CONDITIONAL_PRODUCT_CANDIDATE_ALLOWED`; it consumes no repair round and
+  cannot satisfy C32, which remains pending exact-head CI.
+- The single attributed product candidate commit is the final local action.
+  Push, exact-head CI, PR final review, and merge remain controller work.
+- Traceability is `37/37`, coverage remains
+  `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`, Dreamer remains
+  `PARTIAL`, repair is `0/2`, and `FIRST_NIGHT -> DAY` is not implemented.
+- Remaining blocker:
+  `PENDING_CONTROLLER_PUSH_PR_EXACT_HEAD_CI_AND_FINAL_REVIEW`.
+
+All sections below are chronological preimplementation checkpoints retained as
+history; they do not override the active implementation state.
+
 ## Current state — Phase 3 Slice 2B20A READY_FOR_IMPLEMENTATION
 
 - User authorization `USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE` archives 2B20 as `RESLICE_REQUIRED / UNACCEPTED` and opens only `2B20A — Reachable Base Dreamer Settleability Closure`.
