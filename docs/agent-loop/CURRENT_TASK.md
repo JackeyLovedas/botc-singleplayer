@@ -1,6 +1,6 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — DESIGN RELEASE REVIEW PENDING
+## Phase 3 Slice 2B20A — READY_FOR_IMPLEMENTATION
 
 - Authorization is `USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE`.
 - Parent 2B20 remains archived as `RESLICE_REQUIRED / UNACCEPTED` at commit `2b56a9a0891de9fda9954d9d635bcbda9d4248a3`; its blockers were `PLANNED_BASE_DREAMER_CAN_REMAIN_UNSETTLEABLE` and `DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY`.
@@ -11,16 +11,17 @@
 - Independent Round 1 review `docs/implementation/phase-3-slice-2b20a-design-review-round-1.md`, SHA-256 `7a94445b31fb49b1c504d37fcb842d8c92ee96e78149ca3c50f9d0645a02543e`, is bound to reviewed HEAD `257012175e2a21360c4fc9477ac52e6b7bbea0f4` and returns `RULE_DESIGN_FIX_REQUIRED`.
 - Complete standalone Round 2 design `docs/implementation/phase-3-slice-2b20a-design-round-2.md`, SHA-256 `22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f`, is based on `a834d4b0f79a1779360cf43ede8ba76b7f37cbc6`, closes all three Round 1 blockers, uses exact Governance Traceability V1.1 vocabulary, and returns terminal `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`.
 - Complete independent Round 2 review `docs/implementation/phase-3-slice-2b20a-design-review-round-2.md`, SHA-256 `4b8b24d65ebd8a806bcdeecc73d343780866b1526254706e053e101e6f1c44d3`, is bound to reviewed HEAD `08bea1108037e86d8e01a24bb4fcedc6601ccf8c` and returns `HUMAN_BLOCKED`.
-- User authorization `USER_AUTHORIZED_2B20A_TRACEABILITY_V1_1_CORRECTION_AND_CONDITIONAL_IMPLEMENTATION` permits only the classification appendix, not Design Round 3 or implementation. Appendix `docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md`, SHA-256 `ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb`, supersedes only historical C02/C08/C09 with active C34–C40 and returns `APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW`.
+- User authorization `USER_AUTHORIZED_2B20A_TRACEABILITY_V1_1_CORRECTION_AND_CONDITIONAL_IMPLEMENTATION` authorized the classification appendix and conditioned implementation on release review; it never authorizes Design Round 3. Appendix `docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md`, SHA-256 `ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb`, supersedes only historical C02/C08/C09 with active C34–C40 and returns `APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW`.
+- Complete independent release report `docs/implementation/phase-3-slice-2b20a-design-release-review.md`, SHA-256 `72017917861325619bd6216f437ece3c8758922db51572306113d1d0a4eaae1f`, is bound to reviewed HEAD `313a39a614a2a46a1026e3a272879cbcdd49324b`, returns `DESIGN_RELEASE_PASS`, and closes the sole classification blocker without claiming a new `RULE_DESIGN_PASS`.
 - The V3 opportunity and legal target path exist. Submission currently returns retryable, receipt-free, mutation-free `ApplicationNotConfigured`; no target, delivery, settlement, receipt, version change, or stream mutation is produced, so the opportunity remains `OPEN` and the task remains pending.
 - Rule truth permits a true or false apparent one-good/one-evil pair for this drunk non-Vortox Dreamer; a false pair is not mechanical inversion. The base Dreamer remains the outcome-fact source and counted player; the Philosopher is causal impairment provenance only.
 - Coverage target is `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`; Dreamer remains `PARTIAL`.
-- `status=RUNNING_DESIGN_RELEASE_REVIEW_PENDING`, `ruleReady=true`, `ruleDesignPass=false`, `designReleasePass=false`, design `2/2`, repair `0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, `phase2CStarted=false`, and `currentPR=null`.
+- `status=READY_FOR_IMPLEMENTATION`, `ruleReady=true`, `ruleDesignPass=true` through the release-pass gate, `designReleasePass=true`, design `2/2`, repair `0/2`, `implementationAuthorized=true`, `productRepairRoundConsumed=false`, `phase2CStarted=false`, and `currentPR=null`.
 - No production, test, workflow, dependency, profile, ownership, or role-matrix modification is permitted before independent `RULE_DESIGN_PASS`.
 - Explicitly excluded: poisoned success, No Dashii, gained Dreamer impairment, ineffective Vortox, generic impairment engine, other night, first-night completion/day entry, nomination, voting, execution, death, and Phase 2C.
-- Remaining blocker is `PENDING_INDEPENDENT_2B20A_DESIGN_RELEASE_REVIEW`.
+- Remaining blocker is `PENDING_IMPLEMENTATION`.
 - No Round 3 is authorized. Production code and tests remain unchanged; `FIRST_NIGHT → DAY` is not implemented.
-- Required next action: `RUN_INDEPENDENT_2B20A_DESIGN_RELEASE_REVIEW`.
+- Required next action: `IMPLEMENT_2B20A_FROZEN_SCOPE`.
 
 All sections below are chronological prior-slice checkpoints retained as history; they do not override the active 2B20A governance state.
 
