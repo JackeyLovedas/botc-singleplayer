@@ -1,6 +1,47 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A PRODUCT CANDIDATE COMPLETE
+## Current state — Phase 3 Slice 2B20A Product Repair Round 1 design
+
+- PR #46 product authority is frozen at
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
+- User authorization
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY`
+  permits design and control synchronization only.
+- The complete repair design is
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design.md`,
+  SHA-256
+  `eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8`.
+- Its only product findings are `F01/C20`, `F04/C34`, and `F05/C37`. The future
+  production allowlist contains only `packages/domain-core/src/dreamer.ts`;
+  the future formal-test allowlist contains only the Dreamer domain test and
+  application-service test.
+- The design preserves the frozen 2B20A behavior, rules, event schema,
+  information algorithm, ledger, projection, receipt, replay, idempotency, and
+  supported/unsupported state boundaries.
+- Ownership authority requires an explicit downstream supersession. That
+  2B20AP1 ownership/traceability/routing prerequisite, Linux worker-RPC
+  infrastructure, and Windows W7 observability remain separate blockers and
+  are not part of this repair design.
+- Exact-head CI remains failed and commit-specific:
+  push `30077541075` is the Linux post-test worker-RPC failure; pull-request
+  `30077586762` is the Windows W7 unknown nonzero exit after a successful JSON
+  report.
+- No production code, tests, scripts, workflows, profiles, dependencies,
+  timeouts, or PR metadata changed. No product repair round was consumed.
+- Control is `HUMAN_BLOCKED /
+  READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REVIEW`,
+  `repairRound=0/2`, `implementationAuthorized=false`, and
+  `productRepairRoundConsumed=false`.
+- Remaining blockers are the independent repair-design review, explicit
+  ownership supersession/routing, Linux worker-RPC CI, and Windows W7 unknown
+  exit.
+- Required next action:
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Product Repair Round 1 design state.
+
+## Historical checkpoint — Phase 3 Slice 2B20A product candidate
 
 - The frozen design has been implemented without a Design Round 3, rule change,
   scope expansion, or repair round.

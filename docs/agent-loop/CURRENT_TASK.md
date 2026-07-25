@@ -1,6 +1,54 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — PRODUCT CANDIDATE COMPLETE, EXACT-HEAD CI PENDING
+## Phase 3 Slice 2B20A — PRODUCT REPAIR ROUND 1 DESIGN READY FOR INDEPENDENT REVIEW
+
+- Authorization is
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY`.
+- PR #46 remains open at frozen remote product HEAD
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
+- Exact product-head push run `30077541075` failed with the Linux
+  `REPEATABLE_POST_TEST_WORKER_RPC_FAILURE_WITH_COMPLETE_SELECTED_ASSERTION_PASS`
+  classification. Pull-request run `30077586762` failed with the Windows
+  `REPEATABLE_WINDOWS_W7_UNKNOWN_NONZERO_EXIT_AFTER_SUCCESSFUL_JSON_REPORT`
+  classification. Neither result may be inherited by a future repair HEAD.
+- Product Repair Round 1 design is
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design.md`,
+  SHA-256
+  `eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8`.
+- The design is limited to `F01/C20`, `F04/C34`, and `F05/C37`: numeric-index
+  accessor-safe V7 validation, the complete adjacent-state capability matrix,
+  and formal Mathematician command-path aggregation proof.
+- Future production scope is capped at
+  `packages/domain-core/src/dreamer.ts`. Future formal-test scope is capped at
+  `packages/domain-core/src/dreamer.test.ts` and
+  `packages/application/src/game-application-service.test.ts`.
+- Behavior and rule semantics are unchanged. Supported and unsupported
+  Dreamer states remain frozen, coverage remains
+  `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`, and Dreamer remains
+  `PARTIAL`.
+- Ownership repair route is `EXPLICIT_SUPERSESSION_REQUIRED`.
+  `supersessionActuallyRequired=true` because accepted A3A C17 changed the same
+  semantic path from formal failure to successful settlement. The downstream
+  2B20AP1 supersession, ownership, traceability, and routing prerequisite is
+  recorded but not designed or implemented here.
+- This docs/control-only design action does not consume a product repair round.
+  Control remains `repairRound=0/2`,
+  `productRepairRoundConsumed=false`, and
+  `implementationAuthorized=false`.
+- Canonical status is `HUMAN_BLOCKED`; detailed state is
+  `READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REVIEW`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW`,
+  `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Product Repair Round 1 design state.
+
+## Historical checkpoint — Phase 3 Slice 2B20A product candidate
 
 - The frozen V7 product implementation is complete inside the exact five-file
   production allowlist. It recognizes only the canonical
