@@ -1,53 +1,51 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — Product Repair Round 2 Design Correction V1 awaiting rereview
+## Phase 3 Slice 2B20A — Product Repair Round 2 Design Correction V2 required
 
 - Authorization is
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`.
-- Design Correction V1 updates only
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`;
-  the original Round 2 review remains immutable at
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-review.md`,
+- Design Correction V1 remains at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`,
   SHA-256
-  `332dcf4150441b93daedac3e1ab4802c6b5901ece6b0ef0636868f47a10848a2`.
-- Corrected design SHA-256 is
   `34622f6d4cec94289bf8cebb3ededd1023ae82ed05638c2aae1def50f6fe7b3e`.
-- The frozen twelve-row C34 mapping has no `EVIDENCE_GAP`: its first eight
-  requirements use existing valid T2 evidence, M06 and M08 are the only new
-  required T2 cases, and normal base/gained Dreamer remain controls.
-- M06 uses a parser-valid canonical BASE seat-12 ability ID and changes only
-  its task cross-link from the canonical seat-01 chain.
-- M08 keeps state and catalog separately valid and changes only the same-role
-  relationship with total-preserving state modifier
-  `{ outsiderDelta: 1, townsfolkDelta: -1 }`.
-- Prior M01–M05, prior M07, and sparse impairment are explicitly
-  `R3 / T1 / STRUCTURAL_VALIDATION` supporting evidence, not C34 primary
-  completion authority. The obsolete eight-case implementation and gate
-  language was removed.
-- F01/C20 remains unchanged: strict numeric-element enumerability is required,
-  array `length` remains non-enumerable, and direct/public/stored evidence plus
-  zero getter calls remain frozen.
-- Resolver behavior, F05/C37, Mathematician attribution, rules, schema,
-  coverage, ownership, routing, workflow, profile, and PR #46 are unchanged.
+- The new independent rereview is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-rereview.md`,
+  SHA-256
+  `2b202745b651b1d2e9b2e379d2e2ce525f4a71cabc4c6c7fa5c5b820f2535bd0`,
+  and is bound to reviewed HEAD
+  `1d51e5e99e8bde5b4d34addfee511d466dd03954`.
+- The rereview verdict is `RULE_DESIGN_FIX_REQUIRED`.
+- The rereview closed the sparse-impairment inventory finding and confirmed
+  F01/C20 and M08 are valid. It found that M06 still fails the T1 canonical
+  opportunity/provenance admission gate, so it cannot serve as T2 primary
+  authority.
+- Remaining design blockers are exactly
+  `C34_ROUND_2_MATRIX_MIXES_T1_STRUCTURAL_CASES_INTO_T2_POLICY_AUTHORITY`
+  and
+  `C34_VALID_T2_EVIDENCE_GAP_FOR_UNPROVABLE_SOURCE_ABILITY_PROVENANCE`.
+- Bounded Design Correction V2 is allowed. It must either replace M06 with a
+  fully canonical T1-valid fixture that changes only one T2
+  plan/history/state relation, or record the frozen requirement #9 evidence
+  gap and stop under the existing scope-review condition.
 - Product Repair remains `1/2`; this docs/control correction consumes no
   product repair. `designCorrectionRound=1/2` and
   `implementationAuthorized=false`.
 - Canonical status is `HUMAN_BLOCKED`; detailed state is
-  `READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`.
+  `PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_V2_REQUIRED`.
 - Active blockers are
-  `PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`,
-  `F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED`,
-  `F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE`,
+  `C34_ROUND_2_MATRIX_MIXES_T1_STRUCTURAL_CASES_INTO_T2_POLICY_AUTHORITY`,
+  `C34_VALID_T2_EVIDENCE_GAP_FOR_UNPROVABLE_SOURCE_ABILITY_PROVENANCE`,
   `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
   `LINUX_WORKER_RPC_CI_BLOCKER`, and
   `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
 - Required next action is
-  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`.
-- No production code, tests, review archive, push, PR mutation, CI, coverage,
-  ownership, workflow, profile, or 2B20B work was performed.
+  `EXECUTE_BOUNDED_PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_V2`.
+- No corrected-design, production-code, test, prior-review, push, PR, CI,
+  coverage, ownership, workflow, profile, or 2B20B change was performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 Design Correction V1 state.
+not override the active Product Repair Round 2 Design Correction V2 required
+state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
