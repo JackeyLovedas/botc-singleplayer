@@ -393,6 +393,8 @@ const flowergirlRole = role("flowergirl", "TOWNSFOLK", "GOOD");
 const snakeCharmerRole = role("snake_charmer", "TOWNSFOLK", "GOOD");
 const witchRole = role("witch", "MINION", "EVIL");
 const fangGuRole = role("fang_gu", "DEMON", "EVIL");
+const noDashiiRole = role("no_dashii", "DEMON", "EVIL");
+const vigormortisRole = role("vigormortis", "DEMON", "EVIL");
 const vortoxRole = role("vortox", "DEMON", "EVIL");
 
 const v3TaskId = scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-01");
@@ -634,18 +636,197 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
 
   it("[2B20A-C34] resolves only the exact canonical-drunk Fang Gu capability", () => {
     const facts = v7FangGuFacts();
+    const resolve = (overrides: Partial<Parameters<typeof resolveBaseDreamerV2NormalCapability>[0]> = {}) =>
+      resolveBaseDreamerV2NormalCapability({
+        opportunity: facts.opportunity,
+        firstNightTaskPlan: facts.plan,
+        firstNightTaskProgress: undefined,
+        firstNightActionOpportunities: facts.opportunities,
+        currentCharacterState: facts.state,
+        setup: facts.setup,
+        roleTenures: facts.roleTenures,
+        abilityImpairments: facts.abilityImpairments,
+        ...overrides
+      });
+    const canonicalDrunk = facts.abilityImpairments.impairments[0]!;
+    const poisonedImpairment = {
+      impairmentId: abilityImpairmentId("snake-charmer-poisons-dreamer"),
+      kind: "POISONED" as const,
+      sourceKind: "SNAKE_CHARMER_DEMON_HIT" as const,
+      sourcePlayerId: playerId("snake-charmer-player"),
+      affectedPlayerId: facts.opportunity.sourcePlayerId,
+      affectedSeatNumber: facts.opportunity.sourceSeatNumber,
+      affectedRole: dreamerRole,
+      sourceCharacterStateRevision: 1
+    };
     expect(facts.capability).toMatchObject({
       kind: "CANONICAL_DRUNK_SOURCE_FANG_GU_APPARENT_INFORMATION_SUPPORTED",
       evaluatedCharacterStateRevision: 1,
       currentDemonConstraint: { kind: "UNIQUE_CURRENT_FANG_GU", demonPlayerId: playerId("demon-player") }
     });
+    expect(resolve({ abilityImpairments: { impairments: [poisonedImpairment] } })).toStrictEqual({
+      kind: "SOURCE_REPRESENTED_IMPAIRED",
+      impairmentId: poisonedImpairment.impairmentId,
+      impairmentKind: "POISONED"
+    });
+    expect(resolve({ abilityImpairments: { impairments: [canonicalDrunk, structuredClone(canonicalDrunk)] } }))
+      .toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "SOURCE_IMPAIRMENT_CONFLICT" });
+    expect(resolve({ abilityImpairments: { impairments: [canonicalDrunk, poisonedImpairment] } }))
+      .toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "SOURCE_IMPAIRMENT_CONFLICT" });
+    const sparseImpairments = [canonicalDrunk];
+    expect(Reflect.deleteProperty(sparseImpairments, "0")).toBe(true);
+    expect(resolve({ abilityImpairments: { impairments: sparseImpairments } }))
+      .toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "SOURCE_IMPAIRMENT_CONFLICT" });
+
+    const staleOpportunity = {
+      ...facts.opportunity,
+      sourceCharacterStateRevision: 2,
+      sourceContract: {
+        ...facts.opportunity.sourceContract,
+        sourceCharacterStateRevision: 2
+      }
+    };
+    const staleState = { ...facts.state, revision: 2 };
+    expect(resolve({
+      opportunity: staleOpportunity,
+      firstNightActionOpportunities: { opportunities: [staleOpportunity] },
+      currentCharacterState: staleState,
+      abilityImpairments: { impairments: [canonicalDrunk] }
+    })).toMatchObject({ kind: "NORMAL_INFORMATION_SUPPORTED", evaluatedCharacterStateRevision: 2 });
+
+    const noDashiiState = {
+      ...facts.state,
+      entries: facts.state.entries.map((entry) => entry.role.roleId === "fang_gu"
+        ? { ...entry, role: noDashiiRole }
+        : entry)
+    };
+    expect(resolve({
+      currentCharacterState: noDashiiState,
+      setup: setup(facts.setup.roleCatalogSnapshot.roles.map((entry) =>
+        entry.roleId === "fang_gu" ? noDashiiRole : entry))
+    })).toStrictEqual({
+      kind: "NO_DASHII_EFFECT_UNRESOLVED",
+      noDashiiPlayerId: playerId("demon-player"),
+      noDashiiSeatNumber: seatNumber(3)
+    });
+
+    const canonicalVortox = v4VortoxFacts();
+    expect(canonicalVortox.capability).toMatchObject({
+      kind: "CANONICAL_DRUNK_SOURCE_VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED",
+      vortoxConstraint: { kind: "VORTOX_FORCED_FALSE_REQUIRED" }
+    });
+    const effectiveVortox = v3VortoxFacts();
+    expect(effectiveVortox.capability).toMatchObject({
+      kind: "VORTOX_FORCED_FALSE_INFORMATION_SUPPORTED",
+      vortoxConstraint: { kind: "VORTOX_FORCED_FALSE_REQUIRED" }
+    });
+    const vortoxPoisonOne = {
+      ...poisonedImpairment,
+      impairmentId: abilityImpairmentId("snake-charmer-poisons-vortox-one"),
+      affectedPlayerId: playerId("demon-player"),
+      affectedSeatNumber: seatNumber(3),
+      affectedRole: vortoxRole
+    };
+    const vortoxPoisonTwo = {
+      ...vortoxPoisonOne,
+      impairmentId: abilityImpairmentId("snake-charmer-poisons-vortox-two")
+    };
     expect(resolveBaseDreamerV2NormalCapability({
-      opportunity: facts.opportunity, firstNightTaskPlan: facts.plan, firstNightTaskProgress: undefined,
-      firstNightActionOpportunities: facts.opportunities, currentCharacterState: facts.state, setup: facts.setup,
-      roleTenures: facts.roleTenures, abilityImpairments: { impairments: [{
-        ...facts.abilityImpairments.impairments[0]!, kind: "POISONED", sourceKind: "SNAKE_CHARMER_DEMON_HIT"
-      }] }
-    })).toMatchObject({ kind: "EFFECTIVENESS_UNRESOLVED" });
+      opportunity: effectiveVortox.opportunity,
+      firstNightTaskPlan: effectiveVortox.plan,
+      firstNightTaskProgress: undefined,
+      firstNightActionOpportunities: effectiveVortox.opportunities,
+      currentCharacterState: effectiveVortox.state,
+      setup: effectiveVortox.setup,
+      roleTenures: effectiveVortox.roleTenures,
+      abilityImpairments: { impairments: [vortoxPoisonOne, vortoxPoisonTwo] }
+    })).toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "VORTOX_EFFECTIVENESS_CONFLICT" });
+
+    const anotherDemonState = {
+      ...facts.state,
+      entries: facts.state.entries.map((entry) => entry.role.roleId === "fang_gu"
+        ? { ...entry, role: vigormortisRole }
+        : entry)
+    };
+    const anotherDemonSetup = setup(facts.setup.roleCatalogSnapshot.roles.map((entry) =>
+      entry.roleId === "fang_gu" ? vigormortisRole : entry));
+    expect(resolve({ currentCharacterState: anotherDemonState, setup: anotherDemonSetup }))
+      .toStrictEqual({
+        kind: "SOURCE_REPRESENTED_IMPAIRED",
+        impairmentId: canonicalDrunk.impairmentId,
+        impairmentKind: "DRUNK"
+      });
+    expect(resolve({
+      currentCharacterState: anotherDemonState,
+      setup: anotherDemonSetup,
+      abilityImpairments: undefined
+    })).toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "CURRENT_DEMON_CATALOG_MISMATCH" });
+    expect(resolve({
+      currentCharacterState: {
+        ...facts.state,
+        entries: [...facts.state.entries, {
+          playerId: playerId("second-demon-player"),
+          seatNumber: seatNumber(4),
+          role: vigormortisRole,
+          currentAlignment: "EVIL" as const
+        }]
+      },
+      setup: setup([...facts.setup.roleCatalogSnapshot.roles, vigormortisRole])
+    })).toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "CURRENT_DEMON_IDENTITY_NOT_UNIQUE" });
+
+    expect(resolve({ abilityImpairments: undefined })).toMatchObject({
+      kind: "NORMAL_INFORMATION_SUPPORTED",
+      evaluatedCharacterStateRevision: 1
+    });
+    const provenanceCases: Parameters<typeof resolve>[0][] = [
+      { roleTenures: { records: [], processedTransitionFactIds: [] } },
+      {
+        currentCharacterState: {
+          ...facts.state,
+          entries: facts.state.entries.map((entry) => entry.playerId === facts.opportunity.sourcePlayerId
+            ? { ...entry, role: flowergirlRole }
+            : entry)
+        }
+      },
+      {
+        firstNightTaskPlan: {
+          ...facts.plan,
+          tasks: facts.plan.tasks.map((task) => ({
+            ...task,
+            source: task.source.kind === "ROLE"
+              ? { ...task.source, playerId: playerId("unprovable-task-source") }
+              : task.source
+          }))
+        }
+      },
+      {
+        opportunity: {
+          ...facts.opportunity,
+          sourceContract: {
+            ...facts.opportunity.sourceContract,
+            sourcePlayerId: playerId("unprovable-contract-source")
+          }
+        }
+      }
+    ];
+    for (const provenanceCase of provenanceCases) {
+      expect(resolve(provenanceCase)).toStrictEqual({
+        kind: "EFFECTIVENESS_UNRESOLVED",
+        reason: "SOURCE_PROVENANCE_INVALID"
+      });
+    }
+
+    const gained = gainedDreamerFacts(false);
+    expect(resolvePhilosopherGainedDreamerCapability({
+      opportunity: gained.opportunity,
+      currentCharacterState: gained.state,
+      setup: gained.setup,
+      roleTenures: gained.roleTenures,
+      abilityImpairments: undefined
+    })).toMatchObject({
+      kind: "NORMAL_INFORMATION_SUPPORTED",
+      evaluatedCharacterStateRevision: 1
+    });
   });
 
   it("[2B20A-C16] constructs the complete raw-UTF16 ordered GOOD by EVIL candidate product", () => {
@@ -717,9 +898,129 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
     const nonplain = Object.assign(Object.create({ inherited: true }) as object, facts.delivery);
     const sparse = structuredClone(facts.delivery);
     expect(Reflect.deleteProperty(sparse.apparentPairDecision.legalCandidates, "0")).toBe(true);
-    for (const hostile of [getter, throwing, revoked.proxy, symbol, cycle, nonplain, sparse]) {
+    const numericGetter = structuredClone(facts.delivery);
+    const firstCandidate = numericGetter.apparentPairDecision.legalCandidates[0]!;
+    Object.defineProperty(numericGetter.apparentPairDecision.legalCandidates, "0", {
+      enumerable: true,
+      configurable: true,
+      get: () => {
+        getterCalls += 1;
+        return firstCandidate;
+      }
+    });
+    const numericSetter = structuredClone(facts.delivery);
+    Object.defineProperty(numericSetter.apparentPairDecision.legalCandidates, "0", {
+      enumerable: true,
+      configurable: true,
+      set: () => {
+        getterCalls += 1;
+      }
+    });
+    const throwingNumericGetter = structuredClone(facts.delivery);
+    Object.defineProperty(throwingNumericGetter.apparentPairDecision.legalCandidates, "0", {
+      enumerable: true,
+      configurable: true,
+      get: () => {
+        getterCalls += 1;
+        throw new Error("numeric getter");
+      }
+    });
+    const noncanonicalNumericKey = structuredClone(facts.delivery);
+    Object.defineProperty(noncanonicalNumericKey.apparentPairDecision.legalCandidates, "01", {
+      enumerable: true,
+      configurable: true,
+      value: firstCandidate
+    });
+    const beyondLength = structuredClone(facts.delivery);
+    Object.defineProperty(
+      beyondLength.apparentPairDecision.legalCandidates,
+      String(beyondLength.apparentPairDecision.legalCandidates.length),
+      { enumerable: true, configurable: true, value: firstCandidate }
+    );
+    const extraString = structuredClone(facts.delivery);
+    Object.defineProperty(extraString.apparentPairDecision.legalCandidates, "extra", {
+      enumerable: true,
+      configurable: true,
+      value: firstCandidate
+    });
+    const arraySymbol = structuredClone(facts.delivery);
+    Object.defineProperty(arraySymbol.apparentPairDecision.legalCandidates, Symbol("hidden"), {
+      enumerable: true,
+      configurable: true,
+      value: firstCandidate
+    });
+    const noncanonicalArrayPrototype = structuredClone(facts.delivery);
+    Object.setPrototypeOf(noncanonicalArrayPrototype.apparentPairDecision.legalCandidates, null);
+    const cyclicArray = structuredClone(facts.delivery);
+    (cyclicArray.apparentPairDecision.legalCandidates as unknown as unknown[])[0] =
+      cyclicArray.apparentPairDecision.legalCandidates;
+    const descriptorThrow = structuredClone(facts.delivery);
+    (descriptorThrow.apparentPairDecision as unknown as {
+      legalCandidates: typeof descriptorThrow.apparentPairDecision.legalCandidates;
+    }).legalCandidates = new Proxy(
+      descriptorThrow.apparentPairDecision.legalCandidates,
+      { getOwnPropertyDescriptor: () => { throw new Error("descriptor"); } }
+    );
+    const revokedArray = structuredClone(facts.delivery);
+    const revokedCandidates = Proxy.revocable(revokedArray.apparentPairDecision.legalCandidates, {});
+    (revokedArray.apparentPairDecision as unknown as {
+      legalCandidates: typeof revokedArray.apparentPairDecision.legalCandidates;
+    }).legalCandidates = revokedCandidates.proxy;
+    revokedCandidates.revoke();
+    for (const hostile of [
+      getter,
+      throwing,
+      revoked.proxy,
+      symbol,
+      cycle,
+      nonplain,
+      sparse,
+      numericSetter,
+      throwingNumericGetter,
+      noncanonicalNumericKey,
+      beyondLength,
+      extraString,
+      arraySymbol,
+      noncanonicalArrayPrototype,
+      cyclicArray,
+      descriptorThrow,
+      revokedArray
+    ]) {
       expect(validateDreamerInformationDeliveredPayload(hostile, validationInput(facts)).valid).toBe(false);
     }
+    const publicResult = validateDreamerInformationDeliveredPayload(
+      numericGetter,
+      validationInput(facts)
+    );
+    expect(publicResult).toStrictEqual({
+      valid: false,
+      reason: "DreamerInformationDelivered payload must use exception-safe canonical data"
+    });
+    const storedSourceFacts: StoredDreamerSourceFacts = {
+      rulesBaselineVersion: "Phase One v2.1",
+      setup: facts.setup,
+      roster: facts.roster,
+      firstNightTaskPlan: facts.plan,
+      choices: { choices: [facts.choice] },
+      settlement: {
+        taskId: facts.delivery.taskId,
+        taskType: "DREAMER_ACTION",
+        nightNumber: 1,
+        settlementVersion: "scheduled-task-settlement-v1",
+        outcomeType: "DREAMER_INFORMATION_DELIVERED",
+        characterStateRevision: facts.delivery.sourceCharacterStateRevision
+      }
+    };
+    expect(validateStoredDreamerInformationDelivered(numericGetter, storedSourceFacts)).toStrictEqual({
+      valid: false,
+      reason: "Stored DreamerInformationDelivered payload must use exception-safe canonical data"
+    });
+    expect(validateDreamerInformationDeliveredPayload(
+      facts.delivery,
+      validationInput(facts)
+    )).toStrictEqual({ valid: true });
+    expect(validateStoredDreamerInformationDelivered(facts.delivery, storedSourceFacts))
+      .toStrictEqual({ valid: true });
     expect(getterCalls).toBe(0);
   });
 });

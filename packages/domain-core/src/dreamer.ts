@@ -83,12 +83,26 @@ const isExceptionSafeCanonicalDreamerData = (value: unknown): boolean => {
 
     try {
       if (Array.isArray(candidate)) {
-        visited.add(candidate);
-        for (let index = 0; index < candidate.length; index += 1) {
-          if (!Object.hasOwn(candidate, index) || !inspect(candidate[index])) return false;
+        if (Object.getPrototypeOf(candidate) !== Array.prototype) return false;
+        const lengthDescriptor = Object.getOwnPropertyDescriptor(candidate, "length");
+        if (lengthDescriptor === undefined || !("value" in lengthDescriptor) ||
+            !Number.isSafeInteger(lengthDescriptor.value) || (lengthDescriptor.value as number) < 0) {
+          return false;
         }
-        return Reflect.ownKeys(candidate).every((key) =>
-          key === "length" || typeof key === "string" && /^\d+$/.test(key));
+        const length = lengthDescriptor.value as number;
+        const keys = Reflect.ownKeys(candidate);
+        if (keys.length !== length + 1 || keys.some((key) => {
+          if (key === "length") return false;
+          if (typeof key !== "string" || !/^(?:0|[1-9]\d*)$/.test(key)) return true;
+          const index = Number(key);
+          return !Number.isSafeInteger(index) || index < 0 || index >= length || String(index) !== key;
+        })) return false;
+        visited.add(candidate);
+        for (let index = 0; index < length; index += 1) {
+          const descriptor = Object.getOwnPropertyDescriptor(candidate, String(index));
+          if (descriptor === undefined || !("value" in descriptor) || !inspect(descriptor.value)) return false;
+        }
+        return true;
       }
       const prototype = Object.getPrototypeOf(candidate) as unknown;
       if (prototype !== Object.prototype && prototype !== null) return false;

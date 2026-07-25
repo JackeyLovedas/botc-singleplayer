@@ -2329,12 +2329,152 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
 
   it("[2B19A3B1-2B20A][2B20A-C37] attributes the FALSE contribution to Dreamer and never to Philosopher", async () => {
     const captured = await executeAccepted2B20ADreamer("FALSE", "attribution");
-    const abnormal = captured.state.firstNightAbilityOutcomeLedger?.facts.filter((entry) =>
+    const dreamerDelivery = captured.result.events.find((event) =>
+      event.eventType === "DreamerInformationDelivered"
+    );
+    if (dreamerDelivery?.eventType !== "DreamerInformationDelivered" ||
+        !("deliverySchemaVersion" in dreamerDelivery.payload) ||
+        dreamerDelivery.payload.deliverySchemaVersion !== "dreamer-information-delivered-v7") {
+      throw new Error("Expected accepted FALSE V7 Dreamer delivery");
+    }
+    const v7Delivery = dreamerDelivery.payload;
+    expect(captured.result.events.map((event) => event.eventType)).toStrictEqual([
+      "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
+    ]);
+    expect(v7Delivery.apparentPairDecision.legalCandidates.find((candidate) =>
+      candidate.candidateId === v7Delivery.apparentPairDecision.selectedCandidateId
+    )?.truthClassification).toBe("FALSE");
+
+    const gainedTask = captured.state.firstNightTaskPlan?.tasks.find((task) =>
+      task.taskType === "DREAMER_ACTION" && task.source.kind === "PHILOSOPHER_GAINED_ABILITY"
+    );
+    if (gainedTask === undefined) throw new Error("Expected gained Dreamer task before Mathematician");
+    expectAcceptedResult(await captured.service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("2b20a-attribution-open-gained"),
+      expectedGameVersion: captured.state.gameVersion,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: gainedTask.taskId
+      }
+    })));
+    const gainedOpenState = rebuildOptionalGameState(
+      await captured.commandStore.loadDomainEvents(ids.game)
+    );
+    const gainedOpportunity = gainedOpenState?.firstNightActionOpportunities?.opportunities.find(
+      (entry) => entry.taskId === gainedTask.taskId
+    );
+    const gainedTarget = gainedOpenState?.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== gainedOpportunity?.sourcePlayerId
+    );
+    if (gainedOpenState === undefined || gainedOpportunity === undefined || gainedTarget === undefined) {
+      throw new Error("Expected formal gained Dreamer opportunity and target");
+    }
+    expectAcceptedResult(await captured.service.execute(submitDreamerActionCommand({
+      commandId: commandId("2b20a-attribution-submit-gained"),
+      expectedGameVersion: gainedOpenState.gameVersion,
+      payload: {
+        commandType: "SubmitDreamerAction",
+        taskId: gainedTask.taskId,
+        opportunityId: gainedOpportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: gainedTarget.playerId }
+      }
+    })));
+
+    const beforeMathEvents = await captured.commandStore.loadDomainEvents(ids.game);
+    const beforeMath = rebuildOptionalGameState(beforeMathEvents);
+    const mathTask = beforeMath?.firstNightTaskPlan?.tasks.find((task) =>
+      !beforeMath.firstNightTaskProgress?.settlements.some((settlement) =>
+        settlement.taskId === task.taskId)
+    );
+    if (beforeMath === undefined || mathTask?.taskType !== "MATHEMATICIAN_INFORMATION" ||
+        mathTask.source.kind !== "ROLE") {
+      throw new Error("Expected formal base Mathematician task after gained Dreamer");
+    }
+    const mathCommand: SettleMathematicianInformationCommand = {
+      commandId: commandId("2b20a-attribution-settle-mathematician"),
+      gameId: ids.game,
+      expectedGameVersion: beforeMath.gameVersion,
+      actor: systemActor,
+      issuedAt: "2026-07-25T00:00:00.000Z",
+      correlationId: correlationId("2b20a-attribution-settle-mathematician"),
+      payload: {
+        commandType: "SettleMathematicianInformation",
+        taskId: mathTask.taskId
+      }
+    };
+    const mathResult = await captured.service.execute(mathCommand);
+    expectEventSummaryAcceptedResult(mathResult);
+    const firstTerminalEvents = await captured.commandStore.loadDomainEvents(ids.game);
+    const terminal = firstTerminalEvents.slice(beforeMathEvents.length);
+    expect(terminal.map((event) => event.eventType)).toStrictEqual([
+      "MathematicianInformationDelivered", "ScheduledTaskSettled"
+    ]);
+    expect(() => validateDomainBatchSemantics(beforeMath, terminal)).not.toThrow();
+    const mathDeliveryEvent = terminal[0];
+    if (mathDeliveryEvent?.eventType !== "MathematicianInformationDelivered") {
+      throw new Error("Expected formal Mathematician delivery");
+    }
+    const mathDelivery = mathDeliveryEvent.payload;
+    expect(mathDelivery).toMatchObject({
+      trueCount: 1,
+      selectedCount: 1,
+      informationReliability: "RULE_CORRECT",
+      vortoxConstraint: { kind: "NONE_NO_CURRENT_VORTOX" }
+    });
+    expect(mathDelivery.distinctAbnormalPlayers).toStrictEqual([{
+      playerId: captured.opened.opportunity.sourcePlayerId,
+      seatNumber: captured.opened.opportunity.sourceSeatNumber,
+      supportingFactIds: mathDelivery.qualifyingAbnormalFactIds
+    }]);
+    expect(mathDelivery.qualifyingAbnormalFactIds).toHaveLength(1);
+
+    const abnormal = beforeMath.firstNightAbilityOutcomeLedger?.facts.filter((entry) =>
       entry.outcomeStatus === "ABNORMAL" && entry.causeKind === "SOURCE_DRUNKENNESS") ?? [];
     const dreamerFacts = abnormal.filter((entry) => entry.abilityTaskId === captured.opened.dreamerTask.taskId);
     expect(dreamerFacts).toHaveLength(1);
     expect(dreamerFacts[0]?.sourcePlayerId).toBe(captured.opened.opportunity.sourcePlayerId);
     expect(abnormal.some((entry) => entry.sourcePlayerId === playerId("ai-seat-10"))).toBe(false);
+    expect(abnormal.some((entry) => entry.sourcePlayerId === captured.target.playerId)).toBe(false);
+    expect(mathDelivery.qualifyingAbnormalFactIds).toStrictEqual([dreamerFacts[0]!.auditFactId]);
+    expect(mathDelivery.distinctAbnormalPlayers.flatMap((entry) => entry.supportingFactIds))
+      .toStrictEqual([dreamerFacts[0]!.auditFactId]);
+
+    const sourcePlayerId = mathDelivery.sourceContract.sourcePlayerId;
+    const playerView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+      firstTerminalEvents,
+      sourcePlayerId
+    );
+    const aiView = buildAiPrivateKnowledgeViewFromAcceptedEventStream(
+      firstTerminalEvents,
+      sourcePlayerId
+    );
+    expect(playerView.mathematicianInformation).toStrictEqual({ count: 1 });
+    expect(aiView.mathematicianInformation).toStrictEqual({ count: 1 });
+    expect(JSON.stringify({ playerView, aiView })).not.toContain("trueCount");
+    for (const entry of beforeMath.currentCharacterState?.entries ?? []) {
+      if (entry.playerId === sourcePlayerId) continue;
+      expect(buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+        firstTerminalEvents,
+        entry.playerId
+      ).mathematicianInformation).toBeUndefined();
+      expect(buildAiPrivateKnowledgeViewFromAcceptedEventStream(
+        firstTerminalEvents,
+        entry.playerId
+      ).mathematicianInformation).toBeUndefined();
+    }
+
+    expect(await captured.commandStore.findCommandReceipt(ids.game, mathCommand.commandId))
+      .toBeDefined();
+    await expect(captured.service.execute(mathCommand)).resolves.toMatchObject({
+      status: "accepted",
+      idempotent: true
+    });
+    expect(await captured.commandStore.loadDomainEvents(ids.game)).toStrictEqual(firstTerminalEvents);
+    const finalState = rebuildOptionalGameState(firstTerminalEvents);
+    expect(finalState?.mathematicianInformation?.deliveries).toHaveLength(1);
+    expect(finalState?.firstNightTaskProgress?.settlements.some((entry) =>
+      entry.taskId === mathTask.taskId)).toBe(true);
+    expect(rebuildOptionalGameState(structuredClone(firstTerminalEvents))).toStrictEqual(finalState);
   }, 15_000);
 
   it("[2B19A3B1-2B20A][2B20A-C38] rejects direct malformed V7 ledger source cross-links fail closed", async () => {

@@ -1,31 +1,38 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A design pass, implementation authorization pending
+## Current state — Phase 3 Slice 2B20A Product Repair Round 1 locally complete
 
-- The second independent design review is bound to corrected design HEAD
-  `7b4dee273162fa81655945cc831a2817102eaff1` and returned
-  `RULE_DESIGN_PASS / findings=[] / remainingBlockers=[]`.
-- Its verbatim archive is
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design-rereview.md`,
-  SHA-256
-  `3b36d779bb5e11151e09925bf90b81dd764d7b7111c63dcb1034965fc5c4a158`.
-- The reviewer independently confirmed the three prior findings closed, all
-  external rule sources and official nightsheet hashes, F01/F04/F05 contracts,
-  gate separation, current branch state, scope, and stop-loss.
-- The design pass only permits waiting for explicit Product Repair Round 1
-  implementation authorization. It does not begin implementation or constitute
-  final PR review.
+- The user explicitly authorized
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_C20_C34_C37_ONLY`
+  after `RULE_DESIGN_PASS` on the corrected bounded design.
+- Current and implementation branch remain
+  `phase-3/reachable-base-dreamer-settleability-closure`; PR #46 and its remote
+  HEAD remain unchanged at
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
+- Only the authorized F01/C20 production repair was needed: numeric array
+  entries are validated by descriptors without property evaluation and all
+  frozen fail-closed cases are covered.
+- F04/C34 is closed by the complete frozen resolver matrix with no behavior
+  change. F05/C37 reaches formal Mathematician settlement through real
+  application commands and proves exact count/source attribution, projection
+  privacy, idempotency, and replay/rebuild.
+- Focused C20/C34/C37, both full allowed test files, typecheck, lint, and full
+  ordinary tests all pass; the full ordinary result is
+  `35 files / 1572 tests`.
 - Control is `HUMAN_BLOCKED /
-  READY_FOR_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`,
-  `implementationAuthorized=false`, `productRepairRound=0/2`, and
-  `productRepairRoundConsumed=false`.
-- Downstream ownership/routing and Linux/Windows CI remain PR acceptance gates,
-  not Product Repair implementation-entry prerequisites.
+  PRODUCT_REPAIR_ROUND_1_LOCAL_IMPLEMENTATION_COMPLETE_PENDING_INDEPENDENT_REPAIR_REVIEW`,
+  `implementationAuthorized=false`, `productRepairRound=1/2`, and
+  `productRepairRoundConsumed=true`.
+- Remaining blockers are the independent Product Repair Round 1 implementation
+  review, ownership supersession/routing, Linux worker-RPC CI, and Windows W7
+  unknown-exit CI.
 - Required next action:
-  `REQUEST_EXPLICIT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`.
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_REVIEW`.
+- No push, PR mutation, CI, coverage, ownership self-test, or final review was
+  performed in this local implementation task.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active design-pass authorization-wait state.
+not override the active Product Repair Round 1 local implementation state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 

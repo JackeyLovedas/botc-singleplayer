@@ -1,37 +1,45 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — RULE DESIGN PASS, EXPLICIT IMPLEMENTATION AUTHORIZATION PENDING
+## Phase 3 Slice 2B20A — Product Repair Round 1 local implementation complete
 
-- A new independent read-only reviewer examined corrected design HEAD
-  `7b4dee273162fa81655945cc831a2817102eaff1`, design SHA-256
-  `effb7782bffa0daff963789a42f6ec0139cc355e96f6346dbaa8de5654bee4d1`,
-  and repair base
+- Explicit implementation authorization is
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_C20_C34_C37_ONLY`.
+- Current and implementation branch are
+  `phase-3/reachable-base-dreamer-settleability-closure`; PR #46 remains open,
+  and repair/remote PR HEAD remains
   `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
-- The complete rereview is archived verbatim at
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design-rereview.md`,
-  SHA-256
-  `3b36d779bb5e11151e09925bf90b81dd764d7b7111c63dcb1034965fc5c4a158`.
-- Independent verdict is `RULE_DESIGN_PASS`; `findings=[]` and
-  `remainingBlockers=[]` within the design rereview.
-- All three prior review findings are independently confirmed closed. F01/C20,
-  F04/C34, F05/C37, the one-production/two-test allowlists, behavior/rule
-  freeze, stop-loss, and Gate A/B/C separation remain intact.
-- This is not a final PR review and does not authorize implementation.
-  `implementationAuthorized=false`.
+- F01/C20 now validates numeric array entries exclusively through own property
+  descriptors, rejects accessors, sparse/non-canonical indices, extra keys,
+  non-canonical array prototypes, cycles, throwing/revoked proxies, and never
+  evaluates a numeric getter.
+- F04/C34 now exercises the frozen complete resolver matrix. The canonical
+  Fang Gu case still succeeds, legal adjacent cases keep their exact existing
+  outcomes, and no production behavior changed for this criterion.
+- F05/C37 now proves the accepted V7 Dreamer result through the real
+  application-command path into formal Mathematician settlement: count `1`,
+  base Dreamer as the sole abnormal source, projection privacy, idempotency,
+  and replay/rebuild are all verified.
+- Local verification passed: focused C20, C34, and C37; full
+  `dreamer.test.ts` (`77/77`); full `game-application-service.test.ts`
+  (`296/296`); typecheck; lint; and full ordinary tests
+  (`35 files / 1572 tests`), using Node `v24.15.0` and repository pnpm
+  `11.7.0` through Corepack.
 - Canonical status remains `HUMAN_BLOCKED`; detailed state is
-  `READY_FOR_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`.
-- Product repair remains `0/2` and
-  `productRepairRoundConsumed=false`.
+  `PRODUCT_REPAIR_ROUND_1_LOCAL_IMPLEMENTATION_COMPLETE_PENDING_INDEPENDENT_REPAIR_REVIEW`.
+- Product repair is `1/2`, `productRepairRoundConsumed=true`, and
+  `implementationAuthorized=false` after completion.
 - Active blockers are
-  `PENDING_EXPLICIT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`,
+  `PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_REVIEW`,
   `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
   `LINUX_WORKER_RPC_CI_BLOCKER`, and
   `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
 - Required next action is
-  `REQUEST_EXPLICIT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`.
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_REVIEW`.
+- This local task did not push, mutate PR #46, run CI/coverage/ownership, or
+  perform final review.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active design-pass authorization-wait state.
+not override the active Product Repair Round 1 local implementation state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
