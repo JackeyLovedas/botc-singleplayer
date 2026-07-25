@@ -1,45 +1,41 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — Product Repair Round 1 local implementation complete
+## Phase 3 Slice 2B20A — Product Repair Round 1 implementation review fix required
 
-- Explicit implementation authorization is
-  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_C20_C34_C37_ONLY`.
-- Current and implementation branch are
-  `phase-3/reachable-base-dreamer-settleability-closure`; PR #46 remains open,
-  and repair/remote PR HEAD remains
-  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
-- F01/C20 now validates numeric array entries exclusively through own property
-  descriptors, rejects accessors, sparse/non-canonical indices, extra keys,
-  non-canonical array prototypes, cycles, throwing/revoked proxies, and never
-  evaluates a numeric getter.
-- F04/C34 now exercises the frozen complete resolver matrix. The canonical
-  Fang Gu case still succeeds, legal adjacent cases keep their exact existing
-  outcomes, and no production behavior changed for this criterion.
-- F05/C37 now proves the accepted V7 Dreamer result through the real
-  application-command path into formal Mathematician settlement: count `1`,
-  base Dreamer as the sole abnormal source, projection privacy, idempotency,
-  and replay/rebuild are all verified.
-- Local verification passed: focused C20, C34, and C37; full
-  `dreamer.test.ts` (`77/77`); full `game-application-service.test.ts`
-  (`296/296`); typecheck; lint; and full ordinary tests
-  (`35 files / 1572 tests`), using Node `v24.15.0` and repository pnpm
-  `11.7.0` through Corepack.
+- The new independent read-only reviewer audited local repair HEAD
+  `0ab9cbb1d31f46fb989f049b804638b69ee399ba` against implementation base
+  `9723bded398870a26b65754f579d15b1e3425a9e`.
+- The complete reviewer output is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-implementation-review.md`,
+  SHA-256
+  `913df42266cb97bdd9ba60943bf9430e80f30774ad9731c83590447d87c7a298`.
+- Verdict is `PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED`.
+- F05/C37 passed independent review: the real application-command path reaches
+  formal Mathematician settlement with correct attribution, privacy,
+  idempotency, and rebuild behavior.
+- Two exact Product Repair blockers remain:
+  `F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED` and
+  `F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE`.
+- The reviewer independently reran all eight authorized local gates. Focused
+  C20/C34/C37, both complete test files, typecheck, lint, and full ordinary
+  tests all passed; full ordinary remains `35 files / 1572 tests`.
+- Passing tests do not close the missing F01 numeric-element descriptor
+  enumerability check or the omitted C34 frozen matrix rows.
 - Canonical status remains `HUMAN_BLOCKED`; detailed state is
-  `PRODUCT_REPAIR_ROUND_1_LOCAL_IMPLEMENTATION_COMPLETE_PENDING_INDEPENDENT_REPAIR_REVIEW`.
-- Product repair is `1/2`, `productRepairRoundConsumed=true`, and
-  `implementationAuthorized=false` after completion.
-- Active blockers are
-  `PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_REVIEW`,
+  `PRODUCT_REPAIR_ROUND_2_DESIGN_AUTHORIZATION_REQUIRED`.
+- Product repair remains consumed at `1/2`;
+  `productRepairRoundConsumed=true` and `implementationAuthorized=false`.
+- Downstream PR blockers remain
   `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
   `LINUX_WORKER_RPC_CI_BLOCKER`, and
   `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
 - Required next action is
-  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_REVIEW`.
-- This local task did not push, mutate PR #46, run CI/coverage/ownership, or
-  perform final review.
+  `REQUEST_EXPLICIT_PRODUCT_REPAIR_ROUND_2_DESIGN_AUTHORIZATION`.
+- No Round 2 design or implementation was inferred. This task did not push,
+  mutate PR #46, run coverage/ownership/GitHub CI, or perform final PR review.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 1 local implementation state.
+not override the active Product Repair Round 1 implementation-review state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
