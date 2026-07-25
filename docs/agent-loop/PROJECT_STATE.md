@@ -1,37 +1,41 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A Product Repair Round 1 review fix required
+## Current state — Phase 3 Slice 2B20A Product Repair Round 2 design ready
 
-- Independent read-only implementation review is bound to local repair HEAD
-  `0ab9cbb1d31f46fb989f049b804638b69ee399ba` and implementation base
-  `9723bded398870a26b65754f579d15b1e3425a9e`.
-- The complete verbatim review is archived at
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-implementation-review.md`,
+- The user authorized only
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_DESIGN_F01_ENUMERABILITY_C34_MATRIX_ONLY`.
+- The standalone Round 2 design is
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`,
   SHA-256
+  `7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894`.
+- It is based on local Round 1 review commit
+  `844c7db5666dcb9d738a3bff12425bffd6df9d54` and preserves the independent
+  review archive SHA-256
   `913df42266cb97bdd9ba60943bf9430e80f30774ad9731c83590447d87c7a298`.
-- The reviewer returned
-  `PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED`.
-- F05/C37 is valid. Two Product Repair blockers remain:
-  `F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED` and
-  `F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE`.
-- All eight authorized local gates independently pass, including
-  `35 files / 1572 tests`; green execution does not replace the missing
-  canonical-shape check or frozen matrix evidence.
-- PR #46 and remote HEAD remain unchanged at
+- F01 is bounded to numeric own data descriptor enumerability. F04 is bounded
+  to eight exact missing C34 cases; no resolver behavior change is authorized.
+- Future implementation is capped at one production file
+  (`packages/domain-core/src/dreamer.ts`) and one formal test file
+  (`packages/domain-core/src/dreamer.test.ts`).
+- F05/C37 and the formal Mathematician count/source attribution remain closed
+  and cannot be modified by Round 2.
+- Rule semantics, behavior design, event schema, coverage target, Dreamer
+  `PARTIAL`, ownership, routing, CI, workflow, and profiles are unchanged.
+- PR #46 remains open at remote HEAD
   `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
 - Control is `HUMAN_BLOCKED /
-  PRODUCT_REPAIR_ROUND_2_DESIGN_AUTHORIZATION_REQUIRED`,
+  READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW`,
   `implementationAuthorized=false`, `productRepairRound=1/2`, and
   `productRepairRoundConsumed=true`.
-- Downstream PR blockers remain ownership supersession/routing, Linux
-  worker-RPC CI, and Windows W7 unknown-exit CI.
+- The design itself does not consume Round 2. Only a later authorized first
+  production or formal-test change may consume the final round `2/2`.
 - Required next action:
-  `REQUEST_EXPLICIT_PRODUCT_REPAIR_ROUND_2_DESIGN_AUTHORIZATION`.
-- No Round 2 design or implementation was inferred. No push, PR mutation, CI,
-  coverage, ownership self-test, or final review was performed.
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW`.
+- No implementation, design review, product tests, push, PR mutation, CI,
+  coverage, ownership, workflow, profile, or 2B20B work was performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 1 implementation-review state.
+not override the active Product Repair Round 2 design state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
