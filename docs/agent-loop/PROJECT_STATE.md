@@ -1,41 +1,44 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A Product Repair Round 2 design ready
+## Current state — Phase 3 Slice 2B20A Product Repair Round 2 design correction required
 
-- The user authorized only
-  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_DESIGN_F01_ENUMERABILITY_C34_MATRIX_ONLY`.
-- The standalone Round 2 design is
+- Independent review of design HEAD
+  `26e2dab7b4f7edec0745ad7c930fa9b0e1f95553` returned
+  `RULE_DESIGN_FIX_REQUIRED`.
+- The immutable reviewed design remains
   `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`,
   SHA-256
   `7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894`.
-- It is based on local Round 1 review commit
-  `844c7db5666dcb9d738a3bff12425bffd6df9d54` and preserves the independent
-  review archive SHA-256
-  `913df42266cb97bdd9ba60943bf9430e80f30774ad9731c83590447d87c7a298`.
-- F01 is bounded to numeric own data descriptor enumerability. F04 is bounded
-  to eight exact missing C34 cases; no resolver behavior change is authorized.
-- Future implementation is capped at one production file
-  (`packages/domain-core/src/dreamer.ts`) and one formal test file
-  (`packages/domain-core/src/dreamer.test.ts`).
-- F05/C37 and the formal Mathematician count/source attribution remain closed
-  and cannot be modified by Round 2.
-- Rule semantics, behavior design, event schema, coverage target, Dreamer
-  `PARTIAL`, ownership, routing, CI, workflow, and profiles are unchanged.
+- The complete review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-review.md`,
+  SHA-256
+  `332dcf4150441b93daedac3e1ab4802c6b5901ece6b0ef0636868f47a10848a2`.
+- F01/C20, the two-file future allowlist, resolver immutability, local gates,
+  and final-round stop-loss are valid.
+- C34 design is blocked because M01–M05 and current M07 are T1 structural or
+  invalid-grammar inputs, not T2 pure-policy authority. Sparse impairment is
+  likewise structural supporting evidence, not already-valid T2 authority.
+- M06 and M08 are valid T2 cases. M07 can become valid only with a
+  parser-valid gained-v2 task/grant identity that semantically mismatches the
+  BASE relation.
+- No current legal T2 case requires resolver modification. Rules, behavior,
+  schema, Dreamer `PARTIAL`, F05/C37, attribution, and downstream PR blockers
+  remain unchanged.
 - PR #46 remains open at remote HEAD
   `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
 - Control is `HUMAN_BLOCKED /
-  READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW`,
+  PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION_REQUIRED`,
   `implementationAuthorized=false`, `productRepairRound=1/2`, and
   `productRepairRoundConsumed=true`.
-- The design itself does not consume Round 2. Only a later authorized first
-  production or formal-test change may consume the final round `2/2`.
+- The review consumes no Round 2 product repair.
 - Required next action:
-  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW`.
-- No implementation, design review, product tests, push, PR mutation, CI,
-  coverage, ownership, workflow, profile, or 2B20B work was performed.
+  `REQUEST_BOUNDED_PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION`.
+- The design was not modified. No implementation, product tests, push, PR
+  mutation, CI, coverage, ownership, workflow, profile, or 2B20B work was
+  performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 design state.
+not override the active Product Repair Round 2 design-review state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 

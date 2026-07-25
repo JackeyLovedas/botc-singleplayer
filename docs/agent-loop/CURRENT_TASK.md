@@ -1,48 +1,42 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — Product Repair Round 2 design awaiting review
+## Phase 3 Slice 2B20A — Product Repair Round 2 design fix required
 
-- Explicit authorization is
-  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_DESIGN_F01_ENUMERABILITY_C34_MATRIX_ONLY`.
-- Design base is local review commit
-  `844c7db5666dcb9d738a3bff12425bffd6df9d54`; Round 1 implementation remains
-  `0ab9cbb1d31f46fb989f049b804638b69ee399ba`.
-- The complete Round 2 design is
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`,
-  SHA-256
+- A new independent read-only reviewer audited design HEAD
+  `26e2dab7b4f7edec0745ad7c930fa9b0e1f95553` and design SHA-256
   `7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894`.
-- The design closes only the design contract for
-  `F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED` and
-  `F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE`.
-- F01 permits only strict `enumerable === true` enforcement on numeric own
-  data descriptors; array `length` remains non-enumerable and no writable or
-  configurable combination is added.
-- C20 adds the non-enumerable own-data-property failure through direct, public,
-  and stored validation while retaining zero getter calls and legal V7
-  controls.
-- C34 freezes eight missing independent cases: malformed plan, opportunity,
-  tenure, source contract; missing, unprovable, and wrong-generation source
-  ability instance; and a true state/catalog snapshot mismatch.
-- Future product scope is exactly
-  `packages/domain-core/src/dreamer.ts` and
-  `packages/domain-core/src/dreamer.test.ts`.
-- F05/C37 and the formal Mathematician attribution path remain closed,
-  unchanged, and regression-only.
-- Product Repair remains `1/2`, `productRepairRoundConsumed=true`;
-  materializing this design consumes no Round 2 product repair.
+- The complete reviewer output is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-review.md`,
+  SHA-256
+  `332dcf4150441b93daedac3e1ab4802c6b5901ece6b0ef0636868f47a10848a2`.
+- Verdict is `RULE_DESIGN_FIX_REQUIRED`.
+- F01/C20 design is valid: numeric-element enumerability is correctly bounded,
+  array `length` remains distinct, and no behavior or file-scope expansion is
+  required.
+- Two exact design blockers remain:
+  `C34_ROUND_2_MATRIX_MIXES_T1_STRUCTURAL_CASES_INTO_T2_POLICY_AUTHORITY` and
+  `C34_ROUND_2_ALREADY_VALID_INVENTORY_IS_FALSE`.
+- M01–M05 and the current M07 are T1 structural/grammar failures, not valid C34
+  `R1/T2/PURE_POLICY_SEAM` primary cases. M06 and M08 are valid T2 cases; M07
+  requires a parser-valid gained-v2 identity before it can be T2.
+- The current sparse impairment fixture is structural supporting evidence and
+  cannot be claimed as already-valid T2 C34 authority.
+- No resolver change is required, and
+  `ADDITIONAL_PRODUCT_BEHAVIOR_DEFECT_REQUIRES_FINAL_REPAIR_SCOPE_REVIEW`
+  was not triggered.
+- F05/C37 and formal Mathematician attribution remain closed.
+- Product Repair remains consumed at `1/2`; this design review consumes no
+  Round 2 product repair. `implementationAuthorized=false`.
 - Canonical status is `HUMAN_BLOCKED`; detailed state is
-  `READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW`;
-  `implementationAuthorized=false`.
-- Active blockers are the pending independent Round 2 design review, the two
-  exact Product Repair findings, ownership supersession/routing, Linux
-  worker-RPC CI, and Windows W7 unknown-exit CI.
+  `PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION_REQUIRED`.
 - Required next action is
-  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW`.
-- No implementation, product tests, design review, push, PR mutation, CI,
-  coverage, ownership, workflow, profile, or 2B20B work was performed.
+  `REQUEST_BOUNDED_PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION`.
+- The Round 2 design was not modified. No implementation, product tests, push,
+  PR mutation, CI, coverage, ownership, workflow, profile, or 2B20B work was
+  performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 design state.
+not override the active Product Repair Round 2 design-review state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
