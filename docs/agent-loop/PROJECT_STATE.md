@@ -1,49 +1,42 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A Product Repair Round 2 Design Correction V2 awaiting final rereview
+## Current state — Phase 3 Slice 2B20A Product Repair Round 2 implementation authorized
 
 - Authorization
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`
-  permits the bounded Design Correction V2 and its final independent rereview.
+  permits the bounded Product Repair Round 2 implementation after the final
+  independent design pass.
 - The corrected standalone design remains
   `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`,
   SHA-256
   `2ab3abaf52e5915b010fe7a55f859d50479492541751eae868c9a478aee2261a`.
-- The Design Correction V1 independent rereview remains immutable at
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-rereview.md`,
+- The final independent Design Correction V2 rereview is bound to exact HEAD
+  `547b0b9e41ac8e3d730e33fc1b65301a240bfd31` and is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-rereview-v2.md`,
   SHA-256
-  `2b202745b651b1d2e9b2e379d2e2ce525f4a71cabc4c6c7fa5c5b820f2535bd0`.
-- The rereview is bound to HEAD
-  `1d51e5e99e8bde5b4d34addfee511d466dd03954` and returned
-  `RULE_DESIGN_FIX_REQUIRED`.
-- Design Correction V2 removes the rejected seat-12 ability construction.
-  Corrected M06 preserves the canonical V3 opportunity, source contract,
-  ability identity, task, plan, state, setup, impairment and revisions and
-  replaces only the resolver's external role-tenure witness with the
-  exact-valid empty
-  `{ records: [], processedTransitionFactIds: [] }`.
-- M06 freezes exact opportunity and tenure-state admission proofs, a supporting
-  invalid current-state relationship proof, the unchanged canonical
-  `facts.capability` control, and exact
-  `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID`.
-- Frozen requirement #9 remains `ROUND_2_M06_REQUIRED`;
-  `EVIDENCE_GAP=none`. M08 and F01 remain unchanged.
+  `bcc8199fcd751754e30248580389aeaef9a0961ef8ca61e620b8dafdd12f176a`.
+- The independent reviewer returned `RULE_DESIGN_PASS`, `findings=[]`,
+  `remainingDesignBlockers=[]`, and `EVIDENCE_GAP=none`.
+- The twelve-row C34 frozen requirement mapping, exact-valid M06 source-tenure
+  witness seam, separately legal M08 catalog mismatch, F01 descriptor contract,
+  allowlists, resolver freeze and stop-loss all passed independent review.
 - PR #46 remains open at remote HEAD
   `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
-- Control is `HUMAN_BLOCKED /
-  READY_FOR_FINAL_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`,
-  `implementationAuthorized=false`, `designCorrectionRound=2/2`, and
+- Control is `RUNNING / PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_AUTHORIZED`,
+  `ruleDesignPass=true`, `implementationAuthorized=true`,
+  `designCorrectionRound=2/2`, `designCorrectionPass=2/2`, and
   `productRepairRound=1/2`.
-- Active blockers are pending final independent rereview, F01, F04, ownership
-  supersession/routing, Linux worker RPC, and Windows W7 unknown exit.
+- The first production or formal-test edit consumes the final Product Repair
+  Round `2/2`; no Product Repair Round 3 exists.
+- Active blockers are F01, F04, ownership supersession/routing, Linux worker
+  RPC, and Windows W7 unknown exit.
 - Required next action:
-  `RUN_FINAL_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`.
+  `IMPLEMENT_PRODUCT_REPAIR_ROUND_2_F01_C34`.
 - No production-code, test, prior-review, push, PR, CI, coverage, ownership,
   workflow, profile, or 2B20B change was performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 Design Correction V2 awaiting
-final rereview state.
+not override the active Product Repair Round 2 implementation-authorized state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 

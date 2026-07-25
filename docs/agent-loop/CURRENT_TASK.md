@@ -1,55 +1,44 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — Product Repair Round 2 Design Correction V2 awaiting final rereview
+## Phase 3 Slice 2B20A — Product Repair Round 2 implementation authorized
 
 - Authorization is
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`.
-- Design Correction V2 is materialized at
+- Design Correction V2 remains materialized at
   `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`,
   SHA-256
   `2ab3abaf52e5915b010fe7a55f859d50479492541751eae868c9a478aee2261a`.
-- The Design Correction V1 independent rereview remains immutable at
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-rereview.md`,
+- The final independent Design Correction V2 rereview is bound to exact HEAD
+  `547b0b9e41ac8e3d730e33fc1b65301a240bfd31` and is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-rereview-v2.md`,
   SHA-256
-  `2b202745b651b1d2e9b2e379d2e2ce525f4a71cabc4c6c7fa5c5b820f2535bd0`,
-  and is bound to reviewed HEAD
-  `1d51e5e99e8bde5b4d34addfee511d466dd03954`.
-- That rereview returned `RULE_DESIGN_FIX_REQUIRED`; Design Correction V2
-  closes only its exact M06 classification finding.
-- Corrected M06 retains the complete canonical V3 opportunity,
-  `sourceContract`, `sourceAbilityInstanceId`, task, plan, opportunity state,
-  current-character state, setup, impairment and revisions from
-  `v7FangGuFacts()`.
-- M06 defines the exact-valid
-  `RoleTenureState { records: [], processedTransitionFactIds: [] }` and changes
-  only the resolver's external active source-tenure witness history relation.
-  It freezes exact opportunity admission, exact tenure-state structural
-  validity, supporting current-state relationship rejection, the canonical
-  `facts.capability` control, and exact
-  `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID`.
-- The twelve-row mapping keeps frozen requirement #9 as
-  `ROUND_2_M06_REQUIRED`, keeps M08 and F01 unchanged, and records
-  `EVIDENCE_GAP=none`.
-- Product Repair remains `1/2`; this docs/control correction consumes no
-  product repair. `designCorrectionRound=2/2` and
-  `implementationAuthorized=false`.
-- Canonical status is `HUMAN_BLOCKED`; detailed state is
-  `READY_FOR_FINAL_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`.
+  `bcc8199fcd751754e30248580389aeaef9a0961ef8ca61e620b8dafdd12f176a`.
+- The independent verdict is `RULE_DESIGN_PASS`; `findings=[]`,
+  `remainingDesignBlockers=[]`, and `EVIDENCE_GAP=none`.
+- The reviewer confirmed the twelve-row frozen requirement mapping, exact-valid
+  M06 source-tenure witness seam, separately legal M08 catalog mismatch, F01
+  descriptor contract, production/test allowlists, frozen resolver behavior,
+  and repair stop-loss.
+- Product Repair remains `1/2`; the docs/control archive consumes no product
+  repair. `designCorrectionRound=2/2`, `designCorrectionPass=2/2`,
+  `ruleDesignPass=true`, and `implementationAuthorized=true`.
+- The first production or formal test edit consumes the final Product Repair
+  Round `2/2`; no Product Repair Round 3 exists.
+- Canonical status is `RUNNING`; detailed state is
+  `PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_AUTHORIZED`.
 - Active blockers are
-  `PENDING_FINAL_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`,
   `F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED`,
   `F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE`,
   `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
   `LINUX_WORKER_RPC_CI_BLOCKER`, and
   `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
 - Required next action is
-  `RUN_FINAL_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`.
+  `IMPLEMENT_PRODUCT_REPAIR_ROUND_2_F01_C34`.
 - No production-code, test, prior-review, push, PR, CI, coverage, ownership,
   workflow, profile, or 2B20B change was performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 Design Correction V2 awaiting
-final rereview state.
+not override the active Product Repair Round 2 implementation-authorized state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
