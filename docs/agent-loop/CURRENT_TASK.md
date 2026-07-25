@@ -1,6 +1,39 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — DESIGN CORRECTION V1 READY FOR INDEPENDENT REREVIEW
+## Phase 3 Slice 2B20A — RULE DESIGN PASS, EXPLICIT IMPLEMENTATION AUTHORIZATION PENDING
+
+- A new independent read-only reviewer examined corrected design HEAD
+  `7b4dee273162fa81655945cc831a2817102eaff1`, design SHA-256
+  `effb7782bffa0daff963789a42f6ec0139cc355e96f6346dbaa8de5654bee4d1`,
+  and repair base
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
+- The complete rereview is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design-rereview.md`,
+  SHA-256
+  `3b36d779bb5e11151e09925bf90b81dd764d7b7111c63dcb1034965fc5c4a158`.
+- Independent verdict is `RULE_DESIGN_PASS`; `findings=[]` and
+  `remainingBlockers=[]` within the design rereview.
+- All three prior review findings are independently confirmed closed. F01/C20,
+  F04/C34, F05/C37, the one-production/two-test allowlists, behavior/rule
+  freeze, stop-loss, and Gate A/B/C separation remain intact.
+- This is not a final PR review and does not authorize implementation.
+  `implementationAuthorized=false`.
+- Canonical status remains `HUMAN_BLOCKED`; detailed state is
+  `READY_FOR_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`.
+- Product repair remains `0/2` and
+  `productRepairRoundConsumed=false`.
+- Active blockers are
+  `PENDING_EXPLICIT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`,
+  `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `REQUEST_EXPLICIT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active design-pass authorization-wait state.
+
+## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
 - Authorization is
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_CORRECTION_V1_PATH_GATE_BRANCH_ONLY`.

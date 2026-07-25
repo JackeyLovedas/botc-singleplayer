@@ -1,6 +1,33 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A Design Correction V1 ready for rereview
+## Current state — Phase 3 Slice 2B20A design pass, implementation authorization pending
+
+- The second independent design review is bound to corrected design HEAD
+  `7b4dee273162fa81655945cc831a2817102eaff1` and returned
+  `RULE_DESIGN_PASS / findings=[] / remainingBlockers=[]`.
+- Its verbatim archive is
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design-rereview.md`,
+  SHA-256
+  `3b36d779bb5e11151e09925bf90b81dd764d7b7111c63dcb1034965fc5c4a158`.
+- The reviewer independently confirmed the three prior findings closed, all
+  external rule sources and official nightsheet hashes, F01/F04/F05 contracts,
+  gate separation, current branch state, scope, and stop-loss.
+- The design pass only permits waiting for explicit Product Repair Round 1
+  implementation authorization. It does not begin implementation or constitute
+  final PR review.
+- Control is `HUMAN_BLOCKED /
+  READY_FOR_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`,
+  `implementationAuthorized=false`, `productRepairRound=0/2`, and
+  `productRepairRoundConsumed=false`.
+- Downstream ownership/routing and Linux/Windows CI remain PR acceptance gates,
+  not Product Repair implementation-entry prerequisites.
+- Required next action:
+  `REQUEST_EXPLICIT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active design-pass authorization-wait state.
+
+## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
 - Design Correction V1 is authorized by
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_CORRECTION_V1_PATH_GATE_BRANCH_ONLY`
