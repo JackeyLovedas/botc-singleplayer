@@ -5,8 +5,16 @@
 - sliceId: `2B20A`
 - repairName: `Product Repair Round 1`
 - authorization: `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY`
+- designCorrectionAuthorization: `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_CORRECTION_V1_PATH_GATE_BRANCH_ONLY`
 - currentPR: `46`
 - repairBaseHead: `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`
+- remotePRHead: `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`
+- priorDesignCommit: `627dc709dcbf94e92b61a82cef0b75020b936146`
+- priorDesignSha256: `eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8`
+- priorReviewCommit: `def473e7b84d7b568dcc3d689dcabf5381d48377`
+- priorReviewSha256: `c32cf7ce8f58a75d9a56b5e17383e3247c0c1ad5892db961565846167c78f7e2`
+- designCorrectionRound: `1 / 2`
+- productRepairRound: `0 / 2`
 - frozenRound2Design: `docs/implementation/phase-3-slice-2b20a-design-round-2.md`
 - frozenRound2DesignSha256: `22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f`
 - classificationAppendix: `docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md`
@@ -15,8 +23,9 @@
 - designReleaseReviewSha256: `72017917861325619bd6216f437ece3c8758922db51572306113d1d0a4eaae1f`
 - reviewProtocol: `docs/agent-loop/REVIEW_PROTOCOL.md`
 - reviewProtocolSha256: `4f9328a73172e4a70f8ef64be431a55e23f96bb78e553673d3aef0845ea00b64`
-- governanceAdr: `docs/architecture/ADR-0004-test-traceability-classification-and-acceptance.md`
-- governanceAdrSha256: `f32bcbc92feb710afb9d12f6105c89e8223a7ea98bd1d73ce249b15b3d59a432`
+- governanceAuthorityPath: `docs/architecture/ADR-reachability-trust-boundaries-and-review-governance-v1.md`
+- governanceAuthorityStatus: `ACCEPTED`
+- governanceAuthoritySha256: `f32bcbc92feb710afb9d12f6105c89e8223a7ea98bd1d73ce249b15b3d59a432`
 - productHeadPushCI: `30077541075 / FAILURE / dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`
 - productHeadPullRequestCI: `30077586762 / FAILURE / dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`
 - repairRound: `0 / 2`
@@ -293,8 +302,9 @@ required before canonical ownership and routing can pass.
 This Product Repair Round 1 design records that dependency only. It does not
 design or implement the supersession, ownership markers, manifest routing,
 parser changes, or SUP changes. It also does not investigate or change the
-Linux worker-RPC infrastructure or Windows W7 observability path. All three
-downstream tasks remain independent prerequisites.
+Linux worker-RPC infrastructure or Windows W7 observability path. These are
+independent post-implementation PR acceptance and merge gates. They are not
+Design-to-Implementation Entry Gate prerequisites for F01/F04/F05.
 
 ## Repair Budget
 
@@ -306,24 +316,81 @@ formal C20/C34/C37 tests consumes Product Repair Round 1. Ownership,
 traceability, CI-infrastructure, PR-metadata, and control-recovery work do not
 consume the product repair budget.
 
-## Verification Gates for a Later Implementation
+## Gate Separation
 
-A later implementation must run:
+| Gate layer | Purpose | Required conditions | Explicitly not required at this layer |
+|---|---|---|---|
+| A. Design-to-Implementation Entry Gate | Authorize the bounded F01/F04/F05 repair | The corrected design receives a new independent `RULE_DESIGN_PASS`; the user then explicitly authorizes Product Repair Round 1 implementation; only after both may `implementationAuthorized=true` be recorded | ownership, markers, SUP registry, coverage routing, Linux CI, Windows CI, hosted exact-head evidence |
+| B. Product Repair Implementation and Local Verification Gate | Implement and locally verify only C20/C34/C37 | focused C20, C34, and C37 tests; both allowed full test files; `pnpm typecheck`; `pnpm lint`; full ordinary tests | ownership/routing closure, ownership/coverage/Windows verifiers, workflow or CI-runner repair, GitHub CI for the old frozen HEAD |
+| C. PR Acceptance and Final Review Gate | Decide whether PR #46 may be accepted and merged | accepted-authority supersession; canonical 2B20A ownership; parser-compatible traceability; unique SUP registry; ordinary/coverage/Windows routing; complete CI on the exact final HEAD; Linux and Windows blockers closed; new-head C32 hosted evidence; complete independent final review; both pass verdicts; empty blockers; both GitHub audit comments published and re-read | local implementation completion alone never satisfies this gate |
+
+### A. Design-to-Implementation Entry Gate
+
+The only conditions that permit Product Repair Round 1 implementation are:
+
+1. this corrected design receives a new independent `RULE_DESIGN_PASS`; and
+2. the user subsequently provides explicit Product Repair Round 1
+   implementation authorization.
+
+`implementationAuthorized=true` may be set only after both conditions are
+complete. Ownership, coverage routing, Linux CI, and Windows CI do not belong
+to this entry gate.
+
+### B. Product Repair Implementation and Local Verification Gate
+
+The bounded implementation must run:
 
 1. focused C20 tests;
 2. focused C34 tests;
 3. focused C37 application tests;
-4. TypeScript typecheck;
-5. lint;
-6. the full ordinary test suite.
+4. the complete `packages/domain-core/src/dreamer.test.ts`;
+5. the complete
+   `packages/application/src/game-application-service.test.ts`;
+6. `pnpm typecheck`;
+7. `pnpm lint`;
+8. the full ordinary test suite.
 
-Ownership and traceability gates are expected to remain blocked until the
-separate 2B20AP1 supersession and routing prerequisite is complete.
+The F01/F04/F05 implementation may be completed and committed locally while
+ownership and routing remain open. A known ownership-gate failure is not an
+F01/F04/F05 implementation failure and must not be relabeled as one. The
+Product Repair implementation task does not repair ownership, markers, the SUP
+registry, coverage routing, CI runners, workflows, profiles, dependencies, or
+timeouts. It does not rerun GitHub CI for the old frozen
+`dbfa424c96a8bcf06a0d2a77205626a532aa2ec8` HEAD, and no existing ownership or
+CI failure may be converted into a pass.
 
-Fresh exact-head CI is required for any future repaired product head. The
-failed push run `30077541075` and pull-request run `30077586762` are evidence
-only for `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8` and must not be inherited by
-a later commit.
+The first commit that modifies the authorized production file or formal
+C20/C34/C37 tests consumes Product Repair Round `1 / 2`.
+
+### C. PR Acceptance and Final Review Gate
+
+Before PR #46 can be accepted or merged, all of the following independent
+downstream gates remain mandatory:
+
+- accepted-authority supersession;
+- canonical 2B20A ownership contract;
+- parser-compatible traceability;
+- unique SUP registry;
+- ordinary, coverage, and Windows routing;
+- complete CI for the exact final product HEAD;
+- closure of the Linux worker-RPC blocker;
+- closure of the Windows W7 unknown-exit blocker;
+- real hosted C32 evidence bound to the new exact HEAD;
+- one complete independent final review;
+- `CODE_REVIEW_PASS`;
+- `RULE_REVIEW_PASS`;
+- `remainingBlockers=[]`;
+- both required GitHub audit comments published and re-read.
+
+These gates block PR acceptance and merge. They do not block implementing
+F01/F04/F05 after Gate A passes and the user authorizes implementation. Local
+Product Repair completion does not mean the branch may be pushed, finally
+reviewed, accepted, or merged.
+
+The failed push run `30077541075` and pull-request run `30077586762` are
+evidence only for
+`dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`. Their results cannot be inherited
+by any future HEAD.
 
 ## Mandatory Stop Conditions
 
@@ -340,16 +407,18 @@ Stop without expanding this repair if any of the following occurs:
 - C37 cannot be expressed through the existing formal Mathematician command,
   ledger, event, receipt, and replay path.
 
-## Release Gate
+## Design Rereview Gate
 
-Implementation remains unauthorized until an independent read-only reviewer
-returns `RULE_DESIGN_PASS` for this Product Repair Round 1 design. Until then:
+Implementation remains unauthorized until a new independent read-only reviewer
+returns `RULE_DESIGN_PASS` for this corrected Product Repair Round 1 design and
+the user subsequently provides explicit implementation authorization. Until
+then:
 
 - `implementationAuthorized = false`
 - `productRepairRoundConsumed = false`
 - `repairRound = 0 / 2`
 - control status is `HUMAN_BLOCKED`
 - detailed state is
-  `READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REVIEW`
+  `READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REREVIEW`
 
-READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REVIEW
+READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REREVIEW

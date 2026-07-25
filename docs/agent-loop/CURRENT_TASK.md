@@ -1,6 +1,56 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — PRODUCT REPAIR ROUND 1 DESIGN FIX REQUIRED
+## Phase 3 Slice 2B20A — DESIGN CORRECTION V1 READY FOR INDEPENDENT REREVIEW
+
+- Authorization is
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_CORRECTION_V1_PATH_GATE_BRANCH_ONLY`.
+- Correction base is local review commit
+  `def473e7b84d7b568dcc3d689dcabf5381d48377`; prior design commit is
+  `627dc709dcbf94e92b61a82cef0b75020b936146`.
+- The corrected design remains
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design.md`,
+  now with SHA-256
+  `effb7782bffa0daff963789a42f6ec0139cc355e96f6346dbaa8de5654bee4d1`.
+- The governance authority path now resolves to
+  `docs/architecture/ADR-reachability-trust-boundaries-and-review-governance-v1.md`
+  with status `ACCEPTED`.
+- Gate A permits implementation only after a new independent
+  `RULE_DESIGN_PASS` and subsequent explicit user implementation
+  authorization. Ownership and CI are not Gate A prerequisites.
+- Gate B limits local implementation verification to C20/C34/C37 focused
+  tests, both allowed full test files, typecheck, lint, and full ordinary
+  tests. A local F01/F04/F05 repair commit may exist before ownership/routing
+  closure; its first production/formal-test change consumes repair round 1/2.
+- Gate C retains ownership supersession, traceability/routing, exact-final-HEAD
+  CI, Linux/Windows closure, hosted C32 evidence, complete final review, both
+  pass verdicts, empty blockers, and both GitHub audit comments as downstream
+  PR acceptance and merge gates.
+- Active `implementationBranch` is
+  `phase-3/reachable-base-dreamer-settleability-closure`. The archived 2B20
+  branch remains history only.
+- The three prior review blockers are closed by this correction and retained
+  unchanged in review history. The original review archive and its
+  `RULE_DESIGN_FIX_REQUIRED` verdict are not modified.
+- Behavior and rule semantics are unchanged. F01/F04/F05, C20/C34/C37,
+  production/test allowlists, Dreamer `PARTIAL`, unsupported states,
+  `ownershipRepairRoute=EXPLICIT_SUPERSESSION_REQUIRED`, and
+  `supersessionRequired=true` remain frozen.
+- Canonical status remains `HUMAN_BLOCKED`; detailed state is
+  `READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REREVIEW`.
+- `implementationAuthorized=false`, repair remains `0/2`, and no product
+  repair round is consumed.
+- Active blockers are
+  `PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REREVIEW`,
+  `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REREVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Design Correction V1 state.
+
+## Historical checkpoint — Product Repair Round 1 design fix required
 
 - Independent read-only review is bound to local design HEAD
   `627dc709dcbf94e92b61a82cef0b75020b936146`, repair base

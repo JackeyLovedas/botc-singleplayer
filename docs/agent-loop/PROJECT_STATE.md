@@ -1,6 +1,42 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A Product Repair Round 1 design fix required
+## Current state — Phase 3 Slice 2B20A Design Correction V1 ready for rereview
+
+- Design Correction V1 is authorized by
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_CORRECTION_V1_PATH_GATE_BRANCH_ONLY`
+  and is based on local review commit
+  `def473e7b84d7b568dcc3d689dcabf5381d48377`.
+- The corrected design SHA-256 is
+  `effb7782bffa0daff963789a42f6ec0139cc355e96f6346dbaa8de5654bee4d1`;
+  its prior design and review hashes remain immutable history.
+- The governance ADR path now resolves. Three explicit gate layers separate
+  design-to-implementation entry, bounded local implementation verification,
+  and downstream PR acceptance/final review.
+- Ownership, routing, Linux CI, and Windows CI no longer block beginning the
+  F01/F04/F05 implementation after a new independent `RULE_DESIGN_PASS` and
+  explicit user authorization. They still block PR acceptance and merge.
+- Active `currentBranch` and `implementationBranch` both point to
+  `phase-3/reachable-base-dreamer-settleability-closure`; repair base and
+  remote PR #46 HEAD remain
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
+- The three findings from the immutable prior review are closed in active
+  state and preserved in review history. No rereview has run.
+- No production code, tests, scripts, workflow, profile, dependency, timeout,
+  PR metadata, or GitHub thread changed. The F01/F04/F05 behavior design is
+  unchanged.
+- Control is `HUMAN_BLOCKED /
+  READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REREVIEW`,
+  `implementationAuthorized=false`, `repairRound=0/2`, and
+  `productRepairRoundConsumed=false`.
+- Active blockers are the pending independent design rereview plus downstream
+  ownership/routing, Linux worker-RPC, and Windows W7 exit gates.
+- Required next action:
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REREVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Design Correction V1 state.
+
+## Historical checkpoint — Product Repair Round 1 design fix required
 
 - Independent review of local design HEAD
   `627dc709dcbf94e92b61a82cef0b75020b936146` returned
