@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION_REQUIRED",
+  "detailedStatus": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "PRODUCT_SLICE",
   "productRepairRoundConsumed": true,
@@ -1102,7 +1102,7 @@
     "remainingBlockers": []
   },
   "reviewedHead": "0ab9cbb1d31f46fb989f049b804638b69ee399ba",
-  "currentReviewHeadAuthority": "The independent Product Repair Round 2 design review is bound to design HEAD 26e2dab7b4f7edec0745ad7c930fa9b0e1f95553 and design SHA-256 7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894. It returned RULE_DESIGN_FIX_REQUIRED with blockers C34_ROUND_2_MATRIX_MIXES_T1_STRUCTURAL_CASES_INTO_T2_POLICY_AUTHORITY and C34_ROUND_2_ALREADY_VALID_INVENTORY_IS_FALSE. No implementation is authorized.",
+  "currentReviewHeadAuthority": "The immutable independent Product Repair Round 2 design review remains bound to design HEAD 26e2dab7b4f7edec0745ad7c930fa9b0e1f95553 and prior design SHA-256 7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894. Design Correction V1 is SHA-256 34622f6d4cec94289bf8cebb3ededd1023ae82ed05638c2aae1def50f6fe7b3e and awaits a new independent rereview. No implementation is authorized before RULE_DESIGN_PASS with empty remainingDesignBlockers.",
   "exactHeadCIAuthority": "PR #46 product HEAD dbfa424c96a8bcf06a0d2a77205626a532aa2ec8 has push run 30077541075 FAILURE and pull-request run 30077586762 FAILURE. These records are exact to dbfa424c96a8bcf06a0d2a77205626a532aa2ec8 and supply no authority for a future repair HEAD.",
   "currentFeatureHead": "dbfa424c96a8bcf06a0d2a77205626a532aa2ec8",
   "repairBaseHead": "dbfa424c96a8bcf06a0d2a77205626a532aa2ec8",
@@ -1120,7 +1120,7 @@
   "recoveryAuthorization": "USER_AUTHORIZED_2B20_ACCEPTED_MAIN_RECOVERY_AND_CONTINUE_EXISTING_AUTHORIZATION",
   "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
   "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
-  "authorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_DESIGN_F01_ENUMERABILITY_C34_MATRIX_ONLY",
+  "authorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE",
   "implementationAuthorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_C20_C34_C37_ONLY",
   "classificationOnlyDesignCorrectionAuthorization": "USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3",
   "designCorrectionScope": "REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY",
@@ -1164,7 +1164,7 @@
     ]
   },
   "slice2B20AGate": {
-    "status": "PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION_REQUIRED",
+    "status": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW",
     "disposition": "UNACCEPTED",
     "authorization": "USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE",
     "scopeMode": "REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY",
@@ -1253,7 +1253,7 @@
     "governanceAuthorityPath": "docs/architecture/ADR-reachability-trust-boundaries-and-review-governance-v1.md",
     "governanceAuthorityStatus": "ACCEPTED",
     "governanceAuthoritySha256": "f32bcbc92feb710afb9d12f6105c89e8223a7ea98bd1d73ce249b15b3d59a432",
-    "implementationEntryGate": "NEW_INDEPENDENT_RULE_DESIGN_PASS_THEN_EXPLICIT_USER_PRODUCT_REPAIR_IMPLEMENTATION_AUTHORIZATION",
+    "implementationEntryGate": "NEW_INDEPENDENT_RULE_DESIGN_PASS_WITH_EMPTY_REMAINING_DESIGN_BLOCKERS_AUTOMATICALLY_AUTHORIZES_BOUNDED_ROUND_2_IMPLEMENTATION_UNDER_END_TO_END_AUTHORIZATION",
     "localImplementationGate": "C20_C34_C37_FOCUSED_AND_ALLOWED_FULL_TEST_FILES_TYPECHECK_LINT_FULL_ORDINARY",
     "downstreamAcceptanceGate": "OWNERSHIP_SUPERSESSION_TRACEABILITY_ROUTING_EXACT_FINAL_HEAD_CI_C32_FINAL_REVIEW_AND_GITHUB_AUDIT_COMMENTS",
     "affectedFindings": [
@@ -1358,11 +1358,29 @@
       "F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED",
       "F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE"
     ],
-    "productRepairRound2DesignAuthorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_DESIGN_F01_ENUMERABILITY_C34_MATRIX_ONLY",
+    "productRepairRound2DesignAuthorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE",
     "productRepairRound2DesignBaseHead": "844c7db5666dcb9d738a3bff12425bffd6df9d54",
     "productRepairRound2DesignPath": "docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md",
-    "productRepairRound2DesignSha256": "7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894",
-    "productRepairRound2DesignStatus": "RULE_DESIGN_FIX_REQUIRED",
+    "productRepairRound2DesignSha256": "34622f6d4cec94289bf8cebb3ededd1023ae82ed05638c2aae1def50f6fe7b3e",
+    "productRepairRound2DesignStatus": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW",
+    "productRepairRound2PriorDesignSha256": "7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894",
+    "productRepairRound2DesignCorrectionAuthorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE",
+    "productRepairRound2DesignCorrectionRound": 1,
+    "productRepairRound2MaxDesignCorrectionRounds": 2,
+    "productRepairRound2C34EvidenceGap": "none",
+    "productRepairRound2C34NewT2Cases": [
+      "C34-R2-M06",
+      "C34-R2-M08"
+    ],
+    "productRepairRound2C34StructuralSupportingNonPrimary": [
+      "C34-R2-M01",
+      "C34-R2-M02",
+      "C34-R2-M03",
+      "C34-R2-M04",
+      "C34-R2-M05",
+      "C34-R2-M07",
+      "SPARSE_IMPAIRMENT"
+    ],
     "productRepairRound2DesignAffectedFindings": [
       "F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED",
       "F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE"
@@ -1396,9 +1414,7 @@
     "ownershipSelfTest": "PASS / 22 of 22",
     "traceabilityInventory": "PASS / 37 active / 37 unique primary / 37 unique supporting authority",
     "remainingBlockers": [
-      "PENDING_BOUNDED_PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION",
-      "C34_ROUND_2_MATRIX_MIXES_T1_STRUCTURAL_CASES_INTO_T2_POLICY_AUTHORITY",
-      "C34_ROUND_2_ALREADY_VALID_INVENTORY_IS_FALSE",
+      "PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW",
       "F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED",
       "F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE",
       "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
@@ -1415,10 +1431,10 @@
   "candidateScope": "CANONICAL_PHILOSOPHER_DRUNK_BASE_DREAMER_WITHOUT_CURRENT_VORTOX",
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md",
-  "currentDesignHash": "7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894",
-  "currentDesignStatus": "RULE_DESIGN_FIX_REQUIRED",
-  "currentDesignTerminal": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW",
-  "currentDesignSource": "NEW_READ_ONLY_ARCHITECT_UNDER_USER_AUTHORIZED_PRODUCT_REPAIR_ROUND_2_DESIGN",
+  "currentDesignHash": "34622f6d4cec94289bf8cebb3ededd1023ae82ed05638c2aae1def50f6fe7b3e",
+  "currentDesignStatus": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW",
+  "currentDesignTerminal": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW",
+  "currentDesignSource": "DESIGN_CORRECTION_V1_UNDER_USER_AUTHORIZED_END_TO_END_CLOSURE",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-review.md",
   "currentDesignReviewHash": "332dcf4150441b93daedac3e1ab4802c6b5901ece6b0ef0636868f47a10848a2",
   "currentDesignReviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
@@ -1936,7 +1952,7 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": false,
-  "implementationStatus": "PRODUCT_REPAIR_ROUND_1_LOCAL_IMPLEMENTATION_COMPLETE_PENDING_INDEPENDENT_REPAIR_REVIEW",
+  "implementationStatus": "PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_V1_PENDING_INDEPENDENT_REREVIEW",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -2360,9 +2376,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_BOUNDED_PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION",
-    "C34_ROUND_2_MATRIX_MIXES_T1_STRUCTURAL_CASES_INTO_T2_POLICY_AUTHORITY",
-    "C34_ROUND_2_ALREADY_VALID_INVENTORY_IS_FALSE",
+    "PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW",
     "F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED",
     "F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE",
     "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
@@ -3134,8 +3148,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent Product Repair Round 2 design review. F01/C20 design passed, but the reviewer returned RULE_DESIGN_FIX_REQUIRED because the C34 table mixes T1 structural cases into the frozen T2 policy authority and falsely treats sparse impairment as already-valid T2 evidence. The design was not modified and no implementation was authorized.",
-  "lastError": "C34_ROUND_2_MATRIX_MIXES_T1_STRUCTURAL_CASES_INTO_T2_POLICY_AUTHORITY; C34_ROUND_2_ALREADY_VALID_INVENTORY_IS_FALSE",
-  "requiredNextAction": "REQUEST_BOUNDED_PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION",
-  "nextAction": "REQUEST_BOUNDED_PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION"
+  "lastAction": "Materialized Product Repair Round 2 Design Correction V1. The corrected twelve-row C34 mapping contains no EVIDENCE_GAP, retains the first eight valid T2 authorities and two controls, requires only legal T2 cases M06/M08, and classifies prior M01-M05/M07 plus sparse impairment as non-primary R3/T1 structural supporting evidence. No production or test change was made.",
+  "lastError": null,
+  "requiredNextAction": "RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW",
+  "nextAction": "RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW"
 }

@@ -1,44 +1,46 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A Product Repair Round 2 design correction required
+## Current state — Phase 3 Slice 2B20A Product Repair Round 2 Design Correction V1
 
-- Independent review of design HEAD
-  `26e2dab7b4f7edec0745ad7c930fa9b0e1f95553` returned
-  `RULE_DESIGN_FIX_REQUIRED`.
-- The immutable reviewed design remains
+- Authorization
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`
+  permits Design Correction V1, a new independent rereview, and conditional
+  bounded implementation without another user pause.
+- The corrected standalone design remains
   `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`,
   SHA-256
-  `7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894`.
-- The complete review is archived verbatim at
+  `34622f6d4cec94289bf8cebb3ededd1023ae82ed05638c2aae1def50f6fe7b3e`.
+- The original review remains immutable at
   `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-review.md`,
   SHA-256
   `332dcf4150441b93daedac3e1ab4802c6b5901ece6b0ef0636868f47a10848a2`.
-- F01/C20, the two-file future allowlist, resolver immutability, local gates,
-  and final-round stop-loss are valid.
-- C34 design is blocked because M01–M05 and current M07 are T1 structural or
-  invalid-grammar inputs, not T2 pure-policy authority. Sparse impairment is
-  likewise structural supporting evidence, not already-valid T2 authority.
-- M06 and M08 are valid T2 cases. M07 can become valid only with a
-  parser-valid gained-v2 task/grant identity that semantically mismatches the
-  BASE relation.
-- No current legal T2 case requires resolver modification. Rules, behavior,
-  schema, Dreamer `PARTIAL`, F05/C37, attribution, and downstream PR blockers
-  remain unchanged.
+- The corrected twelve-row requirement map contains no `EVIDENCE_GAP`:
+  requirements 1–8 retain existing valid T2 evidence, M06 and M08 are the
+  only new required T2 cases, and normal base/gained Dreamer remain controls.
+- M06 is a complete parser-valid BASE seat-12 identity that changes only the
+  canonical task cross-link. M08 uses separately legal state/catalog
+  snapshots and a total-preserving state modifier mismatch.
+- M01–M05, prior M07, and sparse impairment are classified only as
+  `R3 / T1 / STRUCTURAL_VALIDATION` supporting evidence; they are excluded
+  from C34 primary completion. All obsolete eight-case authority was removed.
+- F01/C20, resolver immutability, two-file future allowlist, F05/C37, rules,
+  behavior, schema, Dreamer `PARTIAL`, and downstream PR blockers remain
+  unchanged.
 - PR #46 remains open at remote HEAD
   `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
 - Control is `HUMAN_BLOCKED /
-  PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION_REQUIRED`,
-  `implementationAuthorized=false`, `productRepairRound=1/2`, and
-  `productRepairRoundConsumed=true`.
-- The review consumes no Round 2 product repair.
+  READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`,
+  `implementationAuthorized=false`, `designCorrectionRound=1/2`, and
+  `productRepairRound=1/2`.
+- Active blockers are pending independent rereview, F01, F04, ownership
+  supersession/routing, Linux worker RPC, and Windows W7 unknown exit.
 - Required next action:
-  `REQUEST_BOUNDED_PRODUCT_REPAIR_ROUND_2_DESIGN_CORRECTION_AUTHORIZATION`.
-- The design was not modified. No implementation, product tests, push, PR
-  mutation, CI, coverage, ownership, workflow, profile, or 2B20B work was
-  performed.
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`.
+- No production code, tests, original review archive, push, PR mutation, CI,
+  coverage, ownership, workflow, profile, or 2B20B work was performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 design-review state.
+not override the active Product Repair Round 2 Design Correction V1 state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 

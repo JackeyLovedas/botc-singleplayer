@@ -3,7 +3,7 @@
 ## Metadata
 
 - taskId: `2B20A-PRODUCT-REPAIR-ROUND-2`
-- authorization: `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_DESIGN_F01_ENUMERABILITY_C34_MATRIX_ONLY`
+- authorization: `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`
 - sliceId: `2B20A`
 - branch: `phase-3/reachable-base-dreamer-settleability-closure`
 - designBaseHead: `844c7db5666dcb9d738a3bff12425bffd6df9d54`
@@ -28,6 +28,11 @@
 - targetCoverage: `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`
 - DreamerRoleCoverage: `PARTIAL`
 - designPath: `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`
+- designCorrectionPass: `1/2`
+- priorRound2DesignSha256: `7aabfc579508172625fcb9ca5812ee320e858a731a6cd32c9ddfbf96b015d894`
+- priorRound2DesignReviewPath: `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-review.md`
+- priorRound2DesignReviewSha256: `332dcf4150441b93daedac3e1ab4802c6b5901ece6b0ef0636868f47a10848a2`
+- c34ValidT2EvidenceGap: `none`
 
 No future Round 2 implementation commit SHA is defined or reserved by this design.
 
@@ -110,26 +115,26 @@ Exactly two Product Repair blockers remain:
   `[2B20A-C34] resolves only the exact canonical-drunk Fang Gu capability`
 - Exact production symbol under proof:
   `resolveBaseDreamerV2NormalCapability`
-- Missing independent cases:
-  - malformed first-night plan shape;
-  - malformed V3 opportunity shape;
-  - malformed role-tenure-state shape;
-  - malformed base-Dreamer source-contract shape;
-  - missing `sourceAbilityInstanceId`;
-  - well-formed but unprovable `sourceAbilityInstanceId`;
-  - canonically formatted but wrong-generation/mismatched
-    `sourceAbilityInstanceId`;
-  - a real current-Demon/catalog snapshot mismatch.
+- Missing independent T2 primary cases:
+  - a well-formed canonical BASE `sourceAbilityInstanceId` whose task/source/
+    tenure/revision relation cannot be proved;
+  - a real current-Demon/catalog snapshot mismatch in which state and catalog
+    are separately legal but semantically inconsistent.
 - Exact misleading current evidence:
   `anotherDemonState` and `anotherDemonSetup` both use Vigormortis. That fixture
   legitimately proves the “another catalog Demon with no impairment” result,
   but it does not prove a state/catalog mismatch even though the expected
   resolver reason is also `CURRENT_DEMON_CATALOG_MISMATCH`.
 - Exact insufficiency:
-  the four existing provenance cases prove empty tenure, current assignment
-  role mismatch, task-source player mismatch, and source-contract player
-  mismatch. They do not prove malformed plan/opportunity/tenure/contract shapes
-  or the three distinct `sourceAbilityInstanceId` conditions.
+  the current valid T2 matrix proves the other frozen adjacent states but does
+  not independently prove the well-formed source-ability semantic cross-link
+  failure or the separately legal state/catalog semantic mismatch.
+- Structural boundary:
+  missing required plan/opportunity/tenure/contract fields, missing ability ID,
+  invalid ability-ID grammar, and sparse impairment arrays are
+  `R3 / T1 / STRUCTURAL_VALIDATION` evidence. They may remain supporting
+  authority elsewhere but are not C34 primary cases and do not count toward
+  F04 closure.
 
 ## Explicitly Closed Findings
 
@@ -169,8 +174,8 @@ Round 2 owns only:
 1. the missing numeric-element `enumerable === true` check in the existing V7
    canonical-data preflight;
 2. the exact C20 non-enumerable own-data-property regression evidence;
-3. the eight missing or invalid C34 matrix cases identified by the independent
-   Round 1 implementation review;
+3. the two valid T2 C34 matrix cases `C34-R2-M06` and `C34-R2-M08`
+   identified by the independent classification audit;
 4. preservation of all already accepted behavior and all explicitly closed
    findings.
 
@@ -345,61 +350,76 @@ C34 retains its frozen primary classification:
 - primary layer: `PURE_POLICY_SEAM`;
 - required mechanism: `DIRECT_CANONICAL_CAPABILITY_RESOLUTION_MATRIX`.
 
-The malformed supporting variants do not create a new primary test identity or
-authorize traceability reclassification.
+Structural supporting variants do not count toward C34 completion, do not
+create a new C34 primary case, and do not authorize traceability
+reclassification. Existing structural assertions remain regression evidence
+under their actual `R3 / T1 / STRUCTURAL_VALIDATION` authority.
 
 ### C34 frozen-requirement audit
 
-| Frozen requirement | Current Round 1 evidence | Classification for Round 2 |
-|---|---|---|
-| exact canonical DRUNK plus unique Fang Gu | Existing C34 asserts `CANONICAL_DRUNK_SOURCE_FANG_GU_APPARENT_INFORMATION_SUPPORTED` and unique Fang Gu constraint | Truly proved; preserve, do not duplicate |
-| legal POISONED impairment | A genuine `SNAKE_CHARMER_DEMON_HIT` POISONED record without DRUNK-only `chosenRoleId`; exact `SOURCE_REPRESENTED_IMPAIRED` result | Truly proved; preserve |
-| duplicate impairment | Canonical DRUNK plus its clone; exact `SOURCE_IMPAIRMENT_CONFLICT` | Truly proved; preserve |
-| conflicting impairment | Canonical DRUNK plus legal POISONED impairment; exact `SOURCE_IMPAIRMENT_CONFLICT` | Truly proved; preserve |
-| malformed impairment-set shape | Sparse impairment array; exact `SOURCE_IMPAIRMENT_CONFLICT` | Truly proved; preserve |
-| stale applicable impairment | Opening/current revision advanced while the older impairment falls outside the applicable window; exact `NORMAL_INFORMATION_SUPPORTED` kind is asserted | Truly proved; preserve |
-| current No Dashii | State and catalog both changed to No Dashii; exact `NO_DASHII_EFFECT_UNRESOLVED` result | Truly proved; preserve |
-| canonical DRUNK plus effective current Vortox | Existing canonical Vortox fixture asserts exact supported kind | Truly proved; preserve |
-| effective current Vortox without source impairment | Existing Vortox fixture asserts exact supported kind | Truly proved; preserve |
-| conflicting Vortox impairments | Two legal applicable Vortox POISONED records; exact `VORTOX_EFFECTIVENESS_CONFLICT` | Truly proved; preserve |
-| another current catalog Demon plus canonical DRUNK | State and catalog both use Vigormortis; exact `SOURCE_REPRESENTED_IMPAIRED / DRUNK` | Truly proved; preserve |
-| another current catalog Demon without source impairment | State and catalog both use Vigormortis; exact `CURRENT_DEMON_CATALOG_MISMATCH` | Truly proved only as the frozen “other supported catalog Demon” branch; it is not evidence of a state/catalog mismatch |
-| nonunique current Demon | Second current Demon entry plus catalog role; exact `CURRENT_DEMON_IDENTITY_NOT_UNIQUE` | Truly proved; preserve |
-| real current Demon/catalog mismatch | No existing fixture changes only one side of the state/catalog relationship | Surface result name appears, but evidence is invalid for this distinct requirement; Round 2 case required |
-| missing/unprovable tenure | Empty tenure state; exact `SOURCE_PROVENANCE_INVALID` | Truly proves missing active tenure; malformed tenure shape remains missing |
-| missing/unprovable assignment | Current source entry changed from Dreamer to Flowergirl; exact `SOURCE_PROVENANCE_INVALID` | Truly proves unprovable source assignment; preserve |
-| source task provenance | Task source player changed to an unprovable player; exact `SOURCE_PROVENANCE_INVALID` | Truly proved; preserve |
-| source-contract provenance | Contract source player changed independently; exact `SOURCE_PROVENANCE_INVALID` | Truly proves semantic contract mismatch; malformed contract shape remains missing |
-| source ability instance provenance | No C34 case changes `sourceAbilityInstanceId` | Round 2 must add missing, unprovable, and mismatched cases |
-| malformed first-night plan | No independent C34 fixture | Round 2 case required |
-| malformed V3 opportunity | No independent C34 fixture | Round 2 case required |
-| malformed role-tenure-state shape | No independent C34 fixture | Round 2 case required |
-| malformed base-Dreamer source-contract shape | No independent C34 fixture | Round 2 case required |
-| normal effective base Dreamer | Existing no-impairment Fang Gu control asserts exact `NORMAL_INFORMATION_SUPPORTED` kind | Truly proved; preserve |
-| gained Dreamer unchanged | Existing gained resolver control asserts exact `NORMAL_INFORMATION_SUPPORTED` kind | Truly proved; preserve |
+The frozen requirement-to-authority mapping is complete and contains no
+`EVIDENCE_GAP`:
+
+| # | Frozen requirement | Valid T2 evidence | Round 2 classification |
+|---|---|---|---|
+| 1 | canonical DRUNK plus unique Fang Gu | Existing dense canonical C34 fixture asserts `CANONICAL_DRUNK_SOURCE_FANG_GU_APPARENT_INFORMATION_SUPPORTED` and the unique Fang Gu constraint | `EXISTING_VALID_T2_EVIDENCE` |
+| 2 | legal POISONED | Existing complete `SNAKE_CHARMER_DEMON_HIT` POISONED record, without DRUNK-only `chosenRoleId`, asserts exact `SOURCE_REPRESENTED_IMPAIRED / POISONED` | `EXISTING_VALID_T2_EVIDENCE` |
+| 3 | duplicate impairment | Existing dense array contains canonical DRUNK plus its complete clone and asserts exact `SOURCE_IMPAIRMENT_CONFLICT` | `EXISTING_VALID_T2_EVIDENCE` |
+| 4 | conflicting impairment | Existing dense array contains complete canonical DRUNK plus complete legal POISONED and asserts exact `SOURCE_IMPAIRMENT_CONFLICT` | `EXISTING_VALID_T2_EVIDENCE` |
+| 5 | stale revision/provenance | Existing complete opportunity, state, contract, and impairment advance the opening/current revision so the older impairment is outside the applicable window and assert exact `NORMAL_INFORMATION_SUPPORTED` | `EXISTING_VALID_T2_EVIDENCE` |
+| 6 | current No Dashii unresolved | Existing separately legal state/catalog use the same No Dashii snapshot and assert exact `NO_DASHII_EFFECT_UNRESOLVED` | `EXISTING_VALID_T2_EVIDENCE` |
+| 7 | current effective Vortox | Existing canonical Vortox fixture, including the canonical-DRUNK variant, asserts the exact supported Vortox kind; the conflict fixture uses two complete applicable POISONED records and asserts `VORTOX_EFFECTIVENESS_CONFLICT` | `EXISTING_VALID_T2_EVIDENCE` |
+| 8 | another current Demon | Existing matching Vigormortis state/catalog fixtures assert the frozen with-DRUNK and without-impairment outcomes; they prove the other-current-Demon branch, not a state/catalog mismatch | `EXISTING_VALID_T2_EVIDENCE` |
+| 9 | unprovable source ability/provenance | New `C34-R2-M06` uses a parser-valid canonical BASE seat-12 ability identity while retaining the canonical seat-01 task/source/tenure/revision chain | `ROUND_2_M06_REQUIRED` |
+| 10 | state/catalog semantic mismatch | New `C34-R2-M08` uses separately valid same-role state and catalog snapshots whose total-preserving setup modifiers differ | `ROUND_2_M08_REQUIRED` |
+| 11 | normal effective base Dreamer control | Existing no-impairment Fang Gu control asserts exact `NORMAL_INFORMATION_SUPPORTED` | `VALID_CONTROL_NOT_PRIMARY` |
+| 12 | gained Dreamer unchanged control | Existing gained resolver control asserts exact `NORMAL_INFORMATION_SUPPORTED` | `VALID_CONTROL_NOT_PRIMARY` |
 
 The current C34 unresolved assertions already use exact `kind/reason`; it has no
 `not.toBe(success)` substitute. Its supported-result assertions use
 `toMatchObject` but explicitly assert exact `kind`, and supported variants have
 no `reason` field. Round 2 must not weaken them.
 
-## C34 Missing-Case Table
+## C34 Round 2 Primary-Case Table
 
 | Case ID | Frozen requirement | Current evidence | Exact deficiency | Canonical fixture construction | Single domain dimension changed | Exact expected resolver kind/reason | Primary assertion |
 |---|---|---|---|---|---|---|---|
-| `C34-R2-M01` | malformed first-night plan fails provenance closed | Canonical `facts.plan` and task-source mismatch exist; no malformed plan input exists | Plan-shape rejection is unproved | Clone `facts.plan`, remove only required `taskPlanVersion`, retain the canonical task vector and pass the clone as `firstNightTaskPlan` | First-night plan shape | `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID` | `toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "SOURCE_PROVENANCE_INVALID" })` |
-| `C34-R2-M02` | malformed V3 opportunity fails provenance closed | Forged semantic opportunity paths exist elsewhere; C34 has no malformed V3 shape | Direct and stored opportunity-shape rejection is unproved | Clone `facts.opportunity`, remove only required `visibility`, and use that same logical opportunity as both `opportunity` and the sole entry of `firstNightActionOpportunities.opportunities` | V3 opportunity shape | `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID` | Exact `toStrictEqual` of kind and reason |
-| `C34-R2-M03` | malformed role-tenure-state shape fails provenance closed | Empty but well-shaped tenure state proves missing active tenure | Exact tenure container validation is unproved | Clone `facts.roleTenures`, remove only required `processedTransitionFactIds`, retain the canonical tenure record, and pass the clone as `roleTenures` | Role-tenure-state shape | `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID` | Exact `toStrictEqual` of kind and reason |
-| `C34-R2-M04` | malformed base-Dreamer source contract fails provenance closed | A well-shaped contract with wrong `sourcePlayerId` is proved | Exact source-contract shape/version rejection is unproved | Clone the canonical V3 opportunity and change only `sourceContract.sourceContractVersion` to an unsupported literal; place the same mutated opportunity in the opportunity state | Base source-contract shape/version | `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID` | Exact `toStrictEqual` of kind and reason |
-| `C34-R2-M05` | missing source ability instance fails provenance closed | No C34 case removes `sourceAbilityInstanceId` | Missing required ability-instance provenance is unproved | Start from the canonical contract created with `formatBaseFirstNightAbilityInstanceId`, clone it, remove only `sourceAbilityInstanceId`, and use the same mutated opportunity in direct and stored opportunity positions | Presence of source ability-instance identity | `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID` | Exact `toStrictEqual` of kind and reason |
-| `C34-R2-M06` | well-formed but unprovable base ability instance fails provenance closed | No C34 case supplies a canonical ID for a task absent from the plan | Parser-valid but historically unprovable ability identity is unproved | Replace only `sourceAbilityInstanceId` with `formatBaseFirstNightAbilityInstanceId(scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-12"))`; leave the actual seat-01 task, plan, tenure, assignment, and opportunity unchanged | Ability instance refers to an unplanned base task | `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID` | Exact `toStrictEqual` of kind and reason |
-| `C34-R2-M07` | wrong-generation or mismatched source ability instance fails provenance closed | No C34 case changes ability-instance generation | Canonically formatted but non-base ability identity is unproved | Replace only `sourceAbilityInstanceId` with `formatPhilosopherGainedV2AbilityInstanceId({ taskId: facts.opportunity.taskId, grantId: grantedAbilityId("philosopher-grant-v1:seat-01:from-dreamer") })`; retain the BASE source contract and every other canonical field | Ability-instance provenance generation | `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID` | Exact `toStrictEqual` of kind and reason |
-| `C34-R2-M08` | a true current Demon/catalog snapshot mismatch fails closed | Existing `anotherDemonState` and `anotherDemonSetup` both use Vigormortis and therefore match each other | The current assertion proves another catalog Demon, not a state/catalog mismatch | Keep canonical setup unchanged; clone only the current Fang Gu state entry’s `RoleSetupSnapshot` with the same `roleId`, Demon type, alignment, and edition but a different valid `setupModifier` snapshot, leaving exactly one current Demon | Current Demon role snapshot differs from its same-role catalog snapshot | `EFFECTIVENESS_UNRESOLVED / CURRENT_DEMON_CATALOG_MISMATCH` | `toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "CURRENT_DEMON_CATALOG_MISMATCH" })` |
+| `C34-R2-M06` | well-formed but unprovable base ability instance fails provenance closed | No C34 case supplies a canonical BASE ability ID for a task absent from the accepted plan | Parser-valid but historically unprovable ability identity is unproved | Starting from `v7FangGuFacts()`, replace only `sourceContract.sourceAbilityInstanceId` with `formatBaseFirstNightAbilityInstanceId(scheduledTaskId("first-night-v1:DREAMER_ACTION:seat-12"))`; use the same complete cloned opportunity in the direct argument and opportunity state; retain the canonical seat-01 task, plan, source player, tenure, assignment, contract version, opening revision, and current revision | The ability identity’s task cross-link changes from canonical seat-01 to legal but unplanned BASE seat-12 | `EFFECTIVENESS_UNRESOLVED / SOURCE_PROVENANCE_INVALID` | `toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "SOURCE_PROVENANCE_INVALID" })` |
+| `C34-R2-M08` | a true current Demon/catalog snapshot mismatch fails closed | Existing `anotherDemonState` and `anotherDemonSetup` both use Vigormortis and therefore match each other | The current assertion proves another catalog Demon, not a state/catalog relationship mismatch | Keep canonical setup/catalog unchanged; clone only the current Fang Gu state entry’s `RoleSetupSnapshot`, preserving the same canonical `roleId`, `characterType: "DEMON"`, `defaultAlignment: "EVIL"`, and edition, while replacing its modifier with the separately valid total-preserving `{ outsiderDelta: 1, townsfolkDelta: -1 }`; leave exactly one current Demon and every other state/catalog relation unchanged | Only the current-state/catalog `setupModifier` relationship changes; both snapshots remain independently valid | `EFFECTIVENESS_UNRESOLVED / CURRENT_DEMON_CATALOG_MISMATCH` | `toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "CURRENT_DEMON_CATALOG_MISMATCH" })` |
 
-Each malformed fixture begins as a canonical domain fixture and corrupts only
-the shape or provenance field named by its frozen matrix row. The case must not
-also change source player, source seat, assignment, task ordering, impairment,
-Demon identity, target, or revision.
+Both primary fixtures are complete, use supported versions and canonical ID
+grammar, and are `T2 CANONICAL_DERIVED_STATE`. Neither depends on a cast,
+deleted required field, sparse array, accessor, Proxy, nonplain object, or
+invalid literal. Each changes exactly one semantic cross-link from the
+canonical success control.
+
+### Structural supporting authority excluded from C34 primary completion
+
+The prior design’s `C34-R2-M01` through `C34-R2-M05` constructions and its
+prior `C34-R2-M07` construction are removed from the C34 primary required list:
+
+- M01 removed a required plan field.
+- M02 removed a required V3 opportunity field.
+- M03 removed a required tenure-state field.
+- M04 used an unsupported version literal.
+- M05 removed the required `sourceAbilityInstanceId`.
+- M07 embedded a BASE task ID in the gained-v2 formatter and therefore did not
+  produce parser-valid gained-v2 identity grammar.
+
+Those constructions are `R3 / T1 / STRUCTURAL_VALIDATION`, not
+`R1 / T2 / PURE_POLICY_SEAM`. They are neither renamed nor recreated as Round 2
+C34 primary cases, and they are not required implementation evidence.
+
+The existing sparse impairment assertion is classified the same way:
+`R3 / T1 / STRUCTURAL_VALIDATION`. It may remain as read-only structural
+supporting/regression evidence in the existing test body, but it is removed
+from the C34 `already valid` T2 inventory, does not decide C34 completion, and
+does not substitute for the existing dense duplicate/conflicting impairment
+T2 evidence. This correction authorizes no traceability, title, marker, or
+separate structural-test edit.
+
+The twelve-row mapping above has `EVIDENCE_GAP = none`; no replacement T2 case
+beyond M06 and M08 is authorized.
 
 The current production resolver’s branch order yields the expected existing
 result for each listed case. No legal case inspected for this design requires a
@@ -557,7 +577,9 @@ Required implementation acceptance evidence is:
 - C20 proves non-enumerable numeric own data fails at every required entry;
 - C20 retains numeric accessor getter count `0`;
 - C20 legal enumerable V7 controls pass;
-- C34 contains eight independent missing-case fixtures with exact results;
+- C34 preserves the eight mapped existing T2 requirements, adds the two
+  independent M06/M08 T2 primary fixtures with exact results, and preserves the
+  two normal/gained controls;
 - C37 remains unchanged and green;
 - no unhandled error is hidden;
 - `git diff --check` succeeds;
@@ -582,7 +604,7 @@ control files, the active state is:
 
 - top-level status: `HUMAN_BLOCKED`
 - detailed state:
-  `READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW`
+  `READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`
 - currentPR: `46`
 - currentBranch:
   `phase-3/reachable-base-dreamer-settleability-closure`
@@ -598,12 +620,14 @@ control files, the active state is:
 - productRepairRoundConsumed: `true`
 - productRepairRoundConsumedByDesign: `false`
 - implementationAuthorized: `false`
+- designCorrectionRound: `1/2`
+- implementationAuthorized: `false`
 - requiredNextAction:
-  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW`
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`
 
 Active blockers must include:
 
-- `PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW`
+- `PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW`
 - `F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED`
 - `F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE`
 - `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`
@@ -709,8 +733,8 @@ The following blockers are independent of Round 2 product implementation:
 
 They:
 
-- do not block implementing Round 2 after independent design approval and
-  explicit user implementation authorization;
+- do not block implementing Round 2 after the independent design rereview
+  passes under the existing end-to-end authorization;
 - continue to block PR acceptance, final review, and merge;
 - are not modified by Round 2;
 - must not be marked resolved by Round 2;
@@ -747,9 +771,10 @@ The review must verify:
 3. No accessor or unknown numeric value read occurs before rejection.
 4. C20 proves the non-enumerable own-data-property case through all required
    existing validation entries.
-5. The eight C34 cases are independent and mutate one named domain dimension
-   each.
-6. Every C34 result asserts exact `kind/reason`.
+5. The twelve-row frozen requirement mapping is complete, contains no
+   `EVIDENCE_GAP`, and uses only valid T2 evidence or valid controls.
+6. M06 and M08 are independent, complete T2 fixtures, mutate exactly one named
+   semantic relationship each, and assert exact `kind/reason`.
 7. The Vigormortis matching fixture is not misrepresented as a catalog
    mismatch.
 8. No resolver change is authorized.
@@ -761,9 +786,13 @@ The review must verify:
 13. Downstream PR blockers remain independent and unresolved.
 14. Dreamer remains `PARTIAL`.
 
-Only an independent `RULE_DESIGN_PASS`, followed by explicit user authorization
-for Round 2 implementation, may set `implementationAuthorized=true`.
+Under
+`USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`, an
+independent `RULE_DESIGN_PASS` with `remainingDesignBlockers=[]` automatically
+sets `implementationAuthorized=true` and authorizes the bounded Round 2
+implementation. No additional user authorization is required between design
+rereview and implementation.
 
 ## Terminal State
 
-READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REVIEW
+READY_FOR_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_DESIGN_REREVIEW
