@@ -1,6 +1,35 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A Product Repair Round 1 design
+## Current state — Phase 3 Slice 2B20A Product Repair Round 1 design fix required
+
+- Independent review of local design HEAD
+  `627dc709dcbf94e92b61a82cef0b75020b936146` returned
+  `RULE_DESIGN_FIX_REQUIRED`.
+- The unmodified design remains
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design.md`,
+  SHA-256
+  `eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8`.
+- The complete review is archived without editing or reordering at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design-review.md`,
+  SHA-256
+  `c32cf7ce8f58a75d9a56b5e17383e3247c0c1ad5892db961565846167c78f7e2`.
+- Three P1 blockers remain: the design's governance ADR path does not resolve;
+  the implementation gate ambiguously treats ownership/Linux/Windows work as
+  prerequisites rather than post-implementation acceptance gates; and the
+  active `implementationBranch` still points to archived 2B20.
+- Product behavior and rule semantics remain unchanged. No repair was
+  implemented and no repair round was consumed.
+- Control is `HUMAN_BLOCKED /
+  PRODUCT_REPAIR_ROUND_1_DESIGN_FIX_REQUIRED`,
+  `implementationAuthorized=false`, `repairRound=0/2`, and
+  `productRepairRoundConsumed=false`.
+- Required next action:
+  `REQUEST_BOUNDED_PRODUCT_REPAIR_DESIGN_CORRECTION_AUTHORIZATION`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Product Repair Round 1 review state.
+
+## Historical checkpoint — Product Repair Round 1 design awaiting review
 
 - PR #46 product authority is frozen at
   `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.

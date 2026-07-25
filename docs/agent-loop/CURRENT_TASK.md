@@ -1,6 +1,33 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — PRODUCT REPAIR ROUND 1 DESIGN READY FOR INDEPENDENT REVIEW
+## Phase 3 Slice 2B20A — PRODUCT REPAIR ROUND 1 DESIGN FIX REQUIRED
+
+- Independent read-only review is bound to local design HEAD
+  `627dc709dcbf94e92b61a82cef0b75020b936146`, repair base
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`, and design SHA-256
+  `eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8`.
+- The complete reviewer output is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design-review.md`,
+  SHA-256
+  `c32cf7ce8f58a75d9a56b5e17383e3247c0c1ad5892db961565846167c78f7e2`.
+- Verdict is `RULE_DESIGN_FIX_REQUIRED`; the design itself was not modified.
+- Exact reviewer blockers are:
+  `GOVERNANCE_ADR_PATH_DOES_NOT_RESOLVE`,
+  `IMPLEMENTATION_GATE_AMBIGUOUSLY_DEPENDS_ON_OWNERSHIP_AND_CI`, and
+  `ACTIVE_IMPLEMENTATION_BRANCH_POINTS_TO_ARCHIVED_2B20`.
+- Canonical control remains `HUMAN_BLOCKED`; detailed state is
+  `PRODUCT_REPAIR_ROUND_1_DESIGN_FIX_REQUIRED`.
+- `implementationAuthorized=false`, repair remains `0/2`, and
+  `productRepairRoundConsumed=false`.
+- No production code, tests, scripts, workflow, profile, PR metadata, or CI
+  state changed.
+- Required next action is
+  `REQUEST_BOUNDED_PRODUCT_REPAIR_DESIGN_CORRECTION_AUTHORIZATION`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Product Repair Round 1 review state.
+
+## Historical checkpoint — Product Repair Round 1 design awaiting review
 
 - Authorization is
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY`.

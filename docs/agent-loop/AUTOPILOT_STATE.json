@@ -1100,8 +1100,8 @@
     },
     "remainingBlockers": []
   },
-  "reviewedHead": "313a39a614a2a46a1026e3a272879cbcdd49324b",
-  "currentReviewHeadAuthority": "The prior DESIGN_RELEASE_PASS remains historical authority for the frozen 2B20A behavior design only. No independent Product Repair Round 1 design review exists yet for repair base dbfa424c96a8bcf06a0d2a77205626a532aa2ec8.",
+  "reviewedHead": "627dc709dcbf94e92b61a82cef0b75020b936146",
+  "currentReviewHeadAuthority": "The independent Product Repair Round 1 design review is bound to local design HEAD 627dc709dcbf94e92b61a82cef0b75020b936146 and design SHA-256 eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8. It returned RULE_DESIGN_FIX_REQUIRED and supplies no implementation authorization.",
   "exactHeadCIAuthority": "PR #46 product HEAD dbfa424c96a8bcf06a0d2a77205626a532aa2ec8 has push run 30077541075 FAILURE and pull-request run 30077586762 FAILURE. These records are exact to dbfa424c96a8bcf06a0d2a77205626a532aa2ec8 and supply no authority for a future repair HEAD.",
   "currentFeatureHead": "dbfa424c96a8bcf06a0d2a77205626a532aa2ec8",
   "repairRound": 0,
@@ -1112,7 +1112,7 @@
   "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
   "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
   "authorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY",
-  "implementationAuthorization": "NOT_AUTHORIZED_PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW",
+  "implementationAuthorization": "NOT_AUTHORIZED_PRODUCT_REPAIR_ROUND_1_DESIGN_FIX_REQUIRED",
   "classificationOnlyDesignCorrectionAuthorization": "USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3",
   "designCorrectionScope": "REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY",
   "resliceAuthorization": "USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE",
@@ -1155,7 +1155,7 @@
     ]
   },
   "slice2B20AGate": {
-    "status": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REVIEW",
+    "status": "PRODUCT_REPAIR_ROUND_1_DESIGN_FIX_REQUIRED",
     "disposition": "UNACCEPTED",
     "authorization": "USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE",
     "scopeMode": "REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY",
@@ -1204,7 +1204,12 @@
     },
     "productRepairRound1DesignPath": "docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design.md",
     "productRepairRound1DesignSha256": "eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8",
-    "productRepairRound1DesignStatus": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REVIEW",
+    "productRepairRound1DesignStatus": "REVIEWED_RULE_DESIGN_FIX_REQUIRED",
+    "productRepairRound1DesignReviewPath": "docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design-review.md",
+    "productRepairRound1DesignReviewSha256": "c32cf7ce8f58a75d9a56b5e17383e3247c0c1ad5892db961565846167c78f7e2",
+    "productRepairRound1DesignReviewedHead": "627dc709dcbf94e92b61a82cef0b75020b936146",
+    "productRepairRound1DesignReviewTimestamp": "2026-07-25T01:09:03.8290038Z",
+    "productRepairRound1DesignReviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
     "affectedFindings": [
       "F01",
       "F04",
@@ -1280,10 +1285,9 @@
     "ownershipSelfTest": "PASS / 22 of 22",
     "traceabilityInventory": "PASS / 37 active / 37 unique primary / 37 unique supporting authority",
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW",
-      "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
-      "LINUX_WORKER_RPC_CI_BLOCKER",
-      "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
+      "GOVERNANCE_ADR_PATH_DOES_NOT_RESOLVE",
+      "IMPLEMENTATION_GATE_AMBIGUOUSLY_DEPENDS_ON_OWNERSHIP_AND_CI",
+      "ACTIVE_IMPLEMENTATION_BRANCH_POINTS_TO_ARCHIVED_2B20"
     ]
   },
   "behaviorDesignFrozen": false,
@@ -1296,13 +1300,13 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design.md",
   "currentDesignHash": "eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8",
-  "currentDesignStatus": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REVIEW",
+  "currentDesignStatus": "PRODUCT_REPAIR_ROUND_1_DESIGN_FIX_REQUIRED",
   "currentDesignTerminal": "READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REVIEW",
   "currentDesignSource": "CONTROLLER_MATERIALIZED_USER_AUTHORIZED_PRODUCT_REPAIR_DESIGN",
-  "currentDesignReviewPath": null,
-  "currentDesignReviewHash": null,
-  "currentDesignReviewVerdict": null,
-  "currentDesignReviewSource": null,
+  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design-review.md",
+  "currentDesignReviewHash": "c32cf7ce8f58a75d9a56b5e17383e3247c0c1ad5892db961565846167c78f7e2",
+  "currentDesignReviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
+  "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
   "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
   "traceabilityClassificationCorrectionHash": "ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb",
   "traceabilityClassificationCorrectionStatus": "APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW",
@@ -1726,12 +1730,11 @@
     "remainingBlockers": [],
     "requiredNextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED"
   },
-  "rootCauseClassification": "PRODUCT_REPAIR_DESIGN_PENDING / TEST_TRACEABILITY_AND_CI_INFRASTRUCTURE_DEPENDENCIES",
+  "rootCauseClassification": "PRODUCT_REPAIR_ROUND_1_DESIGN_FIX_REQUIRED / GOVERNANCE_PATH_AND_GATE_CONTROL_DEFECTS",
   "knownBlockers": [
-    "PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW",
-    "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
-    "LINUX_WORKER_RPC_CI_BLOCKER",
-    "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
+    "GOVERNANCE_ADR_PATH_DOES_NOT_RESOLVE",
+    "IMPLEMENTATION_GATE_AMBIGUOUSLY_DEPENDS_ON_OWNERSHIP_AND_CI",
+    "ACTIVE_IMPLEMENTATION_BRANCH_POINTS_TO_ARCHIVED_2B20"
   ],
   "implementationPaused": false,
   "vortoxBehaviorConflict": false,
@@ -1740,7 +1743,7 @@
   "ledgerSchemaConflict": false,
   "ruleConflict": false,
   "productResliceRequired": false,
-  "nextGovernanceTask": "RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW",
+  "nextGovernanceTask": "REQUEST_BOUNDED_PRODUCT_REPAIR_DESIGN_CORRECTION_AUTHORIZATION",
   "slice2B19A3Round1DesignHistory": {
     "designPath": "docs/implementation/phase-3-slice-2b19a3-design.md",
     "designSha256": "da48346689c049c1e247d81f0f36e68efc0967e37db5688cc2e3a9ae729f5e3e",
@@ -1816,7 +1819,7 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": false,
-  "implementationStatus": "NOT_AUTHORIZED_PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW",
+  "implementationStatus": "NOT_AUTHORIZED_PRODUCT_REPAIR_ROUND_1_DESIGN_FIX_REQUIRED",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -2240,10 +2243,9 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW",
-    "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
-    "LINUX_WORKER_RPC_CI_BLOCKER",
-    "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
+    "GOVERNANCE_ADR_PATH_DOES_NOT_RESOLVE",
+    "IMPLEMENTATION_GATE_AMBIGUOUSLY_DEPENDS_ON_OWNERSHIP_AND_CI",
+    "ACTIVE_IMPLEMENTATION_BRANCH_POINTS_TO_ARCHIVED_2B20"
   ],
   "slice2B19A3ARound1Design": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design.md",
@@ -3010,8 +3012,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the authorized 2B20A Product Repair Round 1 design for F01/C20, F04/C34, and F05/C37 and synchronized control state without changing production code or tests.",
+  "lastAction": "Archived the complete independent Product Repair Round 1 design review bound to local design HEAD 627dc709dcbf94e92b61a82cef0b75020b936146. The reviewer returned RULE_DESIGN_FIX_REQUIRED with three P1 blockers; no design, production, or test change was made.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW",
-  "nextAction": "RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW"
+  "requiredNextAction": "REQUEST_BOUNDED_PRODUCT_REPAIR_DESIGN_CORRECTION_AUTHORIZATION",
+  "nextAction": "REQUEST_BOUNDED_PRODUCT_REPAIR_DESIGN_CORRECTION_AUTHORIZATION"
 }
