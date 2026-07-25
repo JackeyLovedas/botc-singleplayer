@@ -100,7 +100,8 @@ const isExceptionSafeCanonicalDreamerData = (value: unknown): boolean => {
         visited.add(candidate);
         for (let index = 0; index < length; index += 1) {
           const descriptor = Object.getOwnPropertyDescriptor(candidate, String(index));
-          if (descriptor === undefined || !("value" in descriptor) || !inspect(descriptor.value)) return false;
+          if (descriptor === undefined || !descriptor.enumerable || !("value" in descriptor) ||
+              !inspect(descriptor.value)) return false;
         }
         return true;
       }

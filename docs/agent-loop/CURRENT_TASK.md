@@ -1,6 +1,6 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — Product Repair Round 2 implementation authorized
+## Phase 3 Slice 2B20A — Product Repair Round 2 local implementation complete
 
 - Authorization is
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`.
@@ -19,26 +19,35 @@
   M06 source-tenure witness seam, separately legal M08 catalog mismatch, F01
   descriptor contract, production/test allowlists, frozen resolver behavior,
   and repair stop-loss.
-- Product Repair remains `1/2`; the docs/control archive consumes no product
-  repair. `designCorrectionRound=2/2`, `designCorrectionPass=2/2`,
-  `ruleDesignPass=true`, and `implementationAuthorized=true`.
-- The first production or formal test edit consumes the final Product Repair
-  Round `2/2`; no Product Repair Round 3 exists.
-- Canonical status is `RUNNING`; detailed state is
-  `PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_AUTHORIZED`.
+- The first production and formal-test edit has consumed Product Repair `2/2`.
+  `designCorrectionRound=2/2`, `designCorrectionPass=2/2`,
+  `ruleDesignPass=true`, and `implementationAuthorized=false`.
+- No Product Repair Round 3 exists.
+- F01/C20 now rejects a non-enumerable numeric own data property through the
+  direct, public, and stored validation boundaries while retaining getter
+  count `0` and the legal enumerable control.
+- C34 now includes only the independently approved M06 exact-valid empty
+  source-tenure witness and M08 independently valid Fang Gu state/catalog
+  modifier mismatch. The resolver body is unchanged and C37 remains read-only.
+- All eight authorized local gates passed under Node `v24.15.0` and Corepack
+  pnpm `11.7.0`: focused C20 `1/1`, focused C34 `1/1`, focused C37 `1/1`,
+  Dreamer `77/77`, application service `296/296`, typecheck, lint, and full
+  ordinary `35 files / 1572 tests`.
+- Canonical status is `HUMAN_BLOCKED`; detailed state is
+  `PRODUCT_REPAIR_ROUND_2_LOCAL_IMPLEMENTATION_COMPLETE_PENDING_INDEPENDENT_REPAIR_REVIEW`.
 - Active blockers are
-  `F01_NUMERIC_ELEMENT_ENUMERABILITY_NOT_ENFORCED`,
-  `F04_C34_FROZEN_ADJACENT_STATE_MATRIX_INCOMPLETE`,
+  `PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_REVIEW`,
   `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
   `LINUX_WORKER_RPC_CI_BLOCKER`, and
   `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
 - Required next action is
-  `IMPLEMENT_PRODUCT_REPAIR_ROUND_2_F01_C34`.
-- No production-code, test, prior-review, push, PR, CI, coverage, ownership,
-  workflow, profile, or 2B20B change was performed.
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_REVIEW`.
+- Exactly one production file, one test file, and four controls changed. No
+  push, PR, CI, coverage, ownership, Windows harness, workflow, profile,
+  application test, or 2B20B change was performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 implementation-authorized state.
+not override the active Product Repair Round 2 local implementation state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 

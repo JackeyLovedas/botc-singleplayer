@@ -50,15 +50,21 @@ import {
   DREAMER_V3_VISIBILITY_SCHEMA_VERSION,
   DREAMER_V4_OPPORTUNITY_SCHEMA_VERSION,
   DREAMER_V4_VISIBILITY_SCHEMA_VERSION,
-  formatBaseDreamerV2FirstNightActionOpportunityId
+  formatBaseDreamerV2FirstNightActionOpportunityId,
+  validateFirstNightActionOpportunityStateShape
 } from "./first-night-action-opportunity.js";
 import type { DreamerActionOpportunityV3, DreamerActionOpportunityV4 } from "./first-night-action-opportunity.js";
 import {
   formatBaseFirstNightAbilityInstanceId,
   formatPhilosopherGainedV2AbilityInstanceId
 } from "./first-night-ability-outcome-ledger.js";
-import { formatRoleTenureId } from "./seamstress.js";
+import {
+  formatRoleTenureId,
+  validateRoleTenureStateAgainstCurrentCharacterState,
+  validateRoleTenureStateExact
+} from "./seamstress.js";
 import type { RoleTenureState } from "./seamstress.js";
+import { validateRoleSetupSnapshot } from "./setup-types.js";
 import type { GeneratedSetup, RoleSetupSnapshot } from "./setup-types.js";
 
 const role = (
@@ -664,6 +670,7 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
       evaluatedCharacterStateRevision: 1,
       currentDemonConstraint: { kind: "UNIQUE_CURRENT_FANG_GU", demonPlayerId: playerId("demon-player") }
     });
+    expect(resolve()).toStrictEqual(facts.capability);
     expect(resolve({ abilityImpairments: { impairments: [poisonedImpairment] } })).toStrictEqual({
       kind: "SOURCE_REPRESENTED_IMPAIRED",
       impairmentId: poisonedImpairment.impairmentId,
@@ -756,9 +763,23 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
         impairmentId: canonicalDrunk.impairmentId,
         impairmentKind: "DRUNK"
       });
+    const mismatchedFangGuRole: RoleSetupSnapshot = {
+      ...fangGuRole,
+      setupModifier: { outsiderDelta: 1, townsfolkDelta: -1 }
+    };
+    const mismatchedFangGuState: CurrentCharacterStateSet = {
+      ...facts.state,
+      entries: facts.state.entries.map((entry) => entry.role.roleId === "fang_gu"
+        ? { ...entry, role: mismatchedFangGuRole }
+        : entry)
+    };
+    const canonicalCatalogFangGu = facts.setup.roleCatalogSnapshot.roles.find((entry) =>
+      entry.roleId === "fang_gu");
+    expect(canonicalCatalogFangGu).toBeDefined();
+    expect(validateRoleSetupSnapshot(mismatchedFangGuRole)).toBe(true);
+    expect(validateRoleSetupSnapshot(canonicalCatalogFangGu!)).toBe(true);
     expect(resolve({
-      currentCharacterState: anotherDemonState,
-      setup: anotherDemonSetup,
+      currentCharacterState: mismatchedFangGuState,
       abilityImpairments: undefined
     })).toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "CURRENT_DEMON_CATALOG_MISMATCH" });
     expect(resolve({
@@ -778,8 +799,21 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
       kind: "NORMAL_INFORMATION_SUPPORTED",
       evaluatedCharacterStateRevision: 1
     });
+    const missingSourceTenure: RoleTenureState = {
+      records: [],
+      processedTransitionFactIds: []
+    };
+    expect(validateFirstNightActionOpportunityStateShape(facts.opportunities)).toStrictEqual({ valid: true });
+    expect(validateRoleTenureStateExact(missingSourceTenure)).toStrictEqual({ valid: true });
+    expect(validateRoleTenureStateAgainstCurrentCharacterState({
+      roleTenures: missingSourceTenure,
+      currentCharacterState: facts.state
+    }).valid).toBe(false);
+    expect(resolve({ roleTenures: missingSourceTenure })).toStrictEqual({
+      kind: "EFFECTIVENESS_UNRESOLVED",
+      reason: "SOURCE_PROVENANCE_INVALID"
+    });
     const provenanceCases: Parameters<typeof resolve>[0][] = [
-      { roleTenures: { records: [], processedTransitionFactIds: [] } },
       {
         currentCharacterState: {
           ...facts.state,
@@ -908,6 +942,14 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
         return firstCandidate;
       }
     });
+    const nonEnumerableNumeric = structuredClone(facts.delivery);
+    const nonEnumerableCandidate = nonEnumerableNumeric.apparentPairDecision.legalCandidates[0]!;
+    Object.defineProperty(nonEnumerableNumeric.apparentPairDecision.legalCandidates, "0", {
+      enumerable: false,
+      configurable: true,
+      writable: true,
+      value: nonEnumerableCandidate
+    });
     const numericSetter = structuredClone(facts.delivery);
     Object.defineProperty(numericSetter.apparentPairDecision.legalCandidates, "0", {
       enumerable: true,
@@ -975,6 +1017,7 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
       cycle,
       nonplain,
       sparse,
+      nonEnumerableNumeric,
       numericSetter,
       throwingNumericGetter,
       noncanonicalNumericKey,
@@ -996,6 +1039,13 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
       valid: false,
       reason: "DreamerInformationDelivered payload must use exception-safe canonical data"
     });
+    expect(validateDreamerInformationDeliveredPayload(
+      nonEnumerableNumeric,
+      validationInput(facts)
+    )).toStrictEqual({
+      valid: false,
+      reason: "DreamerInformationDelivered payload must use exception-safe canonical data"
+    });
     const storedSourceFacts: StoredDreamerSourceFacts = {
       rulesBaselineVersion: "Phase One v2.1",
       setup: facts.setup,
@@ -1012,6 +1062,10 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
       }
     };
     expect(validateStoredDreamerInformationDelivered(numericGetter, storedSourceFacts)).toStrictEqual({
+      valid: false,
+      reason: "Stored DreamerInformationDelivered payload must use exception-safe canonical data"
+    });
+    expect(validateStoredDreamerInformationDelivered(nonEnumerableNumeric, storedSourceFacts)).toStrictEqual({
       valid: false,
       reason: "Stored DreamerInformationDelivered payload must use exception-safe canonical data"
     });

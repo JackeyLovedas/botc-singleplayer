@@ -1,6 +1,6 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A Product Repair Round 2 implementation authorized
+## Current state — Phase 3 Slice 2B20A Product Repair Round 2 local implementation complete
 
 - Authorization
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`
@@ -22,21 +22,31 @@
   allowlists, resolver freeze and stop-loss all passed independent review.
 - PR #46 remains open at remote HEAD
   `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
-- Control is `RUNNING / PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_AUTHORIZED`,
-  `ruleDesignPass=true`, `implementationAuthorized=true`,
+- F01/C20 now enforces numeric-element enumerability through direct, public and
+  stored validation with zero getter calls and a legal enumerable control.
+- C34 adds only the approved M06 exact-valid empty source-tenure witness and
+  M08 independently valid Fang Gu setup-modifier mismatch; the resolver body
+  is unchanged and C37 remains read-only.
+- All eight authorized local gates passed: focused C20 `1/1`, focused C34
+  `1/1`, focused C37 `1/1`, Dreamer `77/77`, application service `296/296`,
+  typecheck, lint, and ordinary `35 files / 1572 tests`.
+- Control is `HUMAN_BLOCKED /
+  PRODUCT_REPAIR_ROUND_2_LOCAL_IMPLEMENTATION_COMPLETE_PENDING_INDEPENDENT_REPAIR_REVIEW`,
+  `ruleDesignPass=true`, `implementationAuthorized=false`,
   `designCorrectionRound=2/2`, `designCorrectionPass=2/2`, and
-  `productRepairRound=1/2`.
-- The first production or formal-test edit consumes the final Product Repair
-  Round `2/2`; no Product Repair Round 3 exists.
-- Active blockers are F01, F04, ownership supersession/routing, Linux worker
-  RPC, and Windows W7 unknown exit.
+  `productRepairRound=2/2`.
+- The first production and formal-test edit consumed the final Product Repair
+  Round; no Product Repair Round 3 exists.
+- Active blockers are pending independent implementation review, ownership
+  supersession/routing, Linux worker RPC, and Windows W7 unknown exit.
 - Required next action:
-  `IMPLEMENT_PRODUCT_REPAIR_ROUND_2_F01_C34`.
-- No production-code, test, prior-review, push, PR, CI, coverage, ownership,
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_REVIEW`.
+- Exactly one production file, one test file and four controls changed. No
+  application test, push, PR, CI, coverage, ownership, Windows harness,
   workflow, profile, or 2B20B change was performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 implementation-authorized state.
+not override the active Product Repair Round 2 local implementation state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
