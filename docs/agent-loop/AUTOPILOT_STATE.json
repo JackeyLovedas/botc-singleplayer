@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "2B20AP1_FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
+  "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1581,7 +1581,7 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "2B20AP1_FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
+    "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1614,6 +1614,71 @@
     "designReviewFindings": [],
     "ruleDesignPass": true,
     "remainingDesignBlockers": [],
+    "lfAmendment": {
+      "amendmentId": "2B20AP1-LF1",
+      "authorization": "USER_AUTHORIZED_2B20AP1_LF_SAFE_IDENTITY_ENCODING_AMENDMENT_AND_LOCAL_END_TO_END_CLOSURE",
+      "path": "docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1.md",
+      "sha256": "8afd177afb888a55f5482cb633207d974f79248d968c99d70651ee112c274b20",
+      "bytes": 18650,
+      "lfLineCount": 357,
+      "terminal": "READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
+      "status": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
+      "reviewVerdict": null,
+      "reviewPass": false,
+      "remainingReviewBlockers": [
+        "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW"
+      ],
+      "infrastructureDesignChanged": true,
+      "infrastructureDesignChangeScope": "IDENTITY_ENCODING_ONLY",
+      "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
+      "canonicalIdentityDefinition": "[project,file,ancestorPath,title]",
+      "canonicalInventoryEncoding": "UTF-8(JSON.stringify(sortedCanonicalTuples) + LF)",
+      "lfIdentityCount": 12,
+      "lfIdentityFields": "title only",
+      "lfIsLegalVitestMetadata": true,
+      "testTitlesChanged": false,
+      "legacyHashesChanged": false,
+      "acceptedInventoryMigrationRequired": false,
+      "dualHashBridgeRequired": false,
+      "dualHashBridgeStatus": "NOT_APPLICABLE_NO_ACCEPTED_INVENTORY_MIGRATION",
+      "freshInventory": {
+        "node": "v24.15.0",
+        "pnpm": "11.7.0",
+        "records": 1572,
+        "lfRecords": 12,
+        "crRecords": 0,
+        "bytes": 436062,
+        "sha256": "f596c3ef79d5f37dcbd06326ea97efc59bddc35588a00702c364c57b76064bcf",
+        "temporaryInventoryRemoved": true,
+        "temporaryAnalysisBytes": 5818,
+        "temporaryAnalysisSha256": "cb4e87bc3aa96abcfa0a4baa324c093d277ada35b5ba1ae9e1bf011d91faa43e",
+        "temporaryAnalysisRemoved": true
+      },
+      "externalTempArtifacts": {
+        "disposition": "OPERATIONAL_RECOVERY_TEMP_ARTIFACT_RETAINED_NON_GATING",
+        "deleteAttemptCount": 1,
+        "deleteAttemptResult": "REJECTED_BEFORE_EXECUTION_BY_TOOL_POLICY",
+        "newWorkDependencyAllowed": false,
+        "seed": {
+          "path": "C:\\Users\\wjl\\AppData\\Local\\Temp\\tmp30A8.tmp",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "secretAssessment": "EMPTY_NO_SECRET",
+          "exists": true
+        },
+        "inventory": {
+          "path": "C:\\Users\\wjl\\AppData\\Local\\Temp\\tmp30A8.tmp.inventory.json",
+          "bytes": 435728,
+          "sha256": "a76758ea7c162cc96710c7a3765fadf622091e0e7e32cd393e47692e2920074f",
+          "secretAssessment": "NO_CREDENTIAL_OR_CANONICAL_GAME_SECRET_CONTAINS_LOCAL_ABSOLUTE_PATH_METADATA",
+          "exists": true
+        },
+        "candidate": {
+          "path": "C:\\Users\\wjl\\AppData\\Local\\Temp\\tmp30A8.tmp.candidate.json",
+          "exists": false
+        }
+      }
+    },
     "implementationAuthorized": false,
     "implementationContinuationAuthorized": false,
     "implementationCommit": null,
@@ -1645,18 +1710,18 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "NOT_LOCALLY_CLOSED_HUMAN_BLOCKED",
+    "ownershipStatus": "NOT_LOCALLY_CLOSED_PENDING_LF_AMENDMENT_REVIEW",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
+      "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "REQUEST_NEW_USER_DESIGN_AUTHORIZATION_OR_RESLICE_FOR_LF_IDENTITY_ENCODING_OR_12_TITLE_ADJUSTMENT"
+    "nextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2612,7 +2677,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
+    "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3381,8 +3446,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the independent 2B20AP1 frozen raw-inventory feasibility triage verbatim, restored all seven uncommitted phase-2 drafts exactly to HEAD 3c9ff67e7a08eccb336936883be5b8e1fe1768db, and recorded the first and only candidate attempt exit 1 with VITEST_RAW_INVENTORY_INVALID_NAME and no candidate file. The triage returned HUMAN_BLOCKED for FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT; Design Round remains 3/3, Design Correction 2/2, Infrastructure Repair 0/2, and Product Repair remains complete and unchanged.",
-  "lastError": "FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
-  "requiredNextAction": "REQUEST_NEW_USER_DESIGN_AUTHORIZATION_OR_RESLICE_FOR_LF_IDENTITY_ENCODING_OR_12_TITLE_ADJUSTMENT",
-  "nextAction": "REQUEST_NEW_USER_DESIGN_AUTHORIZATION_OR_RESLICE_FOR_LF_IDENTITY_ENCODING_OR_12_TITLE_ADJUSTMENT"
+  "lastAction": "Materialized the bounded 2B20AP1-LF1 identity-encoding amendment after one fresh 1572-record Vitest list proved 12 legal LF-bearing accepted 2B18B titles. The amendment freezes vitest-semantic-identity-json-tuple-v1, preserves all accepted frozen hashes without a dual-hash migration, removes both repository-local temporary evidence files, records the retained old OS-temp artifacts as non-gating, and leaves implementation unauthorized pending independent amendment review. Infrastructure Repair remains 0/2.",
+  "lastError": null,
+  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
+  "nextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW"
 }

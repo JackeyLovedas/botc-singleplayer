@@ -1,6 +1,56 @@
 # Current Task
 
-## 2B20AP1 — HUMAN_BLOCKED by frozen raw Vitest name contract conflict
+## 2B20AP1-LF1 — amendment pending independent review
+
+- Authorization is
+  `USER_AUTHORIZED_2B20AP1_LF_SAFE_IDENTITY_ENCODING_AMENDMENT_AND_LOCAL_END_TO_END_CLOSURE`.
+- The bounded amendment is
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1.md`,
+  exact UTF-8 SHA-256
+  `8afd177afb888a55f5482cb633207d974f79248d968c99d70651ee112c274b20`,
+  `18650` bytes and `357` LF lines. Its terminal is
+  `READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW`.
+- This is not Design Round 4. The immutable parent remains Round 3,
+  SHA-256
+  `4f2fab7b877ca98e1fb46974661874353dd78a1c6b388cb91d3031c59608e003`,
+  with its independent `RULE_DESIGN_PASS`.
+- Fresh Node `v24.15.0` / Corepack pnpm `11.7.0` list evidence contains
+  `1572` records and exactly `12` legal LF-bearing identities. The temporary
+  raw inventory was `436062` bytes, SHA-256
+  `f596c3ef79d5f37dcbd06326ea97efc59bddc35588a00702c364c57b76064bcf`;
+  the raw inventory and repository-local analysis result were removed.
+- All twelve are accepted 2B18B dynamic test titles in
+  `packages/application/src/mathematician-information.test.ts`. LF occurs only
+  in `title`, not in `ancestorPath`; no title was changed.
+- The amendment freezes
+  `vitest-semantic-identity-json-tuple-v1` over
+  `[project,file,ancestorPath,title]`, with
+  `JSON.stringify(sortedCanonicalTuples) + LF` as canonical inventory bytes.
+  Raw `name` remains transport/display metadata and must be multiset-checked
+  against a structured source from the same existing Vitest discovery.
+- Old A3A/A3B1/A3B2/B19B frozen hashes are unaffected and remain byte-exact.
+  No accepted inventory migrates, so `dualHashBridgeRequired=false`.
+- The old external OS-temp seed and inventory remain after the one safe
+  non-recursive deletion attempt was rejected before execution:
+  `OPERATIONAL_RECOVERY_TEMP_ARTIFACT_RETAINED_NON_GATING`. No new work may
+  depend on them.
+- Canonical control is `HUMAN_BLOCKED /
+  PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW`.
+- No script, test, workflow, production, profile, implementation, candidate,
+  test/coverage gate, push, PR, CI, Linux/Windows investigation, or 2B20B work
+  is authorized.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active amendment-review-pending state.
+
+## Historical checkpoint — 2B20AP1 frozen raw Vitest name contract conflict
 
 - The complete final replacement design is
   `docs/implementation/phase-3-slice-2b20ap1-design-round-3.md`, exact UTF-8
@@ -52,8 +102,8 @@
   investigation, full local coverage, production/profile mutation, or 2B20B
   work remains unauthorized.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active HUMAN_BLOCKED state.
+The historical conflict above is the target of the pending amendment review;
+it is not claimed closed before an independent `RULE_DESIGN_PASS`.
 
 ## Historical checkpoint — 2B20AP1 design materialized, independent rule-design review pending
 
