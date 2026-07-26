@@ -1,30 +1,32 @@
 # Project State
 
-## Current state — 2B20AP1 design round 1 fix required
+## Current state — 2B20AP1 design round 2 awaiting independent review
 
-- Independent design review round 1 is archived verbatim at
-  `docs/implementation/phase-3-slice-2b20ap1-design-review-round-1.md`,
+- The complete self-contained Round 2 replacement design is
+  `docs/implementation/phase-3-slice-2b20ap1-design-round-2.md`, exact UTF-8
   SHA-256
-  `eedea1f3c721c1878683700b275cd164ee62c090eeb1298b88a39588db548943`,
-  `13522` bytes and `195` LF-normalized lines.
-- It is bound to exact reviewed HEAD
-  `43c764f3e6542afd93994032338f045d121965ae`.
-- Verdict is `RULE_DESIGN_FIX_REQUIRED`; exact design blockers are D01 through
-  D09 as preserved in the review archive and active JSON control.
+  `aac241bc6207af83d78125c0ac311d608207113d1f3340f9cb846a88c74747bc`,
+  `28349` bytes and `218` LF-normalized lines.
+- Its terminal is `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`; it closes only the
+  Round 1 D01-D09 design findings and preserves the immutable parent
+  design/review/governance history.
 - Control is `HUMAN_BLOCKED /
-  2B20AP1_DESIGN_REVIEW_ROUND_1_FIX_REQUIRED`; `designRound=1/2`,
-  `designCorrectionRound=1`, `ruleDesignPass=false`, and
+  2B20AP1_DESIGN_ROUND_2_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW`;
+  `designRound=2/2`, `designCorrectionRound=1`, `ruleDesignPass=false`, and
   `implementationAuthorized=false`.
 - Infrastructure Repair remains `0/2`; Product Repair is untouched.
-  Governance remains `GO`; rules, product behavior, coverage profiles and role
-  coverage are unchanged.
-- Linux worker RPC and Windows W7 unknown-exit blockers remain.
-- Required next action is `CREATE_2B20AP1_DESIGN_ROUND_2_CORRECTION`.
+  Governance remains `GO`; rules, product behavior, coverage profiles,
+  topology, processes, timeouts, dependencies and role coverage are unchanged.
+- Remaining design blocker is
+  `PENDING_INDEPENDENT_2B20AP1_DESIGN_ROUND_2_REVIEW`; Linux worker RPC and
+  Windows W7 unknown-exit blockers remain.
+- Required next action is
+  `RUN_2B20AP1_INDEPENDENT_DESIGN_ROUND_2_REVIEW`.
 - No implementation, push, PR, CI, Linux/Windows investigation, or 2B20B work
   is authorized.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active design-correction-required state.
+not override the active Round 2 design-review-pending state.
 
 ## Historical checkpoint — 2B20AP1 design awaiting independent rule-design review
 

@@ -1,38 +1,33 @@
 # Current Task
 
-## 2B20AP1 design review round 1 — correction required
+## 2B20AP1 design round 2 — independent rule-design review pending
 
-- The complete independent review is archived verbatim at
-  `docs/implementation/phase-3-slice-2b20ap1-design-review-round-1.md`,
+- The complete self-contained replacement design is
+  `docs/implementation/phase-3-slice-2b20ap1-design-round-2.md`, exact UTF-8
   SHA-256
-  `eedea1f3c721c1878683700b275cd164ee62c090eeb1298b88a39588db548943`,
-  `13522` bytes and `195` LF-normalized lines.
-- It reviewed exact HEAD `43c764f3e6542afd93994032338f045d121965ae`
-  at `2026-07-26T05:56:16.5292898Z`.
-- Reviewer verdict is exactly `RULE_DESIGN_FIX_REQUIRED`; the nine exact
-  design blockers are:
-  `D01_OWNERSHIP_CONTRACT_RUNTIME_SHAPE_INVALID`,
-  `D02_REAL_PATHS_AND_CLI_DO_NOT_MATCH`,
-  `D03_C28_C29_PHYSICAL_IDENTITIES_INCORRECT`,
-  `D04_C30_IS_STILL_A_BORROWED_REGISTERED_PRIMARY`,
-  `D05_SUP_REGISTRY_VIOLATES_REVIEW_PROTOCOL_SCHEMA`,
-  `D06_LOCAL_GATE_EXCEEDS_USER_B6_AUTHORITY`,
-  `D07_CANDIDATE_BASELINE_CLI_AND_OUTPUT_UNDEFINED`,
-  `D08_CONTROL_DOC_ALLOWLIST_IS_INCOMPLETE_AND_NAMES_NONEXISTENT_FILES`, and
-  `D09_SUPERSESSION_GRAPH_AND_SUBCASE_PROOF_NOT_SELF_CONTAINED`.
+  `aac241bc6207af83d78125c0ac311d608207113d1f3340f9cb846a88c74747bc`,
+  `28349` bytes and `218` LF-normalized lines.
+- Its terminal is exactly `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`.
+- It preserves governance `GO` and closes only the Round 1 D01-D09 design
+  contract findings. The original design, Round 1 review, and governance
+  report remain immutable history.
 - Canonical state is `HUMAN_BLOCKED /
-  2B20AP1_DESIGN_REVIEW_ROUND_1_FIX_REQUIRED`.
-- `designRound=1/2`, `designCorrectionRound=1`,
+  2B20AP1_DESIGN_ROUND_2_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW`.
+- `designRound=2/2`, `designCorrectionRound=1`,
   `ruleDesignPass=false`, and `implementationAuthorized=false`.
 - Infrastructure Repair remains `0/2`; Product Repair is untouched.
-  Governance remains `GO`; rules, product behavior, and profiles are unchanged.
-- Linux worker RPC and Windows W7 unknown-exit blockers remain.
-- Required next action is `CREATE_2B20AP1_DESIGN_ROUND_2_CORRECTION`.
-- The original design is immutable review history. No implementation, push,
+  Rules, product behavior, profiles, topology, processes, timeouts, and
+  dependencies are unchanged.
+- Remaining design blocker is
+  `PENDING_INDEPENDENT_2B20AP1_DESIGN_ROUND_2_REVIEW`; Linux worker RPC and
+  Windows W7 unknown-exit blockers remain.
+- Required next action is
+  `RUN_2B20AP1_INDEPENDENT_DESIGN_ROUND_2_REVIEW`.
+- No implementation, script/test/workflow/production/profile mutation, push,
   PR, CI, Linux/Windows investigation, or 2B20B work is authorized.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active design-correction-required state.
+not override the active Round 2 design-review-pending state.
 
 ## Historical checkpoint — 2B20AP1 design materialized, independent rule-design review pending
 
