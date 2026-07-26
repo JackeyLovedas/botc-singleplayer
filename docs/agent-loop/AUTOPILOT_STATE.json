@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "2B20AP1_LF_AMENDMENT_CORRECTION_BUDGET_EXHAUSTED",
+  "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1581,7 +1581,7 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "2B20AP1_LF_AMENDMENT_CORRECTION_BUDGET_EXHAUSTED",
+    "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1622,13 +1622,11 @@
       "bytes": 18650,
       "lfLineCount": 357,
       "terminal": "READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
-      "status": "CORRECTION_BUDGET_EXHAUSTED_HUMAN_BLOCKED",
-      "reviewVerdict": "HUMAN_BLOCKED",
+      "status": "PUBLIC_VITEST_LIFECYCLE_OVERRIDE_MATERIALIZED_PENDING_INDEPENDENT_REVIEW",
+      "reviewVerdict": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
       "reviewPass": false,
       "remainingReviewBlockers": [
-        "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN",
-        "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION",
-        "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE"
+        "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
       ],
       "amendmentCorrectionRound": 2,
       "maxAmendmentCorrectionRounds": 2,
@@ -1750,6 +1748,98 @@
         "lf3Closure": "NOT_CLOSED",
         "implementationAuthorized": false
       },
+      "publicVitestLifecycleOverride": {
+        "overrideId": "2B20AP1-PUBLIC-VITEST-LIFECYCLE-OVERRIDE-V1",
+        "authorization": "USER_AUTHORIZED_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_AND_LOCAL_END_TO_END_CLOSURE",
+        "classification": "BOUNDED_PUBLIC_API_LIFECYCLE_REPLACEMENT / NON_PRODUCT / DOCS_CONTROL_ONLY / NOT_DESIGN_ROUND_4",
+        "path": "docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-v1.md",
+        "sha256": "f944d431e9003a52eb4b0d1c8d5f5fcc20e820430d185f3649521e1605010d0b",
+        "bytes": 22587,
+        "lfLineCount": 494,
+        "terminal": "READY_FOR_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
+        "materializationParentHead": "0b895c4a2056fbe2bac41802b3a5efd6dcc82600",
+        "futureMaterializationShaRecorded": false,
+        "status": "HUMAN_BLOCKED",
+        "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
+        "reviewVerdict": "PENDING",
+        "remainingReviewBlockers": [
+          "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
+        ],
+        "implementationAuthorized": false,
+        "candidateAuthorized": false,
+        "infrastructureRepairRoundConsumed": false,
+        "infrastructureRepairRound": 0,
+        "maxInfrastructureRepairRounds": 2,
+        "vitestVersion": "3.2.6",
+        "publicApiSurface": [
+          "createVitest",
+          "globTestSpecifications",
+          "collect OR collectTests",
+          "TestModule / TestCase structured results",
+          "close"
+        ],
+        "observableWrapperPhases": [
+          "CREATING",
+          "COLLECTING",
+          "VALIDATING_OR_ENCODING",
+          "CLOSING",
+          "PUBLISHING",
+          "SUCCEEDED"
+        ],
+        "failureClassifications": [
+          "CREATE_FAILED",
+          "COLLECT_FAILED",
+          "VALIDATE_OR_ENCODE_FAILED",
+          "CLOSE_FAILED",
+          "PUBLISH_FAILED"
+        ],
+        "createRejectContract": "NO_RETURNED_OR_USABLE_INSTANCE_NO_CALLER_CLOSE_OBLIGATION_NO_CANDIDATE",
+        "collectionContract": "REPOSITORY_COLLECT_SEMANTIC_INVENTORY_WRAPPER_ENTRY_EXACTLY_ONCE_AFTER_SUCCESSFUL_CREATE_USING_ONLY_PUBLIC_VITEST_APIS",
+        "internalGlobInvocationCountAuthoritative": false,
+        "structuredIdentityContract": "[project,file,ancestorPath,title]",
+        "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
+        "structuredIdentityCount": 1572,
+        "lfTitleCount": 12,
+        "literalLfCrCrlfPreserved": true,
+        "testTitlesChanged": false,
+        "closeContract": "PUBLIC_CLOSE_AWAITED_EXACTLY_ONCE_FOR_EVERY_SUCCESSFULLY_RETURNED_INSTANCE",
+        "preReturnCloseRequired": false,
+        "privateClosingPromiseInspectionAllowed": false,
+        "combinedFailureContract": "PRIMARY_AND_CLOSE_ERRORS_BOTH_RETAINED_NO_CANDIDATE",
+        "publicationContract": "CANDIDATE_PRIVATE_UNTIL_CLOSE_SUCCESS_THEN_SAME_DIRECTORY_ATOMIC_REPLACEMENT_NO_PARTIAL_FINAL",
+        "diagnosticContract": "OBSERVABLE_REPOSITORY_WRAPPER_PHASES_CREATE_AWAIT_DIAGNOSTICS_ALLOWED_NO_PRIVATE_ORDERING_GATE",
+        "historicalFindingDispositions": {
+          "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN": "DESIGN_CONTRACT_REPLACED_BY_PUBLIC_API_PHASE_AWARE_DIAGNOSTICS",
+          "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION": "INTERNAL_INVOCATION_COUNT_NOT_AN_ACCEPTANCE_AUTHORITY",
+          "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE": "PRE_RETURN_CLOSE_NOT_REQUIRED_AND_NOT_EXPRESSIBLE"
+        },
+        "historicalFindingsAreActiveBlockers": false,
+        "requiredWrapperSelfTestGroupCount": 12,
+        "requiredRealIntegration": "VITEST_3_2_6 / 1572_IDENTITIES / 12_LF_TITLES / DETERMINISTIC_CANDIDATE / NORMAL_EXIT_NO_HANG",
+        "newScriptOrTestFileAuthorized": false,
+        "newWorkspaceProjectAuthorized": false,
+        "newProcessGroupAuthorized": false,
+        "newCoverageProfileAuthorized": false,
+        "dependencyChangeAuthorized": false,
+        "timeoutChangeAuthorized": false,
+        "futureImplementationAllowlist": [
+          "scripts/vitest-ownership-contracts.mjs",
+          "scripts/verify-vitest-ownership-contracts.mjs",
+          "scripts/verify-vitest-coverage-groups.mjs",
+          ".github/workflows/ci.yml",
+          "packages/application/src/game-application-service.test.ts",
+          "packages/domain-core/src/rebuild.test.ts",
+          "docs/implementation/phase-3-slice-2b20a-test-traceability.md",
+          "docs/agent-loop/CURRENT_TASK.md",
+          "docs/agent-loop/PROJECT_STATE.md",
+          "docs/agent-loop/AUTOPILOT_STATE.json",
+          "docs/agent-loop/AUTOPILOT_LOG.md"
+        ],
+        "productionFilesAuthorized": false,
+        "mathematicianTitleFilesAuthorized": false,
+        "maxDocsControlCorrections": 2,
+        "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
+      },
       "infrastructureDesignChanged": true,
       "infrastructureDesignChangeScope": "IDENTITY_ENCODING_ONLY",
       "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
@@ -1832,20 +1922,18 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "NOT_LOCALLY_CLOSED_LF_AMENDMENT_CORRECTION_BUDGET_EXHAUSTED",
+    "ownershipStatus": "NOT_LOCALLY_CLOSED_PENDING_INDEPENDENT_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN",
-      "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION",
-      "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE",
+      "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "REQUEST_NEW_USER_AUTHORIZATION_FOR_2B20AP1_LF_LIFECYCLE_DESIGN_CORRECTION_OR_RESLICE"
+    "nextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2801,9 +2889,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN",
-    "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION",
-    "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE",
+    "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3572,8 +3658,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete final independent 2B20AP1-LF1 amendment review verbatim and performed docs/control-only Operational Recovery. The reviewer returned HUMAN_BLOCKED with exact blockers LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN, LF1-GLOB_INVOCATION_COUNT_CONTRADICTION and LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE. LF2 is closed; LF1 and LF3 are not closed. Amendment Correction 2/2 is exhausted, no Correction 3 or implementation commit is authorized, implementationAuthorized remains false and Infrastructure Repair remains 0/2. Product Repair completion is retained and downstream Linux/Windows blockers remain.",
+  "lastAction": "Materialized the complete user-authorized 2B20AP1 public Vitest lifecycle override and synchronized only four active controls. The replacement freezes observable public create, one repository collectSemanticInventory wrapper entry, structured validation/encoding, exact-once close for each successfully returned instance, primary-plus-close error retention and same-directory atomic candidate publication only after close success. Historical Correction 2 phase, internal-glob-count and pre-return-close findings are preserved with explicit replacement dispositions and are not active blockers pending independent override review. No implementation, candidate, test, coverage, Infrastructure Repair, push, PR, CI or downstream investigation occurred.",
   "lastError": null,
-  "requiredNextAction": "REQUEST_NEW_USER_AUTHORIZATION_FOR_2B20AP1_LF_LIFECYCLE_DESIGN_CORRECTION_OR_RESLICE",
-  "nextAction": "REQUEST_NEW_USER_AUTHORIZATION_FOR_2B20AP1_LF_LIFECYCLE_DESIGN_CORRECTION_OR_RESLICE"
+  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
+  "nextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
 }

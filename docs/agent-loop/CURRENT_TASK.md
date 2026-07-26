@@ -1,5 +1,83 @@
 # Current Task
 
+## 2B20AP1 — public Vitest lifecycle override pending independent review
+
+- Authorization is
+  `USER_AUTHORIZED_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_AND_LOCAL_END_TO_END_CLOSURE`.
+- The complete bounded replacement authority is
+  `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-v1.md`,
+  exact UTF-8 SHA-256
+  `f944d431e9003a52eb4b0d1c8d5f5fcc20e820430d185f3649521e1605010d0b`,
+  `22587` bytes and `494` LF lines. Its terminal is
+  `READY_FOR_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW`.
+- Override ID is `2B20AP1-PUBLIC-VITEST-LIFECYCLE-OVERRIDE-V1`. It was
+  materialized from parent HEAD
+  `0b895c4a2056fbe2bac41802b3a5efd6dcc82600`, is not Design Round 4 and
+  records no impossible future materialization SHA.
+- The immutable parent remains Round 3,
+  `docs/implementation/phase-3-slice-2b20ap1-design-round-3.md`,
+  SHA-256
+  `4f2fab7b877ca98e1fb46974661874353dd78a1c6b388cb91d3031c59608e003`,
+  with independent `RULE_DESIGN_PASS`. The latest LF Correction 2 and its
+  final `HUMAN_BLOCKED` review remain immutable history.
+- The override replaces only the public Vitest lifecycle contract. A rejected
+  `createVitest` returns no usable instance, creates no caller close obligation
+  and publishes no candidate. After successful creation, repository
+  `collectSemanticInventory` is entered exactly once using public Vitest
+  `3.2.6` collection APIs and structured `TestModule` / `TestCase` data;
+  Vitest's internal glob invocation count is non-authoritative.
+- Validation and encoding preserve exact
+  `[project,file,ancestorPath,title]` tuples, literal LF/CR/CRLF string data,
+  `vitest-semantic-identity-json-tuple-v1`, ordinal sorting, all `1572`
+  identities and all `12` LF titles. Duplicate, collision, path, ancestor or
+  encoding failures close the returned instance once and publish no candidate.
+- Public `close()` is awaited exactly once for every successfully returned
+  instance. A close failure publishes no candidate; a primary plus close
+  failure retains both errors. Candidate bytes remain private until close
+  succeeds and are then published by same-directory atomic replacement; every
+  failure leaves no partial final.
+- Diagnostics use observable repository-wrapper phases. Warning/deprecation
+  output received while awaiting create is create-stage diagnostic evidence,
+  not a private Vitest ordering gate. Correction 2's internal phase,
+  internal-glob-count and pre-return-close requirements do not survive.
+- The three final-review finding IDs remain historical and are not renamed or
+  recreated as active blockers:
+  `LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN` is disposed as
+  `DESIGN_CONTRACT_REPLACED_BY_PUBLIC_API_PHASE_AWARE_DIAGNOSTICS`;
+  `LF1-GLOB_INVOCATION_COUNT_CONTRADICTION` as
+  `INTERNAL_INVOCATION_COUNT_NOT_AN_ACCEPTANCE_AUTHORITY`; and
+  `LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE` as
+  `PRE_RETURN_CLOSE_NOT_REQUIRED_AND_NOT_EXPRESSIBLE`.
+- Future implementation must prove the exact twelve wrapper self-test groups,
+  real Vitest `3.2.6` integration with `1572` identities / `12` LF titles,
+  deterministic candidate bytes and normal process exit with no hanging watch
+  resources or private `closingPromise` inspection.
+- The inherited exact future implementation allowlist is eleven existing
+  files: the three ownership scripts, `.github/workflows/ci.yml`, the existing
+  application-service and domain-core test files, the existing 2B20A
+  traceability document and these four controls. No new script/test file,
+  mathematician-title file, production file, workspace project, profile,
+  process group, dependency or timeout is authorized.
+- Canonical control is `HUMAN_BLOCKED /
+  PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW`.
+  Only a complete independent `RULE_DESIGN_PASS` with
+  `remainingBlockers=[]` can authorize a later implementation turn. Up to two
+  in-scope docs/control-only corrections may follow a
+  `RULE_DESIGN_FIX_REQUIRED` without consuming Infrastructure Repair.
+- No script, test, workflow, production, profile, candidate, product test,
+  coverage, implementation, Infrastructure Repair, push, PR, CI,
+  Linux/Windows investigation or next-slice work was performed.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active public-lifecycle-override review gate.
+
 ## 2B20AP1-LF1 — amendment correction budget exhausted
 
 - The complete final independent amendment review is archived verbatim at
@@ -41,8 +119,8 @@
   push, PR, CI, Linux/Windows investigation, or next-slice work is authorized
   or was performed.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active correction-budget-exhausted state.
+All sections below this historical checkpoint are retained as history; they do
+not override the active public-lifecycle-override review gate.
 
 ## Historical checkpoint — final Correction 2 pending independent review
 
