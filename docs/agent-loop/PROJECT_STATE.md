@@ -1,6 +1,32 @@
 # Project State
 
-## Current state — 2B20AP1 governance GO, design pending
+## Current state — 2B20AP1 design awaiting independent rule-design review
+
+- The complete bounded design is
+  `docs/implementation/phase-3-slice-2b20ap1-design.md`, exact UTF-8 SHA-256
+  `622d5e8572e933a38c5503fa80ee342c8acee084b62ed1578ede0569a3e22c46`,
+  `26534` bytes and `228` LF-normalized lines.
+- Its terminal is exactly `READY_FOR_RULE_DESIGN_REVIEW`.
+- Governance remains `GO`; task type remains
+  `CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT`.
+- Control is `HUMAN_BLOCKED /
+  2B20AP1_DESIGN_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW`;
+  `designRound=1/2`, `ruleDesignPass=false`, and
+  `implementationAuthorized=false`.
+- Infrastructure Repair remains `0/2`; Product Repair is untouched. Rules and
+  product behavior remain unchanged, and ownership remains not locally closed.
+- Active blockers are
+  `PENDING_2B20AP1_INDEPENDENT_RULE_DESIGN_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is `RUN_2B20AP1_INDEPENDENT_DESIGN_REVIEW`.
+- No implementation, script/test/workflow/profile mutation, push, PR, CI,
+  Linux/Windows investigation, or 2B20B work is authorized.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active 2B20AP1 design-review-pending state.
+
+## Historical checkpoint — 2B20AP1 governance GO, design pending
 
 - Active work is `CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT`, Slice
   `2B20AP1`, on local branch

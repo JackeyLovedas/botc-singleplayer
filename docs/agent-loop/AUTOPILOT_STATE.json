@@ -1,6 +1,6 @@
 {
-  "status": "RUNNING",
-  "detailedStatus": "2B20AP1_GOVERNANCE_GO_READY_FOR_COMPLETE_INFRASTRUCTURE_DESIGN",
+  "status": "HUMAN_BLOCKED",
+  "detailedStatus": "2B20AP1_DESIGN_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1580,8 +1580,8 @@
     ]
   },
   "slice2B20AP1Gate": {
-    "status": "RUNNING",
-    "detailedStatus": "2B20AP1_GOVERNANCE_GO_READY_FOR_COMPLETE_INFRASTRUCTURE_DESIGN",
+    "status": "HUMAN_BLOCKED",
+    "detailedStatus": "2B20AP1_DESIGN_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1591,6 +1591,14 @@
     "governanceBytes": 21690,
     "governanceLines": 588,
     "governanceVerdict": "GO",
+    "designPath": "docs/implementation/phase-3-slice-2b20ap1-design.md",
+    "designSha256": "622d5e8572e933a38c5503fa80ee342c8acee084b62ed1578ede0569a3e22c46",
+    "designBytes": 26534,
+    "designLfNormalizedLineCount": 228,
+    "designTerminal": "READY_FOR_RULE_DESIGN_REVIEW",
+    "designRound": 1,
+    "maxDesignRounds": 2,
+    "ruleDesignPass": false,
     "implementationAuthorized": false,
     "infrastructureRepairRound": 0,
     "maxInfrastructureRepairRounds": 2,
@@ -1604,11 +1612,11 @@
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN_AND_INDEPENDENT_REVIEW",
+      "PENDING_2B20AP1_INDEPENDENT_RULE_DESIGN_REVIEW",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "CREATE_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN"
+    "nextAction": "RUN_2B20AP1_INDEPENDENT_DESIGN_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2564,7 +2572,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN_AND_INDEPENDENT_REVIEW",
+    "PENDING_2B20AP1_INDEPENDENT_RULE_DESIGN_REVIEW",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3333,8 +3341,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the complete 2B20AP1 governance report for base 167d800e20bed5431764092877085886df4b7c93. Verdict GO authorizes only one complete bounded infrastructure design and independent review; implementation remains unauthorized, ownership is not locally closed, Infrastructure Repair remains 0/2, and Product Repair is not consumed.",
+  "lastAction": "Materialized the complete bounded 2B20AP1 infrastructure design at docs/implementation/phase-3-slice-2b20ap1-design.md from the architect's complete 4/4 report. The design is 26534 UTF-8 bytes, 228 LF-normalized lines, SHA-256 622d5e8572e933a38c5503fa80ee342c8acee084b62ed1578ede0569a3e22c46, and terminates READY_FOR_RULE_DESIGN_REVIEW. Implementation remains unauthorized pending independent review.",
   "lastError": null,
-  "requiredNextAction": "CREATE_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN",
-  "nextAction": "CREATE_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN"
+  "requiredNextAction": "RUN_2B20AP1_INDEPENDENT_DESIGN_REVIEW",
+  "nextAction": "RUN_2B20AP1_INDEPENDENT_DESIGN_REVIEW"
 }

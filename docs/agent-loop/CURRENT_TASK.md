@@ -1,6 +1,33 @@
 # Current Task
 
-## 2B20AP1 governance GO — complete infrastructure design pending
+## 2B20AP1 design materialized — independent rule-design review pending
+
+- The complete bounded design is
+  `docs/implementation/phase-3-slice-2b20ap1-design.md`, exact UTF-8 SHA-256
+  `622d5e8572e933a38c5503fa80ee342c8acee084b62ed1578ede0569a3e22c46`,
+  `26534` bytes and `228` LF-normalized lines.
+- The terminal is exactly `READY_FOR_RULE_DESIGN_REVIEW`.
+- Governance remains `GO` at commit
+  `aa063f9784ae94a54d83151b931828df4948c56c`; the governance document hash
+  remains `583f1778582c168935b380b19e453117b000d8caf18dd3a4cd7731365cdb3537`.
+- Canonical state is `HUMAN_BLOCKED /
+  2B20AP1_DESIGN_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW`.
+- `designRound=1`, `maxDesignRounds=2`, `ruleDesignPass=false`, and
+  `implementationAuthorized=false`.
+- Infrastructure Repair remains `0/2`; Product Repair is untouched. Rule
+  semantics and product behavior remain unchanged.
+- Remaining blockers are
+  `PENDING_2B20AP1_INDEPENDENT_RULE_DESIGN_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is `RUN_2B20AP1_INDEPENDENT_DESIGN_REVIEW`.
+- No script, test, workflow, production, profile, push, PR, CI, Linux/Windows,
+  or 2B20B work is authorized in this design-materialization milestone.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active design-review-pending state.
+
+## Historical checkpoint — 2B20AP1 governance GO, complete infrastructure design pending
 
 - Task type is `CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT`; current
   Slice is `2B20AP1`.
