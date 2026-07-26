@@ -1,32 +1,38 @@
 # Project State
 
-## Current state — 2B20AP1 design round 2 awaiting independent review
+## Current state — 2B20AP1 design round 2 fix required
 
-- The complete self-contained Round 2 replacement design is
-  `docs/implementation/phase-3-slice-2b20ap1-design-round-2.md`, exact UTF-8
+- The complete independent Round 2 review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-design-review-round-2.md`,
   SHA-256
-  `aac241bc6207af83d78125c0ac311d608207113d1f3340f9cb846a88c74747bc`,
-  `28349` bytes and `218` LF-normalized lines.
-- Its terminal is `READY_FOR_RULE_DESIGN_REVIEW_ROUND_2`; it closes only the
-  Round 1 D01-D09 design findings and preserves the immutable parent
-  design/review/governance history.
+  `3710c07c099cc268725e8550bdfa72030e2ed4d01453096a78dab3100cf368de`,
+  `12806` bytes and `195` LF-normalized lines.
+- It reviewed exact HEAD
+  `5d8827626d092e05999d8c1888ce2d36afe9bdc9` and returned
+  `RULE_DESIGN_FIX_REQUIRED`.
 - Control is `HUMAN_BLOCKED /
-  2B20AP1_DESIGN_ROUND_2_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW`;
-  `designRound=2/2`, `designCorrectionRound=1`, `ruleDesignPass=false`, and
-  `implementationAuthorized=false`.
+  2B20AP1_DESIGN_ROUND_2_REVIEW_FIX_REQUIRED_FINAL_CORRECTION_AVAILABLE`;
+  `designRound=2/3`, `designCorrectionRound=1/2`,
+  `ruleDesignPass=false`, and `implementationAuthorized=false`.
 - Infrastructure Repair remains `0/2`; Product Repair is untouched.
   Governance remains `GO`; rules, product behavior, coverage profiles,
   topology, processes, timeouts, dependencies and role coverage are unchanged.
-- Remaining design blocker is
-  `PENDING_INDEPENDENT_2B20AP1_DESIGN_ROUND_2_REVIEW`; Linux worker RPC and
-  Windows W7 unknown-exit blockers remain.
+- Exact design blockers are
+  `R2_D03_EXACT_PHYSICAL_IDENTITIES_STILL_FALSE`,
+  `R2_D07_CANDIDATE_CANONICALIZATION_AND_PROVENANCE_HASH_UNFROZEN`,
+  `R2_D07_COVERAGE_NEGATIVE_SELF_TESTS_HAVE_NO_EXECUTABLE_GATE`,
+  `R2_D08_APPROVED_DESIGN_IS_MUTABLE_DURING_IMPLEMENTATION`, and
+  `R2_D08_DESIGN_CORRECTION_BUDGET_AND_STOP_LOSS_INCONSISTENT`.
+- One and only one final docs-only correction remains authorized as Design
+  Round 3 / correction `2/2`. A non-pass final review triggers stop-loss.
+- Linux worker RPC and Windows W7 unknown-exit blockers remain.
 - Required next action is
-  `RUN_2B20AP1_INDEPENDENT_DESIGN_ROUND_2_REVIEW`.
+  `CREATE_2B20AP1_FINAL_DESIGN_CORRECTION_ROUND_3`.
 - No implementation, push, PR, CI, Linux/Windows investigation, or 2B20B work
   is authorized.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Round 2 design-review-pending state.
+not override the active Round 2 fix-required state.
 
 ## Historical checkpoint — 2B20AP1 design awaiting independent rule-design review
 

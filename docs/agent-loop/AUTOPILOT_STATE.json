@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "2B20AP1_DESIGN_ROUND_2_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW",
+  "detailedStatus": "2B20AP1_DESIGN_ROUND_2_REVIEW_FIX_REQUIRED_FINAL_CORRECTION_AVAILABLE",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1113,7 +1113,7 @@
   "remotePRHead": "dbfa424c96a8bcf06a0d2a77205626a532aa2ec8",
   "priorDesignCommit": "627dc709dcbf94e92b61a82cef0b75020b936146",
   "priorReviewCommit": "def473e7b84d7b568dcc3d689dcabf5381d48377",
-  "designCorrectionRound": 2,
+  "designCorrectionRound": 1,
   "maxDesignCorrectionRounds": 2,
   "designCorrectionPass": 2,
   "maxDesignCorrectionPasses": 2,
@@ -1131,7 +1131,7 @@
   "productRepairStatus": "COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE",
   "remainingRepairBlockers": [],
   "designRound": 2,
-  "maxDesignRounds": 2,
+  "maxDesignRounds": 3,
   "userContinuationAuthorization": "USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE",
   "recoveryAuthorization": "USER_AUTHORIZED_2B20_ACCEPTED_MAIN_RECOVERY_AND_CONTINUE_EXISTING_AUTHORIZATION",
   "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
@@ -1581,7 +1581,7 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "2B20AP1_DESIGN_ROUND_2_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW",
+    "detailedStatus": "2B20AP1_DESIGN_ROUND_2_REVIEW_FIX_REQUIRED_FINAL_CORRECTION_AVAILABLE",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1599,19 +1599,23 @@
     "parentDesignPath": "docs/implementation/phase-3-slice-2b20ap1-design.md",
     "parentDesignSha256": "622d5e8572e933a38c5503fa80ee342c8acee084b62ed1578ede0569a3e22c46",
     "designRound": 2,
-    "maxDesignRounds": 2,
+    "maxDesignRounds": 3,
     "designCorrectionRound": 1,
     "maxDesignCorrectionRounds": 2,
-    "designReviewPath": "docs/implementation/phase-3-slice-2b20ap1-design-review-round-1.md",
-    "designReviewSha256": "eedea1f3c721c1878683700b275cd164ee62c090eeb1298b88a39588db548943",
-    "designReviewBytes": 13522,
+    "designReviewPath": "docs/implementation/phase-3-slice-2b20ap1-design-review-round-2.md",
+    "designReviewSha256": "3710c07c099cc268725e8550bdfa72030e2ed4d01453096a78dab3100cf368de",
+    "designReviewBytes": 12806,
     "designReviewLfNormalizedLineCount": 195,
-    "designReviewedHead": "43c764f3e6542afd93994032338f045d121965ae",
-    "designReviewTimestamp": "2026-07-26T05:56:16.5292898Z",
-    "designVerdict": null,
+    "designReviewedHead": "5d8827626d092e05999d8c1888ce2d36afe9bdc9",
+    "designReviewTimestamp": "2026-07-26T06:42:16.9841751Z",
+    "designVerdict": "RULE_DESIGN_FIX_REQUIRED",
     "ruleDesignPass": false,
     "remainingDesignBlockers": [
-      "PENDING_INDEPENDENT_2B20AP1_DESIGN_ROUND_2_REVIEW"
+      "R2_D03_EXACT_PHYSICAL_IDENTITIES_STILL_FALSE",
+      "R2_D07_CANDIDATE_CANONICALIZATION_AND_PROVENANCE_HASH_UNFROZEN",
+      "R2_D07_COVERAGE_NEGATIVE_SELF_TESTS_HAVE_NO_EXECUTABLE_GATE",
+      "R2_D08_APPROVED_DESIGN_IS_MUTABLE_DURING_IMPLEMENTATION",
+      "R2_D08_DESIGN_CORRECTION_BUDGET_AND_STOP_LOSS_INCONSISTENT"
     ],
     "implementationAuthorized": false,
     "infrastructureRepairRound": 0,
@@ -1626,11 +1630,15 @@
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_2B20AP1_DESIGN_ROUND_2_REVIEW",
+      "R2_D03_EXACT_PHYSICAL_IDENTITIES_STILL_FALSE",
+      "R2_D07_CANDIDATE_CANONICALIZATION_AND_PROVENANCE_HASH_UNFROZEN",
+      "R2_D07_COVERAGE_NEGATIVE_SELF_TESTS_HAVE_NO_EXECUTABLE_GATE",
+      "R2_D08_APPROVED_DESIGN_IS_MUTABLE_DURING_IMPLEMENTATION",
+      "R2_D08_DESIGN_CORRECTION_BUDGET_AND_STOP_LOSS_INCONSISTENT",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "RUN_2B20AP1_INDEPENDENT_DESIGN_ROUND_2_REVIEW"
+    "nextAction": "CREATE_2B20AP1_FINAL_DESIGN_CORRECTION_ROUND_3"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2160,7 +2168,7 @@
   "designReviewRound3Hash": "5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b",
   "designReviewRound3Verdict": "RULE_DESIGN_FIX_REQUIRED",
   "ruleReady": true,
-  "ruleDesignPass": true,
+  "ruleDesignPass": false,
   "implementationAuthorized": false,
   "implementationStatus": "COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE",
   "repairRound3Authorization": null,
@@ -2586,7 +2594,11 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_2B20AP1_DESIGN_ROUND_2_REVIEW",
+    "R2_D03_EXACT_PHYSICAL_IDENTITIES_STILL_FALSE",
+    "R2_D07_CANDIDATE_CANONICALIZATION_AND_PROVENANCE_HASH_UNFROZEN",
+    "R2_D07_COVERAGE_NEGATIVE_SELF_TESTS_HAVE_NO_EXECUTABLE_GATE",
+    "R2_D08_APPROVED_DESIGN_IS_MUTABLE_DURING_IMPLEMENTATION",
+    "R2_D08_DESIGN_CORRECTION_BUDGET_AND_STOP_LOSS_INCONSISTENT",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3355,8 +3367,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the complete self-contained 2B20AP1 Design Round 2 replacement at docs/implementation/phase-3-slice-2b20ap1-design-round-2.md with SHA-256 aac241bc6207af83d78125c0ac311d608207113d1f3340f9cb846a88c74747bc. It closes D01 through D09 at design level, preserves governance GO and immutable parent history, and remains pending independent Round 2 rule-design review with implementation unauthorized.",
-  "lastError": null,
-  "requiredNextAction": "RUN_2B20AP1_INDEPENDENT_DESIGN_ROUND_2_REVIEW",
-  "nextAction": "RUN_2B20AP1_INDEPENDENT_DESIGN_ROUND_2_REVIEW"
+  "lastAction": "Archived the complete independent 2B20AP1 Design Round 2 review verbatim at docs/implementation/phase-3-slice-2b20ap1-design-review-round-2.md. Verdict is RULE_DESIGN_FIX_REQUIRED with exactly five ownership/routing/docs blockers. One and only one final docs-only correction remains authorized as Design Round 3 / correction 2 of 2; implementation remains unauthorized.",
+  "lastError": "2B20AP1 Design Round 2 returned RULE_DESIGN_FIX_REQUIRED with five bounded design blockers.",
+  "requiredNextAction": "CREATE_2B20AP1_FINAL_DESIGN_CORRECTION_ROUND_3",
+  "nextAction": "CREATE_2B20AP1_FINAL_DESIGN_CORRECTION_ROUND_3"
 }
