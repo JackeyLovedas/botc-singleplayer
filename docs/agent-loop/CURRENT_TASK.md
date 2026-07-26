@@ -1,6 +1,6 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — Product Repair Round 2 local implementation complete
+## Phase 3 Slice 2B20A — Product Repair stop-loss reached
 
 - Authorization is
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`.
@@ -19,10 +19,12 @@
   M06 source-tenure witness seam, separately legal M08 catalog mismatch, F01
   descriptor contract, production/test allowlists, frozen resolver behavior,
   and repair stop-loss.
-- The first production and formal-test edit has consumed Product Repair `2/2`.
+- The first production and formal-test edit consumed Product Repair `2/2`.
   `designCorrectionRound=2/2`, `designCorrectionPass=2/2`,
-  `ruleDesignPass=true`, and `implementationAuthorized=false`.
-- No Product Repair Round 3 exists.
+  `ruleDesignPass=true`, `implementationAuthorized=false`,
+  `productRepairRoundConsumed=true`, and
+  `productRepairStopLossReached=true`.
+- No Product Repair Round 3 or automatic implementation repair is authorized.
 - F01/C20 now rejects a non-enumerable numeric own data property through the
   direct, public, and stored validation boundaries while retaining getter
   count `0` and the legal enumerable control.
@@ -33,21 +35,30 @@
   pnpm `11.7.0`: focused C20 `1/1`, focused C34 `1/1`, focused C37 `1/1`,
   Dreamer `77/77`, application service `296/296`, typecheck, lint, and full
   ordinary `35 files / 1572 tests`.
+- The complete independent implementation review is bound to exact local HEAD
+  `79af6c75149b7a6b04b34329f9d2d338e41c19e9` with timestamp
+  `2026-07-26T03:14:05.084Z`. Its output is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-implementation-review.md`,
+  SHA-256
+  `92d18dda1d8844be1ff37ca6adf8d557347e6415cb85a1b55602d956e246052c`.
+- The reviewer independently reran all eight authorized gates and returned
+  `PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED`.
 - Canonical status is `HUMAN_BLOCKED`; detailed state is
-  `PRODUCT_REPAIR_ROUND_2_LOCAL_IMPLEMENTATION_COMPLETE_PENDING_INDEPENDENT_REPAIR_REVIEW`.
+  `PRODUCT_REPAIR_STOP_LOSS_REACHED`.
 - Active blockers are
-  `PENDING_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_REVIEW`,
+  `C20_NONENUMERABLE_DESCRIPTOR_EVIDENCE_INCOMPLETE`,
+  `AUTOPILOT_TOP_LEVEL_REMAINING_BLOCKERS_STALE`,
   `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
   `LINUX_WORKER_RPC_CI_BLOCKER`, and
   `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
 - Required next action is
-  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_REVIEW`.
+  `REQUEST_USER_STOP_LOSS_DECISION_OVERRIDE_RESLICE_OR_ABANDON_PR_46`.
 - Exactly one production file, one test file, and four controls changed. No
   push, PR, CI, coverage, ownership, Windows harness, workflow, profile,
   application test, or 2B20B change was performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 local implementation state.
+not override the active Product Repair stop-loss state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 

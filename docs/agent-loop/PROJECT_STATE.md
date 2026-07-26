@@ -1,6 +1,6 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A Product Repair Round 2 local implementation complete
+## Current state — Phase 3 Slice 2B20A Product Repair stop-loss reached
 
 - Authorization
   `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`
@@ -30,23 +30,36 @@
 - All eight authorized local gates passed: focused C20 `1/1`, focused C34
   `1/1`, focused C37 `1/1`, Dreamer `77/77`, application service `296/296`,
   typecheck, lint, and ordinary `35 files / 1572 tests`.
+- The complete independent implementation review is bound to exact local HEAD
+  `79af6c75149b7a6b04b34329f9d2d338e41c19e9` with timestamp
+  `2026-07-26T03:14:05.084Z`. It is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-implementation-review.md`,
+  SHA-256
+  `92d18dda1d8844be1ff37ca6adf8d557347e6415cb85a1b55602d956e246052c`.
+- The reviewer independently reran all eight gates and returned
+  `PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED`.
 - Control is `HUMAN_BLOCKED /
-  PRODUCT_REPAIR_ROUND_2_LOCAL_IMPLEMENTATION_COMPLETE_PENDING_INDEPENDENT_REPAIR_REVIEW`,
+  PRODUCT_REPAIR_STOP_LOSS_REACHED`,
   `ruleDesignPass=true`, `implementationAuthorized=false`,
   `designCorrectionRound=2/2`, `designCorrectionPass=2/2`, and
   `productRepairRound=2/2`.
 - The first production and formal-test edit consumed the final Product Repair
-  Round; no Product Repair Round 3 exists.
-- Active blockers are pending independent implementation review, ownership
-  supersession/routing, Linux worker RPC, and Windows W7 unknown exit.
+  Round; `productRepairRoundConsumed=true`,
+  `productRepairStopLossReached=true`, and no Product Repair Round 3 or
+  automatic implementation repair is authorized.
+- Active repair blockers are
+  `C20_NONENUMERABLE_DESCRIPTOR_EVIDENCE_INCOMPLETE` and
+  `AUTOPILOT_TOP_LEVEL_REMAINING_BLOCKERS_STALE`. Downstream blockers remain
+  ownership supersession/routing, Linux worker RPC, and Windows W7 unknown
+  exit.
 - Required next action:
-  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_2_IMPLEMENTATION_REVIEW`.
+  `REQUEST_USER_STOP_LOSS_DECISION_OVERRIDE_RESLICE_OR_ABANDON_PR_46`.
 - Exactly one production file, one test file and four controls changed. No
   application test, push, PR, CI, coverage, ownership, Windows harness,
   workflow, profile, or 2B20B change was performed.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair Round 2 local implementation state.
+not override the active Product Repair stop-loss state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
