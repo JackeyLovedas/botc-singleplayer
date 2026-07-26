@@ -1,5 +1,52 @@
 # Project State
 
+## Current state — public lifecycle design passed; implementation authorized
+
+- The final complete independent review of public lifecycle Correction 1 is
+  preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-review-final.md`,
+  SHA-256
+  `2af6aa65ef1ae4f9f8cbf9a9d3f651fa89f4e28ecd651dafaf2bb5a3a045f911`,
+  `4694` bytes and `85` LF lines, bound to exact reviewed HEAD
+  `2e97457a0f37ee10f501957eaba084a1ddf10ead` and timestamp
+  `2026-07-26T11:55:29.4291682Z`.
+- The reviewer returned `RULE_DESIGN_PASS`, no findings, no blockers and
+  `implementationAuthorized=true`. Create, collect, corrected close and
+  candidate publication contracts all passed. LF compatibility and topology
+  passed statically; the exact eleven-file implementation upper bound passed.
+- `LFC1-PUBLIC-CLOSE-FULFILLED-WITH-ERROR-DIAGNOSTIC` is closed. Close success
+  requires Promise fulfillment plus zero normalized close-error records during
+  observable `CLOSING`; Promise rejection, fulfilled-with-error, invalid
+  capture and combined-primary paths all prevent candidate creation or
+  publication.
+- Warning-only close stderr remains deterministic non-error output. Actual
+  integration must still prove zero close-stage diagnostics, fulfilled public
+  close and natural process exit. No private state, hook order, internal glob
+  count or pre-return close is an acceptance authority.
+- The approved implementation authority is governance `GO`, Round 3 and its
+  pass, LF-safe Correction 2, public lifecycle Correction 1 and this pass.
+  Candidate-v2, `1572`/`12` identities, four accepted histories, ownership,
+  supersession, traceability and ordinary/coverage/Windows routing remain
+  frozen.
+- Lifecycle correction is `1/2`; Correction `2/2` is unnecessary.
+  Infrastructure Repair is still `0/2`. It will become `1/2` only in the first
+  formal implementation commit after all authorized local evidence is
+  recorded.
+- Control is `RUNNING /
+  2B20AP1_PUBLIC_VITEST_LIFECYCLE_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED`;
+  `implementationAuthorized=true`.
+- Remaining blockers are `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `IMPLEMENT_2B20AP1_PUBLIC_LIFECYCLE_AND_LOCAL_CLOSURE`.
+- Product Repair remains complete and unchanged. No script, test, workflow,
+  production, candidate, coverage, Infrastructure Repair, push, PR, CI or
+  Linux/Windows work was performed during the review closeout.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active implementation authorization.
+
 ## Current state — public Vitest lifecycle Correction 1 pending review
 
 - The first complete independent review of the public lifecycle override is
@@ -71,8 +118,8 @@
   implementation, Infrastructure Repair, push, PR, CI or downstream
   investigation was performed.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active Correction-1 review gate.
+All sections below this historical checkpoint are retained as history; they do
+not override the active implementation authorization.
 
 ## Current state — public Vitest lifecycle override pending independent review
 

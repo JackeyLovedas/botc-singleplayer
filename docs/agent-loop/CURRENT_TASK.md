@@ -1,5 +1,44 @@
 # Current Task
 
+## 2B20AP1 — public lifecycle pass; implementation authorized
+
+- The complete final independent Correction-1 review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-review-final.md`,
+  exact UTF-8 SHA-256
+  `2af6aa65ef1ae4f9f8cbf9a9d3f651fa89f4e28ecd651dafaf2bb5a3a045f911`,
+  `4694` bytes and `85` LF lines. It reviewed exact HEAD
+  `2e97457a0f37ee10f501957eaba084a1ddf10ead` at
+  `2026-07-26T11:55:29.4291682Z`.
+- The independent reviewer returned exact `RULE_DESIGN_PASS`,
+  `findings=[]`, `remainingBlockers=[]` and
+  `implementationAuthorized=true`. `LFC1` is closed.
+- Public close success remains exact: the public `close()` Promise must fulfill
+  and the public injected stderr must contain zero normalized close-error
+  records captured during observable `CLOSING`. Fulfilled-with-
+  `error during close` remains `CLOSE_FAILED`; candidate bytes are discarded
+  and primary/close diagnostic channels are preserved.
+- The complete implementation authority is now the governance `GO`, Round 3
+  and its passing review, LF-safe Correction 2 contracts, the public lifecycle
+  Correction 1 and this passing review. Historical internal glob-count,
+  pre-return diagnostic and pre-return close findings remain non-blockers.
+- Lifecycle correction remains `1/2`; Correction `2/2` is unnecessary.
+  Infrastructure Repair remains `0/2` until the first formal implementation
+  commit. The implementation turn is authorized but has not yet been
+  materialized in this docs-only review closeout.
+- Canonical control is `RUNNING /
+  2B20AP1_PUBLIC_VITEST_LIFECYCLE_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED`;
+  `implementationAuthorized=true`.
+- Remaining blockers are `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `IMPLEMENT_2B20AP1_PUBLIC_LIFECYCLE_AND_LOCAL_CLOSURE`.
+- No implementation, candidate, test, coverage, Infrastructure Repair, push,
+  PR or CI was performed during this review closeout.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active implementation authorization.
+
 ## 2B20AP1 — public Vitest lifecycle Correction 1 pending independent review
 
 - The complete first independent public-lifecycle review is archived verbatim
@@ -75,8 +114,8 @@
   coverage, Infrastructure Repair, push, PR, CI, Linux/Windows investigation
   or next-slice work was performed.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active Correction-1 review gate.
+All sections below this historical checkpoint are retained as history; they do
+not override the active implementation authorization.
 
 ## 2B20AP1 — public Vitest lifecycle override pending independent review
 
