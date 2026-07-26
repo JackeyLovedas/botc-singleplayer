@@ -1,4 +1,6 @@
+import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -59,6 +61,203 @@ export function sha256CanonicalLines(lines) {
   return createHash("sha256")
     .update(`${[...lines].sort(ordinalCompare).join("\n")}\n`, "utf8")
     .digest("hex");
+}
+
+export const IDENTITY_ENCODING_VERSION =
+  "vitest-semantic-identity-json-tuple-v1";
+
+function assertCanonicalArray(value, code, context) {
+  if (
+    !Array.isArray(value) ||
+    Object.getPrototypeOf(value) !== Array.prototype
+  ) {
+    fail(code, `${context} must be a canonical array`);
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const keys = Reflect.ownKeys(value);
+  if (
+    keys.some(
+      (key) =>
+        typeof key === "symbol" ||
+        (key !== "length" && !/^(0|[1-9]\d*)$/u.test(key))
+    )
+  ) {
+    fail(code, `${context} has an unexpected own key`);
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    const descriptor = descriptors[String(index)];
+    if (
+      descriptor === undefined ||
+      !Object.prototype.hasOwnProperty.call(descriptor, "value")
+    ) {
+      fail(code, `${context} must be dense own data`);
+    }
+  }
+}
+
+function canonicalRepositoryFile(repoRoot, inputFile, code, context) {
+  if (typeof inputFile !== "string" || inputFile.length === 0) {
+    fail(code, `${context} file must be a nonempty string`);
+  }
+  const root = path.resolve(repoRoot);
+  const absoluteFile = path.isAbsolute(inputFile)
+    ? path.resolve(inputFile)
+    : path.resolve(root, inputFile);
+  const relative = path.relative(root, absoluteFile);
+  if (
+    relative.length === 0 ||
+    relative === ".." ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
+    fail(code, `${context} file must be strictly inside the repository`);
+  }
+  const canonical = relative.split(path.sep).join("/");
+  if (
+    canonical.length === 0 ||
+    canonical.split("/").some((segment) => segment === "" || segment === "." || segment === "..")
+  ) {
+    fail(code, `${context} file is not canonical`);
+  }
+  return canonical;
+}
+
+function validateStructuredIdentityRecord(repoRoot, value, context) {
+  const code = "INVALID_STRUCTURED_VITEST_IDENTITY";
+  const descriptors = assertExactPlainRecord(
+    value,
+    ["project", "file", "ancestorPath", "title"],
+    context
+  );
+  const project = descriptorValue(descriptors, "project");
+  const title = descriptorValue(descriptors, "title");
+  if (typeof project !== "string" || project.length === 0) {
+    fail(code, `${context}.project must be a nonempty string`);
+  }
+  if (typeof title !== "string" || title.length === 0 || title.includes("\0")) {
+    fail(code, `${context}.title must be a nonempty NUL-free string`);
+  }
+  const ancestorPath = descriptorValue(descriptors, "ancestorPath");
+  assertCanonicalArray(ancestorPath, code, `${context}.ancestorPath`);
+  const canonicalAncestors = ancestorPath.map((ancestor, index) => {
+    if (
+      typeof ancestor !== "string" ||
+      ancestor.length === 0 ||
+      ancestor.includes("\0")
+    ) {
+      fail(code, `${context}.ancestorPath[${index}] is invalid`);
+    }
+    return ancestor;
+  });
+  return Object.freeze({
+    project,
+    file: canonicalRepositoryFile(
+      repoRoot,
+      descriptorValue(descriptors, "file"),
+      code,
+      context
+    ),
+    ancestorPath: Object.freeze(canonicalAncestors),
+    title
+  });
+}
+
+export function structuredIdentityTuple(identity) {
+  return Object.freeze([
+    identity.project,
+    identity.file,
+    Object.freeze([...identity.ancestorPath]),
+    identity.title
+  ]);
+}
+
+export function compactStructuredIdentityTuple(tuple) {
+  return JSON.stringify(tuple);
+}
+
+export function canonicalizeStructuredVitestIdentities(repoRoot, input) {
+  const code = "INVALID_STRUCTURED_VITEST_IDENTITY";
+  assertCanonicalArray(input, code, "structured identities");
+  const identities = input.map((identity, index) =>
+    validateStructuredIdentityRecord(repoRoot, identity, `structured identities[${index}]`)
+  );
+  const keyed = identities.map((identity) => ({
+    identity,
+    tuple: structuredIdentityTuple(identity)
+  }));
+  keyed.sort((left, right) =>
+    ordinalCompare(
+      compactStructuredIdentityTuple(left.tuple),
+      compactStructuredIdentityTuple(right.tuple)
+    )
+  );
+  for (let index = 1; index < keyed.length; index += 1) {
+    if (
+      compactStructuredIdentityTuple(keyed[index - 1].tuple) ===
+      compactStructuredIdentityTuple(keyed[index].tuple)
+    ) {
+      fail(
+        "DUPLICATE_STRUCTURED_VITEST_IDENTITY",
+        compactStructuredIdentityTuple(keyed[index].tuple)
+      );
+    }
+  }
+  return Object.freeze(keyed.map(({ identity }) => identity));
+}
+
+export function structuredInventoryBytes(identities) {
+  const tuples = identities.map(structuredIdentityTuple);
+  return Buffer.from(`${JSON.stringify(tuples)}\n`, "utf8");
+}
+
+export function structuredInventorySha256(identities) {
+  return createHash("sha256").update(structuredInventoryBytes(identities)).digest("hex");
+}
+
+export function traceabilitySha256(repoRoot, traceabilityFile) {
+  const raw = readFileSync(path.resolve(repoRoot, traceabilityFile), "utf8");
+  if (raw.includes("\0")) {
+    fail("INVALID_TRACEABILITY_BYTES", `${traceabilityFile} contains NUL`);
+  }
+  const normalized = raw.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n");
+  const lines = normalized.split("\n");
+  if (normalized.endsWith("\n")) lines.pop();
+  return sha256CanonicalLines(lines);
+}
+
+export function canonicalizeRawVitestInventory(repoRoot, rawInventory) {
+  const code = "INVALID_RAW_VITEST_INVENTORY";
+  assertCanonicalArray(rawInventory, code, "raw inventory");
+  const structured = rawInventory.map((entry, index) => {
+    const descriptors = assertExactPlainRecord(
+      entry,
+      ["name", "file", "projectName"],
+      `raw inventory[${index}]`
+    );
+    const name = descriptorValue(descriptors, "name");
+    const project = descriptorValue(descriptors, "projectName");
+    if (
+      typeof name !== "string" ||
+      name.length === 0 ||
+      typeof project !== "string" ||
+      project.length === 0 ||
+      name.includes("\0") ||
+      project.includes("\0")
+    ) {
+      fail(code, `raw inventory[${index}] has invalid string fields`);
+    }
+    const segments = name.split(" > ");
+    if (segments.some((segment) => segment.length === 0)) {
+      fail(code, `raw inventory[${index}] has an invalid name projection`);
+    }
+    return {
+      project,
+      file: descriptorValue(descriptors, "file"),
+      ancestorPath: segments.slice(0, -1),
+      title: segments.at(-1)
+    };
+  });
+  return canonicalizeStructuredVitestIdentities(repoRoot, structured);
 }
 
 function assertDenseArray(value, context) {
@@ -543,6 +742,747 @@ function traceTitleMatches(actualTitle, inventoryTitle) {
   return true;
 }
 
+const APP_TEST_FILE =
+  "packages/application/src/game-application-service.test.ts";
+const SLICE_2B20A_ANCESTOR = Object.freeze([
+  "Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"
+]);
+const GAS_ANCESTOR = Object.freeze(["GameApplicationService"]);
+const DOMAIN_2B20A_ANCESTOR = Object.freeze([
+  "Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer"
+]);
+
+const PRIMARY_2B20A_ROWS = [
+  ["C01", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C01] proves the exact reachable source impairment and Fang Gu precondition snapshot"],
+  ["C03", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C03] reaches a naturally selected TRUE V7 stream through the real command boundary"],
+  ["C04", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C04] reaches a naturally selected FALSE V7 stream through the real command boundary"],
+  ["C05", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C05] settles the base Dreamer task and closes its V3 opportunity atomically"],
+  ["C06", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C06] derives TRUE as a normal base-Dreamer fact with zero contribution"],
+  ["C07", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C07] derives FALSE as one abnormal base-Dreamer drunkenness contribution"],
+  ["C10", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C10] records the exact nine existing evidence variants for V7"],
+  ["C11", "application-service-information-and-later-actions", APP_TEST_FILE, GAS_ANCESTOR, "rejects invalid Dreamer submissions with deterministic receipts"],
+  ["C12", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C12] rejects an unrepresented Traveller target id at the real command boundary"],
+  ["C13", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C13] rejects a forged V3 opportunity id without appending a batch"],
+  ["C14", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C14] preserves success receipt replay and fingerprint conflict semantics"],
+  ["C15", "application-service-information-and-later-actions", APP_TEST_FILE, GAS_ANCESTOR, "keeps SubmitDreamerAction metadata generation failures classified independently"],
+  ["C16", "domain-core", "packages/domain-core/src/dreamer.test.ts", DOMAIN_2B20A_ANCESTOR, "[2B20A-C16] constructs the complete raw-UTF16 ordered GOOD by EVIL candidate product"],
+  ["C17", "domain-core", "packages/domain-core/src/dreamer.test.ts", DOMAIN_2B20A_ANCESTOR, "[2B20A-C17] selects the first candidate in the parity-selected truth class"],
+  ["C18", "domain-core", "packages/domain-core/src/dreamer.test.ts", DOMAIN_2B20A_ANCESTOR, "[2B20A-C18] validates the exact 22-key V7 payload and selected top-level roles"],
+  ["C19", "domain-core", "packages/domain-core/src/dreamer.test.ts", DOMAIN_2B20A_ANCESTOR, "[2B20A-C19] deep-clones and compares every V7 nested canonical decision"],
+  ["C20", "domain-core", "packages/domain-core/src/dreamer.test.ts", DOMAIN_2B20A_ANCESTOR, "[2B20A-C20] rejects getter Proxy symbol cycle sparse and nonplain V7 inputs with zero getter calls"],
+  ["C21", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C21] rebuilds the complete accepted V7 stream identically"],
+  ["C22", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C22] rejects reordered or missing V7 batch members during replay"],
+  ["C23", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C23] rejects persisted V7 candidate and policy mutations during replay"],
+  ["C24", "domain-core-rebuild", "packages/domain-core/src/rebuild.test.ts", Object.freeze(["domain event rebuild"]), "rejects malformed Dreamer replay batches"],
+  ["C25", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C25] projects the accepted V7 pair only to its source player"],
+  ["C26", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C26] omits accepted V7 information from every other player"],
+  ["C27", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C27] leaks no V7 impairment candidate policy Demon or ledger metadata"],
+  ["C28", "projections", "packages/projections/src/private-knowledge-view.test.ts", Object.freeze([]), "[2B20A-C28] rejects state-only V7 for both player and AI projection authority"],
+  ["C29", "projections", "packages/projections/src/private-knowledge-view.test.ts", Object.freeze([]), "[2B20A-C29] rejects hostile state-only V7 accessors and proxies without invoking getters"],
+  ["C30", "domain-core-rebuild", "packages/domain-core/src/rebuild.test.ts", Object.freeze(["domain event rebuild"]), "[2B20A-C30] rebuilds accepted legacy Dreamer information for an EVIL target without reinterpretation"],
+  ["C31", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C31] preserves Philosopher Dreamer Mathematician first-night order without phase transition"],
+  ["C32", "STATIC_REPOSITORY", ".github/workflows/ci.yml", Object.freeze([]), "coverage / application-service-dreamer-vortox-core testNamePattern=\\[(?:2B19A3A|2B19A3B1|2B20A)-"],
+  ["C33", "domain-core", "packages/domain-core/src/dreamer.test.ts", Object.freeze(["Dreamer information model"]), "does not use locale-based sorting in the Dreamer domain model"],
+  ["C34", "domain-core", "packages/domain-core/src/dreamer.test.ts", DOMAIN_2B20A_ANCESTOR, "[2B20A-C34] resolves only the exact canonical-drunk Fang Gu capability"],
+  ["C35", "application-service-dreamer-vortox", APP_TEST_FILE, GAS_ANCESTOR, "[2B20A-C35] accepts the reachable canonical-drunk base Dreamer through the real Philosopher chain"],
+  ["C36", "application-service-information-and-later-actions", APP_TEST_FILE, GAS_ANCESTOR, "rejects SubmitDreamerAction accessors before receipt or event work"],
+  ["C37", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C37] attributes the FALSE contribution to Dreamer and never to Philosopher"],
+  ["C38", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C38] rejects direct malformed V7 ledger source cross-links fail closed"],
+  ["C39", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C39] rejects coordinated persisted V7 source and impairment substitution"],
+  ["C40", "application-service-dreamer-vortox", APP_TEST_FILE, SLICE_2B20A_ANCESTOR, "[2B20A-C40] leaves no delivery fact or contribution when the real No Dashii command fails"]
+];
+
+export const TWO_B20A_PRIMARY_IDENTITIES = Object.freeze(
+  PRIMARY_2B20A_ROWS.map(
+    ([criterionId, project, file, ancestorPath, title]) =>
+      Object.freeze({
+        criterionId,
+        project,
+        file,
+        ancestorPath,
+        title,
+        kind:
+          criterionId === "C32"
+            ? "STATIC"
+            : title.startsWith("[2B20A-")
+              ? "DYNAMIC_MARKED"
+              : "DYNAMIC_UNMARKED"
+      })
+  )
+);
+
+export const EXPLICIT_UNMARKED_2B20A_PRIMARIES = Object.freeze(
+  TWO_B20A_PRIMARY_IDENTITIES.filter(
+    (identity) => identity.kind === "DYNAMIC_UNMARKED"
+  ).map(({ criterionId, file, ancestorPath, title }) =>
+    Object.freeze({ criterionId, file, ancestorPath, title })
+  )
+);
+
+const TWO_B20A_SUPPORT_TUPLES = Object.freeze({
+  R: Object.freeze([
+    "rule-researcher",
+    "docs/rules/evidence/2B20A-resolved.md",
+    "ACCEPTED",
+    "NONE"
+  ]),
+  V: Object.freeze([
+    "test-harness",
+    "loadAcceptedBaseDreamerVortoxV3StreamFixture",
+    "ACCEPTED",
+    "NONE"
+  ]),
+  VC: Object.freeze([
+    "test-harness",
+    "loadAcceptedBaseDreamerVortoxV3StreamFixture",
+    "ACCEPTED",
+    "CLONE_MUTATED"
+  ]),
+  VP: Object.freeze([
+    "test-harness",
+    "loadAcceptedBaseDreamerVortoxV3StreamFixture",
+    "ACCEPTED",
+    "PERSISTED_OR_IMPORTED_MUTATED"
+  ]),
+  A2: Object.freeze([
+    "accepted-history",
+    "packages/application/src/game-application-service.test.ts@[2B19A2-C20]",
+    "LEGACY",
+    "NONE"
+  ]),
+  A3B1: Object.freeze([
+    "accepted-history",
+    "packages/application/src/game-application-service.test.ts@[2B19A3B1-C08/C30/C36-S14/S16/S17]",
+    "LEGACY",
+    "PERSISTED_OR_IMPORTED_MUTATED"
+  ]),
+  L: Object.freeze([
+    "domain-core",
+    "acceptedLegacyDreamerV1()",
+    "LEGACY",
+    "NONE"
+  ]),
+  B: Object.freeze([
+    "accepted-history",
+    "packages/domain-core/src/dreamer.test.ts@[2B19B-S20]",
+    "LEGACY",
+    "NONE"
+  ]),
+  W: Object.freeze([
+    "repository",
+    ".github/workflows/ci.yml",
+    "ACCEPTED",
+    "NONE"
+  ]),
+  S: Object.freeze([
+    "accepted-history",
+    "SUPR-2B20AP1-001+SUPR-2B20AP1-002+SUPR-2B20AP1-004",
+    "LEGACY",
+    "NONE"
+  ])
+});
+
+const TWO_B20A_SUPPORT_ASSIGNMENTS = Object.freeze([
+  ["C01", "R"], ["C03", "V"], ["C04", "V"], ["C05", "V"],
+  ["C06", "V"], ["C07", "V"], ["C10", "V"], ["C11", "R"],
+  ["C12", "R"], ["C13", "V"], ["C14", "V"], ["C15", "A2"],
+  ["C16", "R"], ["C17", "R"], ["C18", "VC"], ["C19", "VC"],
+  ["C20", "VC"], ["C21", "V"], ["C22", "VP"], ["C23", "VP"],
+  ["C24", "A3B1"], ["C25", "V"], ["C26", "V"], ["C27", "V"],
+  ["C28", "VC"], ["C29", "VC"], ["C30", "L"], ["C31", "V"],
+  ["C32", "W"], ["C33", "B"], ["C34", "R"], ["C35", "S"],
+  ["C36", "A2"], ["C37", "V"], ["C38", "VC"], ["C39", "VP"],
+  ["C40", "V"]
+]);
+
+const EXPECTED_2B20A_SUPPORT_ROWS = new Map(
+  TWO_B20A_SUPPORT_ASSIGNMENTS.map(([criterionId, tupleId], index) => {
+    const [producer, source, status, disposition] =
+      TWO_B20A_SUPPORT_TUPLES[tupleId];
+    const supportId = `SUP-2B20A-${String(index + 1).padStart(3, "0")}`;
+    return [
+      supportId,
+      [supportId, producer, source, status, criterionId, disposition]
+    ];
+  })
+);
+
+export function validate2B20APrimaryIdentities(repoRoot, inventory) {
+  const canonicalInventory = canonicalizeStructuredVitestIdentities(
+    repoRoot,
+    inventory
+  );
+  const fullKeys = new Map();
+  for (const identity of canonicalInventory) {
+    const key = compactStructuredIdentityTuple(structuredIdentityTuple(identity));
+    fullKeys.set(key, (fullKeys.get(key) ?? 0) + 1);
+  }
+  for (const primary of TWO_B20A_PRIMARY_IDENTITIES) {
+    if (primary.kind === "STATIC") {
+      const workflow = readFileSync(path.resolve(repoRoot, primary.file), "utf8");
+      if (!workflow.includes("testNamePattern: '\\[(?:2B19A3A|2B19A3B1|2B20A)-'")) {
+        fail("TWO_B20A_STATIC_WIRING_MISSING", primary.title);
+      }
+      continue;
+    }
+    const key = JSON.stringify([
+      primary.project,
+      primary.file,
+      [...primary.ancestorPath],
+      primary.title
+    ]);
+    if (fullKeys.get(key) !== 1) {
+      fail(
+        "TWO_B20A_PRIMARY_IDENTITY_MISMATCH",
+        `${primary.criterionId}: expected exactly one, got ${fullKeys.get(key) ?? 0}`
+      );
+    }
+  }
+  const expectedMarked = new Set(
+    TWO_B20A_PRIMARY_IDENTITIES.filter(
+      (primary) => primary.kind === "DYNAMIC_MARKED"
+    ).map((primary) =>
+      JSON.stringify([
+        primary.project,
+        primary.file,
+        [...primary.ancestorPath],
+        primary.title
+      ])
+    )
+  );
+  const actualMarked = canonicalInventory.filter((identity) =>
+    identity.title.startsWith("[2B20A-")
+  );
+  if (
+    actualMarked.length !== expectedMarked.size ||
+    actualMarked.some(
+      (identity) =>
+        !expectedMarked.has(
+          compactStructuredIdentityTuple(structuredIdentityTuple(identity))
+        )
+    )
+  ) {
+    fail(
+      "TWO_B20A_MARKED_PRIMARY_SET_MISMATCH",
+      `expected=${expectedMarked.size}, actual=${actualMarked.length}`
+    );
+  }
+  return canonicalInventory;
+}
+
+const VIRTUAL_ACCEPTED_PREDECESSORS = Object.freeze([
+  Object.freeze({
+    contractId: "2B19A3A",
+    project: "application-service-dreamer-vortox",
+    file: APP_TEST_FILE,
+    ancestorPath: GAS_ANCESTOR,
+    title:
+      "[2B19A3A-C17] fails a represented DRUNK base Dreamer receipt-free through the real Philosopher chain",
+    authorityMarker: "2B19A3A-C17"
+  }),
+  Object.freeze({
+    contractId: "2B19A3B1",
+    project: "application-service-dreamer-vortox",
+    file: APP_TEST_FILE,
+    ancestorPath: SLICE_2B20A_ANCESTOR,
+    title:
+      "[2B19A3B1-C18/C28] keeps canonical DRUNK without effective Vortox receipt-free, OPEN, and retryable",
+    authorityMarker: "2B19A3B1-C18/C28"
+  })
+]);
+
+const ACCEPTED_HEAD = "5a69c90f2d3947556ff45c15c467902b1e28ca43";
+const ACCEPTED_APPLICATION_BLOB =
+  "0ff733004899f17ff82b20b40b0f41b888ba85d0";
+const SUCCESSOR_C35 = Object.freeze({
+  contractId: "2B20A",
+  criterionId: "C35",
+  ownerProject: "application-service-dreamer-vortox",
+  file: APP_TEST_FILE,
+  ancestorPath: GAS_ANCESTOR,
+  title:
+    "[2B20A-C35] accepts the reachable canonical-drunk base Dreamer through the real Philosopher chain"
+});
+
+export const ACCEPTED_AUTHORITY_SUPERSESSIONS = Object.freeze([
+  Object.freeze({
+    supersessionId: "SUPR-2B20AP1-001",
+    predecessor: Object.freeze({
+      acceptedHead: ACCEPTED_HEAD,
+      acceptedBlobOid: ACCEPTED_APPLICATION_BLOB,
+      contractId: "2B19A3A",
+      criterionId: "C17",
+      ownerProject: "application-service-dreamer-vortox",
+      file: APP_TEST_FILE,
+      ancestorPath: GAS_ANCESTOR,
+      title:
+        "[2B19A3A-C17] fails a represented DRUNK base Dreamer receipt-free through the real Philosopher chain",
+      historicalLocator: Object.freeze({
+        kind: "EXACT_TEST_TITLE",
+        titleOccurrence: 1
+      })
+    }),
+    scope: "WHOLE_TEST",
+    subcaseKey: null,
+    disposition: "WHOLE_TEST_SEMANTIC_SUPERSESSION",
+    successor: SUCCESSOR_C35,
+    rationale:
+      "The reachable canonical-drunk Philosopher chain now has one canonical 2B20A primary."
+  }),
+  Object.freeze({
+    supersessionId: "SUPR-2B20AP1-002",
+    predecessor: Object.freeze({
+      acceptedHead: ACCEPTED_HEAD,
+      acceptedBlobOid: ACCEPTED_APPLICATION_BLOB,
+      contractId: "2B19A3B1",
+      criterionId: "C18",
+      ownerProject: "application-service-dreamer-vortox",
+      file: APP_TEST_FILE,
+      ancestorPath: SLICE_2B20A_ANCESTOR,
+      title:
+        "[2B19A3B1-C18/C28] keeps canonical DRUNK without effective Vortox receipt-free, OPEN, and retryable",
+      historicalLocator: Object.freeze({
+        kind: "EXACT_TEST_TITLE",
+        titleOccurrence: 1
+      })
+    }),
+    scope: "WHOLE_TEST",
+    subcaseKey: null,
+    disposition: "WHOLE_TEST_SEMANTIC_SUPERSESSION",
+    successor: SUCCESSOR_C35,
+    rationale:
+      "The accepted predecessor is preserved virtually while current authority resolves to C35."
+  }),
+  Object.freeze({
+    supersessionId: "SUPR-2B20AP1-003",
+    predecessor: Object.freeze({
+      acceptedHead: ACCEPTED_HEAD,
+      acceptedBlobOid: ACCEPTED_APPLICATION_BLOB,
+      contractId: "2B19A3B1",
+      criterionId: "C28",
+      ownerProject: "application-service-dreamer-vortox",
+      file: APP_TEST_FILE,
+      ancestorPath: SLICE_2B20A_ANCESTOR,
+      title:
+        "[2B19A3B1-C18/C28] keeps canonical DRUNK without effective Vortox receipt-free, OPEN, and retryable",
+      historicalLocator: Object.freeze({
+        kind: "EXACT_TEST_TITLE",
+        titleOccurrence: 1
+      })
+    }),
+    scope: "MARKER_ALIAS",
+    subcaseKey: "C28",
+    disposition: "RETIRED_NONPRIMARY_ALIAS",
+    successor: Object.freeze({
+      contractId: "2B19A3B1",
+      criterionId: "C28",
+      ownerProject: "application-service-dreamer-vortox",
+      file: APP_TEST_FILE,
+      ancestorPath: SLICE_2B20A_ANCESTOR,
+      title:
+        "[2B19A3B1-C28/C29] proves every V4 failure stage is atomic retryable and converges exactly once"
+    }),
+    rationale:
+      "The obsolete compound C28 token resolves only to the preserved C28/C29 primary."
+  }),
+  Object.freeze({
+    supersessionId: "SUPR-2B20AP1-004",
+    predecessor: Object.freeze({
+      acceptedHead: ACCEPTED_HEAD,
+      acceptedBlobOid: ACCEPTED_APPLICATION_BLOB,
+      contractId: "2B19A2",
+      criterionId: "C20",
+      ownerProject: "application-service-information-and-later-actions",
+      file: APP_TEST_FILE,
+      ancestorPath: GAS_ANCESTOR,
+      title:
+        "[2B19A2-C20] keeps every retryable unsupported or dependency path receipt-free and mutation-free",
+      historicalLocator: Object.freeze({
+        kind: "LF_BOUNDED_SOURCE_SHA256",
+        wholeStart:
+          "  it(\"[2B19A2-C20] keeps every retryable unsupported or dependency path receipt-free and mutation-free\", async () => {",
+        wholeEndExclusive:
+          "  it(\"[2B19A2-C21] retries the same command after a transient metadata dependency recovers\", async () => {",
+        wholeChars: 5835,
+        wholeSha256:
+          "e06c3a7f9d4cb2ac2a2eed24f2082ff6cf5819b0af7388c11e47e478b0e34531",
+        subcaseStart: "const drunk = makeService();",
+        subcaseEndExclusive:
+          "const dependencyStore = new OneShotDomainEventLoadFailureStore();",
+        subcaseChars: 1746,
+        subcaseSha256:
+          "b5ccb8e06ca99b5e21bca2ce60806fcd6f2f9d7f509dece50d217dd3f7e6ae85"
+      })
+    }),
+    scope: "SUBCASE",
+    subcaseKey: "A2_C20_DRUNK_NO_CURRENT_VORTOX",
+    disposition: "SUBCASE_SUPERSESSION",
+    successor: SUCCESSOR_C35,
+    rationale:
+      "Only the canonical-drunk no-current-Vortox subcase is superseded; adjacent failures remain support."
+  })
+]);
+
+export function validateAcceptedAuthoritySupersessionRegistry(input) {
+  const code = "INVALID_ACCEPTED_AUTHORITY_SUPERSESSION_REGISTRY";
+  assertCanonicalArray(input, code, "supersession registry");
+  if (input.length !== 4) {
+    fail(code, `expected four records, got ${input.length}`);
+  }
+  const knownContracts = new Set([
+    "2B19A2",
+    "2B19A3A",
+    "2B19A3B1",
+    "2B19A3B2",
+    "2B19B",
+    "2B20A"
+  ]);
+  const seenIds = new Set();
+  const successorByPredecessor = new Map();
+  const graph = new Map();
+  const scopesByCriterion = new Map();
+  for (let index = 0; index < input.length; index += 1) {
+    const context = `supersession registry[${index}]`;
+    const record = assertExactPlainRecord(
+      input[index],
+      [
+        "supersessionId",
+        "predecessor",
+        "scope",
+        "subcaseKey",
+        "disposition",
+        "successor",
+        "rationale"
+      ],
+      context
+    );
+    const supersessionId = descriptorValue(record, "supersessionId");
+    if (
+      typeof supersessionId !== "string" ||
+      !/^SUPR-2B20AP1-\d{3}$/u.test(supersessionId) ||
+      seenIds.has(supersessionId)
+    ) {
+      fail(code, `${context}.supersessionId is invalid or duplicated`);
+    }
+    seenIds.add(supersessionId);
+    const predecessor = assertExactPlainRecord(
+      descriptorValue(record, "predecessor"),
+      [
+        "acceptedHead",
+        "acceptedBlobOid",
+        "contractId",
+        "criterionId",
+        "ownerProject",
+        "file",
+        "ancestorPath",
+        "title",
+        "historicalLocator"
+      ],
+      `${context}.predecessor`
+    );
+    const successor = assertExactPlainRecord(
+      descriptorValue(record, "successor"),
+      [
+        "contractId",
+        "criterionId",
+        "ownerProject",
+        "file",
+        "ancestorPath",
+        "title"
+      ],
+      `${context}.successor`
+    );
+    for (const [descriptors, side] of [
+      [predecessor, "predecessor"],
+      [successor, "successor"]
+    ]) {
+      const contractId = descriptorValue(descriptors, "contractId");
+      if (!knownContracts.has(contractId)) {
+        fail(code, `${context}.${side}.contractId is unknown`);
+      }
+      assertNonEmptyString(
+        descriptorValue(descriptors, "criterionId"),
+        `${context}.${side}.criterionId`
+      );
+      assertNonEmptyString(
+        descriptorValue(descriptors, "ownerProject"),
+        `${context}.${side}.ownerProject`
+      );
+      assertCanonicalRepoPath(
+        descriptorValue(descriptors, "file"),
+        `${context}.${side}.file`
+      );
+      assertNonEmptyString(
+        descriptorValue(descriptors, "title"),
+        `${context}.${side}.title`
+      );
+      const ancestors = descriptorValue(descriptors, "ancestorPath");
+      assertCanonicalArray(ancestors, code, `${context}.${side}.ancestorPath`);
+      for (const ancestor of ancestors) {
+        assertNonEmptyString(ancestor, `${context}.${side}.ancestorPath`);
+      }
+    }
+    for (const gitKey of ["acceptedHead", "acceptedBlobOid"]) {
+      const value = descriptorValue(predecessor, gitKey);
+      if (typeof value !== "string" || !/^[0-9a-f]{40}$/u.test(value)) {
+        fail(code, `${context}.predecessor.${gitKey} is invalid`);
+      }
+    }
+    const locator = descriptorValue(predecessor, "historicalLocator");
+    if (
+      locator === null ||
+      typeof locator !== "object" ||
+      Array.isArray(locator) ||
+      Object.getPrototypeOf(locator) !== Object.prototype
+    ) {
+      fail(code, `${context} historical locator is invalid`);
+    }
+    const locatorKindDescriptor =
+      Object.getOwnPropertyDescriptor(locator, "kind");
+    if (
+      locatorKindDescriptor === undefined ||
+      !Object.prototype.hasOwnProperty.call(locatorKindDescriptor, "value")
+    ) {
+      fail(code, `${context} historical locator kind must be own data`);
+    }
+    const locatorKind = locatorKindDescriptor.value;
+    if (locatorKind === "EXACT_TEST_TITLE") {
+      const locatorDescriptors = assertExactPlainRecord(
+        locator,
+        ["kind", "titleOccurrence"],
+        `${context}.predecessor.historicalLocator`
+      );
+      if (descriptorValue(locatorDescriptors, "titleOccurrence") !== 1) {
+        fail(code, `${context} title occurrence must be one`);
+      }
+    } else if (locatorKind === "LF_BOUNDED_SOURCE_SHA256") {
+      const locatorDescriptors = assertExactPlainRecord(
+        locator,
+        [
+          "kind",
+          "wholeStart",
+          "wholeEndExclusive",
+          "wholeChars",
+          "wholeSha256",
+          "subcaseStart",
+          "subcaseEndExclusive",
+          "subcaseChars",
+          "subcaseSha256"
+        ],
+        `${context}.predecessor.historicalLocator`
+      );
+      for (const key of [
+        "wholeStart",
+        "wholeEndExclusive",
+        "subcaseStart",
+        "subcaseEndExclusive"
+      ]) {
+        assertNonEmptyString(
+          descriptorValue(locatorDescriptors, key),
+          `${context}.historicalLocator.${key}`
+        );
+      }
+      for (const key of ["wholeChars", "subcaseChars"]) {
+        assertNonNegativeInteger(
+          descriptorValue(locatorDescriptors, key),
+          `${context}.historicalLocator.${key}`
+        );
+      }
+      for (const key of ["wholeSha256", "subcaseSha256"]) {
+        assertSha256(
+          descriptorValue(locatorDescriptors, key),
+          `${context}.historicalLocator.${key}`
+        );
+      }
+    } else {
+      fail(code, `${context} historical locator is invalid`);
+    }
+    const scope = descriptorValue(record, "scope");
+    const disposition = descriptorValue(record, "disposition");
+    const subcaseKey = descriptorValue(record, "subcaseKey");
+    const exactScopeDisposition = {
+      WHOLE_TEST: "WHOLE_TEST_SEMANTIC_SUPERSESSION",
+      SUBCASE: "SUBCASE_SUPERSESSION",
+      MARKER_ALIAS: "RETIRED_NONPRIMARY_ALIAS"
+    };
+    if (
+      exactScopeDisposition[scope] !== disposition ||
+      (scope === "WHOLE_TEST"
+        ? subcaseKey !== null
+        : typeof subcaseKey !== "string" || subcaseKey.length === 0)
+    ) {
+      fail(code, `${context} scope/disposition/subcaseKey mismatch`);
+    }
+    assertNonEmptyString(
+      descriptorValue(record, "rationale"),
+      `${context}.rationale`
+    );
+    const node = (descriptors) =>
+      encodeFields([
+        descriptorValue(descriptors, "contractId"),
+        descriptorValue(descriptors, "criterionId"),
+        descriptorValue(descriptors, "file"),
+        encodeFields(descriptorValue(descriptors, "ancestorPath")),
+        descriptorValue(descriptors, "title")
+      ]);
+    const predecessorNode = node(predecessor);
+    const successorNode = node(successor);
+    if (
+      predecessorNode === successorNode ||
+      (successorByPredecessor.has(predecessorNode) &&
+        successorByPredecessor.get(predecessorNode) !== successorNode)
+    ) {
+      fail(code, `${context} has a self edge or multiple successor`);
+    }
+    successorByPredecessor.set(predecessorNode, successorNode);
+    graph.set(predecessorNode, successorNode);
+    const criterionKey = [
+      descriptorValue(predecessor, "contractId"),
+      descriptorValue(predecessor, "criterionId")
+    ].join("/");
+    const existingScopes = scopesByCriterion.get(criterionKey) ?? new Set();
+    if (
+      (scope === "WHOLE_TEST" && existingScopes.has("SUBCASE")) ||
+      (scope === "SUBCASE" && existingScopes.has("WHOLE_TEST"))
+    ) {
+      fail(code, `${context} overlaps whole and subcase scopes`);
+    }
+    existingScopes.add(scope);
+    scopesByCriterion.set(criterionKey, existingScopes);
+  }
+  for (const start of graph.keys()) {
+    const visited = new Set();
+    let node = start;
+    while (graph.has(node)) {
+      if (visited.has(node)) fail(code, "supersession graph contains a cycle");
+      visited.add(node);
+      node = graph.get(node);
+    }
+  }
+  return input;
+}
+
+export function validateAcceptedAuthoritySupersessions(repoRoot, liveInventory = null) {
+  const root = path.resolve(repoRoot);
+  validateAcceptedAuthoritySupersessionRegistry(
+    ACCEPTED_AUTHORITY_SUPERSESSIONS
+  );
+  const ancestor = spawnSync(
+    "git",
+    ["merge-base", "--is-ancestor", ACCEPTED_HEAD, "HEAD"],
+    { cwd: root, encoding: "utf8" }
+  );
+  if (ancestor.status !== 0) {
+    fail("SUPERSESSION_ACCEPTED_HEAD_NOT_ANCESTOR", ACCEPTED_HEAD);
+  }
+  const blob = spawnSync(
+    "git",
+    ["rev-parse", `${ACCEPTED_HEAD}:${APP_TEST_FILE}`],
+    { cwd: root, encoding: "utf8" }
+  );
+  if (blob.status !== 0 || blob.stdout.trim() !== ACCEPTED_APPLICATION_BLOB) {
+    fail("SUPERSESSION_ACCEPTED_BLOB_MISMATCH", blob.stdout.trim() || "missing");
+  }
+  const sourceResult = spawnSync(
+    "git",
+    ["show", `${ACCEPTED_HEAD}:${APP_TEST_FILE}`],
+    { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }
+  );
+  if (sourceResult.status !== 0) {
+    fail("SUPERSESSION_ACCEPTED_SOURCE_UNAVAILABLE", APP_TEST_FILE);
+  }
+  const source = sourceResult.stdout.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n");
+  for (const record of ACCEPTED_AUTHORITY_SUPERSESSIONS) {
+    const locator = record.predecessor.historicalLocator;
+    const occurrences = source.split(record.predecessor.title).length - 1;
+    if (occurrences !== 1) {
+      fail(
+        "SUPERSESSION_PREDECESSOR_TITLE_MISMATCH",
+        `${record.supersessionId}:${occurrences}`
+      );
+    }
+    if (locator.kind === "LF_BOUNDED_SOURCE_SHA256") {
+      const wholeStart = source.indexOf(locator.wholeStart);
+      const wholeEnd = source.indexOf(locator.wholeEndExclusive);
+      if (
+        wholeStart < 0 ||
+        wholeEnd <= wholeStart ||
+        source.indexOf(locator.wholeStart, wholeStart + 1) >= 0 ||
+        source.indexOf(locator.wholeEndExclusive, wholeEnd + 1) >= 0
+      ) {
+        fail("SUPERSESSION_SOURCE_BOUND_MISMATCH", record.supersessionId);
+      }
+      const whole = source.slice(wholeStart, wholeEnd);
+      const subcaseStartToken = whole.indexOf(locator.subcaseStart);
+      const subcaseEndToken = whole.indexOf(locator.subcaseEndExclusive);
+      const subcaseStart = subcaseStartToken - 4;
+      const subcaseEnd = subcaseEndToken - 4;
+      const subcase = whole.slice(subcaseStart, subcaseEnd);
+      if (
+        whole.length !== locator.wholeChars ||
+        createHash("sha256").update(whole, "utf8").digest("hex") !==
+          locator.wholeSha256 ||
+        subcaseStartToken < 0 ||
+        subcaseEndToken < 0 ||
+        whole.slice(subcaseStart, subcaseStartToken) !== "    " ||
+        whole.slice(subcaseEnd, subcaseEndToken) !== "    " ||
+        subcaseStart < 0 ||
+        subcaseEnd <= subcaseStart ||
+        subcase.length !== locator.subcaseChars ||
+        createHash("sha256").update(subcase, "utf8").digest("hex") !==
+          locator.subcaseSha256
+      ) {
+        fail("SUPERSESSION_SOURCE_HASH_MISMATCH", record.supersessionId);
+      }
+    }
+  }
+  const currentSource = readFileSync(path.resolve(root, APP_TEST_FILE), "utf8")
+    .replace(/\r\n/gu, "\n")
+    .replace(/\r/gu, "\n");
+  for (const title of [
+    SUCCESSOR_C35.title,
+    "[2B19A3B1-C28/C29] proves every V4 failure stage is atomic retryable and converges exactly once"
+  ]) {
+    if (currentSource.split(title).length - 1 !== 1) {
+      fail("SUPERSESSION_CURRENT_PRIMARY_MISMATCH", title);
+    }
+  }
+  if (liveInventory !== null) {
+    const required = [
+      {
+        project: SUCCESSOR_C35.ownerProject,
+        file: SUCCESSOR_C35.file,
+        ancestorPath: SUCCESSOR_C35.ancestorPath,
+        title: SUCCESSOR_C35.title
+      },
+      {
+        project: "application-service-dreamer-vortox",
+        file: APP_TEST_FILE,
+        ancestorPath: SLICE_2B20A_ANCESTOR,
+        title:
+          "[2B19A3B1-C28/C29] proves every V4 failure stage is atomic retryable and converges exactly once"
+      }
+    ];
+    for (const identity of required) {
+      const matches = liveInventory.filter(
+        (candidate) =>
+          candidate.project === identity.project &&
+          candidate.file === identity.file &&
+          JSON.stringify(candidate.ancestorPath) ===
+            JSON.stringify(identity.ancestorPath) &&
+          candidate.title === identity.title
+      );
+      if (matches.length !== 1) {
+        fail(
+          "SUPERSESSION_CURRENT_PRIMARY_MISMATCH",
+          `${identity.title}:${matches.length}`
+        );
+      }
+    }
+  }
+  return ACCEPTED_AUTHORITY_SUPERSESSIONS;
+}
+
 function parseSupportingAuthorityReference(value, contract) {
   if (value === "NONE") return null;
   const plainMatch = /^(SUP-[A-Z0-9]+-\d{3})$/u.exec(value);
@@ -560,6 +1500,30 @@ function parseSupportingAuthorityReference(value, contract) {
   return supportingAuthorityId;
 }
 
+function splitMarkdownTableRow(line) {
+  if (!line.startsWith("|") || !line.endsWith("|")) return [];
+  const cells = [];
+  let current = "";
+  let escaped = false;
+  for (let index = 1; index < line.length - 1; index += 1) {
+    const character = line[index];
+    if (character === "\\" && !escaped) {
+      escaped = true;
+      current += character;
+      continue;
+    }
+    if (character === "|" && !escaped) {
+      cells.push(current.trim().replace(/\\\|/gu, "|"));
+      current = "";
+      continue;
+    }
+    escaped = false;
+    current += character;
+  }
+  cells.push(current.trim().replace(/\\\|/gu, "|"));
+  return cells;
+}
+
 function parseTraceability(repoRoot, contract, semanticInventory, contracts) {
   const traceabilityPath = path.resolve(repoRoot, contract.traceabilityFile);
   if (!existsSync(traceabilityPath)) {
@@ -571,7 +1535,7 @@ function parseTraceability(repoRoot, contract, semanticInventory, contracts) {
   const traceabilityLines = readFileSync(traceabilityPath, "utf8").split(/\r?\n/u);
   const traceabilityRows = new Map();
   for (const line of traceabilityLines) {
-    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+    const cells = splitMarkdownTableRow(line);
     if (!CRITERION_ID_PATTERN.test(cells[0] ?? "")) continue;
     if (traceabilityRows.has(cells[0])) {
       fail("DUPLICATE_TRACEABILITY_CRITERION", `${contract.contractId}:${cells[0]}`);
@@ -602,11 +1566,35 @@ function parseTraceability(repoRoot, contract, semanticInventory, contracts) {
     if (actualTestFile.length === 0 || actualTestTitle.length === 0) {
       fail("TRACEABILITY_BINDING_EMPTY", `${contract.contractId}:${id}`);
     }
-    if (!actualTestFile.endsWith(".test.ts")) continue;
+    if (!actualTestFile.endsWith(".test.ts")) {
+      if (contract.contractId === "2B20A" && id !== "C32") {
+        fail("TRACEABILITY_STATIC_PRIMARY_MISMATCH", `${contract.contractId}:${id}`);
+      }
+      continue;
+    }
+    let expectedPrimary = null;
+    if (contract.contractId === "2B20A") {
+      expectedPrimary = TWO_B20A_PRIMARY_IDENTITIES.find(
+        (primary) => primary.criterionId === id
+      );
+      if (
+        expectedPrimary === undefined ||
+        actualTestFile !== expectedPrimary.file ||
+        actualTestTitle !== expectedPrimary.title ||
+        cells[3] !== JSON.stringify(expectedPrimary.ancestorPath) ||
+        cells[4] !== expectedPrimary.project
+      ) {
+        fail("TRACEABILITY_EXACT_IDENTITY_MISMATCH", `${contract.contractId}:${id}`);
+      }
+    }
     const candidates = [...semanticInventory.values()].filter(
       (identity) =>
         identity.file === actualTestFile &&
-        traceTitleMatches(actualTestTitle, identity.title)
+        traceTitleMatches(actualTestTitle, identity.title) &&
+        (expectedPrimary === null ||
+          (identity.project === expectedPrimary.project &&
+            JSON.stringify(identity.ancestorPath) ===
+              JSON.stringify(expectedPrimary.ancestorPath)))
     );
     const semanticCandidates = new Set(candidates.map(semanticIdentityKey));
     if (semanticCandidates.size !== 1) {
@@ -621,10 +1609,17 @@ function parseTraceability(repoRoot, contract, semanticInventory, contracts) {
       resolvedIdentity.title,
       contracts
     );
+    const explicitlyUnmarked =
+      contract.contractId === "2B20A" &&
+      EXPLICIT_UNMARKED_2B20A_PRIMARIES.some(
+        (primary) => primary.criterionId === id
+      );
     if (
-      classification === null ||
-      classification.unregisteredSliceMarker === true ||
-      classification.contract.contractId !== contract.contractId
+      (!explicitlyUnmarked &&
+        (classification === null ||
+          classification.unregisteredSliceMarker === true ||
+          classification.contract.contractId !== contract.contractId)) ||
+      (explicitlyUnmarked && classification !== null)
     ) {
       fail(
         "TRACEABILITY_BINDING_WRONG_OWNERSHIP_CONTRACT",
@@ -643,10 +1638,29 @@ function parseTraceability(repoRoot, contract, semanticInventory, contracts) {
     "u"
   );
   const registryIds = new Set();
+  const supportConsumers = new Map();
+  let supersessionLinkCount = 0;
   for (const line of traceabilityLines) {
-    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+    const cells = splitMarkdownTableRow(line);
     const rawRegistryToken = cells[0] ?? "";
     if (!rawRegistryToken.includes("SUP-")) continue;
+    if (
+      contract.contractId === "2B20A" &&
+      cells.length === 2 &&
+      rawRegistryToken === "SUP-2B20A-032"
+    ) {
+      if (
+        cells[1] !==
+        "SUPR-2B20AP1-001,SUPR-2B20AP1-002,SUPR-2B20AP1-004"
+      ) {
+        fail(
+          "SUPPORTING_AUTHORITY_SUPERSESSION_LINK_MISMATCH",
+          cells[1]
+        );
+      }
+      supersessionLinkCount += 1;
+      continue;
+    }
     const plainRegistryMatch = /^(SUP-[A-Z0-9]+-\d{3})$/u.exec(
       rawRegistryToken
     );
@@ -667,7 +1681,32 @@ function parseTraceability(repoRoot, contract, semanticInventory, contracts) {
         `${contract.contractId}:${registryToken}`
       );
     }
+    if (
+      contract.contractId === "2B20A" &&
+      (cells.length !== 6 ||
+        !["ACCEPTED", "LEGACY", "HOSTILE"].includes(cells[3]) ||
+        !["NONE", "CLONE_MUTATED", "PERSISTED_OR_IMPORTED_MUTATED"].includes(
+          cells[5]
+        ) ||
+        !contract.criterionIds.includes(cells[4]))
+    ) {
+      fail(
+        "INVALID_SUPPORTING_AUTHORITY_REGISTRY_ENTRY",
+        `${contract.contractId}: ${registryToken}`
+      );
+    }
+    if (
+      contract.contractId === "2B20A" &&
+      JSON.stringify(cells) !==
+        JSON.stringify(EXPECTED_2B20A_SUPPORT_ROWS.get(registryToken))
+    ) {
+      fail(
+        "SUPPORTING_AUTHORITY_EXACT_ROW_MISMATCH",
+        `${contract.contractId}: ${registryToken}`
+      );
+    }
     registryIds.add(registryToken);
+    supportConsumers.set(registryToken, cells[4]);
   }
   const referencedIds = new Set();
   for (const cells of traceabilityRows.values()) {
@@ -691,6 +1730,23 @@ function parseTraceability(repoRoot, contract, semanticInventory, contracts) {
       `${contract.contractId}: ${unusedSupportingIds.join(",")}`
     );
   }
+  if (contract.contractId === "2B20A") {
+    if (supersessionLinkCount !== 1) {
+      fail(
+        "SUPPORTING_AUTHORITY_SUPERSESSION_LINK_MISMATCH",
+        `expected=1, actual=${supersessionLinkCount}`
+      );
+    }
+    for (const [criterionId, cells] of traceabilityRows) {
+      const supportId = parseSupportingAuthorityReference(cells[6], contract);
+      if (supportConsumers.get(supportId) !== criterionId) {
+        fail(
+          "SUPPORTING_AUTHORITY_CONSUMER_MISMATCH",
+          `${supportId}:${supportConsumers.get(supportId) ?? "none"}:${criterionId}`
+        );
+      }
+    }
+  }
   return {
     traceabilityRows: traceabilityRows.size,
     dynamicTestAuthorityRows,
@@ -713,6 +1769,12 @@ export function auditOwnershipContracts({
     legacyApplicationServiceProjects,
     "legacyApplicationServiceProjects"
   );
+  if (
+    validatedContracts.some((contract) => contract.contractId === "2B20A")
+  ) {
+    validate2B20APrimaryIdentities(resolvedRoot, fullInventory);
+    validateAcceptedAuthoritySupersessions(resolvedRoot, fullInventory);
+  }
   const applicationFiles = new Set(
     validatedContracts.map((contract) => contract.applicationTestFile)
   );
@@ -740,6 +1802,22 @@ export function auditOwnershipContracts({
     contractInventories.get(classification.contract.contractId).push({
       ...identity,
       authorityMarker: classification.authorityMarker
+    });
+  }
+  for (const predecessor of VIRTUAL_ACCEPTED_PREDECESSORS.filter((candidate) =>
+    contractInventories.has(candidate.contractId)
+  )) {
+    const inventory = contractInventories.get(predecessor.contractId);
+    if (inventory === undefined) {
+      fail("SUPERSESSION_PREDECESSOR_CONTRACT_MISSING", predecessor.contractId);
+    }
+    inventory.push({
+      project: predecessor.project,
+      file: predecessor.file,
+      ancestorPath: predecessor.ancestorPath,
+      title: predecessor.title,
+      authorityMarker: predecessor.authorityMarker,
+      virtualAcceptedPredecessor: true
     });
   }
 
@@ -777,6 +1855,11 @@ export function auditOwnershipContracts({
   const semanticInventory = new Map();
   for (const identity of fullInventory) {
     semanticInventory.set(semanticIdentityKey(identity), identity);
+  }
+  for (const predecessor of VIRTUAL_ACCEPTED_PREDECESSORS.filter((candidate) =>
+    contractInventories.has(candidate.contractId)
+  )) {
+    semanticInventory.set(semanticIdentityKey(predecessor), predecessor);
   }
 
   const audits = [];
@@ -946,11 +2029,41 @@ const B19B_CRITERION_IDS = [];
 for (let index = 1; index <= 60; index += 1) {
   B19B_CRITERION_IDS.push(`C${String(index).padStart(2, "0")}`);
 }
+
+const TWO_B20A_CRITERION_IDS = Object.freeze(
+  TWO_B20A_PRIMARY_IDENTITIES.map((identity) => identity.criterionId)
+);
 for (let index = 1; index <= 20; index += 1) {
   B19B_CRITERION_IDS.push(`S${String(index).padStart(2, "0")}`);
 }
 
 const RAW_OWNERSHIP_CONTRACTS = Object.freeze([
+  Object.freeze({
+    contractId: "2B20A",
+    markerPrefix: "[2B20A-",
+    markerPattern: "^\\[2B20A-[^\\]]+\\]",
+    applicationTestFile: APP_TEST_FILE,
+    ownerProject: "application-service-dreamer-vortox",
+    traceabilityFile:
+      "docs/implementation/phase-3-slice-2b20a-test-traceability.md",
+    criterionIds: TWO_B20A_CRITERION_IDS,
+    supportingAuthorityPrefix: "SUP-2B20A-",
+    frozenBaseline: Object.freeze({
+      projectExecutionsBefore: 22,
+      projectExecutionsAfter: 22,
+      projectInventorySha256: "56d9e7f6c6cc39845d3aef4637e4545b3a03181ddfc67fe8df9b760b6a4644d0",
+      currentProjectInventorySha256: "56d9e7f6c6cc39845d3aef4637e4545b3a03181ddfc67fe8df9b760b6a4644d0",
+      semanticInventorySha256: "3d639f664458a11014774dc29c95c711ab8705bc20502d180d57abd6ce6db4c6",
+      authorityInventorySha256: "edc6ae6c04dce5c4f19663152b97c96a9e1527cc81b18b551d95f906bd93c955",
+      nonOwnedInventoryPolicy: NON_OWNED_POLICY,
+      nonMarkerOwnershipSha256: "764888ea567eb545303c17d0cc89706d0b871360a5271912910257397f2829a8",
+      physicalTestFileSetSha256: "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab",
+      traceabilityRowCount: 37,
+      dynamicTestAuthorityRows: 36,
+      supportingAuthorityCount: 37
+    }),
+    status: ACTIVE_STATUS
+  }),
   Object.freeze({
     contractId: "2B19A3B2",
     markerPrefix: "[2B19A3B2-",
@@ -1071,3 +2184,168 @@ export const OWNERSHIP_CONTRACTS = validateOwnershipContracts(
   RAW_OWNERSHIP_CONTRACTS,
   { repoRoot: process.cwd() }
 );
+
+export const ACCEPTED_CONTRACT_BASELINES = Object.freeze(
+  ["2B19A3A", "2B19A3B1", "2B19A3B2", "2B19B"].map((contractId) => {
+    const contract = OWNERSHIP_CONTRACTS.find(
+      (candidate) => candidate.contractId === contractId
+    );
+    if (contract === undefined) {
+      fail("ACCEPTED_CONTRACT_BASELINE_MISSING", contractId);
+    }
+    return Object.freeze({
+      contractId,
+      frozenBaseline: contract.frozenBaseline
+    });
+  })
+);
+
+export function calculate2B20AFrozenBaseline(repoRoot, fullInventory) {
+  const resolvedRoot = path.resolve(repoRoot);
+  const canonicalInventory = validate2B20APrimaryIdentities(
+    resolvedRoot,
+    fullInventory
+  );
+  const contract = OWNERSHIP_CONTRACTS.find(
+    (candidate) => candidate.contractId === "2B20A"
+  );
+  if (contract === undefined) {
+    fail("TWO_B20A_CONTRACT_MISSING", "2B20A");
+  }
+  const applicationIdentities = canonicalInventory.filter(
+    (identity) => identity.file === contract.applicationTestFile
+  );
+  const owned = [];
+  const nonMarker = [];
+  for (const identity of applicationIdentities) {
+    const classification = classifyOwnershipTitle(identity.title, OWNERSHIP_CONTRACTS);
+    if (
+      classification !== null &&
+      classification.unregisteredSliceMarker !== true &&
+      classification.contract.contractId === "2B20A"
+    ) {
+      if (identity.project !== contract.ownerProject) {
+        fail("SEMANTIC_OWNERSHIP_MISMATCH", `2B20A:${identity.title}`);
+      }
+      owned.push({
+        ...identity,
+        authorityMarker: classification.authorityMarker
+      });
+    } else if (classification === null || classification.unregisteredSliceMarker === true) {
+      nonMarker.push(identity);
+    }
+  }
+  const semanticOwners = new Map();
+  for (const identity of owned) {
+    const key = semanticIdentityKey(identity);
+    if (semanticOwners.has(key)) {
+      fail("SEMANTIC_OWNERSHIP_DUPLICATE_EXECUTION", `2B20A:${identity.title}`);
+    }
+    semanticOwners.set(key, identity);
+  }
+  if (owned.length !== 22 || semanticOwners.size !== 22) {
+    fail(
+      "TWO_B20A_APPLICATION_OWNERSHIP_COUNT_MISMATCH",
+      `expected=22, actual=${owned.length}, semantic=${semanticOwners.size}`
+    );
+  }
+  const nonMarkerOwners = new Map();
+  for (const identity of nonMarker) {
+    const key = semanticIdentityKey(identity);
+    const entry = nonMarkerOwners.get(key) ?? { identity, owners: new Set() };
+    entry.owners.add(identity.project);
+    nonMarkerOwners.set(key, entry);
+  }
+  const nonMarkerLines = [...nonMarkerOwners.values()].map(({ identity, owners }) =>
+    [
+      identity.file,
+      identity.ancestorPath.join(" > "),
+      identity.title,
+      [...owners].sort(ordinalCompare).join(",")
+    ].join("\t")
+  );
+  const semanticInventory = new Map(
+    canonicalInventory.map((identity) => [semanticIdentityKey(identity), identity])
+  );
+  const traceability = parseTraceability(
+    resolvedRoot,
+    contract,
+    semanticInventory,
+    OWNERSHIP_CONTRACTS
+  );
+  return Object.freeze({
+    projectExecutionsBefore: 22,
+    projectExecutionsAfter: 22,
+    projectInventorySha256: sha256CanonicalLines(
+      owned.map((identity) => tabIdentity(identity, true))
+    ),
+    currentProjectInventorySha256: sha256CanonicalLines(
+      owned.map((identity) => tabIdentity(identity, true))
+    ),
+    semanticInventorySha256: sha256CanonicalLines(
+      [...semanticOwners.values()].map((identity) =>
+        [identity.file, identity.ancestorPath.join(" > "), identity.title].join("\t")
+      )
+    ),
+    authorityInventorySha256: sha256CanonicalLines(
+      new Set(owned.map((identity) => identity.authorityMarker))
+    ),
+    nonOwnedInventoryPolicy: NON_OWNED_POLICY,
+    nonMarkerOwnershipSha256: sha256CanonicalLines(nonMarkerLines),
+    physicalTestFileSetSha256: sha256CanonicalLines(
+      new Set(canonicalInventory.map((identity) => identity.file))
+    ),
+    traceabilityRowCount: traceability.traceabilityRows,
+    dynamicTestAuthorityRows: traceability.dynamicTestAuthorityRows,
+    supportingAuthorityCount: traceability.supportingAuthorityIds
+  });
+}
+
+export function build2B20ACandidate(repoRoot, fullInventory) {
+  const canonicalInventory = canonicalizeStructuredVitestIdentities(
+    repoRoot,
+    fullInventory
+  );
+  if (canonicalInventory.length !== 1572) {
+    fail(
+      "STRUCTURED_IDENTITY_COUNT_MISMATCH",
+      `expected=1572, actual=${canonicalInventory.length}`
+    );
+  }
+  const lfIdentityCount = canonicalInventory.filter((identity) =>
+    [identity.project, identity.file, ...identity.ancestorPath, identity.title].some(
+      (field) => field.includes("\n")
+    )
+  ).length;
+  if (lfIdentityCount !== 12) {
+    fail(
+      "LF_IDENTITY_COUNT_MISMATCH",
+      `expected=12, actual=${lfIdentityCount}`
+    );
+  }
+  const structuredIdentities = canonicalInventory.map((identity) => [
+    identity.project,
+    identity.file,
+    [...identity.ancestorPath],
+    identity.title
+  ]);
+  return {
+    schemaVersion: "vitest-ownership-candidate-baseline-v2",
+    contractId: "2B20A",
+    identityEncodingVersion: IDENTITY_ENCODING_VERSION,
+    structuredIdentityCount: canonicalInventory.length,
+    lfIdentityCount,
+    inventorySha256: structuredInventorySha256(canonicalInventory),
+    traceabilitySha256: traceabilitySha256(
+      repoRoot,
+      "docs/implementation/phase-3-slice-2b20a-test-traceability.md"
+    ),
+    structuredIdentities,
+    frozenBaseline: calculate2B20AFrozenBaseline(repoRoot, canonicalInventory),
+    acceptedContractBaselines: ACCEPTED_CONTRACT_BASELINES
+  };
+}
+
+export function candidateBytes(candidate) {
+  return Buffer.from(`${JSON.stringify(candidate, null, 2)}\n`, "utf8");
+}

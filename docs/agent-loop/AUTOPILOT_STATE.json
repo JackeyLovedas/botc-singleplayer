@@ -1,6 +1,6 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "2B20AP1_PUBLIC_VITEST_LIFECYCLE_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED",
+  "detailedStatus": "2B20AP1_INFRA_REPAIR_1_LOCALLY_CLOSED_PENDING_CONTROLLER_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -27,7 +27,7 @@
   "slice2B19BStarted": true,
   "nextRoleSliceStarted": false,
   "phase2CStarted": false,
-  "infrastructureRepairRound": 0,
+  "infrastructureRepairRound": 1,
   "maxInfrastructureRepairRounds": 2,
   "commandCaptureProxyRejectionV1": {
     "status": "COMPLETED_ACCEPTED",
@@ -1581,7 +1581,7 @@
   },
   "slice2B20AP1Gate": {
     "status": "RUNNING",
-    "detailedStatus": "2B20AP1_PUBLIC_VITEST_LIFECYCLE_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED",
+    "detailedStatus": "2B20AP1_INFRA_REPAIR_1_LOCALLY_CLOSED_PENDING_CONTROLLER_REVIEW",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1982,9 +1982,39 @@
         }
       }
     },
-    "implementationAuthorized": true,
-    "implementationContinuationAuthorized": true,
-    "implementationCommit": null,
+    "implementationAuthorized": false,
+    "implementationContinuationAuthorized": false,
+    "implementationCommit": "FORMAL_COMMIT_CONTAINING_THIS_CONTROL_STATE",
+    "localClosure": {
+      "status": "PASS",
+      "infrastructureRepairRound": 1,
+      "candidateSchemaVersion": "vitest-ownership-candidate-baseline-v2",
+      "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
+      "structuredIdentityCount": 1572,
+      "lfIdentityCount": 12,
+      "inventorySha256": "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8",
+      "traceabilitySha256": "a801af97875d7ea6921b0bc21b7b66b0f50d7ef2b2d15df81f127b7953331eb5",
+      "candidateDocumentSha256": "d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129",
+      "candidateTemporaryFilesRemoved": true,
+      "ownershipPrimaryCount": 37,
+      "supportingAuthorityCount": 37,
+      "applicationOwnershipExecutions": 22,
+      "ownershipSelfTest": "PASS_37_OF_37",
+      "coverageSelfTest": "PASS_7_OF_7",
+      "ordinaryRouting": "PASS_9_OF_9_1572_OF_1572_ZERO_MISMATCH",
+      "coverageRouting": "PASS_11_OF_11_1572_OF_1572_ZERO_MISMATCH",
+      "ownershipContracts": "PASS_5_OF_5",
+      "windowsInventory": "PASS_305_W1_9_W2_90_W3_52_W4_73_W5_9_W6_26_W7_46",
+      "focusedApplicationTests": "PASS_296_OF_296",
+      "focusedRebuildTests": "PASS_207_OF_207",
+      "targetedLint": "PASS",
+      "typecheck": "PASS",
+      "fullLint": "PASS",
+      "ordinaryTests": "PASS_1572_OF_1572",
+      "fullLocalCoverage": "NOT_RUN_EXCLUDED_BY_APPROVED_SECTION_8",
+      "hostedCI": "PENDING_EXACT_HEAD_CI",
+      "pushOrPrMutation": false
+    },
     "phase2DraftsRestoredToHead": "3c9ff67e7a08eccb336936883be5b8e1fe1768db",
     "triagePath": "docs/implementation/phase-3-slice-2b20ap1-frozen-raw-inventory-conflict-triage.md",
     "triageSha256": "0d0aa020e713ed09f0d79d79fdcc6b57a6883def4feecc29ef00f1e484c7b45e",
@@ -2008,23 +2038,22 @@
     "tempInventoryExists": true,
     "tempCandidatePath": "C:\\Users\\wjl\\AppData\\Local\\Temp\\tmp30A8.tmp.candidate.json",
     "tempCandidateExists": false,
-    "infrastructureRepairRound": 0,
+    "infrastructureRepairRound": 1,
     "maxInfrastructureRepairRounds": 2,
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "NOT_LOCALLY_CLOSED_IMPLEMENTATION_AUTHORIZED",
+    "ownershipStatus": "LOCALLY_CLOSED_PENDING_CONTROLLER_REVIEW",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "IMPLEMENT_2B20AP1_PUBLIC_LIFECYCLE_AND_LOCAL_CLOSURE"
+    "nextAction": "REPORT_2B20AP1_INFRA_REPAIR_1_LOCAL_CLOSURE_TO_CONTROLLER"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -3749,8 +3778,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete final independent public Vitest lifecycle Correction 1 review verbatim. The reviewer returned RULE_DESIGN_PASS with findings=[], remainingBlockers=[] and implementationAuthorized=true; LFC1 is closed. Lifecycle correction remains 1/2, Correction 2 is unnecessary, Infrastructure Repair remains 0/2 until the formal implementation commit, and the combined governance, Round 3, LF-safe and corrected public lifecycle authority now permits implementation.",
+  "lastAction": "Implemented and locally closed 2B20AP1 Infrastructure Repair 1/2 within the exact eleven-file allowlist: four accepted supersessions, immutable virtual predecessor reconciliation, 37/37 2B20A primary/support authority, LF-safe candidate v2 1572/12 with corrected public close gate, unchanged 9/11/W routing, focused and full ordinary gates green, no full local coverage, push, PR or hosted CI.",
   "lastError": null,
-  "requiredNextAction": "IMPLEMENT_2B20AP1_PUBLIC_LIFECYCLE_AND_LOCAL_CLOSURE",
-  "nextAction": "IMPLEMENT_2B20AP1_PUBLIC_LIFECYCLE_AND_LOCAL_CLOSURE"
+  "requiredNextAction": "REPORT_2B20AP1_INFRA_REPAIR_1_LOCAL_CLOSURE_TO_CONTROLLER",
+  "nextAction": "REPORT_2B20AP1_INFRA_REPAIR_1_LOCAL_CLOSURE_TO_CONTROLLER"
 }

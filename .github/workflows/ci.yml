@@ -234,7 +234,7 @@ jobs:
             testNamePattern: ""
           - group: application-service-dreamer-vortox-core
             projects: --project=application-service-dreamer-vortox
-            testNamePattern: '\[(?:2B19A3A|2B19A3B1)-'
+            testNamePattern: '\[(?:2B19A3A|2B19A3B1|2B20A)-'
           - group: application-service-dreamer-vortox-gained
             projects: --project=application-service-dreamer-vortox
             testNamePattern: '\[2B19B-'

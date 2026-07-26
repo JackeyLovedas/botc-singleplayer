@@ -1,5 +1,46 @@
 # Current Task
 
+## 2B20AP1 — Infra Repair 1/2 implemented and locally closed
+
+- The first formal non-product implementation is complete on
+  `infra/2b20ap1-ownership-supersession-routing-v1`. It changes only the
+  approved eleven-file upper bound and consumes Infrastructure Repair `1/2`.
+- Accepted-authority supersession validates four exact records against
+  accepted head `5a69c90f2d3947556ff45c15c467902b1e28ca43` and blob
+  `0ff733004899f17ff82b20b40b0f41b888ba85d0`, including exact A2/C20 bounded
+  source hashes. A3A/C17 and A3B1/C18 are virtual accepted predecessors only;
+  the preserved A3B1 C28/C29 primary remains unchanged.
+- 2B20A has `37/37` exact primaries (`36` dynamic plus static C32), `37/37`
+  supporting authorities and `22/22` application ownership executions.
+  Compound, borrowed, duplicate and cross-contract primaries are zero.
+- Candidate v2 was emitted twice successfully after one bounded parser repair
+  and independently verified after each successful emit through one public
+  Vitest instance, one repository collection wrapper entry and exact-once
+  corrected close. Final identity facts are `1572` structured identities,
+  `12` LF-bearing titles and inventory SHA-256
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`;
+  final traceability SHA-256 is
+  `a801af97875d7ea6921b0bc21b7b66b0f50d7ef2b2d15df81f127b7953331eb5`.
+  All candidate temporary files were removed.
+- Local gates passed: ownership self-test `37/37`; coverage self-test `7/7`;
+  live ordinary `9/9` and coverage `11/11` over `1572/1572` with zero
+  mismatch; all five ownership contracts; Windows inventory-only `305`
+  (`9/90/52/73/9/26/46`); focused application `296/296`; focused rebuild
+  `207/207`; targeted ESLint; `pnpm typecheck`; `pnpm lint`; and `pnpm test`
+  `1572/1572`.
+- Full local coverage, hosted CI, profile refresh, Linux worker-RPC, Windows
+  W7 execution, push and PR mutation were not run and remain outside this
+  approved implementation-local closure.
+- Control is `RUNNING /
+  2B20AP1_INFRA_REPAIR_1_LOCALLY_CLOSED_PENDING_CONTROLLER_REVIEW`;
+  `implementationAuthorized=false`; `implementationContinuationAuthorized=false`.
+- Remaining blockers are `LINUX_WORKER_RPC_CI_BLOCKER` and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`. Required next action is
+  `REPORT_2B20AP1_INFRA_REPAIR_1_LOCAL_CLOSURE_TO_CONTROLLER`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this completed local implementation checkpoint.
+
 ## 2B20AP1 — public lifecycle pass; implementation authorized
 
 - The complete final independent Correction-1 review is archived verbatim at

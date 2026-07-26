@@ -1,5 +1,40 @@
 # Project State
 
+## Current state — 2B20AP1 Infra Repair 1/2 locally closed
+
+- The approved ownership/supersession/routing implementation is complete
+  locally in the exact eleven-file allowlist. Infrastructure Repair is now
+  `1/2`; production behavior, rule semantics, topology, profile, workspace,
+  dependencies, timeouts and role-coverage status are unchanged.
+- Four accepted supersessions and two virtual whole-test predecessors preserve
+  immutable A3A/A3B1 baselines. Current 2B20A authority resolves exactly
+  `37/37` primaries and `37/37` supporting authorities, with `22/22`
+  application executions and zero compound/borrowed/collision findings.
+- Public structured candidate v2 collection closed naturally and verified
+  byte-for-byte. It contains all `1572` tuples and exactly `12` LF-bearing
+  titles. Inventory SHA-256 is
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`;
+  traceability SHA-256 is
+  `a801af97875d7ea6921b0bc21b7b66b0f50d7ef2b2d15df81f127b7953331eb5`.
+  No candidate artifact remains.
+- Ownership `37/37`, coverage `7/7`, live `9/9` ordinary and `11/11`
+  coverage routing, five ownership contracts, Windows inventory `305`,
+  focused tests `296+207`, targeted lint, full typecheck, full lint and full
+  ordinary test `1572/1572` all pass.
+- C32 static wiring is `PASS`; hosted evidence remains
+  `PENDING_EXACT_HEAD_CI`. Full local coverage was intentionally not run by
+  the approved Section 8 boundary. No push or PR/CI mutation occurred.
+- Control is `RUNNING /
+  2B20AP1_INFRA_REPAIR_1_LOCALLY_CLOSED_PENDING_CONTROLLER_REVIEW`;
+  implementation authorization is consumed and continuation is not
+  authorized.
+- Remaining blockers are only `LINUX_WORKER_RPC_CI_BLOCKER` and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`. Next action is
+  `REPORT_2B20AP1_INFRA_REPAIR_1_LOCAL_CLOSURE_TO_CONTROLLER`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this completed local implementation checkpoint.
+
 ## Current state — public lifecycle design passed; implementation authorized
 
 - The final complete independent review of public lifecycle Correction 1 is

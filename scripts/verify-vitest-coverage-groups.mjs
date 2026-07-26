@@ -12,13 +12,14 @@ import path from "node:path";
 import process from "node:process";
 import {
   OWNERSHIP_CONTRACTS,
-  auditOwnershipContracts
+  auditOwnershipContracts,
+  canonicalizeRawVitestInventory
 } from "./vitest-ownership-contracts.mjs";
 
 const EMPTY_TEST_NAME_PATTERN = "";
 const INFORMATION_BASE_PATTERN = "^(?!.*\\[2B19A3B2-).*$";
 const INFORMATION_A3B2_PATTERN = "\\[2B19A3B2-";
-const DREAMER_VORTOX_CORE_PATTERN = "\\[(?:2B19A3A|2B19A3B1)-";
+const DREAMER_VORTOX_CORE_PATTERN = "\\[(?:2B19A3A|2B19A3B1|2B20A)-";
 const DREAMER_VORTOX_GAINED_PATTERN = "\\[2B19B-";
 
 const ORDINARY_GROUPS = Object.freeze([
@@ -149,42 +150,17 @@ function requireValue(argv, index, option) {
   return value;
 }
 
-function normalizeTestFile(repoRoot, file) {
+function normalizeReportTestFile(repoRoot, file) {
   const absolute = path.resolve(file);
   const relative = path.relative(repoRoot, absolute);
-  if (relative === "" || relative === ".." || relative.startsWith(`..${path.sep}`)) {
+  if (
+    relative === "" ||
+    relative === ".." ||
+    relative.startsWith(`..${path.sep}`)
+  ) {
     throw new Error(`Test file is outside the repository: ${file}`);
   }
   return relative.split(path.sep).join("/");
-}
-
-function splitTestName(name) {
-  if (typeof name !== "string" || name.length === 0) {
-    throw new Error("Vitest inventory contains an empty test name");
-  }
-  const segments = name.split(" > ");
-  return {
-    ancestorPath: segments.slice(0, -1),
-    title: segments.at(-1)
-  };
-}
-
-function canonicalizeInventoryEntry(repoRoot, entry) {
-  if (
-    entry === null ||
-    typeof entry !== "object" ||
-    typeof entry.projectName !== "string" ||
-    typeof entry.file !== "string"
-  ) {
-    throw new Error("Vitest inventory contains an invalid entry");
-  }
-  const name = splitTestName(entry.name);
-  return {
-    project: entry.projectName,
-    file: normalizeTestFile(repoRoot, entry.file),
-    ancestorPath: name.ancestorPath,
-    title: name.title
-  };
 }
 
 function identityKey(identity) {
@@ -257,7 +233,7 @@ function runVitestList(
   if (!Array.isArray(parsed)) {
     throw new Error(`Vitest inventory is not an array: ${destination}`);
   }
-  return parsed.map((entry) => canonicalizeInventoryEntry(repoRoot, entry));
+  return canonicalizeRawVitestInventory(repoRoot, parsed);
 }
 
 function increment(counts, key) {
@@ -364,7 +340,7 @@ function validateMergedReport(repoRoot, mergedReportPath, fullInventory) {
     ) {
       throw new Error("Merged Vitest group report contains a non-passed or invalid suite");
     }
-    const file = normalizeTestFile(repoRoot, testResult.name);
+    const file = normalizeReportTestFile(repoRoot, testResult.name);
     for (const assertion of testResult.assertionResults) {
       actualTotal += 1;
       if (
@@ -515,7 +491,7 @@ function validateFilteredMergedReport(
     ) {
       throw new Error(`${context} contains a non-passed or invalid suite`);
     }
-    const file = normalizeTestFile(repoRoot, testResult.name);
+    const file = normalizeReportTestFile(repoRoot, testResult.name);
     for (const assertion of testResult.assertionResults) {
       if (
         assertion === null ||
@@ -628,7 +604,7 @@ function validateCoverageMergedReportCollision(
     ) {
       throw new Error(`${context} contains a non-passed or invalid suite`);
     }
-    const file = normalizeTestFile(repoRoot, testResult.name);
+    const file = normalizeReportTestFile(repoRoot, testResult.name);
     for (const assertion of testResult.assertionResults) {
       assertionTotal += 1;
       if (
@@ -741,15 +717,129 @@ function classifyDreamerVortoxMarker(identity) {
   if (identity.title.includes("[2B19A3B1-")) {
     matches.push("2B19A3B1");
   }
+  if (identity.title.includes("[2B20A-")) {
+    matches.push("2B20A");
+  }
   if (identity.title.includes("[2B19B-")) {
     matches.push("2B19B");
   }
   if (matches.length !== 1) {
-    throw new Error(
+    const error = new Error(
       `Dreamer-Vortox test must contain exactly one supported marker: ${identity.title}`
     );
+    error.code = "UNKNOWN_OR_AMBIGUOUS_DREAMER_VORTOX_MARKER";
+    throw error;
   }
   return matches[0];
+}
+
+function coverageSelfTestIdentity(marker, title = marker, project = "application-service-dreamer-vortox") {
+  return {
+    project,
+    file: APP_TEST_FILE_FOR_SELF_TEST,
+    ancestorPath: ["self-test"],
+    title: `[${marker}-${title}]`
+  };
+}
+
+const APP_TEST_FILE_FOR_SELF_TEST =
+  "packages/application/src/game-application-service.test.ts";
+
+function coverageContractFail(code) {
+  const error = new Error(code);
+  error.code = code;
+  throw error;
+}
+
+function auditDreamerVortoxPartition(full, core, gained) {
+  const expectedCore = new Set();
+  const expectedGained = new Set();
+  for (const identity of full) {
+    const marker = classifyDreamerVortoxMarker(identity);
+    const key = semanticIdentityKey(identity);
+    if (marker === "2B19B") expectedGained.add(key);
+    else expectedCore.add(key);
+  }
+  const coreKeys = core.map(semanticIdentityKey);
+  const gainedKeys = gained.map(semanticIdentityKey);
+  const coreSet = new Set(coreKeys);
+  const gainedSet = new Set(gainedKeys);
+  if (
+    core.some(
+      (identity) =>
+        identity.project !== "application-service-dreamer-vortox"
+    ) ||
+    gained.some(
+      (identity) =>
+        identity.project !== "application-service-dreamer-vortox"
+    )
+  ) {
+    coverageContractFail("COVERAGE_PARTITION_WRONG_OWNER");
+  }
+  if ([...coreSet].some((key) => gainedSet.has(key))) {
+    coverageContractFail("COVERAGE_PARTITION_INTERSECTION");
+  }
+  if (
+    core.some((identity) => classifyDreamerVortoxMarker(identity) === "2B19B") ||
+    gained.some((identity) => classifyDreamerVortoxMarker(identity) !== "2B19B")
+  ) {
+    coverageContractFail("COVERAGE_PARTITION_CROSS_PLACEMENT");
+  }
+  const selected = new Set([...coreSet, ...gainedSet]);
+  const expected = new Set([...expectedCore, ...expectedGained]);
+  if ([...expected].some((key) => !selected.has(key))) {
+    coverageContractFail("COVERAGE_PARTITION_MISSING");
+  }
+  if ([...selected].some((key) => !expected.has(key))) {
+    coverageContractFail("COVERAGE_PARTITION_UNEXPECTED");
+  }
+  if (
+    coreKeys.length !== coreSet.size ||
+    gainedKeys.length !== gainedSet.size
+  ) {
+    coverageContractFail("COVERAGE_PARTITION_UNEXPECTED");
+  }
+}
+
+function runCoverageSelfTest() {
+  const a3a = coverageSelfTestIdentity("2B19A3A", "A");
+  const a3b1 = coverageSelfTestIdentity("2B19A3B1", "B");
+  const b20a = coverageSelfTestIdentity("2B20A", "C");
+  const b19b = coverageSelfTestIdentity("2B19B", "D");
+  const full = [a3a, a3b1, b20a, b19b];
+  const core = [a3a, a3b1, b20a];
+  const gained = [b19b];
+  const cases = [
+    ["exactly-once", null, () => auditDreamerVortoxPartition(full, core, gained)],
+    ["missing", "COVERAGE_PARTITION_MISSING", () => auditDreamerVortoxPartition(full, core.slice(1), gained)],
+    ["unexpected", "COVERAGE_PARTITION_UNEXPECTED", () => auditDreamerVortoxPartition(full, [...core, coverageSelfTestIdentity("2B20A", "EXTRA")], gained)],
+    ["wrong-owner", "COVERAGE_PARTITION_WRONG_OWNER", () => auditDreamerVortoxPartition(full, [{ ...a3a, project: "wrong" }, a3b1, b20a], gained)],
+    ["intersection", "COVERAGE_PARTITION_INTERSECTION", () => auditDreamerVortoxPartition(full, [...core, b19b], gained)],
+    ["cross-placement", "COVERAGE_PARTITION_CROSS_PLACEMENT", () => auditDreamerVortoxPartition(full, [a3a, a3b1], [b19b, b20a])],
+    ["unknown-marker", "UNKNOWN_OR_AMBIGUOUS_DREAMER_VORTOX_MARKER", () => auditDreamerVortoxPartition([coverageSelfTestIdentity("UNKNOWN", "X")], [], [])]
+  ];
+  for (const [caseId, expectedCode, execute] of cases) {
+    try {
+      execute();
+      if (expectedCode !== null) {
+        process.stderr.write(
+          `VITEST_COVERAGE_GROUPS_SELF_TEST_FAILED ${caseId} NO_ERROR\n`
+        );
+        process.exitCode = 1;
+        return;
+      }
+    } catch (error) {
+      const actualCode = error?.code ?? "UNKNOWN";
+      if (actualCode !== expectedCode) {
+        process.stderr.write(
+          `VITEST_COVERAGE_GROUPS_SELF_TEST_FAILED ${caseId} ${actualCode}\n`
+        );
+        process.exitCode = 1;
+        return;
+      }
+    }
+  }
+  process.stdout.write("VITEST_COVERAGE_GROUPS_SELF_TEST_PASS 7/7\n");
 }
 
 function assertExactKeySet(actualKeys, expectedKeys, context) {
@@ -1023,6 +1113,7 @@ function main() {
     const dreamerVortoxByMarker = new Map([
       ["2B19A3A", []],
       ["2B19A3B1", []],
+      ["2B20A", []],
       ["2B19B", []]
     ]);
     for (const identity of dreamerVortoxFull) {
@@ -1030,7 +1121,8 @@ function main() {
     }
     const expectedCoreKeys = [
       ...dreamerVortoxByMarker.get("2B19A3A"),
-      ...dreamerVortoxByMarker.get("2B19A3B1")
+      ...dreamerVortoxByMarker.get("2B19A3B1"),
+      ...dreamerVortoxByMarker.get("2B20A")
     ].map(semanticIdentityKey);
     const expectedGainedKeys = dreamerVortoxByMarker
       .get("2B19B")
@@ -1203,6 +1295,7 @@ function main() {
         markers: {
           "2B19A3A": dreamerVortoxByMarker.get("2B19A3A").length,
           "2B19A3B1": dreamerVortoxByMarker.get("2B19A3B1").length,
+          "2B20A": dreamerVortoxByMarker.get("2B20A").length,
           "2B19B": dreamerVortoxByMarker.get("2B19B").length
         }
       },
@@ -1234,7 +1327,14 @@ function main() {
 }
 
 try {
-  main();
+  if (
+    process.argv.length === 3 &&
+    process.argv[2] === "--self-test"
+  ) {
+    runCoverageSelfTest();
+  } else {
+    main();
+  }
 } catch (error) {
   const message = error instanceof Error ? error.stack ?? error.message : String(error);
   process.stderr.write(`${message}\n`);

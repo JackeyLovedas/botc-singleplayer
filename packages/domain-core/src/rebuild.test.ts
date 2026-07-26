@@ -4813,7 +4813,7 @@ describe("domain event rebuild", () => {
     expect(seamstress.seamstressRoleTenureState).toStrictEqual(legacyDreamer.seamstressRoleTenureState);
   }, 15_000);
 
-  it("rebuilds Dreamer information for an EVIL target with the target role in the EVIL slot", () => {
+  it("[2B20A-C30] rebuilds accepted legacy Dreamer information for an EVIL target without reinterpretation", () => {
     const [targetChosen, information, settlement] = dreamerInformationBatchEvents("EVIL");
     const state = rebuildGameState([
       ...openDreamerActionStream(),

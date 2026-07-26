@@ -1,101 +1,126 @@
-# Phase 3 Slice 2B20A Test Traceability
+# Phase 3 Slice 2B20A test traceability
 
-## Metadata
+## Authority and status
 
-- sliceId: `2B20A`
-- scope: `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`
-- frozenDesign: `docs/implementation/phase-3-slice-2b20a-design-round-2.md`
-- frozenDesignSha256: `22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f`
-- classificationAppendix: `docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md`
-- designReleaseReviewSha256: `72017917861325619bd6216f437ece3c8758922db51572306113d1d0a4eaae1f`
-- inactiveHistoricalCriteria: `C02,C08,C09`
-- activeCriteria: `C01,C03-C07,C10-C33,C34-C40`
-- activeCriterionCount: `37`
-- primaryIdentityCount: `37`
-- supportingAuthorityCount: `37`
-- duplicatePrimaryIdentities: `0`
-- duplicateSupportingAuthorityIds: `0`
-- mechanismMismatches: `0`
+- Slice: `2B20A`
+- Role coverage: Dreamer remains `PARTIAL`.
+- Infrastructure prerequisite: `2B20AP1`, Infra Repair `1/2`.
+- Static wiring: `PASS`.
+- Hosted evidence: `PENDING_EXACT_HEAD_CI`.
+- Rule evidence: `docs/rules/evidence/2B20A-resolved.md`.
+- Ownership design: `docs/implementation/phase-3-slice-2b20ap1-design-round-3.md`.
+- LF-safe identity authority: `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1-correction-2.md`.
+- Public lifecycle authority: `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-v1-correction-1.md`.
 
-## Primary Evidence Bindings
+## Implementation bindings
 
-Each row has one primary evidence identity. A test named in one row is not the
-primary evidence for another row. Supporting evidence is non-primary.
-For application-service Dreamer/Vortox tests, the existing nonsemantic
-`[2B19A3B1-2B20A]` ownership prefix precedes the criterion-specific
-`ActualTestTitle` shown below; C35 retains its historical `[2B19A3A-C17]`
-ownership/authority prefix. Those prefixes preserve the accepted ordinary and
-coverage shard topology and do not create additional criterion ownership.
+`ActualAncestorPath` is a compact JSON array. C32 is the sole static primary and is not a dynamic test.
 
-- `C01` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C01] proves the exact reachable source impairment and Fang Gu precondition snapshot` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C01` | MainAssertion=`ai-seat-01 Dreamer, ai-seat-10 Philosopher impairment, unique Fang Gu, no Vortox/No Dashii` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C03` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C03] reaches a naturally selected TRUE V7 stream through the real command boundary` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C03` | MainAssertion=`real SubmitDreamerAction naturally selects TRUE and commits V7` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C04` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C04] reaches a naturally selected FALSE V7 stream through the real command boundary` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C04` | MainAssertion=`real SubmitDreamerAction naturally selects FALSE and commits V7` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C05` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C05] settles the base Dreamer task and closes its V3 opportunity atomically` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C05` | MainAssertion=`target, V7 and settlement share one version; opportunity closes` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C06` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C06] derives TRUE as a normal base-Dreamer fact with zero contribution` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T2 CANONICAL_DERIVED_STATE` | SupportingAuthorityId=`SUP-2B20A-C06` | MainAssertion=`TRUE yields NORMAL base Dreamer fact and zero abnormal contribution` | ProductionEntry=`deriveFirstNightAbilityOutcomeFact` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C07` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C07] derives FALSE as one abnormal base-Dreamer drunkenness contribution` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T2 CANONICAL_DERIVED_STATE` | SupportingAuthorityId=`SUP-2B20A-C07` | MainAssertion=`FALSE yields one ABNORMAL SOURCE_DRUNKENNESS base Dreamer fact` | ProductionEntry=`deriveFirstNightAbilityOutcomeFact` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C10` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C10] records the exact nine existing evidence variants for V7` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T2 CANONICAL_DERIVED_STATE` | SupportingAuthorityId=`SUP-2B20A-C10` | MainAssertion=`V7 ledger fact contains nine existing evidence kinds in canonical order` | ProductionEntry=`deriveFirstNightAbilityOutcomeFact` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C11` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B19A2-C06] rejects a V3 self target with a deterministic receipt and no append` | ActualPrimaryLayer=`APPLICATION_COMMAND_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C11` | MainAssertion=`self target rejects without append under preserved deterministic rejection-receipt semantics` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`SELF_TARGET` | MechanismMatch=`PASS`
-- `C12` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C12] rejects an unrepresented Traveller target id at the real command boundary` | ActualPrimaryLayer=`APPLICATION_COMMAND_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C12` | MainAssertion=`fixed-roster model rejects a Traveller target identity without append` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`UNREPRESENTED_TRAVELLER_TARGET` | MechanismMatch=`PASS`
-- `C13` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C13] rejects a forged V3 opportunity id without appending a batch` | ActualPrimaryLayer=`APPLICATION_COMMAND_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C13` | MainAssertion=`forged opportunity identity rejects without append` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`FORGED_OPPORTUNITY_ID` | MechanismMatch=`PASS`
-- `C14` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C14] preserves success receipt replay and fingerprint conflict semantics` | ActualPrimaryLayer=`APPLICATION_COMMAND_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C14` | MainAssertion=`one receipt, idempotent replay, fingerprint conflict` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`FINGERPRINT_CONFLICT` | MechanismMatch=`PASS`
-- `C15` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B19A2-C20] keeps every retryable unsupported or dependency path receipt-free and mutation-free` | ActualPrimaryLayer=`APPLICATION_COMMAND_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C15` | MainAssertion=`unsupported and dependency failures leave events, state and receipts unchanged` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`DEPENDENCY_AND_UNSUPPORTED_MATRIX` | MechanismMatch=`PASS`
-- `C16` | ActualTestFile=`packages/domain-core/src/dreamer.test.ts` | ActualTestTitle=`[2B20A-C16] constructs the complete raw-UTF16 ordered GOOD by EVIL candidate product` | ActualPrimaryLayer=`PURE_POLICY_SEAM` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T3 MODULE_PRIVATE_PURE_CORE` | SupportingAuthorityId=`SUP-2B20A-C16` | MainAssertion=`complete canonical GOOD x EVIL candidate product` | ProductionEntry=`buildCanonicalDrunkBaseDreamerFangGuInformation` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C17` | ActualTestFile=`packages/domain-core/src/dreamer.test.ts` | ActualTestTitle=`[2B20A-C17] selects the first candidate in the parity-selected truth class` | ActualPrimaryLayer=`PURE_POLICY_SEAM` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T3 MODULE_PRIVATE_PURE_CORE` | SupportingAuthorityId=`SUP-2B20A-C17` | MainAssertion=`NUL material parity selects first canonical member` | ProductionEntry=`buildCanonicalDrunkBaseDreamerFangGuInformation` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C18` | ActualTestFile=`packages/domain-core/src/dreamer.test.ts` | ActualTestTitle=`[2B20A-C18] validates the exact 22-key V7 payload and selected top-level roles` | ActualPrimaryLayer=`STRUCTURAL_VALIDATION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C18` | MainAssertion=`exact V7 key and literal shape` | ProductionEntry=`validateStoredDreamerInformationDelivery` | FaultMechanism=`EXACT_SHAPE_MUTATION` | MechanismMatch=`PASS`
-- `C19` | ActualTestFile=`packages/domain-core/src/dreamer.test.ts` | ActualTestTitle=`[2B20A-C19] deep-clones and compares every V7 nested canonical decision` | ActualPrimaryLayer=`STRUCTURAL_VALIDATION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C19` | MainAssertion=`nested canonical structures clone and compare without aliasing` | ProductionEntry=`cloneDreamerInformationSet` | FaultMechanism=`NESTED_MUTATION` | MechanismMatch=`PASS`
-- `C20` | ActualTestFile=`packages/domain-core/src/dreamer.test.ts` | ActualTestTitle=`[2B20A-C20] rejects getter Proxy symbol cycle sparse and nonplain V7 inputs with zero getter calls` | ActualPrimaryLayer=`STRUCTURAL_VALIDATION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C20` | MainAssertion=`hostile canonical data fails closed and invokes zero getters` | ProductionEntry=`validateStoredDreamerInformationDelivery` | FaultMechanism=`HOSTILE_INPUT_MATRIX` | MechanismMatch=`PASS`
-- `C21` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C21] rebuilds the complete accepted V7 stream identically` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C21` | MainAssertion=`accepted V7 stream validates and rebuilds identically` | ProductionEntry=`rebuildOptionalGameState` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C22` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C22] rejects reordered or missing V7 batch members during replay` | ActualPrimaryLayer=`HOSTILE_REPLAY_REJECTION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C22` | MainAssertion=`partial and reordered V7 batch rejects` | ProductionEntry=`rebuildOptionalGameState` | FaultMechanism=`PERSISTED_ORDER_MUTATION` | MechanismMatch=`PASS`
-- `C23` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C23] rejects persisted V7 candidate and policy mutations during replay` | ActualPrimaryLayer=`HOSTILE_REPLAY_REJECTION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C23` | MainAssertion=`candidate and policy mutations reject on rebuild` | ProductionEntry=`rebuildOptionalGameState` | FaultMechanism=`PERSISTED_PAYLOAD_MUTATION` | MechanismMatch=`PASS`
-- `C24` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B19A3B1-C08/C30/C36-S14/S16/S17] rebuilds legacy generations and rejects V4 envelopes evidence and ledger mutations` | ActualPrimaryLayer=`HOSTILE_REPLAY_REJECTION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C24` | MainAssertion=`ledger evidence provenance mutation rejects during accepted-history rebuild` | ProductionEntry=`rebuildOptionalGameState` | FaultMechanism=`LEDGER_EVIDENCE_MUTATION` | MechanismMatch=`PASS`
-- `C25` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C25] projects the accepted V7 pair only to its source player` | ActualPrimaryLayer=`PROJECTION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C25` | MainAssertion=`accepted source receives existing private target and pair shape` | ProductionEntry=`buildPlayerPrivateKnowledgeViewFromAcceptedEventStream` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C26` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C26] omits accepted V7 information from every other player` | ActualPrimaryLayer=`PROJECTION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C26` | MainAssertion=`all non-sources omit Dreamer delivery` | ProductionEntry=`buildPlayerPrivateKnowledgeViewFromAcceptedEventStream` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C27` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C27] leaks no V7 impairment candidate policy Demon or ledger metadata` | ActualPrimaryLayer=`PROJECTION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C27` | MainAssertion=`source projection contains no canonical secrets or audit metadata` | ProductionEntry=`buildPlayerPrivateKnowledgeViewFromAcceptedEventStream` | FaultMechanism=`SECRET_AUDIT` | MechanismMatch=`PASS`
-- `C28` | ActualTestFile=`packages/projections/src/private-knowledge-view.test.ts` | ActualTestTitle=`[2B20A-C28] rejects state-only V7 for both player and AI projection authority` | ActualPrimaryLayer=`PROJECTION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C28` | MainAssertion=`state-only V7 is not accepted-history provenance` | ProductionEntry=`buildPlayerPrivateKnowledgeView` | FaultMechanism=`STATE_ONLY_V7` | MechanismMatch=`PASS`
-- `C29` | ActualTestFile=`packages/projections/src/private-knowledge-view.test.ts` | ActualTestTitle=`[2B20A-C29] rejects hostile state-only V7 accessors and proxies without invoking getters` | ActualPrimaryLayer=`PROJECTION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C29` | MainAssertion=`hostile state-only projection fails closed with zero getters` | ProductionEntry=`buildPlayerPrivateKnowledgeView` | FaultMechanism=`ACCESSOR_AND_REVOKED_PROXY` | MechanismMatch=`PASS`
-- `C30` | ActualTestFile=`packages/domain-core/src/rebuild.test.ts` | ActualTestTitle=`[2B19A2-C30] preserves legacy Dreamer, Seamstress, task, and role-tenure rebuild behavior` | ActualPrimaryLayer=`LEGACY_REPLAY_COMPATIBILITY` | ActualReachability=`R2 LEGACY_OR_IMPORTED_ACCEPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C30` | MainAssertion=`representative legacy accepted history rebuild remains unchanged` | ProductionEntry=`rebuildOptionalGameState` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C31` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C31] preserves Philosopher Dreamer Mathematician first-night order without phase transition` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T2 CANONICAL_DERIVED_STATE` | SupportingAuthorityId=`SUP-2B20A-C31` | MainAssertion=`catalog order keys preserve official relative order and remain FIRST_NIGHT` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C32` | ActualTestFile=`package.json` | ActualTestTitle=`2B20A exact-head full gate execution` | ActualPrimaryLayer=`CROSS_PLATFORM_CI` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C32` | MainAssertion=`six focused tests plus typecheck lint test coverage and future exact-head CI` | ProductionEntry=`pnpm scripts and GitHub CI` | FaultMechanism=`NONE` | MechanismMatch=`PENDING_EXACT_HEAD_CI`
-- `C33` | ActualTestFile=`packages/domain-core/src/dreamer.test.ts` | ActualTestTitle=`[2B19B-S20] statically forbids nondeterministic Dreamer primitives and requires stable sorting` | ActualPrimaryLayer=`CROSS_PLATFORM_CI` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C33` | MainAssertion=`Dreamer implementation avoids forbidden nondeterministic primitives` | ProductionEntry=`source audit` | FaultMechanism=`STATIC_FORBIDDEN_PRIMITIVE_SCAN` | MechanismMatch=`PASS`
-- `C34` | ActualTestFile=`packages/domain-core/src/dreamer.test.ts` | ActualTestTitle=`[2B20A-C34] resolves only the exact canonical-drunk Fang Gu capability` | ActualPrimaryLayer=`PURE_POLICY_SEAM` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T2 CANONICAL_DERIVED_STATE` | SupportingAuthorityId=`SUP-2B20A-C34` | MainAssertion=`only exact canonical drunk plus unique Fang Gu resolves V7 capability` | ProductionEntry=`resolveBaseDreamerV2NormalCapability` | FaultMechanism=`ADJACENT_STATE_MATRIX` | MechanismMatch=`PASS`
-- `C35` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C35] accepts the reachable canonical-drunk base Dreamer through the real Philosopher chain` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C35` | MainAssertion=`real command produces target, V7, settlement, receipt and rebuilt closed state` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C36` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B19A2-C20] keeps every retryable unsupported or dependency path receipt-free and mutation-free` | ActualPrimaryLayer=`APPLICATION_COMMAND_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C36` | MainAssertion=`real adjacent No Dashii and dependency/prospective paths remain fail closed` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`ADJACENT_FAILURE_MATRIX` | MechanismMatch=`PASS`
-- `C37` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C37] attributes the FALSE contribution to Dreamer and never to Philosopher` | ActualPrimaryLayer=`ACCEPTED_STREAM_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C37` | MainAssertion=`one base Dreamer abnormal fact; Philosopher zero; no double count` | ProductionEntry=`deriveFirstNightAbilityOutcomeFact` | FaultMechanism=`NONE` | MechanismMatch=`PASS`
-- `C38` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C38] rejects direct malformed V7 ledger source cross-links fail closed` | ActualPrimaryLayer=`STRUCTURAL_VALIDATION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C38` | MainAssertion=`inconsistent fact source and ability-instance source rejects` | ProductionEntry=`validateFirstNightAbilityOutcomeFactShape` | FaultMechanism=`DIRECT_CROSS_LINK_MUTATION` | MechanismMatch=`PASS`
-- `C39` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C39] rejects coordinated persisted V7 source and impairment substitution` | ActualPrimaryLayer=`HOSTILE_REPLAY_REJECTION` | ActualReachability=`R3 HOSTILE_OR_CORRUPTED_HISTORY` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C39` | MainAssertion=`coordinated persisted attribution substitution rejects on rebuild` | ProductionEntry=`rebuildOptionalGameState` | FaultMechanism=`COORDINATED_PERSISTED_MUTATION` | MechanismMatch=`PASS`
-- `C40` | ActualTestFile=`packages/application/src/game-application-service.test.ts` | ActualTestTitle=`[2B20A-C40] leaves no delivery fact or contribution when the real No Dashii command fails` | ActualPrimaryLayer=`APPLICATION_COMMAND_INTEGRATION` | ActualReachability=`R1 CURRENTLY_REACHABLE_APPLICATION_PATH` | ActualTrust=`T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | SupportingAuthorityId=`SUP-2B20A-C40` | MainAssertion=`real failure commits no V7, settlement, fact, contribution or receipt` | ProductionEntry=`GameApplicationService.execute` | FaultMechanism=`NO_DASHII_UNRESOLVED` | MechanismMatch=`PASS`
+| Criterion | ActualTestFile | ActualTestTitle | ActualAncestorPath | ActualProject | PrimaryKind | SupportingAuthorityId | MechanismMatch | HostedEvidenceStatus |
+|---|---|---|---|---|---|---|---|---|
+| C01 | packages/application/src/game-application-service.test.ts | [2B20A-C01] proves the exact reachable source impairment and Fang Gu precondition snapshot | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-001 | PASS | PENDING_EXACT_HEAD_CI |
+| C03 | packages/application/src/game-application-service.test.ts | [2B20A-C03] reaches a naturally selected TRUE V7 stream through the real command boundary | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-002 | PASS | PENDING_EXACT_HEAD_CI |
+| C04 | packages/application/src/game-application-service.test.ts | [2B20A-C04] reaches a naturally selected FALSE V7 stream through the real command boundary | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-003 | PASS | PENDING_EXACT_HEAD_CI |
+| C05 | packages/application/src/game-application-service.test.ts | [2B20A-C05] settles the base Dreamer task and closes its V3 opportunity atomically | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-004 | PASS | PENDING_EXACT_HEAD_CI |
+| C06 | packages/application/src/game-application-service.test.ts | [2B20A-C06] derives TRUE as a normal base-Dreamer fact with zero contribution | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-005 | PASS | PENDING_EXACT_HEAD_CI |
+| C07 | packages/application/src/game-application-service.test.ts | [2B20A-C07] derives FALSE as one abnormal base-Dreamer drunkenness contribution | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-006 | PASS | PENDING_EXACT_HEAD_CI |
+| C10 | packages/application/src/game-application-service.test.ts | [2B20A-C10] records the exact nine existing evidence variants for V7 | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-007 | PASS | PENDING_EXACT_HEAD_CI |
+| C11 | packages/application/src/game-application-service.test.ts | rejects invalid Dreamer submissions with deterministic receipts | ["GameApplicationService"] | application-service-information-and-later-actions | DYNAMIC_UNMARKED | SUP-2B20A-008 | PASS | PENDING_EXACT_HEAD_CI |
+| C12 | packages/application/src/game-application-service.test.ts | [2B20A-C12] rejects an unrepresented Traveller target id at the real command boundary | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-009 | PASS | PENDING_EXACT_HEAD_CI |
+| C13 | packages/application/src/game-application-service.test.ts | [2B20A-C13] rejects a forged V3 opportunity id without appending a batch | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-010 | PASS | PENDING_EXACT_HEAD_CI |
+| C14 | packages/application/src/game-application-service.test.ts | [2B20A-C14] preserves success receipt replay and fingerprint conflict semantics | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-011 | PASS | PENDING_EXACT_HEAD_CI |
+| C15 | packages/application/src/game-application-service.test.ts | keeps SubmitDreamerAction metadata generation failures classified independently | ["GameApplicationService"] | application-service-information-and-later-actions | DYNAMIC_UNMARKED | SUP-2B20A-012 | PASS | PENDING_EXACT_HEAD_CI |
+| C16 | packages/domain-core/src/dreamer.test.ts | [2B20A-C16] constructs the complete raw-UTF16 ordered GOOD by EVIL candidate product | ["Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer"] | domain-core | DYNAMIC_MARKED | SUP-2B20A-013 | PASS | PENDING_EXACT_HEAD_CI |
+| C17 | packages/domain-core/src/dreamer.test.ts | [2B20A-C17] selects the first candidate in the parity-selected truth class | ["Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer"] | domain-core | DYNAMIC_MARKED | SUP-2B20A-014 | PASS | PENDING_EXACT_HEAD_CI |
+| C18 | packages/domain-core/src/dreamer.test.ts | [2B20A-C18] validates the exact 22-key V7 payload and selected top-level roles | ["Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer"] | domain-core | DYNAMIC_MARKED | SUP-2B20A-015 | PASS | PENDING_EXACT_HEAD_CI |
+| C19 | packages/domain-core/src/dreamer.test.ts | [2B20A-C19] deep-clones and compares every V7 nested canonical decision | ["Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer"] | domain-core | DYNAMIC_MARKED | SUP-2B20A-016 | PASS | PENDING_EXACT_HEAD_CI |
+| C20 | packages/domain-core/src/dreamer.test.ts | [2B20A-C20] rejects getter Proxy symbol cycle sparse and nonplain V7 inputs with zero getter calls | ["Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer"] | domain-core | DYNAMIC_MARKED | SUP-2B20A-017 | PASS | PENDING_EXACT_HEAD_CI |
+| C21 | packages/application/src/game-application-service.test.ts | [2B20A-C21] rebuilds the complete accepted V7 stream identically | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-018 | PASS | PENDING_EXACT_HEAD_CI |
+| C22 | packages/application/src/game-application-service.test.ts | [2B20A-C22] rejects reordered or missing V7 batch members during replay | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-019 | PASS | PENDING_EXACT_HEAD_CI |
+| C23 | packages/application/src/game-application-service.test.ts | [2B20A-C23] rejects persisted V7 candidate and policy mutations during replay | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-020 | PASS | PENDING_EXACT_HEAD_CI |
+| C24 | packages/domain-core/src/rebuild.test.ts | rejects malformed Dreamer replay batches | ["domain event rebuild"] | domain-core-rebuild | DYNAMIC_UNMARKED | SUP-2B20A-021 | PASS | PENDING_EXACT_HEAD_CI |
+| C25 | packages/application/src/game-application-service.test.ts | [2B20A-C25] projects the accepted V7 pair only to its source player | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-022 | PASS | PENDING_EXACT_HEAD_CI |
+| C26 | packages/application/src/game-application-service.test.ts | [2B20A-C26] omits accepted V7 information from every other player | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-023 | PASS | PENDING_EXACT_HEAD_CI |
+| C27 | packages/application/src/game-application-service.test.ts | [2B20A-C27] leaks no V7 impairment candidate policy Demon or ledger metadata | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-024 | PASS | PENDING_EXACT_HEAD_CI |
+| C28 | packages/projections/src/private-knowledge-view.test.ts | [2B20A-C28] rejects state-only V7 for both player and AI projection authority | [] | projections | DYNAMIC_MARKED | SUP-2B20A-025 | PASS | PENDING_EXACT_HEAD_CI |
+| C29 | packages/projections/src/private-knowledge-view.test.ts | [2B20A-C29] rejects hostile state-only V7 accessors and proxies without invoking getters | [] | projections | DYNAMIC_MARKED | SUP-2B20A-026 | PASS | PENDING_EXACT_HEAD_CI |
+| C30 | packages/domain-core/src/rebuild.test.ts | [2B20A-C30] rebuilds accepted legacy Dreamer information for an EVIL target without reinterpretation | ["domain event rebuild"] | domain-core-rebuild | DYNAMIC_MARKED | SUP-2B20A-027 | PASS | PENDING_EXACT_HEAD_CI |
+| C31 | packages/application/src/game-application-service.test.ts | [2B20A-C31] preserves Philosopher Dreamer Mathematician first-night order without phase transition | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-028 | PASS | PENDING_EXACT_HEAD_CI |
+| C32 | .github/workflows/ci.yml | coverage / application-service-dreamer-vortox-core testNamePattern=\[(?:2B19A3A\|2B19A3B1\|2B20A)- | [] | STATIC_REPOSITORY | STATIC | SUP-2B20A-029 | PASS | PENDING_EXACT_HEAD_CI |
+| C33 | packages/domain-core/src/dreamer.test.ts | does not use locale-based sorting in the Dreamer domain model | ["Dreamer information model"] | domain-core | DYNAMIC_UNMARKED | SUP-2B20A-030 | PASS | PENDING_EXACT_HEAD_CI |
+| C34 | packages/domain-core/src/dreamer.test.ts | [2B20A-C34] resolves only the exact canonical-drunk Fang Gu capability | ["Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer"] | domain-core | DYNAMIC_MARKED | SUP-2B20A-031 | PASS | PENDING_EXACT_HEAD_CI |
+| C35 | packages/application/src/game-application-service.test.ts | [2B20A-C35] accepts the reachable canonical-drunk base Dreamer through the real Philosopher chain | ["GameApplicationService"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-032 | PASS | PENDING_EXACT_HEAD_CI |
+| C36 | packages/application/src/game-application-service.test.ts | rejects SubmitDreamerAction accessors before receipt or event work | ["GameApplicationService"] | application-service-information-and-later-actions | DYNAMIC_UNMARKED | SUP-2B20A-033 | PASS | PENDING_EXACT_HEAD_CI |
+| C37 | packages/application/src/game-application-service.test.ts | [2B20A-C37] attributes the FALSE contribution to Dreamer and never to Philosopher | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-034 | PASS | PENDING_EXACT_HEAD_CI |
+| C38 | packages/application/src/game-application-service.test.ts | [2B20A-C38] rejects direct malformed V7 ledger source cross-links fail closed | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-035 | PASS | PENDING_EXACT_HEAD_CI |
+| C39 | packages/application/src/game-application-service.test.ts | [2B20A-C39] rejects coordinated persisted V7 source and impairment substitution | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-036 | PASS | PENDING_EXACT_HEAD_CI |
+| C40 | packages/application/src/game-application-service.test.ts | [2B20A-C40] leaves no delivery fact or contribution when the real No Dashii command fails | ["Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer"] | application-service-dreamer-vortox | DYNAMIC_MARKED | SUP-2B20A-037 | PASS | PENDING_EXACT_HEAD_CI |
 
-## Supporting Authority Records
+## Supporting authority registry
 
-Every `SUP-2B20A-Cxx` identifier above is unique. Its record is:
+| SupportingAuthorityId | Producer | SourceTestOrFixture | AuthorityStatus | UsedByCriteria | MutationDisposition |
+|---|---|---|---|---|---|
+| SUP-2B20A-001 | rule-researcher | docs/rules/evidence/2B20A-resolved.md | ACCEPTED | C01 | NONE |
+| SUP-2B20A-002 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C03 | NONE |
+| SUP-2B20A-003 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C04 | NONE |
+| SUP-2B20A-004 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C05 | NONE |
+| SUP-2B20A-005 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C06 | NONE |
+| SUP-2B20A-006 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C07 | NONE |
+| SUP-2B20A-007 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C10 | NONE |
+| SUP-2B20A-008 | rule-researcher | docs/rules/evidence/2B20A-resolved.md | ACCEPTED | C11 | NONE |
+| SUP-2B20A-009 | rule-researcher | docs/rules/evidence/2B20A-resolved.md | ACCEPTED | C12 | NONE |
+| SUP-2B20A-010 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C13 | NONE |
+| SUP-2B20A-011 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C14 | NONE |
+| SUP-2B20A-012 | accepted-history | packages/application/src/game-application-service.test.ts@[2B19A2-C20] | LEGACY | C15 | NONE |
+| SUP-2B20A-013 | rule-researcher | docs/rules/evidence/2B20A-resolved.md | ACCEPTED | C16 | NONE |
+| SUP-2B20A-014 | rule-researcher | docs/rules/evidence/2B20A-resolved.md | ACCEPTED | C17 | NONE |
+| SUP-2B20A-015 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C18 | CLONE_MUTATED |
+| SUP-2B20A-016 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C19 | CLONE_MUTATED |
+| SUP-2B20A-017 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C20 | CLONE_MUTATED |
+| SUP-2B20A-018 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C21 | NONE |
+| SUP-2B20A-019 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C22 | PERSISTED_OR_IMPORTED_MUTATED |
+| SUP-2B20A-020 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C23 | PERSISTED_OR_IMPORTED_MUTATED |
+| SUP-2B20A-021 | accepted-history | packages/application/src/game-application-service.test.ts@[2B19A3B1-C08/C30/C36-S14/S16/S17] | LEGACY | C24 | PERSISTED_OR_IMPORTED_MUTATED |
+| SUP-2B20A-022 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C25 | NONE |
+| SUP-2B20A-023 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C26 | NONE |
+| SUP-2B20A-024 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C27 | NONE |
+| SUP-2B20A-025 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C28 | CLONE_MUTATED |
+| SUP-2B20A-026 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C29 | CLONE_MUTATED |
+| SUP-2B20A-027 | domain-core | acceptedLegacyDreamerV1() | LEGACY | C30 | NONE |
+| SUP-2B20A-028 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C31 | NONE |
+| SUP-2B20A-029 | repository | .github/workflows/ci.yml | ACCEPTED | C32 | NONE |
+| SUP-2B20A-030 | accepted-history | packages/domain-core/src/dreamer.test.ts@[2B19B-S20] | LEGACY | C33 | NONE |
+| SUP-2B20A-031 | rule-researcher | docs/rules/evidence/2B20A-resolved.md | ACCEPTED | C34 | NONE |
+| SUP-2B20A-032 | accepted-history | SUPR-2B20AP1-001+SUPR-2B20AP1-002+SUPR-2B20AP1-004 | LEGACY | C35 | NONE |
+| SUP-2B20A-033 | accepted-history | packages/application/src/game-application-service.test.ts@[2B19A2-C20] | LEGACY | C36 | NONE |
+| SUP-2B20A-034 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C37 | NONE |
+| SUP-2B20A-035 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C38 | CLONE_MUTATED |
+| SUP-2B20A-036 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C39 | PERSISTED_OR_IMPORTED_MUTATED |
+| SUP-2B20A-037 | test-harness | loadAcceptedBaseDreamerVortoxV3StreamFixture | ACCEPTED | C40 | NONE |
 
-- purpose: corroborate the primary criterion with the frozen rule evidence,
-  immediately preceding accepted prefix, direct pure seam, or accepted legacy
-  control named by that criterion;
-- producer: the cited test's immutable pre-mutation accepted stream or the
-  frozen authority in `docs/rules/evidence/2B20A-resolved.md`;
-- status: `ACCEPTED`;
-- consumer: the matching `Cxx` suffix only;
-- mutation: `NONE` for positive controls, `CLONE_MUTATED` for direct hostile
-  validation, and `PERSISTED_OR_IMPORTED_MUTATED` for replay rejection.
+## Optional supersession links
 
-Supporting authority does not determine primary layer, reachability, trust,
-result, or pass status.
+| SupportingAuthorityId | SupersessionRecordIds |
+|---|---|
+| SUP-2B20A-032 | SUPR-2B20AP1-001,SUPR-2B20AP1-002,SUPR-2B20AP1-004 |
 
-## Execution Status
+## Frozen acceptance
 
-- six required focused test files: `PASS`
-- typecheck: `PASS`
-- lint: `PASS`
-- full ordinary test: `PASS / 35 files / 1572 tests`
-- full coverage assertions: `PASS / 35 files / 1572 tests`
-- full coverage process: `FAIL / exit 1 / one unhandled [vitest-worker]: Timeout calling "onTaskUpdate"`
-- coverage report: `GENERATED / 73.57% statements / 83.38% branches / 97.34% functions`
-- local toolchain: `Node v24.15.0 / shell pnpm 11.9.0 / repository packageManager pnpm@11.7.0`
-- coverage-process classification: `CONDITIONAL_PRODUCT_CANDIDATE_ALLOWED / repair round not consumed`
-- ownership self-test: `PASS / 22 of 22`
-- semantic inventory: `PASS / 37 active / 37 unique primary / 37 unique supporting authority / zero missing or unexpected`
-- deterministic primitive scan: `PASS`
-- exact-head CI: `PENDING`
-
-TRACEABILITY_IMPLEMENTED_C32_PENDING_EXACT_HEAD_CI
+- Candidate schema: `vitest-ownership-candidate-baseline-v2`.
+- Identity encoding: `vitest-semantic-identity-json-tuple-v1`.
+- Structured identities: `1572`; LF-bearing identities: `12`; CR-bearing identities: `0`.
+- Structured inventory SHA-256: `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`.
+- 2B20A ownership hashes before final trace hash capture:
+  - project/current project: `56d9e7f6c6cc39845d3aef4637e4545b3a03181ddfc67fe8df9b760b6a4644d0`;
+  - semantic: `3d639f664458a11014774dc29c95c711ab8705bc20502d180d57abd6ce6db4c6`;
+  - authority: `edc6ae6c04dce5c4f19663152b97c96a9e1527cc81b18b551d95f906bd93c955`;
+  - non-marker ownership: `764888ea567eb545303c17d0cc89706d0b871360a5271912910257397f2829a8`;
+  - physical test-file set: `55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab`.
+- Primary identities: `37/37` (`36` dynamic, `1` static).
+- Supporting authorities: `37/37`; every authority is defined and consumed exactly once.
+- Application ownership executions: `22/22`.
+- Compound, borrowed, duplicate, and cross-contract primaries: `0`.
+- Ordinary inventory: `1572` across unchanged `9` groups.
+- Coverage inventory: `1572` across unchanged `11` groups.
+- Windows inventory: `305` across unchanged `W1-W7`.
+- Full local coverage is intentionally unrun for this infrastructure repair.
