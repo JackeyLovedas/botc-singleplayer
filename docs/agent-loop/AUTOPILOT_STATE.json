@@ -1,6 +1,6 @@
 {
-  "status": "HUMAN_BLOCKED",
-  "detailedStatus": "2B20AP1_FINAL_DESIGN_ROUND_3_MATERIALIZED_PENDING_FINAL_INDEPENDENT_RULE_DESIGN_REVIEW",
+  "status": "RUNNING",
+  "detailedStatus": "2B20AP1_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1580,8 +1580,8 @@
     ]
   },
   "slice2B20AP1Gate": {
-    "status": "HUMAN_BLOCKED",
-    "detailedStatus": "2B20AP1_FINAL_DESIGN_ROUND_3_MATERIALIZED_PENDING_FINAL_INDEPENDENT_RULE_DESIGN_REVIEW",
+    "status": "RUNNING",
+    "detailedStatus": "2B20AP1_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1604,18 +1604,17 @@
     "maxDesignRounds": 3,
     "designCorrectionRound": 2,
     "maxDesignCorrectionRounds": 2,
-    "designReviewPath": "docs/implementation/phase-3-slice-2b20ap1-design-review-round-2.md",
-    "designReviewSha256": "3710c07c099cc268725e8550bdfa72030e2ed4d01453096a78dab3100cf368de",
-    "designReviewBytes": 12806,
-    "designReviewLfNormalizedLineCount": 195,
-    "designReviewedHead": "5d8827626d092e05999d8c1888ce2d36afe9bdc9",
-    "designReviewTimestamp": "2026-07-26T06:42:16.9841751Z",
-    "designVerdict": null,
-    "ruleDesignPass": false,
-    "remainingDesignBlockers": [
-      "PENDING_FINAL_INDEPENDENT_2B20AP1_RULE_DESIGN_REVIEW_ROUND_3"
-    ],
-    "implementationAuthorized": false,
+    "designReviewPath": "docs/implementation/phase-3-slice-2b20ap1-design-review-round-3.md",
+    "designReviewSha256": "25489a5f49b599c62a7db5c69e50d7f2948df9c7c106669189184454cc393d14",
+    "designReviewBytes": 5689,
+    "designReviewLfNormalizedLineCount": 102,
+    "designReviewedHead": "814c8b2de8ec164db84155031f26e661fb0f9482",
+    "designReviewTimestamp": "2026-07-26T07:36:47.2094330Z",
+    "designVerdict": "RULE_DESIGN_PASS",
+    "designReviewFindings": [],
+    "ruleDesignPass": true,
+    "remainingDesignBlockers": [],
+    "implementationAuthorized": true,
     "infrastructureRepairRound": 0,
     "maxInfrastructureRepairRounds": 2,
     "productRepairRoundConsumed": false,
@@ -1628,11 +1627,11 @@
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_FINAL_INDEPENDENT_2B20AP1_RULE_DESIGN_REVIEW_ROUND_3",
+      "PENDING_2B20AP1_LOCAL_IMPLEMENTATION",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_RULE_DESIGN_REVIEW_ROUND_3"
+    "nextAction": "IMPLEMENT_2B20AP1_LOCAL_INFRASTRUCTURE_CONTRACT"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2588,7 +2587,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_FINAL_INDEPENDENT_2B20AP1_RULE_DESIGN_REVIEW_ROUND_3",
+    "PENDING_2B20AP1_LOCAL_IMPLEMENTATION",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3357,8 +3356,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the complete final 2B20AP1 Design Round 3 replacement at docs/implementation/phase-3-slice-2b20ap1-design-round-3.md with finalDesignSha256 4f2fab7b877ca98e1fb46974661874353dd78a1c6b388cb91d3031c59608e003. Design correction budget is exhausted at 3/3 and 2/2; one final independent Round 3 rule-design review remains, and implementation remains unauthorized.",
+  "lastAction": "Archived the complete independent 2B20AP1 final Design Round 3 review verbatim at docs/implementation/phase-3-slice-2b20ap1-design-review-round-3.md with SHA-256 25489a5f49b599c62a7db5c69e50d7f2948df9c7c106669189184454cc393d14. The reviewer returned RULE_DESIGN_PASS with findings=[] and remainingBlockers=[]; final design/review bytes are frozen, design remains 3/3 and correction 2/2, Infrastructure Repair remains 0/2, and bounded local implementation is authorized.",
   "lastError": null,
-  "requiredNextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_RULE_DESIGN_REVIEW_ROUND_3",
-  "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_RULE_DESIGN_REVIEW_ROUND_3"
+  "requiredNextAction": "IMPLEMENT_2B20AP1_LOCAL_INFRASTRUCTURE_CONTRACT",
+  "nextAction": "IMPLEMENT_2B20AP1_LOCAL_INFRASTRUCTURE_CONTRACT"
 }

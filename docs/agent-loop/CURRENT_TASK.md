@@ -1,34 +1,37 @@
 # Current Task
 
-## 2B20AP1 final design round 3 — independent rule-design review pending
+## 2B20AP1 final design round 3 — RULE_DESIGN_PASS, implementation authorized
 
 - The complete final replacement design is
   `docs/implementation/phase-3-slice-2b20ap1-design-round-3.md`, exact UTF-8
   `finalDesignSha256=4f2fab7b877ca98e1fb46974661874353dd78a1c6b388cb91d3031c59608e003`,
   `30091` bytes and `176` LF-normalized lines.
-- Its terminal is exactly `READY_FOR_FINAL_RULE_DESIGN_REVIEW_ROUND_3`.
-- It preserves governance `GO`, immutable rule evidence, the original/Round-2
-  designs, and both prior reviews. It is the final docs-only correction and
-  closes only the five Round-2 design findings at design-contract level.
-- Canonical state is `HUMAN_BLOCKED /
-  2B20AP1_FINAL_DESIGN_ROUND_3_MATERIALIZED_PENDING_FINAL_INDEPENDENT_RULE_DESIGN_REVIEW`.
+- The complete independent final review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-design-review-round-3.md`,
+  exact UTF-8 SHA-256
+  `25489a5f49b599c62a7db5c69e50d7f2948df9c7c106669189184454cc393d14`,
+  `5689` bytes and `102` LF-normalized lines.
+- The reviewer bound the report to exact HEAD
+  `814c8b2de8ec164db84155031f26e661fb0f9482` and returned
+  `RULE_DESIGN_PASS`, `findings=[]`, `remainingBlockers=[]`, and
+  `implementationAuthorized=true`.
+- Canonical state is `RUNNING /
+  2B20AP1_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED`.
 - `designRound=3/3`, `designCorrectionRound=2/2`, `maxCorrection=2`,
-  `ruleDesignPass=false`, and `implementationAuthorized=false`.
+  `ruleDesignPass=true`, and `implementationAuthorized=true`.
 - Infrastructure Repair remains `0/2`; Product Repair is untouched.
   Rules, product behavior, profiles, topology, processes, timeouts, and
   dependencies are unchanged.
-- Remaining design blocker is
-  `PENDING_FINAL_INDEPENDENT_2B20AP1_RULE_DESIGN_REVIEW_ROUND_3`.
-- Any missing, truncated, unknown, blocked, or non-pass Round-3 verdict triggers
-  immediate 2B20AP1 stop-loss. There is no Design Round 4.
+- The implementation must follow only the immutable Round-3 design allowlist;
+  the final design and all review archives are read-only. There is no Design
+  Round 4.
 - Linux worker RPC and Windows W7 unknown-exit blockers remain.
-- Required next action is
-  `RUN_FINAL_INDEPENDENT_2B20AP1_RULE_DESIGN_REVIEW_ROUND_3`.
-- No implementation, script/test/workflow/production/profile mutation, push,
-  PR, CI, Linux/Windows investigation, or 2B20B work is authorized.
+- Required next action is `IMPLEMENT_2B20AP1_LOCAL_INFRASTRUCTURE_CONTRACT`.
+- Push, PR, hosted CI, Linux/Windows investigation, full local coverage,
+  production/profile mutation, or 2B20B work remains unauthorized.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active final-design-review-pending state.
+not override the active implementation-authorized state.
 
 ## Historical checkpoint — 2B20AP1 design materialized, independent rule-design review pending
 
