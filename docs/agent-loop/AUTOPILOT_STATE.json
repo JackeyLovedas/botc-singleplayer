@@ -1,6 +1,6 @@
 {
-  "status": "RUNNING",
-  "detailedStatus": "2B20AP1_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED",
+  "status": "HUMAN_BLOCKED",
+  "detailedStatus": "2B20AP1_FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1580,8 +1580,8 @@
     ]
   },
   "slice2B20AP1Gate": {
-    "status": "RUNNING",
-    "detailedStatus": "2B20AP1_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED",
+    "status": "HUMAN_BLOCKED",
+    "detailedStatus": "2B20AP1_FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1614,24 +1614,49 @@
     "designReviewFindings": [],
     "ruleDesignPass": true,
     "remainingDesignBlockers": [],
-    "implementationAuthorized": true,
+    "implementationAuthorized": false,
+    "implementationContinuationAuthorized": false,
+    "implementationCommit": null,
+    "phase2DraftsRestoredToHead": "3c9ff67e7a08eccb336936883be5b8e1fe1768db",
+    "triagePath": "docs/implementation/phase-3-slice-2b20ap1-frozen-raw-inventory-conflict-triage.md",
+    "triageSha256": "0d0aa020e713ed09f0d79d79fdcc6b57a6883def4feecc29ef00f1e484c7b45e",
+    "triageBytes": 5812,
+    "triageLfLineCount": 115,
+    "triageVerdict": "HUMAN_BLOCKED",
+    "triageBlocker": "FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
+    "candidateAttemptCount": 1,
+    "candidateAttemptExitCode": 1,
+    "candidateAttemptStderr": "VITEST_RAW_INVENTORY_INVALID_NAME",
+    "candidateAttemptStdout": "",
+    "candidateCreated": false,
+    "rawInventoryEntries": 1572,
+    "rawInventoryNamesWithLf": 12,
+    "rawInventoryLfIndexes": "518-529",
+    "rawInventorySha256": "a76758ea7c162cc96710c7a3765fadf622091e0e7e32cd393e47692e2920074f",
+    "tempCleanupStatus": "REJECTED_BEFORE_EXECUTION_BY_TOOL_POLICY",
+    "tempSeedPath": "C:\\Users\\wjl\\AppData\\Local\\Temp\\tmp30A8.tmp",
+    "tempSeedExists": true,
+    "tempInventoryPath": "C:\\Users\\wjl\\AppData\\Local\\Temp\\tmp30A8.tmp.inventory.json",
+    "tempInventoryExists": true,
+    "tempCandidatePath": "C:\\Users\\wjl\\AppData\\Local\\Temp\\tmp30A8.tmp.candidate.json",
+    "tempCandidateExists": false,
     "infrastructureRepairRound": 0,
     "maxInfrastructureRepairRounds": 2,
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "GOVERNANCE_GO_NOT_LOCALLY_CLOSED",
+    "ownershipStatus": "NOT_LOCALLY_CLOSED_HUMAN_BLOCKED",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_2B20AP1_LOCAL_IMPLEMENTATION",
+      "FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "IMPLEMENT_2B20AP1_LOCAL_INFRASTRUCTURE_CONTRACT"
+    "nextAction": "REQUEST_NEW_USER_DESIGN_AUTHORIZATION_OR_RESLICE_FOR_LF_IDENTITY_ENCODING_OR_12_TITLE_ADJUSTMENT"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2587,7 +2612,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_2B20AP1_LOCAL_IMPLEMENTATION",
+    "FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3356,8 +3381,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent 2B20AP1 final Design Round 3 review verbatim at docs/implementation/phase-3-slice-2b20ap1-design-review-round-3.md with SHA-256 25489a5f49b599c62a7db5c69e50d7f2948df9c7c106669189184454cc393d14. The reviewer returned RULE_DESIGN_PASS with findings=[] and remainingBlockers=[]; final design/review bytes are frozen, design remains 3/3 and correction 2/2, Infrastructure Repair remains 0/2, and bounded local implementation is authorized.",
-  "lastError": null,
-  "requiredNextAction": "IMPLEMENT_2B20AP1_LOCAL_INFRASTRUCTURE_CONTRACT",
-  "nextAction": "IMPLEMENT_2B20AP1_LOCAL_INFRASTRUCTURE_CONTRACT"
+  "lastAction": "Archived the independent 2B20AP1 frozen raw-inventory feasibility triage verbatim, restored all seven uncommitted phase-2 drafts exactly to HEAD 3c9ff67e7a08eccb336936883be5b8e1fe1768db, and recorded the first and only candidate attempt exit 1 with VITEST_RAW_INVENTORY_INVALID_NAME and no candidate file. The triage returned HUMAN_BLOCKED for FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT; Design Round remains 3/3, Design Correction 2/2, Infrastructure Repair 0/2, and Product Repair remains complete and unchanged.",
+  "lastError": "FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT",
+  "requiredNextAction": "REQUEST_NEW_USER_DESIGN_AUTHORIZATION_OR_RESLICE_FOR_LF_IDENTITY_ENCODING_OR_12_TITLE_ADJUSTMENT",
+  "nextAction": "REQUEST_NEW_USER_DESIGN_AUTHORIZATION_OR_RESLICE_FOR_LF_IDENTITY_ENCODING_OR_12_TITLE_ADJUSTMENT"
 }

@@ -1,6 +1,6 @@
 # Project State
 
-## Current state — 2B20AP1 RULE_DESIGN_PASS, local implementation authorized
+## Current state — 2B20AP1 HUMAN_BLOCKED by frozen raw Vitest name conflict
 
 - The complete final replacement design is
   `docs/implementation/phase-3-slice-2b20ap1-design-round-3.md`, exact UTF-8
@@ -15,21 +15,44 @@
 - The reviewer returned `RULE_DESIGN_PASS`, `findings=[]`,
   `remainingBlockers=[]`, `behaviorDesignChanged=false`,
   `ruleSemanticsChanged=false`, and `implementationAuthorized=true`.
-- Control is `RUNNING / 2B20AP1_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED`;
+- Independent feasibility triage is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-frozen-raw-inventory-conflict-triage.md`,
+  exact UTF-8 SHA-256
+  `0d0aa020e713ed09f0d79d79fdcc6b57a6883def4feecc29ef00f1e484c7b45e`,
+  `5812` bytes and `115` LF lines. It returns `HUMAN_BLOCKED` with blocker
+  `FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT`.
+- The required unfiltered `1572`-entry Vitest inventory has `12` existing
+  legal names with LF at indexes `518–529`. The frozen canonicalizer requires
+  LF rejection, so no design-conforming candidate or live audit is feasible.
+- The first and only candidate attempt exited `1` with
+  `VITEST_RAW_INVENTORY_INVALID_NAME`, produced no stdout and created no
+  candidate. All seven phase-2 drafts were restored exactly to HEAD
+  `3c9ff67e7a08eccb336936883be5b8e1fe1768db`; no phase-2 implementation commit
+  exists.
+- Tool policy rejected the validated, non-recursive literal-path cleanup
+  before execution. The OS-temp seed and inventory remain; the candidate path
+  does not exist.
+- Control is `HUMAN_BLOCKED /
+  2B20AP1_FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT`;
   `designRound=3/3`, `designCorrectionRound=2/2`, `maxCorrection=2`,
-  `ruleDesignPass=true`, and `implementationAuthorized=true`.
+  and `ruleDesignPass=true`; implementation continuation is unauthorized.
 - Infrastructure Repair remains `0/2`; Product Repair is untouched.
   Governance remains `GO`; rules, product behavior, coverage profiles,
   topology, processes, timeouts, dependencies and role coverage are unchanged.
 - Final design and review bytes are immutable and absent from the
-  implementation allowlist. There is no Design Round 4.
-- Linux worker RPC and Windows W7 unknown-exit blockers remain.
-- Required next action is `IMPLEMENT_2B20AP1_LOCAL_INFRASTRUCTURE_CONTRACT`.
-- No push, PR, hosted CI, full local coverage, Linux/Windows investigation,
-  product/profile change, or 2B20B work is authorized.
+  implementation allowlist. There is no Design Round 4, and Infrastructure
+  Repair cannot change this frozen contract.
+- Linux worker RPC and Windows W7 unknown-exit blockers remain downstream.
+- Required next action is
+  `REQUEST_NEW_USER_DESIGN_AUTHORIZATION_OR_RESLICE_FOR_LF_IDENTITY_ENCODING_OR_12_TITLE_ADJUSTMENT`,
+  choosing either a reversible collision-free legal-LF identity encoding or
+  explicit authority to adjust the 12 existing titles and inventory authority.
+- No push, PR, hosted CI, candidate rerun, implementation, full local coverage,
+  Linux/Windows investigation, product/profile change, or 2B20B work is
+  authorized.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active implementation-authorized state.
+not override the active HUMAN_BLOCKED state.
 
 ## Historical checkpoint — 2B20AP1 design awaiting independent rule-design review
 
