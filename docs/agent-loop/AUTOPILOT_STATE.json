@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
+  "detailedStatus": "2B20AP1_LF_AMENDMENT_CORRECTION_BUDGET_EXHAUSTED",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1581,7 +1581,7 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
+    "detailedStatus": "2B20AP1_LF_AMENDMENT_CORRECTION_BUDGET_EXHAUSTED",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1622,11 +1622,13 @@
       "bytes": 18650,
       "lfLineCount": 357,
       "terminal": "READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
-      "status": "FINAL_CORRECTION_2_MATERIALIZED_PENDING_INDEPENDENT_REVIEW",
-      "reviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
+      "status": "CORRECTION_BUDGET_EXHAUSTED_HUMAN_BLOCKED",
+      "reviewVerdict": "HUMAN_BLOCKED",
       "reviewPass": false,
       "remainingReviewBlockers": [
-        "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW"
+        "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN",
+        "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION",
+        "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE"
       ],
       "amendmentCorrectionRound": 2,
       "maxAmendmentCorrectionRounds": 2,
@@ -1699,7 +1701,7 @@
         "bytes": 27099,
         "lfLineCount": 571,
         "terminal": "READY_FOR_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
-        "status": "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
+        "status": "REVIEWED_HUMAN_BLOCKED_CORRECTION_BUDGET_EXHAUSTED",
         "parentCorrectionCommit": "41d3eac2cd0184bb2063b0f4de6b79dafbc78c66",
         "closedFindingIdsAtDesignContractLevel": [
           "LF3-VITEST-WORKSPACE-DEPRECATION_CAPTURE_CONTRADICTION"
@@ -1722,6 +1724,30 @@
         "closeContract": "EXCEPTION_SAFE_CLOSE_ATTEMPTED_EXACTLY_ONCE_WHEN_INSTANCE_EXISTS_BEFORE_CANDIDATE_USE",
         "failureContract": "ALTERED_ADDITIONAL_REPEATED_NON_STRING_WRONG_PHASE_DIAGNOSTICS_INTERNAL_STDOUT_ERRORS_MALFORMED_RESULTS_MISSING_APIS_OR_CLOSE_FAILURE_REJECT_WITHOUT_LEAK",
         "requiredLf3TestGroupCount": 5,
+        "implementationAuthorized": false
+      },
+      "finalReview": {
+        "path": "docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-final.md",
+        "sha256": "df96cfa33fb2c23e570896ab3722d1ceece6f223568301a3459eac135960a1b9",
+        "bytes": 9377,
+        "lfLineCount": 141,
+        "reviewedHead": "070ac746bc25f93a0a3f391fe7b97a95336d87d6",
+        "reviewTimestamp": "2026-07-26T10:42:00.9229399Z",
+        "reviewScope": "FINAL_INDEPENDENT_READ_ONLY_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW_COMBINED_ROUND_3_PLUS_FINAL_CORRECTION_2_NOT_DESIGN_ROUND_4",
+        "designVerdict": "HUMAN_BLOCKED",
+        "findings": [
+          "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN",
+          "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION",
+          "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE"
+        ],
+        "remainingBlockers": [
+          "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN",
+          "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION",
+          "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE"
+        ],
+        "lf1Closure": "NOT_CLOSED",
+        "lf2Closure": "CLOSED",
+        "lf3Closure": "NOT_CLOSED",
         "implementationAuthorized": false
       },
       "infrastructureDesignChanged": true,
@@ -1806,18 +1832,20 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "NOT_LOCALLY_CLOSED_PENDING_FINAL_LF_AMENDMENT_CORRECTION_2_REVIEW",
+    "ownershipStatus": "NOT_LOCALLY_CLOSED_LF_AMENDMENT_CORRECTION_BUDGET_EXHAUSTED",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
+      "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN",
+      "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION",
+      "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW"
+    "nextAction": "REQUEST_NEW_USER_AUTHORIZATION_FOR_2B20AP1_LF_LIFECYCLE_DESIGN_CORRECTION_OR_RESLICE"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2773,7 +2801,9 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
+    "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN",
+    "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION",
+    "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3542,8 +3572,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the second complete independent 2B20AP1-LF1 amendment review verbatim with RULE_DESIGN_FIX_REQUIRED and the sole LF3 Vitest workspace-deprecation capture blocker, then materialized final standalone Correction 2/2. Correction 2 inherits LF1/LF2 and closes only LF3 at design-contract level by freezing Vitest 3.2.6 source phase, root-config label, exact plain-or-six-SGR raw bytes, one occurrence, internal consumption, no external success stderr, fail-closed error handling and exception-safe close while preserving one instance and one public collectTests call without callbacks. Implementation remains unauthorized and Infrastructure Repair remains 0/2 pending final independent correction review; any non-pass exhausts the correction budget and no Correction 3 exists.",
+  "lastAction": "Archived the complete final independent 2B20AP1-LF1 amendment review verbatim and performed docs/control-only Operational Recovery. The reviewer returned HUMAN_BLOCKED with exact blockers LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN, LF1-GLOB_INVOCATION_COUNT_CONTRADICTION and LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE. LF2 is closed; LF1 and LF3 are not closed. Amendment Correction 2/2 is exhausted, no Correction 3 or implementation commit is authorized, implementationAuthorized remains false and Infrastructure Repair remains 0/2. Product Repair completion is retained and downstream Linux/Windows blockers remain.",
   "lastError": null,
-  "requiredNextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
-  "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW"
+  "requiredNextAction": "REQUEST_NEW_USER_AUTHORIZATION_FOR_2B20AP1_LF_LIFECYCLE_DESIGN_CORRECTION_OR_RESLICE",
+  "nextAction": "REQUEST_NEW_USER_AUTHORIZATION_FOR_2B20AP1_LF_LIFECYCLE_DESIGN_CORRECTION_OR_RESLICE"
 }

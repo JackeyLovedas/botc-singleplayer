@@ -1,6 +1,50 @@
 # Current Task
 
-## 2B20AP1-LF1 — final Correction 2 pending independent review
+## 2B20AP1-LF1 — amendment correction budget exhausted
+
+- The complete final independent amendment review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-final.md`,
+  exact UTF-8 SHA-256
+  `df96cfa33fb2c23e570896ab3722d1ceece6f223568301a3459eac135960a1b9`,
+  `9377` bytes and `141` LF lines. It is bound to exact reviewed HEAD
+  `070ac746bc25f93a0a3f391fe7b97a95336d87d6` and timestamp
+  `2026-07-26T10:42:00.9229399Z`.
+- The independent reviewer returned exact `HUMAN_BLOCKED`. The three exact
+  amendment blockers are
+  `LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN`,
+  `LF1-GLOB_INVOCATION_COUNT_CONTRADICTION`, and
+  `LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE`.
+- LF2 is closed. LF1 is not closed because the frozen lifecycle invokes glob
+  discovery twice while requiring one invocation and cannot prove ownership
+  of resources created before a rejected `createVitest` returns. LF3 is not
+  closed because the exact diagnostic occurs before `createVitest` resolves,
+  before the frozen `INITIALIZING` phase; pre-return close remains unprovable.
+- Correction 2 was the final authorized amendment correction.
+  `amendmentCorrectionRound=2/2`, `thirdCorrectionAuthorized=false`,
+  `implementationAuthorized=false`, and Infrastructure Repair remains `0/2`.
+  No Correction 3 or implementation commit exists or is authorized.
+- Canonical control is `HUMAN_BLOCKED /
+  2B20AP1_LF_AMENDMENT_CORRECTION_BUDGET_EXHAUSTED`.
+- Remaining blockers are
+  `LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN`,
+  `LF1-GLOB_INVOCATION_COUNT_CONTRADICTION`,
+  `LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `REQUEST_NEW_USER_AUTHORIZATION_FOR_2B20AP1_LF_LIFECYCLE_DESIGN_CORRECTION_OR_RESLICE`.
+- Product Repair remains completed under its accepted evidence-only stop-loss
+  override. No product behavior, rule, title, ownership baseline, topology,
+  profile, timeout, dependency, workflow, package, lockfile or role-coverage
+  state changed during Operational Recovery.
+- No candidate, product test, coverage, implementation, Infrastructure Repair,
+  push, PR, CI, Linux/Windows investigation, or next-slice work is authorized
+  or was performed.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active correction-budget-exhausted state.
+
+## Historical checkpoint — final Correction 2 pending independent review
 
 - The second complete independent amendment review is archived verbatim at
   `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-2.md`,
@@ -56,8 +100,8 @@
 - No script, test, workflow, production, profile, candidate, local gate, push,
   PR, CI, Linux/Windows investigation, or 2B20B work was performed.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active final-Correction-2-review-pending state.
+The historical final-Correction-2-review-pending checkpoint above returned
+`HUMAN_BLOCKED`; it does not authorize implementation.
 
 ## Historical checkpoint — 2B20AP1-LF1 Correction 1 pending independent review
 
