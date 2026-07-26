@@ -1,6 +1,40 @@
 # Current Task
 
-## 2B20AP1 design materialized — independent rule-design review pending
+## 2B20AP1 design review round 1 — correction required
+
+- The complete independent review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-design-review-round-1.md`,
+  SHA-256
+  `eedea1f3c721c1878683700b275cd164ee62c090eeb1298b88a39588db548943`,
+  `13522` bytes and `195` LF-normalized lines.
+- It reviewed exact HEAD `43c764f3e6542afd93994032338f045d121965ae`
+  at `2026-07-26T05:56:16.5292898Z`.
+- Reviewer verdict is exactly `RULE_DESIGN_FIX_REQUIRED`; the nine exact
+  design blockers are:
+  `D01_OWNERSHIP_CONTRACT_RUNTIME_SHAPE_INVALID`,
+  `D02_REAL_PATHS_AND_CLI_DO_NOT_MATCH`,
+  `D03_C28_C29_PHYSICAL_IDENTITIES_INCORRECT`,
+  `D04_C30_IS_STILL_A_BORROWED_REGISTERED_PRIMARY`,
+  `D05_SUP_REGISTRY_VIOLATES_REVIEW_PROTOCOL_SCHEMA`,
+  `D06_LOCAL_GATE_EXCEEDS_USER_B6_AUTHORITY`,
+  `D07_CANDIDATE_BASELINE_CLI_AND_OUTPUT_UNDEFINED`,
+  `D08_CONTROL_DOC_ALLOWLIST_IS_INCOMPLETE_AND_NAMES_NONEXISTENT_FILES`, and
+  `D09_SUPERSESSION_GRAPH_AND_SUBCASE_PROOF_NOT_SELF_CONTAINED`.
+- Canonical state is `HUMAN_BLOCKED /
+  2B20AP1_DESIGN_REVIEW_ROUND_1_FIX_REQUIRED`.
+- `designRound=1/2`, `designCorrectionRound=1`,
+  `ruleDesignPass=false`, and `implementationAuthorized=false`.
+- Infrastructure Repair remains `0/2`; Product Repair is untouched.
+  Governance remains `GO`; rules, product behavior, and profiles are unchanged.
+- Linux worker RPC and Windows W7 unknown-exit blockers remain.
+- Required next action is `CREATE_2B20AP1_DESIGN_ROUND_2_CORRECTION`.
+- The original design is immutable review history. No implementation, push,
+  PR, CI, Linux/Windows investigation, or 2B20B work is authorized.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active design-correction-required state.
+
+## Historical checkpoint — 2B20AP1 design materialized, independent rule-design review pending
 
 - The complete bounded design is
   `docs/implementation/phase-3-slice-2b20ap1-design.md`, exact UTF-8 SHA-256
