@@ -1,5 +1,30 @@
 # Current Task
 
+## 2B20AP1 — final implementation review HUMAN_BLOCKED; repair budget exhausted
+
+- The complete independent final review of exact implementation HEAD
+  `de2e008fb85fd3c1ed933936af58cdbd970f879d` is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-infrastructure-implementation-review-final.md`,
+  SHA-256
+  `81022f93b993f0ba02febfeadf2789595539eef1c260ff71546635fc2c881a01`,
+  `10092` bytes and `172` LF lines.
+- Verdict is `HUMAN_BLOCKED`. The exact local implementation blockers are
+  `LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE` and
+  `CONTROL_ACTIVE_REPAIR_STATE_CONTRADICTION`.
+- Infrastructure Repair is exhausted at `2/2`; Repair 3 does not exist and
+  `implementationAuthorized=false`. This operational recovery does not fix
+  either blocker or claim Finding 2 implementation acceptance.
+- Candidate, ownership, routing, traceability, title and authorized local gate
+  PASS results remain historical evidence only. Local acceptance is blocked.
+- `LINUX_WORKER_RPC_CI_BLOCKER` and `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER` remain
+  separate downstream blockers.
+- Active control is `HUMAN_BLOCKED /
+  2B20AP1_INFRASTRUCTURE_REPAIR_BUDGET_EXHAUSTED`. Required next action is
+  `REQUEST_NEW_USER_REPAIR_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this terminal stop-loss state.
+
 ## 2B20AP1 — final Infra Repair 2/2 locally closed pending independent review
 
 - The sole authorized final implementation repair closes all three findings

@@ -1,6 +1,6 @@
 {
-  "status": "RUNNING",
-  "detailedStatus": "2B20AP1_INFRA_REPAIR_2_LOCALLY_CLOSED_PENDING_FINAL_INDEPENDENT_IMPLEMENTATION_REVIEW",
+  "status": "HUMAN_BLOCKED",
+  "detailedStatus": "2B20AP1_INFRASTRUCTURE_REPAIR_BUDGET_EXHAUSTED",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1580,8 +1580,8 @@
     ]
   },
   "slice2B20AP1Gate": {
-    "status": "RUNNING",
-    "detailedStatus": "2B20AP1_INFRA_REPAIR_1_LOCALLY_CLOSED_PENDING_CONTROLLER_REVIEW",
+    "status": "HUMAN_BLOCKED",
+    "detailedStatus": "2B20AP1_INFRASTRUCTURE_REPAIR_BUDGET_EXHAUSTED",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1984,7 +1984,7 @@
     },
     "implementationAuthorized": false,
     "implementationContinuationAuthorized": false,
-    "implementationCommit": "FORMAL_REPAIR_2_COMMIT_CONTAINING_THIS_CONTROL_STATE",
+    "implementationCommit": "de2e008fb85fd3c1ed933936af58cdbd970f879d",
     "repair1ImplementationCommit": "2e7ecb95e589eceff38484d928017260314bfb36",
     "repair2ParentCommit": "4552ad03e542a4958f219c82af9e22c1b081ba1a",
     "implementationReviewRepair1": {
@@ -2012,8 +2012,37 @@
       "repair2Authorized": true,
       "repair3Authorized": false
     },
+    "implementationReviewFinal": {
+      "path": "docs/implementation/phase-3-slice-2b20ap1-infrastructure-implementation-review-final.md",
+      "sha256": "81022f93b993f0ba02febfeadf2789595539eef1c260ff71546635fc2c881a01",
+      "bytes": 10092,
+      "lfLineCount": 172,
+      "reviewedHead": "de2e008fb85fd3c1ed933936af58cdbd970f879d",
+      "reviewTimestamp": "2026-07-26T13:54:12.3658197Z",
+      "verdict": "HUMAN_BLOCKED",
+      "findings": [
+        "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE",
+        "CONTROL_ACTIVE_REPAIR_STATE_CONTRADICTION"
+      ],
+      "remainingBlockers": [
+        "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE",
+        "CONTROL_ACTIVE_REPAIR_STATE_CONTRADICTION"
+      ],
+      "lifecycleAudit": "HUMAN_BLOCKED_DIAGNOSTIC_CONFIDENTIALITY_BOUNDARY",
+      "candidateAudit": "HISTORICAL_PASS_LOCAL_ACCEPTANCE_BLOCKED",
+      "ownershipAudit": "HISTORICAL_PASS_LOCAL_ACCEPTANCE_BLOCKED",
+      "traceabilityAudit": "HISTORICAL_PASS_LOCAL_ACCEPTANCE_BLOCKED",
+      "routingAudit": "HISTORICAL_PASS_LOCAL_ACCEPTANCE_BLOCKED",
+      "allowlistAudit": "PASS_FILE_SCOPE_CONTROL_CONSISTENCY_RECONCILED_BY_OPERATIONAL_RECOVERY",
+      "titleAudit": "HISTORICAL_PASS_LOCAL_ACCEPTANCE_BLOCKED",
+      "productBehaviorChanged": false,
+      "ruleSemanticsChanged": false,
+      "infrastructureRepair": "2/2_EXHAUSTED",
+      "repair3Authorized": false,
+      "controlReconciliation": "ACTIVE_FIELDS_SYNCHRONIZED_TO_HUMAN_BLOCKED_STOP_LOSS_WITHOUT_FINDING_2_CODE_ACCEPTANCE"
+    },
     "localClosure": {
-      "status": "PASS_PENDING_FINAL_INDEPENDENT_IMPLEMENTATION_REVIEW",
+      "status": "HISTORICAL_PASS_LOCAL_ACCEPTANCE_BLOCKED",
       "infrastructureRepairRound": 2,
       "candidateSchemaVersion": "vitest-ownership-candidate-baseline-v2",
       "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
@@ -2076,18 +2105,22 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "INFRA_REPAIR_2_LOCALLY_CLOSED_PENDING_FINAL_INDEPENDENT_IMPLEMENTATION_REVIEW",
+    "ownershipStatus": "HUMAN_BLOCKED_REPAIR_BUDGET_EXHAUSTED",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_FINAL_INDEPENDENT_2B20AP1_IMPLEMENTATION_REVIEW_REPAIR_2",
+      "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE",
+      "CONTROL_ACTIVE_REPAIR_STATE_CONTRADICTION"
+    ],
+    "downstreamBlockers": [
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_IMPLEMENTATION_REVIEW_REPAIR_2"
+    "requiredNextAction": "REQUEST_NEW_USER_REPAIR_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION",
+    "nextAction": "REQUEST_NEW_USER_REPAIR_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -3043,7 +3076,10 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
+    "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE",
+    "CONTROL_ACTIVE_REPAIR_STATE_CONTRADICTION"
+  ],
+  "downstreamBlockers": [
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3812,8 +3848,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Locally closed final Infrastructure Repair 2/2 within the existing allowlist: exact six-key lifecycle diagnostic JSONL, complete frozen twelve-group evidence with atomic failure injection and deterministic bytes, and public-only TestCase.result pending-state enforcement. All authorized local gates pass; final independent implementation review remains mandatory.",
-  "lastError": null,
-  "requiredNextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_IMPLEMENTATION_REVIEW_REPAIR_2",
-  "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_IMPLEMENTATION_REVIEW_REPAIR_2"
+  "lastAction": "Archived the complete final independent 2B20AP1 implementation review verbatim and synchronized active root and slice controls to terminal HUMAN_BLOCKED stop-loss. Historical candidate and gate PASS evidence is retained, but local acceptance is blocked; Infrastructure Repair 2/2 is exhausted and no Repair 3 is authorized.",
+  "lastError": "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE / CONTROL_ACTIVE_REPAIR_STATE_CONTRADICTION",
+  "requiredNextAction": "REQUEST_NEW_USER_REPAIR_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION",
+  "nextAction": "REQUEST_NEW_USER_REPAIR_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION"
 }
