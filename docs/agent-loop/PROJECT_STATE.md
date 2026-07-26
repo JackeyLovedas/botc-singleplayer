@@ -1,5 +1,39 @@
 # Project State
 
+## Current state — final Infra Repair 2/2 locally closed pending review
+
+- The final bounded implementation repair modifies only the lifecycle verifier
+  and four active controls. It closes the three exact Repair-1 review findings
+  locally without changing product behavior, rule semantics, accepted
+  histories, test titles/bodies, ownership/routing topology, coverage profile,
+  workspace, dependencies, timeout or process groups.
+- External lifecycle diagnostics now have one exact six-key JSONL serializer,
+  the approved three sources, deterministic category ordinals and preserved
+  safe messages. Capture integrity failures remain distinct and no lifecycle
+  JSON output is followed by a bare code.
+- The existing twelve lifecycle groups are now explicitly checks 26–37 and
+  include every required failure injection plus real Vitest `1572/12`,
+  wrapper-entry-one, public close and natural return. No thirteenth group was
+  created.
+- Candidate TestCase state is read only through public `result()`. Exact
+  pending is accepted; executed/skipped/malformed/throwing results fail closed;
+  the candidate path contains no private task access.
+- Fresh candidates are byte-identical at
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`;
+  all candidate and Windows-inventory OS-temp outputs were removed.
+- Ownership/lifecycle `37/37`, coverage `7/7`, 9/11 routing over 1572, Windows
+  305, focused `296+207`, targeted lint, typecheck, full lint and full ordinary
+  `35/1572` pass.
+- Infrastructure Repair is now exhausted at `2/2`; no Repair 3 is available.
+  Status is `RUNNING /
+  2B20AP1_INFRA_REPAIR_2_LOCALLY_CLOSED_PENDING_FINAL_INDEPENDENT_IMPLEMENTATION_REVIEW`.
+  A complete independent implementation review is mandatory next.
+- Full coverage, hosted CI/profile, downstream Linux worker-RPC and Windows W7,
+  push/PR mutation and the next slice remain outside this local closure.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the final Repair-2 local closure.
+
 ## Current state — Infra Repair 1 review failed; final Repair 2/2 authorized
 
 - The independent implementation review of commit

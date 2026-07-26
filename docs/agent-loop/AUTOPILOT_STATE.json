@@ -1,6 +1,6 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "2B20AP1_INFRA_REPAIR_1_REVIEW_FIX_REQUIRED_REPAIR_2_AUTHORIZED",
+  "detailedStatus": "2B20AP1_INFRA_REPAIR_2_LOCALLY_CLOSED_PENDING_FINAL_INDEPENDENT_IMPLEMENTATION_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -27,7 +27,7 @@
   "slice2B19BStarted": true,
   "nextRoleSliceStarted": false,
   "phase2CStarted": false,
-  "infrastructureRepairRound": 1,
+  "infrastructureRepairRound": 2,
   "maxInfrastructureRepairRounds": 2,
   "commandCaptureProxyRejectionV1": {
     "status": "COMPLETED_ACCEPTED",
@@ -1983,8 +1983,10 @@
       }
     },
     "implementationAuthorized": false,
-    "implementationContinuationAuthorized": true,
-    "implementationCommit": "2e7ecb95e589eceff38484d928017260314bfb36",
+    "implementationContinuationAuthorized": false,
+    "implementationCommit": "FORMAL_REPAIR_2_COMMIT_CONTAINING_THIS_CONTROL_STATE",
+    "repair1ImplementationCommit": "2e7ecb95e589eceff38484d928017260314bfb36",
+    "repair2ParentCommit": "4552ad03e542a4958f219c82af9e22c1b081ba1a",
     "implementationReviewRepair1": {
       "path": "docs/implementation/phase-3-slice-2b20ap1-infrastructure-implementation-review-repair-1.md",
       "sha256": "b6dacc4f4c37ea7abc47e7af357b752711cc0a71ed3ef709d8316bbf4792fb01",
@@ -2011,8 +2013,8 @@
       "repair3Authorized": false
     },
     "localClosure": {
-      "status": "REVIEW_FIX_REQUIRED",
-      "infrastructureRepairRound": 1,
+      "status": "PASS_PENDING_FINAL_INDEPENDENT_IMPLEMENTATION_REVIEW",
+      "infrastructureRepairRound": 2,
       "candidateSchemaVersion": "vitest-ownership-candidate-baseline-v2",
       "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
       "structuredIdentityCount": 1572,
@@ -2025,7 +2027,12 @@
       "supportingAuthorityCount": 37,
       "applicationOwnershipExecutions": 22,
       "ownershipSelfTest": "PASS_37_OF_37",
-      "ownershipSelfTestEvidenceSufficiency": "FAIL_MANDATORY_LIFECYCLE_GROUPS_INCOMPLETE",
+      "ownershipSelfTestEvidenceSufficiency": "PASS_EXACT_LIFECYCLE_GROUPS_1_THROUGH_12",
+      "lifecycleDiagnosticContract": "PASS_EXACT_SIX_KEY_JSONL_THREE_SOURCES_CATEGORY_ORDINALS_MESSAGES_PRESERVED_NO_TRAILING_BARE_CODE",
+      "lifecycleGroups": "PASS_EXACT_12_NO_GROUP_13",
+      "publicTestCaseContract": "PASS_RESULT_METHOD_PENDING_ONLY_NO_PRIVATE_TASK_ACCESS",
+      "atomicFailureInjection": "PASS_WRITE_CLOSE_RENAME_NO_PARTIAL_FINAL",
+      "candidateRepeat": "PASS_BYTE_IDENTICAL_D8AE2D1F76958460173DAAF84663B0C680C8DEAD7C052B446C2FCD037EAB9129",
       "coverageSelfTest": "PASS_7_OF_7",
       "ordinaryRouting": "PASS_9_OF_9_1572_OF_1572_ZERO_MISMATCH",
       "coverageRouting": "PASS_11_OF_11_1572_OF_1572_ZERO_MISMATCH",
@@ -2064,25 +2071,23 @@
     "tempInventoryExists": true,
     "tempCandidatePath": "C:\\Users\\wjl\\AppData\\Local\\Temp\\tmp30A8.tmp.candidate.json",
     "tempCandidateExists": false,
-    "infrastructureRepairRound": 1,
+    "infrastructureRepairRound": 2,
     "maxInfrastructureRepairRounds": 2,
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "INFRA_REPAIR_1_REVIEW_FIX_REQUIRED_REPAIR_2_AUTHORIZED",
+    "ownershipStatus": "INFRA_REPAIR_2_LOCALLY_CLOSED_PENDING_FINAL_INDEPENDENT_IMPLEMENTATION_REVIEW",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "LFC_IMPLEMENTATION_EXTERNAL_DIAGNOSTIC_EXACT_SHAPE_VIOLATION",
-      "LFC_IMPLEMENTATION_MANDATORY_LIFECYCLE_SELF_TEST_GROUPS_INCOMPLETE",
-      "LFC_IMPLEMENTATION_PRIVATE_TESTCASE_TASK_ACCESS",
+      "PENDING_FINAL_INDEPENDENT_2B20AP1_IMPLEMENTATION_REVIEW_REPAIR_2",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "IMPLEMENT_2B20AP1_FINAL_INFRA_REPAIR_2"
+    "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_IMPLEMENTATION_REVIEW_REPAIR_2"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -3807,8 +3812,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent Infrastructure Repair 1 implementation review verbatim. The review passed ownership, traceability, routing, accepted-history, allowlist, title-only and non-product audits but requires one final bounded Infrastructure Repair 2/2 for exact lifecycle diagnostics, complete twelve-group self-test evidence and public-only TestCase.result access.",
-  "lastError": "LFC_IMPLEMENTATION_EXTERNAL_DIAGNOSTIC_EXACT_SHAPE_VIOLATION; LFC_IMPLEMENTATION_MANDATORY_LIFECYCLE_SELF_TEST_GROUPS_INCOMPLETE; LFC_IMPLEMENTATION_PRIVATE_TESTCASE_TASK_ACCESS",
-  "requiredNextAction": "IMPLEMENT_2B20AP1_FINAL_INFRA_REPAIR_2",
-  "nextAction": "IMPLEMENT_2B20AP1_FINAL_INFRA_REPAIR_2"
+  "lastAction": "Locally closed final Infrastructure Repair 2/2 within the existing allowlist: exact six-key lifecycle diagnostic JSONL, complete frozen twelve-group evidence with atomic failure injection and deterministic bytes, and public-only TestCase.result pending-state enforcement. All authorized local gates pass; final independent implementation review remains mandatory.",
+  "lastError": null,
+  "requiredNextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_IMPLEMENTATION_REVIEW_REPAIR_2",
+  "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_IMPLEMENTATION_REVIEW_REPAIR_2"
 }

@@ -54,20 +54,99 @@ function candidateFail(code, details = "", diagnostics = []) {
   throw new CandidateLifecycleError(code, details, diagnostics);
 }
 
-function safeDiagnostic(error, channel, classification, extra = {}) {
+const DIAGNOSTIC_KEYS = Object.freeze([
+  "phase",
+  "classification",
+  "source",
+  "ordinal",
+  "name",
+  "message"
+]);
+const DIAGNOSTIC_SOURCES = Object.freeze([
+  "PUBLIC_PROMISE_REJECTION",
+  "PUBLIC_INJECTED_STDERR",
+  "PUBLIC_INJECTED_STDERR_CAPTURE"
+]);
+
+function safeDiagnosticMessage(value) {
   const rawMessage =
-    error instanceof Error ? error.message : error === null ? "" : String(error);
-  const message = rawMessage
+    value instanceof Error ? value.message : value === null ? "" : String(value);
+  return rawMessage
+    .replace(/\r\n/gu, "\n")
+    .replace(/\r/gu, "\n")
     .replaceAll(path.resolve(process.cwd()), "<repo>")
     .replaceAll(path.resolve(tmpdir()), "<temp>")
     .slice(0, 500);
+}
+
+function lifecycleDiagnostic({
+  phase,
+  classification,
+  source,
+  ordinal,
+  error = null,
+  name,
+  message
+}) {
+  if (
+    typeof phase !== "string" ||
+    phase.length === 0 ||
+    typeof classification !== "string" ||
+    classification.length === 0 ||
+    !DIAGNOSTIC_SOURCES.includes(source) ||
+    !Number.isSafeInteger(ordinal) ||
+    ordinal < 0
+  ) {
+    throw new Error("Invalid lifecycle diagnostic");
+  }
   return {
-    channel,
+    phase,
     classification,
-    name: error instanceof Error ? error.name : "Error",
-    message,
-    ...extra
+    source,
+    ordinal,
+    name: safeDiagnosticMessage(
+      name ?? (error instanceof Error ? error.name : "")
+    ),
+    message: safeDiagnosticMessage(message ?? error)
   };
+}
+
+function lifecycleDiagnosticBytes(diagnostics) {
+  const lines = diagnostics.map((diagnostic) => {
+    if (
+      Object.keys(diagnostic).join(",") !== DIAGNOSTIC_KEYS.join(",") ||
+      !DIAGNOSTIC_SOURCES.includes(diagnostic.source)
+    ) {
+      throw new Error("Invalid external lifecycle diagnostic shape");
+    }
+    return JSON.stringify(diagnostic);
+  });
+  return Buffer.from(lines.length === 0 ? "" : `${lines.join("\n")}\n`, "utf8");
+}
+
+function writeLifecycleDiagnostics(diagnostics, writable = process.stderr) {
+  const bytes = lifecycleDiagnosticBytes(diagnostics);
+  if (bytes.length > 0) writable.write(bytes);
+  return bytes;
+}
+
+function writeCandidateFailure(error, writable = process.stderr) {
+  if (
+    error instanceof CandidateLifecycleError &&
+    error.diagnostics.length > 0
+  ) {
+    return writeLifecycleDiagnostics(error.diagnostics, writable);
+  }
+  const code = error?.code;
+  const message =
+    typeof code === "string"
+      ? code
+      : error instanceof Error
+        ? error.stack ?? error.message
+        : String(error);
+  const bytes = Buffer.from(`${message}\n`, "utf8");
+  writable.write(bytes);
+  return bytes;
 }
 
 function createPhaseCapture(phaseState) {
@@ -111,8 +190,10 @@ function classifyClosingCapture(records) {
       if (record.bytes === null) {
         return {
           ...record,
-          classification: "CLOSE_ERROR",
-          text: "CLOSE_DIAGNOSTIC_CAPTURE_INVALID"
+          classification: "CLOSE_DIAGNOSTIC_CAPTURE_INVALID",
+          source: "PUBLIC_INJECTED_STDERR_CAPTURE",
+          text: "CLOSE_DIAGNOSTIC_CAPTURE_INVALID",
+          isCloseError: true
         };
       }
       let text;
@@ -121,8 +202,10 @@ function classifyClosingCapture(records) {
       } catch {
         return {
           ...record,
-          classification: "CLOSE_ERROR",
-          text: "CLOSE_DIAGNOSTIC_CAPTURE_INVALID"
+          classification: "CLOSE_DIAGNOSTIC_CAPTURE_INVALID",
+          source: "PUBLIC_INJECTED_STDERR_CAPTURE",
+          text: "CLOSE_DIAGNOSTIC_CAPTURE_INVALID",
+          isCloseError: true
         };
       }
       const normalized = text
@@ -130,18 +213,32 @@ function classifyClosingCapture(records) {
         .replace(/\r/gu, "\n")
         .replace(/\n+$/gu, "");
       if (normalized.length === 0) {
-        return { ...record, classification: "EMPTY_FORMATTING", text: "" };
+        return {
+          ...record,
+          classification: "EMPTY_FORMATTING",
+          source: "PUBLIC_INJECTED_STDERR",
+          text: "",
+          isCloseError: false
+        };
       }
       if (
         normalized === "error during close" ||
         /^error during close(?: |\t|\n)/u.test(normalized)
       ) {
-        return { ...record, classification: "CLOSE_ERROR", text: normalized };
+        return {
+          ...record,
+          classification: "CLOSE_FAILED",
+          source: "PUBLIC_INJECTED_STDERR",
+          text: normalized,
+          isCloseError: true
+        };
       }
       return {
         ...record,
         classification: "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC",
-        text: normalized
+        source: "PUBLIC_INJECTED_STDERR",
+        text: normalized,
+        isCloseError: false
       };
     });
 }
@@ -149,6 +246,7 @@ function classifyClosingCapture(records) {
 async function executeCandidateLifecycle({
   create,
   collect,
+  validate,
   encode,
   publish
 }) {
@@ -169,7 +267,8 @@ async function executeCandidateLifecycle({
     phaseState.phase = "COLLECTING";
     const collected = await collect(vitest);
     phaseState.phase = "VALIDATING_OR_ENCODING";
-    encoded = await encode(collected);
+    const validated = await validate(collected);
+    encoded = await encode(validated);
   } catch (error) {
     primaryDiagnostic = error;
     primaryClassification =
@@ -191,7 +290,7 @@ async function executeCandidateLifecycle({
   }
   const closingRecords = classifyClosingCapture(stderrCapture.records);
   const closeErrors = closingRecords.filter(
-    (record) => record.classification === "CLOSE_ERROR"
+    (record) => record.isCloseError
   );
   const closeNonErrors = closingRecords.filter(
     (record) =>
@@ -207,27 +306,57 @@ async function executeCandidateLifecycle({
     const diagnostics = [];
     if (primaryDiagnostic !== null) {
       diagnostics.push(
-        safeDiagnostic(
-          primaryDiagnostic,
-          "PRIMARY",
-          primaryClassification
-        )
+        lifecycleDiagnostic({
+          phase:
+            primaryClassification === "CREATE_FAILED"
+              ? "CREATING"
+              : primaryClassification === "COLLECT_FAILED"
+                ? "COLLECTING"
+                : "VALIDATING_OR_ENCODING",
+          classification: primaryClassification,
+          source: "PUBLIC_PROMISE_REJECTION",
+          ordinal: 0,
+          error: primaryDiagnostic
+        })
       );
     }
     if (closeDiagnostic !== null) {
       diagnostics.push(
-        safeDiagnostic(closeDiagnostic, "CLOSE_PROMISE", "CLOSE_FAILED")
+        lifecycleDiagnostic({
+          phase: "CLOSING",
+          classification: "CLOSE_FAILED",
+          source: "PUBLIC_PROMISE_REJECTION",
+          ordinal: 0,
+          error: closeDiagnostic
+        })
       );
     }
-    for (const record of closeErrors) {
-      diagnostics.push({
-        channel: "CLOSE_STDERR",
-        classification: "CLOSE_FAILED",
-        name: "PublicStderrRecord",
-        message: record.text,
-        ordinal: record.ordinal,
-        sha256: record.sha256
-      });
+    for (const [ordinal, record] of closeErrors.entries()) {
+      diagnostics.push(
+        lifecycleDiagnostic({
+          phase: "CLOSING",
+          classification: record.classification,
+          source: record.source,
+          ordinal,
+          name:
+            record.source === "PUBLIC_INJECTED_STDERR_CAPTURE"
+              ? "PublicStderrCapture"
+              : "PublicStderrRecord",
+          message: record.text
+        })
+      );
+    }
+    for (const [ordinal, record] of closeNonErrors.entries()) {
+      diagnostics.push(
+        lifecycleDiagnostic({
+          phase: "CLOSING",
+          classification: record.classification,
+          source: record.source,
+          ordinal,
+          name: "PublicStderrRecord",
+          message: record.text
+        })
+      );
     }
     candidateFail(
       "CLOSE_FAILED",
@@ -240,18 +369,38 @@ async function executeCandidateLifecycle({
   }
   if (primaryDiagnostic !== null) {
     encoded = undefined;
+    const diagnostics = [
+      lifecycleDiagnostic({
+        phase:
+          primaryClassification === "CREATE_FAILED"
+            ? "CREATING"
+            : primaryClassification === "COLLECT_FAILED"
+              ? "COLLECTING"
+              : "VALIDATING_OR_ENCODING",
+        classification: primaryClassification,
+        source: "PUBLIC_PROMISE_REJECTION",
+        ordinal: 0,
+        error: primaryDiagnostic
+      })
+    ];
+    for (const [ordinal, record] of closeNonErrors.entries()) {
+      diagnostics.push(
+        lifecycleDiagnostic({
+          phase: "CLOSING",
+          classification: record.classification,
+          source: record.source,
+          ordinal,
+          name: "PublicStderrRecord",
+          message: record.text
+        })
+      );
+    }
     candidateFail(
       primaryClassification,
       primaryDiagnostic instanceof Error
         ? primaryDiagnostic.message
         : String(primaryDiagnostic),
-      [
-        safeDiagnostic(
-          primaryDiagnostic,
-          "PRIMARY",
-          primaryClassification
-        )
-      ]
+      diagnostics
     );
   }
   if (!Buffer.isBuffer(encoded)) {
@@ -265,6 +414,16 @@ async function executeCandidateLifecycle({
     closeInvocationCount,
     closingRecords,
     closeNonErrors,
+    diagnostics: closeNonErrors.map((record, ordinal) =>
+      lifecycleDiagnostic({
+        phase: "CLOSING",
+        classification: record.classification,
+        source: record.source,
+        ordinal,
+        name: "PublicStderrRecord",
+        message: record.text
+      })
+    ),
     stdoutRecords: stdoutCapture.records,
     stderrRecords: stderrCapture.records
   };
@@ -318,6 +477,40 @@ function testAncestorPath(test, module) {
   return reversed.reverse();
 }
 
+function assertPublicPendingTestCase(test) {
+  if (
+    test === null ||
+    typeof test !== "object" ||
+    typeof test.result !== "function"
+  ) {
+    candidateFail(
+      "VITEST_STRUCTURED_IDENTITY_SOURCE_UNAVAILABLE",
+      "public TestCase.result is unavailable"
+    );
+  }
+  let result;
+  try {
+    result = test.result();
+  } catch {
+    candidateFail(
+      "VITEST_STRUCTURED_IDENTITY_SOURCE_UNAVAILABLE",
+      "public TestCase.result threw"
+    );
+  }
+  if (
+    result === null ||
+    typeof result !== "object" ||
+    Array.isArray(result) ||
+    result.state !== "pending"
+  ) {
+    candidateFail(
+      "VITEST_STRUCTURED_IDENTITY_SOURCE_UNAVAILABLE",
+      "TestCase is not in the exact supported pending state"
+    );
+  }
+  return result;
+}
+
 async function collectSemanticInventory(vitest, repoRoot) {
   if (typeof vitest.collect !== "function") {
     candidateFail(
@@ -365,6 +558,7 @@ async function collectSemanticInventory(vitest, repoRoot) {
     }
     const tests = [...module.children.allTests()];
     for (const test of tests) {
+      assertPublicPendingTestCase(test);
       if (
         seenTests.has(test) ||
         test.module !== module ||
@@ -372,8 +566,7 @@ async function collectSemanticInventory(vitest, repoRoot) {
         test.name.length === 0 ||
         typeof test.fullName !== "string" ||
         typeof test.project?.name !== "string" ||
-        test.project.name.length === 0 ||
-        ["passed", "failed"].includes(test.task?.result?.state)
+        test.project.name.length === 0
       ) {
         candidateFail(
           "VITEST_STRUCTURED_IDENTITY_SOURCE_UNAVAILABLE",
@@ -457,20 +650,32 @@ function assertCandidatePath(candidatePath, { mustExist }) {
   return resolved;
 }
 
-function publishCandidateAtomically(finalPath, bytes) {
+function publishCandidateAtomically(
+  finalPath,
+  bytes,
+  operations = {
+    exists: existsSync,
+    open: openSync,
+    write: writeSync,
+    fsync: fsyncSync,
+    close: closeSync,
+    rename: renameSync,
+    unlink: unlinkSync
+  }
+) {
   const temporaryPath = path.join(
     path.dirname(finalPath),
     `.${path.basename(finalPath)}.2b20ap1.tmp`
   );
-  if (existsSync(temporaryPath)) {
+  if (operations.exists(temporaryPath)) {
     candidateFail("CANDIDATE_TEMP_COLLISION", temporaryPath);
   }
   let descriptor;
   try {
-    descriptor = openSync(temporaryPath, "wx");
+    descriptor = operations.open(temporaryPath, "wx");
     let offset = 0;
     while (offset < bytes.length) {
-      const written = writeSync(
+      const written = operations.write(
         descriptor,
         bytes,
         offset,
@@ -481,19 +686,19 @@ function publishCandidateAtomically(finalPath, bytes) {
       }
       offset += written;
     }
-    fsyncSync(descriptor);
-    closeSync(descriptor);
+    operations.fsync(descriptor);
+    operations.close(descriptor);
     descriptor = undefined;
-    renameSync(temporaryPath, finalPath);
+    operations.rename(temporaryPath, finalPath);
   } catch (error) {
     if (descriptor !== undefined) {
       try {
-        closeSync(descriptor);
+        operations.close(descriptor);
       } catch {
         // Preserve the primary publication error.
       }
     }
-    if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
+    if (operations.exists(temporaryPath)) operations.unlink(temporaryPath);
     candidateFail(
       "PUBLISH_FAILED",
       error instanceof Error ? error.message : String(error)
@@ -559,8 +764,9 @@ async function runCandidateCommand(options) {
         },
         {},
         { stdout, stderr }
-      ),
+    ),
     collect: (vitest) => collectSemanticInventory(vitest, repoRoot),
+    validate: (inventory) => inventory,
     encode: (inventory) => candidateBytes(build2B20ACandidate(repoRoot, inventory)),
     publish: async (bytes) => {
       if (options.mode === "emit") {
@@ -573,20 +779,7 @@ async function runCandidateCommand(options) {
       }
     }
   });
-  if (result.closeNonErrors.length > 0) {
-    for (const record of result.closeNonErrors) {
-      process.stderr.write(
-        `${JSON.stringify({
-          channel: "CLOSE_STDERR",
-          classification: "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC",
-          name: "PublicStderrRecord",
-          message: "",
-          ordinal: record.ordinal,
-          sha256: record.sha256
-        })}\n`
-      );
-    }
-  }
+  writeLifecycleDiagnostics(result.diagnostics);
   if (options.mode === "emit") process.stdout.write(result.bytes);
   else process.stdout.write("CANDIDATE_BASELINE_VERIFIED 2B20A\n");
 }
@@ -1119,10 +1312,88 @@ async function runCompleteSelfTest() {
     try {
       await execute();
     } catch (error) {
-      if (error instanceof CandidateLifecycleError && error.code === code) return;
+      if (error instanceof CandidateLifecycleError && error.code === code) {
+        return error;
+      }
       throw error;
     }
     throw new Error(`Expected lifecycle code ${code}`);
+  };
+  const parseDiagnosticBytes = (bytes) => {
+    const text = bytes.toString("utf8");
+    if (text.length === 0 || !text.endsWith("\n")) {
+      throw new Error("diagnostic JSONL has no terminal LF");
+    }
+    return text.slice(0, -1).split("\n").map((line) => {
+      const record = JSON.parse(line);
+      if (
+        Object.keys(record).join(",") !== DIAGNOSTIC_KEYS.join(",") ||
+        !DIAGNOSTIC_SOURCES.includes(record.source)
+      ) {
+        throw new Error("diagnostic JSONL shape mismatch");
+      }
+      return record;
+    });
+  };
+  const captureFailure = async (code, execute) => {
+    const error = await expectLifecycleCode(code, execute);
+    const chunks = [];
+    const stderr = new Writable({
+      write(chunk, _encoding, callback) {
+        chunks.push(Buffer.from(chunk));
+        callback();
+      }
+    });
+    const direct = writeCandidateFailure(error, stderr);
+    const captured = Buffer.concat(chunks);
+    if (!captured.equals(direct)) {
+      throw new Error("external diagnostic capture differs from serializer");
+    }
+    const records = parseDiagnosticBytes(captured);
+    if (records.length !== error.diagnostics.length) {
+      throw new Error("external diagnostic record count mismatch");
+    }
+    return { bytes: captured, error, records };
+  };
+  const assertDiagnostic = (actual, expected) => {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      throw new Error(
+        `diagnostic mismatch expected=${JSON.stringify(expected)} actual=${JSON.stringify(actual)}`
+      );
+    }
+  };
+  let realIntegrationPromise;
+  let realIntegrationCollectEntries = 0;
+  let realIntegrationPublishedBytes;
+  const getRealIntegration = () => {
+    realIntegrationPromise ??= executeCandidateLifecycle({
+      create: ({ stdout, stderr }) =>
+        createVitest(
+          "test",
+          {
+            root: process.cwd(),
+            workspace: path.resolve(process.cwd(), "vitest.workspace.ts"),
+            run: true,
+            watch: false,
+            passWithNoTests: false,
+            reporters: [],
+            color: false
+          },
+          {},
+          { stdout, stderr }
+        ),
+      collect: async (vitest) => {
+        realIntegrationCollectEntries += 1;
+        return collectSemanticInventory(vitest, process.cwd());
+      },
+      validate: (inventory) => inventory,
+      encode: (inventory) =>
+        candidateBytes(build2B20ACandidate(process.cwd(), inventory)),
+      publish: async (bytes) => {
+        realIntegrationPublishedBytes = Buffer.from(bytes);
+      }
+    });
+    return realIntegrationPromise;
   };
   await check("23 exact supersession authority and Git provenance pass", async () => {
     if (
@@ -1222,138 +1493,242 @@ async function runCompleteSelfTest() {
       throw new Error("cross-root structured identities differ");
     }
   });
-  await check("26 create failure has no close or publication", async () => {
-    let published = 0;
-    await expectLifecycleCode("CREATE_FAILED", () =>
+  await check("26 lifecycle group 1 create rejection", async () => {
+    let collections = 0;
+    let closes = 0;
+    let publications = 0;
+    const failure = await captureFailure("CREATE_FAILED", () =>
       executeCandidateLifecycle({
         create: async () => {
-          throw new Error("create");
+          throw new Error("create actual message");
         },
-        collect: async () => [],
-        encode: async () => Buffer.from("x"),
-        publish: async () => {
-          published += 1;
-        }
-      })
-    );
-    if (published !== 0) throw new Error("published after create failure");
-  });
-  await check("27 collection failure closes once and does not publish", async () => {
-    let closes = 0;
-    let published = 0;
-    await expectLifecycleCode("COLLECT_FAILED", () =>
-      executeCandidateLifecycle({
-        create: async () => ({ close: async () => { closes += 1; } }),
         collect: async () => {
-          throw new Error("collect");
+          collections += 1;
+          return [];
         },
+        validate: (value) => value,
         encode: async () => Buffer.from("x"),
         publish: async () => {
-          published += 1;
+          publications += 1;
         }
       })
     );
-    if (closes !== 1 || published !== 0) throw new Error("collection cleanup mismatch");
+    assertDiagnostic(failure.records[0], {
+      phase: "CREATING",
+      classification: "CREATE_FAILED",
+      source: "PUBLIC_PROMISE_REJECTION",
+      ordinal: 0,
+      name: "Error",
+      message: "create actual message"
+    });
+    if (collections !== 0 || closes !== 0 || publications !== 0) {
+      throw new Error("create rejection entered a later lifecycle boundary");
+    }
   });
-  await check("28 validation failure closes once and does not publish", async () => {
+  await check("27 lifecycle group 2 create collect close success", async () => {
+    let collectionEntries = 0;
     let closes = 0;
-    await expectLifecycleCode("VALIDATE_OR_ENCODE_FAILED", () =>
-      executeCandidateLifecycle({
-        create: async () => ({ close: async () => { closes += 1; } }),
-        collect: async () => [],
-        encode: async () => {
-          throw new Error("encode");
-        },
-        publish: async () => {
-          throw new Error("must not publish");
+    let publications = 0;
+    const clean = await executeCandidateLifecycle({
+      create: async () => ({
+        close: async () => {
+          closes += 1;
         }
-      })
-    );
-    if (closes !== 1) throw new Error("validation cleanup mismatch");
-  });
-  await check("29 public close rejection is CLOSE_FAILED", async () => {
-    await expectLifecycleCode("CLOSE_FAILED", () =>
-      executeCandidateLifecycle({
-        create: async () => ({ close: async () => { throw new Error("close"); } }),
-        collect: async () => [],
-        encode: async () => Buffer.from("x"),
-        publish: async () => {
-          throw new Error("must not publish");
-        }
-      })
-    );
-  });
-  await check("30 fulfilled close with sentinel stderr is CLOSE_FAILED", async () => {
-    let published = 0;
-    await expectLifecycleCode("CLOSE_FAILED", () =>
-      executeCandidateLifecycle({
-        create: async ({ stderr }) => ({
-          close: async () => {
-            stderr.write("error during close reason\r\n");
-          }
-        }),
-        collect: async () => [],
-        encode: async () => Buffer.from("x"),
-        publish: async () => {
-          published += 1;
-        }
-      })
-    );
-    if (published !== 0) throw new Error("published after close stderr failure");
-  });
-  await check("31 unrelated close stderr is retained and does not fabricate failure", async () => {
-    let published = 0;
-    const result = await executeCandidateLifecycle({
+      }),
+      collect: async () => {
+        collectionEntries += 1;
+        return [];
+      },
+      validate: (value) => value,
+      encode: async () => Buffer.from("candidate\n"),
+      publish: async () => {
+        publications += 1;
+      }
+    });
+    let warningPublications = 0;
+    const warning = await executeCandidateLifecycle({
       create: async ({ stderr }) => ({
         close: async () => {
-          stderr.write("ordinary close warning\n");
+          stderr.write("ordinary close warning actual\n");
         }
       }),
       collect: async () => [],
-      encode: async () => Buffer.from("x"),
-      publish: async () => {
-        published += 1;
-      }
-    });
-    if (published !== 1 || result.closeNonErrors.length !== 1) {
-      throw new Error("non-error close diagnostic mismatch");
-    }
-  });
-  await check("32 close sentinel matching is anchored and case-sensitive", async () => {
-    const records = classifyClosingCapture([
-      { ordinal: 0, phase: "CLOSING", bytes: Buffer.from("prefix error during close"), encoding: "utf8", sha256: "" },
-      { ordinal: 1, phase: "CLOSING", bytes: Buffer.from("Error during close"), encoding: "utf8", sha256: "" },
-      { ordinal: 2, phase: "CLOSING", bytes: Buffer.from("error during close\tcause"), encoding: "utf8", sha256: "" }
-    ]);
-    if (
-      records[0].classification !== "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC" ||
-      records[1].classification !== "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC" ||
-      records[2].classification !== "CLOSE_ERROR"
-    ) {
-      throw new Error("close sentinel classifier mismatch");
-    }
-  });
-  await check("33 clean lifecycle publishes exactly once after close", async () => {
-    let closes = 0;
-    let published = 0;
-    const result = await executeCandidateLifecycle({
-      create: async () => ({ close: async () => { closes += 1; } }),
-      collect: async () => [],
+      validate: (value) => value,
       encode: async () => Buffer.from("candidate\n"),
       publish: async () => {
-        published += 1;
+        warningPublications += 1;
       }
     });
+    const warningBytes = lifecycleDiagnosticBytes(warning.diagnostics);
+    const warningRecords = parseDiagnosticBytes(warningBytes);
+    assertDiagnostic(warningRecords[0], {
+      phase: "CLOSING",
+      classification: "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC",
+      source: "PUBLIC_INJECTED_STDERR",
+      ordinal: 0,
+      name: "PublicStderrRecord",
+      message: "ordinary close warning actual"
+    });
     if (
+      collectionEntries !== 1 ||
       closes !== 1 ||
-      published !== 1 ||
-      result.closingRecords.length !== 0
+      publications !== 1 ||
+      warningPublications !== 1 ||
+      clean.diagnostics.length !== 0
     ) {
-      throw new Error("clean lifecycle mismatch");
+      throw new Error("successful lifecycle count mismatch");
     }
   });
-  await check("34 invalid UTF-8 close capture is CLOSE_FAILED", async () => {
-    await expectLifecycleCode("CLOSE_FAILED", () =>
+  await check("28 lifecycle group 3 collection failure", async () => {
+    let closes = 0;
+    let publications = 0;
+    const failure = await captureFailure("COLLECT_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async () => ({
+          close: async () => {
+            closes += 1;
+          }
+        }),
+        collect: async () => {
+          throw new Error("collect actual message");
+        },
+        validate: (value) => value,
+        encode: async () => Buffer.from("x"),
+        publish: async () => {
+          publications += 1;
+        }
+      })
+    );
+    assertDiagnostic(failure.records[0], {
+      phase: "COLLECTING",
+      classification: "COLLECT_FAILED",
+      source: "PUBLIC_PROMISE_REJECTION",
+      ordinal: 0,
+      name: "Error",
+      message: "collect actual message"
+    });
+    if (closes !== 1 || publications !== 0) {
+      throw new Error("collection failure cleanup mismatch");
+    }
+  });
+  await check("29 lifecycle group 4 validation failure", async () => {
+    let closes = 0;
+    let encodes = 0;
+    const failure = await captureFailure("VALIDATE_OR_ENCODE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async () => ({
+          close: async () => {
+            closes += 1;
+          }
+        }),
+        collect: async () => [],
+        validate: async () => {
+          throw new Error("validation actual message");
+        },
+        encode: async () => {
+          encodes += 1;
+          return Buffer.from("x");
+        },
+        publish: async () => {
+          throw new Error("must not publish");
+        }
+      })
+    );
+    assertDiagnostic(failure.records[0], {
+      phase: "VALIDATING_OR_ENCODING",
+      classification: "VALIDATE_OR_ENCODE_FAILED",
+      source: "PUBLIC_PROMISE_REJECTION",
+      ordinal: 0,
+      name: "Error",
+      message: "validation actual message"
+    });
+    if (closes !== 1 || encodes !== 0) {
+      throw new Error("validation failure boundary mismatch");
+    }
+  });
+  await check("30 lifecycle group 5 encoding failure", async () => {
+    let closes = 0;
+    let validations = 0;
+    const failure = await captureFailure("VALIDATE_OR_ENCODE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async () => ({
+          close: async () => {
+            closes += 1;
+          }
+        }),
+        collect: async () => [],
+        validate: async (value) => {
+          validations += 1;
+          return value;
+        },
+        encode: async () => {
+          throw new Error("encoding actual message");
+        },
+        publish: async () => {
+          throw new Error("must not publish");
+        }
+      })
+    );
+    assertDiagnostic(failure.records[0], {
+      phase: "VALIDATING_OR_ENCODING",
+      classification: "VALIDATE_OR_ENCODE_FAILED",
+      source: "PUBLIC_PROMISE_REJECTION",
+      ordinal: 0,
+      name: "Error",
+      message: "encoding actual message"
+    });
+    if (closes !== 1 || validations !== 1) {
+      throw new Error("encoding failure boundary mismatch");
+    }
+  });
+  await check("31 lifecycle group 6 close failure", async () => {
+    const rejected = await captureFailure("CLOSE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async () => ({
+          close: async () => {
+            throw new Error("close promise actual message");
+          }
+        }),
+        collect: async () => [],
+        validate: (value) => value,
+        encode: async () => Buffer.from("x"),
+        publish: async () => {
+          throw new Error("must not publish");
+        }
+      })
+    );
+    assertDiagnostic(rejected.records[0], {
+      phase: "CLOSING",
+      classification: "CLOSE_FAILED",
+      source: "PUBLIC_PROMISE_REJECTION",
+      ordinal: 0,
+      name: "Error",
+      message: "close promise actual message"
+    });
+    const sentinel = await captureFailure("CLOSE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async ({ stderr }) => ({
+          close: async () => {
+            stderr.write("error during close sentinel actual\r\n");
+          }
+        }),
+        collect: async () => [],
+        validate: (value) => value,
+        encode: async () => Buffer.from("x"),
+        publish: async () => {
+          throw new Error("must not publish");
+        }
+      })
+    );
+    assertDiagnostic(sentinel.records[0], {
+      phase: "CLOSING",
+      classification: "CLOSE_FAILED",
+      source: "PUBLIC_INJECTED_STDERR",
+      ordinal: 0,
+      name: "PublicStderrRecord",
+      message: "error during close sentinel actual"
+    });
+    const invalid = await captureFailure("CLOSE_FAILED", () =>
       executeCandidateLifecycle({
         create: async ({ stderr }) => ({
           close: async () => {
@@ -1361,77 +1736,291 @@ async function runCompleteSelfTest() {
           }
         }),
         collect: async () => [],
+        validate: (value) => value,
         encode: async () => Buffer.from("x"),
         publish: async () => {
           throw new Error("must not publish");
         }
       })
     );
-  });
-  await check("35 empty close formatting is audited but permits publication", async () => {
-    let published = 0;
-    const result = await executeCandidateLifecycle({
-      create: async ({ stderr }) => ({
-        close: async () => {
-          stderr.write("\r\n");
-        }
-      }),
-      collect: async () => [],
-      encode: async () => Buffer.from("x"),
-      publish: async () => {
-        published += 1;
-      }
+    assertDiagnostic(invalid.records[0], {
+      phase: "CLOSING",
+      classification: "CLOSE_DIAGNOSTIC_CAPTURE_INVALID",
+      source: "PUBLIC_INJECTED_STDERR_CAPTURE",
+      ordinal: 0,
+      name: "PublicStderrCapture",
+      message: "CLOSE_DIAGNOSTIC_CAPTURE_INVALID"
     });
+    const boundary = classifyClosingCapture([
+      {
+        ordinal: 0,
+        phase: "CLOSING",
+        bytes: Buffer.from("prefix error during close"),
+        encoding: "utf8",
+        sha256: ""
+      },
+      {
+        ordinal: 1,
+        phase: "CLOSING",
+        bytes: Buffer.from("Error during close"),
+        encoding: "utf8",
+        sha256: ""
+      },
+      {
+        ordinal: 2,
+        phase: "CLOSING",
+        bytes: Buffer.from("error during close\tcause"),
+        encoding: "utf8",
+        sha256: ""
+      }
+    ]);
     if (
-      published !== 1 ||
-      result.closingRecords.length !== 1 ||
-      result.closingRecords[0].classification !== "EMPTY_FORMATTING"
+      boundary[0].classification !== "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC" ||
+      boundary[1].classification !== "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC" ||
+      boundary[2].classification !== "CLOSE_FAILED"
     ) {
-      throw new Error("empty formatting classification mismatch");
+      throw new Error("close sentinel classifier mismatch");
     }
   });
-  await check("36 primary plus close stderr failure retains both channels", async () => {
-    try {
-      await executeCandidateLifecycle({
-        create: async ({ stderr }) => ({
+  await check("32 lifecycle group 7 primary plus close failure", async () => {
+    const promise = await captureFailure("CLOSE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async () => ({
           close: async () => {
-            stderr.write("error during close combined");
+            throw new Error("close rejection after primary");
           }
         }),
         collect: async () => {
-          throw new Error("primary");
+          throw new Error("primary collection");
         },
+        validate: (value) => value,
         encode: async () => Buffer.from("x"),
         publish: async () => {
           throw new Error("must not publish");
         }
-      });
-      throw new Error("Expected combined close failure");
-    } catch (error) {
-      if (
-        !(error instanceof CandidateLifecycleError) ||
-        error.code !== "CLOSE_FAILED" ||
-        error.diagnostics.map(({ channel }) => channel).join(",") !==
-          "PRIMARY,CLOSE_STDERR"
-      ) {
-        throw error;
+      })
+    );
+    if (
+      promise.records.map(({ classification }) => classification).join(",") !==
+        "COLLECT_FAILED,CLOSE_FAILED" ||
+      promise.records.map(({ source }) => source).join(",") !==
+        "PUBLIC_PROMISE_REJECTION,PUBLIC_PROMISE_REJECTION"
+    ) {
+      throw new Error("primary plus close Promise diagnostics mismatch");
+    }
+    const stderr = await captureFailure("CLOSE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async ({ stderr: publicStderr }) => ({
+          close: async () => {
+            publicStderr.write("error during close after encoding");
+          }
+        }),
+        collect: async () => [],
+        validate: (value) => value,
+        encode: async () => {
+          throw new Error("primary encoding");
+        },
+        publish: async () => {
+          throw new Error("must not publish");
+        }
+      })
+    );
+    if (
+      stderr.records.map(({ classification }) => classification).join(",") !==
+        "VALIDATE_OR_ENCODE_FAILED,CLOSE_FAILED" ||
+      stderr.records.map(({ source }) => source).join(",") !==
+        "PUBLIC_PROMISE_REJECTION,PUBLIC_INJECTED_STDERR"
+    ) {
+      throw new Error("primary plus close stderr diagnostics mismatch");
+    }
+    const both = await captureFailure("CLOSE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async ({ stderr: publicStderr }) => ({
+          close: async () => {
+            publicStderr.write("error during close both");
+            throw new Error("close rejection both");
+          }
+        }),
+        collect: async () => {
+          throw new Error("primary both");
+        },
+        validate: (value) => value,
+        encode: async () => Buffer.from("x"),
+        publish: async () => {
+          throw new Error("must not publish");
+        }
+      })
+    );
+    if (
+      both.records.map(({ classification }) => classification).join(",") !==
+        "COLLECT_FAILED,CLOSE_FAILED,CLOSE_FAILED" ||
+      both.records.map(({ ordinal }) => ordinal).join(",") !== "0,0,0"
+    ) {
+      throw new Error("primary plus both close channels mismatch");
+    }
+  });
+  await check("33 lifecycle group 8 atomic candidate write failure", async () => {
+    const bytes = Buffer.from("atomic candidate\n");
+    for (const failureStage of ["write", "close", "rename"]) {
+      const root = mkdtempSync(
+        path.join(tmpdir(), `2b20ap1-${failureStage}-self-test-`)
+      );
+      const destination = path.join(root, "candidate.json");
+      const temporary = path.join(root, ".candidate.json.2b20ap1.tmp");
+      let closeInjectionPending = failureStage === "close";
+      const operations = {
+        exists: existsSync,
+        open: openSync,
+        write(descriptor, source, offset, length) {
+          if (failureStage === "write") throw new Error("injected write");
+          return writeSync(descriptor, source, offset, length);
+        },
+        fsync: fsyncSync,
+        close(descriptor) {
+          if (closeInjectionPending) {
+            closeInjectionPending = false;
+            closeSync(descriptor);
+            throw new Error("injected close");
+          }
+          closeSync(descriptor);
+        },
+        rename(source, target) {
+          if (failureStage === "rename") throw new Error("injected rename");
+          renameSync(source, target);
+        },
+        unlink: unlinkSync
+      };
+      try {
+        await expectLifecycleCode("PUBLISH_FAILED", async () =>
+          publishCandidateAtomically(destination, bytes, operations)
+        );
+        if (existsSync(destination) || existsSync(temporary)) {
+          throw new Error(`${failureStage} exposed a partial candidate`);
+        }
+      } finally {
+        rmSync(root, { recursive: true, force: true });
       }
     }
   });
-  await check("37 candidate publication is exact and atomic", async () => {
-    const root = mkdtempSync(path.join(tmpdir(), "2b20ap1-publish-self-test-"));
-    const destination = path.join(root, "candidate.json");
-    const bytes = candidateBytes({
-      schemaVersion: "self-test",
-      acceptedContractBaselines: ACCEPTED_CONTRACT_BASELINES
-    });
-    try {
-      publishCandidateAtomically(destination, bytes);
-      if (!readFileSync(destination).equals(bytes)) {
-        throw new Error("published candidate bytes differ");
+  await check("34 lifecycle group 9 deterministic repetition", async () => {
+    const generate = async () => {
+      let published;
+      const result = await executeCandidateLifecycle({
+        create: async () => ({ close: async () => {} }),
+        collect: async () => ["stable"],
+        validate: (value) => value,
+        encode: async (value) =>
+          candidateBytes({ schemaVersion: "self-test", value }),
+        publish: async (bytes) => {
+          published = Buffer.from(bytes);
+        }
+      });
+      if (!result.bytes.equals(published)) {
+        throw new Error("generated and published bytes differ");
       }
-    } finally {
-      rmSync(root, { recursive: true, force: true });
+      return result.bytes;
+    };
+    const first = await generate();
+    const second = await generate();
+    const firstFailure = await captureFailure("CREATE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async () => {
+          throw new Error("stable diagnostic");
+        },
+        collect: async () => [],
+        validate: (value) => value,
+        encode: async () => Buffer.from("x"),
+        publish: async () => {}
+      })
+    );
+    const secondFailure = await captureFailure("CREATE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async () => {
+          throw new Error("stable diagnostic");
+        },
+        collect: async () => [],
+        validate: (value) => value,
+        encode: async () => Buffer.from("x"),
+        publish: async () => {}
+      })
+    );
+    if (
+      !first.equals(second) ||
+      !firstFailure.bytes.equals(secondFailure.bytes)
+    ) {
+      throw new Error("repeated candidate or diagnostic bytes differ");
+    }
+  });
+  await check("35 lifecycle group 10 authoritative wrapper entry", async () => {
+    let wrapperEntries = 0;
+    await executeCandidateLifecycle({
+      create: async () => ({ close: async () => {} }),
+      collect: async () => {
+        wrapperEntries += 1;
+        return [];
+      },
+      validate: (value) => value,
+      encode: async () => Buffer.from("x"),
+      publish: async () => {}
+    });
+    const publicOnlyPending = {
+      result() {
+        return { state: "pending", errors: undefined };
+      }
+    };
+    if (
+      wrapperEntries !== 1 ||
+      "task" in publicOnlyPending ||
+      assertPublicPendingTestCase(publicOnlyPending).state !== "pending"
+    ) {
+      throw new Error("public wrapper-entry or pending result mismatch");
+    }
+    const invalidCases = [
+      { result: undefined },
+      { result: "not a function" },
+      { result: () => { throw new Error("result failure"); } },
+      { result: () => ({ state: "passed" }) },
+      { result: () => ({ state: "failed" }) },
+      { result: () => ({ state: "skipped" }) }
+    ];
+    for (const testCase of invalidCases) {
+      await expectLifecycleCode(
+        "VITEST_STRUCTURED_IDENTITY_SOURCE_UNAVAILABLE",
+        async () => assertPublicPendingTestCase(testCase)
+      );
+    }
+    const privateAccessToken = [".", "task"].join("");
+    if (
+      collectSemanticInventory.toString().includes(privateAccessToken) ||
+      assertPublicPendingTestCase.toString().includes(privateAccessToken)
+    ) {
+      throw new Error("candidate collection reads a private TestCase field");
+    }
+  });
+  await check("36 lifecycle group 11 real Vitest 1572 and 12 LF", async () => {
+    const result = await getRealIntegration();
+    const candidate = JSON.parse(result.bytes.toString("utf8"));
+    if (
+      candidate.structuredIdentityCount !== 1572 ||
+      candidate.lfIdentityCount !== 12 ||
+      candidate.structuredIdentities.filter((tuple) =>
+        tuple[3].includes("\n")
+      ).length !== 12 ||
+      !result.bytes.equals(realIntegrationPublishedBytes)
+    ) {
+      throw new Error("real structured inventory mismatch");
+    }
+  });
+  await check("37 lifecycle group 12 real public close and natural exit", async () => {
+    const result = await getRealIntegration();
+    if (
+      realIntegrationCollectEntries !== 1 ||
+      result.closeInvocationCount !== 1 ||
+      result.closingRecords.length !== 0 ||
+      result.closeNonErrors.length !== 0 ||
+      result.diagnostics.length !== 0
+    ) {
+      throw new Error("real public close integration mismatch");
     }
   });
   process.stdout.write(
@@ -1456,18 +2045,6 @@ try {
     await runCandidateCommand(parseCandidateArguments(argv));
   }
 } catch (error) {
-  const code = error?.code;
-  if (error instanceof CandidateLifecycleError) {
-    for (const diagnostic of error.diagnostics) {
-      process.stderr.write(`${JSON.stringify(diagnostic)}\n`);
-    }
-  }
-  const message =
-    typeof code === "string"
-      ? code
-      : error instanceof Error
-        ? error.stack ?? error.message
-        : String(error);
-  process.stderr.write(`${message}\n`);
+  writeCandidateFailure(error);
   process.exitCode = 1;
 }

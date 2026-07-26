@@ -1,5 +1,55 @@
 # Current Task
 
+## 2B20AP1 — final Infra Repair 2/2 locally closed pending independent review
+
+- The sole authorized final implementation repair closes all three findings
+  from
+  `docs/implementation/phase-3-slice-2b20ap1-infrastructure-implementation-review-repair-1.md`
+  within `scripts/verify-vitest-ownership-contracts.mjs` plus the four active
+  controls. No other implementation, test, workflow, production, rule,
+  profile, workspace, dependency, timeout or process-group file changed.
+- F1 is locally closed: one serializer emits exact JSONL keys in fixed order
+  `phase,classification,source,ordinal,name,message`; the only sources are
+  `PUBLIC_PROMISE_REJECTION`, `PUBLIC_INJECTED_STDERR`, and
+  `PUBLIC_INJECTED_STDERR_CAPTURE`. Messages are safely normalized and
+  preserved, category ordinals begin at zero, capture-invalid remains
+  distinct, warnings retain their text, and lifecycle JSON is not followed by
+  a bare error-code line.
+- F2 is locally closed without group 13: checks 26–37 are now exactly lifecycle
+  groups 1–12. Separate validation and encoding callbacks, create rejection,
+  clean/warning success, collection/validation/encoding failures, close
+  rejection/sentinel/capture-invalid, primary plus each/both close channel,
+  atomic write/close/rename failure, deterministic candidate and diagnostic
+  bytes, wrapper entry `1`, real `1572/12`, and real public close/no-hang are
+  all asserted.
+- F3 is locally closed: candidate collection calls only public
+  `TestCase.result()`, accepts exact state `pending`, rejects
+  passed/failed/skipped/missing/non-function/throwing results, uses
+  public-only doubles with no private task field, and statically rejects a
+  private access token in the candidate collection path.
+- Fresh candidate emit/verify/repeat produced byte-identical candidate SHA-256
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`,
+  structured inventory SHA-256
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`,
+  `1572` identities and `12` LF titles. Exact OS-temp candidate files were
+  removed.
+- Authorized local gates pass: ownership/lifecycle `37/37`, coverage `7/7`,
+  ordinary `9/9`, coverage `11/11`, five ownership contracts, zero routing
+  mismatch, Windows `305` (`9/90/52/73/9/26/46`), application `296/296`,
+  rebuild `207/207`, targeted lint, typecheck, full lint, and ordinary
+  `35 files / 1572 tests`.
+- Infrastructure Repair is exhausted at `2/2`. Control is `RUNNING /
+  2B20AP1_INFRA_REPAIR_2_LOCALLY_CLOSED_PENDING_FINAL_INDEPENDENT_IMPLEMENTATION_REVIEW`;
+  implementation and continuation authorization are both false. Any remaining
+  local implementation blocker is terminal `HUMAN_BLOCKED`; Repair 3 does not
+  exist.
+- Full local coverage, hosted CI, profile refresh, Linux worker-RPC, Windows
+  W7, push and PR mutation remain unrun and excluded. Required next action is
+  `RUN_FINAL_INDEPENDENT_2B20AP1_IMPLEMENTATION_REVIEW_REPAIR_2`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the final Repair-2 local closure.
+
 ## 2B20AP1 — Infra Repair 1 review fix required; final Repair 2/2 authorized
 
 - The complete independent implementation review of exact HEAD
