@@ -1,6 +1,55 @@
 # Current Task
 
-## 2B20AP1-LF1 — amendment pending independent review
+## 2B20AP1-LF1 — Correction 1 pending independent review
+
+- The complete independent amendment review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-1.md`,
+  exact UTF-8 SHA-256
+  `d6b386265d30ebfc6fff2b190179909a168b0f673789027f4097d628f9dd9e8b`,
+  `11007` bytes and `140` LF lines. It is bound to exact reviewed HEAD
+  `609b01d352c194424c778fcb7013a868cc768af8`.
+- The reviewer returned `RULE_DESIGN_FIX_REQUIRED` with exactly
+  `LF1-SAME-DISCOVERY-CONTRACT` and
+  `LF2-CANDIDATE-SCHEMA-CONTRACT`; every other 15-point amendment audit item
+  passed.
+- Standalone replacement authority Correction 1 is
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1-correction-1.md`,
+  exact UTF-8 SHA-256
+  `7731bd5092689e8b0604090736955bd54f649bf8d5070ce9f6266b49dc30efe7`,
+  `28642` bytes and `639` LF lines. Its terminal is
+  `READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`.
+- Correction 1 is not Design Round 4 and leaves the parent Round 3 design,
+  amendment, and review immutable. `amendmentCorrectionRound=1/2`.
+- LF1 is closed at design-contract level by one exact public-API discovery
+  flow per CLI invocation: one Node process, one Vitest instance, one
+  `collectTests` call, and the same `TestCase` references producing both raw
+  `fullName` projections and structured tuples. The external
+  `vitest list --json` / `--inventory` gate is superseded.
+- LF2 is closed at design-contract level by exact
+  `vitest-ownership-candidate-baseline-v2`: ten ordered top-level keys, all
+  1572 sorted tuples, LF count 12, LF-safe inventory hash, complete 2B20A
+  baseline, and complete accepted baselines in actual registry order
+  `2B19A3A,2B19A3B1,2B19A3B2,2B19B`.
+- Verify regenerates expected bytes from its own single fresh collection and
+  compares raw candidate bytes before JSON parsing. Duplicate object keys,
+  wrong order, missing/extra fields and bridge fields therefore reject before
+  permissive `JSON.parse` behavior is reachable.
+- Canonical control is `HUMAN_BLOCKED /
+  PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`.
+- No script, test, workflow, production, profile, candidate, local gate, push,
+  PR, CI, Linux/Windows investigation, or 2B20B work is authorized.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Correction-1-review-pending state.
+
+## Historical checkpoint — 2B20AP1-LF1 amendment pending independent review
 
 - Authorization is
   `USER_AUTHORIZED_2B20AP1_LF_SAFE_IDENTITY_ENCODING_AMENDMENT_AND_LOCAL_END_TO_END_CLOSURE`.
@@ -47,8 +96,8 @@
   test/coverage gate, push, PR, CI, Linux/Windows investigation, or 2B20B work
   is authorized.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active amendment-review-pending state.
+The historical amendment checkpoint above was independently reviewed and
+returned `RULE_DESIGN_FIX_REQUIRED`; it does not authorize implementation.
 
 ## Historical checkpoint — 2B20AP1 frozen raw Vitest name contract conflict
 

@@ -1,6 +1,57 @@
 # Project State
 
-## Current state — 2B20AP1-LF1 amendment pending independent review
+## Current state — 2B20AP1-LF1 Correction 1 pending independent review
+
+- The complete independent amendment review is preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-1.md`,
+  SHA-256
+  `d6b386265d30ebfc6fff2b190179909a168b0f673789027f4097d628f9dd9e8b`,
+  `11007` bytes and `140` LF lines, bound to exact HEAD
+  `609b01d352c194424c778fcb7013a868cc768af8`.
+- Its verdict is `RULE_DESIGN_FIX_REQUIRED`; exact blockers are
+  `LF1-SAME-DISCOVERY-CONTRACT` and
+  `LF2-CANDIDATE-SCHEMA-CONTRACT`.
+- Standalone replacement Correction 1 is
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1-correction-1.md`,
+  SHA-256
+  `7731bd5092689e8b0604090736955bd54f649bf8d5070ce9f6266b49dc30efe7`,
+  `28642` bytes and `639` LF lines, with terminal
+  `READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`.
+- This is `amendmentCorrectionRound=1/2`, not Design Round 4. The parent Round
+  3 design, amendment, and Round-1 review are immutable.
+- The replacement freezes one exact collection per emit/verify invocation
+  using one Node process, one Vitest instance and one public
+  `collectTests` call. The same `TestCase` references derive raw `fullName`
+  and structured `[project,file,ancestorPath,title]`; the old external
+  raw-list/`--inventory` gate is superseded.
+- Candidate authority is exact
+  `vitest-ownership-candidate-baseline-v2`, containing all 1572 sorted
+  structured tuples, 12 LF identities, the LF-safe hash, complete 2B20A
+  baseline, and complete immutable accepted baselines ordered
+  `2B19A3A,2B19A3B1,2B19A3B2,2B19B`.
+- Verify regenerates expected bytes from its one fresh collection and performs
+  raw byte equality before parsing. Duplicate JSON keys, wrong key order,
+  missing/extra fields, accepted-baseline drift and bridge fields reject.
+- The prior 12-title facts, no-title-change audit, legacy hash protection,
+  no-bridge decision, topology and exact future implementation allowlist are
+  inherited unchanged.
+- Control is `HUMAN_BLOCKED /
+  PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`.
+- Product branch, PR #46, rules, product behavior, test titles, role coverage,
+  scripts, tests, workflow, profile, topology, timeouts and dependencies are
+  unchanged. No implementation or validation gate was run.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Correction-1-review-pending state.
+
+## Historical checkpoint — 2B20AP1-LF1 amendment pending independent review
 
 - Authorization is
   `USER_AUTHORIZED_2B20AP1_LF_SAFE_IDENTITY_ENCODING_AMENDMENT_AND_LOCAL_END_TO_END_CLOSURE`.
@@ -44,8 +95,8 @@
   topology, process groups, timeouts, dependencies, and role coverage remain
   unchanged. No implementation or validation gate was run.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active amendment-review-pending state.
+The historical amendment checkpoint above was independently reviewed and
+returned `RULE_DESIGN_FIX_REQUIRED`; it does not authorize implementation.
 
 ## Historical checkpoint — 2B20AP1 frozen raw Vitest name conflict
 

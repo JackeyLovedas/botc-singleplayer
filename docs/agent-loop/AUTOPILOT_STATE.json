@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
+  "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1581,7 +1581,7 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
+    "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1622,12 +1622,59 @@
       "bytes": 18650,
       "lfLineCount": 357,
       "terminal": "READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
-      "status": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
-      "reviewVerdict": null,
+      "status": "CORRECTION_1_MATERIALIZED_PENDING_INDEPENDENT_REVIEW",
+      "reviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
       "reviewPass": false,
       "remainingReviewBlockers": [
-        "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW"
+        "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW"
       ],
+      "amendmentCorrectionRound": 1,
+      "maxAmendmentCorrectionRounds": 2,
+      "reviewRound1": {
+        "path": "docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-1.md",
+        "sha256": "d6b386265d30ebfc6fff2b190179909a168b0f673789027f4097d628f9dd9e8b",
+        "bytes": 11007,
+        "lfLineCount": 140,
+        "reviewedHead": "609b01d352c194424c778fcb7013a868cc768af8",
+        "reviewTimestamp": "2026-07-26T09:44:00.542Z",
+        "verdict": "RULE_DESIGN_FIX_REQUIRED",
+        "findings": [
+          "LF1-SAME-DISCOVERY-CONTRACT",
+          "LF2-CANDIDATE-SCHEMA-CONTRACT"
+        ],
+        "remainingBlockers": [
+          "LF1-SAME-DISCOVERY-CONTRACT",
+          "LF2-CANDIDATE-SCHEMA-CONTRACT"
+        ],
+        "implementationAuthorized": false
+      },
+      "correction1": {
+        "correctionId": "2B20AP1-LF1-CORRECTION-1",
+        "path": "docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1-correction-1.md",
+        "sha256": "7731bd5092689e8b0604090736955bd54f649bf8d5070ce9f6266b49dc30efe7",
+        "bytes": 28642,
+        "lfLineCount": 639,
+        "terminal": "READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
+        "status": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
+        "parentAmendmentCommit": "609b01d352c194424c778fcb7013a868cc768af8",
+        "closedFindingIdsAtDesignContractLevel": [
+          "LF1-SAME-DISCOVERY-CONTRACT",
+          "LF2-CANDIDATE-SCHEMA-CONTRACT"
+        ],
+        "singleDiscoveryFlow": "ONE_NODE_PROCESS_ONE_VITEST_INSTANCE_ONE_COLLECT_TESTS_CALL_PER_CLI_INVOCATION",
+        "candidateSchemaVersion": "vitest-ownership-candidate-baseline-v2",
+        "candidateTopLevelKeyCount": 10,
+        "embeddedStructuredIdentityCount": 1572,
+        "lfIdentityCount": 12,
+        "acceptedContractOrder": [
+          "2B19A3A",
+          "2B19A3B1",
+          "2B19A3B2",
+          "2B19B"
+        ],
+        "externalRawInventoryGateSuperseded": true,
+        "implementationAuthorized": false
+      },
       "infrastructureDesignChanged": true,
       "infrastructureDesignChangeScope": "IDENTITY_ENCODING_ONLY",
       "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
@@ -1710,18 +1757,18 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "NOT_LOCALLY_CLOSED_PENDING_LF_AMENDMENT_REVIEW",
+    "ownershipStatus": "NOT_LOCALLY_CLOSED_PENDING_LF_AMENDMENT_CORRECTION_1_REVIEW",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
+      "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW"
+    "nextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2677,7 +2724,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
+    "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3446,8 +3493,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the bounded 2B20AP1-LF1 identity-encoding amendment after one fresh 1572-record Vitest list proved 12 legal LF-bearing accepted 2B18B titles. The amendment freezes vitest-semantic-identity-json-tuple-v1, preserves all accepted frozen hashes without a dual-hash migration, removes both repository-local temporary evidence files, records the retained old OS-temp artifacts as non-gating, and leaves implementation unauthorized pending independent amendment review. Infrastructure Repair remains 0/2.",
+  "lastAction": "Archived the complete independent 2B20AP1-LF1 amendment review verbatim with RULE_DESIGN_FIX_REQUIRED and materialized standalone Correction 1/2. The correction closes LF1 at design-contract level with one Node process, one Vitest instance and one public collectTests call per emit/verify invocation using the same task objects for raw and structured projections. It closes LF2 with exact candidate v2 schema/order, embedded 1572 tuples and 12 LF identities, complete 2B20A baseline, all four immutable accepted baselines in actual registry order, and byte-first verification that rejects duplicate JSON keys and all noncanonical bytes. Implementation remains unauthorized and Infrastructure Repair remains 0/2 pending independent correction review.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
-  "nextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW"
+  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
+  "nextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW"
 }
