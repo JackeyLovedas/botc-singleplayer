@@ -1,5 +1,36 @@
 # Project State
 
+## Current state — Infra Repair 1 review failed; final Repair 2/2 authorized
+
+- The independent implementation review of commit
+  `2e7ecb95e589eceff38484d928017260314bfb36` is preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-infrastructure-implementation-review-repair-1.md`,
+  SHA-256
+  `b6dacc4f4c37ea7abc47e7af357b752711cc0a71ed3ef709d8316bbf4792fb01`,
+  `9074` bytes and `120` LF lines.
+- Verdict is `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED`. The
+  reviewer independently reconfirmed the 5/5 ownership contracts, 37/37
+  trace/support rows, 1572-test 9/11 routing, Windows 305 split, immutable
+  accepted baselines, exact allowlist, title-only test edits, and no product
+  or rule change.
+- Three local blockers remain: exact external lifecycle diagnostic shape,
+  complete evidence for the frozen twelve lifecycle groups, and removal of
+  private `TestCase.task` access in favor of public `result()`.
+- Infrastructure Repair remains `1/2` during this docs/control checkpoint.
+  The final authorized implementation is Repair `2/2`, limited to those three
+  findings. Any remaining blocker after Repair 2 is terminal
+  `HUMAN_BLOCKED`; no Repair 3 is permitted.
+- Control is `RUNNING /
+  2B20AP1_INFRA_REPAIR_1_REVIEW_FIX_REQUIRED_REPAIR_2_AUTHORIZED`.
+  Implementation continuation is authorized only for the final bounded
+  repair.
+- Full local coverage, hosted CI/profile, Linux worker-RPC, Windows W7,
+  push/PR mutation, production, rules, role coverage and the next slice remain
+  untouched.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this final Repair-2 authorization.
+
 ## Current state — 2B20AP1 Infra Repair 1/2 locally closed
 
 - The approved ownership/supersession/routing implementation is complete

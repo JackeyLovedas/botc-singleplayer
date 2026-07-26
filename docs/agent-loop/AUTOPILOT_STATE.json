@@ -1,6 +1,6 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "2B20AP1_INFRA_REPAIR_1_LOCALLY_CLOSED_PENDING_CONTROLLER_REVIEW",
+  "detailedStatus": "2B20AP1_INFRA_REPAIR_1_REVIEW_FIX_REQUIRED_REPAIR_2_AUTHORIZED",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1983,10 +1983,35 @@
       }
     },
     "implementationAuthorized": false,
-    "implementationContinuationAuthorized": false,
-    "implementationCommit": "FORMAL_COMMIT_CONTAINING_THIS_CONTROL_STATE",
+    "implementationContinuationAuthorized": true,
+    "implementationCommit": "2e7ecb95e589eceff38484d928017260314bfb36",
+    "implementationReviewRepair1": {
+      "path": "docs/implementation/phase-3-slice-2b20ap1-infrastructure-implementation-review-repair-1.md",
+      "sha256": "b6dacc4f4c37ea7abc47e7af357b752711cc0a71ed3ef709d8316bbf4792fb01",
+      "bytes": 9074,
+      "lfLineCount": 120,
+      "reviewedHead": "2e7ecb95e589eceff38484d928017260314bfb36",
+      "reviewTimestamp": "2026-07-26T21:04:47.0587327+08:00",
+      "verdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED",
+      "remainingBlockers": [
+        "LFC_IMPLEMENTATION_EXTERNAL_DIAGNOSTIC_EXACT_SHAPE_VIOLATION",
+        "LFC_IMPLEMENTATION_MANDATORY_LIFECYCLE_SELF_TEST_GROUPS_INCOMPLETE",
+        "LFC_IMPLEMENTATION_PRIVATE_TESTCASE_TASK_ACCESS"
+      ],
+      "lifecycleAudit": "FAIL",
+      "candidateAudit": "PASS_HAPPY_PATH_FAIL_FAILURE_CONTRACT",
+      "ownershipAudit": "PASS",
+      "traceabilityAudit": "PASS",
+      "routingAudit": "PASS",
+      "allowlistAudit": "PASS",
+      "titleAudit": "PASS",
+      "productBehaviorChanged": false,
+      "ruleSemanticsChanged": false,
+      "repair2Authorized": true,
+      "repair3Authorized": false
+    },
     "localClosure": {
-      "status": "PASS",
+      "status": "REVIEW_FIX_REQUIRED",
       "infrastructureRepairRound": 1,
       "candidateSchemaVersion": "vitest-ownership-candidate-baseline-v2",
       "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
@@ -2000,6 +2025,7 @@
       "supportingAuthorityCount": 37,
       "applicationOwnershipExecutions": 22,
       "ownershipSelfTest": "PASS_37_OF_37",
+      "ownershipSelfTestEvidenceSufficiency": "FAIL_MANDATORY_LIFECYCLE_GROUPS_INCOMPLETE",
       "coverageSelfTest": "PASS_7_OF_7",
       "ordinaryRouting": "PASS_9_OF_9_1572_OF_1572_ZERO_MISMATCH",
       "coverageRouting": "PASS_11_OF_11_1572_OF_1572_ZERO_MISMATCH",
@@ -2043,17 +2069,20 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "LOCALLY_CLOSED_PENDING_CONTROLLER_REVIEW",
+    "ownershipStatus": "INFRA_REPAIR_1_REVIEW_FIX_REQUIRED_REPAIR_2_AUTHORIZED",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
+      "LFC_IMPLEMENTATION_EXTERNAL_DIAGNOSTIC_EXACT_SHAPE_VIOLATION",
+      "LFC_IMPLEMENTATION_MANDATORY_LIFECYCLE_SELF_TEST_GROUPS_INCOMPLETE",
+      "LFC_IMPLEMENTATION_PRIVATE_TESTCASE_TASK_ACCESS",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "REPORT_2B20AP1_INFRA_REPAIR_1_LOCAL_CLOSURE_TO_CONTROLLER"
+    "nextAction": "IMPLEMENT_2B20AP1_FINAL_INFRA_REPAIR_2"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -3778,8 +3807,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Implemented and locally closed 2B20AP1 Infrastructure Repair 1/2 within the exact eleven-file allowlist: four accepted supersessions, immutable virtual predecessor reconciliation, 37/37 2B20A primary/support authority, LF-safe candidate v2 1572/12 with corrected public close gate, unchanged 9/11/W routing, focused and full ordinary gates green, no full local coverage, push, PR or hosted CI.",
-  "lastError": null,
-  "requiredNextAction": "REPORT_2B20AP1_INFRA_REPAIR_1_LOCAL_CLOSURE_TO_CONTROLLER",
-  "nextAction": "REPORT_2B20AP1_INFRA_REPAIR_1_LOCAL_CLOSURE_TO_CONTROLLER"
+  "lastAction": "Archived the complete independent Infrastructure Repair 1 implementation review verbatim. The review passed ownership, traceability, routing, accepted-history, allowlist, title-only and non-product audits but requires one final bounded Infrastructure Repair 2/2 for exact lifecycle diagnostics, complete twelve-group self-test evidence and public-only TestCase.result access.",
+  "lastError": "LFC_IMPLEMENTATION_EXTERNAL_DIAGNOSTIC_EXACT_SHAPE_VIOLATION; LFC_IMPLEMENTATION_MANDATORY_LIFECYCLE_SELF_TEST_GROUPS_INCOMPLETE; LFC_IMPLEMENTATION_PRIVATE_TESTCASE_TASK_ACCESS",
+  "requiredNextAction": "IMPLEMENT_2B20AP1_FINAL_INFRA_REPAIR_2",
+  "nextAction": "IMPLEMENT_2B20AP1_FINAL_INFRA_REPAIR_2"
 }

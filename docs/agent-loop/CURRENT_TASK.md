@@ -1,5 +1,46 @@
 # Current Task
 
+## 2B20AP1 — Infra Repair 1 review fix required; final Repair 2/2 authorized
+
+- The complete independent implementation review of exact HEAD
+  `2e7ecb95e589eceff38484d928017260314bfb36` is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-infrastructure-implementation-review-repair-1.md`,
+  exact UTF-8 SHA-256
+  `b6dacc4f4c37ea7abc47e7af357b752711cc0a71ed3ef709d8316bbf4792fb01`,
+  `9074` bytes and `120` LF lines. The review timestamp is
+  `2026-07-26T21:04:47.0587327+08:00`.
+- The reviewer returned exact
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED`. Ownership,
+  traceability, ordinary/coverage/Windows routing, accepted histories,
+  unchanged product/rules, and the exact eleven-file implementation allowlist
+  passed. The happy-path candidate passed; the lifecycle failure contract did
+  not.
+- The three exact local implementation blockers are:
+  `LFC_IMPLEMENTATION_EXTERNAL_DIAGNOSTIC_EXACT_SHAPE_VIOLATION`,
+  `LFC_IMPLEMENTATION_MANDATORY_LIFECYCLE_SELF_TEST_GROUPS_INCOMPLETE`, and
+  `LFC_IMPLEMENTATION_PRIVATE_TESTCASE_TASK_ACCESS`.
+- The only remaining implementation turn is Infrastructure Repair `2/2`. It
+  is limited to the three blockers above within the existing implementation
+  allowlist. Infrastructure Repair remains `1/2` until the formal Repair-2
+  implementation commit; this docs/control review archive does not consume
+  another round. No Repair `3/2` exists.
+- Repair 2 must implement the exact six-key lifecycle diagnostic JSONL
+  contract, truthfully close all twelve existing lifecycle groups without a
+  thirteenth, and use only public `TestCase.result()` with exact pending-state
+  validation and no `.task` access.
+- Control is `RUNNING /
+  2B20AP1_INFRA_REPAIR_1_REVIEW_FIX_REQUIRED_REPAIR_2_AUTHORIZED`;
+  `implementationAuthorized=false`;
+  `implementationContinuationAuthorized=true`.
+- Full local coverage, hosted CI, profile refresh, Linux worker-RPC, Windows
+  W7, push and PR mutation remain excluded. The independent downstream
+  blockers remain `LINUX_WORKER_RPC_CI_BLOCKER` and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is `IMPLEMENT_2B20AP1_FINAL_INFRA_REPAIR_2`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this final Repair-2 authorization.
+
 ## 2B20AP1 — Infra Repair 1/2 implemented and locally closed
 
 - The first formal non-product implementation is complete on
