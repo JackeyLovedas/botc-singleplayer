@@ -1,5 +1,83 @@
 # Current Task
 
+## 2B20AP1 — public Vitest lifecycle Correction 1 pending independent review
+
+- The complete first independent public-lifecycle review is archived verbatim
+  at
+  `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-review-round-1.md`,
+  exact UTF-8 SHA-256
+  `275a0fe3bd0ea99a6f5e7b917a033de1ed8936992a7d64b8d7474b54b248b0aa`,
+  `5969` bytes and `101` LF lines. It reviewed exact HEAD
+  `99be3e69957bc4ca53b9cab9785b079be73fbf8d` at
+  `2026-07-26T11:34:14.0459835Z`.
+- The independent reviewer returned exact `RULE_DESIGN_FIX_REQUIRED` with one
+  blocker:
+  `LFC1-PUBLIC-CLOSE-FULFILLED-WITH-ERROR-DIAGNOSTIC`. Create and collect
+  contracts passed; LF compatibility, topology and allowlist passed statically.
+  Implementation remains unauthorized.
+- Standalone replacement authority Correction 1 is
+  `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-v1-correction-1.md`,
+  exact UTF-8 SHA-256
+  `12b8adf1bdf5c8b057a8303a0861499d08c788f5334afd0ef6950fad316bc276`,
+  `26817` bytes and `650` LF lines. Its terminal is
+  `READY_FOR_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW`.
+- Correction 1 is `lifecycleCorrection=1/2`, is not Design Round 4 and was
+  materialized from exact parent override commit
+  `99be3e69957bc4ca53b9cab9785b079be73fbf8d`. The parent override and review
+  remain immutable. No future materialization SHA is prewritten.
+- The correction inherits all passing create, collection, LF-safe identity,
+  candidate-v2, atomic publication, topology, ownership, allowlist and
+  historical-non-blocker contracts. It closes only `LFC1` at design-contract
+  level.
+- Locked Vitest `3.2.6` public evidence exposes
+  `VitestOptions.stderr?: Writable` and `Vitest.close(): Promise<void>`.
+  Its installed close implementation uses `Promise.allSettled` for
+  project/pool/close-listener work, writes
+  `error during close` to the injected public stderr for rejected members and
+  may still fulfill the outer close Promise.
+- Corrected close success is exact: the public `close()` Promise fulfilled
+  **and** the public injected stderr captured zero normalized close-error
+  records while the repository wrapper phase was `CLOSING`. Either Promise
+  rejection or an anchored, case-sensitive `error during close` record maps to
+  `CLOSE_FAILED`, discards in-memory candidate bytes and forbids publication.
+- Capture uses one per-invocation public injected Writable, tags each write
+  with the observable wrapper phase and applies exact UTF-8/line-ending
+  normalization without case folding, whitespace collapse, Unicode
+  normalization or broad ANSI removal. It reads no private field and freezes
+  no hook order.
+- Non-error close stderr is retained as
+  `CLOSE_STDERR_NON_ERROR_DIAGNOSTIC`, safely redacted and deterministically
+  emitted; warnings are not arbitrarily swallowed or falsely renamed as close
+  errors. Actual integration still requires zero close-stage stderr records
+  and natural process exit.
+- Primary plus close diagnostics remain separate and both are emitted in fixed
+  order. External diagnostics are fixed-key JSON-lines with JSON escaping,
+  no timestamp, locale value or random identifier.
+- The existing twelve self-test group IDs remain exact. Groups 2, 6 and 7 gain
+  fulfilled-clean/warning, rejected/fulfilled-with-close-error and
+  primary-plus-fulfilled-with-close-error subcases; group 12 proves real close
+  has zero close diagnostics and exits naturally. No group 13, new script,
+  test file, timeout or process/profile change is authorized.
+- Canonical control is `HUMAN_BLOCKED /
+  PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW`.
+  Only a complete independent `RULE_DESIGN_PASS` with
+  `remainingBlockers=[]` can authorize a later implementation turn. One final
+  in-scope docs/control lifecycle correction remains if the next verdict is
+  `RULE_DESIGN_FIX_REQUIRED`.
+- No script, test, workflow, production, profile, candidate, product test,
+  coverage, Infrastructure Repair, push, PR, CI, Linux/Windows investigation
+  or next-slice work was performed.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Correction-1 review gate.
+
 ## 2B20AP1 — public Vitest lifecycle override pending independent review
 
 - Authorization is
@@ -75,8 +153,8 @@
   coverage, implementation, Infrastructure Repair, push, PR, CI,
   Linux/Windows investigation or next-slice work was performed.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active public-lifecycle-override review gate.
+All sections below this historical checkpoint are retained as history; they do
+not override the active Correction-1 review gate.
 
 ## 2B20AP1-LF1 — amendment correction budget exhausted
 

@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
+  "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1581,7 +1581,7 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
+    "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1622,11 +1622,11 @@
       "bytes": 18650,
       "lfLineCount": 357,
       "terminal": "READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
-      "status": "PUBLIC_VITEST_LIFECYCLE_OVERRIDE_MATERIALIZED_PENDING_INDEPENDENT_REVIEW",
-      "reviewVerdict": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
+      "status": "PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_MATERIALIZED_PENDING_INDEPENDENT_REVIEW",
+      "reviewVerdict": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW",
       "reviewPass": false,
       "remainingReviewBlockers": [
-        "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
+        "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW"
       ],
       "amendmentCorrectionRound": 2,
       "maxAmendmentCorrectionRounds": 2,
@@ -1760,10 +1760,10 @@
         "materializationParentHead": "0b895c4a2056fbe2bac41802b3a5efd6dcc82600",
         "futureMaterializationShaRecorded": false,
         "status": "HUMAN_BLOCKED",
-        "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
-        "reviewVerdict": "PENDING",
+        "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW",
+        "reviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
         "remainingReviewBlockers": [
-          "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
+          "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW"
         ],
         "implementationAuthorized": false,
         "candidateAuthorized": false,
@@ -1837,8 +1837,83 @@
         ],
         "productionFilesAuthorized": false,
         "mathematicianTitleFilesAuthorized": false,
+        "lifecycleCorrectionRound": 1,
         "maxDocsControlCorrections": 2,
-        "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
+        "reviewRound1": {
+          "path": "docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-review-round-1.md",
+          "sha256": "275a0fe3bd0ea99a6f5e7b917a033de1ed8936992a7d64b8d7474b54b248b0aa",
+          "bytes": 5969,
+          "lfLineCount": 101,
+          "reviewedHead": "99be3e69957bc4ca53b9cab9785b079be73fbf8d",
+          "reviewTimestamp": "2026-07-26T11:34:14.0459835Z",
+          "verdict": "RULE_DESIGN_FIX_REQUIRED",
+          "findings": [
+            "LFC1-PUBLIC-CLOSE-FULFILLED-WITH-ERROR-DIAGNOSTIC"
+          ],
+          "remainingBlockers": [
+            "LFC1-PUBLIC-CLOSE-FULFILLED-WITH-ERROR-DIAGNOSTIC"
+          ],
+          "createContract": "PASS",
+          "collectContract": "PASS",
+          "closeContract": "FIX_REQUIRED",
+          "candidatePublicationContract": "FIX_REQUIRED",
+          "lfCompatibility": "PASS_STATIC",
+          "topologyAudit": "PASS_STATIC",
+          "allowlistAudit": "PASS",
+          "implementationAuthorized": false
+        },
+        "correction1": {
+          "correctionId": "2B20AP1-PUBLIC-VITEST-LIFECYCLE-OVERRIDE-V1-CORRECTION-1",
+          "path": "docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-v1-correction-1.md",
+          "sha256": "12b8adf1bdf5c8b057a8303a0861499d08c788f5334afd0ef6950fad316bc276",
+          "bytes": 26817,
+          "lfLineCount": 650,
+          "terminal": "READY_FOR_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW",
+          "parentOverrideCommit": "99be3e69957bc4ca53b9cab9785b079be73fbf8d",
+          "lifecycleCorrectionRound": 1,
+          "maxLifecycleCorrectionRounds": 2,
+          "closedFindingIdsAtDesignContractLevel": [
+            "LFC1-PUBLIC-CLOSE-FULFILLED-WITH-ERROR-DIAGNOSTIC"
+          ],
+          "inheritedParentPassContracts": [
+            "CREATE",
+            "COLLECT",
+            "LF_SAFE_IDENTITY_AND_CANDIDATE_V2",
+            "ATOMIC_PUBLICATION",
+            "TOPOLOGY",
+            "ALLOWLIST",
+            "HISTORICAL_NON_BLOCKERS"
+          ],
+          "vitestVersion": "3.2.6",
+          "vitestPackageSha256": "86c8529110b6690e7ed95e243c867ee9b3118ac91d8ae8857d22f228666252c4",
+          "vitestPublicTypesSha256": "ab80d2cb170a92c61ca8c822d0db0fc50eb15c7c6cf1a24cb01852a5a15a7db8",
+          "vitestSourceSha256": "123e44ea39aee4f9e7a0d8f91fd78d9091c161e56d0f15ece5ab7e807ac5eaed",
+          "publicCloseSuccessContract": "PUBLIC_CLOSE_PROMISE_FULFILLED_AND_ZERO_NORMALIZED_CLOSE_ERROR_RECORDS_DURING_OBSERVABLE_CLOSING",
+          "closeErrorSentinel": "error during close",
+          "closeErrorSentinelMatch": "ANCHORED_AT_ZERO_CASE_SENSITIVE_EXACT_OR_FOLLOWED_BY_ASCII_SPACE_TAB_OR_LF",
+          "closeNormalization": "STRICT_UTF8_CRLF_TO_LF_LONE_CR_TO_LF_REMOVE_TERMINAL_LF_FOR_CLASSIFICATION_NO_CASEFOLD_TRIM_UNICODE_NORMALIZATION_OR_BROAD_ANSI_STRIP",
+          "captureBoundary": "PER_INVOCATION_PUBLIC_VITEST_OPTIONS_STDERR_WRITABLE_TAGGED_WITH_REPOSITORY_WRAPPER_PHASE",
+          "fulfilledWithCloseErrorClassification": "CLOSE_FAILED",
+          "nonErrorCloseDiagnosticClassification": "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC_PRESERVED_NOT_SWALLOWED",
+          "primaryAndCloseDiagnosticsPreserved": true,
+          "candidateBytesDiscardedOnCloseError": true,
+          "privateFieldsInspected": false,
+          "privateHookOrderFrozen": false,
+          "requiredWrapperSelfTestGroupCount": 12,
+          "extendedSelfTestGroups": [
+            2,
+            6,
+            7,
+            12
+          ],
+          "group13Created": false,
+          "actualIntegrationContract": "ZERO_CLOSE_STAGE_STDERR_RECORDS_AND_NATURAL_PROCESS_EXIT",
+          "implementationAuthorized": false,
+          "infrastructureRepairRound": 0,
+          "maxInfrastructureRepairRounds": 2,
+          "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW"
+        },
+        "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW"
       },
       "infrastructureDesignChanged": true,
       "infrastructureDesignChangeScope": "IDENTITY_ENCODING_ONLY",
@@ -1922,18 +1997,18 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "NOT_LOCALLY_CLOSED_PENDING_INDEPENDENT_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
+    "ownershipStatus": "NOT_LOCALLY_CLOSED_PENDING_INDEPENDENT_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
+      "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
+    "nextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2889,7 +2964,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
+    "PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3658,8 +3733,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the complete user-authorized 2B20AP1 public Vitest lifecycle override and synchronized only four active controls. The replacement freezes observable public create, one repository collectSemanticInventory wrapper entry, structured validation/encoding, exact-once close for each successfully returned instance, primary-plus-close error retention and same-directory atomic candidate publication only after close success. Historical Correction 2 phase, internal-glob-count and pre-return-close findings are preserved with explicit replacement dispositions and are not active blockers pending independent override review. No implementation, candidate, test, coverage, Infrastructure Repair, push, PR, CI or downstream investigation occurred.",
+  "lastAction": "Archived the complete first independent public Vitest lifecycle override review verbatim and materialized standalone lifecycle Correction 1/2. The reviewer returned RULE_DESIGN_FIX_REQUIRED with sole blocker LFC1-PUBLIC-CLOSE-FULFILLED-WITH-ERROR-DIAGNOSTIC. Correction 1 freezes close success as public close Promise fulfillment plus zero normalized close-error records from the public injected stderr during observable CLOSING, maps fulfilled-with-error-diagnostic to CLOSE_FAILED, preserves primary plus close diagnostics, discards candidate bytes, retains non-error warnings deterministically and uses no private fields or hook ordering. Implementation remains unauthorized and Infrastructure Repair remains 0/2.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW",
-  "nextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW"
+  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW",
+  "nextAction": "RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW"
 }
