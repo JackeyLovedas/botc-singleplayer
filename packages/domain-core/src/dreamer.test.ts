@@ -943,13 +943,51 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
       }
     });
     const nonEnumerableNumeric = structuredClone(facts.delivery);
-    const nonEnumerableCandidate = nonEnumerableNumeric.apparentPairDecision.legalCandidates[0]!;
-    Object.defineProperty(nonEnumerableNumeric.apparentPairDecision.legalCandidates, "0", {
+    const nonEnumerableCandidates = nonEnumerableNumeric.apparentPairDecision.legalCandidates;
+    const nonEnumerableCandidate = nonEnumerableCandidates[0]!;
+    const originalCandidateArrayPrototype = Object.getPrototypeOf(nonEnumerableCandidates) as unknown;
+    const originalCandidateArrayLength = nonEnumerableCandidates.length;
+    const originalCandidateArrayKeys = Reflect.ownKeys(nonEnumerableCandidates);
+    const originalNumericDescriptor = Object.getOwnPropertyDescriptor(nonEnumerableCandidates, "0");
+    if (originalNumericDescriptor === undefined || !("value" in originalNumericDescriptor) ||
+        typeof originalNumericDescriptor.configurable !== "boolean" ||
+        typeof originalNumericDescriptor.writable !== "boolean") {
+      throw new Error("Expected the original legal candidate to use an own data descriptor");
+    }
+    expect(originalCandidateArrayPrototype).toBe(Array.prototype);
+    expect(originalNumericDescriptor.enumerable).toBe(true);
+    expect(originalNumericDescriptor.value).toBe(nonEnumerableCandidate);
+    expect(Object.hasOwn(originalNumericDescriptor, "get")).toBe(false);
+    expect(Object.hasOwn(originalNumericDescriptor, "set")).toBe(false);
+    Object.defineProperty(nonEnumerableCandidates, "0", {
       enumerable: false,
-      configurable: true,
-      writable: true,
-      value: nonEnumerableCandidate
+      configurable: originalNumericDescriptor.configurable,
+      writable: originalNumericDescriptor.writable,
+      value: originalNumericDescriptor.value
     });
+    const nonEnumerableNumericDescriptor = Object.getOwnPropertyDescriptor(nonEnumerableCandidates, "0");
+    if (nonEnumerableNumericDescriptor === undefined || !("value" in nonEnumerableNumericDescriptor)) {
+      throw new Error("Expected the non-enumerable candidate to remain an own data descriptor");
+    }
+    expect(Object.getPrototypeOf(nonEnumerableCandidates)).toBe(originalCandidateArrayPrototype);
+    expect(Object.getPrototypeOf(nonEnumerableCandidates)).toBe(Array.prototype);
+    expect(nonEnumerableCandidates).toHaveLength(originalCandidateArrayLength);
+    expect(Object.hasOwn(nonEnumerableCandidates, "0")).toBe(true);
+    expect(nonEnumerableNumericDescriptor).toStrictEqual({
+      ...originalNumericDescriptor,
+      enumerable: false
+    });
+    expect(nonEnumerableNumericDescriptor.enumerable).toBe(false);
+    expect(nonEnumerableNumericDescriptor.value).toBe(nonEnumerableCandidate);
+    expect(Object.hasOwn(nonEnumerableNumericDescriptor, "get")).toBe(false);
+    expect(Object.hasOwn(nonEnumerableNumericDescriptor, "set")).toBe(false);
+    expect(Array.from({ length: originalCandidateArrayLength }, (_, index) =>
+      Object.hasOwn(nonEnumerableCandidates, String(index)))).not.toContain(false);
+    expect(Reflect.ownKeys(nonEnumerableCandidates)).toStrictEqual(originalCandidateArrayKeys);
+    expect(Reflect.ownKeys(nonEnumerableCandidates)).toStrictEqual([
+      ...Array.from({ length: originalCandidateArrayLength }, (_, index) => String(index)),
+      "length"
+    ]);
     const numericSetter = structuredClone(facts.delivery);
     Object.defineProperty(numericSetter.apparentPairDecision.legalCandidates, "0", {
       enumerable: true,

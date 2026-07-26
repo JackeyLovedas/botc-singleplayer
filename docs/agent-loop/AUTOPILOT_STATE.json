@@ -1,9 +1,13 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "PRODUCT_REPAIR_STOP_LOSS_REACHED",
+  "detailedStatus": "EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_LOCAL_COMPLETION_PENDING_INDEPENDENT_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "PRODUCT_SLICE",
   "productRepairRoundConsumed": true,
+  "productRepairStopLossOverrideUsed": true,
+  "overrideKind": "EVIDENCE_ONLY_TEST_COMPLETION",
+  "productionBehaviorChangeAuthorized": false,
+  "newProductRepairRoundCreated": false,
   "currentPR": 46,
   "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/46",
   "currentBranch": "phase-3/reachable-base-dreamer-settleability-closure",
@@ -1102,7 +1106,7 @@
     "remainingBlockers": []
   },
   "reviewedHead": "79af6c75149b7a6b04b34329f9d2d338e41c19e9",
-  "currentReviewHeadAuthority": "The independent Product Repair Round 2 implementation review is bound to exact local HEAD 79af6c75149b7a6b04b34329f9d2d338e41c19e9. Its complete verbatim archive is docs/implementation/phase-3-slice-2b20a-product-repair-round-2-implementation-review.md at SHA-256 92d18dda1d8844be1ff37ca6adf8d557347e6415cb85a1b55602d956e246052c and returns PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED with exactly two remaining repair blockers. Product repair is exhausted at 2/2 and no automatic repair or Product Repair Round 3 is authorized.",
+  "currentReviewHeadAuthority": "The independent Product Repair Round 2 implementation review remains immutable authority for exact local HEAD 79af6c75149b7a6b04b34329f9d2d338e41c19e9. Its complete verbatim archive is docs/implementation/phase-3-slice-2b20a-product-repair-round-2-implementation-review.md at SHA-256 92d18dda1d8844be1ff37ca6adf8d557347e6415cb85a1b55602d956e246052c and returns PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED. The user-authorized evidence-only stop-loss override closes only the two reported local evidence/control defects and now requires a new independent implementation review; Product Repair remains exhausted at 2/2 and no Product Repair Round 3 exists.",
   "exactHeadCIAuthority": "PR #46 product HEAD dbfa424c96a8bcf06a0d2a77205626a532aa2ec8 has push run 30077541075 FAILURE and pull-request run 30077586762 FAILURE. These records are exact to dbfa424c96a8bcf06a0d2a77205626a532aa2ec8 and supply no authority for a future repair HEAD.",
   "currentFeatureHead": "dbfa424c96a8bcf06a0d2a77205626a532aa2ec8",
   "repairBaseHead": "dbfa424c96a8bcf06a0d2a77205626a532aa2ec8",
@@ -1118,14 +1122,14 @@
   "maxProductRepairRounds": 2,
   "productRepairStopLossReached": true,
   "stopLoss": true,
+  "evidenceOverrideAuthorization": "USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE",
   "implementationReviewPath": "docs/implementation/phase-3-slice-2b20a-product-repair-round-2-implementation-review.md",
   "implementationReviewSha256": "92d18dda1d8844be1ff37ca6adf8d557347e6415cb85a1b55602d956e246052c",
   "implementationReviewReviewedHead": "79af6c75149b7a6b04b34329f9d2d338e41c19e9",
   "implementationReviewTimestamp": "2026-07-26T03:14:05.084Z",
   "implementationReviewVerdict": "PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED",
   "remainingRepairBlockers": [
-    "C20_NONENUMERABLE_DESCRIPTOR_EVIDENCE_INCOMPLETE",
-    "AUTOPILOT_TOP_LEVEL_REMAINING_BLOCKERS_STALE"
+    "PENDING_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW"
   ],
   "designRound": 2,
   "maxDesignRounds": 2,
@@ -1178,7 +1182,7 @@
   },
   "slice2B20AGate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "PRODUCT_REPAIR_STOP_LOSS_REACHED",
+    "detailedStatus": "EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_LOCAL_COMPLETION_PENDING_INDEPENDENT_REVIEW",
     "disposition": "UNACCEPTED",
     "authorization": "USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE",
     "scopeMode": "REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY",
@@ -1214,6 +1218,11 @@
     "productRepairStopLossReached": true,
     "stopLoss": true,
     "productRepairRoundConsumed": true,
+    "productRepairStopLossOverrideUsed": true,
+    "overrideKind": "EVIDENCE_ONLY_TEST_COMPLETION",
+    "productionBehaviorChangeAuthorized": false,
+    "newProductRepairRoundCreated": false,
+    "evidenceOverrideAuthorization": "USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE",
     "productRepairDesignAuthorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY",
     "productRepairDesignCorrectionAuthorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_CORRECTION_V1_PATH_GATE_BRANCH_ONLY",
     "designCorrectionRound": 2,
@@ -1449,7 +1458,7 @@
     "productRepairRound2DesignRereviewV2Findings": [],
     "productRepairRound2DesignRereviewV2RemainingBlockers": [],
     "productRepairRound2ImplementationBaseHead": "b4d33fd0026eae72e28329a8d9ac127a6f2cc31f",
-    "productRepairRound2ImplementationStatus": "PRODUCT_REPAIR_STOP_LOSS_REACHED",
+    "productRepairRound2ImplementationStatus": "EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_LOCAL_COMPLETION_PENDING_INDEPENDENT_REVIEW",
     "productRepairRound2LocalValidation": {
       "nodeVersion": "v24.15.0",
       "pnpmVersion": "11.7.0 via Corepack",
@@ -1498,8 +1507,7 @@
     "implementationReviewTimestamp": "2026-07-26T03:14:05.084Z",
     "implementationReviewVerdict": "PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED",
     "remainingRepairBlockers": [
-      "C20_NONENUMERABLE_DESCRIPTOR_EVIDENCE_INCOMPLETE",
-      "AUTOPILOT_TOP_LEVEL_REMAINING_BLOCKERS_STALE"
+      "PENDING_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW"
     ],
     "reviewerGateResults": {
       "focusedC20": "PASS / 1 passed / 76 skipped",
@@ -1515,9 +1523,46 @@
     "coverageProcessFailureConsumedRepairRound": false,
     "ownershipSelfTest": "PASS / 22 of 22",
     "traceabilityInventory": "PASS / 37 active / 37 unique primary / 37 unique supporting authority",
+    "evidenceOnlyStopLossOverride": {
+      "status": "LOCAL_COMPLETION_PENDING_INDEPENDENT_IMPLEMENTATION_REVIEW",
+      "authorization": "USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE",
+      "overrideKind": "EVIDENCE_ONLY_TEST_COMPLETION",
+      "productRepairRound": "2/2",
+      "productRepairStopLossOverrideUsed": true,
+      "productionBehaviorChangeAuthorized": false,
+      "newProductRepairRoundCreated": false,
+      "implementationAuthorized": false,
+      "baseHead": "5e2d31635d5296ef04dbfe9b585daadf145a8f93",
+      "testFile": "packages/domain-core/src/dreamer.test.ts",
+      "controlFiles": [
+        "docs/agent-loop/AUTOPILOT_STATE.json",
+        "docs/agent-loop/CURRENT_TASK.md",
+        "docs/agent-loop/PROJECT_STATE.md",
+        "docs/agent-loop/AUTOPILOT_LOG.md"
+      ],
+      "productionChanged": false,
+      "applicationTestsChanged": false,
+      "markerOrTitleChanged": false,
+      "resolverSchemaOwnershipRoutingWorkflowProfileTimeoutDependencyChanged": false,
+      "localValidation": {
+        "nodeVersion": "v24.15.0",
+        "pnpmVersion": "11.7.0 via Corepack",
+        "focusedC20": "PASS / 1 passed / 76 skipped",
+        "focusedC34": "PASS / 1 passed / 76 skipped",
+        "focusedC37": "PASS / 1 passed / 295 skipped",
+        "fullDreamerTest": "PASS / 77 passed",
+        "fullApplicationServiceTest": "PASS / 296 passed",
+        "typecheck": "PASS",
+        "lint": "PASS / zero warnings",
+        "fullOrdinary": "PASS / 35 files / 1572 tests",
+        "coverageRun": false,
+        "ownershipRun": false,
+        "githubCiRun": false,
+        "windowsHarnessRun": false
+      }
+    },
     "remainingBlockers": [
-      "C20_NONENUMERABLE_DESCRIPTOR_EVIDENCE_INCOMPLETE",
-      "AUTOPILOT_TOP_LEVEL_REMAINING_BLOCKERS_STALE",
+      "PENDING_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW",
       "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
@@ -2053,7 +2098,7 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "implementationAuthorized": false,
-  "implementationStatus": "PRODUCT_REPAIR_STOP_LOSS_REACHED",
+  "implementationStatus": "EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_LOCAL_COMPLETION_PENDING_INDEPENDENT_REVIEW",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -2477,8 +2522,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "C20_NONENUMERABLE_DESCRIPTOR_EVIDENCE_INCOMPLETE",
-    "AUTOPILOT_TOP_LEVEL_REMAINING_BLOCKERS_STALE",
+    "PENDING_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW",
     "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
@@ -3248,8 +3292,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent Product Repair Round 2 implementation review for exact local HEAD 79af6c75149b7a6b04b34329f9d2d338e41c19e9. The reviewer reran all eight authorized gates successfully but returned PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED with C20_NONENUMERABLE_DESCRIPTOR_EVIDENCE_INCOMPLETE and AUTOPILOT_TOP_LEVEL_REMAINING_BLOCKERS_STALE. Product repair is exhausted at 2/2 and stop-loss is active.",
-  "lastError": "PRODUCT_REPAIR_STOP_LOSS_REACHED",
-  "requiredNextAction": "REQUEST_USER_STOP_LOSS_DECISION_OVERRIDE_RESLICE_OR_ABANDON_PR_46",
-  "nextAction": "REQUEST_USER_STOP_LOSS_DECISION_OVERRIDE_RESLICE_OR_ABANDON_PR_46"
+  "lastAction": "Applied the explicit evidence-only stop-loss override from base HEAD 5e2d31635d5296ef04dbfe9b585daadf145a8f93: C20 now directly proves the numeric descriptor changes only enumerable from true to false while preserving the legal candidate and all other array structure, and active control blockers are synchronized. Product Repair remains 2/2, no production behavior change is authorized, and no Product Repair Round 3 was created.",
+  "lastError": "PENDING_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW",
+  "requiredNextAction": "RUN_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW",
+  "nextAction": "RUN_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW"
 }

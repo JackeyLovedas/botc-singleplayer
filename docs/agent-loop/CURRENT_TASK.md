@@ -1,64 +1,52 @@
 # Current Task
 
-## Phase 3 Slice 2B20A — Product Repair stop-loss reached
+## Phase 3 Slice 2B20A — Evidence-only stop-loss override pending independent review
 
-- Authorization is
-  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_2_END_TO_END_CLOSURE`.
-- Design Correction V2 remains materialized at
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design.md`,
-  SHA-256
-  `2ab3abaf52e5915b010fe7a55f859d50479492541751eae868c9a478aee2261a`.
-- The final independent Design Correction V2 rereview is bound to exact HEAD
-  `547b0b9e41ac8e3d730e33fc1b65301a240bfd31` and is archived verbatim at
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-design-rereview-v2.md`,
-  SHA-256
-  `bcc8199fcd751754e30248580389aeaef9a0961ef8ca61e620b8dafdd12f176a`.
-- The independent verdict is `RULE_DESIGN_PASS`; `findings=[]`,
-  `remainingDesignBlockers=[]`, and `EVIDENCE_GAP=none`.
-- The reviewer confirmed the twelve-row frozen requirement mapping, exact-valid
-  M06 source-tenure witness seam, separately legal M08 catalog mismatch, F01
-  descriptor contract, production/test allowlists, frozen resolver behavior,
-  and repair stop-loss.
-- The first production and formal-test edit consumed Product Repair `2/2`.
-  `designCorrectionRound=2/2`, `designCorrectionPass=2/2`,
-  `ruleDesignPass=true`, `implementationAuthorized=false`,
-  `productRepairRoundConsumed=true`, and
-  `productRepairStopLossReached=true`.
-- No Product Repair Round 3 or automatic implementation repair is authorized.
-- F01/C20 now rejects a non-enumerable numeric own data property through the
-  direct, public, and stored validation boundaries while retaining getter
-  count `0` and the legal enumerable control.
-- C34 now includes only the independently approved M06 exact-valid empty
-  source-tenure witness and M08 independently valid Fang Gu state/catalog
-  modifier mismatch. The resolver body is unchanged and C37 remains read-only.
-- All eight authorized local gates passed under Node `v24.15.0` and Corepack
-  pnpm `11.7.0`: focused C20 `1/1`, focused C34 `1/1`, focused C37 `1/1`,
-  Dreamer `77/77`, application service `296/296`, typecheck, lint, and full
-  ordinary `35 files / 1572 tests`.
-- The complete independent implementation review is bound to exact local HEAD
-  `79af6c75149b7a6b04b34329f9d2d338e41c19e9` with timestamp
-  `2026-07-26T03:14:05.084Z`. Its output is archived verbatim at
+- Explicit authorization is
+  `USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE`.
+- This milestone is `overrideKind=EVIDENCE_ONLY_TEST_COMPLETION`; Product Repair
+  remains `2/2`, `productRepairStopLossOverrideUsed=true`,
+  `productionBehaviorChangeAuthorized=false`, and
+  `newProductRepairRoundCreated=false`. It is not Product Repair Round 3.
+- The immutable Round 2 implementation review remains bound to exact local HEAD
+  `79af6c75149b7a6b04b34329f9d2d338e41c19e9` and archived at
   `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-implementation-review.md`,
   SHA-256
   `92d18dda1d8844be1ff37ca6adf8d557347e6415cb85a1b55602d956e246052c`.
-- The reviewer independently reran all eight authorized gates and returned
+  Its historical verdict remains
   `PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED`.
-- Canonical status is `HUMAN_BLOCKED`; detailed state is
-  `PRODUCT_REPAIR_STOP_LOSS_REACHED`.
+- From override base `5e2d31635d5296ef04dbfe9b585daadf145a8f93`,
+  the unchanged `[2B20A-C20]` physical test now reads the original numeric
+  descriptor, preserves its `value`, `writable`, and `configurable` attributes,
+  and changes only `enumerable` to `false`.
+- C20 directly asserts the before/after own data descriptors, same legal
+  candidate, no getter/setter slots, canonical `Array.prototype`, unchanged
+  length, dense own indices, and unchanged canonical own-key inventory. The
+  existing direct/public/stored fail-closed assertions, legal enumerable
+  controls, and numeric getter count `0` remain.
+- No production code, application test, marker, title, resolver, schema,
+  ownership, routing, workflow, profile, timeout, dependency, or role coverage
+  changed.
+- All eight authorized local gates passed under Node `v24.15.0` and Corepack
+  pnpm `11.7.0`: focused C20 `1/1`, focused C34 `1/1`, focused C37 `1/1`,
+  Dreamer `77/77`, application service `296/296`, typecheck, lint, and full
+  ordinary `35 files / 1572 tests`. Coverage, ownership, GitHub CI, and Windows
+  W1-W7 were not run.
+- Canonical control is `HUMAN_BLOCKED /
+  EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_LOCAL_COMPLETION_PENDING_INDEPENDENT_REVIEW`;
+  `implementationAuthorized=false`, PR #46 remains open, unmerged and
+  unaccepted at remote HEAD
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
 - Active blockers are
-  `C20_NONENUMERABLE_DESCRIPTOR_EVIDENCE_INCOMPLETE`,
-  `AUTOPILOT_TOP_LEVEL_REMAINING_BLOCKERS_STALE`,
+  `PENDING_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW`,
   `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
   `LINUX_WORKER_RPC_CI_BLOCKER`, and
   `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
 - Required next action is
-  `REQUEST_USER_STOP_LOSS_DECISION_OVERRIDE_RESLICE_OR_ABANDON_PR_46`.
-- Exactly one production file, one test file, and four controls changed. No
-  push, PR, CI, coverage, ownership, Windows harness, workflow, profile,
-  application test, or 2B20B change was performed.
+  `RUN_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW`.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active Product Repair stop-loss state.
+not override the active evidence-only stop-loss override state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
