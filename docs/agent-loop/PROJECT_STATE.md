@@ -1,6 +1,6 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A evidence-only stop-loss override pending independent review
+## Current state — Phase 3 Slice 2B20A evidence-only stop-loss override complete
 
 - Explicit authorization is
   `USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE`.
@@ -8,12 +8,19 @@
   `overrideKind=EVIDENCE_ONLY_TEST_COMPLETION`,
   `productionBehaviorChangeAuthorized=false`, and
   `newProductRepairRoundCreated=false`. No Product Repair Round 3 was created.
-- The prior complete independent implementation review remains immutable at
-  `docs/implementation/phase-3-slice-2b20a-product-repair-round-2-implementation-review.md`,
+- The independent evidence-only implementation review is bound to exact HEAD
+  `29fefae499fc905995d0b30d3ed7d94fb819e8bf` and archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-evidence-only-stop-loss-override-implementation-review.md`,
   SHA-256
-  `92d18dda1d8844be1ff37ca6adf8d557347e6415cb85a1b55602d956e246052c`,
-  reviewed HEAD `79af6c75149b7a6b04b34329f9d2d338e41c19e9`, verdict
-  `PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_FIX_REQUIRED`.
+  `1f55a6e3b38305cc57030788a448223ecda2a9ecbff2cd70ff034db7f75d8142`.
+- The reviewer returned `PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_PASS`,
+  `findings=[]`, and `remainingRepairBlockers=[]`.
+- The original reviewer message was `7977` UTF-8 bytes without a terminal LF,
+  SHA-256
+  `0cdb28ecc3ddf0c3e60cda1923dfd94eef74347489c77967faaaf2fb56b98172`.
+  The 204-line repository archive adds exactly one standard terminal LF and is
+  therefore `7978` bytes with the archive hash above.
+- `productRepairStatus=COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE`.
 - The override starts from
   `5e2d31635d5296ef04dbfe9b585daadf145a8f93` and changes only
   `packages/domain-core/src/dreamer.test.ts` plus the four active control files.
@@ -34,17 +41,16 @@
   were not run.
 - PR #46 remains open, unmerged, and unaccepted at remote HEAD
   `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
-- Control is `HUMAN_BLOCKED /
-  EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_LOCAL_COMPLETION_PENDING_INDEPENDENT_REVIEW`;
+- Control is `RUNNING /
+  COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_READY_FOR_2B20AP1_GOVERNANCE`;
   `implementationAuthorized=false`.
-- Active blockers are the pending independent evidence-only implementation
-  review, ownership supersession/routing, Linux worker RPC, and Windows W7
-  unknown exit.
+- Active repair blockers are empty. Downstream blockers remain ownership
+  supersession/routing, Linux worker RPC, and Windows W7 unknown exit.
 - Required next action:
-  `RUN_INDEPENDENT_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_IMPLEMENTATION_REVIEW`.
+  `CREATE_2B20AP1_INFRASTRUCTURE_BRANCH_AND_RUN_GOVERNANCE_PRECHECK`.
 
 All sections below are chronological checkpoints retained as history; they do
-not override the active evidence-only stop-loss override state.
+not override the completed evidence-only stop-loss override state.
 
 ## Historical checkpoint — Design Correction V1 awaiting independent rereview
 
