@@ -1,6 +1,35 @@
 # Project State
 
-## Current state — Phase 3 Slice 2B20A evidence-only stop-loss override complete
+## Current state — 2B20AP1 governance GO, design pending
+
+- Active work is `CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT`, Slice
+  `2B20AP1`, on local branch
+  `infra/2b20ap1-ownership-supersession-routing-v1`.
+- Exact base is `167d800e20bed5431764092877085886df4b7c93`.
+- Governance authority is
+  `docs/architecture/2B20AP1-go-no-go-under-governance-v1.md`, SHA-256
+  `583f1778582c168935b380b19e453117b000d8caf18dd3a4cd7731365cdb3537`,
+  `21690` bytes and `588` lines. Verdict is `GO`.
+- Governance authorizes only one bounded complete infrastructure design and
+  independent review. `implementationAuthorized=false`.
+- Infrastructure Repair is `0/2`; Product Repair is untouched. Rule semantics
+  and product behavior remain unchanged.
+- Ownership is `GOVERNANCE_GO_NOT_LOCALLY_CLOSED`; no coverage profile,
+  coverage project, or new coverage process group is required.
+- Canonical control is `RUNNING /
+  2B20AP1_GOVERNANCE_GO_READY_FOR_COMPLETE_INFRASTRUCTURE_DESIGN`.
+- Remaining blockers are
+  `PENDING_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN_AND_INDEPENDENT_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is `CREATE_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN`.
+- No implementation, push, PR creation, CI rerun, Linux/Windows investigation,
+  or 2B20B work is authorized.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active 2B20AP1 governance-GO design-pending state.
+
+## Historical checkpoint — Phase 3 Slice 2B20A evidence-only stop-loss override complete
 
 - Explicit authorization is
   `USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE`.

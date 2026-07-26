@@ -1,17 +1,17 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_READY_FOR_2B20AP1_GOVERNANCE",
+  "detailedStatus": "2B20AP1_GOVERNANCE_GO_READY_FOR_COMPLETE_INFRASTRUCTURE_DESIGN",
   "disposition": "UNACCEPTED",
-  "taskType": "PRODUCT_SLICE",
-  "productRepairRoundConsumed": true,
+  "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
+  "productRepairRoundConsumed": false,
   "productRepairStopLossOverrideUsed": true,
   "overrideKind": "EVIDENCE_ONLY_TEST_COMPLETION",
   "productionBehaviorChangeAuthorized": false,
   "newProductRepairRoundCreated": false,
-  "currentPR": 46,
-  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/46",
-  "currentBranch": "phase-3/reachable-base-dreamer-settleability-closure",
-  "currentSlice": "2B20A",
+  "currentPR": null,
+  "currentPRUrl": null,
+  "currentBranch": "infra/2b20ap1-ownership-supersession-routing-v1",
+  "currentSlice": "2B20AP1",
   "currentFoundation": null,
   "acceptedBase": "5a69c90f2d3947556ff45c15c467902b1e28ca43",
   "slice2B19A1Started": false,
@@ -27,7 +27,7 @@
   "slice2B19BStarted": true,
   "nextRoleSliceStarted": false,
   "phase2CStarted": false,
-  "infrastructureRepairRound": 2,
+  "infrastructureRepairRound": 0,
   "maxInfrastructureRepairRounds": 2,
   "commandCaptureProxyRejectionV1": {
     "status": "COMPLETED_ACCEPTED",
@@ -1579,6 +1579,37 @@
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ]
   },
+  "slice2B20AP1Gate": {
+    "status": "RUNNING",
+    "detailedStatus": "2B20AP1_GOVERNANCE_GO_READY_FOR_COMPLETE_INFRASTRUCTURE_DESIGN",
+    "disposition": "UNACCEPTED",
+    "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
+    "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
+    "base": "167d800e20bed5431764092877085886df4b7c93",
+    "governancePath": "docs/architecture/2B20AP1-go-no-go-under-governance-v1.md",
+    "governanceSha256": "583f1778582c168935b380b19e453117b000d8caf18dd3a4cd7731365cdb3537",
+    "governanceBytes": 21690,
+    "governanceLines": 588,
+    "governanceVerdict": "GO",
+    "implementationAuthorized": false,
+    "infrastructureRepairRound": 0,
+    "maxInfrastructureRepairRounds": 2,
+    "productRepairRoundConsumed": false,
+    "ruleSemanticsChanged": false,
+    "productBehaviorChanged": false,
+    "ownershipStatus": "GOVERNANCE_GO_NOT_LOCALLY_CLOSED",
+    "coverageProfileRequired": false,
+    "coverageProjectRequired": false,
+    "coverageProcessGroupRequired": false,
+    "linuxWorkerRpcClosureInScope": false,
+    "windowsW7ClosureInScope": false,
+    "remainingBlockers": [
+      "PENDING_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN_AND_INDEPENDENT_REVIEW",
+      "LINUX_WORKER_RPC_CI_BLOCKER",
+      "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
+    ],
+    "nextAction": "CREATE_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN"
+  },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
   "designRound3_2Scope": null,
@@ -2533,7 +2564,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED",
+    "PENDING_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN_AND_INDEPENDENT_REVIEW",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3302,8 +3333,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent evidence-only stop-loss override implementation review for exact HEAD 29fefae499fc905995d0b30d3ed7d94fb819e8bf. The reviewer returned PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_PASS with findings=[] and remainingRepairBlockers=[]. Product Repair is COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE at 2/2; no production behavior changed and no Product Repair Round 3 was created.",
+  "lastAction": "Materialized the complete 2B20AP1 governance report for base 167d800e20bed5431764092877085886df4b7c93. Verdict GO authorizes only one complete bounded infrastructure design and independent review; implementation remains unauthorized, ownership is not locally closed, Infrastructure Repair remains 0/2, and Product Repair is not consumed.",
   "lastError": null,
-  "requiredNextAction": "CREATE_2B20AP1_INFRASTRUCTURE_BRANCH_AND_RUN_GOVERNANCE_PRECHECK",
-  "nextAction": "CREATE_2B20AP1_INFRASTRUCTURE_BRANCH_AND_RUN_GOVERNANCE_PRECHECK"
+  "requiredNextAction": "CREATE_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN",
+  "nextAction": "CREATE_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN"
 }
