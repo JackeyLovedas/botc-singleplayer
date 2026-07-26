@@ -1,6 +1,65 @@
 # Current Task
 
-## 2B20AP1-LF1 — Correction 1 pending independent review
+## 2B20AP1-LF1 — final Correction 2 pending independent review
+
+- The second complete independent amendment review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-2.md`,
+  exact UTF-8 SHA-256
+  `fcc833748531d3c05a7e130f25efbea0eaccc23e23105714071d1b3256f97cef`,
+  `6600` bytes and `121` LF lines. It is bound to exact reviewed HEAD
+  `41d3eac2cd0184bb2063b0f4de6b79dafbc78c66`.
+- The reviewer returned `RULE_DESIGN_FIX_REQUIRED` with the sole blocker
+  `LF3-VITEST-WORKSPACE-DEPRECATION_CAPTURE_CONTRADICTION`. LF2 passed; LF1's
+  same-object discovery contract passed except that the required Vitest 3.2.6
+  workspace-deprecation diagnostic made the frozen zero-stderr lifecycle
+  impossible.
+- Standalone final replacement authority Correction 2 is
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1-correction-2.md`,
+  exact UTF-8 SHA-256
+  `2b07ac52427a9bd95ee535e71de37d6d0a7c2eb662b28048115ce4377d09b10c`,
+  `27099` bytes and `571` LF lines. Its terminal is
+  `READY_FOR_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`.
+- Correction 2 is the final amendment correction (`2/2`), is not Design Round
+  4, and leaves Round 3, the original amendment, Correction 1, and both
+  reviews immutable. No Correction 3 is authorized.
+- LF1 and LF2 are inherited completely. Correction 2 closes only LF3 at
+  design-contract level by freezing the exact Vitest `3.2.6` workspace
+  deprecation emitted during `INITIALIZING`, before collection, for this
+  repository's exact `configFile` branch (`the root config file`).
+- The internal diagnostic sink accepts exactly one raw message, equal byte for
+  byte to either the frozen plain form or the frozen six-SGR colored form with
+  one terminal LF. ANSI stripping is confirm-only after raw equality.
+  Altered, additional, repeated, non-string or wrong-phase diagnostics,
+  internal stdout, malformed collection results, missing APIs, initialization
+  or collection errors, and close errors all fail closed without leaking
+  internal diagnostics.
+- One CLI invocation still creates one Vitest instance, calls public
+  `collectTests` exactly once with no callbacks, derives raw and structured
+  projections from the same collected task objects, and attempts `close`
+  exactly once when an instance exists. Candidate bytes may be consumed only
+  after successful exception-safe close and exact diagnostic validation.
+- Correction 2 retains all LF1/LF2 tests and adds the five required LF3
+  diagnostic groups. It authorizes no implementation until a fresh complete
+  independent review returns exact `RULE_DESIGN_PASS` with no blockers.
+- Canonical control is `HUMAN_BLOCKED /
+  PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`.
+- Any non-pass final review exhausts the amendment correction budget and
+  returns the slice to `HUMAN_BLOCKED`; no Correction 3, implementation,
+  repair, push, PR, CI, or next slice is authorized.
+- No script, test, workflow, production, profile, candidate, local gate, push,
+  PR, CI, Linux/Windows investigation, or 2B20B work was performed.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active final-Correction-2-review-pending state.
+
+## Historical checkpoint — 2B20AP1-LF1 Correction 1 pending independent review
 
 - The complete independent amendment review is archived verbatim at
   `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-1.md`,
@@ -46,8 +105,8 @@
 - No script, test, workflow, production, profile, candidate, local gate, push,
   PR, CI, Linux/Windows investigation, or 2B20B work is authorized.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active Correction-1-review-pending state.
+The historical Correction 1 checkpoint above was independently reviewed and
+returned `RULE_DESIGN_FIX_REQUIRED`; it does not authorize implementation.
 
 ## Historical checkpoint — 2B20AP1-LF1 amendment pending independent review
 

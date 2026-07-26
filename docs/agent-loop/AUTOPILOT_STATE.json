@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
+  "detailedStatus": "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
   "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -1581,7 +1581,7 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
+    "detailedStatus": "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
     "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1622,14 +1622,15 @@
       "bytes": 18650,
       "lfLineCount": 357,
       "terminal": "READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW",
-      "status": "CORRECTION_1_MATERIALIZED_PENDING_INDEPENDENT_REVIEW",
+      "status": "FINAL_CORRECTION_2_MATERIALIZED_PENDING_INDEPENDENT_REVIEW",
       "reviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
       "reviewPass": false,
       "remainingReviewBlockers": [
-        "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW"
+        "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW"
       ],
-      "amendmentCorrectionRound": 1,
+      "amendmentCorrectionRound": 2,
       "maxAmendmentCorrectionRounds": 2,
+      "thirdCorrectionAuthorized": false,
       "reviewRound1": {
         "path": "docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-1.md",
         "sha256": "d6b386265d30ebfc6fff2b190179909a168b0f673789027f4097d628f9dd9e8b",
@@ -1673,6 +1674,54 @@
           "2B19B"
         ],
         "externalRawInventoryGateSuperseded": true,
+        "implementationAuthorized": false
+      },
+      "reviewRound2": {
+        "path": "docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-2.md",
+        "sha256": "fcc833748531d3c05a7e130f25efbea0eaccc23e23105714071d1b3256f97cef",
+        "bytes": 6600,
+        "lfLineCount": 121,
+        "reviewedHead": "41d3eac2cd0184bb2063b0f4de6b79dafbc78c66",
+        "reviewTimestamp": "2026-07-26T10:18:21.7835798Z",
+        "verdict": "RULE_DESIGN_FIX_REQUIRED",
+        "findings": [
+          "LF3-VITEST-WORKSPACE-DEPRECATION_CAPTURE_CONTRADICTION"
+        ],
+        "remainingBlockers": [
+          "LF3-VITEST-WORKSPACE-DEPRECATION_CAPTURE_CONTRADICTION"
+        ],
+        "implementationAuthorized": false
+      },
+      "correction2": {
+        "correctionId": "2B20AP1-LF1-CORRECTION-2",
+        "path": "docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1-correction-2.md",
+        "sha256": "2b07ac52427a9bd95ee535e71de37d6d0a7c2eb662b28048115ce4377d09b10c",
+        "bytes": 27099,
+        "lfLineCount": 571,
+        "terminal": "READY_FOR_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
+        "status": "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
+        "parentCorrectionCommit": "41d3eac2cd0184bb2063b0f4de6b79dafbc78c66",
+        "closedFindingIdsAtDesignContractLevel": [
+          "LF3-VITEST-WORKSPACE-DEPRECATION_CAPTURE_CONTRADICTION"
+        ],
+        "inheritedClosedFindingIdsAtDesignContractLevel": [
+          "LF1-SAME-DISCOVERY-CONTRACT",
+          "LF2-CANDIDATE-SCHEMA-CONTRACT"
+        ],
+        "vitestVersion": "3.2.6",
+        "vitestSourcePath": "node_modules/.pnpm/vitest@3.2.6_@types+node@24.13.2/node_modules/vitest/dist/chunks/cli-api.DWGBtMmz.js",
+        "vitestSourceSha256": "123e44ea39aee4f9e7a0d8f91fd78d9091c161e56d0f15ece5ab7e807ac5eaed",
+        "diagnosticPhase": "INITIALIZING_BEFORE_COLLECT_TESTS",
+        "diagnosticConfigFileLabel": "the root config file",
+        "diagnosticOccurrenceCount": 1,
+        "diagnosticContract": "RAW_BYTES_EQUAL_EXACT_FROZEN_PLAIN_OR_SIX_SGR_COLORED_FORM_WITH_ONE_TERMINAL_LF",
+        "ansiStrippingRole": "CONFIRM_ONLY_AFTER_RAW_EQUALITY",
+        "internalDiagnosticConsumed": true,
+        "externalSuccessStderr": "",
+        "singleDiscoveryFlow": "ONE_NODE_PROCESS_ONE_VITEST_INSTANCE_ONE_COLLECT_TESTS_CALL_NO_CALLBACKS_PER_CLI_INVOCATION",
+        "closeContract": "EXCEPTION_SAFE_CLOSE_ATTEMPTED_EXACTLY_ONCE_WHEN_INSTANCE_EXISTS_BEFORE_CANDIDATE_USE",
+        "failureContract": "ALTERED_ADDITIONAL_REPEATED_NON_STRING_WRONG_PHASE_DIAGNOSTICS_INTERNAL_STDOUT_ERRORS_MALFORMED_RESULTS_MISSING_APIS_OR_CLOSE_FAILURE_REJECT_WITHOUT_LEAK",
+        "requiredLf3TestGroupCount": 5,
         "implementationAuthorized": false
       },
       "infrastructureDesignChanged": true,
@@ -1757,18 +1806,18 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "NOT_LOCALLY_CLOSED_PENDING_LF_AMENDMENT_CORRECTION_1_REVIEW",
+    "ownershipStatus": "NOT_LOCALLY_CLOSED_PENDING_FINAL_LF_AMENDMENT_CORRECTION_2_REVIEW",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
+      "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "nextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW"
+    "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2724,7 +2773,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
+    "PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -3493,8 +3542,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent 2B20AP1-LF1 amendment review verbatim with RULE_DESIGN_FIX_REQUIRED and materialized standalone Correction 1/2. The correction closes LF1 at design-contract level with one Node process, one Vitest instance and one public collectTests call per emit/verify invocation using the same task objects for raw and structured projections. It closes LF2 with exact candidate v2 schema/order, embedded 1572 tuples and 12 LF identities, complete 2B20A baseline, all four immutable accepted baselines in actual registry order, and byte-first verification that rejects duplicate JSON keys and all noncanonical bytes. Implementation remains unauthorized and Infrastructure Repair remains 0/2 pending independent correction review.",
+  "lastAction": "Archived the second complete independent 2B20AP1-LF1 amendment review verbatim with RULE_DESIGN_FIX_REQUIRED and the sole LF3 Vitest workspace-deprecation capture blocker, then materialized final standalone Correction 2/2. Correction 2 inherits LF1/LF2 and closes only LF3 at design-contract level by freezing Vitest 3.2.6 source phase, root-config label, exact plain-or-six-SGR raw bytes, one occurrence, internal consumption, no external success stderr, fail-closed error handling and exception-safe close while preserving one instance and one public collectTests call without callbacks. Implementation remains unauthorized and Infrastructure Repair remains 0/2 pending final independent correction review; any non-pass exhausts the correction budget and no Correction 3 exists.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW",
-  "nextAction": "RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW"
+  "requiredNextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW",
+  "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW"
 }

@@ -1,6 +1,60 @@
 # Project State
 
-## Current state — 2B20AP1-LF1 Correction 1 pending independent review
+## Current state — 2B20AP1-LF1 final Correction 2 pending independent review
+
+- The second complete independent amendment review is preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-2.md`,
+  SHA-256
+  `fcc833748531d3c05a7e130f25efbea0eaccc23e23105714071d1b3256f97cef`,
+  `6600` bytes and `121` LF lines, bound to exact HEAD
+  `41d3eac2cd0184bb2063b0f4de6b79dafbc78c66`.
+- Its verdict is `RULE_DESIGN_FIX_REQUIRED`; the sole blocker is
+  `LF3-VITEST-WORKSPACE-DEPRECATION_CAPTURE_CONTRADICTION`. LF2 passed, while
+  LF1 remained blocked only because Vitest 3.2.6 necessarily emits its
+  workspace-file deprecation during initialization.
+- Standalone final replacement authority Correction 2 is
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1-correction-2.md`,
+  SHA-256
+  `2b07ac52427a9bd95ee535e71de37d6d0a7c2eb662b28048115ce4377d09b10c`,
+  `27099` bytes and `571` LF lines, with terminal
+  `READY_FOR_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`.
+- This is the final amendment correction, `2/2`, not Design Round 4. Round 3,
+  the original amendment, Correction 1, and both reviews remain immutable.
+  No Correction 3 is available.
+- Correction 2 inherits the complete LF1 same-object single-discovery and LF2
+  candidate-v2 contracts, and closes only LF3 at design-contract level. It
+  freezes the exact Vitest `3.2.6` diagnostic source phase, root-config label,
+  plain bytes and permitted six-SGR colored bytes, one occurrence, internal
+  consumption, and fail-closed handling.
+- The one-instance/one-public-`collectTests`/no-callback lifecycle remains.
+  Exact raw diagnostic validation precedes ANSI confirmation; all altered,
+  additional, repeated, non-string or wrong-phase diagnostics, internal
+  stdout, missing APIs, malformed results and lifecycle errors reject.
+  Exception-safe close is attempted once, and no candidate bytes are usable
+  until close and diagnostic validation both succeed.
+- All LF1/LF2 tests remain required and five LF3 test groups are added. The
+  exact future implementation allowlist remains frozen, but implementation is
+  unauthorized until a fresh complete independent review returns exact
+  `RULE_DESIGN_PASS` with `remainingBlockers=[]`.
+- Control is `HUMAN_BLOCKED /
+  PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`.
+- A non-pass final review exhausts the amendment correction budget and returns
+  the slice to `HUMAN_BLOCKED`; no Correction 3 or implementation follows.
+- Product branch, PR #46, rules, product behavior, test titles, role coverage,
+  scripts, tests, workflow, profile, topology, timeouts and dependencies are
+  unchanged. No implementation or validation gate was run.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active final-Correction-2-review-pending state.
+
+## Historical checkpoint — 2B20AP1-LF1 Correction 1 pending independent review
 
 - The complete independent amendment review is preserved verbatim at
   `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-1.md`,
@@ -48,8 +102,8 @@
   scripts, tests, workflow, profile, topology, timeouts and dependencies are
   unchanged. No implementation or validation gate was run.
 
-All sections below are chronological checkpoints retained as history; they do
-not override the active Correction-1-review-pending state.
+The historical Correction 1 checkpoint above was independently reviewed and
+returned `RULE_DESIGN_FIX_REQUIRED`; it does not authorize implementation.
 
 ## Historical checkpoint — 2B20AP1-LF1 amendment pending independent review
 
