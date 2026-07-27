@@ -1,5 +1,35 @@
 # Project State
 
+## Current state — 2B20AP2 Design Round 2 pending final independent review
+
+- Round-1 independent review of exact HEAD
+  `f71fffa9a043334283e8e95da27af33833976da1` is materialized in full in
+  `phase-3-slice-2b20ap2-design-review-round-1.md` with
+  `RULE_DESIGN_FIX_REQUIRED` and the exact three design blockers.
+- Standalone Design Round 2 is materialized at
+  `docs/implementation/phase-3-slice-2b20ap2-design-round-2.md`
+  (`c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c`,
+  `46499` bytes, `1304` LF lines).
+- Round 2 closes the proposed contract at design level with a complete
+  C01-C15/SUP registry, explicit R1-R4/T1-T3 authority separation, fixed roots
+  and launcher resolution, true Vitest mergeable blobs, separate same-process
+  sidecars, exact physical/logical mappings, and mandatory hostile correction
+  tests.
+- Design budget is now `2/2`; CI remediation remains untouched at `0/2`.
+  `ruleReady=true`, `ruleDesignPass=false`, and implementation is unauthorized.
+- Product Repair `2/2` and 2B20AP1 Infrastructure Repair `2/2` remain immutable.
+  Dreamer remains `PARTIAL`; product/rule/event/replay/projection/privacy,
+  tests, titles, role coverage, and old profile remain unchanged.
+- Sole blocker:
+  `PENDING_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2`.
+  Required next action:
+  `RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2`.
+- Only the Round-1 review, Round-2 design, and four controls change. No
+  implementation or remote operation occurred.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-final-Round-2-review state.
+
 ## Current state — 2B20AP2 complete design pending independent review
 
 - Exact baseline `8881f54bcc8467502d56634be993ebffc53d009b` now has one

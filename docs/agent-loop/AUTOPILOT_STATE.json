@@ -1,7 +1,7 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "2B20AP2_COMPLETE_DESIGN_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW",
-  "disposition": "DESIGN_MATERIALIZED_PENDING_REVIEW",
+  "detailedStatus": "2B20AP2_DESIGN_ROUND_2_MATERIALIZED_PENDING_FINAL_INDEPENDENT_RULE_DESIGN_REVIEW",
+  "disposition": "DESIGN_ROUND_2_MATERIALIZED_PENDING_FINAL_REVIEW",
   "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
   "productRepairStopLossOverrideUsed": true,
@@ -1160,7 +1160,7 @@
   "implementationReviewVerdict": "PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_PASS",
   "productRepairStatus": "COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE",
   "remainingRepairBlockers": [],
-  "designRound": 1,
+  "designRound": 2,
   "maxDesignRounds": 2,
   "userContinuationAuthorization": "USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE",
   "recoveryAuthorization": "USER_AUTHORIZED_2B20_ACCEPTED_MAIN_RECOVERY_AND_CONTINUE_EXISTING_AUTHORIZATION",
@@ -2547,8 +2547,8 @@
   },
   "slice2B20AP2Gate": {
     "status": "RUNNING",
-    "detailedStatus": "2B20AP2_COMPLETE_DESIGN_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW",
-    "disposition": "DESIGN_MATERIALIZED_PENDING_REVIEW",
+    "detailedStatus": "2B20AP2_DESIGN_ROUND_2_MATERIALIZED_PENDING_FINAL_INDEPENDENT_RULE_DESIGN_REVIEW",
+    "disposition": "DESIGN_ROUND_2_MATERIALIZED_PENDING_FINAL_REVIEW",
     "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
     "authorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
     "name": "Hosted Exact-Head CI Execution Closure V1",
@@ -2598,13 +2598,39 @@
     "governanceSha256": "116ea972ed083756e67d5a0500cd53666c0d34bb024ddd4c81e1501715587b4a",
     "governanceBytes": 8419,
     "governanceVerdict": "GO",
-    "designRound": 1,
+    "designRound": 2,
     "maxDesignRounds": 2,
-    "designPath": "docs/implementation/phase-3-slice-2b20ap2-design.md",
-    "designSha256": "7cc3e31ce9d1a15eab4b392652e63cd00828becddc7a4342fa73d276e4bc5201",
-    "designBytes": 31184,
-    "designLfLineCount": 989,
-    "designTerminal": "READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW",
+    "designPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
+    "designSha256": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
+    "designBytes": 46499,
+    "designLfLineCount": 1304,
+    "designTerminal": "READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_2",
+    "designRound1": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-design.md",
+      "sha256": "7cc3e31ce9d1a15eab4b392652e63cd00828becddc7a4342fa73d276e4bc5201",
+      "bytes": 31184,
+      "lfLineCount": 989,
+      "terminal": "READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW"
+    },
+    "designReviewRound1": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-design-review-round-1.md",
+      "sha256": "19bc92c9dd6bb89d5453490707322da80bfb0da58ad581c67a962f2738d365bf",
+      "bytes": 9151,
+      "lfLineCount": 234,
+      "reviewedHead": "f71fffa9a043334283e8e95da27af33833976da1",
+      "reviewTimestamp": "2026-07-27T10:26:29Z",
+      "verdict": "RULE_DESIGN_FIX_REQUIRED",
+      "findings": [
+        "MISSING_GOVERNANCE_V1_1_DESIGN_TRACEABILITY_AND_R_T_CLASSIFICATION",
+        "VITEST_MERGEABLE_BLOB_AND_SIDECAR_CONTRACT_NOT_FROZEN",
+        "RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED"
+      ],
+      "remainingBlockers": [
+        "MISSING_GOVERNANCE_V1_1_DESIGN_TRACEABILITY_AND_R_T_CLASSIFICATION",
+        "VITEST_MERGEABLE_BLOB_AND_SIDECAR_CONTRACT_NOT_FROZEN",
+        "RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED"
+      ]
+    },
     "designVerdict": null,
     "ruleDesignPass": false,
     "implementationAuthorized": false,
@@ -2648,10 +2674,10 @@
     "prChanged": false,
     "ciRerunPerformed": false,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW"
+      "PENDING_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2"
     ],
-    "requiredNextAction": "RUN_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW",
-    "nextAction": "RUN_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW"
+    "requiredNextAction": "RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2",
+    "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2661,15 +2687,15 @@
   "candidateRole": "dreamer",
   "candidateScope": "HOSTED_EXACT_HEAD_CI_EXECUTION_CLOSURE_V1",
   "designStarted": true,
-  "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design.md",
-  "currentDesignHash": "7cc3e31ce9d1a15eab4b392652e63cd00828becddc7a4342fa73d276e4bc5201",
-  "currentDesignStatus": "READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW",
-  "currentDesignTerminal": "READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW",
-  "currentDesignSource": "READ_ONLY_ARCHITECT_58_DECISION_FROZEN_SPECIFICATION",
-  "currentDesignReviewPath": null,
-  "currentDesignReviewHash": null,
-  "currentDesignReviewVerdict": null,
-  "currentDesignReviewSource": null,
+  "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
+  "currentDesignHash": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
+  "currentDesignStatus": "READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_2",
+  "currentDesignTerminal": "READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_2",
+  "currentDesignSource": "READ_ONLY_ARCHITECT_STANDALONE_ROUND_2_CORRECTION",
+  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-design-review-round-1.md",
+  "currentDesignReviewHash": "19bc92c9dd6bb89d5453490707322da80bfb0da58ad581c67a962f2738d365bf",
+  "currentDesignReviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
+  "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
   "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
   "traceabilityClassificationCorrectionHash": "ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb",
   "traceabilityClassificationCorrectionStatus": "APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW",
@@ -3607,7 +3633,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW"
+    "PENDING_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -4389,8 +4415,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the read-only architect's complete 58-decision 2B20AP2 frozen design on exact baseline 8881f54bcc8467502d56634be993ebffc53d009b. The design freezes H1-H4, history validation, one segmented logical-group runner with same-process reporter, strict evidence and logical-report schemas, unchanged logical topology, two-commit append-only coverage profile handling, exact allowlists, gates, remediation stop-loss, hosted review, rollback, and conditional closeout. No rule-design verdict, implementation, CI remediation round, push, PR mutation, CI rerun, product, test, workflow, script, profile, dependency, timeout, or role-coverage change was made.",
+  "lastAction": "Archived the complete independent Round-1 rule-design review of exact HEAD f71fffa9a043334283e8e95da27af33833976da1 with RULE_DESIGN_FIX_REQUIRED and its exact three findings, then materialized the standalone complete Round-2 design. Round 2 closes the design contract through C01-C15 R/T traceability, SUP-2B20AP2-001 through 010, repository-owned roots, executable pnpm/Vitest launcher resolution, strict dual Vitest blob plus same-process sidecar evidence, exact ordinary/coverage/Windows mappings, and twenty-two mandatory correction tests. No review PASS, implementation, CI remediation round, push, PR mutation, CI rerun, product, test, workflow, script, profile, dependency, timeout, or role-coverage change was made.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW",
-  "nextAction": "RUN_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW"
+  "requiredNextAction": "RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2",
+  "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2"
 }

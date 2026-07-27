@@ -1,5 +1,41 @@
 # Current Task
 
+## 2B20AP2 — standalone Design Round 2 pending final independent review
+
+- The complete Round-1 independent review is archived at
+  `docs/implementation/phase-3-slice-2b20ap2-design-review-round-1.md`,
+  SHA-256
+  `19bc92c9dd6bb89d5453490707322da80bfb0da58ad581c67a962f2738d365bf`,
+  `9151` bytes, `234` LF lines. It reviewed exact HEAD
+  `f71fffa9a043334283e8e95da27af33833976da1` at
+  `2026-07-27T10:26:29Z` and returned `RULE_DESIGN_FIX_REQUIRED`.
+- Its exact findings remain
+  `MISSING_GOVERNANCE_V1_1_DESIGN_TRACEABILITY_AND_R_T_CLASSIFICATION`,
+  `VITEST_MERGEABLE_BLOB_AND_SIDECAR_CONTRACT_NOT_FROZEN`, and
+  `RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED`.
+- The standalone full-authority Round 2 is
+  `docs/implementation/phase-3-slice-2b20ap2-design-round-2.md`, SHA-256
+  `c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c`,
+  `46499` bytes, `1304` LF lines, terminal
+  `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_2`.
+- Round 2 directly integrates C01-C15 nine-field R/T traceability,
+  `SUP-2B20AP2-001` through `010`, fixed repository-owned roots, executable
+  launcher/version gates, Vitest mergeable blob plus same-process sidecar
+  separation, exact ordinary/coverage/W7 artifact mappings, strict errors and
+  schemas, and twenty-two correction tests. It inherits all other valid H1-H4,
+  profile, allowlist, budget, hosted review, rollback, and stop contracts.
+- Active controls are `RUNNING / designRound=2/2`,
+  `ruleReady=true`, `ruleDesignPass=false`,
+  `implementationAuthorized=false`, and `ciRemediationRound=0/2`.
+- The only blocker is
+  `PENDING_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2`; next action is
+  `RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2`.
+- No implementation, workflow, script, product, test, profile, dependency,
+  timeout, remote, PR, CI, or role-coverage change is included.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-final-Round-2-review state.
+
 ## 2B20AP2 — complete frozen design materialized; independent review pending
 
 - The read-only architect's complete 58-decision design is materialized at
