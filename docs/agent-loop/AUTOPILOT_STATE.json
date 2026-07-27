@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_PENDING_REVIEW",
+  "detailedStatus": "2B20AP1_FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
   "disposition": "PENDING_INDEPENDENT_REVIEW",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
@@ -19,6 +19,7 @@
   "correctionParentHead": "203f75d01f42dcb2a3e177875405f02d3f52dc6d",
   "futureCorrectionShaRecorded": false,
   "stopLossOverrideAuthorization": "USER_AUTHORIZED_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_STOP_LOSS_OVERRIDE_AND_PUBLICATION_PIPELINE",
+  "controlRecoveryAuthorization": "USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT",
   "overrideKind": "FILE_URL_SINGLE_CLASSIFICATION_ONLY",
   "productionBehaviorChangeAuthorized": false,
   "implementationContinuationAuthorized": false,
@@ -1604,7 +1605,7 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_PENDING_REVIEW",
+    "detailedStatus": "2B20AP1_FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
     "disposition": "PENDING_INDEPENDENT_REVIEW",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
@@ -1619,7 +1620,8 @@
     "productHead": "167d800e20bed5431764092877085886df4b7c93",
     "productBranchHead": "phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93",
     "base": "167d800e20bed5431764092877085886df4b7c93",
-    "authorization": "USER_AUTHORIZED_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_STOP_LOSS_OVERRIDE_AND_PUBLICATION_PIPELINE",
+    "authorization": "USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT",
+    "fileUrlImplementationAuthorization": "USER_AUTHORIZED_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_STOP_LOSS_OVERRIDE_AND_PUBLICATION_PIPELINE",
     "overrideKind": "FILE_URL_SINGLE_CLASSIFICATION_ONLY",
     "stopLossOverrideUsed": true,
     "infrastructureStopLossOverrideUsed": true,
@@ -2092,7 +2094,7 @@
     },
     "diagnosticRedactionStopLossOverride": {
       "authorization": "USER_AUTHORIZED_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_STACKED_PUBLICATION_AND_CONDITIONAL_2B20A_CLOSEOUT",
-      "status": "FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_LOCALLY_CLOSED_PENDING_INDEPENDENT_REVIEW",
+      "status": "FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
       "classification": "USER_AUTHORIZED_STOP_LOSS_OVERRIDE / NON_PRODUCT / NO_NEW_INFRASTRUCTURE_REPAIR_ROUND",
       "parentHead": "611f3289a19bb630176b1638124abbef48bbd23f",
       "futureImplementationShaRecorded": false,
@@ -2125,7 +2127,7 @@
         "<redacted-userinfo>",
         "<redacted>"
       ],
-      "fileUrlClassification": "LOCALLY_PASS_SINGLE_ROOT_CLASSIFICATION_PENDING_INDEPENDENT_REVIEW",
+      "fileUrlClassification": "PASS_CLOSED_BY_IMPLEMENTATION",
       "nativeErrorPolicy": "NODE_UTIL_TYPES_IS_NATIVE_ERROR_FIRST_THEN_OWN_DATA_DESCRIPTORS_ONLY_FOR_NAME_MESSAGE_STACK_CAUSE",
       "unknownObjectPolicy": "OPAQUE_WITHOUT_GETTER_PROXY_OR_REVOKED_PROXY_TRAP_INVOCATION",
       "causePolicy": "SAFE_PRIMITIVE_OR_NATIVE_ERROR_ONLY_WITH_DEPTH_AND_CYCLE_BOUNDARIES",
@@ -2201,7 +2203,7 @@
       "fileUrlSingleClassificationOverride": {
         "authorization": "USER_AUTHORIZED_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_STOP_LOSS_OVERRIDE_AND_PUBLICATION_PIPELINE",
         "overrideKind": "FILE_URL_SINGLE_CLASSIFICATION_ONLY",
-        "status": "LOCALLY_CLOSED_PENDING_INDEPENDENT_REVIEW",
+        "status": "IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
         "parentHead": "2e3ee6457dbf5fd22062db7f28104e5040be1fd8",
         "futureImplementationShaRecorded": false,
         "implementationFile": "scripts/verify-vitest-ownership-contracts.mjs",
@@ -2303,9 +2305,63 @@
         "implementationContinuationAuthorized": false,
         "accepted": false,
         "remainingBlockers": [
-          "PENDING_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW"
+          "PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+          "LINUX_WORKER_RPC_CI_BLOCKER",
+          "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
         ],
-        "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW"
+        "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
+      },
+      "controlOnlyOperationalRecovery": {
+        "authorization": "USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT",
+        "status": "MATERIALIZED_PENDING_INDEPENDENT_CONTROL_REVIEW",
+        "classification": "CONTROL_ONLY_OPERATIONAL_RECOVERY / NON_PRODUCT / NO_NEW_REPAIR_ROUND",
+        "parentHead": "997161fb1dccbfcd672ce14ba28799cb79809ba7",
+        "futureRecoveryShaRecorded": false,
+        "priorIndependentReview": {
+          "source": "INDEPENDENT_READ_ONLY_REVIEWER_CONTROLLER_RELAY",
+          "reviewedHead": "997161fb1dccbfcd672ce14ba28799cb79809ba7",
+          "verdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED",
+          "technicalBehavior": "PASS_ALL_FILE_URL_REDACTION_CANDIDATE_OWNERSHIP_TRACEABILITY_AND_ROUTING_CHECKS",
+          "findings": [
+            "CONTROL_ACTIVE_FILE_URL_OVERRIDE_BLOCKER_STATE_CONTRADICTION"
+          ],
+          "remainingBlockers": [
+            "CONTROL_ACTIVE_FILE_URL_OVERRIDE_BLOCKER_STATE_CONTRADICTION"
+          ],
+          "reviewArchiveCreated": false
+        },
+        "exactContradiction": {
+          "priorTopLevelRemainingBlockers": [
+            "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION"
+          ],
+          "priorSliceRemainingBlockers": [
+            "PENDING_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW"
+          ],
+          "reason": "TOP_LEVEL_RETAINED_CLOSED_TECHNICAL_LFC_WHILE_SLICE_ADVANCED_TO_PENDING_REVIEW",
+          "technicalFindingReopened": false,
+          "status": "ADDRESSED_PENDING_INDEPENDENT_CONTROL_REVIEW"
+        },
+        "allowedFiles": [
+          "docs/agent-loop/AUTOPILOT_STATE.json",
+          "docs/agent-loop/CURRENT_TASK.md",
+          "docs/agent-loop/PROJECT_STATE.md",
+          "docs/agent-loop/AUTOPILOT_LOG.md"
+        ],
+        "scriptFilesChanged": false,
+        "productionFilesChanged": false,
+        "testFilesChanged": false,
+        "workflowChanged": false,
+        "coverageProfileChanged": false,
+        "dependencyChanged": false,
+        "timeoutChanged": false,
+        "reviewArchiveCreated": false,
+        "remoteMutation": false,
+        "activeRemainingBlockers": [
+          "PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+          "LINUX_WORKER_RPC_CI_BLOCKER",
+          "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
+        ],
+        "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
       },
       "boundedCorrection": {
         "status": "CONSUMED_HUMAN_BLOCKED",
@@ -2381,10 +2437,10 @@
       "repair3Authorized": false,
       "implementationAuthorized": false,
       "implementationContinuationAuthorized": false,
-      "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW"
+      "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
     },
     "localClosure": {
-      "status": "LOCALLY_CLOSED_PENDING_INDEPENDENT_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW",
+      "status": "FILE_URL_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
       "infrastructureRepairRound": 2,
       "candidateSchemaVersion": "vitest-ownership-candidate-baseline-v2",
       "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
@@ -2400,7 +2456,7 @@
       "ownershipSelfTest": "PASS_37_OF_37",
       "ownershipSelfTestEvidenceSufficiency": "PASS_EXACT_LIFECYCLE_GROUPS_1_THROUGH_12",
       "lifecycleDiagnosticContract": "PASS_EXACT_SIX_KEY_JSONL_THREE_SOURCES_CATEGORY_ORDINALS_MESSAGES_PRESERVED_NO_TRAILING_BARE_CODE",
-      "lifecycleDiagnosticRedaction": "LOCALLY_PASS_FILE_URL_SINGLE_CLASSIFICATION_PENDING_INDEPENDENT_REVIEW",
+      "lifecycleDiagnosticRedaction": "PASS_FILE_URL_SINGLE_CLASSIFICATION_CLOSED_BY_IMPLEMENTATION",
       "lifecycleGroups": "PASS_EXACT_12_NO_GROUP_13",
       "publicTestCaseContract": "PASS_RESULT_METHOD_PENDING_ONLY_NO_PRIVATE_TASK_ACCESS",
       "atomicFailureInjection": "PASS_WRITE_CLOSE_RENAME_NO_PARTIAL_FINAL",
@@ -2449,21 +2505,23 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "HUMAN_BLOCKED_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_PENDING_REVIEW",
+    "ownershipStatus": "PASS_LOCAL_IMPLEMENTATION_COMPLETE_PENDING_PUBLICATION",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW"
+      "PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+      "LINUX_WORKER_RPC_CI_BLOCKER",
+      "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
     "downstreamBlockers": [
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW",
-    "nextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW"
+    "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+    "nextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -3419,8 +3477,21 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION"
+    "PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+    "LINUX_WORKER_RPC_CI_BLOCKER",
+    "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
+  "historicalFindingDispositions": {
+    "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
+    "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE": "CLOSED_BY_IMPLEMENTATION",
+    "CONTROL_ACTIVE_REPAIR_STATE_CONTRADICTION": "ADDRESSED_PENDING_INDEPENDENT_CONTROL_REVIEW",
+    "CONTROL_ACTIVE_FILE_URL_OVERRIDE_BLOCKER_STATE_CONTRADICTION": "ADDRESSED_PENDING_INDEPENDENT_CONTROL_REVIEW",
+    "FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT": "LOCAL_IMPLEMENTATION_COMPLETE_PENDING_PUBLICATION",
+    "LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN": "SUPERSEDED_BY_PUBLIC_API_LIFECYCLE_OVERRIDE",
+    "LF1-GLOB_INVOCATION_COUNT_CONTRADICTION": "SUPERSEDED_BY_PUBLIC_API_LIFECYCLE_OVERRIDE",
+    "LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE": "SUPERSEDED_BY_PUBLIC_API_LIFECYCLE_OVERRIDE",
+    "OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED": "LOCAL_IMPLEMENTATION_COMPLETE_PENDING_PUBLICATION"
+  },
   "downstreamBlockers": [
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
@@ -4190,8 +4261,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Implemented the separately authorized bounded 2B20AP1 file-URL single-classification stop-loss override on parent 2e3ee6457dbf5fd22062db7f28104e5040be1fd8. Structured file URLs are parsed and decoded once, classified once, and rendered directly so placeholders do not re-enter generic path replacement. Existing lifecycle self-tests remain 37/37 in twelve groups, candidate and ownership evidence remain unchanged, Infrastructure Repair remains exhausted 2/2 without Repair 3, implementation and continuation are false, and the local result awaits exact independent review.",
+  "lastAction": "Materialized the control-only 2B20AP1 Operational Recovery on parent 997161fb1dccbfcd672ce14ba28799cb79809ba7 after the independent review passed all technical behavior and found only CONTROL_ACTIVE_FILE_URL_OVERRIDE_BLOCKER_STATE_CONTRADICTION. Root and slice now agree on HUMAN_BLOCKED / 2B20AP1_FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW, the exact three active blockers, and RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW. Historical verdicts and findings remain preserved with explicit dispositions; Product Repair remains complete 2/2, Infrastructure Repair remains consumed/stopped/overridden 2/2, and no implementation, review archive, remote, PR or CI mutation was made.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW",
-  "nextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW"
+  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+  "nextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
 }

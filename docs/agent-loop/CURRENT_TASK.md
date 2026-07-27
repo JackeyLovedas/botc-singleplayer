@@ -1,5 +1,54 @@
 # Current Task
 
+## 2B20AP1 — control-only Operational Recovery complete; independent control review required
+
+- Exact authorization is
+  `USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT`.
+  This phase changes only the four active agent-loop controls on parent
+  `997161fb1dccbfcd672ce14ba28799cb79809ba7`. It creates no Product Repair,
+  Infrastructure Repair, implementation, test, review archive, publication,
+  remote, PR, or CI change.
+- The independent review of exact implementation HEAD
+  `997161fb1dccbfcd672ce14ba28799cb79809ba7` passed file-URL single
+  classification, Windows/POSIX path coverage, secret redaction, safe error
+  extraction, idempotence, determinism, candidate, ownership, traceability,
+  and routing. Its sole finding was
+  `CONTROL_ACTIVE_FILE_URL_OVERRIDE_BLOCKER_STATE_CONTRADICTION`: top-level
+  `remainingBlockers` still named the closed LFC while slice state had already
+  advanced to pending review.
+- Active root and slice state are now both `HUMAN_BLOCKED /
+  2B20AP1_FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW`.
+  Their active blockers are exactly:
+  `PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is exactly
+  `RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW`.
+  Current branch remains
+  `infra/2b20ap1-ownership-supersession-routing-v1`; product authority remains
+  `phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93`;
+  PR #46 remains product context only.
+- Product Repair remains `2/2 /
+  COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE`. Infrastructure Repair
+  remains consumed/stopped/overridden at `2/2`;
+  `overrideKind=FILE_URL_SINGLE_CLASSIFICATION_ONLY`,
+  `newInfrastructureRepairRoundCreated=false`, and
+  `implementationAuthorized=false`.
+- Historical findings and review verdicts are preserved without rewrite.
+  Implemented file-URL and diagnostic findings are marked
+  `CLOSED_BY_IMPLEMENTATION`; obsolete private/internal lifecycle findings are
+  `SUPERSEDED_BY_PUBLIC_API_LIFECYCLE_OVERRIDE`; control contradictions are
+  `ADDRESSED_PENDING_INDEPENDENT_CONTROL_REVIEW`; and LF/ownership
+  implementation authorities are
+  `LOCAL_IMPLEMENTATION_COMPLETE_PENDING_PUBLICATION`.
+- Candidate evidence remains
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129 /
+  391257 bytes / 1572 identities / 12 LF titles`. No previously passed
+  implementation gate is reopened by this docs/control-only recovery.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-independent-control-review state.
+
 ## 2B20AP1 — file-URL single-classification stop-loss override locally closed; independent review required
 
 - User authorization is exactly

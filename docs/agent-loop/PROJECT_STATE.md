@@ -1,5 +1,48 @@
 # Project State
 
+## Current state — 2B20AP1 control recovery pending independent control review
+
+- The control-only Operational Recovery authorized by
+  `USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT`
+  is materialized on parent
+  `997161fb1dccbfcd672ce14ba28799cb79809ba7`. Only
+  `AUTOPILOT_STATE.json`, `CURRENT_TASK.md`, `PROJECT_STATE.md`, and
+  `AUTOPILOT_LOG.md` change.
+- The prior independent reviewer found the `997161fb…` implementation
+  technically complete and returned one control finding:
+  `CONTROL_ACTIVE_FILE_URL_OVERRIDE_BLOCKER_STATE_CONTRADICTION`. The
+  top-level active blocker still named
+  `LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION`, while the slice
+  already recorded pending independent review. No code, test, candidate,
+  ownership, traceability, routing, or confidentiality defect remained open.
+- Root and slice now agree on `HUMAN_BLOCKED /
+  2B20AP1_FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW`,
+  next action
+  `RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW`, and exactly
+  three active blockers:
+  `PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Branch/product/PR authority remains
+  `infra/2b20ap1-ownership-supersession-routing-v1`,
+  `phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93`,
+  and PR #46 product context. Product Repair remains `2/2 /
+  COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE`; Infrastructure Repair
+  remains consumed, stop-loss reached, and override used at `2/2`. No new
+  repair round exists and implementation remains unauthorized.
+- Historical review findings remain in their original review objects with
+  their original verdicts. Active disposition metadata records technical
+  findings as `CLOSED_BY_IMPLEMENTATION`, replaced lifecycle assumptions as
+  `SUPERSEDED_BY_PUBLIC_API_LIFECYCLE_OVERRIDE`, the control finding as
+  `ADDRESSED_PENDING_INDEPENDENT_CONTROL_REVIEW`, and completed LF/ownership
+  implementation as `LOCAL_IMPLEMENTATION_COMPLETE_PENDING_PUBLICATION`.
+- No review archive, script, production, test, workflow, profile, dependency,
+  timeout, remote, PR, or CI change is part of this checkpoint. The local
+  result remains unaccepted until a new independent read-only control review.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-independent-control-review state.
+
 ## Current state — 2B20AP1 file-URL single-classification override pending independent review
 
 - Exact authorization
