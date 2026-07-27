@@ -1,5 +1,22 @@
 # Project State
 
+## Current state — 2B20AP2 infrastructure implementation released
+
+- Independent Design Release review of
+  `e1268299ffa21bd3ae86181554bd38c30acc52df` passed with no findings or
+  blockers; the complete report is archived verbatim in the named Correction
+  V1 review file.
+- Design remains `2/2`, no Round 3 exists, `ruleReady=true`, and the old
+  `ruleDesignPass=false` is preserved. The separate release gate is now
+  `designReleasePass=true`, `designReleaseVerdict=DESIGN_RELEASE_PASS`.
+- Root and slice remain `RUNNING`; implementation is authorized but has not
+  started. CI remediation remains `0/2`.
+- Sole blocker: `PENDING_2B20AP2_SOURCE_IMPLEMENTATION`. Required next action:
+  `IMPLEMENT_2B20AP2_SOURCE_COMMIT`.
+- Only the review archive and four controls change.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20AP2 Design Release Appendix pending independent review
 
 - One docs-only release correction is authorized by

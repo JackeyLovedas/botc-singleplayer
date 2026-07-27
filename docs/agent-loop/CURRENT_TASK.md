@@ -1,5 +1,24 @@
 # Current Task
 
+## 2B20AP2 — Design Release PASS; source implementation authorized
+
+- The independent read-only Design Release review of exact HEAD
+  `e1268299ffa21bd3ae86181554bd38c30acc52df` returned
+  `DESIGN_RELEASE_PASS`, `findings=[]`, and `remainingBlockers=[]`. Its complete
+  report is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1.md`.
+- This does not rewrite the historical rule-design verdict. Design remains
+  `2/2`, no Round 3 exists, `ruleReady=true`, `ruleDesignPass=false`, while the
+  separate release gate is `designReleasePass=true`.
+- Active controls are `RUNNING`, `implementationAuthorized=true`, and
+  `ciRemediationRound=0/2`. The only blocker is
+  `PENDING_2B20AP2_SOURCE_IMPLEMENTATION`.
+- Required next action is `IMPLEMENT_2B20AP2_SOURCE_COMMIT`.
+- This checkpoint contains no script, workflow, profile, test, product, push,
+  PR, or CI change.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20AP2 — authorized Design Release Appendix pending independent review
 
 - Authorization
