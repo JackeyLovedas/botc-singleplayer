@@ -1,5 +1,28 @@
 # Current Task
 
+## 2B20AP2 — Operational Recovery; Correction 1 pending independent review
+
+- Conflict triage on exact HEAD
+  `11a0f0e9d0b287b49c46b60cb0818357a787bdf7` returned
+  `DESIGN_RELEASE_FIX_REQUIRED`: the historical `1809` literal cannot remain a
+  cross-run coverage-equivalence acceptance gate.
+- The docs-only overlay
+  `docs/implementation/phase-3-slice-2b20ap2-design-release-correction-v1-correction-1.md`
+  freezes same-source, same-context relational semantic-set equality. It
+  changes only the parent Appendix §3.1 fingerprint interpretation, §20 test
+  38, and §21 probe acceptance.
+- Design remains `2/2`; this is not Round 3. Active controls are `RUNNING`,
+  `docsOnlyCorrectionRound=1/2`, `designReleasePass=false`,
+  `implementationAuthorized=false`, `sourceImplementationPaused=true`, and
+  `ciRemediationRound=0/2`.
+- The four frozen source WIP files remain byte-identical and unstaged.
+- Sole blocker:
+  `PENDING_INDEPENDENT_2B20AP2_DESIGN_RELEASE_CORRECTION_V1_CORRECTION_1_REVIEW`.
+- Required next action:
+  `RUN_NEW_INDEPENDENT_2B20AP2_DESIGN_RELEASE_CORRECTION_V1_CORRECTION_1_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20AP2 — Design Release PASS; source implementation authorized
 
 - The independent read-only Design Release review of exact HEAD
