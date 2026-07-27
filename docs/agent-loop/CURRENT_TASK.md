@@ -1,5 +1,59 @@
 # Current Task
 
+## 2B20AP1 — diagnostic-redaction stop-loss override locally closed, independent review required
+
+- User authorization is exactly
+  `USER_AUTHORIZED_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_STACKED_PUBLICATION_AND_CONDITIONAL_2B20A_CLOSEOUT`.
+  This is a bounded stop-loss override on parent
+  `611f3289a19bb630176b1638124abbef48bbd23f`; it does not create
+  Infrastructure Repair 3, reopen the exhausted `2/2` repair budget, or
+  authorize product/rule changes.
+- The only implementation file is
+  `scripts/verify-vitest-ownership-contracts.mjs`. It now owns versioned
+  boundary `vitest-lifecycle-diagnostic-redaction-v1` while preserving the
+  exact six-key external JSONL order
+  `phase,classification,source,ordinal,name,message` and the exact three
+  public sources.
+- Path output uses only the frozen placeholder classes:
+  `<repo-root>/<canonical-relative-path>`, `<home>/...`, `<temp>/...`,
+  `<runner-workspace>/...`, `<absolute-path>/<basename>`, and
+  `<unc-path>/<basename>`. File URLs use the same classification. Tokens,
+  URL userinfo, sensitive queries, and candidate/baseline/canonical secret
+  values use `<redacted-token>`, `<redacted-userinfo>`, or `<redacted>`.
+- Native errors are recognized with `node:util/types.isNativeError` before
+  reading only own data descriptors for `name`, `message`, `stack`, and
+  `cause`. Unknown objects, getters, hostile proxies, and revoked proxies are
+  opaque. Nested native causes, primitive causes, cycles, multiple-path
+  stacks, input/output bounds, and deterministic repeated JSONL are covered
+  inside the existing lifecycle groups; no group 13 or check 38 was added.
+- Fresh local evidence passes: ownership/lifecycle `37/37`, coverage
+  self-test `7/7`, candidate emit/verify/repeat with exact candidate SHA-256
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`,
+  inventory SHA-256
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`,
+  `1572` identities and `12` LF titles, ordinary routing `9/9`, coverage
+  routing `11/11`, five ownership contracts, Windows `305`
+  (`9/90/52/73/9/26/46`), focused application `296/296`, focused rebuild
+  `207/207`, targeted lint, typecheck, full lint, and ordinary
+  `35 files / 1572 tests`.
+- Full local coverage, hosted CI, profile refresh, push, PR mutation, and
+  Linux/Windows downstream investigation were excluded by the local-only
+  authorization. PR #46 remote facts remain controller-provided historical
+  facts; this turn made no remote call.
+- Active control is `HUMAN_BLOCKED /
+  2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_PENDING_REVIEW`.
+  `implementationAuthorized=false`,
+  `implementationContinuationAuthorized=false`, and the only local blocker is
+  `PENDING_INDEPENDENT_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_REVIEW`.
+  Linux worker-RPC and Windows W7 remain separate downstream blockers.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_REVIEW`.
+  Do not publish, close 2B20A, or mutate PR #46 before that review supplies
+  its exact verdict.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this user-authorized local stop-loss closure.
+
 ## 2B20AP1 — final implementation review HUMAN_BLOCKED; repair budget exhausted
 
 - The complete independent final review of exact implementation HEAD

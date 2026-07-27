@@ -14,11 +14,11 @@ import {
   writeFileSync,
   writeSync
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { Writable } from "node:stream";
-import { TextDecoder } from "node:util";
+import { TextDecoder, types as utilTypes } from "node:util";
 import { createVitest } from "vitest/node";
 import {
   ACCEPTED_AUTHORITY_SUPERSESSIONS,
@@ -40,6 +40,7 @@ const LEGACY_PROJECTS = Object.freeze(["legacy-a", "legacy-b"]);
 const NON_OWNED_POLICY =
   "GLOBAL_APPLICATION_NON_OWNED_EXACT_SHA256_WITH_FROZEN_LEGACY_MARKERS";
 const ZERO_SHA256 = "0".repeat(64);
+const CANDIDATE_LIFECYCLE_ERRORS = new WeakSet();
 
 class CandidateLifecycleError extends Error {
   constructor(code, details = "", diagnostics = []) {
@@ -47,6 +48,7 @@ class CandidateLifecycleError extends Error {
     this.name = "CandidateLifecycleError";
     this.code = code;
     this.diagnostics = diagnostics;
+    CANDIDATE_LIFECYCLE_ERRORS.add(this);
   }
 }
 
@@ -67,16 +69,306 @@ const DIAGNOSTIC_SOURCES = Object.freeze([
   "PUBLIC_INJECTED_STDERR",
   "PUBLIC_INJECTED_STDERR_CAPTURE"
 ]);
+const DIAGNOSTIC_REDACTION_SCHEMA_VERSION =
+  "vitest-lifecycle-diagnostic-redaction-v1";
+const DIAGNOSTIC_INPUT_LIMIT = 4096;
+const DIAGNOSTIC_OUTPUT_LIMIT = 500;
+const DIAGNOSTIC_CAUSE_DEPTH_LIMIT = 4;
+const REDACTED_TOKEN = "<redacted-token>";
+const REDACTED_VALUE = "<redacted>";
+const REDACTED_OPAQUE = "<redacted:opaque>";
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
+function pathVariantPattern(value, placeholder) {
+  const normalized = path.resolve(value).replaceAll("\\", "/");
+  const source = escapeRegExp(normalized).replaceAll("/", "[\\\\/]+");
+  return Object.freeze({
+    normalized,
+    pattern: new RegExp(source, "giu"),
+    placeholder
+  });
+}
+
+const SENSITIVE_PATH_ROOTS = Object.freeze(
+  [
+    [path.resolve(process.cwd()), "<repo-root>"],
+    [path.resolve(tmpdir()), "<temp>"],
+    [path.resolve(homedir()), "<home>"]
+  ]
+    .sort(([left], [right]) => right.length - left.length)
+    .map(([value, placeholder]) => pathVariantPattern(value, placeholder))
+);
+
+function boundedDiagnosticText(value) {
+  return value.slice(0, DIAGNOSTIC_OUTPUT_LIMIT);
+}
+
+function normalizeDiagnosticControls(value) {
+  let normalized = "";
+  for (const character of value) {
+    const codePoint = character.codePointAt(0);
+    normalized +=
+      codePoint === 9 ||
+      codePoint === 10 ||
+      codePoint === undefined ||
+      (codePoint >= 32 && codePoint !== 127)
+        ? character
+        : "\uFFFD";
+  }
+  return normalized;
+}
+
+function safePathBasename(value) {
+  const withoutLineColumn = value.replace(/:\d+(?::\d+)?$/u, "");
+  const lineColumn = value.slice(withoutLineColumn.length);
+  const parts = withoutLineColumn.split("/").filter((part) => part.length > 0);
+  const basename = parts.at(-1);
+  return basename === undefined
+    ? ""
+    : `/${basename}${lineColumn}`;
+}
+
+function classifyAbsolutePath(value) {
+  let canonical = value.replaceAll("\\", "/").replace(/\/+/gu, "/");
+  if (/^\/[A-Za-z]:\//u.test(canonical)) canonical = canonical.slice(1);
+  const lower = canonical.toLowerCase();
+  const classifyKnownRoot = ({ normalized, placeholder }) => {
+    const rootLower = normalized.toLowerCase();
+    return lower === rootLower ||
+      (lower.startsWith(rootLower) && canonical[normalized.length] === "/")
+      ? `${placeholder}${canonical.slice(normalized.length)}`
+      : null;
+  };
+  const repositoryRoot = SENSITIVE_PATH_ROOTS.find(
+    ({ placeholder }) => placeholder === "<repo-root>"
+  );
+  const repositoryPath =
+    repositoryRoot === undefined ? null : classifyKnownRoot(repositoryRoot);
+  if (repositoryPath !== null) return repositoryPath;
+  if (
+    /^\/home\/runner\/work\/[^/]+\/[^/]+(?:\/|$)/u.test(canonical) ||
+    /^[A-Za-z]:\/a\/[^/]+\/[^/]+(?:\/|$)/u.test(canonical)
+  ) {
+    const workspace = canonical.match(
+      /^(?:\/home\/runner\/work\/[^/]+\/[^/]+|[A-Za-z]:\/a\/[^/]+\/[^/]+)/u
+    )?.[0];
+    return `<runner-workspace>${canonical.slice(workspace?.length ?? canonical.length)}`;
+  }
+  for (const root of SENSITIVE_PATH_ROOTS) {
+    if (root.placeholder === "<repo-root>") continue;
+    const classified = classifyKnownRoot(root);
+    if (classified !== null) return classified;
+  }
+  const portableTemporaryRoot = canonical.match(
+    /^(?:\/private\/tmp|\/var\/tmp|\/tmp)(?:\/|$)/u
+  )?.[0]?.replace(/\/$/u, "");
+  if (portableTemporaryRoot !== undefined) {
+    return `<temp>${canonical.slice(portableTemporaryRoot.length)}`;
+  }
+  const portableHomeRoot = canonical.match(
+    /^\/(?:home|Users)\/[^/]+(?:\/|$)/u
+  )?.[0]?.replace(/\/$/u, "");
+  if (portableHomeRoot !== undefined) {
+    return `<home>${canonical.slice(portableHomeRoot.length)}`;
+  }
+  if (value.startsWith("\\\\") || value.startsWith("//")) {
+    return `<unc-path>${safePathBasename(canonical)}`;
+  }
+  return `<absolute-path>${safePathBasename(canonical)}`;
+}
+
+function redactDiagnosticString(value) {
+  let text = value
+    .slice(0, DIAGNOSTIC_INPUT_LIMIT)
+    .replace(/\r\n/gu, "\n")
+    .replace(/\r/gu, "\n");
+  text = normalizeDiagnosticControls(text);
+  text = text
+    .replace(
+      /\b([a-z][a-z0-9+.-]*:\/\/)[^/\s:@]+(?::[^/\s@]*)?@/giu,
+      `$1<redacted-userinfo>@`
+    )
+    .replace(
+      /\bBearer[ \t]+[A-Za-z0-9._~+/=-]+/giu,
+      `Bearer ${REDACTED_TOKEN}`
+    )
+    .replace(
+      /\b(?:github_pat_[A-Za-z0-9_]{12,}|gh[pousr]_[A-Za-z0-9]{12,}|npm_[A-Za-z0-9]{12,}|sk-(?:proj-)?[A-Za-z0-9_-]{12,})\b/gu,
+      REDACTED_TOKEN
+    )
+    .replace(
+      /\b(api[_-]?key|authorization|credential|password|passwd|pwd|secret|token)([ \t]*[:=][ \t]*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/giu,
+      `$1$2${REDACTED_TOKEN}`
+    )
+    .replace(
+      /\b(candidate(?:[_-]?(?:bytes?|baseline))?|baseline(?:[_-]?bytes?)?|canonical(?:[_-]?game)?[_-]?secret)([ \t]*[:=][ \t]*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/giu,
+      `$1$2${REDACTED_VALUE}`
+    )
+    .replace(
+      /([?&](?:access[_-]?token|auth(?:orization)?|api[_-]?key|credential|key|password|passwd|pwd|secret|signature|sig|token)=)[^&#\s]*/giu,
+      `$1${REDACTED_VALUE}`
+    )
+    .replace(
+      /\b(?:CANONICAL_GAME_SECRET|CANDIDATE_BYTES|BASELINE_BYTES)_[A-Z0-9_-]{4,}\b/gu,
+      REDACTED_VALUE
+    )
+    .replace(
+      /\b(?:eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|[A-Fa-f0-9]{32,}|[A-Za-z0-9+/]{48,}={0,2})\b/gu,
+      REDACTED_TOKEN
+    )
+    .replace(
+      /\bfile:(?:\/\/)?([/\\][^\s"'<>]+)/giu,
+      (_match, filePath) => classifyAbsolutePath(filePath)
+    );
+  const repositoryRoot = SENSITIVE_PATH_ROOTS.find(
+    ({ placeholder }) => placeholder === "<repo-root>"
+  );
+  if (repositoryRoot !== undefined) {
+    text = text.replace(repositoryRoot.pattern, repositoryRoot.placeholder);
+  }
+  text = text
+    .replace(
+      /\/home\/runner\/work\/[^/\s"'<>]+\/[^/\s"'<>]+(?:\/[^\s"'<>),;]*)?/gu,
+      (runnerPath) => classifyAbsolutePath(runnerPath)
+    )
+    .replace(
+      /\b[A-Za-z]:[\\/]a[\\/][^\\/\s"'<>]+[\\/][^\\/\s"'<>]+(?:[\\/][^\s"'<>),;]*)?/gu,
+      (runnerPath) => classifyAbsolutePath(runnerPath)
+    );
+  for (const { pattern, placeholder } of SENSITIVE_PATH_ROOTS) {
+    if (placeholder === "<repo-root>") continue;
+    text = text.replace(pattern, placeholder);
+  }
+  return boundedDiagnosticText(
+    text
+      .replace(
+        /\\\\[^\\/\s"'<>]+[\\/][^\\/\s"'<>]+(?:[\\/][^\s"'<>),;]+)*/gu,
+        (uncPath) => classifyAbsolutePath(uncPath)
+      )
+      .replace(
+        /\b[A-Za-z]:[\\/][^\s"'<>|),;]*/gu,
+        (absolutePath) => classifyAbsolutePath(absolutePath)
+      )
+      .replace(
+        /^\/(?:[^/\s"'<>),;]+\/)*[^/\s"'<>),;]*/gu,
+        (absolutePath) => classifyAbsolutePath(absolutePath)
+      )
+      .replace(
+        /([\s(=[{])\/(?:[^/\s"'<>),;]+\/)*[^/\s"'<>),;]*/gu,
+        (_match, prefix) =>
+          `${prefix}${classifyAbsolutePath(_match.slice(prefix.length))}`
+      )
+      .replace(
+        /(<repo-root>|<home>|<temp>|<runner-workspace>)[\\/][^\s"'<>),;]*/gu,
+        (classifiedPath) => classifiedPath.replaceAll("\\", "/")
+      )
+  );
+}
+
+function safeOwnDataValue(value, key) {
+  if (!utilTypes.isNativeError(value)) return undefined;
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    return descriptor !== undefined && "value" in descriptor
+      ? descriptor.value
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function nativeErrorName(error) {
+  if (!utilTypes.isNativeError(error)) return "OpaqueFailure";
+  const ownName = safeOwnDataValue(error, "name");
+  if (typeof ownName === "string" && ownName.length > 0) {
+    return redactDiagnosticString(ownName);
+  }
+  let prototype;
+  try {
+    prototype = Object.getPrototypeOf(error);
+  } catch {
+    return "Error";
+  }
+  const known = [
+    [AggregateError.prototype, "AggregateError"],
+    [EvalError.prototype, "EvalError"],
+    [RangeError.prototype, "RangeError"],
+    [ReferenceError.prototype, "ReferenceError"],
+    [SyntaxError.prototype, "SyntaxError"],
+    [TypeError.prototype, "TypeError"],
+    [URIError.prototype, "URIError"]
+  ];
+  return known.find(([candidate]) => prototype === candidate)?.[1] ?? "Error";
+}
+
+function primitiveDiagnosticText(value) {
+  if (value === null) return "";
+  if (typeof value === "string") return redactDiagnosticString(value);
+  if (
+    typeof value === "undefined" ||
+    typeof value === "boolean" ||
+    typeof value === "number" ||
+    typeof value === "bigint" ||
+    typeof value === "symbol"
+  ) {
+    return redactDiagnosticString(String(value));
+  }
+  return REDACTED_OPAQUE;
+}
+
+function nativeErrorSummary(error, seen = new Set(), depth = 0) {
+  if (!utilTypes.isNativeError(error)) return REDACTED_OPAQUE;
+  if (seen.has(error)) return "<redacted:cycle>";
+  if (depth >= DIAGNOSTIC_CAUSE_DEPTH_LIMIT) return "<redacted:depth>";
+  seen.add(error);
+  try {
+    const name = nativeErrorName(error);
+    const rawMessage = safeOwnDataValue(error, "message");
+    const message =
+      typeof rawMessage === "string"
+        ? redactDiagnosticString(rawMessage)
+        : rawMessage === undefined
+          ? ""
+          : REDACTED_OPAQUE;
+    const parts = [message];
+    const rawStack = safeOwnDataValue(error, "stack");
+    if (typeof rawStack === "string") {
+      const normalizedStack = rawStack
+        .replace(/\r\n/gu, "\n")
+        .replace(/\r/gu, "\n");
+      const defaultPrefix =
+        message.length === 0 ? name : `${name}: ${rawMessage}`;
+      const isDefaultStack =
+        normalizedStack === defaultPrefix ||
+        normalizedStack.startsWith(`${defaultPrefix}\n    at `);
+      if (!isDefaultStack) {
+        parts.push(`stack=${redactDiagnosticString(normalizedStack)}`);
+      }
+    }
+    const cause = safeOwnDataValue(error, "cause");
+    if (cause !== undefined) {
+      const causeSummary = utilTypes.isNativeError(cause)
+        ? nativeErrorSummary(cause, seen, depth + 1)
+        : primitiveDiagnosticText(cause);
+      parts.push(`cause=${causeSummary}`);
+    }
+    return boundedDiagnosticText(parts.filter((part) => part.length > 0).join(" | "));
+  } catch {
+    return REDACTED_OPAQUE;
+  }
+}
 
 function safeDiagnosticMessage(value) {
-  const rawMessage =
-    value instanceof Error ? value.message : value === null ? "" : String(value);
-  return rawMessage
-    .replace(/\r\n/gu, "\n")
-    .replace(/\r/gu, "\n")
-    .replaceAll(path.resolve(process.cwd()), "<repo>")
-    .replaceAll(path.resolve(tmpdir()), "<temp>")
-    .slice(0, 500);
+  try {
+    return utilTypes.isNativeError(value)
+      ? nativeErrorSummary(value)
+      : primitiveDiagnosticText(value);
+  } catch {
+    return REDACTED_OPAQUE;
+  }
 }
 
 function lifecycleDiagnostic({
@@ -104,9 +396,7 @@ function lifecycleDiagnostic({
     classification,
     source,
     ordinal,
-    name: safeDiagnosticMessage(
-      name ?? (error instanceof Error ? error.name : "")
-    ),
+    name: safeDiagnosticMessage(name ?? nativeErrorName(error)),
     message: safeDiagnosticMessage(message ?? error)
   };
 }
@@ -131,19 +421,46 @@ function writeLifecycleDiagnostics(diagnostics, writable = process.stderr) {
 }
 
 function writeCandidateFailure(error, writable = process.stderr) {
-  if (
-    error instanceof CandidateLifecycleError &&
-    error.diagnostics.length > 0
-  ) {
-    return writeLifecycleDiagnostics(error.diagnostics, writable);
+  const isCandidateLifecycleError =
+    (typeof error === "object" && error !== null) ||
+    typeof error === "function"
+      ? CANDIDATE_LIFECYCLE_ERRORS.has(error)
+      : false;
+  const diagnostics = isCandidateLifecycleError
+    ? safeOwnDataValue(error, "diagnostics")
+    : undefined;
+  if (Array.isArray(diagnostics) && diagnostics.length > 0) {
+    return writeLifecycleDiagnostics(diagnostics, writable);
   }
-  const code = error?.code;
-  const message =
-    typeof code === "string"
-      ? code
-      : error instanceof Error
-        ? error.stack ?? error.message
-        : String(error);
+  if (!isCandidateLifecycleError) {
+    return writeLifecycleDiagnostics(
+      [
+        lifecycleDiagnostic({
+          phase: "FAILED",
+          classification: "UNEXPECTED_CANDIDATE_FAILURE",
+          source: "PUBLIC_PROMISE_REJECTION",
+          ordinal: 0,
+          error
+        })
+      ],
+      writable
+    );
+  }
+  const message = safeOwnDataValue(error, "code");
+  if (typeof message !== "string") {
+    return writeLifecycleDiagnostics(
+      [
+        lifecycleDiagnostic({
+          phase: "FAILED",
+          classification: "UNEXPECTED_CANDIDATE_FAILURE",
+          source: "PUBLIC_PROMISE_REJECTION",
+          ordinal: 0,
+          error
+        })
+      ],
+      writable
+    );
+  }
   const bytes = Buffer.from(`${message}\n`, "utf8");
   writable.write(bytes);
   return bytes;
@@ -361,7 +678,7 @@ async function executeCandidateLifecycle({
     candidateFail(
       "CLOSE_FAILED",
       [
-        closeDiagnostic instanceof Error ? closeDiagnostic.message : "",
+        closeDiagnostic === null ? "" : safeDiagnosticMessage(closeDiagnostic),
         ...closeErrors.map((record) => record.text)
       ].filter(Boolean).join(" | "),
       diagnostics
@@ -397,9 +714,7 @@ async function executeCandidateLifecycle({
     }
     candidateFail(
       primaryClassification,
-      primaryDiagnostic instanceof Error
-        ? primaryDiagnostic.message
-        : String(primaryDiagnostic),
+      safeDiagnosticMessage(primaryDiagnostic),
       diagnostics
     );
   }
@@ -701,7 +1016,7 @@ function publishCandidateAtomically(
     if (operations.exists(temporaryPath)) operations.unlink(temporaryPath);
     candidateFail(
       "PUBLISH_FAILED",
-      error instanceof Error ? error.message : String(error)
+      safeDiagnosticMessage(error)
     );
   }
 }
@@ -1362,6 +1677,196 @@ async function runCompleteSelfTest() {
       );
     }
   };
+  const assertSanitized = (
+    label,
+    input,
+    forbiddenFragments,
+    expectedFragments = []
+  ) => {
+    const sanitized = safeDiagnosticMessage(input);
+    if (
+      sanitized.length > DIAGNOSTIC_OUTPUT_LIMIT ||
+      sanitized.includes("\r") ||
+      safeDiagnosticMessage(sanitized) !== sanitized
+    ) {
+      throw new Error(`${label} diagnostic normalization is not bounded/idempotent`);
+    }
+    for (const fragment of forbiddenFragments) {
+      if (fragment.length > 0 && sanitized.toLowerCase().includes(fragment.toLowerCase())) {
+        throw new Error(`${label} retained sensitive diagnostic material`);
+      }
+    }
+    for (const fragment of expectedFragments) {
+      if (!sanitized.includes(fragment)) {
+        throw new Error(`${label} missing exact redaction placeholder ${fragment}`);
+      }
+    }
+    return sanitized;
+  };
+  const diagnosticSafetyCases = [
+    [
+      "repository path",
+      `${path.resolve(process.cwd())}${path.sep}private${path.sep}secret.txt:12:3`,
+      [path.resolve(process.cwd())],
+      ["<repo-root>/private/secret.txt:12:3"]
+    ],
+    [
+      "repository alternate case and separators",
+      `${path.resolve(process.cwd()).toUpperCase().replaceAll("\\", "/")}/private/secret.txt`,
+      [path.resolve(process.cwd()).toUpperCase().replaceAll("\\", "/")],
+      ["<repo-root>/private/secret.txt"]
+    ],
+    [
+      "home path",
+      `${path.resolve(homedir())}${path.sep}.ssh${path.sep}id_rsa`,
+      [path.resolve(homedir())],
+      ["<home>/.ssh/id_rsa"]
+    ],
+    [
+      "temporary path",
+      `${path.resolve(tmpdir())}${path.sep}candidate-private.json`,
+      [path.resolve(tmpdir())],
+      ["<temp>/candidate-private.json"]
+    ],
+    [
+      "POSIX absolute path",
+      "/work/private/repository/file.ts",
+      ["/work/private"],
+      ["<absolute-path>/file.ts"]
+    ],
+    [
+      "POSIX home path",
+      "/home/alice/.ssh/id_rsa",
+      ["/home/alice"],
+      ["<home>/.ssh/id_rsa"]
+    ],
+    [
+      "macOS home path",
+      "/Users/alice/Library/private.txt",
+      ["/Users/alice"],
+      ["<home>/Library/private.txt"]
+    ],
+    [
+      "POSIX temporary path",
+      "/tmp/private-candidate.json",
+      ["/tmp/private"],
+      ["<temp>/private-candidate.json"]
+    ],
+    [
+      "var temporary path",
+      "/var/tmp/private-candidate.json",
+      ["/var/tmp/private"],
+      ["<temp>/private-candidate.json"]
+    ],
+    [
+      "macOS temporary path",
+      "/private/tmp/private-candidate.json",
+      ["/private/tmp/private"],
+      ["<temp>/private-candidate.json"]
+    ],
+    [
+      "GitHub workspace path",
+      "/home/runner/work/project/project/private.test.ts",
+      ["/home/runner/work"],
+      ["<runner-workspace>/private.test.ts"]
+    ],
+    [
+      "other drive path",
+      "Z:\\outside\\private\\secret.txt",
+      ["Z:\\outside"],
+      ["<absolute-path>/secret.txt"]
+    ],
+    [
+      "UNC path",
+      "\\\\server\\share\\private\\secret.txt",
+      ["server", "share"],
+      ["<unc-path>/secret.txt"]
+    ],
+    [
+      "Windows file URL",
+      "file:///C:/Users/alice/private/secret.txt",
+      ["C:/Users/alice"],
+      ["<absolute-path>/secret.txt"]
+    ],
+    [
+      "POSIX file URL",
+      "file:///home/alice/private/secret.txt",
+      ["/home/alice"],
+      ["<home>/private/secret.txt"]
+    ],
+    [
+      "repository file URL",
+      `file:///${path.resolve(process.cwd()).replaceAll("\\", "/")}/private/file.ts`,
+      [path.resolve(process.cwd()).replaceAll("\\", "/")],
+      ["<repo-root>/private/file.ts"]
+    ],
+    [
+      "Bearer token",
+      "Bearer bearer-secret-0123456789",
+      ["bearer-secret"],
+      ["Bearer <redacted-token>"]
+    ],
+    [
+      "GitHub classic token",
+      "ghp_abcdefghijklmnopqrstuvwxyz1234",
+      ["ghp_"],
+      [REDACTED_TOKEN]
+    ],
+    [
+      "GitHub fine-grained token",
+      "github_pat_abcdefghijklmnopqrstuvwxyz123456",
+      ["github_pat_"],
+      [REDACTED_TOKEN]
+    ],
+    [
+      "npm token",
+      "npm_abcdefghijklmnopqrstuvwxyz123456",
+      ["npm_"],
+      [REDACTED_TOKEN]
+    ],
+    [
+      "API token",
+      "sk-proj-abcdefghijklmnopqrstuvwxyz123456",
+      ["sk-proj-"],
+      [REDACTED_TOKEN]
+    ],
+    [
+      "URL userinfo",
+      "https://alice:password-secret@example.test/path",
+      ["alice", "password-secret"],
+      ["https://<redacted-userinfo>@example.test/path"]
+    ],
+    [
+      "sensitive token query",
+      "https://example.test/path?view=public&token=query-secret-value",
+      ["query-secret-value"],
+      ["token=<redacted>"]
+    ],
+    [
+      "sensitive API query",
+      "https://example.test/path?api_key=query-api-secret",
+      ["query-api-secret"],
+      ["api_key=<redacted>"]
+    ],
+    [
+      "candidate bytes sentinel",
+      "candidateBytes=CANDIDATE_BYTES_SENTINEL_ALPHA",
+      ["CANDIDATE_BYTES_SENTINEL_ALPHA"],
+      ["candidateBytes=<redacted>"]
+    ],
+    [
+      "baseline bytes sentinel",
+      "baselineBytes=BASELINE_BYTES_SENTINEL_BETA",
+      ["BASELINE_BYTES_SENTINEL_BETA"],
+      ["baselineBytes=<redacted>"]
+    ],
+    [
+      "canonical game secret sentinel",
+      "canonicalGameSecret=CANONICAL_GAME_SECRET_SENTINEL_GAMMA",
+      ["CANONICAL_GAME_SECRET_SENTINEL_GAMMA"],
+      ["canonicalGameSecret=<redacted>"]
+    ]
+  ];
   let realIntegrationPromise;
   let realIntegrationCollectEntries = 0;
   let realIntegrationPublishedBytes;
@@ -1521,6 +2026,186 @@ async function runCompleteSelfTest() {
       name: "Error",
       message: "create actual message"
     });
+    if (
+      DIAGNOSTIC_REDACTION_SCHEMA_VERSION !==
+      "vitest-lifecycle-diagnostic-redaction-v1"
+    ) {
+      throw new Error("diagnostic redaction schema version mismatch");
+    }
+    for (const [
+      label,
+      input,
+      forbiddenFragments,
+      expectedFragments
+    ] of diagnosticSafetyCases) {
+      assertSanitized(label, input, forbiddenFragments, expectedFragments);
+    }
+    const nestedCause = new Error(
+      "nested token=nested-cause-secret",
+      { cause: null }
+    );
+    Object.defineProperty(nestedCause, "stack", {
+      configurable: true,
+      value:
+        `nested stack ${path.resolve(process.cwd())}${path.sep}nested.ts\n` +
+        "at /home/alice/private/nested.ts\n" +
+        "at Z:\\outside\\private\\nested.ts"
+    });
+    const outerError = new Error("outer api_key=outer-secret", {
+      cause: nestedCause
+    });
+    Object.defineProperty(outerError, "stack", {
+      configurable: true,
+      value:
+        "outer stack at \\\\server\\share\\private\\outer.ts\n" +
+        "at file:///home/alice/private/outer.ts"
+    });
+    Object.defineProperty(nestedCause, "cause", {
+      configurable: true,
+      value: outerError
+    });
+    const nestedSummary = assertSanitized(
+      "nested and cyclic native Error",
+      outerError,
+      [
+        "outer-secret",
+        "nested-cause-secret",
+        path.resolve(process.cwd()),
+        "/home/alice/private",
+        "Z:\\outside",
+        "server",
+        "share"
+      ]
+    );
+    if (
+      !nestedSummary.includes("stack=") ||
+      !nestedSummary.includes("cause=") ||
+      !nestedSummary.includes("<redacted:cycle>")
+    ) {
+      throw new Error("native Error stack/cause summary is incomplete");
+    }
+    assertSanitized(
+      "safe primitive native Error cause",
+      new Error("outer primitive cause", {
+        cause: "Bearer primitive-cause-secret"
+      }),
+      ["primitive-cause-secret"],
+      ["cause=Bearer <redacted-token>"]
+    );
+    let getterCalls = 0;
+    const getterError = new Error();
+    for (const key of ["name", "message", "stack", "cause"]) {
+      Object.defineProperty(getterError, key, {
+        configurable: true,
+        get() {
+          getterCalls += 1;
+          return "must-not-read";
+        }
+      });
+    }
+    if (
+      safeDiagnosticMessage(getterError) !== "" ||
+      getterCalls !== 0
+    ) {
+      throw new Error("native Error diagnostic getter was invoked");
+    }
+    let proxyTrapCalls = 0;
+    const hostileProxy = new Proxy(
+      {},
+      {
+        get() {
+          proxyTrapCalls += 1;
+          throw new Error("must not get");
+        },
+        getOwnPropertyDescriptor() {
+          proxyTrapCalls += 1;
+          throw new Error("must not inspect");
+        },
+        getPrototypeOf() {
+          proxyTrapCalls += 1;
+          throw new Error("must not inspect prototype");
+        }
+      }
+    );
+    const revoked = Proxy.revocable({}, {});
+    revoked.revoke();
+    if (
+      safeDiagnosticMessage(hostileProxy) !== REDACTED_OPAQUE ||
+      safeDiagnosticMessage(revoked.proxy) !== REDACTED_OPAQUE ||
+      proxyTrapCalls !== 0
+    ) {
+      throw new Error("opaque Proxy diagnostic boundary mismatch");
+    }
+    const unexpectedChunks = [];
+    const unexpectedWritable = new Writable({
+      write(chunk, _encoding, callback) {
+        unexpectedChunks.push(Buffer.from(chunk));
+        callback();
+      }
+    });
+    const unexpectedFirst = writeCandidateFailure(
+      revoked.proxy,
+      unexpectedWritable
+    );
+    const unexpectedSecond = writeCandidateFailure(
+      revoked.proxy,
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        }
+      })
+    );
+    if (
+      !unexpectedFirst.equals(unexpectedSecond) ||
+      !Buffer.concat(unexpectedChunks).equals(unexpectedFirst)
+    ) {
+      throw new Error("unexpected failure diagnostics are not deterministic");
+    }
+    assertDiagnostic(parseDiagnosticBytes(unexpectedFirst)[0], {
+      phase: "FAILED",
+      classification: "UNEXPECTED_CANDIDATE_FAILURE",
+      source: "PUBLIC_PROMISE_REJECTION",
+      ordinal: 0,
+      name: "OpaqueFailure",
+      message: REDACTED_OPAQUE
+    });
+    let brandedProxyTrapCalls = 0;
+    const brandedProxy = new Proxy(
+      new CandidateLifecycleError("MUST_NOT_ESCAPE"),
+      {
+        get() {
+          brandedProxyTrapCalls += 1;
+          throw new Error("must not read branded proxy");
+        },
+        getOwnPropertyDescriptor() {
+          brandedProxyTrapCalls += 1;
+          throw new Error("must not inspect branded proxy");
+        },
+        getPrototypeOf() {
+          brandedProxyTrapCalls += 1;
+          throw new Error("must not inspect branded proxy prototype");
+        }
+      }
+    );
+    const brandedProxyBytes = writeCandidateFailure(
+      brandedProxy,
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        }
+      })
+    );
+    assertDiagnostic(parseDiagnosticBytes(brandedProxyBytes)[0], {
+      phase: "FAILED",
+      classification: "UNEXPECTED_CANDIDATE_FAILURE",
+      source: "PUBLIC_PROMISE_REJECTION",
+      ordinal: 0,
+      name: "OpaqueFailure",
+      message: REDACTED_OPAQUE
+    });
+    if (brandedProxyTrapCalls !== 0) {
+      throw new Error("CandidateLifecycleError Proxy trap was invoked");
+    }
     if (collections !== 0 || closes !== 0 || publications !== 0) {
       throw new Error("create rejection entered a later lifecycle boundary");
     }
@@ -1569,6 +2254,38 @@ async function runCompleteSelfTest() {
       name: "PublicStderrRecord",
       message: "ordinary close warning actual"
     });
+    const sensitiveWarningText =
+      `warning ${path.resolve(process.cwd())}${path.sep}private.test.ts ` +
+      "Bearer warning-secret-0123456789\r\n" +
+      "file:///home/alice/private/warning.ts?token=query-warning-secret";
+    const sensitiveWarning = await executeCandidateLifecycle({
+      create: async ({ stderr }) => ({
+        close: async () => {
+          stderr.write(sensitiveWarningText);
+        }
+      }),
+      collect: async () => [],
+      validate: (value) => value,
+      encode: async () => Buffer.from("candidate\n"),
+      publish: async () => {}
+    });
+    const sensitiveWarningBytes = lifecycleDiagnosticBytes(
+      sensitiveWarning.diagnostics
+    );
+    const sensitiveWarningRecords = parseDiagnosticBytes(sensitiveWarningBytes);
+    if (
+      sensitiveWarningRecords.length !== 1 ||
+      sensitiveWarningRecords[0].classification !==
+        "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC" ||
+      sensitiveWarningRecords[0].message.includes("\r") ||
+      sensitiveWarningBytes.includes(Buffer.from("warning-secret")) ||
+      sensitiveWarningBytes.includes(Buffer.from(path.resolve(process.cwd()))) ||
+      !sensitiveWarningBytes.equals(
+        lifecycleDiagnosticBytes(sensitiveWarning.diagnostics)
+      )
+    ) {
+      throw new Error("sensitive warning diagnostic redaction mismatch");
+    }
     if (
       collectionEntries !== 1 ||
       closes !== 1 ||
@@ -1705,6 +2422,42 @@ async function runCompleteSelfTest() {
       name: "Error",
       message: "close promise actual message"
     });
+    const closeCause = new Error("token=close-cause-secret");
+    const closeSecretError = new Error("api_key=close-promise-secret", {
+      cause: closeCause
+    });
+    Object.defineProperty(closeSecretError, "stack", {
+      configurable: true,
+      value:
+        `close stack ${path.resolve(homedir())}${path.sep}private.ts\n` +
+        "at /home/runner/work/project/project/private.ts"
+    });
+    const closeSensitive = await captureFailure("CLOSE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async () => ({
+          close: async () => {
+            throw closeSecretError;
+          }
+        }),
+        collect: async () => [],
+        validate: (value) => value,
+        encode: async () => Buffer.from("x"),
+        publish: async () => {
+          throw new Error("must not publish");
+        }
+      })
+    );
+    if (
+      closeSensitive.records.length !== 1 ||
+      closeSensitive.records[0].name !== "Error" ||
+      !closeSensitive.records[0].message.includes("stack=") ||
+      !closeSensitive.records[0].message.includes("cause=") ||
+      closeSensitive.bytes.includes(Buffer.from("close-promise-secret")) ||
+      closeSensitive.bytes.includes(Buffer.from("close-cause-secret")) ||
+      closeSensitive.bytes.includes(Buffer.from(path.resolve(homedir())))
+    ) {
+      throw new Error("close Promise diagnostic redaction mismatch");
+    }
     const sentinel = await captureFailure("CLOSE_FAILED", () =>
       executeCandidateLifecycle({
         create: async ({ stderr }) => ({
@@ -1728,6 +2481,32 @@ async function runCompleteSelfTest() {
       name: "PublicStderrRecord",
       message: "error during close sentinel actual"
     });
+    const sensitiveSentinelText =
+      "error during close at \\\\server\\share\\private\\close.ts " +
+      "github_pat_abcdefghijklmnopqrstuvwxyz123456";
+    const sensitiveSentinel = await captureFailure("CLOSE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async ({ stderr }) => ({
+          close: async () => {
+            stderr.write(sensitiveSentinelText);
+          }
+        }),
+        collect: async () => [],
+        validate: (value) => value,
+        encode: async () => Buffer.from("x"),
+        publish: async () => {
+          throw new Error("must not publish");
+        }
+      })
+    );
+    if (
+      sensitiveSentinel.records.length !== 1 ||
+      sensitiveSentinel.records[0].source !== "PUBLIC_INJECTED_STDERR" ||
+      sensitiveSentinel.bytes.includes(Buffer.from("server")) ||
+      sensitiveSentinel.bytes.includes(Buffer.from("github_pat_"))
+    ) {
+      throw new Error("close stderr diagnostic redaction mismatch");
+    }
     const invalid = await captureFailure("CLOSE_FAILED", () =>
       executeCandidateLifecycle({
         create: async ({ stderr }) => ({
@@ -1858,6 +2637,41 @@ async function runCompleteSelfTest() {
     ) {
       throw new Error("primary plus both close channels mismatch");
     }
+    const sensitiveCombined = await captureFailure("CLOSE_FAILED", () =>
+      executeCandidateLifecycle({
+        create: async ({ stderr: publicStderr }) => ({
+          close: async () => {
+            publicStderr.write(
+              "error during close file:///home/alice/private/close.ts " +
+                "npm_abcdefghijklmnopqrstuvwxyz123456"
+            );
+            throw new Error("token=combined-close-secret");
+          }
+        }),
+        collect: async () => {
+          throw new Error(
+            `candidateBytes=CANDIDATE_BYTES_SENTINEL_PRIMARY at ` +
+              `${path.resolve(process.cwd())}${path.sep}primary.ts`
+          );
+        },
+        validate: (value) => value,
+        encode: async () => Buffer.from("x"),
+        publish: async () => {
+          throw new Error("must not publish");
+        }
+      })
+    );
+    for (const forbidden of [
+      "CANDIDATE_BYTES_SENTINEL_PRIMARY",
+      path.resolve(process.cwd()),
+      "/home/alice/private",
+      "npm_",
+      "combined-close-secret"
+    ]) {
+      if (sensitiveCombined.bytes.toString("utf8").includes(forbidden)) {
+        throw new Error("combined primary/close diagnostics retained sensitive data");
+      }
+    }
   });
   await check("33 lifecycle group 8 atomic candidate write failure", async () => {
     const bytes = Buffer.from("atomic candidate\n");
@@ -1944,9 +2758,40 @@ async function runCompleteSelfTest() {
         publish: async () => {}
       })
     );
+    const deterministicCause = new Error("token=deterministic-cause-secret");
+    const deterministicError = new Error(
+      "candidateBytes=CANDIDATE_BYTES_DETERMINISTIC_SECRET",
+      { cause: deterministicCause }
+    );
+    Object.defineProperty(deterministicError, "stack", {
+      configurable: true,
+      value:
+        `deterministic stack ${path.resolve(process.cwd())}${path.sep}one.ts\n` +
+        "at /home/runner/work/project/project/two.ts\n" +
+        "at \\\\server\\share\\three.ts"
+    });
+    Object.defineProperty(deterministicCause, "cause", {
+      configurable: true,
+      value: deterministicError
+    });
+    const deterministicFailure = async () =>
+      captureFailure("CREATE_FAILED", () =>
+        executeCandidateLifecycle({
+          create: async () => {
+            throw deterministicError;
+          },
+          collect: async () => [],
+          validate: (value) => value,
+          encode: async () => Buffer.from("x"),
+          publish: async () => {}
+        })
+      );
+    const firstDeterministicFailure = await deterministicFailure();
+    const secondDeterministicFailure = await deterministicFailure();
     if (
       !first.equals(second) ||
-      !firstFailure.bytes.equals(secondFailure.bytes)
+      !firstFailure.bytes.equals(secondFailure.bytes) ||
+      !firstDeterministicFailure.bytes.equals(secondDeterministicFailure.bytes)
     ) {
       throw new Error("repeated candidate or diagnostic bytes differ");
     }
@@ -2006,6 +2851,10 @@ async function runCompleteSelfTest() {
       candidate.structuredIdentities.filter((tuple) =>
         tuple[3].includes("\n")
       ).length !== 12 ||
+      createHash("sha256").update(result.bytes).digest("hex") !==
+        "d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129" ||
+      candidate.inventorySha256 !==
+        "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8" ||
       !result.bytes.equals(realIntegrationPublishedBytes)
     ) {
       throw new Error("real structured inventory mismatch");

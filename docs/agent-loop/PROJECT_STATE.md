@@ -1,5 +1,58 @@
 # Project State
 
+## Current state — 2B20AP1 diagnostic-redaction stop-loss override pending independent review
+
+- Exact authorization:
+  `USER_AUTHORIZED_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_STACKED_PUBLICATION_AND_CONDITIONAL_2B20A_CLOSEOUT`.
+  The local implementation is stacked on parent
+  `611f3289a19bb630176b1638124abbef48bbd23f`; no future commit SHA is
+  recorded in active controls.
+- The stop-loss override changes only
+  `scripts/verify-vitest-ownership-contracts.mjs` plus the four active
+  controls. It introduces the versioned
+  `vitest-lifecycle-diagnostic-redaction-v1` confidentiality boundary without
+  changing candidate bytes, identity encoding, accepted histories,
+  ownership/routing topology, test titles/bodies, workflow, production code,
+  rule semantics, coverage profile, workspace, dependencies, timeout, or
+  process groups.
+- The exact external lifecycle JSONL remains six keys in fixed order and
+  three public sources. Safe output classifies repository, home, temporary,
+  GitHub runner workspace, other absolute, UNC, and file-URL paths; redacts
+  bearer/GitHub/npm/API tokens, URL userinfo, sensitive query values, and
+  candidate/baseline/canonical secrets; bounds input to `4096`, output to
+  `500`, and native-error cause depth to `4`.
+- Native Error inspection is limited to own data descriptors for
+  `name/message/stack/cause` after `isNativeError`. Unknown objects and
+  proxies are opaque. Existing self-test groups cover nested and cyclic
+  causes, a safe primitive cause, multiple stack paths, getter/trap
+  non-invocation, CRLF normalization, deterministic repeated JSONL, all three
+  sources, and primary/close/warning/capture paths. Counts remain `37/37` and
+  twelve lifecycle groups.
+- Fresh candidate bytes remain
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`;
+  structured inventory remains
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`,
+  `1572` identities and `12` LF titles. Coverage verification, ordinary and
+  coverage routing, Windows inventory, focused application/rebuild, targeted
+  lint, typecheck, full lint, and the full ordinary `1572` tests pass.
+- Active root and slice controls are `HUMAN_BLOCKED /
+  2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_PENDING_REVIEW`.
+  The exhausted Infrastructure Repair count remains `2/2`; no Repair 3 or
+  new infrastructure repair round exists. Implementation and continuation
+  authorization are false.
+- The only local blocker is
+  `PENDING_INDEPENDENT_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_REVIEW`.
+  `LINUX_WORKER_RPC_CI_BLOCKER` and `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER` remain
+  separate downstream blockers. Full local coverage, hosted CI, profile
+  refresh, remote calls, push, and PR mutation were not performed.
+- Required next action:
+  `RUN_INDEPENDENT_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_REVIEW`.
+  Publication and conditional 2B20A closeout remain unauthorized until that
+  review returns its exact verdict.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this current local stop-loss closure.
+
 ## Current state — 2B20AP1 HUMAN_BLOCKED; Infrastructure Repair 2/2 exhausted
 
 - The independent final implementation review examined exact HEAD
