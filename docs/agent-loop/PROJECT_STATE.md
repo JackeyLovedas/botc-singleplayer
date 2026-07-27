@@ -1,21 +1,24 @@
 # Project State
 
-## Current state — 2B20AP2 Operational Recovery
+## Current state — 2B20AP2 Correction 1 Design Release PASS
 
-- Exact-source triage invalidated only the historical fixed-fingerprint
-  acceptance premise; it did not change product behavior, rules, tests,
-  topology, coverage include, profiles, dependencies, or accepted history.
-- Correction V1 Correction 1 is a docs-only overlay that freezes relational
-  equality of five complete canonical coverage semantic sets across two
-  production `12→11` runs and at least one probe-only `11→11` reference.
-- Design remains `2/2`, with no Round 3. Root and slice remain `RUNNING`;
-  `docsOnlyCorrectionRound=1/2`, `designReleasePass=false`,
-  `implementationAuthorized=false`, `sourceImplementationPaused=true`, and CI
+- Independent read-only review of Correction 1 at exact HEAD
+  `66e362df33d8d0276a52df2cbffdaada20ca1335` returned
+  `DESIGN_RELEASE_PASS`, `findings=[]`, and `remainingBlockers=[]`. The complete
+  verbatim report is
+  `docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1.md`,
+  SHA-256
+  `44b3e5ccd0cfbbedac805106dcb87354140ecf62718da912cc21142f5ebfbe30`.
+- Design remains `2/2`; this docs-only correction is `1/2` and is not Round 3.
+  Root and slice remain `RUNNING`; `designReleasePass=true`,
+  `designReleaseVerdict=DESIGN_RELEASE_PASS`,
+  `implementationAuthorized=true`, `sourceImplementationPaused=false`, and CI
   remediation remains `0/2`.
-- The source WIP is preserved byte-identically and remains outside this commit.
-- Sole blocker is the new independent Correction 1 Design Release review.
-  Required next action is
-  `RUN_NEW_INDEPENDENT_2B20AP2_DESIGN_RELEASE_CORRECTION_V1_CORRECTION_1_REVIEW`.
+- The four source WIP files remain byte-identical, unstaged, and outside this
+  selective review/control commit.
+- Sole blocker is `PENDING_2B20AP2_SOURCE_IMPLEMENTATION_RESUME`. Required next
+  action is
+  `RESUME_2B20AP2_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE`.
 
 All sections below are chronological history and do not override this state.
 

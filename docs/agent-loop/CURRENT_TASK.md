@@ -1,25 +1,25 @@
 # Current Task
 
-## 2B20AP2 — Operational Recovery; Correction 1 pending independent review
+## 2B20AP2 — Correction 1 Design Release PASS; source resume authorized
 
-- Conflict triage on exact HEAD
-  `11a0f0e9d0b287b49c46b60cb0818357a787bdf7` returned
-  `DESIGN_RELEASE_FIX_REQUIRED`: the historical `1809` literal cannot remain a
-  cross-run coverage-equivalence acceptance gate.
-- The docs-only overlay
-  `docs/implementation/phase-3-slice-2b20ap2-design-release-correction-v1-correction-1.md`
-  freezes same-source, same-context relational semantic-set equality. It
-  changes only the parent Appendix §3.1 fingerprint interpretation, §20 test
-  38, and §21 probe acceptance.
-- Design remains `2/2`; this is not Round 3. Active controls are `RUNNING`,
-  `docsOnlyCorrectionRound=1/2`, `designReleasePass=false`,
-  `implementationAuthorized=false`, `sourceImplementationPaused=true`, and
+- The independent read-only Correction 1 review of exact correction HEAD
+  `66e362df33d8d0276a52df2cbffdaada20ca1335` returned
+  `DESIGN_RELEASE_PASS`, `findings=[]`, and `remainingBlockers=[]`. Its complete
+  report is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1.md`,
+  SHA-256
+  `44b3e5ccd0cfbbedac805106dcb87354140ecf62718da912cc21142f5ebfbe30`.
+- Design remains `2/2`; Correction 1 is not Round 3.
+  `docsOnlyCorrectionRound=1/2`, `designReleasePass=true`,
+  `designReleaseVerdict=DESIGN_RELEASE_PASS`,
+  `implementationAuthorized=true`, `sourceImplementationPaused=false`, and
   `ciRemediationRound=0/2`.
-- The four frozen source WIP files remain byte-identical and unstaged.
-- Sole blocker:
-  `PENDING_INDEPENDENT_2B20AP2_DESIGN_RELEASE_CORRECTION_V1_CORRECTION_1_REVIEW`.
+- The four frozen source WIP files remain byte-identical and unstaged in this
+  selective review/control checkpoint.
+- Sole remaining blocker:
+  `PENDING_2B20AP2_SOURCE_IMPLEMENTATION_RESUME`.
 - Required next action:
-  `RUN_NEW_INDEPENDENT_2B20AP2_DESIGN_RELEASE_CORRECTION_V1_CORRECTION_1_REVIEW`.
+  `RESUME_2B20AP2_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE`.
 
 All sections below are chronological history and do not override this state.
 
