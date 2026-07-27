@@ -1,7 +1,7 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "2B20AP2_CORRECTION_1_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
-  "disposition": "SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
+  "detailedStatus": "2B20AP2_REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
+  "disposition": "SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED_UNDER_REPLACEMENT_REVIEW",
   "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
   "correctionId": "2B20AP2-DESIGN-RELEASE-CORRECTION-V1",
   "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
@@ -2554,8 +2554,8 @@
   },
   "slice2B20AP2Gate": {
     "status": "RUNNING",
-    "detailedStatus": "2B20AP2_CORRECTION_1_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
-    "disposition": "SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
+    "detailedStatus": "2B20AP2_REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
+    "disposition": "SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED_UNDER_REPLACEMENT_REVIEW",
     "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
     "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
     "originalAuthorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
@@ -2736,10 +2736,10 @@
       "designReleasePass": true,
       "designReleaseVerdict": "DESIGN_RELEASE_PASS",
       "remainingBlockers": [
-        "PENDING_2B20AP2_SOURCE_IMPLEMENTATION_RESUME"
+        "PENDING_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE"
       ],
-      "requiredNextAction": "RESUME_2B20AP2_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE",
-      "terminal": "DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED"
+      "requiredNextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE",
+      "terminal": "REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED"
     },
     "designReleaseReviewCorrectionV1Correction1": {
       "path": "docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1.md",
@@ -2750,6 +2750,26 @@
       "reviewedCorrectionSha256": "2fdc6b455f2bc13d4919663767a00a12c251b78d3d9d8bf9defc0c1cfdd3593e",
       "reviewedHead": "66e362df33d8d0276a52df2cbffdaada20ca1335",
       "reviewTimestamp": "2026-07-27T14:29:08.9089487Z",
+      "verdict": "DESIGN_RELEASE_PASS",
+      "findings": [],
+      "remainingBlockers": [],
+      "authorityStatus": "INVALID_PROVENANCE_HASH_TRANSCRIPTION",
+      "authoritative": false,
+      "historicalOnly": true,
+      "supersededBy": "docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1-replacement-1.md"
+    },
+    "designReleaseReviewCorrectionV1Correction1Replacement1": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1-replacement-1.md",
+      "sha256": "7bebc7f15412f0ec9784d9df500786dd5ecfc8d4c63ea2574b2b2060f4f52137",
+      "bytes": 11033,
+      "lfLineCount": 281,
+      "reviewedCorrectionPath": "docs/implementation/phase-3-slice-2b20ap2-design-release-correction-v1-correction-1.md",
+      "reviewedCorrectionSha256": "2fdc6b455f2bc13d4919663767a00a12c251b78d3d9d8bf9defc0c1cfdd3593e",
+      "reviewedHead": "0bc5db4e46445cd97a3193131086fb1f630fde7c",
+      "reviewTimestamp": "2026-07-27T14:50:16.2442036Z",
+      "supersedesInvalidReviewPath": "docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1.md",
+      "authorityStatus": "AUTHORITATIVE_REPLACEMENT_REVIEW",
+      "authoritative": true,
       "verdict": "DESIGN_RELEASE_PASS",
       "findings": [],
       "remainingBlockers": []
@@ -2793,10 +2813,10 @@
     "prChanged": false,
     "ciRerunPerformed": false,
     "remainingBlockers": [
-      "PENDING_2B20AP2_SOURCE_IMPLEMENTATION_RESUME"
+      "PENDING_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE"
     ],
-    "requiredNextAction": "RESUME_2B20AP2_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE",
-    "nextAction": "RESUME_2B20AP2_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE"
+    "requiredNextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE",
+    "nextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2808,8 +2828,8 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
   "currentDesignHash": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
-  "currentDesignStatus": "CORRECTION_1_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
-  "currentDesignTerminal": "DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
+  "currentDesignStatus": "REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
+  "currentDesignTerminal": "REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
   "currentDesignSource": "READ_ONLY_ARCHITECT_STANDALONE_ROUND_2_CORRECTION",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-design-review-round-2.md",
   "currentDesignReviewHash": "d6e13ba8de627dec662eceb4babc92366526ae30aaaa0ece0742bbd65d43b4d7",
@@ -2819,9 +2839,10 @@
   "traceabilityClassificationCorrectionHash": "ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb",
   "traceabilityClassificationCorrectionStatus": "APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW",
   "designReleasePass": true,
-  "currentDesignReleaseReviewPath": "docs/implementation/phase-3-slice-2b20a-design-release-review.md",
-  "currentDesignReleaseReviewHash": "72017917861325619bd6216f437ece3c8758922db51572306113d1d0a4eaae1f",
+  "currentDesignReleaseReviewPath": "docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1-replacement-1.md",
+  "currentDesignReleaseReviewHash": "7bebc7f15412f0ec9784d9df500786dd5ecfc8d4c63ea2574b2b2060f4f52137",
   "currentDesignReleaseReviewVerdict": "DESIGN_RELEASE_PASS",
+  "currentDesignReleaseReviewedHead": "0bc5db4e46445cd97a3193131086fb1f630fde7c",
   "historicalSecurityDesignReviewPath": "docs/implementation/command-capture-proxy-rejection-v1-design-review.md",
   "historicalSecurityDesignReviewHash": "247b302d22aca5dc6249a541cc2d8a5d712b89002d685250a862226553406cd8",
   "historicalSecurityDesignReviewVerdict": "SECURITY_DESIGN_PASS",
@@ -3752,7 +3773,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_2B20AP2_SOURCE_IMPLEMENTATION_RESUME"
+    "PENDING_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -4534,8 +4555,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent Correction 1 Design Release review verbatim and synchronized only four active controls. The reviewer returned DESIGN_RELEASE_PASS with findings and remainingBlockers empty. Design remains Round 2/2 with no Round 3; docsOnlyCorrectionRound remains 1/2, designReleasePass is true, source implementation resume is authorized, sourceImplementationPaused is false, and CI remediation remains 0/2. Four source WIP files remain byte-identical and unstaged; no runner-literal edit, coverage rerun, remote action, push, PR, or CI mutation occurred.",
+  "lastAction": "Archived the complete independent Replacement 1 Design Release review verbatim and synchronized only four active controls. The prior Correction 1 review is INVALID_PROVENANCE_HASH_TRANSCRIPTION, historical only, and non-authoritative. The replacement reviewer returned DESIGN_RELEASE_PASS with findings and remainingBlockers empty on reviewed HEAD 0bc5db4e46445cd97a3193131086fb1f630fde7c. Design remains Round 2/2 with no Round 3; docsOnlyCorrectionRound remains 1/2, implementation is authorized, sourceImplementationPaused is false, and CI remediation remains 0/2. Four source WIP files remain byte-identical and unstaged; no source edit, gate rerun, remote action, push, PR, or CI mutation occurred.",
   "lastError": null,
-  "requiredNextAction": "RESUME_2B20AP2_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE",
-  "nextAction": "RESUME_2B20AP2_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE"
+  "requiredNextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE",
+  "nextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE"
 }

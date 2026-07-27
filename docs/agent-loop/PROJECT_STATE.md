@@ -1,24 +1,26 @@
 # Project State
 
-## Current state — 2B20AP2 Correction 1 Design Release PASS
+## Current state — 2B20AP2 Replacement Design Release PASS
 
-- Independent read-only review of Correction 1 at exact HEAD
-  `66e362df33d8d0276a52df2cbffdaada20ca1335` returned
+- Independent replacement review of Correction 1 at exact HEAD
+  `0bc5db4e46445cd97a3193131086fb1f630fde7c` returned
   `DESIGN_RELEASE_PASS`, `findings=[]`, and `remainingBlockers=[]`. The complete
-  verbatim report is
-  `docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1.md`,
+  verbatim replacement report is
+  `docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1-replacement-1.md`,
   SHA-256
-  `44b3e5ccd0cfbbedac805106dcb87354140ecf62718da912cc21142f5ebfbe30`.
+  `7bebc7f15412f0ec9784d9df500786dd5ecfc8d4c63ea2574b2b2060f4f52137`.
+- The prior Correction 1 review archive is retained only as
+  `INVALID_PROVENANCE_HASH_TRANSCRIPTION`; it is not current authority.
 - Design remains `2/2`; this docs-only correction is `1/2` and is not Round 3.
   Root and slice remain `RUNNING`; `designReleasePass=true`,
   `designReleaseVerdict=DESIGN_RELEASE_PASS`,
   `implementationAuthorized=true`, `sourceImplementationPaused=false`, and CI
   remediation remains `0/2`.
 - The four source WIP files remain byte-identical, unstaged, and outside this
-  selective review/control commit.
-- Sole blocker is `PENDING_2B20AP2_SOURCE_IMPLEMENTATION_RESUME`. Required next
-  action is
-  `RESUME_2B20AP2_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE`.
+  selective replacement-review/control commit.
+- Sole blocker is
+  `PENDING_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE`. Required next
+  action is `RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE`.
 
 All sections below are chronological history and do not override this state.
 
