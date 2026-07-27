@@ -1,5 +1,35 @@
 # Current Task
 
+## 2B20AP2 — complete frozen design materialized; independent review pending
+
+- The read-only architect's complete 58-decision design is materialized at
+  `docs/implementation/phase-3-slice-2b20ap2-design.md`, SHA-256
+  `7cc3e31ce9d1a15eab4b392652e63cd00828becddc7a4342fa73d276e4bc5201`,
+  `31184` UTF-8 bytes, `989` LF lines, with terminal
+  `READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW`.
+- The design is frozen against exact baseline
+  `8881f54bcc8467502d56634be993ebffc53d009b`. It preserves `RULE_READY`,
+  governance `GO`, H1-H4 classifications, non-product scope, and Dreamer
+  `PARTIAL`.
+- It freezes full-history checkout and verifier failure ordering, one bounded
+  segmented runner plus same-process reporter, strict CLI/path/evidence/report
+  schemas, exact error strings and exits, `14/22/10` segmentation, ordinary
+  `11 physical / 9 logical`, coverage `12 physical / 11 logical`, Windows
+  `W1-W7`, source/profile-child commits, append-only profile review, exact
+  allowlists, local/hosted/final gates, remediation stop-loss, rollback, and
+  conditional closeout.
+- Active controls are `RUNNING / designRound=1/2`,
+  `ruleReady=true`, `ruleDesignPass=false`,
+  `implementationAuthorized=false`, and `ciRemediationRound=0/2`.
+- The sole blocker is
+  `PENDING_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW`. Required next action is
+  `RUN_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW`.
+- No implementation, workflow, script, product, test, coverage profile,
+  dependency, timeout, remote, PR, CI, or role-coverage change is included.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-independent-design-review state.
+
 ## 2B20AP2 — RULE_READY; complete design and independent review pending
 
 - Exact authorization is

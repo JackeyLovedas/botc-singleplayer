@@ -1,5 +1,34 @@
 # Project State
 
+## Current state — 2B20AP2 complete design pending independent review
+
+- Exact baseline `8881f54bcc8467502d56634be993ebffc53d009b` now has one
+  complete frozen 2B20AP2 design:
+  `docs/implementation/phase-3-slice-2b20ap2-design.md`
+  (`7cc3e31ce9d1a15eab4b392652e63cd00828becddc7a4342fa73d276e4bc5201`,
+  `31184` bytes, `989` LF lines).
+- The design consumes Design Round `1/2`, but no implementation or CI
+  remediation round. `ruleReady=true`, `ruleDesignPass=false`,
+  `implementationAuthorized=false`, and `ciRemediationRound=0/2`.
+- The design fully fixes the future implementation contract for H1-H4,
+  logical/physical execution separation, same-process diagnostics, true
+  process exits, strict artifacts, append-only coverage profile provenance,
+  exact source/profile-child allowlists, local and hosted gates, independent
+  reviews, rollback, and two-round stop-loss.
+- Product Repair `2/2` and 2B20AP1 Infrastructure Repair `2/2` remain
+  immutable history. Product behavior, BOTC rules, events, replay,
+  projections, privacy, tests, LF titles, role coverage, and the old profile
+  remain unchanged.
+- The sole blocker is
+  `PENDING_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW`; next action is
+  `RUN_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW`.
+- Only the design and four active controls change. No implementation,
+  workflow, script, test, product, profile, remote, PR, or CI mutation has
+  occurred.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-independent-design-review state.
+
 ## Current state — 2B20AP2 rule/governance gates ready; design pending
 
 - The active slice is `2B20AP2 — Hosted Exact-Head CI Execution Closure V1`,
