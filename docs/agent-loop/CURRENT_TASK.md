@@ -1,5 +1,34 @@
 # Current Task
 
+## 2B20AP2 — Design Round 2 HUMAN_BLOCKED; stop-loss reached
+
+- The complete final independent review of exact HEAD
+  `53872611e2782c28afd16584134616dcb2fafcaa` is archived without rewriting,
+  summarization, or omission at
+  `docs/implementation/phase-3-slice-2b20ap2-design-review-round-2.md`,
+  SHA-256
+  `d6e13ba8de627dec662eceb4babc92366526ae30aaaa0ece0742bbd65d43b4d7`,
+  `13282` bytes, `201` LF lines. The verbatim report is bounded by explicit
+  begin/end markers.
+- The reviewer returned `designVerdict: HUMAN_BLOCKED`. Design Round `2/2` is
+  exhausted, and no additional design round is authorized.
+- Active blockers are exactly:
+  `MISSING_GOVERNANCE_V1_1_DESIGN_TRACEABILITY_AND_R_T_CLASSIFICATION`,
+  `VITEST_MERGEABLE_BLOB_AND_SIDECAR_CONTRACT_NOT_FROZEN`, and
+  `RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED`.
+- Active controls are `HUMAN_BLOCKED`, `designRound=2/2`,
+  `ruleReady=true`, `ruleDesignPass=false`,
+  `implementationAuthorized=false`, and `ciRemediationRound=0/2`.
+- Required next action is `HUMAN_RESLICE_OR_GOVERNANCE_DECISION`. Do not
+  implement, create another design round, push, mutate either PR, or run CI
+  without new human/controller authority.
+- Product Repair `2/2`, 2B20AP1 Infrastructure Repair `2/2`, Dreamer
+  `PARTIAL`, accepted history, old profiles, and all product/rule/test/privacy
+  behavior remain unchanged.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this terminal design stop-loss state.
+
 ## 2B20AP2 — standalone Design Round 2 pending final independent review
 
 - The complete Round-1 independent review is archived at

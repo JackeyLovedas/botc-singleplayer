@@ -1,5 +1,29 @@
 # Project State
 
+## Current state — 2B20AP2 design stop-loss HUMAN_BLOCKED
+
+- The final independent reviewer examined exact Round-2 HEAD
+  `53872611e2782c28afd16584134616dcb2fafcaa` and returned
+  `HUMAN_BLOCKED`. Its complete original report is archived within explicit
+  verbatim boundaries at
+  `docs/implementation/phase-3-slice-2b20ap2-design-review-round-2.md`
+  (`d6e13ba8de627dec662eceb4babc92366526ae30aaaa0ece0742bbd65d43b4d7`,
+  `13282` bytes, `201` LF lines).
+- Design budget `2/2` is exhausted. No additional design round or
+  implementation is authorized. CI remediation remains unconsumed at `0/2`.
+- The three active blockers are exactly the governance R/T classification,
+  mergeable blob/sidecar contract, and executable pnpm/artifact-root trust
+  anchor IDs recorded by the reviewer.
+- Root and slice controls are `HUMAN_BLOCKED`; `ruleReady=true`,
+  `ruleDesignPass=false`, and `implementationAuthorized=false`.
+- Required next action is `HUMAN_RESLICE_OR_GOVERNANCE_DECISION`.
+- This checkpoint changes only the review archive and four active controls.
+  No workflow, script, product, test, profile, dependency, timeout, PR, push,
+  CI, or role-coverage mutation occurred.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this terminal design stop-loss state.
+
 ## Current state — 2B20AP2 Design Round 2 pending final independent review
 
 - Round-1 independent review of exact HEAD

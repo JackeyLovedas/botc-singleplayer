@@ -1,7 +1,7 @@
 {
-  "status": "RUNNING",
-  "detailedStatus": "2B20AP2_DESIGN_ROUND_2_MATERIALIZED_PENDING_FINAL_INDEPENDENT_RULE_DESIGN_REVIEW",
-  "disposition": "DESIGN_ROUND_2_MATERIALIZED_PENDING_FINAL_REVIEW",
+  "status": "HUMAN_BLOCKED",
+  "detailedStatus": "2B20AP2_DESIGN_STOP_LOSS_HUMAN_BLOCKED",
+  "disposition": "DESIGN_BUDGET_EXHAUSTED_RESLICE_OR_GOVERNANCE_DECISION_REQUIRED",
   "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
   "productRepairStopLossOverrideUsed": true,
@@ -2546,9 +2546,9 @@
     "nextAction": "PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI"
   },
   "slice2B20AP2Gate": {
-    "status": "RUNNING",
-    "detailedStatus": "2B20AP2_DESIGN_ROUND_2_MATERIALIZED_PENDING_FINAL_INDEPENDENT_RULE_DESIGN_REVIEW",
-    "disposition": "DESIGN_ROUND_2_MATERIALIZED_PENDING_FINAL_REVIEW",
+    "status": "HUMAN_BLOCKED",
+    "detailedStatus": "2B20AP2_DESIGN_STOP_LOSS_HUMAN_BLOCKED",
+    "disposition": "DESIGN_BUDGET_EXHAUSTED_RESLICE_OR_GOVERNANCE_DECISION_REQUIRED",
     "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
     "authorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
     "name": "Hosted Exact-Head CI Execution Closure V1",
@@ -2631,10 +2631,32 @@
         "RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED"
       ]
     },
-    "designVerdict": null,
+    "designVerdict": "HUMAN_BLOCKED",
     "ruleDesignPass": false,
     "implementationAuthorized": false,
     "implementationStarted": false,
+    "designReviewRound2": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-design-review-round-2.md",
+      "sha256": "d6e13ba8de627dec662eceb4babc92366526ae30aaaa0ece0742bbd65d43b4d7",
+      "bytes": 13282,
+      "lfLineCount": 201,
+      "reviewedHead": "53872611e2782c28afd16584134616dcb2fafcaa",
+      "reviewTimestamp": "2026-07-27T10:49:50.2295723Z",
+      "verdict": "HUMAN_BLOCKED",
+      "findings": [
+        "MISSING_GOVERNANCE_V1_1_DESIGN_TRACEABILITY_AND_R_T_CLASSIFICATION",
+        "VITEST_MERGEABLE_BLOB_AND_SIDECAR_CONTRACT_NOT_FROZEN",
+        "RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED"
+      ],
+      "remainingBlockers": [
+        "MISSING_GOVERNANCE_V1_1_DESIGN_TRACEABILITY_AND_R_T_CLASSIFICATION",
+        "VITEST_MERGEABLE_BLOB_AND_SIDECAR_CONTRACT_NOT_FROZEN",
+        "RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED"
+      ],
+      "implementationAuthorized": false,
+      "stopLossReached": true,
+      "additionalDesignRoundAuthorized": false
+    },
     "logicalTopology": {
       "ordinaryGroups": 9,
       "coverageGroups": 11,
@@ -2674,10 +2696,12 @@
     "prChanged": false,
     "ciRerunPerformed": false,
     "remainingBlockers": [
-      "PENDING_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2"
+      "MISSING_GOVERNANCE_V1_1_DESIGN_TRACEABILITY_AND_R_T_CLASSIFICATION",
+      "VITEST_MERGEABLE_BLOB_AND_SIDECAR_CONTRACT_NOT_FROZEN",
+      "RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED"
     ],
-    "requiredNextAction": "RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2",
-    "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2"
+    "requiredNextAction": "HUMAN_RESLICE_OR_GOVERNANCE_DECISION",
+    "nextAction": "HUMAN_RESLICE_OR_GOVERNANCE_DECISION"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2689,12 +2713,12 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
   "currentDesignHash": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
-  "currentDesignStatus": "READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_2",
+  "currentDesignStatus": "HUMAN_BLOCKED_DESIGN_STOP_LOSS",
   "currentDesignTerminal": "READY_FOR_INDEPENDENT_RULE_DESIGN_REVIEW_ROUND_2",
   "currentDesignSource": "READ_ONLY_ARCHITECT_STANDALONE_ROUND_2_CORRECTION",
-  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-design-review-round-1.md",
-  "currentDesignReviewHash": "19bc92c9dd6bb89d5453490707322da80bfb0da58ad581c67a962f2738d365bf",
-  "currentDesignReviewVerdict": "RULE_DESIGN_FIX_REQUIRED",
+  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-design-review-round-2.md",
+  "currentDesignReviewHash": "d6e13ba8de627dec662eceb4babc92366526ae30aaaa0ece0742bbd65d43b4d7",
+  "currentDesignReviewVerdict": "HUMAN_BLOCKED",
   "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
   "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
   "traceabilityClassificationCorrectionHash": "ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb",
@@ -3633,7 +3657,9 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2"
+    "MISSING_GOVERNANCE_V1_1_DESIGN_TRACEABILITY_AND_R_T_CLASSIFICATION",
+    "VITEST_MERGEABLE_BLOB_AND_SIDECAR_CONTRACT_NOT_FROZEN",
+    "RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -4415,8 +4441,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent Round-1 rule-design review of exact HEAD f71fffa9a043334283e8e95da27af33833976da1 with RULE_DESIGN_FIX_REQUIRED and its exact three findings, then materialized the standalone complete Round-2 design. Round 2 closes the design contract through C01-C15 R/T traceability, SUP-2B20AP2-001 through 010, repository-owned roots, executable pnpm/Vitest launcher resolution, strict dual Vitest blob plus same-process sidecar evidence, exact ordinary/coverage/Windows mappings, and twenty-two mandatory correction tests. No review PASS, implementation, CI remediation round, push, PR mutation, CI rerun, product, test, workflow, script, profile, dependency, timeout, or role-coverage change was made.",
+  "lastAction": "Archived the complete final independent Design Round-2 review of exact HEAD 53872611e2782c28afd16584134616dcb2fafcaa without rewriting, summarization, or omission. The reviewer returned HUMAN_BLOCKED with exactly three blockers: governance R/T classification redefinition, non-executable mergeable-blob/sidecar topology and canonical nonce contract, and non-executable repository-pinned pnpm trust anchor. Design budget 2/2 is exhausted; no additional design round is authorized. Rule design and implementation remain unauthorized, CI remediation remains 0/2, and no implementation, push, PR mutation, CI rerun, product, test, workflow, script, profile, dependency, timeout, or role-coverage change was made.",
   "lastError": null,
-  "requiredNextAction": "RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2",
-  "nextAction": "RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2"
+  "requiredNextAction": "HUMAN_RESLICE_OR_GOVERNANCE_DECISION",
+  "nextAction": "HUMAN_RESLICE_OR_GOVERNANCE_DECISION"
 }
