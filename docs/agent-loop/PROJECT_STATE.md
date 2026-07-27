@@ -1,5 +1,55 @@
 # Project State
 
+## Current state — 2B20AP1 bounded correction pending second independent review
+
+- Independent review of
+  `203f75d01f42dcb2a3e177875405f02d3f52dc6d` returned
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED` at
+  `2026-07-27T02:50:37.0878515Z`. The single authorized correction is
+  materialized locally without creating a review archive, Infrastructure
+  Repair 3, or a new repair round.
+- Only the verifier and four active controls change. The verifier now fully
+  consumes Windows drive/UNC/file-URL paths containing spaces and retains only
+  the authorized placeholder plus safe basename and optional line/column.
+  Existing probes cover message, stack, native cause, injected stderr, mixed
+  separators, case, idempotence, and deterministic output.
+- Compound query names are segmented on `_`/`-`; an exact
+  token/key/secret/signature/sig/credential/authorization segment redacts its
+  value to `<redacted>`. Required compound names and case/multi-parameter
+  forms pass, while view/monkey/hockey, host, and safe path remain unchanged.
+- The six-key/three-source external lifecycle format, candidate bytes,
+  identity encoding, accepted histories, product behavior, rule semantics,
+  test titles/bodies, routing topology, coverage profile, workspace,
+  dependency, timeout, and process-group contracts remain unchanged. The
+  non-gating truncation-marker suggestion is explicitly not implemented.
+- Fresh gates pass: lint and safety self-test `37/37` in twelve existing
+  groups; candidate
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`
+  (`391257` bytes), inventory
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`
+  (`1572/12`), coverage `7/7`, routing `9/11`, ownership `5/5`, Windows
+  `305`, focused `296+207`, typecheck, full lint, and ordinary
+  `35 files / 1572 tests`.
+- Root and slice are `HUMAN_BLOCKED /
+  2B20AP1_BOUNDED_CORRECTION_PENDING_SECOND_INDEPENDENT_REVIEW`.
+  `overrideKind` is exactly
+  `DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION_ONLY`; all three exact
+  Infrastructure Repair consumed/stop-loss/override flags are true; Repair
+  remains `2/2`; new-round and implementation authorization are false.
+- Product authority is explicitly
+  `phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93`;
+  PR remains #46. The unique correction is `1/1`, parent
+  `203f75d01f42dcb2a3e177875405f02d3f52dc6d`, with no future SHA recorded.
+- The only local blocker is
+  `PENDING_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW`. Linux
+  worker-RPC and Windows W7 remain separate downstream blockers. Full
+  coverage, hosted CI, profile refresh, remote calls, push, and PR mutation
+  were not performed. Next:
+  `RUN_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this single bounded correction.
+
 ## Current state — 2B20AP1 diagnostic-redaction stop-loss override pending independent review
 
 - Exact authorization:

@@ -77,6 +77,21 @@ const DIAGNOSTIC_CAUSE_DEPTH_LIMIT = 4;
 const REDACTED_TOKEN = "<redacted-token>";
 const REDACTED_VALUE = "<redacted>";
 const REDACTED_OPAQUE = "<redacted:opaque>";
+const SENSITIVE_QUERY_NAME_SEGMENTS = Object.freeze(
+  new Set([
+    "auth",
+    "authorization",
+    "credential",
+    "key",
+    "passwd",
+    "password",
+    "pwd",
+    "secret",
+    "sig",
+    "signature",
+    "token"
+  ])
+);
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
@@ -180,6 +195,64 @@ function classifyAbsolutePath(value) {
   return `<absolute-path>${safePathBasename(canonical)}`;
 }
 
+function redactWindowsAbsolutePaths(value) {
+  const redactDrive = (drivePath) => classifyAbsolutePath(drivePath);
+  const redactUnc = (uncPath) => classifyAbsolutePath(uncPath);
+  return value
+    .replace(
+      /\bfile:(?:\/{2,3})?([A-Za-z]:[\\/](?:[^\\/\r\n"'<>|]+[\\/])+[^\\/\r\n"'<>|]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?)/giu,
+      (_match, drivePath) => redactDrive(drivePath)
+    )
+    .replace(
+      /\bfile:((?:\\\\|\/\/)[^\\/\r\n"'<>]+[\\/][^\\/\r\n"'<>]+(?:[\\/][^\\/\r\n"'<>]+)*?[\\/][^\\/\r\n"'<>]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?)/giu,
+      (_match, uncPath) => redactUnc(uncPath)
+    )
+    .replace(
+      /\bfile:\/\/(\/[^\s"'<>]+)/giu,
+      (_match, posixPath) =>
+        classifyAbsolutePath(posixPath.replace(/^\/{2,}/u, "/"))
+    )
+    .replace(
+      /\b[A-Za-z]:[\\/](?:[^\\/\r\n"'<>|]+[\\/])+[^\\/\r\n"'<>|]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?/gu,
+      (drivePath) => redactDrive(drivePath)
+    )
+    .replace(
+      /(^|[\s(=[{])((?:\\\\|\/\/)[^\\/\r\n"'<>]+[\\/][^\\/\r\n"'<>]+(?:[\\/][^\\/\r\n"'<>]+)*?[\\/][^\\/\r\n"'<>]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?)/gmu,
+      (_match, prefix, uncPath) => `${prefix}${redactUnc(uncPath)}`
+    )
+    .replace(
+      /\bfile:(?:\/{2,3})?[A-Za-z]:[\\/][^\r\n"'<>|]*/giu,
+      "<absolute-path>/<basename>"
+    )
+    .replace(
+      /\bfile:(?:\\\\|\/\/)[^\r\n"'<>]*/giu,
+      "<unc-path>/<basename>"
+    )
+    .replace(
+      /\b[A-Za-z]:[\\/][^\r\n"'<>|]*/gu,
+      "<absolute-path>/<basename>"
+    )
+    .replace(
+      /(^|[\s(=[{])(?:\\\\|\/\/)[^\r\n"'<>]*/gmu,
+      (_match, prefix) => `${prefix}<unc-path>/<basename>`
+    );
+}
+
+function redactSensitiveQueryValues(value) {
+  return value.replace(
+    /([?&])([^=&#\s]+)=([^&#\s]*)/gu,
+    (match, separator, name) => {
+      const isSensitive = name
+        .toLowerCase()
+        .split(/[_-]+/u)
+        .some((segment) => SENSITIVE_QUERY_NAME_SEGMENTS.has(segment));
+      return isSensitive
+        ? `${separator}${name}=${REDACTED_VALUE}`
+        : match;
+    }
+  );
+}
+
 function redactDiagnosticString(value) {
   let text = value
     .slice(0, DIAGNOSTIC_INPUT_LIMIT)
@@ -200,16 +273,12 @@ function redactDiagnosticString(value) {
       REDACTED_TOKEN
     )
     .replace(
-      /\b(api[_-]?key|authorization|credential|password|passwd|pwd|secret|token)([ \t]*[:=][ \t]*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/giu,
+      /\b(api[_-]?key|authorization|credential|password|passwd|pwd|secret|token)([ \t]*[:=][ \t]*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;&#]+)/giu,
       `$1$2${REDACTED_TOKEN}`
     )
     .replace(
-      /\b(candidate(?:[_-]?(?:bytes?|baseline))?|baseline(?:[_-]?bytes?)?|canonical(?:[_-]?game)?[_-]?secret)([ \t]*[:=][ \t]*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/giu,
+      /\b(candidate(?:[_-]?(?:bytes?|baseline))?|baseline(?:[_-]?bytes?)?|canonical(?:[_-]?game)?[_-]?secret)([ \t]*[:=][ \t]*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;&#]+)/giu,
       `$1$2${REDACTED_VALUE}`
-    )
-    .replace(
-      /([?&](?:access[_-]?token|auth(?:orization)?|api[_-]?key|credential|key|password|passwd|pwd|secret|signature|sig|token)=)[^&#\s]*/giu,
-      `$1${REDACTED_VALUE}`
     )
     .replace(
       /\b(?:CANONICAL_GAME_SECRET|CANDIDATE_BYTES|BASELINE_BYTES)_[A-Z0-9_-]{4,}\b/gu,
@@ -218,10 +287,6 @@ function redactDiagnosticString(value) {
     .replace(
       /\b(?:eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|[A-Fa-f0-9]{32,}|[A-Za-z0-9+/]{48,}={0,2})\b/gu,
       REDACTED_TOKEN
-    )
-    .replace(
-      /\bfile:(?:\/\/)?([/\\][^\s"'<>]+)/giu,
-      (_match, filePath) => classifyAbsolutePath(filePath)
     );
   const repositoryRoot = SENSITIVE_PATH_ROOTS.find(
     ({ placeholder }) => placeholder === "<repo-root>"
@@ -242,8 +307,10 @@ function redactDiagnosticString(value) {
     if (placeholder === "<repo-root>") continue;
     text = text.replace(pattern, placeholder);
   }
+  text = redactWindowsAbsolutePaths(text);
   return boundedDiagnosticText(
-    text
+    redactSensitiveQueryValues(
+      text
       .replace(
         /\\\\[^\\/\s"'<>]+[\\/][^\\/\s"'<>]+(?:[\\/][^\s"'<>),;]+)*/gu,
         (uncPath) => classifyAbsolutePath(uncPath)
@@ -265,6 +332,7 @@ function redactDiagnosticString(value) {
         /(<repo-root>|<home>|<temp>|<runner-workspace>)[\\/][^\s"'<>),;]*/gu,
         (classifiedPath) => classifiedPath.replaceAll("\\", "/")
       )
+    )
   );
 }
 
@@ -1777,9 +1845,27 @@ async function runCompleteSelfTest() {
       ["<absolute-path>/secret.txt"]
     ],
     [
+      "Windows drive path with spaces and line column",
+      "C:\\Users\\Alice Doe\\private\\secret.txt:12:3",
+      ["C:\\Users", "Alice Doe", "\\private\\"],
+      ["<absolute-path>/secret.txt:12:3"]
+    ],
+    [
+      "Windows mixed path separators case and spaces",
+      "c:/USERS\\Alice Doe/Private\\Mixed.File.TS:8",
+      ["c:/USERS", "Alice Doe", "/Private"],
+      ["<absolute-path>/Mixed.File.TS:8"]
+    ],
+    [
       "UNC path",
       "\\\\server\\share\\private\\secret.txt",
       ["server", "share"],
+      ["<unc-path>/secret.txt"]
+    ],
+    [
+      "UNC path with spaces",
+      "\\\\server name\\share name\\private\\secret.txt",
+      ["server name", "share name", "\\private\\"],
       ["<unc-path>/secret.txt"]
     ],
     [
@@ -1787,6 +1873,12 @@ async function runCompleteSelfTest() {
       "file:///C:/Users/alice/private/secret.txt",
       ["C:/Users/alice"],
       ["<absolute-path>/secret.txt"]
+    ],
+    [
+      "Windows file URL with spaces",
+      "file:///C:/Users/Alice Doe/private/secret.txt:9:2",
+      ["file:///", "C:/Users", "Alice Doe", "/private/"],
+      ["<absolute-path>/secret.txt:9:2"]
     ],
     [
       "POSIX file URL",
@@ -1847,6 +1939,47 @@ async function runCompleteSelfTest() {
       "https://example.test/path?api_key=query-api-secret",
       ["query-api-secret"],
       ["api_key=<redacted>"]
+    ],
+    [
+      "compound sensitive query names",
+      "https://example.test/safe/path?client_secret=client-value&private-key=private-value&signing_signature=signing-value&authorization_token=authorization-value&view=public",
+      [
+        "client-value",
+        "private-value",
+        "signing-value",
+        "authorization-value"
+      ],
+      [
+        "https://example.test/safe/path?",
+        "client_secret=<redacted>",
+        "private-key=<redacted>",
+        "signing_signature=<redacted>",
+        "authorization_token=<redacted>",
+        "view=public"
+      ]
+    ],
+    [
+      "compound sensitive query case variants",
+      "https://example.test/path?Client-Secret=first-value&AUTHORIZATION_TOKEN=second-value",
+      ["first-value", "second-value"],
+      ["Client-Secret=<redacted>", "AUTHORIZATION_TOKEN=<redacted>"]
+    ],
+    [
+      "legacy exact sensitive query names remain redacted",
+      "https://example.test/path?auth=auth-value&password=password-value&passwd=passwd-value&pwd=pwd-value",
+      ["auth-value", "password-value", "passwd-value", "pwd-value"],
+      [
+        "auth=<redacted>",
+        "password=<redacted>",
+        "passwd=<redacted>",
+        "pwd=<redacted>"
+      ]
+    ],
+    [
+      "safe query substrings remain unchanged",
+      "https://example.test/safe/path?view=public&monkey=banana&hockey=ice",
+      [],
+      ["https://example.test/safe/path?view=public&monkey=banana&hockey=ice"]
     ],
     [
       "candidate bytes sentinel",
@@ -2049,7 +2182,7 @@ async function runCompleteSelfTest() {
       value:
         `nested stack ${path.resolve(process.cwd())}${path.sep}nested.ts\n` +
         "at /home/alice/private/nested.ts\n" +
-        "at Z:\\outside\\private\\nested.ts"
+        "at Z:\\outside\\Alice Doe\\private\\nested.ts"
     });
     const outerError = new Error("outer api_key=outer-secret", {
       cause: nestedCause
@@ -2073,6 +2206,7 @@ async function runCompleteSelfTest() {
         path.resolve(process.cwd()),
         "/home/alice/private",
         "Z:\\outside",
+        "Alice Doe",
         "server",
         "share"
       ]
@@ -2091,6 +2225,26 @@ async function runCompleteSelfTest() {
       }),
       ["primitive-cause-secret"],
       ["cause=Bearer <redacted-token>"]
+    );
+    assertSanitized(
+      "native Error cause path and compound query",
+      new Error("outer cause boundary", {
+        cause: new Error(
+          "cause at C:\\Users\\Alice Doe\\private\\cause.txt:7:4 " +
+            "https://example.test/path?client_secret=cause-query-secret"
+        )
+      }),
+      [
+        "C:\\Users",
+        "Alice Doe",
+        "\\private\\",
+        "cause-query-secret"
+      ],
+      [
+        "cause=cause at ",
+        "<absolute-path>/cause.txt:7:4",
+        "client_secret=<redacted>"
+      ]
     );
     let getterCalls = 0;
     const getterError = new Error();
@@ -2256,8 +2410,11 @@ async function runCompleteSelfTest() {
     });
     const sensitiveWarningText =
       `warning ${path.resolve(process.cwd())}${path.sep}private.test.ts ` +
+      "C:\\Users\\Alice Doe\\private\\warning.txt:5:2 " +
+      "\\\\server name\\share name\\private\\warning.log " +
       "Bearer warning-secret-0123456789\r\n" +
-      "file:///home/alice/private/warning.ts?token=query-warning-secret";
+      "file:///home/alice/private/warning.ts" +
+      "?client_secret=query-warning-secret&view=public";
     const sensitiveWarning = await executeCandidateLifecycle({
       create: async ({ stderr }) => ({
         close: async () => {
@@ -2279,7 +2436,19 @@ async function runCompleteSelfTest() {
         "CLOSE_STDERR_NON_ERROR_DIAGNOSTIC" ||
       sensitiveWarningRecords[0].message.includes("\r") ||
       sensitiveWarningBytes.includes(Buffer.from("warning-secret")) ||
+      sensitiveWarningBytes.includes(Buffer.from("Alice Doe")) ||
+      sensitiveWarningBytes.includes(Buffer.from("server name")) ||
+      sensitiveWarningBytes.includes(Buffer.from("share name")) ||
       sensitiveWarningBytes.includes(Buffer.from(path.resolve(process.cwd()))) ||
+      !sensitiveWarningRecords[0].message.includes(
+        "<absolute-path>/warning.txt:5:2"
+      ) ||
+      !sensitiveWarningRecords[0].message.includes(
+        "<unc-path>/warning.log"
+      ) ||
+      !sensitiveWarningRecords[0].message.includes(
+        "client_secret=<redacted>&view=public"
+      ) ||
       !sensitiveWarningBytes.equals(
         lifecycleDiagnosticBytes(sensitiveWarning.diagnostics)
       )
@@ -2482,7 +2651,8 @@ async function runCompleteSelfTest() {
       message: "error during close sentinel actual"
     });
     const sensitiveSentinelText =
-      "error during close at \\\\server\\share\\private\\close.ts " +
+      "error during close at \\\\server name\\share name\\private\\close.ts " +
+      "https://example.test/path?signing_signature=close-query-secret " +
       "github_pat_abcdefghijklmnopqrstuvwxyz123456";
     const sensitiveSentinel = await captureFailure("CLOSE_FAILED", () =>
       executeCandidateLifecycle({
@@ -2502,8 +2672,14 @@ async function runCompleteSelfTest() {
     if (
       sensitiveSentinel.records.length !== 1 ||
       sensitiveSentinel.records[0].source !== "PUBLIC_INJECTED_STDERR" ||
-      sensitiveSentinel.bytes.includes(Buffer.from("server")) ||
-      sensitiveSentinel.bytes.includes(Buffer.from("github_pat_"))
+      sensitiveSentinel.bytes.includes(Buffer.from("server name")) ||
+      sensitiveSentinel.bytes.includes(Buffer.from("share name")) ||
+      sensitiveSentinel.bytes.includes(Buffer.from("close-query-secret")) ||
+      sensitiveSentinel.bytes.includes(Buffer.from("github_pat_")) ||
+      !sensitiveSentinel.records[0].message.includes("<unc-path>/close.ts") ||
+      !sensitiveSentinel.records[0].message.includes(
+        "signing_signature=<redacted>"
+      )
     ) {
       throw new Error("close stderr diagnostic redaction mismatch");
     }

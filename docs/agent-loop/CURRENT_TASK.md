@@ -1,5 +1,62 @@
 # Current Task
 
+## 2B20AP1 — single bounded correction locally closed, second independent review required
+
+- The first independent review examined exact HEAD
+  `203f75d01f42dcb2a3e177875405f02d3f52dc6d` at
+  `2026-07-27T02:50:37.0878515Z` and returned
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED`. No review archive is
+  created in this correction.
+- This unique correction closes only:
+  `LFC_IMPLEMENTATION_WINDOWS_UNC_SPACE_PATH_REDACTION_INCOMPLETE`,
+  `LFC_IMPLEMENTATION_COMPOUND_QUERY_SECRET_REDACTION_INCOMPLETE`, and
+  `CONTROL_ACTIVE_STOP_LOSS_OVERRIDE_FIELDS_CONTRADICT_AUTHORIZATION`.
+  It is not Infrastructure Repair 3 and does not create a new repair round.
+- Windows drive, UNC, and Windows file-URL paths containing spaces are now
+  consumed completely across message, stack, native cause, and public
+  injected-stderr diagnostics. Mixed separators, case variants, safe
+  basename, line/column, idempotence, and deterministic output are covered in
+  existing lifecycle groups.
+- Query names are split only on `_` and `-`. A segment exactly equal,
+  case-insensitively, to `token`, `key`, `secret`, `signature`, `sig`,
+  `credential`, or `authorization` redacts the value to `<redacted>`.
+  `client_secret`, `private-key`, `signing_signature`, and
+  `authorization_token` are covered; `view`, `monkey`, and `hockey` remain
+  unchanged with the host and safe path preserved.
+- The external lifecycle contract remains the exact six keys
+  `phase,classification,source,ordinal,name,message` and the same three
+  sources. No check 38, lifecycle group 13, truncation marker, product/rule
+  change, workflow/profile change, or other review suggestion is included.
+- Fresh local evidence passes: targeted lint; ownership/lifecycle `37/37`;
+  coverage self-test `7/7`; dual candidate emit/verify with exact candidate
+  SHA-256
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`,
+  inventory SHA-256
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`,
+  `391257` bytes, `1572` identities, and `12` LF titles; ordinary routing
+  `9/9`; coverage routing `11/11`; ownership `5/5`; Windows `305`
+  (`9/90/52/73/9/26/46`); focused application `296/296`; focused rebuild
+  `207/207`; typecheck; full lint; and ordinary `35 files / 1572 tests`.
+- Active root and slice controls remain `HUMAN_BLOCKED /
+  2B20AP1_BOUNDED_CORRECTION_PENDING_SECOND_INDEPENDENT_REVIEW`, PR #46,
+  Infrastructure Repair `2/2`, and `implementationAuthorized=false`.
+  `overrideKind=DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION_ONLY`;
+  `infrastructureRepairRoundConsumed=true`,
+  `infrastructureRepairStopLossReached=true`, and
+  `infrastructureRepairStopLossOverrideUsed=true`. Product authority is
+  `phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93`.
+- `correctionUsed=true`, correction count/max are `1/1`, and only parent
+  `203f75d01f42dcb2a3e177875405f02d3f52dc6d` is recorded; no future
+  correction SHA is prewritten. The only local blocker is
+  `PENDING_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW`.
+  Linux worker-RPC and Windows W7 remain separate downstream blockers.
+- Full local coverage, hosted CI, profile refresh, remote calls, push, and PR
+  mutation were excluded and not run. Required next action is
+  `RUN_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this single bounded correction state.
+
 ## 2B20AP1 — diagnostic-redaction stop-loss override locally closed, independent review required
 
 - User authorization is exactly
