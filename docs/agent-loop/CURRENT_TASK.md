@@ -1,5 +1,50 @@
 # Current Task
 
+## 2B20AP2 — RULE_READY; complete design and independent review pending
+
+- Exact authorization is
+  `USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT`.
+  The active task is `Hosted Exact-Head CI Execution Closure V1`,
+  `CI_TEST_INFRASTRUCTURE / NON_PRODUCT`.
+- Initial branch and exact HEAD remain
+  `infra/2b20ap1-ownership-supersession-routing-v1` at
+  `03a4184282cde5f972a9ccab94f36e3a2aa79ed5`. Infrastructure PR #47 and
+  product PR #46 remain open/unmerged. This checkpoint performs no push, PR
+  mutation, CI rerun, or merge.
+- Fresh preservation-only rule evidence is materialized at
+  `docs/rules/evidence/2B20AP2.md`
+  (`246f2cd045361589a314232bdfe52f62793f29080e0ea60b43a00046a46a4ca9`,
+  `6485` bytes) with terminal verdict `RULE_READY`, no conflicts, and Dreamer
+  still `PARTIAL`.
+- The old exact-head failures are audited at
+  `docs/implementation/phase-3-slice-2b20ap2-hosted-ci-failure-audit.md`
+  (`0e98ffee3d5536adbe90340dda3ac2494c16409e4ec1e608729082bbba47751b`,
+  `7709` bytes). H1-H4 are confirmed; no product/authority regression was
+  found; runs `30247984028` and `30248052689` must not be rerun.
+- Engineering governance is `GO` in
+  `docs/architecture/2B20AP2-go-no-go-under-governance-v1.md`
+  (`116ea972ed083756e67d5a0500cd53666c0d34bb024ddd4c81e1501715587b4a`,
+  `8419` bytes). The GO authorizes only one complete design and its independent
+  review; it does not authorize implementation.
+- Active controls are `RUNNING`,
+  `ruleReady=true`, `ruleDesignPass=false`,
+  `implementationAuthorized=false`, `designRound=0/2`, and independent
+  `ciRemediationRound=0/2`. Product Repair `2/2` and 2B20AP1 Infrastructure
+  Repair `2/2` remain immutable history.
+- Logical topology remains ordinary `9`, coverage `11`, and Windows `W1-W7`.
+  The only authorized physical split is ordinary `11` blobs and coverage `12`
+  blobs, with exact Dreamer/Vortox segments `14/22/10` and union `46`.
+- The sole active blocker is
+  `PENDING_2B20AP2_COMPLETE_DESIGN_AND_INDEPENDENT_REVIEW`.
+  Required next action is
+  `CREATE_2B20AP2_COMPLETE_DESIGN_AND_RUN_INDEPENDENT_REVIEW`.
+- No design, design-review verdict, product, test, script, workflow, profile,
+  dependency, timeout, LF-title, role-coverage, or remote change is included in
+  this docs/control-only checkpoint.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this 2B20AP2 pre-design state.
+
 ## 2B20AP1 — local closure complete; ready for stacked publication and exact-head CI
 
 - A new independent read-only reviewer examined exact control-recovery HEAD

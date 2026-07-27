@@ -1,5 +1,41 @@
 # Project State
 
+## Current state — 2B20AP2 rule/governance gates ready; design pending
+
+- The active slice is `2B20AP2 — Hosted Exact-Head CI Execution Closure V1`,
+  classified `CI_TEST_INFRASTRUCTURE / NON_PRODUCT`, on exact initial HEAD
+  `03a4184282cde5f972a9ccab94f36e3a2aa79ed5`.
+- Fresh rule evidence is `RULE_READY` with `unresolvedConflicts=[]`; Dreamer
+  remains `PARTIAL`, and product behavior, rule semantics, production files,
+  role coverage, and new role declarations remain unchanged.
+- The old push/PR failures have been fully classified as H1 accepted-history
+  shallow-checkout unavailability, H2 stale append-only coverage profile, H3
+  duration-sensitive Linux worker-RPC/shutdown evidence, and H4 Windows W7
+  nonzero exit without a same-process global-error channel. The old runs are
+  immutable and must not be rerun.
+- Governance verdict is `GO` only for the next complete design plus independent
+  rule-design review. The active state is `RUNNING`; `designRound=0/2`,
+  `ruleDesignPass=false`, and implementation remains unauthorized.
+- A separate 2B20AP2 `ciRemediationRound=0/2` budget is active. It is not
+  2B20AP1 Repair 3 and does not rewrite Product Repair `2/2` or 2B20AP1
+  Infrastructure Repair `2/2`.
+- Logical topology is frozen at ordinary `9`, coverage `11`, and Windows
+  `W1-W7`. Physical execution may become ordinary `11` blobs and coverage `12`
+  blobs only inside those logical groups, with Dreamer/Vortox partition
+  `14/22/10`, union `46`, and zero overlap/missing/unexpected identities.
+- The old coverage profile remains immutable. Any future profile must use the
+  authorized source-commit/profile-child structure, exact local coverage delta,
+  and independent profile review.
+- The sole blocker is
+  `PENDING_2B20AP2_COMPLETE_DESIGN_AND_INDEPENDENT_REVIEW`; next action is
+  `CREATE_2B20AP2_COMPLETE_DESIGN_AND_RUN_INDEPENDENT_REVIEW`.
+- This checkpoint changes only three new evidence/audit/governance documents
+  and the four active controls. It makes no code, test, workflow, profile,
+  dependency, timeout, remote, PR, CI, or merge change.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this 2B20AP2 pre-design state.
+
 ## Current state — 2B20AP1 local review passed; stacked publication and exact-head CI pending
 
 - Independent control review of exact HEAD
