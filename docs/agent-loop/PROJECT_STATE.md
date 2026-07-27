@@ -1,5 +1,49 @@
 # Project State
 
+## Current state — 2B20AP1 file-URL single-classification override pending independent review
+
+- Exact authorization
+  `USER_AUTHORIZED_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_STOP_LOSS_OVERRIDE_AND_PUBLICATION_PIPELINE`
+  permits one bounded local change on parent
+  `2e3ee6457dbf5fd22062db7f28104e5040be1fd8`. The verifier plus four active
+  controls are the complete allowlist; there is no review archive in this
+  phase.
+- Structured file-URL parsing now feeds exactly one root classification and
+  direct safe rendering. Repository, home, temporary, runner-workspace,
+  absolute, and UNC outputs cannot be passed back through the generic path
+  matcher after placeholder rendering.
+- The prior final-review witness now renders
+  `<repo-root>/private/repo.ts:1:2` instead of
+  `<unc-path>/<basename><repo-root>/private/repo.ts:1:2`. No raw sensitive
+  absolute path was exposed by the prior defect. Windows and POSIX root forms,
+  spaces, encoded non-ASCII, line/column suffixes, multi-URL messages, native
+  Error message/stack, exact placeholder cardinality, and idempotence are
+  covered inside existing lifecycle group 1/check 26; the suite remains
+  `37/37` with twelve groups.
+- Candidate/inventory evidence remains
+  `d8ae2d1f...9129 / 391257 bytes` and
+  `58bd4b69...e1b8 / 1572 identities / 12 LF titles`; ordinary routing is
+  `9/9`, coverage routing `11/11`, ownership `5/5`, and Windows inventory
+  `305 (9/90/52/73/9/26/46)`. C32 static wiring is `PASS`; hosted evidence is
+  still pending and is not inherited.
+- Root and slice controls are `HUMAN_BLOCKED /
+  2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_PENDING_REVIEW` with the
+  sole local blocker
+  `PENDING_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW`.
+  Infrastructure Repair remains exhausted `2/2`; all consumed/reached/override
+  flags remain true; no Repair 3 or new round exists. The historical bounded
+  correction remains consumed `1/1` and is not rewritten.
+- Product Repair stays `2/2 /
+  COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE`; PR #46 is product context
+  only. Implementation and continuation are false. No full coverage, hosted
+  CI, profile refresh, remote operation, push, PR mutation, or downstream
+  Linux/Windows work is authorized in this phase.
+- Required next action:
+  `RUN_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-independent-review state.
+
 ## Current state — 2B20AP1 correction budget exhausted; HUMAN_BLOCKED
 
 - Two complete independent diagnostic stop-loss reports are now preserved

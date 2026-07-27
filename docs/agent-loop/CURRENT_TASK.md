@@ -1,5 +1,59 @@
 # Current Task
 
+## 2B20AP1 — file-URL single-classification stop-loss override locally closed; independent review required
+
+- User authorization is exactly
+  `USER_AUTHORIZED_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_STOP_LOSS_OVERRIDE_AND_PUBLICATION_PIPELINE`.
+  This separate bounded stop-loss override is stacked on exact parent
+  `2e3ee6457dbf5fd22062db7f28104e5040be1fd8`; it does not create
+  Infrastructure Repair 3, reopen the exhausted `2/2` repair budget, or create
+  a second bounded correction.
+- The only implementation file is
+  `scripts/verify-vitest-ownership-contracts.mjs`. File URLs are now parsed as
+  structured URLs, decoded, classified exactly once against repository, home,
+  temporary, runner-workspace, absolute, or UNC roots, and rendered directly.
+  An already-rendered placeholder never re-enters generic absolute-path
+  replacement.
+- The exact reviewed witness changes from malformed
+  `<unc-path>/<basename><repo-root>/private/repo.ts:1:2` to
+  `<repo-root>/private/repo.ts:1:2`. The final prior review found no raw
+  sensitive-path disclosure; this override closes only the duplicate/root
+  double-classification defect for repository, home, and temporary roots on
+  Windows and POSIX forms.
+- Existing ownership self-test count remains `37/37` in lifecycle groups
+  `1–12`; no check 38 or group 13 was added. The expanded existing lifecycle
+  check covers current and simulated Windows/POSIX roots, runner workspace,
+  UNC, encoded spaces/non-ASCII, line/column suffixes, multiple URLs,
+  message-plus-stack surfaces, exact placeholder counts, no retained root or
+  `file:` material, exact output, idempotence, and no nested/consecutive
+  placeholders.
+- Candidate evidence remains byte-identical at SHA-256
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`,
+  `391257` bytes; inventory SHA-256 is
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`,
+  with `1572` identities and `12` LF titles. Ownership, routing, traceability,
+  and Windows inventory audits remain green; C32 static wiring is `PASS` and
+  hosted exact-HEAD evidence remains pending.
+- Active controls are `HUMAN_BLOCKED /
+  2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_PENDING_REVIEW`,
+  `overrideKind=FILE_URL_SINGLE_CLASSIFICATION_ONLY`, PR #46 product context,
+  Infrastructure Repair `2/2`, and `implementationAuthorized=false`.
+  Product Repair remains `2/2 /
+  COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE`.
+- No review archive, full local coverage, hosted CI, profile refresh, remote
+  call, push, PR mutation, product/rule/test/workflow/dependency change, or
+  downstream Linux/Windows investigation is included. The sole local blocker
+  is pending independent review; downstream
+  `LINUX_WORKER_RPC_CI_BLOCKER` and `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER` remain
+  separate.
+- Required next action:
+  `RUN_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW`.
+  Do not publish or conditionally close 2B20A before the exact reviewer
+  verdict.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-independent-review state.
+
 ## 2B20AP1 — terminal diagnostic stop-loss recovery; correction budget exhausted
 
 - The first complete independent review is archived verbatim at

@@ -18,6 +18,7 @@ import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { Writable } from "node:stream";
+import { URL } from "node:url";
 import { TextDecoder, types as utilTypes } from "node:util";
 import { createVitest } from "vitest/node";
 import {
@@ -146,7 +147,7 @@ function safePathBasename(value) {
     : `/${basename}${lineColumn}`;
 }
 
-function classifyAbsolutePath(value) {
+function classifyAbsolutePath(value, sensitivePathRoots = SENSITIVE_PATH_ROOTS) {
   let canonical = value.replaceAll("\\", "/").replace(/\/+/gu, "/");
   if (/^\/[A-Za-z]:\//u.test(canonical)) canonical = canonical.slice(1);
   const lower = canonical.toLowerCase();
@@ -157,7 +158,7 @@ function classifyAbsolutePath(value) {
       ? `${placeholder}${canonical.slice(normalized.length)}`
       : null;
   };
-  const repositoryRoot = SENSITIVE_PATH_ROOTS.find(
+  const repositoryRoot = sensitivePathRoots.find(
     ({ placeholder }) => placeholder === "<repo-root>"
   );
   const repositoryPath =
@@ -172,7 +173,7 @@ function classifyAbsolutePath(value) {
     )?.[0];
     return `<runner-workspace>${canonical.slice(workspace?.length ?? canonical.length)}`;
   }
-  for (const root of SENSITIVE_PATH_ROOTS) {
+  for (const root of sensitivePathRoots) {
     if (root.placeholder === "<repo-root>") continue;
     const classified = classifyKnownRoot(root);
     if (classified !== null) return classified;
@@ -195,23 +196,59 @@ function classifyAbsolutePath(value) {
   return `<absolute-path>${safePathBasename(canonical)}`;
 }
 
+function redactFileUrlToken(value, sensitivePathRoots = SENSITIVE_PATH_ROOTS) {
+  const withoutUserinfo = value.replace(
+    /^file:\/\/[^/@\s]+@/iu,
+    "file://"
+  );
+  try {
+    const parsed = new URL(withoutUserinfo);
+    if (parsed.protocol !== "file:") {
+      return "<absolute-path>/<basename>";
+    }
+    const decodedPathname = decodeURIComponent(parsed.pathname);
+    const host =
+      parsed.hostname.length > 0 && parsed.hostname.toLowerCase() !== "localhost"
+        ? decodeURIComponent(parsed.hostname)
+        : "";
+    const absolutePath =
+      host.length > 0
+        ? `//${host}${decodedPathname}`
+        : decodedPathname;
+    return (
+      classifyAbsolutePath(absolutePath, sensitivePathRoots) +
+      parsed.search +
+      parsed.hash
+    );
+  } catch {
+    return /^file:(?:\\\\|\/\/[^/])/iu.test(value)
+      ? "<unc-path>/<basename>"
+      : "<absolute-path>/<basename>";
+  }
+}
+
+function redactFileUrls(value, sensitivePathRoots = SENSITIVE_PATH_ROOTS) {
+  const render = (fileUrl) =>
+    redactFileUrlToken(fileUrl, sensitivePathRoots);
+  return value
+    .replace(
+      /\bfile:(?:\/{2,3})?[A-Za-z]:[\\/](?:[^\\/\r\n"'<>|]+[\\/])+[^\\/\r\n"'<>|]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?/giu,
+      render
+    )
+    .replace(
+      /\bfile:(?:\\\\|\/\/)[^\\/\r\n"'<>]+[\\/][^\\/\r\n"'<>]+(?:[\\/][^\\/\r\n"'<>]+)*?[\\/][^\\/\r\n"'<>]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?/giu,
+      render
+    )
+    .replace(
+      /\bfile:[^\s"'<>),;]+/giu,
+      render
+    );
+}
+
 function redactWindowsAbsolutePaths(value) {
   const redactDrive = (drivePath) => classifyAbsolutePath(drivePath);
   const redactUnc = (uncPath) => classifyAbsolutePath(uncPath);
   return value
-    .replace(
-      /\bfile:(?:\/{2,3})?([A-Za-z]:[\\/](?:[^\\/\r\n"'<>|]+[\\/])+[^\\/\r\n"'<>|]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?)/giu,
-      (_match, drivePath) => redactDrive(drivePath)
-    )
-    .replace(
-      /\bfile:((?:\\\\|\/\/)[^\\/\r\n"'<>]+[\\/][^\\/\r\n"'<>]+(?:[\\/][^\\/\r\n"'<>]+)*?[\\/][^\\/\r\n"'<>]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?)/giu,
-      (_match, uncPath) => redactUnc(uncPath)
-    )
-    .replace(
-      /\bfile:\/\/(\/[^\s"'<>]+)/giu,
-      (_match, posixPath) =>
-        classifyAbsolutePath(posixPath.replace(/^\/{2,}/u, "/"))
-    )
     .replace(
       /\b[A-Za-z]:[\\/](?:[^\\/\r\n"'<>|]+[\\/])+[^\\/\r\n"'<>|]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?/gu,
       (drivePath) => redactDrive(drivePath)
@@ -219,14 +256,6 @@ function redactWindowsAbsolutePaths(value) {
     .replace(
       /(^|[\s(=[{])((?:\\\\|\/\/)[^\\/\r\n"'<>]+[\\/][^\\/\r\n"'<>]+(?:[\\/][^\\/\r\n"'<>]+)*?[\\/][^\\/\r\n"'<>]*?(?:\.[A-Za-z0-9_-]+)+(?::\d+(?::\d+)?)?)/gmu,
       (_match, prefix, uncPath) => `${prefix}${redactUnc(uncPath)}`
-    )
-    .replace(
-      /\bfile:(?:\/{2,3})?[A-Za-z]:[\\/][^\r\n"'<>|]*/giu,
-      "<absolute-path>/<basename>"
-    )
-    .replace(
-      /\bfile:(?:\\\\|\/\/)[^\r\n"'<>]*/giu,
-      "<unc-path>/<basename>"
     )
     .replace(
       /\b[A-Za-z]:[\\/][^\r\n"'<>|]*/gu,
@@ -259,6 +288,7 @@ function redactDiagnosticString(value) {
     .replace(/\r\n/gu, "\n")
     .replace(/\r/gu, "\n");
   text = normalizeDiagnosticControls(text);
+  text = redactFileUrls(text);
   text = text
     .replace(
       /\b([a-z][a-z0-9+.-]*:\/\/)[^/\s:@]+(?::[^/\s@]*)?@/giu,
@@ -1771,6 +1801,174 @@ async function runCompleteSelfTest() {
     }
     return sanitized;
   };
+  const rootPlaceholderPattern =
+    /<(?:repo-root|home|temp|runner-workspace|absolute-path|unc-path)>/gu;
+  const virtualWindowsRoots = Object.freeze([
+    Object.freeze({
+      normalized: "C:/Users/Alice Doe/work/botc",
+      placeholder: "<repo-root>"
+    }),
+    Object.freeze({
+      normalized: "C:/Users/Alice Doe/AppData/Local/Temp",
+      placeholder: "<temp>"
+    }),
+    Object.freeze({
+      normalized: "C:/Users/Alice Doe",
+      placeholder: "<home>"
+    })
+  ]);
+  const virtualPosixRoots = Object.freeze([
+    Object.freeze({
+      normalized: "/opt/botc/repository",
+      placeholder: "<repo-root>"
+    }),
+    Object.freeze({
+      normalized: "/tmp",
+      placeholder: "<temp>"
+    }),
+    Object.freeze({
+      normalized: "/home/alice",
+      placeholder: "<home>"
+    })
+  ]);
+  const assertSingleClassifiedFileUrl = ({
+    expected,
+    forbidden,
+    input,
+    label,
+    placeholderCount = 1,
+    roots
+  }) => {
+    const sanitized =
+      roots === undefined
+        ? safeDiagnosticMessage(input)
+        : redactFileUrls(input, roots);
+    if (sanitized !== expected) {
+      throw new Error(
+        `${label} file URL mismatch expected=${expected} actual=${sanitized}`
+      );
+    }
+    const placeholders = sanitized.match(rootPlaceholderPattern) ?? [];
+    if (
+      placeholders.length !== placeholderCount ||
+      /<(?:repo-root|home|temp|runner-workspace|absolute-path|unc-path)><|<(?:repo-root|home|temp|runner-workspace|absolute-path|unc-path)>\/<(?:repo-root|home|temp|runner-workspace|absolute-path|unc-path)>/u.test(
+        sanitized
+      ) ||
+      safeDiagnosticMessage(sanitized) !== sanitized
+    ) {
+      throw new Error(`${label} file URL classification is not singular/idempotent`);
+    }
+    for (const fragment of forbidden) {
+      if (sanitized.toLowerCase().includes(fragment.toLowerCase())) {
+        throw new Error(`${label} retained file URL root material`);
+      }
+    }
+    return sanitized;
+  };
+  const localFileUrl = (absolutePath) => {
+    const normalized = absolutePath.replaceAll("\\", "/");
+    return `file://${normalized.startsWith("/") ? "" : "/"}${normalized}`;
+  };
+  const currentRepositoryFileUrl = localFileUrl(
+    `${path.resolve(process.cwd())}${path.sep}private${path.sep}repo.ts:1:2`
+  );
+  const currentHomeFileUrl = localFileUrl(
+    `${path.resolve(homedir())}${path.sep}private${path.sep}home.ts:3:4`
+  );
+  const currentTemporaryFileUrl = localFileUrl(
+    `${path.resolve(tmpdir())}${path.sep}private${path.sep}temp.ts:5:6`
+  );
+  const fileUrlSingleClassificationCases = [
+    {
+      label: "current repository file URL",
+      input: currentRepositoryFileUrl,
+      expected: "<repo-root>/private/repo.ts:1:2",
+      forbidden: [path.resolve(process.cwd()), "file:"]
+    },
+    {
+      label: "current home file URL",
+      input: currentHomeFileUrl,
+      expected: "<home>/private/home.ts:3:4",
+      forbidden: [path.resolve(homedir()), "file:"]
+    },
+    {
+      label: "current temporary file URL",
+      input: currentTemporaryFileUrl,
+      expected: "<temp>/private/temp.ts:5:6",
+      forbidden: [path.resolve(tmpdir()), "file:"]
+    },
+    {
+      label: "Windows repository file URL",
+      input: "file:///C:/Users/Alice%20Doe/work/botc/private/repo.ts:7:8",
+      expected: "<repo-root>/private/repo.ts:7:8",
+      forbidden: ["C:/Users", "Alice", "file:"],
+      roots: virtualWindowsRoots
+    },
+    {
+      label: "Windows home file URL",
+      input: "file:///C:/Users/Alice%20Doe/private/home.ts",
+      expected: "<home>/private/home.ts",
+      forbidden: ["C:/Users", "Alice", "file:"],
+      roots: virtualWindowsRoots
+    },
+    {
+      label: "Windows temporary file URL",
+      input:
+        "file:///C:/Users/Alice%20Doe/AppData/Local/Temp/private/temp.ts",
+      expected: "<temp>/private/temp.ts",
+      forbidden: ["C:/Users", "Alice", "AppData", "file:"],
+      roots: virtualWindowsRoots
+    },
+    {
+      label: "POSIX repository file URL",
+      input: "file:///opt/botc/repository/private/repo.ts",
+      expected: "<repo-root>/private/repo.ts",
+      forbidden: ["/opt/botc", "file:"],
+      roots: virtualPosixRoots
+    },
+    {
+      label: "POSIX home file URL",
+      input: "file:///home/alice/private/home.ts",
+      expected: "<home>/private/home.ts",
+      forbidden: ["/home/alice", "file:"],
+      roots: virtualPosixRoots
+    },
+    {
+      label: "POSIX temporary file URL",
+      input: "file:///tmp/private/temp.ts",
+      expected: "<temp>/private/temp.ts",
+      forbidden: ["/tmp", "file:"],
+      roots: virtualPosixRoots
+    },
+    {
+      label: "runner workspace file URL",
+      input: "file:///home/runner/work/project/project/private/runner.ts",
+      expected: "<runner-workspace>/private/runner.ts",
+      forbidden: ["/home/runner", "project/project", "file:"]
+    },
+    {
+      label: "UNC file URL",
+      input: "file://server/share/private/unc.ts:9:10",
+      expected: "<unc-path>/unc.ts:9:10",
+      forbidden: ["server", "share", "file:"]
+    },
+    {
+      label: "encoded space and non-ASCII file URL",
+      input:
+        "file:///C:/Users/Alice%20Doe/work/botc/private/encoded%20%E9%92%9F%E6%A5%BC.ts",
+      expected: "<repo-root>/private/encoded 钟楼.ts",
+      forbidden: ["C:/Users", "Alice", "%20", "%E9", "file:"],
+      roots: virtualWindowsRoots
+    },
+    {
+      label: "two file URLs in one message",
+      input:
+        "first file:///home/alice/private/one.ts then file:///tmp/private/two.ts",
+      expected: "first <home>/private/one.ts then <temp>/private/two.ts",
+      forbidden: ["/home/alice", "/tmp", "file:"],
+      placeholderCount: 2
+    }
+  ];
   const diagnosticSafetyCases = [
     [
       "repository path",
@@ -2164,6 +2362,35 @@ async function runCompleteSelfTest() {
       "vitest-lifecycle-diagnostic-redaction-v1"
     ) {
       throw new Error("diagnostic redaction schema version mismatch");
+    }
+    for (const fileUrlCase of fileUrlSingleClassificationCases) {
+      assertSingleClassifiedFileUrl(fileUrlCase);
+    }
+    const fileUrlMessageAndStack = new Error(currentRepositoryFileUrl);
+    Object.defineProperty(fileUrlMessageAndStack, "stack", {
+      configurable: true,
+      value: `Error: ${currentRepositoryFileUrl}\nat ${currentTemporaryFileUrl}`
+    });
+    const fileUrlMessageAndStackSummary = safeDiagnosticMessage(
+      fileUrlMessageAndStack
+    );
+    if (
+      (fileUrlMessageAndStackSummary.match(rootPlaceholderPattern) ?? [])
+        .length !== 3 ||
+      !fileUrlMessageAndStackSummary.includes(
+        "<repo-root>/private/repo.ts:1:2"
+      ) ||
+      !fileUrlMessageAndStackSummary.includes(
+        "<temp>/private/temp.ts:5:6"
+      ) ||
+      fileUrlMessageAndStackSummary.includes("file:") ||
+      fileUrlMessageAndStackSummary.includes("<unc-path>/<basename><") ||
+      safeDiagnosticMessage(fileUrlMessageAndStackSummary) !==
+        fileUrlMessageAndStackSummary
+    ) {
+      throw new Error(
+        "message and stack file URL single-classification mismatch"
+      );
     }
     for (const [
       label,
