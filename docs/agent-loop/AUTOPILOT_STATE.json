@@ -1,7 +1,7 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "2B20AP2_REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
-  "disposition": "SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED_UNDER_REPLACEMENT_REVIEW",
+  "detailedStatus": "2B20AP2_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+  "disposition": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
   "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
   "correctionId": "2B20AP2-DESIGN-RELEASE-CORRECTION-V1",
   "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
@@ -30,7 +30,8 @@
   "overrideKind": "FILE_URL_SINGLE_CLASSIFICATION_ONLY",
   "productionBehaviorChangeAuthorized": false,
   "implementationAuthorized": true,
-  "implementationContinuationAuthorized": false,
+  "implementationStarted": true,
+  "implementationContinuationAuthorized": true,
   "newProductRepairRoundCreated": false,
   "currentPR": 47,
   "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/47",
@@ -64,7 +65,7 @@
   "phase2CStarted": false,
   "infrastructureRepairRound": 2,
   "maxInfrastructureRepairRounds": 2,
-  "ciRemediationRound": 0,
+  "ciRemediationRound": 1,
   "maxCiRemediationRounds": 2,
   "commandCaptureProxyRejectionV1": {
     "status": "COMPLETED_ACCEPTED",
@@ -2554,8 +2555,8 @@
   },
   "slice2B20AP2Gate": {
     "status": "RUNNING",
-    "detailedStatus": "2B20AP2_REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
-    "disposition": "SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED_UNDER_REPLACEMENT_REVIEW",
+    "detailedStatus": "2B20AP2_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+    "disposition": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
     "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
     "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
     "originalAuthorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
@@ -2578,7 +2579,7 @@
     "priorInfrastructureRepairRound": 2,
     "priorMaxInfrastructureRepairRounds": 2,
     "priorInfrastructureRepairStatus": "CONSUMED_IMMUTABLE_HISTORY",
-    "ciRemediationRound": 0,
+    "ciRemediationRound": 1,
     "maxCiRemediationRounds": 2,
     "new2B20AP1RepairRoundCreated": false,
     "ruleEvidencePath": "docs/rules/evidence/2B20AP2.md",
@@ -2647,7 +2648,7 @@
     "designReleasePass": true,
     "designReleaseVerdict": "DESIGN_RELEASE_PASS",
     "implementationAuthorized": true,
-    "implementationStarted": false,
+    "implementationStarted": true,
     "sourceImplementationPaused": false,
     "docsOnlyCorrectionRound": 1,
     "maxDocsOnlyCorrectionRounds": 2,
@@ -2692,7 +2693,7 @@
       "ruleDesignPass": false,
       "designReleasePass": false,
       "implementationAuthorized": false,
-      "ciRemediationRound": 0,
+      "ciRemediationRound": 1,
       "maxCiRemediationRounds": 2,
       "remainingBlockers": [
         "PENDING_INDEPENDENT_2B20AP2_DESIGN_RELEASE_REVIEW_CORRECTION_V1"
@@ -2729,17 +2730,17 @@
       "acceptanceMode": "SAME_SOURCE_SAME_CONTEXT_RELATIONAL_SEMANTIC_SET_EQUALITY",
       "docsOnlyCorrectionRound": 1,
       "maxDocsOnlyCorrectionRounds": 2,
-      "ciRemediationRound": 0,
+      "ciRemediationRound": 1,
       "maxCiRemediationRounds": 2,
       "sourceImplementationPaused": false,
       "implementationAuthorized": true,
       "designReleasePass": true,
       "designReleaseVerdict": "DESIGN_RELEASE_PASS",
       "remainingBlockers": [
-        "PENDING_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE"
+        "PENDING_COVERAGE_PROFILE_CHILD"
       ],
-      "requiredNextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE",
-      "terminal": "REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED"
+      "requiredNextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD",
+      "terminal": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD"
     },
     "designReleaseReviewCorrectionV1Correction1": {
       "path": "docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1.md",
@@ -2796,9 +2797,38 @@
       "oldProfileId": "phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2",
       "oldProfileChanged": false,
       "newProfileCreated": false,
-      "sourceCommitCreated": false,
+      "sourceCommitCreated": true,
       "profileChildCommitCreated": false,
-      "profileReviewVerdict": null
+      "profileReviewVerdict": null,
+      "exactSourceEvidenceRoot": "<os-temp>/botc-2b20ap2-source-evidence-bdbbe8b",
+      "rawCoverageSha256": "52e01a01aede65da8c660ccfc2b5779ea6ea3918b170fc9e13a153befbdc250d",
+      "normalizedTuplesSha256": "5e6d1e333f99f77fb5d4b8c71adc2d00146f0d1f52c72b933a36f3a807448f82"
+    },
+    "sourceImplementation": {
+      "statusPath": "docs/implementation/phase-3-slice-2b20ap2-implementation-status.md",
+      "sourceBaseline": "bdbbe8bc051c5b6ff832aecec3202bee27e3b53f",
+      "sourceCommit": "THIS_COMMIT",
+      "sourceFileCount": 5,
+      "implementationStarted": true,
+      "ciRemediationRound": 1,
+      "ordinaryTopology": "11->9->1572",
+      "coverageTopology": "12->11->1572",
+      "coverageCoreCount": 36,
+      "coverageGainedCount": 10,
+      "windowsTotal": 305,
+      "windowsW7Count": 46,
+      "relationalCoverageGate": "PASS",
+      "rawUnsegmentedCoverageDiagnostic": {
+        "authority": false,
+        "testFilesPassed": 35,
+        "testFilesTotal": 35,
+        "testsPassed": 1572,
+        "testsTotal": 1572,
+        "unhandledErrors": 1,
+        "error": "Timeout calling \"onTaskUpdate\"",
+        "exitCode": 1,
+        "rerun": false
+      }
     },
     "productProductionChanged": false,
     "productBehaviorChanged": false,
@@ -2813,10 +2843,10 @@
     "prChanged": false,
     "ciRerunPerformed": false,
     "remainingBlockers": [
-      "PENDING_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE"
+      "PENDING_COVERAGE_PROFILE_CHILD"
     ],
-    "requiredNextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE",
-    "nextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE"
+    "requiredNextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD",
+    "nextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2828,8 +2858,8 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
   "currentDesignHash": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
-  "currentDesignStatus": "REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
-  "currentDesignTerminal": "REPLACEMENT_DESIGN_RELEASE_PASS_SOURCE_IMPLEMENTATION_RESUME_AUTHORIZED",
+  "currentDesignStatus": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+  "currentDesignTerminal": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
   "currentDesignSource": "READ_ONLY_ARCHITECT_STANDALONE_ROUND_2_CORRECTION",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-design-review-round-2.md",
   "currentDesignReviewHash": "d6e13ba8de627dec662eceb4babc92366526ae30aaaa0ece0742bbd65d43b4d7",
@@ -3349,7 +3379,7 @@
   "ruleReady": true,
   "ruleDesignPass": false,
   "implementationAuthorized": true,
-  "implementationStatus": "AUTHORIZED_PENDING_2B20AP2_SOURCE_IMPLEMENTATION_RESUME",
+  "implementationStatus": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -3773,7 +3803,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE"
+    "PENDING_COVERAGE_PROFILE_CHILD"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -4555,8 +4585,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent Replacement 1 Design Release review verbatim and synchronized only four active controls. The prior Correction 1 review is INVALID_PROVENANCE_HASH_TRANSCRIPTION, historical only, and non-authoritative. The replacement reviewer returned DESIGN_RELEASE_PASS with findings and remainingBlockers empty on reviewed HEAD 0bc5db4e46445cd97a3193131086fb1f630fde7c. Design remains Round 2/2 with no Round 3; docsOnlyCorrectionRound remains 1/2, implementation is authorized, sourceImplementationPaused is false, and CI remediation remains 0/2. Four source WIP files remain byte-identical and unstaged; no source edit, gate rerun, remote action, push, PR, or CI mutation occurred.",
+  "lastAction": "Completed the Design Release-authorized five-file 2B20AP2 source implementation and synchronized the implementation status plus four controls. Runner relational self-test, ownership/H1, ownership repetition, ordinary 11->9->1572, segmented coverage 12->11->1572 with core 36 and gained 10, Windows W1-W7 305 with isolated W7 46, typecheck, lint, and ordinary full tests passed. Raw unsegmented coverage passed 35/35 files and 1572/1572 assertions but exited 1 after one unhandled onTaskUpdate timeout; it is recorded only as a non-release-authority H3 diagnostic and was not rerun. Exact-source tuple evidence is preserved outside the repository. CI remediation is 1/2 and the sole blocker is the append-only independently reviewed coverage profile child. No push, PR mutation, hosted CI, or merge occurred.",
   "lastError": null,
-  "requiredNextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE",
-  "nextAction": "RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE"
+  "requiredNextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD",
+  "nextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD"
 }

@@ -1,0 +1,102 @@
+# 2B20AP2 source implementation status
+
+## Disposition
+
+- Status: `SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD`.
+- Source baseline: `bdbbe8bc051c5b6ff832aecec3202bee27e3b53f`.
+- Branch: `infra/2b20ap1-ownership-supersession-routing-v1`.
+- Design remains Round `2/2`; Correction 1 remains docs-only Round `1/2`.
+- Replacement Design Release verdict remains `DESIGN_RELEASE_PASS`.
+- This source commit consumes `ciRemediationRound=1/2`.
+- Sole remaining blocker: `PENDING_COVERAGE_PROFILE_CHILD`.
+- No push, pull-request mutation, hosted CI run, or merge was performed.
+
+## Implemented source scope
+
+Exactly five infrastructure source files changed:
+
+| Path | SHA-256 before commit |
+|---|---|
+| `.github/workflows/ci.yml` | `cf78d9cff7bacc28d7c51b882f086a93f1fd989f898af827ced4e1abf4c24127` |
+| `scripts/run-vitest-logical-group.mjs` | `c33bf65fe5a0b674cdd47c3a578be112fa7c5b7bc70beedbf19d9774fd6cb169` |
+| `scripts/verify-vitest-ownership-contracts.mjs` | `30c7e294cda38e5d044c15dc611b1b2d7ca3dcf64f98dd7363fd5874f6e41dba` |
+| `scripts/verify-vitest-windows-application-groups.mjs` | `b7f12bc03ec22911a029ba51f0dc7effcec45a99bc53e5bfee0b639bb67c3fab` |
+| `scripts/vitest-ownership-contracts.mjs` | `98a7717485c9a472fff597f3decbfcdef56ecd47e4e1f8fb92339826ae1c46fe` |
+
+The implementation:
+
+- validates accepted Git authority in the required missing-object, ancestry,
+  blob, and successor order;
+- executes Dreamer/Vortox ordinary, coverage, and W7 evidence in isolated
+  same-process segments;
+- preserves ordinary `11 physical -> 9 logical` and coverage
+  `12 physical -> 11 logical`;
+- preserves W1-W7 ownership while replacing only W7 execution with isolated
+  `14/22/10` evidence;
+- resolves the installed Vitest `3.2.6` public bin and invokes it directly with
+  Node `24.15.0`;
+- emits all five complete canonical coverage tuple sets with count and SHA-256;
+- compares complete sorted added/removed tuple sets and treats raw coverage JSON
+  SHA-256 as diagnostic only;
+- rebases downloaded coverage blob lookup to each validated logical-manifest
+  directory.
+
+No product source, product test, assertion, title, marker, rule evidence, role
+coverage, coverage include, timeout, dependency, lockfile, Vitest project,
+logical group, accepted authority, or old coverage profile changed.
+
+## Local validation
+
+| Gate | Result |
+|---|---|
+| Runner relational self-test | `PASS 20/20` |
+| Ownership/H1 self-test | `OWNERSHIP_CONTRACT_SELF_TEST_PASS 37/37` |
+| Ownership candidate repetition | `CANDIDATE_BASELINE_VERIFIED 2B20A`; `1572` structured identities, `12` LF identities |
+| Targeted ESLint | `PASS` |
+| Ordinary segmented execution | `PASS`; `11 -> 9 -> 1572` |
+| Coverage segmented execution | `PASS`; `12 -> 11 -> 1572`; Dreamer core `36`, gained `10` |
+| Windows application execution | `PASS`; W1-W7 `9/90/52/73/9/26/46 = 305`; W7 `14/22/10`; all risk-string counts zero |
+| `pnpm typecheck` | `PASS` |
+| `pnpm lint` | `PASS` |
+| `pnpm test` | `PASS`; `35/35` files, `1572/1572` tests |
+| Raw unsegmented `pnpm test:coverage` diagnostic | `FAIL`, exit `1`; `35/35` files and `1572/1572` assertions passed, then Vitest reported one unhandled `[vitest-worker]: Timeout calling "onTaskUpdate"` |
+| Full segmented coverage release authority | `PASS`; `12 -> 11 -> 1572`, core `36`, gained `10`, same-process exits/signals/global errors clean |
+| Existing profile validation | expected `COVERAGE_REQUESTED_PROFILE_MISMATCH`; not a source failure and not promoted to PASS |
+| `git diff --check` | `PASS` |
+
+The raw unsegmented coverage result is retained as an H3 historical diagnostic,
+is not release authority, was not rerun, and is not represented as PASS.
+
+## Exact-source coverage evidence
+
+Preserved outside the repository at
+`<os-temp>/botc-2b20ap2-source-evidence-bdbbe8b`:
+
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| `coverage/coverage-final.json` | 4,648,231 | `52e01a01aede65da8c660ccfc2b5779ea6ea3918b170fc9e13a153befbdc250d` |
+| `coverage/coverage-normalized-tuples.json` | 669,415 | `5e6d1e333f99f77fb5d4b8c71adc2d00146f0d1f52c72b933a36f3a807448f82` |
+| `coverage/global-manifest.json` | 393,593 | `dd159c980d27f1847b83b848f2b3b894c18392ae2e4a2b3167f12dd9c03dee85` |
+| `ordinary-global-manifest.json` | 388,958 | `a3a9649920928cea00b2c02acaba1b91b5ffb31150779b56b80a41e1899ea0c6` |
+| `windows-verification.json` | 9,683 | `86ca31fdace5efaea1871d5a5b980a5d65c92cbbf57c0913d3ca95c7afe6813d` |
+
+Canonical coverage sets:
+
+| Set | Count | SHA-256 |
+|---|---:|---|
+| `sourceFiles` | 63 | `f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691` |
+| `zeroHitStatements` | 3217 | `851add3e897ea59b8b1d86fbde3c52b792d466902f3705958d97dfba174224fe` |
+| `zeroHitFunctions` | 23 | `f4c97e3e3270830939cf6a337358de3dbe4ce0ae354f000d3e6001c7cb7a00be` |
+| `zeroHitLines` | 3217 | `c37a009f8cbca2bfa30ece8349b5864751e4274b4e4c19ca29bf0ea03acb166f` |
+| `zeroHitBranchArms` | 1808 | `12e72ae3e8a02fa18425f14f804c9f630537dff1534e9dcb0168833718622a7d` |
+
+All five persisted-artifact comparisons have equal count/hash, empty complete
+added/removed sets, internally consistent metadata, and `equal=true`. The
+branch-arm count above is an observed artifact value only. Neither it nor the
+historical parent observation controls acceptance.
+
+The old profile verifier remains byte-identical at SHA-256
+`4eecd0472548a254546ac37b89d7102d7007f011574a16a3a7fa41bf04f3acbc`.
+The later profile child must bind a new append-only profile to the committed
+source HEAD, receive independent `COVERAGE_PROFILE_REVIEW_PASS`, and only then
+switch the workflow profile ID.

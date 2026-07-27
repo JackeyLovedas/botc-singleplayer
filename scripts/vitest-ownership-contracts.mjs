@@ -920,7 +920,21 @@ export function validate2B20APrimaryIdentities(repoRoot, inventory) {
   for (const primary of TWO_B20A_PRIMARY_IDENTITIES) {
     if (primary.kind === "STATIC") {
       const workflow = readFileSync(path.resolve(repoRoot, primary.file), "utf8");
-      if (!workflow.includes("testNamePattern: '\\[(?:2B19A3A|2B19A3B1|2B20A)-'")) {
+      const runner = readFileSync(
+        path.resolve(repoRoot, "scripts/run-vitest-logical-group.mjs"),
+        "utf8"
+      );
+      const relationalCoverageWiring = [
+        workflow.includes("application-service-dreamer-vortox-core"),
+        runner.includes('"application-service-dreamer-vortox-core": ['),
+        runner.includes(
+          '["legacy", ["application-service-dreamer-vortox"], "\\\\[(?:2B19A3A|2B19A3B1)-"]'
+        ),
+        runner.includes(
+          '["2b20a", ["application-service-dreamer-vortox"], "\\\\[2B20A-"]'
+        )
+      ];
+      if (relationalCoverageWiring.some((present) => !present)) {
         fail("TWO_B20A_STATIC_WIRING_MISSING", primary.title);
       }
       continue;
@@ -1362,27 +1376,72 @@ export function validateAcceptedAuthoritySupersessionRegistry(input) {
   return input;
 }
 
+export function validateAcceptedGitAuthority(
+  repoRoot,
+  acceptedHead,
+  acceptedFile,
+  acceptedBlobOid
+) {
+  const root = path.resolve(repoRoot);
+  const repository = spawnSync(
+    "git",
+    ["rev-parse", "--is-inside-work-tree"],
+    { cwd: root, encoding: "utf8", windowsHide: true, shell: false }
+  );
+  if (repository.error || repository.status !== 0 ||
+      repository.stdout.trim() !== "true") {
+    fail("GIT_COMMAND_FAILED", "repository validation");
+  }
+  const object = spawnSync(
+    "git",
+    ["cat-file", "-e", `${acceptedHead}^{commit}`],
+    { cwd: root, encoding: "utf8", windowsHide: true, shell: false }
+  );
+  if (object.error) fail("GIT_COMMAND_FAILED", "accepted object validation");
+  if (object.status !== 0) {
+    fail("SUPERSESSION_ACCEPTED_HISTORY_UNAVAILABLE", acceptedHead);
+  }
+  const ancestor = spawnSync(
+    "git",
+    ["merge-base", "--is-ancestor", acceptedHead, "HEAD"],
+    { cwd: root, encoding: "utf8", windowsHide: true, shell: false }
+  );
+  if (ancestor.error || (ancestor.status !== 0 && ancestor.status !== 1)) {
+    fail("GIT_COMMAND_FAILED", "accepted ancestry validation");
+  }
+  if (ancestor.status === 1) {
+    fail("SUPERSESSION_ACCEPTED_HEAD_NOT_ANCESTOR", acceptedHead);
+  }
+  const blob = spawnSync(
+    "git",
+    ["rev-parse", `${acceptedHead}:${acceptedFile}`],
+    { cwd: root, encoding: "utf8", windowsHide: true, shell: false }
+  );
+  if (blob.error) fail("GIT_COMMAND_FAILED", "accepted blob validation");
+  if (blob.status !== 0 || blob.stdout.trim() !== acceptedBlobOid) {
+    fail(
+      "SUPERSESSION_ACCEPTED_BLOB_MISMATCH",
+      blob.stdout.trim() || "missing"
+    );
+  }
+  return Object.freeze({
+    acceptedHead,
+    acceptedFile,
+    acceptedBlobOid
+  });
+}
+
 export function validateAcceptedAuthoritySupersessions(repoRoot, liveInventory = null) {
   const root = path.resolve(repoRoot);
   validateAcceptedAuthoritySupersessionRegistry(
     ACCEPTED_AUTHORITY_SUPERSESSIONS
   );
-  const ancestor = spawnSync(
-    "git",
-    ["merge-base", "--is-ancestor", ACCEPTED_HEAD, "HEAD"],
-    { cwd: root, encoding: "utf8" }
+  validateAcceptedGitAuthority(
+    root,
+    ACCEPTED_HEAD,
+    APP_TEST_FILE,
+    ACCEPTED_APPLICATION_BLOB
   );
-  if (ancestor.status !== 0) {
-    fail("SUPERSESSION_ACCEPTED_HEAD_NOT_ANCESTOR", ACCEPTED_HEAD);
-  }
-  const blob = spawnSync(
-    "git",
-    ["rev-parse", `${ACCEPTED_HEAD}:${APP_TEST_FILE}`],
-    { cwd: root, encoding: "utf8" }
-  );
-  if (blob.status !== 0 || blob.stdout.trim() !== ACCEPTED_APPLICATION_BLOB) {
-    fail("SUPERSESSION_ACCEPTED_BLOB_MISMATCH", blob.stdout.trim() || "missing");
-  }
   const sourceResult = spawnSync(
     "git",
     ["show", `${ACCEPTED_HEAD}:${APP_TEST_FILE}`],

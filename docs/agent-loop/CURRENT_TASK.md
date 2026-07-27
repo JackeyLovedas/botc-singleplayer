@@ -1,5 +1,32 @@
 # Current Task
 
+## 2B20AP2 — source commit ready; coverage profile child pending
+
+- The authorized source implementation is complete on source baseline
+  `bdbbe8bc051c5b6ff832aecec3202bee27e3b53f` and is recorded in
+  `docs/implementation/phase-3-slice-2b20ap2-implementation-status.md`.
+- Exactly five infrastructure source files changed. Product source/tests,
+  assertions/titles/markers, rules, role coverage, coverage include, timeout,
+  dependencies, lockfile, Vitest projects, logical groups, accepted authority,
+  and the old coverage profile remain unchanged.
+- `ciRemediationRound=1/2`, `implementationStarted=true`,
+  `sourceImplementationPaused=false`, and the source commit is ready.
+- Release-authority gates pass: runner `20/20`, ownership/H1 `37/37`,
+  ordinary `11 -> 9 -> 1572`, coverage `12 -> 11 -> 1572` with core `36` and
+  gained `10`, W1-W7 `305` with isolated W7 `46`, typecheck, lint, and ordinary
+  full tests.
+- Raw unsegmented `pnpm test:coverage` is explicitly a non-release-authority H3
+  diagnostic: `35/35` files and `1572/1572` assertions passed, then one
+  unhandled `Timeout calling "onTaskUpdate"` caused exit `1`. It was not rerun
+  and is not represented as PASS.
+- Exact-source coverage artifacts and all five complete canonical tuple sets
+  are preserved under
+  `<os-temp>/botc-2b20ap2-source-evidence-bdbbe8b`.
+- Sole remaining blocker: `PENDING_COVERAGE_PROFILE_CHILD`.
+- Required next action: `CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD`.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20AP2 — Replacement Design Release PASS; source resume authorized
 
 - The independent replacement review of exact HEAD

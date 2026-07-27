@@ -1,5 +1,27 @@
 # Project State
 
+## Current state — 2B20AP2 source ready; profile child pending
+
+- The Design Release-authorized infrastructure source implementation is ready
+  in the current commit and documented at
+  `docs/implementation/phase-3-slice-2b20ap2-implementation-status.md`.
+- Production topology is ordinary `11 -> 9 -> 1572`, coverage
+  `12 -> 11 -> 1572`, and Windows W1-W7 `305`; W7 is isolated as
+  `14/22/10 -> 46`.
+- Five canonical coverage tuple sets are complete and relationally equal after
+  persisted-artifact round-trip; raw coverage JSON hashes are diagnostic only.
+- `ciRemediationRound=1/2`, `implementationStarted=true`, source implementation
+  is ready, and no remote action occurred.
+- The raw unsegmented coverage command retained the known H3
+  `onTaskUpdate` diagnostic at exit `1`; the full segmented coverage authority
+  passed and is the release gate.
+- The old profile remains byte-identical and intentionally mismatches the new
+  exact-source coverage. Sole blocker:
+  `PENDING_COVERAGE_PROFILE_CHILD`; next action:
+  `CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD`.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20AP2 Replacement Design Release PASS
 
 - Independent replacement review of Correction 1 at exact HEAD

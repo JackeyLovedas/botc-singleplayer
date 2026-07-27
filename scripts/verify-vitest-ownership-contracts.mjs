@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   closeSync,
@@ -33,6 +34,7 @@ import {
   sha256CanonicalLines,
   validateAcceptedAuthoritySupersessionRegistry,
   validateAcceptedAuthoritySupersessions,
+  validateAcceptedGitAuthority,
   validateOwnershipContracts
 } from "./vitest-ownership-contracts.mjs";
 
@@ -2288,6 +2290,72 @@ async function runCompleteSelfTest() {
       !rejectedSelfEdge
     ) {
       throw new Error("supersession negative validation mismatch");
+    }
+    const gitRoot = mkdtempSync(path.join(tmpdir(), "2b20ap2-git-authority-"));
+    const git = (arguments_, options = {}) => {
+      const result = spawnSync("git", arguments_, {
+        cwd: gitRoot,
+        encoding: "utf8",
+        windowsHide: true,
+        shell: false,
+        ...options
+      });
+      if (result.error || result.status !== 0) {
+        throw new Error(`git fixture failed: ${arguments_.join(" ")}`);
+      }
+      return result.stdout.trim();
+    };
+    try {
+      git(["init", "--initial-branch=main"]);
+      git(["config", "user.name", "BOTC Test"]);
+      git(["config", "user.email", "botc-test@example.invalid"]);
+      writeFileSync(path.join(gitRoot, "authority.txt"), "accepted\n", "utf8");
+      git(["add", "authority.txt"]);
+      git(["commit", "-m", "accepted"]);
+      const acceptedHead = git(["rev-parse", "HEAD"]);
+      const acceptedBlob = git(["rev-parse", `${acceptedHead}:authority.txt`]);
+      writeFileSync(path.join(gitRoot, "current.txt"), "current\n", "utf8");
+      git(["add", "current.txt"]);
+      git(["commit", "-m", "current"]);
+      validateAcceptedGitAuthority(
+        gitRoot,
+        acceptedHead,
+        "authority.txt",
+        acceptedBlob
+      );
+      expectCode("SUPERSESSION_ACCEPTED_HISTORY_UNAVAILABLE", () =>
+        validateAcceptedGitAuthority(
+          gitRoot,
+          "f".repeat(40),
+          "authority.txt",
+          acceptedBlob
+        )
+      );
+      expectCode("SUPERSESSION_ACCEPTED_BLOB_MISMATCH", () =>
+        validateAcceptedGitAuthority(
+          gitRoot,
+          acceptedHead,
+          "authority.txt",
+          "0".repeat(40)
+        )
+      );
+      const tree = git(["rev-parse", "HEAD^{tree}"]);
+      const sibling = git(
+        ["commit-tree", tree, "-m", "sibling"],
+        { input: "sibling\n" }
+      );
+      git(["update-ref", "refs/heads/sibling", sibling]);
+      git(["switch", "sibling"]);
+      expectCode("SUPERSESSION_ACCEPTED_HEAD_NOT_ANCESTOR", () =>
+        validateAcceptedGitAuthority(
+          gitRoot,
+          acceptedHead,
+          "authority.txt",
+          acceptedBlob
+        )
+      );
+    } finally {
+      rmSync(gitRoot, { recursive: true, force: true });
     }
   });
   await check("24 candidate versions and immutable baseline order are exact", async () => {
