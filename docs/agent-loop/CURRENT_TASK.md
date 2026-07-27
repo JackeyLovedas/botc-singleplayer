@@ -1,5 +1,44 @@
 # Current Task
 
+## 2B20AP1 — local closure complete; ready for stacked publication and exact-head CI
+
+- A new independent read-only reviewer examined exact control-recovery HEAD
+  `140d64e86a03244972246ec8027f8a2943eb71e4` and returned
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS`, `findings=[]`, and
+  `remainingBlockers=[]`.
+- The complete reviewer output is archived verbatim without wrapper at
+  `docs/implementation/phase-3-slice-2b20ap1-control-operational-recovery-review-final.md`,
+  SHA-256
+  `28238d60f88570ec51974f02b6c980a7f6eb01767b6902b3b7d2aab01c6ac811`,
+  `10864` UTF-8 bytes, `260` LF bytes, zero CR bytes, and one terminal LF.
+  The archive records reviewed HEAD `140d64e…`, parent `997161fb…`, and
+  timestamp `2026-07-27T07:42:50.1233881Z`.
+- Root and slice remain `HUMAN_BLOCKED` while the local candidate is
+  unpublished and unaccepted. Their detailed state is exactly
+  `2B20AP1_LOCAL_CLOSURE_COMPLETE_READY_FOR_STACKED_PUBLICATION_AND_EXACT_HEAD_CI`;
+  `local2B20AP1Status` is
+  `LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI`;
+  `2B20AP1Acceptance=UNACCEPTED_LOCAL_CANDIDATE`; and implementation remains
+  unauthorized.
+- Active blockers are exactly:
+  `PENDING_2B20AP1_STACKED_PUBLICATION_AND_EXACT_HEAD_CI`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`. Required next action is
+  `PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI`.
+- Product Repair remains `2/2 /
+  COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE`. Infrastructure Repair
+  remains consumed/stopped/overridden at `2/2`; no Repair 3, new repair
+  round, or implementation continuation exists. Historical reviewer objects,
+  findings, dispositions, candidate evidence, and all prior local PASS
+  evidence remain unchanged.
+- This checkpoint contains only the verbatim review archive plus the four
+  active controls. It makes no script, production, test, self-test, workflow,
+  profile, dependency, timeout, remote, PR, or CI change. Publication has not
+  begun.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this local-closure-ready-for-publication state.
+
 ## 2B20AP1 — control-only Operational Recovery complete; independent control review required
 
 - Exact authorization is

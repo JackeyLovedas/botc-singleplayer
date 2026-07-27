@@ -1,5 +1,41 @@
 # Project State
 
+## Current state — 2B20AP1 local review passed; stacked publication and exact-head CI pending
+
+- Independent control review of exact HEAD
+  `140d64e86a03244972246ec8027f8a2943eb71e4` passed with
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS`, no findings, and no review
+  blockers. Its complete output is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-control-operational-recovery-review-final.md`
+  (`28238d60f88570ec51974f02b6c980a7f6eb01767b6902b3b7d2aab01c6ac811`,
+  `10864` bytes, `260` LF, one terminal LF).
+- Root, slice, file-URL override, and control-recovery state now agree on
+  `HUMAN_BLOCKED /
+  2B20AP1_LOCAL_CLOSURE_COMPLETE_READY_FOR_STACKED_PUBLICATION_AND_EXACT_HEAD_CI`.
+  `local2B20AP1Status` is
+  `LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI`,
+  and `2B20AP1Acceptance` is `UNACCEPTED_LOCAL_CANDIDATE`.
+- Active blockers are exactly
+  `PENDING_2B20AP1_STACKED_PUBLICATION_AND_EXACT_HEAD_CI`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`; next action is
+  `PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI`.
+- Product Repair remains complete `2/2`; Infrastructure Repair remains
+  consumed/stopped/overridden `2/2`; the historical bounded correction
+  remains consumed `1/1`. No new round, Repair 3, second correction, or
+  implementation authorization is created.
+- Candidate, ownership, traceability, supporting-authority, ordinary routing,
+  coverage routing, Windows routing, C32 static, and retained test evidence
+  remain as independently reviewed. C32 hosted evidence is still pending
+  exact-head CI.
+- Only one review archive and the four active controls change in this
+  checkpoint. No publication, remote operation, PR mutation, CI run, review
+  comment, implementation, test, workflow, profile, dependency, or timeout
+  change has occurred.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this local-closure-ready-for-publication state.
+
 ## Current state — 2B20AP1 control recovery pending independent control review
 
 - The control-only Operational Recovery authorized by

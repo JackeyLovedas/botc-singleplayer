@@ -1,7 +1,7 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "2B20AP1_FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
-  "disposition": "PENDING_INDEPENDENT_REVIEW",
+  "detailedStatus": "2B20AP1_LOCAL_CLOSURE_COMPLETE_READY_FOR_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
+  "disposition": "UNACCEPTED_LOCAL_CANDIDATE",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
   "productRepairStopLossOverrideUsed": true,
@@ -22,6 +22,7 @@
   "controlRecoveryAuthorization": "USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT",
   "overrideKind": "FILE_URL_SINGLE_CLASSIFICATION_ONLY",
   "productionBehaviorChangeAuthorized": false,
+  "implementationAuthorized": false,
   "implementationContinuationAuthorized": false,
   "newProductRepairRoundCreated": false,
   "currentPR": 46,
@@ -36,6 +37,8 @@
   "productBranchHead": "phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93",
   "currentBranch": "infra/2b20ap1-ownership-supersession-routing-v1",
   "currentSlice": "2B20AP1",
+  "local2B20AP1Status": "LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
+  "2B20AP1Acceptance": "UNACCEPTED_LOCAL_CANDIDATE",
   "currentFoundation": null,
   "acceptedBase": "5a69c90f2d3947556ff45c15c467902b1e28ca43",
   "slice2B19A1Started": false,
@@ -1605,8 +1608,8 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "2B20AP1_FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
-    "disposition": "PENDING_INDEPENDENT_REVIEW",
+    "detailedStatus": "2B20AP1_LOCAL_CLOSURE_COMPLETE_READY_FOR_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
+    "disposition": "UNACCEPTED_LOCAL_CANDIDATE",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
     "currentPR": 46,
@@ -1623,6 +1626,8 @@
     "authorization": "USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT",
     "fileUrlImplementationAuthorization": "USER_AUTHORIZED_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_STOP_LOSS_OVERRIDE_AND_PUBLICATION_PIPELINE",
     "overrideKind": "FILE_URL_SINGLE_CLASSIFICATION_ONLY",
+    "local2B20AP1Status": "LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
+    "2B20AP1Acceptance": "UNACCEPTED_LOCAL_CANDIDATE",
     "stopLossOverrideUsed": true,
     "infrastructureStopLossOverrideUsed": true,
     "infrastructureRepairRoundConsumed": true,
@@ -2094,7 +2099,7 @@
     },
     "diagnosticRedactionStopLossOverride": {
       "authorization": "USER_AUTHORIZED_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_STACKED_PUBLICATION_AND_CONDITIONAL_2B20A_CLOSEOUT",
-      "status": "FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
+      "status": "LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
       "classification": "USER_AUTHORIZED_STOP_LOSS_OVERRIDE / NON_PRODUCT / NO_NEW_INFRASTRUCTURE_REPAIR_ROUND",
       "parentHead": "611f3289a19bb630176b1638124abbef48bbd23f",
       "futureImplementationShaRecorded": false,
@@ -2203,7 +2208,7 @@
       "fileUrlSingleClassificationOverride": {
         "authorization": "USER_AUTHORIZED_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_STOP_LOSS_OVERRIDE_AND_PUBLICATION_PIPELINE",
         "overrideKind": "FILE_URL_SINGLE_CLASSIFICATION_ONLY",
-        "status": "IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
+        "status": "LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
         "parentHead": "2e3ee6457dbf5fd22062db7f28104e5040be1fd8",
         "futureImplementationShaRecorded": false,
         "implementationFile": "scripts/verify-vitest-ownership-contracts.mjs",
@@ -2305,15 +2310,15 @@
         "implementationContinuationAuthorized": false,
         "accepted": false,
         "remainingBlockers": [
-          "PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+          "PENDING_2B20AP1_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
           "LINUX_WORKER_RPC_CI_BLOCKER",
           "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
         ],
-        "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
+        "requiredNextAction": "PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI"
       },
       "controlOnlyOperationalRecovery": {
         "authorization": "USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT",
-        "status": "MATERIALIZED_PENDING_INDEPENDENT_CONTROL_REVIEW",
+        "status": "INDEPENDENT_CONTROL_REVIEW_PASS_LOCAL_CLOSURE_COMPLETE",
         "classification": "CONTROL_ONLY_OPERATIONAL_RECOVERY / NON_PRODUCT / NO_NEW_REPAIR_ROUND",
         "parentHead": "997161fb1dccbfcd672ce14ba28799cb79809ba7",
         "futureRecoveryShaRecorded": false,
@@ -2341,6 +2346,20 @@
           "technicalFindingReopened": false,
           "status": "ADDRESSED_PENDING_INDEPENDENT_CONTROL_REVIEW"
         },
+        "finalIndependentControlReview": {
+          "path": "docs/implementation/phase-3-slice-2b20ap1-control-operational-recovery-review-final.md",
+          "sha256": "28238d60f88570ec51974f02b6c980a7f6eb01767b6902b3b7d2aab01c6ac811",
+          "bytes": 10864,
+          "lfCount": 260,
+          "terminalLfCount": 1,
+          "reviewedHead": "140d64e86a03244972246ec8027f8a2943eb71e4",
+          "parentHead": "997161fb1dccbfcd672ce14ba28799cb79809ba7",
+          "reviewTimestamp": "2026-07-27T07:42:50.1233881Z",
+          "verdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
+          "findings": [],
+          "remainingBlockers": [],
+          "verbatimArchiveConfirmed": true
+        },
         "allowedFiles": [
           "docs/agent-loop/AUTOPILOT_STATE.json",
           "docs/agent-loop/CURRENT_TASK.md",
@@ -2357,11 +2376,11 @@
         "reviewArchiveCreated": false,
         "remoteMutation": false,
         "activeRemainingBlockers": [
-          "PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+          "PENDING_2B20AP1_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
           "LINUX_WORKER_RPC_CI_BLOCKER",
           "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
         ],
-        "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
+        "requiredNextAction": "PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI"
       },
       "boundedCorrection": {
         "status": "CONSUMED_HUMAN_BLOCKED",
@@ -2437,10 +2456,10 @@
       "repair3Authorized": false,
       "implementationAuthorized": false,
       "implementationContinuationAuthorized": false,
-      "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
+      "requiredNextAction": "PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI"
     },
     "localClosure": {
-      "status": "FILE_URL_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW",
+      "status": "LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
       "infrastructureRepairRound": 2,
       "candidateSchemaVersion": "vitest-ownership-candidate-baseline-v2",
       "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
@@ -2512,7 +2531,7 @@
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+      "PENDING_2B20AP1_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
@@ -2520,8 +2539,8 @@
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
-    "nextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
+    "requiredNextAction": "PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI",
+    "nextAction": "PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -3477,7 +3496,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
+    "PENDING_2B20AP1_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
     "LINUX_WORKER_RPC_CI_BLOCKER",
     "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
   ],
@@ -4261,8 +4280,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Materialized the control-only 2B20AP1 Operational Recovery on parent 997161fb1dccbfcd672ce14ba28799cb79809ba7 after the independent review passed all technical behavior and found only CONTROL_ACTIVE_FILE_URL_OVERRIDE_BLOCKER_STATE_CONTRADICTION. Root and slice now agree on HUMAN_BLOCKED / 2B20AP1_FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW, the exact three active blockers, and RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW. Historical verdicts and findings remain preserved with explicit dispositions; Product Repair remains complete 2/2, Infrastructure Repair remains consumed/stopped/overridden 2/2, and no implementation, review archive, remote, PR or CI mutation was made.",
+  "lastAction": "Archived the complete independent control review of exact HEAD 140d64e86a03244972246ec8027f8a2943eb71e4 verbatim. The reviewer returned INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS with findings=[] and remainingBlockers=[]. Root, slice, file-URL override and control-recovery state now record HUMAN_BLOCKED / 2B20AP1_LOCAL_CLOSURE_COMPLETE_READY_FOR_STACKED_PUBLICATION_AND_EXACT_HEAD_CI, an unaccepted local candidate, and the exact publication plus Linux/Windows blockers. Historical verdicts and repair budgets remain preserved; no implementation, remote, PR or CI mutation was made.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW",
-  "nextAction": "RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW"
+  "requiredNextAction": "PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI",
+  "nextAction": "PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI"
 }
