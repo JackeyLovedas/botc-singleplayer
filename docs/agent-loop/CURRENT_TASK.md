@@ -1,5 +1,48 @@
 # Current Task
 
+## 2B20AP1 — terminal diagnostic stop-loss recovery; correction budget exhausted
+
+- The first complete independent review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-diagnostic-stop-loss-override-review-round-1.md`,
+  SHA-256
+  `8ebcf7d5dd0535aa0075538c3228510891aa6b3c3d036eb63d2202164a92d0c0`,
+  `10916` UTF-8 bytes and `177` LF bytes. It reviewed exact HEAD
+  `203f75d01f42dcb2a3e177875405f02d3f52dc6d` at
+  `2026-07-27T02:50:37.0878515Z` and returned
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED`.
+- The second complete independent review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-diagnostic-stop-loss-override-review-final.md`,
+  SHA-256
+  `0d9a38d9d329e47c6285254b0fcf589772de91a6136a0e37f9da862635c5a3aa`,
+  `12454` UTF-8 bytes and `244` LF bytes. It reviewed exact correction HEAD
+  `48d9071038757c66281e4f8bb348d82306894bf2` at
+  `2026-07-27T03:26:55.2764579Z` and returned `HUMAN_BLOCKED`.
+- The sole active local blocker is
+  `LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION`. Repository,
+  home, and temporary-root Windows `file:///` diagnostics can acquire an
+  erroneous second `<unc-path>/<basename>` classification. The review found
+  no raw sensitive-path exposure from this defect, but exact authorized
+  single-class output is not satisfied.
+- The first review's three blockers and their `1/1` correction remain
+  preserved as history. The correction budget is exhausted. Infrastructure
+  Repair remains consumed and stopped at `2/2`; no Repair 3, new
+  infrastructure repair round, or second correction exists or is authorized.
+- Active root and slice state is `HUMAN_BLOCKED /
+  2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_CORRECTION_BUDGET_EXHAUSTED`.
+  Implementation and continuation authorization are false. PR #46 is product
+  context only; the infrastructure candidate has `infrastructurePR=null` and
+  remains local and unpublished.
+- `LINUX_WORKER_RPC_CI_BLOCKER` and `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER` remain
+  separate downstream blockers. No hosted CI, full coverage, profile refresh,
+  remote call, push, PR mutation, script/test/workflow/product change, or
+  acceptance claim was made in this operational recovery.
+- Required next action is
+  `REQUEST_NEW_USER_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_FILE_URL_ROOT_CLASSIFICATION`.
+  Stop without modifying the verifier or starting another correction.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this terminal `HUMAN_BLOCKED` state.
+
 ## 2B20AP1 — single bounded correction locally closed, second independent review required
 
 - The first independent review examined exact HEAD

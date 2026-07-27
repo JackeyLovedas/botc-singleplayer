@@ -1,7 +1,7 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "2B20AP1_BOUNDED_CORRECTION_PENDING_SECOND_INDEPENDENT_REVIEW",
-  "disposition": "PENDING_INDEPENDENT_REVIEW",
+  "detailedStatus": "2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_CORRECTION_BUDGET_EXHAUSTED",
+  "disposition": "UNACCEPTED",
   "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
   "productRepairRoundConsumed": false,
   "productRepairStopLossOverrideUsed": true,
@@ -11,17 +11,25 @@
   "infrastructureRepairStopLossReached": true,
   "infrastructureRepairStopLossOverrideUsed": true,
   "newInfrastructureRepairRoundCreated": false,
+  "repair3Authorized": false,
   "correctionUsed": true,
   "correctionCount": 1,
   "maxCorrections": 1,
+  "secondCorrectionAuthorized": false,
   "correctionParentHead": "203f75d01f42dcb2a3e177875405f02d3f52dc6d",
   "futureCorrectionShaRecorded": false,
   "stopLossOverrideAuthorization": "USER_AUTHORIZED_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_STACKED_PUBLICATION_AND_CONDITIONAL_2B20A_CLOSEOUT",
   "overrideKind": "DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION_ONLY",
   "productionBehaviorChangeAuthorized": false,
+  "implementationContinuationAuthorized": false,
   "newProductRepairRoundCreated": false,
   "currentPR": 46,
   "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/46",
+  "currentPRContext": "PRODUCT_PR_CONTEXT_ONLY",
+  "infrastructurePR": null,
+  "infrastructurePRUrl": null,
+  "infrastructurePublished": false,
+  "infrastructurePublicationStatus": "UNPUBLISHED_LOCAL_ONLY",
   "productBranch": "phase-3/reachable-base-dreamer-settleability-closure",
   "productHead": "167d800e20bed5431764092877085886df4b7c93",
   "productBranchHead": "phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93",
@@ -1596,12 +1604,17 @@
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
-    "detailedStatus": "2B20AP1_BOUNDED_CORRECTION_PENDING_SECOND_INDEPENDENT_REVIEW",
-    "disposition": "PENDING_INDEPENDENT_REVIEW",
+    "detailedStatus": "2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_CORRECTION_BUDGET_EXHAUSTED",
+    "disposition": "UNACCEPTED",
     "taskType": "CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT",
     "branch": "infra/2b20ap1-ownership-supersession-routing-v1",
     "currentPR": 46,
     "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/46",
+    "currentPRContext": "PRODUCT_PR_CONTEXT_ONLY",
+    "infrastructurePR": null,
+    "infrastructurePRUrl": null,
+    "infrastructurePublished": false,
+    "infrastructurePublicationStatus": "UNPUBLISHED_LOCAL_ONLY",
     "productBranch": "phase-3/reachable-base-dreamer-settleability-closure",
     "productHead": "167d800e20bed5431764092877085886df4b7c93",
     "productBranchHead": "phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93",
@@ -1614,9 +1627,11 @@
     "infrastructureRepairStopLossReached": true,
     "infrastructureRepairStopLossOverrideUsed": true,
     "newInfrastructureRepairRoundCreated": false,
+    "repair3Authorized": false,
     "correctionUsed": true,
     "correctionCount": 1,
     "maxCorrections": 1,
+    "secondCorrectionAuthorized": false,
     "correctionParentHead": "203f75d01f42dcb2a3e177875405f02d3f52dc6d",
     "futureCorrectionShaRecorded": false,
     "overrideImplementationParentHead": "611f3289a19bb630176b1638124abbef48bbd23f",
@@ -2077,7 +2092,7 @@
     },
     "diagnosticRedactionStopLossOverride": {
       "authorization": "USER_AUTHORIZED_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_STACKED_PUBLICATION_AND_CONDITIONAL_2B20A_CLOSEOUT",
-      "status": "BOUNDED_CORRECTION_LOCALLY_CLOSED_PENDING_SECOND_INDEPENDENT_REVIEW",
+      "status": "HUMAN_BLOCKED_CORRECTION_BUDGET_EXHAUSTED",
       "classification": "USER_AUTHORIZED_STOP_LOSS_OVERRIDE / NON_PRODUCT / NO_NEW_INFRASTRUCTURE_REPAIR_ROUND",
       "parentHead": "611f3289a19bb630176b1638124abbef48bbd23f",
       "futureImplementationShaRecorded": false,
@@ -2110,7 +2125,7 @@
         "<redacted-userinfo>",
         "<redacted>"
       ],
-      "fileUrlClassification": "IDENTICAL_TO_CORRESPONDING_FILESYSTEM_PATH_CLASS",
+      "fileUrlClassification": "HUMAN_BLOCKED_REPO_HOME_TEMP_FILE_URL_ROOT_DOUBLE_CLASSIFICATION",
       "nativeErrorPolicy": "NODE_UTIL_TYPES_IS_NATIVE_ERROR_FIRST_THEN_OWN_DATA_DESCRIPTORS_ONLY_FOR_NAME_MESSAGE_STACK_CAUSE",
       "unknownObjectPolicy": "OPAQUE_WITHOUT_GETTER_PROXY_OR_REVOKED_PROXY_TRAP_INVOCATION",
       "causePolicy": "SAFE_PRIMITIVE_OR_NATIVE_ERROR_ONLY_WITH_DEPTH_AND_CYCLE_BOUNDARIES",
@@ -2153,6 +2168,10 @@
         "INITIAL_NO_CONTROL_REGEX_LINT_FAILURE_FIXED_AND_RERUN_PASS"
       ],
       "firstIndependentReview": {
+        "path": "docs/implementation/phase-3-slice-2b20ap1-diagnostic-stop-loss-override-review-round-1.md",
+        "sha256": "8ebcf7d5dd0535aa0075538c3228510891aa6b3c3d036eb63d2202164a92d0c0",
+        "bytes": 10916,
+        "lfLineCount": 177,
         "reviewedHead": "203f75d01f42dcb2a3e177875405f02d3f52dc6d",
         "reviewTimestamp": "2026-07-27T02:50:37.0878515Z",
         "verdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED",
@@ -2161,16 +2180,32 @@
           "LFC_IMPLEMENTATION_COMPOUND_QUERY_SECRET_REDACTION_INCOMPLETE",
           "CONTROL_ACTIVE_STOP_LOSS_OVERRIDE_FIELDS_CONTRADICT_AUTHORIZATION"
         ],
-        "reviewArchiveCreated": false,
+        "reviewArchiveCreated": true,
+        "verbatimConfirmedByReviewer": true,
         "backlogNonGatingFinding": "TRUNCATION_MARKER_RECOMMENDATION_EXCLUDED_FROM_BOUNDED_CORRECTION"
       },
+      "secondIndependentReview": {
+        "path": "docs/implementation/phase-3-slice-2b20ap1-diagnostic-stop-loss-override-review-final.md",
+        "sha256": "0d9a38d9d329e47c6285254b0fcf589772de91a6136a0e37f9da862635c5a3aa",
+        "bytes": 12454,
+        "lfLineCount": 244,
+        "reviewedHead": "48d9071038757c66281e4f8bb348d82306894bf2",
+        "reviewTimestamp": "2026-07-27T03:26:55.2764579Z",
+        "verdict": "HUMAN_BLOCKED",
+        "remainingBlockers": [
+          "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION"
+        ],
+        "reviewArchiveCreated": true,
+        "verbatimConfirmedByReviewer": true
+      },
       "boundedCorrection": {
-        "status": "LOCALLY_CLOSED_PENDING_SECOND_INDEPENDENT_REVIEW",
+        "status": "CONSUMED_HUMAN_BLOCKED",
         "parentHead": "203f75d01f42dcb2a3e177875405f02d3f52dc6d",
         "futureCorrectionShaRecorded": false,
         "correctionUsed": true,
         "correctionCount": 1,
         "maxCorrections": 1,
+        "secondCorrectionAuthorized": false,
         "overrideKind": "DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION_ONLY",
         "closedBlockers": [
           "LFC_IMPLEMENTATION_WINDOWS_UNC_SPACE_PATH_REDACTION_INCOMPLETE",
@@ -2229,7 +2264,7 @@
         "repair3Authorized": false,
         "implementationAuthorized": false,
         "implementationContinuationAuthorized": false,
-        "requiredNextAction": "RUN_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW"
+        "requiredNextAction": "REQUEST_NEW_USER_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_FILE_URL_ROOT_CLASSIFICATION"
       },
       "infrastructureRepairRound": 2,
       "maxInfrastructureRepairRounds": 2,
@@ -2237,10 +2272,10 @@
       "repair3Authorized": false,
       "implementationAuthorized": false,
       "implementationContinuationAuthorized": false,
-      "requiredNextAction": "RUN_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW"
+      "requiredNextAction": "REQUEST_NEW_USER_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_FILE_URL_ROOT_CLASSIFICATION"
     },
     "localClosure": {
-      "status": "BOUNDED_CORRECTION_PASS_PENDING_SECOND_INDEPENDENT_REVIEW",
+      "status": "HUMAN_BLOCKED_SECOND_INDEPENDENT_REVIEW_FILE_URL_ROOT_DOUBLE_CLASSIFICATION",
       "infrastructureRepairRound": 2,
       "candidateSchemaVersion": "vitest-ownership-candidate-baseline-v2",
       "identityEncodingVersion": "vitest-semantic-identity-json-tuple-v1",
@@ -2256,7 +2291,7 @@
       "ownershipSelfTest": "PASS_37_OF_37",
       "ownershipSelfTestEvidenceSufficiency": "PASS_EXACT_LIFECYCLE_GROUPS_1_THROUGH_12",
       "lifecycleDiagnosticContract": "PASS_EXACT_SIX_KEY_JSONL_THREE_SOURCES_CATEGORY_ORDINALS_MESSAGES_PRESERVED_NO_TRAILING_BARE_CODE",
-      "lifecycleDiagnosticRedaction": "PASS_VERSIONED_SAFE_BOUNDARY_WINDOWS_UNC_SPACE_PATHS_COMPOUND_QUERY_SEGMENTS_PATH_TOKEN_USERINFO_CANONICAL_SECRET_NATIVE_ERROR_STACK_CAUSE_GETTER_PROXY_CYCLE_BOUNDS",
+      "lifecycleDiagnosticRedaction": "HUMAN_BLOCKED_FILE_URL_ROOT_DOUBLE_CLASSIFICATION",
       "lifecycleGroups": "PASS_EXACT_12_NO_GROUP_13",
       "publicTestCaseContract": "PASS_RESULT_METHOD_PENDING_ONLY_NO_PRIVATE_TASK_ACCESS",
       "atomicFailureInjection": "PASS_WRITE_CLOSE_RENAME_NO_PARTIAL_FINAL",
@@ -2273,8 +2308,9 @@
       "fullLint": "PASS",
       "ordinaryTests": "PASS_1572_OF_1572",
       "fullLocalCoverage": "NOT_RUN_EXCLUDED_BY_APPROVED_SECTION_8",
-      "hostedCI": "PENDING_EXACT_HEAD_CI",
-      "pushOrPrMutation": false
+      "hostedCI": "NOT_RUN_UNPUBLISHED_LOCAL_ONLY",
+      "pushOrPrMutation": false,
+      "accepted": false
     },
     "phase2DraftsRestoredToHead": "3c9ff67e7a08eccb336936883be5b8e1fe1768db",
     "triagePath": "docs/implementation/phase-3-slice-2b20ap1-frozen-raw-inventory-conflict-triage.md",
@@ -2304,21 +2340,21 @@
     "productRepairRoundConsumed": false,
     "ruleSemanticsChanged": false,
     "productBehaviorChanged": false,
-    "ownershipStatus": "HUMAN_BLOCKED_BOUNDED_CORRECTION_PENDING_SECOND_INDEPENDENT_REVIEW",
+    "ownershipStatus": "HUMAN_BLOCKED_CORRECTION_BUDGET_EXHAUSTED_FILE_URL_ROOT_DOUBLE_CLASSIFICATION",
     "coverageProfileRequired": false,
     "coverageProjectRequired": false,
     "coverageProcessGroupRequired": false,
     "linuxWorkerRpcClosureInScope": false,
     "windowsW7ClosureInScope": false,
     "remainingBlockers": [
-      "PENDING_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW"
+      "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION"
     ],
     "downstreamBlockers": [
       "LINUX_WORKER_RPC_CI_BLOCKER",
       "WINDOWS_W7_UNKNOWN_EXIT_BLOCKER"
     ],
-    "requiredNextAction": "RUN_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW",
-    "nextAction": "RUN_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW"
+    "requiredNextAction": "REQUEST_NEW_USER_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_FILE_URL_ROOT_CLASSIFICATION",
+    "nextAction": "REQUEST_NEW_USER_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_FILE_URL_ROOT_CLASSIFICATION"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -3274,7 +3310,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW"
+    "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION"
   ],
   "downstreamBlockers": [
     "LINUX_WORKER_RPC_CI_BLOCKER",
@@ -4045,8 +4081,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Locally closed the single authorized 2B20AP1 bounded correction for Windows and UNC space-path redaction, compound query-secret redaction, and active stop-loss control reconciliation. Infrastructure Repair remains consumed and stopped at 2/2; no Repair 3 or new repair round exists. All authorized local gates pass and active controls await the second independent review; no remote mutation, hosted CI, full coverage, profile refresh, product behavior or rule semantics change occurred.",
-  "lastError": null,
-  "requiredNextAction": "RUN_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW",
-  "nextAction": "RUN_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW"
+  "lastAction": "Archived both complete independent diagnostic stop-loss override reviews verbatim and synchronized terminal controls. The second review of exact HEAD 48d9071038757c66281e4f8bb348d82306894bf2 returned HUMAN_BLOCKED for LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION. Infrastructure Repair remains exhausted at 2/2, the single bounded correction remains consumed at 1/1, no Repair 3 or second correction is authorized, implementation and continuation remain false, PR 46 is product context only, and the infrastructure candidate remains local and unpublished without hosted CI or remote mutation.",
+  "lastError": "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION",
+  "requiredNextAction": "REQUEST_NEW_USER_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_FILE_URL_ROOT_CLASSIFICATION",
+  "nextAction": "REQUEST_NEW_USER_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_FILE_URL_ROOT_CLASSIFICATION"
 }

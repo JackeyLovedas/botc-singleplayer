@@ -1,5 +1,47 @@
 # Project State
 
+## Current state — 2B20AP1 correction budget exhausted; HUMAN_BLOCKED
+
+- Two complete independent diagnostic stop-loss reports are now preserved
+  verbatim. Round 1 is
+  `docs/implementation/phase-3-slice-2b20ap1-diagnostic-stop-loss-override-review-round-1.md`
+  (`8ebcf7d5dd0535aa0075538c3228510891aa6b3c3d036eb63d2202164a92d0c0`,
+  `10916` bytes, `177` LF), reviewed HEAD
+  `203f75d01f42dcb2a3e177875405f02d3f52dc6d`, timestamp
+  `2026-07-27T02:50:37.0878515Z`, verdict
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED`.
+- The final report is
+  `docs/implementation/phase-3-slice-2b20ap1-diagnostic-stop-loss-override-review-final.md`
+  (`0d9a38d9d329e47c6285254b0fcf589772de91a6136a0e37f9da862635c5a3aa`,
+  `12454` bytes, `244` LF), reviewed HEAD
+  `48d9071038757c66281e4f8bb348d82306894bf2`, timestamp
+  `2026-07-27T03:26:55.2764579Z`, verdict `HUMAN_BLOCKED`.
+- The unique active local blocker is
+  `LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION`. The correction
+  closes the first review's Windows/UNC-space, compound-query-secret, and
+  control-reconciliation blockers only as historical correction evidence; it
+  does not satisfy exact repository/home/temp Windows file-URL root
+  classification.
+- Root and slice controls are `HUMAN_BLOCKED /
+  2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_CORRECTION_BUDGET_EXHAUSTED`.
+  Infrastructure Repair is exhausted at `2/2`; the bounded correction is
+  consumed at `1/1`; stop-loss override remains used; Repair 3, a new repair
+  round, and a second correction are not authorized. Implementation and
+  continuation authorization are false.
+- PR #46 is retained only as product-PR context. No infrastructure PR exists;
+  the infrastructure candidate is unpublished and local. No hosted CI,
+  full-coverage, or profile result exists for this terminal docs/control
+  recovery, and no prior result is inherited as acceptance.
+- Downstream blockers remain separately
+  `LINUX_WORKER_RPC_CI_BLOCKER` and `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`. This
+  recovery changed no script, test, workflow, product, rule, coverage profile,
+  dependency, timeout, routing topology, or accepted history.
+- Required next action:
+  `REQUEST_NEW_USER_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_FILE_URL_ROOT_CLASSIFICATION`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this terminal active state.
+
 ## Current state — 2B20AP1 bounded correction pending second independent review
 
 - Independent review of
