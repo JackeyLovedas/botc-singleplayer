@@ -1,5 +1,28 @@
 # Project State
 
+## Current state — 2B20AP2 Design Release Appendix pending independent review
+
+- One docs-only release correction is authorized by
+  `USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT`
+  and materialized as
+  `docs/implementation/phase-3-slice-2b20ap2-design-release-correction-v1.md`.
+- This is an authorized Appendix, not Design Round 3. Design remains `2/2`;
+  `ruleReady=true`, `ruleDesignPass=false`, `designReleasePass=false`,
+  `implementationAuthorized=false`, and CI remediation remains `0/2`.
+- The Appendix preserves the Round 2 design/review as immutable history and
+  replaces only their three blocked release contracts with executed-probe,
+  42-row traceability, singleton-authority, direct-public-bin, fixed-root,
+  exact-schema/failure/test/allowlist/stop-loss contracts.
+- Root and slice are `RUNNING`. Their only blocker is
+  `PENDING_INDEPENDENT_2B20AP2_DESIGN_RELEASE_REVIEW_CORRECTION_V1`; required
+  next action is
+  `RUN_INDEPENDENT_2B20AP2_DESIGN_RELEASE_REVIEW_CORRECTION_V1`.
+- Product, rule, test, profile, dependency, timeout, topology, role coverage,
+  accepted history, PRs, remotes, and CI are unchanged.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this authorized Design Release Appendix state.
+
 ## Current state — 2B20AP2 design stop-loss HUMAN_BLOCKED
 
 - The final independent reviewer examined exact Round-2 HEAD

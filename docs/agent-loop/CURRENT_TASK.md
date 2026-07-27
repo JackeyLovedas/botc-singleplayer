@@ -1,5 +1,31 @@
 # Current Task
 
+## 2B20AP2 — authorized Design Release Appendix pending independent review
+
+- Authorization
+  `USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT`
+  permits one docs-only Design Release Correction V1 Appendix. This is
+  `AUTHORIZED_APPENDIX_NOT_DESIGN_ROUND_3`; Design Round remains `2/2`, and CI
+  remediation remains `0/2`.
+- The Appendix is
+  `docs/implementation/phase-3-slice-2b20ap2-design-release-correction-v1.md`
+  with correction ID `2B20AP2-DESIGN-RELEASE-CORRECTION-V1`. It preserves the
+  immutable Round 2 design and review, freezes the executed probes, supplies
+  the complete 42-row Governance V1.1 matrix, and replaces only the three
+  blocked release contracts.
+- Active controls are `RUNNING`, `ruleReady=true`,
+  `ruleDesignPass=false`, `designReleasePass=false`,
+  `implementationAuthorized=false`, and `ciRemediationRound=0/2`.
+- The sole blocker is
+  `PENDING_INDEPENDENT_2B20AP2_DESIGN_RELEASE_REVIEW_CORRECTION_V1`.
+  Required next action is
+  `RUN_INDEPENDENT_2B20AP2_DESIGN_RELEASE_REVIEW_CORRECTION_V1`.
+- No implementation, workflow, script, product, test, profile, dependency,
+  timeout, role-coverage, PR, push, or CI mutation is included.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this authorized Design Release Appendix state.
+
 ## 2B20AP2 — Design Round 2 HUMAN_BLOCKED; stop-loss reached
 
 - The complete final independent review of exact HEAD
