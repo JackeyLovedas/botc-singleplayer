@@ -1,5 +1,38 @@
 # Current Task
 
+## 2B20A — profile review passed; restoration review pending
+
+- Status:
+  `HUMAN_BLOCKED / PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW`.
+- The independent coverage-profile reviewer examined exact profile child HEAD
+  `3cdb60b7de12b010a5b076800f3c8ab705b0108a` and returned
+  `COVERAGE_PROFILE_REVIEW_PASS`, with `findings=[]`,
+  `profileDeltaEvidenceInsufficient=false`, and profile
+  `remainingBlockers=[]`.
+- Complete review archive:
+  `docs/implementation/phase-3-slice-2b20a-final-restoration-coverage-profile-review.md`,
+  SHA-256
+  `51e3c773075b71b1a493c2344f1eb02e12bc726edc9c4c0d7dde0c69c3ebdb40`,
+  `5257` bytes, `81` LF lines.
+- The reviewed profile remains bound to source HEAD
+  `4d576e205cb20c37ba913b923a1cd39e8d800d18`. Old-authority/old-profile
+  and new-authority/new-profile verification both match; the closed-schema
+  tuple evidence remains sufficient and attributes every changed zero-hit
+  tuple only to `packages/domain-core/src/dreamer.ts`.
+- The coverage-profile gate is closed. The independent accepted-behavior
+  restoration implementation review is still pending and has not passed.
+- Product Repair remains `2/2`; `newProductRepairRoundCreated=false`;
+  `acceptedBehaviorRestorationOverrideUsed=true`; Dreamer remains `PARTIAL`.
+- Sole blocker:
+  `PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW`.
+- Required next action:
+  `RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW`.
+- This checkpoint changes only the complete review archive and four active
+  controls. It does not change production, tests, profiles, workflow, audit,
+  rules, role matrix, remote state, PR state, CI, merge, or acceptance.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20A — final restoration profile child pending independent review
 
 - Status:

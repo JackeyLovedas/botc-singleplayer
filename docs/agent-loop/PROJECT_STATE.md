@@ -1,5 +1,38 @@
 # Project State
 
+## Current state — 2B20A profile review passed; restoration review pending
+
+- Active state:
+  `HUMAN_BLOCKED / PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW`.
+- Exact profile child HEAD
+  `3cdb60b7de12b010a5b076800f3c8ab705b0108a` passed independent
+  coverage-profile review with verdict `COVERAGE_PROFILE_REVIEW_PASS`,
+  `findings=[]`, `profileDeltaEvidenceInsufficient=false`, and no profile
+  blockers.
+- Complete review archive:
+  `docs/implementation/phase-3-slice-2b20a-final-restoration-coverage-profile-review.md`,
+  SHA-256
+  `51e3c773075b71b1a493c2344f1eb02e12bc726edc9c4c0d7dde0c69c3ebdb40`,
+  `5257` bytes, `81` LF lines.
+- The accepted-behavior restoration implementation review remains pending.
+  No implementation-review verdict has been promoted to pass.
+- Source HEAD remains
+  `4d576e205cb20c37ba913b923a1cd39e8d800d18`; its new exact profile and
+  the preserved old profile both match their authorities. Tuple-delta
+  evidence remains sufficient and confined to the authorized `dreamer.ts`
+  restoration.
+- Product Repair stays `2/2`; no Round 3 exists;
+  `newProductRepairRoundCreated=false`;
+  `acceptedBehaviorRestorationOverrideUsed=true`; Dreamer stays `PARTIAL`.
+- Sole blocker:
+  `PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW`; next action:
+  `RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW`.
+- Only the review archive and four active controls change. Production, tests,
+  profiles, workflow, audit, rules, role matrix, remote state, PR state, CI,
+  merge, and acceptance remain unchanged.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20A final restoration profile child pending review
 
 - Active state:
