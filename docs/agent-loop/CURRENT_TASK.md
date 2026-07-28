@@ -1,5 +1,58 @@
 # Current Task
 
+## 2B20A — final restoration profile child pending independent review
+
+- Status:
+  `HUMAN_BLOCKED / 2B20A_FINAL_RESTORATION_COVERAGE_PROFILE_CHILD_PENDING_INDEPENDENT_REVIEW`.
+- Exact source HEAD:
+  `4d576e205cb20c37ba913b923a1cd39e8d800d18`; parent:
+  `ba56c05fe4b3f3e2a6acc1c80a83a2ac5fca5b0a`.
+- One complete exact-source AP2 segmented authority passes
+  `12 physical / 11 logical / 1572 semantic tests`, with Dreamer core `36`,
+  gained `10`, and empty duplicate/intersection/missing/unexpected/failure
+  sets. Ownership remains `1572 / 37 / 37`.
+- The closed-schema full tuple delta is preserved outside the repository at
+  `<os-temp>/botc-2b20a-4d576e2-profile-child/full-tuple-delta.json`,
+  SHA-256
+  `8e6ed9ebe2239b48dafd33e3ce1973054d8a5e6225d8f64c1513f3720090e206`,
+  `41950` bytes, and returns `evidenceSufficient=true`.
+- Old/new obligations are:
+  source files `63/63`; statements `3217 -> 3213` with `86/90`
+  added/removed; functions `23 -> 23` with `0/0`; lines `3217 -> 3213`
+  with `78/82`; branch arms `1808 -> 1807` with `63/64`. Every added or
+  removed zero-hit tuple belongs only to
+  `packages/domain-core/src/dreamer.ts`; helper delta is zero in all five
+  classes.
+- Positive-loss audit is closed: stable positive-to-zero `0`, relocated
+  positive-to-zero `0`, unmatched prior positive `0`. Two helper same-line
+  statement counterparts and one restored-fallback branch counterpart remain
+  positively hit.
+- New profile:
+  `phase-3-slice-2b20a-4d576e2-final-restoration-v1`, bound to the full source
+  HEAD above. The workflow selector targets exactly that ID.
+- The old profile record remains Git-canonical byte-identical:
+  `2931` bytes,
+  `15f755ab1786d5f2ecb73bb3eacd06951470a7e232c3fd35e97b95233516ed1c`.
+  Old authority/old profile and new authority/new profile each return
+  `COVERAGE_APPROVED_PROFILE_MATCH`.
+- Complete audit:
+  `docs/implementation/phase-3-slice-2b20a-final-restoration-coverage-profile-audit.md`,
+  SHA-256
+  `4fb594fd839434b1fc8c457e4ef63036e54d6f4679d2fb5b70ebef4d32a1c73f`,
+  `8595` bytes, `215` LF lines.
+- Raw unsegmented coverage remains explicitly non-authoritative: `35/1572`
+  assertions were green before one `onTaskUpdate` timeout caused exit `1`.
+  It was not rerun or represented as passing.
+- Product Repair remains `2/2`; no Round 3 exists; the restoration override
+  remains active. Dreamer remains `PARTIAL`.
+- Sole blocker: `PENDING_INDEPENDENT_COVERAGE_PROFILE_REVIEW`.
+- Required next action:
+  `RUN_INDEPENDENT_2B20A_FINAL_RESTORATION_COVERAGE_PROFILE_REVIEW`.
+- No product, test, helper, old-profile, rule, role-matrix, push, PR, hosted-CI,
+  merge, or acceptance action is included.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20A — restoration source ready; coverage profile child pending
 
 - Status:

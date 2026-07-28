@@ -1,5 +1,42 @@
 # Project State
 
+## Current state — 2B20A final restoration profile child pending review
+
+- Active state:
+  `HUMAN_BLOCKED / 2B20A_FINAL_RESTORATION_COVERAGE_PROFILE_CHILD_PENDING_INDEPENDENT_REVIEW`.
+- Source HEAD `4d576e205cb20c37ba913b923a1cd39e8d800d18` has one complete
+  exact-source segmented authority: `12 physical -> 11 logical -> 1572`,
+  Dreamer core `36`, gained `10`, and no semantic, routing, process, merge, or
+  coverage failure.
+- Closed-schema tuple evidence
+  `8e6ed9ebe2239b48dafd33e3ce1973054d8a5e6225d8f64c1513f3720090e206`
+  proves `63` source files remain present, all zero-hit added/removed tuples are
+  confined to `dreamer.ts`, helper zero delta is exact, and no stable or
+  relocated positive tuple became zero.
+- New exact profile
+  `phase-3-slice-2b20a-4d576e2-final-restoration-v1` binds the complete source
+  SHA. Both old-authority/old-profile and new-authority/new-profile verification
+  return `COVERAGE_APPROVED_PROFILE_MATCH`.
+- The old AP2 profile record remains verbatim at `2931` Git-canonical LF bytes
+  and SHA-256
+  `15f755ab1786d5f2ecb73bb3eacd06951470a7e232c3fd35e97b95233516ed1c`.
+  Only the new profile is appended and only the workflow's exact selector is
+  switched.
+- Audit:
+  `docs/implementation/phase-3-slice-2b20a-final-restoration-coverage-profile-audit.md`,
+  hash `4fb594fd839434b1fc8c457e4ef63036e54d6f4679d2fb5b70ebef4d32a1c73f`.
+- Raw unsegmented coverage is still not authority: `35/1572` assertions were
+  green, then the known worker `onTaskUpdate` timeout caused exit `1`.
+- Inventory remains `1572 / 37 / 37`; Dreamer remains `PARTIAL`; Product Repair
+  remains `2/2`, no Round 3 exists, and the accepted-restoration override stays
+  active.
+- Sole blocker: `PENDING_INDEPENDENT_COVERAGE_PROFILE_REVIEW`; next action:
+  `RUN_INDEPENDENT_2B20A_FINAL_RESTORATION_COVERAGE_PROFILE_REVIEW`.
+- Product source/tests/helper, rules, role matrix, old profile, and all remote
+  state remain unchanged.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20A restoration source ready; coverage profile child pending
 
 - Active state:
