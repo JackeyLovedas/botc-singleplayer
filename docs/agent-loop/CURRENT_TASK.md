@@ -1,5 +1,44 @@
 # Current Task
 
+## 2B20AP2 — final CI remediation round complete; local re-review pending
+
+- The complete independent local infrastructure implementation review of exact
+  HEAD `73563e6ae6b53dd30bbe3eb674a33eace750c166` is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap2-local-implementation-review-round-1.md`,
+  SHA-256
+  `7c8a12df66f61ab56cb9699b30d7166fe9da964fead6bba409619278cee33279`,
+  `8590` bytes, `145` LF lines. It returned
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED` with exactly two
+  blockers.
+- Final `ciRemediationRound=2/2` closes both reviewed blockers:
+  persisted Vitest evidence is now strictly revalidated before verify or
+  aggregate, including exact paths, hashes, schemas, identities, process
+  results, singleton diagnostics, coverage, directory inventories, links, and
+  downloaded artifact layout; the canonical top-level Autopilot state now
+  matches the accepted AP2 gates.
+- Hostile runner self-tests pass `36/36`. The reviewer's missing-blob
+  reproduction now fails deterministically with `MERGEABLE_BLOB_MISSING`,
+  exit `22`, and succeeds after the exact blob is restored.
+- Release-authority gates pass: ownership/H1 `37/37` plus direct candidate
+  repetition; ordinary segmented `11 physical -> 9 logical -> 1572`; coverage
+  segmented `12 physical -> 11 logical -> 1572`, core `36`, gained `10`;
+  Windows W1-W7 `9/90/52/73/9/26/46 = 305`; typecheck, lint, and ordinary
+  full tests `35/35` files and `1572/1572` tests. Raw
+  `pnpm test:coverage` was not run.
+- The coverage profile remains
+  `phase-3-slice-2b20ap2-cc82a95-hosted-execution-v1`; the profile verifier,
+  profile record, profile audit, workflow selector, product/tests, rules,
+  role matrix, dependencies, timeout, include, projects, and logical groups
+  are unchanged.
+- Current status:
+  `CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`.
+- Sole remaining blocker:
+  `PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`.
+- Required next action:
+  `RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20AP2 — coverage profile review passed; local implementation review pending
 
 - Independent read-only coverage-profile review of exact child HEAD

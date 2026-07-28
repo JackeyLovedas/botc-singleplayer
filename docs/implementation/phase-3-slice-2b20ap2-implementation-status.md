@@ -1,5 +1,68 @@
 # 2B20AP2 source implementation status
 
+## Final CI remediation round 2 complete
+
+- The complete independent local infrastructure implementation review of exact
+  HEAD `73563e6ae6b53dd30bbe3eb674a33eace750c166` is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap2-local-implementation-review-round-1.md`,
+  SHA-256
+  `7c8a12df66f61ab56cb9699b30d7166fe9da964fead6bba409619278cee33279`,
+  `8590` bytes, `145` LF lines. It returned
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED` with exactly two
+  remaining blockers.
+- Remediation F1 is confined to
+  `scripts/run-vitest-logical-group.mjs`. Verify and aggregate now revalidate
+  persisted envelopes and every declared physical artifact from frozen runner
+  configuration, reject missing/renamed/corrupt/extra/link-backed artifacts,
+  recompute singleton and manifest authority, and accept only the exact direct
+  local or downloaded artifact layout.
+- Remediation F2 synchronizes the canonical root fields in
+  `docs/agent-loop/AUTOPILOT_STATE.json`; historical same-name fields are
+  explicitly historical, and both Node `JSON.parse` and PowerShell
+  `ConvertFrom-Json` resolve the same active tuple.
+- Hostile runner checks pass `36/36`. The reviewer's exact absent application
+  blob probe now returns `MERGEABLE_BLOB_MISSING`, exit `22`; restoring the
+  exact blob returns `VERIFY PASS 465`.
+- Strict ordinary segmented authority passes
+  `11 physical -> 9 logical -> 1572`; strict segmented coverage passes
+  `12 physical -> 11 logical -> 1572`, Dreamer core `36`, gained `10`.
+- Windows inventory passes baseline `305`; the clean real W1-W7 run and
+  separate verification both pass `9/90/52/73/9/26/46`, with every
+  `onTaskUpdate`, `Timeout`, and `Unhandled` risk-string count equal to zero.
+  An earlier Windows attempt was rejected because a tool-timeout orphan wrote
+  the fixed directory concurrently; its mismatched staged/physical blobs were
+  isolated and were not represented as passing evidence.
+- Ownership/H1 self-test remains `37/37`; the direct 2B20A candidate repeats
+  exactly at `391257` bytes and SHA-256
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`.
+  Old and new profile verification both return
+  `COVERAGE_APPROVED_PROFILE_MATCH`.
+- `pnpm typecheck`, `pnpm lint`, and `pnpm test` pass; ordinary full tests are
+  `35/35` files and `1572/1572` tests. Raw `pnpm test:coverage` was not run.
+- Final ordinary, coverage, and Windows evidence is preserved outside the
+  repository under
+  `<os-temp>/botc-2b20ap2-round2-final-evidence`.
+- `ciRemediationRound=2/2`. No push, pull-request mutation, hosted CI run, or
+  merge occurred. The sole remaining blocker is
+  `PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`.
+
+## Round 2 disposition
+
+- Status:
+  `CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`.
+- Repair baseline: `73563e6ae6b53dd30bbe3eb674a33eace750c166`.
+- Branch: `infra/2b20ap1-ownership-supersession-routing-v1`.
+- Design remains Round `2/2`; rule and product behavior are unchanged.
+- Coverage profile review remains `COVERAGE_PROFILE_REVIEW_PASS` at
+  `da14b5dbdf705bc7776f1c83b799f07b0a29e405`.
+- This repair consumes the final `ciRemediationRound=2/2`.
+- Sole remaining blocker:
+  `PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`.
+- Required next action:
+  `RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## Coverage profile review passed
 
 - Independent read-only coverage-profile review of exact child HEAD

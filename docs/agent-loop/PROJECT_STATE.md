@@ -1,5 +1,33 @@
 # Project State
 
+## Current state — 2B20AP2 final CI remediation complete; re-review pending
+
+- The complete Round-1 independent local implementation review of exact HEAD
+  `73563e6ae6b53dd30bbe3eb674a33eace750c166` is preserved verbatim in
+  `docs/implementation/phase-3-slice-2b20ap2-local-implementation-review-round-1.md`
+  (`7c8a12df66f61ab56cb9699b30d7166fe9da964fead6bba409619278cee33279`,
+  `8590` bytes, `145` LF lines).
+- Final CI remediation `2/2` closes its two blockers with strict persisted
+  artifact validation/aggregation and one canonical top-level Autopilot state.
+  No rule, product, test, workflow, profile, profile-audit, dependency,
+  timeout, include, project, logical-group, accepted-history, or role-matrix
+  authority changed.
+- Runner hostile checks pass `36/36`; the exact missing-blob probe now exits
+  `22` with `MERGEABLE_BLOB_MISSING`. Ownership/H1, old/new profiles,
+  ordinary segmented `11 -> 9 -> 1572`, coverage segmented
+  `12 -> 11 -> 1572`, Windows W1-W7 `305`, typecheck, lint, and ordinary full
+  `35/1572` all pass. Raw unsegmented coverage was not run.
+- Design remains `2/2`; `ruleReady=true`, `ruleDesignPass=true`,
+  `designReleasePass=true`, profile review remains
+  `COVERAGE_PROFILE_REVIEW_PASS` at
+  `da14b5dbdf705bc7776f1c83b799f07b0a29e405`, and
+  `ciRemediationRound=2/2`.
+- Sole blocker:
+  `PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`; next
+  action: `RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20AP2 profile review passed; local implementation review pending
 
 - Independent coverage-profile review of exact child HEAD

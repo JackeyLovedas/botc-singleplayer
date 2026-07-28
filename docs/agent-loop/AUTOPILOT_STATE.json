@@ -1,13 +1,18 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "2B20AP2_COVERAGE_PROFILE_REVIEW_PASS_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW",
-  "disposition": "COVERAGE_PROFILE_REVIEW_PASS_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW",
+  "detailedStatus": "2B20AP2_CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+  "disposition": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
   "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
   "correctionId": "2B20AP2-DESIGN-RELEASE-CORRECTION-V1",
   "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
   "designReleasePass": true,
   "designReleaseVerdict": "DESIGN_RELEASE_PASS",
+  "ruleReady": true,
   "ruleDesignPass": true,
+  "ruleConflict": false,
+  "ruleCoverageStatus": "PARTIAL",
+  "profileReviewVerdict": "COVERAGE_PROFILE_REVIEW_PASS",
+  "profileReviewedHead": "da14b5dbdf705bc7776f1c83b799f07b0a29e405",
   "docsOnlyCorrectionRound": 1,
   "maxDocsOnlyCorrectionRounds": 2,
   "sourceImplementationPaused": false,
@@ -66,7 +71,7 @@
   "phase2CStarted": false,
   "infrastructureRepairRound": 2,
   "maxInfrastructureRepairRounds": 2,
-  "ciRemediationRound": 1,
+  "ciRemediationRound": 2,
   "maxCiRemediationRounds": 2,
   "commandCaptureProxyRejectionV1": {
     "status": "COMPLETED_ACCEPTED",
@@ -1175,7 +1180,7 @@
   "recoveryAuthorization": "USER_AUTHORIZED_2B20_ACCEPTED_MAIN_RECOVERY_AND_CONTINUE_EXISTING_AUTHORIZATION",
   "rescopeAuthorization": "USER_AUTHORIZED_2B19A3_RESLICE_TO_ACCEPTED_STREAM_EFFECTIVE_VORTOX_ONLY",
   "prerequisiteAuthorization": "USER_AUTHORIZED_2B19T_CANONICAL_DREAMER_ROLE_TENURE_PREREQUISITE",
-  "authorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
+  "historical2B20AP2OriginalAuthorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
   "implementationAuthorization": null,
   "classificationOnlyDesignCorrectionAuthorization": "USER_AUTHORIZED_2B19A3A_CLASSIFICATION_ONLY_DESIGN_CORRECTION_ROUND_3",
   "designCorrectionScope": "REACHABILITY_AND_PRIMARY_TEST_LAYER_CLASSIFICATION_ONLY",
@@ -2556,8 +2561,8 @@
   },
   "slice2B20AP2Gate": {
     "status": "RUNNING",
-    "detailedStatus": "2B20AP2_COVERAGE_PROFILE_REVIEW_PASS_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW",
-    "disposition": "COVERAGE_PROFILE_REVIEW_PASS_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW",
+    "detailedStatus": "2B20AP2_CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+    "disposition": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
     "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
     "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
     "originalAuthorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
@@ -2580,7 +2585,7 @@
     "priorInfrastructureRepairRound": 2,
     "priorMaxInfrastructureRepairRounds": 2,
     "priorInfrastructureRepairStatus": "CONSUMED_IMMUTABLE_HISTORY",
-    "ciRemediationRound": 1,
+    "ciRemediationRound": 2,
     "maxCiRemediationRounds": 2,
     "new2B20AP1RepairRoundCreated": false,
     "ruleEvidencePath": "docs/rules/evidence/2B20AP2.md",
@@ -2831,13 +2836,27 @@
       "auditPath": "docs/implementation/phase-3-slice-2b20ap2-coverage-profile-audit.md",
       "auditSha256": "930989dc333c301041043f907c5871ef5083150e016e3c92a55b8b31cfe1b271"
     },
+    "localImplementationReviewRound1": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-local-implementation-review-round-1.md",
+      "sha256": "7c8a12df66f61ab56cb9699b30d7166fe9da964fead6bba409619278cee33279",
+      "bytes": 8590,
+      "lfLineCount": 145,
+      "reviewedHead": "73563e6ae6b53dd30bbe3eb674a33eace750c166",
+      "reviewTimestamp": "2026-07-28T01:57:41.176Z",
+      "verdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED",
+      "findingCount": 2,
+      "remainingBlockers": [
+        "PERSISTED_VITEST_EVIDENCE_VERIFICATION_FAIL_OPEN",
+        "CANONICAL_TOP_LEVEL_AUTOPILOT_STATE_CONTRADICTION"
+      ]
+    },
     "sourceImplementation": {
       "statusPath": "docs/implementation/phase-3-slice-2b20ap2-implementation-status.md",
       "sourceBaseline": "bdbbe8bc051c5b6ff832aecec3202bee27e3b53f",
       "sourceCommit": "THIS_COMMIT",
       "sourceFileCount": 5,
       "implementationStarted": true,
-      "ciRemediationRound": 1,
+      "ciRemediationRound": 2,
       "ordinaryTopology": "11->9->1572",
       "coverageTopology": "12->11->1572",
       "coverageCoreCount": 36,
@@ -2870,10 +2889,10 @@
     "prChanged": false,
     "ciRerunPerformed": false,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW"
+      "PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW"
     ],
-    "requiredNextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW",
-    "nextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW"
+    "requiredNextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+    "nextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2885,8 +2904,8 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
   "currentDesignHash": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
-  "currentDesignStatus": "COVERAGE_PROFILE_REVIEW_PASS_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW",
-  "currentDesignTerminal": "COVERAGE_PROFILE_REVIEW_PASS_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW",
+  "currentDesignStatus": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+  "currentDesignTerminal": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
   "currentDesignSource": "READ_ONLY_ARCHITECT_STANDALONE_ROUND_2_CORRECTION",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-rule-design-review-recovery.md",
   "currentDesignReviewHash": "71c77072b53c57d6a3d67bb956af98fda867c5209585791a09641828b084b633",
@@ -2895,7 +2914,7 @@
   "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
   "traceabilityClassificationCorrectionHash": "ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb",
   "traceabilityClassificationCorrectionStatus": "APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW",
-  "designReleasePass": true,
+  "currentDesignReleasePass": true,
   "currentDesignReleaseReviewPath": "docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1-replacement-1.md",
   "currentDesignReleaseReviewHash": "7bebc7f15412f0ec9784d9df500786dd5ecfc8d4c63ea2574b2b2060f4f52137",
   "currentDesignReleaseReviewVerdict": "DESIGN_RELEASE_PASS",
@@ -3328,7 +3347,7 @@
   "provenanceConflict": false,
   "eventSchemaConflict": false,
   "ledgerSchemaConflict": false,
-  "ruleConflict": false,
+  "historicalProductRepairRound1RuleConflict": false,
   "productResliceRequired": false,
   "nextGovernanceTask": "REQUEST_EXPLICIT_PRODUCT_REPAIR_ROUND_1_IMPLEMENTATION_AUTHORIZATION",
   "slice2B19A3Round1DesignHistory": {
@@ -3403,10 +3422,10 @@
   "designReviewRound3Path": "docs/implementation/phase-3-slice-2b18a-design-review-round-3.md",
   "designReviewRound3Hash": "5d43e80a7591785b7825113a27bd7d1b9c7ff724eebfb78e32b403c785625d1b",
   "designReviewRound3Verdict": "RULE_DESIGN_FIX_REQUIRED",
-  "ruleReady": true,
-  "ruleDesignPass": false,
-  "implementationAuthorized": true,
-  "implementationStatus": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+  "historicalSlice2B18ARuleReady": true,
+  "historicalSlice2B18ARuleDesignPass": false,
+  "historicalSlice2B18AImplementationAuthorized": true,
+  "implementationStatus": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -3820,8 +3839,8 @@
   "ruleEvidenceRetrievalWindow": "2026-07-27",
   "ruleEvidenceRetrievalStart": "2026-07-27",
   "ruleEvidenceRetrievalEnd": "2026-07-27",
-  "ruleCoverageStatus": "PARTIAL",
-  "ruleConflict": false,
+  "slice2B20AP2RuleCoverageStatus": "PARTIAL",
+  "slice2B20AP2RuleConflict": false,
   "ruleSemanticsChanged": false,
   "unresolvedConflicts": [],
   "closedRound2BehaviorBlockers": [
@@ -3830,7 +3849,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_COVERAGE_PROFILE_CHILD"
+    "PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -3894,7 +3913,7 @@
     "archiveCIStatus": "SUCCESS",
     "nextWork": "2B19A3A reslice"
   },
-  "ruleCoverageStatus": "PARTIAL",
+  "historicalSlice2B19A3RuleCoverageStatus": "PARTIAL",
   "approvedOverrideId": "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
   "approvedOverrideIds": [
     "BOTC-SIM-PHILOSOPHER-FIRST-NIGHT-SCHEDULING-V1",
@@ -4612,8 +4631,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Completed the Design Release-authorized five-file 2B20AP2 source implementation and synchronized the implementation status plus four controls. Runner relational self-test, ownership/H1, ownership repetition, ordinary 11->9->1572, segmented coverage 12->11->1572 with core 36 and gained 10, Windows W1-W7 305 with isolated W7 46, typecheck, lint, and ordinary full tests passed. Raw unsegmented coverage passed 35/35 files and 1572/1572 assertions but exited 1 after one unhandled onTaskUpdate timeout; it is recorded only as a non-release-authority H3 diagnostic and was not rerun. Exact-source tuple evidence is preserved outside the repository. CI remediation is 1/2 and the sole blocker is the append-only independently reviewed coverage profile child. No push, PR mutation, hosted CI, or merge occurred.",
+  "lastAction": "Completed the final authorized 2B20AP2 CI remediation round 2/2 for the two independent implementation-review blockers. Persisted Vitest verification and aggregation now share strict physical-artifact, schema, identity, path, hash, cross-link, process, global-error, eligibility, manifest, and incoming-layout validation; canonical top-level active state now agrees with the AP2 gate and profile review. The sole remaining blocker is independent local infrastructure implementation rereview. No push, PR mutation, hosted CI, or merge occurred.",
   "lastError": null,
-  "requiredNextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD",
-  "nextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD"
+  "requiredNextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+  "nextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW"
 }

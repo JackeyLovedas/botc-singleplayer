@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
 import { Buffer } from "node:buffer";
-import { copyFileSync, constants as fsConstants, existsSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, readdirSync, renameSync, rmSync, statSync, writeSync, fsyncSync, closeSync } from "node:fs";
+import { copyFileSync, constants as fsConstants, existsSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, realpathSync, readdirSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync, writeSync, fsyncSync, closeSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import path from "node:path";
 import process from "node:process";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { canonicalizeRawVitestInventory } from "./vitest-ownership-contracts.mjs";
 
@@ -322,6 +323,41 @@ function physicalId(logicalGroupId, segmentId) {
   return `${logicalGroupId}--${segmentId}`;
 }
 
+function segmentPaths(root, id) {
+  return {
+    blob: path.join(root, "physical-blobs", `${id}.blob`),
+    reporter: path.join(root, "reporter-records", `${id}.json`),
+    singletonInput: path.join(root, "singleton-input", id),
+    singletonRaw: path.join(root, "singleton-raw-reports", `${id}.json`),
+    singletonDiagnostic: path.join(root, "singleton-diagnostics", `${id}.json`),
+    evidence: path.join(root, "segment-evidence", `${id}.json`),
+    stdout: path.join(root, "logs", `${id}.stdout.txt`),
+    stderr: path.join(root, "logs", `${id}.stderr.txt`),
+    inventory: path.join(root, "logs", `${id}.inventory.json`),
+    coverage: path.join(root, "coverage", id, "coverage-final.json")
+  };
+}
+
+function vitestRunArgs(cli, mode, projects, pattern, paths) {
+  const args = [cli, "run", `--workspace=${WORKSPACE}`, ...projects.map((item) => `--project=${item}`)];
+  if (projects[0] === "application-service-dreamer-vortox") args.push(APP_TEST);
+  if (pattern !== null) args.push(`--testNamePattern=${pattern}`);
+  args.push("--reporter=blob", `--reporter=${SCRIPT_PATH}`, `--outputFile.blob=${paths.blob}`);
+  if (mode === "coverage") {
+    args.push("--coverage", `--coverage.include=${COVERAGE_INCLUDE}`, "--coverage.reporter=json", `--coverage.reportsDirectory=${path.dirname(paths.coverage)}`);
+  }
+  return args;
+}
+
+function controlledEnvironment(identity, mode, logicalGroupId, id, segmentId, reporterPath) {
+  return {
+    VITEST_MAX_FORKS: "1", FORCE_COLOR: "0", NO_COLOR: "1",
+    BOTC_VITEST_REPORTER_RECORD: reporterPath, BOTC_VITEST_COMMAND_IDENTITY: identity,
+    BOTC_VITEST_MODE: mode, BOTC_VITEST_LOGICAL_GROUP_ID: logicalGroupId,
+    BOTC_VITEST_PHYSICAL_BLOB_ID: id, BOTC_VITEST_SEGMENT_ID: segmentId
+  };
+}
+
 function commandIdentity(repoRoot, mode, logicalGroupId, segmentId, projects, pattern, paths) {
   const value = {
     schemaVersion: COMMAND_SCHEMA,
@@ -458,38 +494,16 @@ function singletonFromJson(repoRoot, report, record, selected, commandIdentity_,
 
 function runSegment(repoRoot, cli, mode, logicalGroupId, [segmentId, projects, pattern], root) {
   const id = physicalId(logicalGroupId, segmentId);
-  const paths = {
-    blob: path.join(root, "physical-blobs", `${id}.blob`),
-    reporter: path.join(root, "reporter-records", `${id}.json`),
-    singletonInput: path.join(root, "singleton-input", id),
-    singletonRaw: path.join(root, "singleton-raw-reports", `${id}.json`),
-    singletonDiagnostic: path.join(root, "singleton-diagnostics", `${id}.json`),
-    evidence: path.join(root, "segment-evidence", `${id}.json`),
-    stdout: path.join(root, "logs", `${id}.stdout.txt`),
-    stderr: path.join(root, "logs", `${id}.stderr.txt`),
-    inventory: path.join(root, "logs", `${id}.inventory.json`),
-    coverage: path.join(root, "coverage", id, "coverage-final.json")
-  };
+  const paths = segmentPaths(root, id);
   for (const directory of new Set(Object.values(paths).map(path.dirname))) ensureDirectory(repoRoot, directory);
   const selected = rawInventory(repoRoot, cli, projects, pattern, paths.inventory);
   const identity = commandIdentity(repoRoot, mode, logicalGroupId, segmentId, projects, pattern, paths);
-  const args = [cli, "run", `--workspace=${WORKSPACE}`, ...projects.map((item) => `--project=${item}`)];
-  if (projects[0] === "application-service-dreamer-vortox") args.push(APP_TEST);
-  if (pattern !== null) args.push(`--testNamePattern=${pattern}`);
-  args.push("--reporter=blob", `--reporter=${SCRIPT_PATH}`, `--outputFile.blob=${paths.blob}`);
-  if (mode === "coverage") {
-    args.push("--coverage", `--coverage.include=${COVERAGE_INCLUDE}`, "--coverage.reporter=json", `--coverage.reportsDirectory=${path.dirname(paths.coverage)}`);
-  }
-  const controlledEnvironment = {
-    VITEST_MAX_FORKS: "1", FORCE_COLOR: "0", NO_COLOR: "1",
-    BOTC_VITEST_REPORTER_RECORD: paths.reporter, BOTC_VITEST_COMMAND_IDENTITY: identity,
-    BOTC_VITEST_MODE: mode, BOTC_VITEST_LOGICAL_GROUP_ID: logicalGroupId,
-    BOTC_VITEST_PHYSICAL_BLOB_ID: id, BOTC_VITEST_SEGMENT_ID: segmentId
-  };
+  const args = vitestRunArgs(cli, mode, projects, pattern, paths);
+  const controlledEnvironment_ = controlledEnvironment(identity, mode, logicalGroupId, id, segmentId, paths.reporter);
   const started = Date.now();
   const child = spawnSync(process.execPath, args, {
     cwd: repoRoot, encoding: "utf8", maxBuffer: MAX_LOG_BYTES * 2,
-    env: { ...process.env, ...controlledEnvironment }, windowsHide: true, shell: false
+    env: { ...process.env, ...controlledEnvironment_ }, windowsHide: true, shell: false
   });
   const ended = Date.now();
   const stdout = boundedLog(child.stdout);
@@ -551,7 +565,7 @@ function runSegment(repoRoot, cli, mode, logicalGroupId, [segmentId, projects, p
     physicalBlobId: id, segmentId,
     command: {
       executable: process.execPath, cliPath: relativePath(repoRoot, cli), args: args.slice(1),
-      cwd: "<repo-root>", controlledEnvironment
+      cwd: "<repo-root>", controlledEnvironment: controlledEnvironment_
     },
     runtime: { node: process.versions.node, vitest: EXPECTED_VITEST, platform: process.platform, arch: process.arch },
     process: {
@@ -639,16 +653,374 @@ function buildLogicalManifest(mode, logicalGroupId, envelopes) {
   };
 }
 
-function verifyLogical(repoRoot, mode, logicalGroupId) {
-  const root = inside(repoRoot, `${ROOTS[mode]}/${logicalGroupId}`);
-  rejectLinks(repoRoot, root);
-  const evidenceDir = path.join(root, "segment-evidence");
-  const expectedIds = MODE_CONFIG[mode][logicalGroupId].map(([segment]) => physicalId(logicalGroupId, segment));
-  const entries = readdirSync(evidenceDir).sort(ordinal);
-  const expectedEntries = expectedIds.map((id) => `${id}.json`).sort(ordinal);
-  if (JSON.stringify(entries) !== JSON.stringify(expectedEntries)) fail("SIDECAR_EXTRA", logicalGroupId);
-  const envelopes = expectedIds.map((id) => JSON.parse(readFileSync(path.join(evidenceDir, `${id}.json`), "utf8")));
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function assertString(value, code, label, pattern = null) {
+  if (typeof value !== "string" || (pattern !== null && !pattern.test(value))) fail(code, label);
+}
+
+function assertInteger(value, code, label, minimum = 0) {
+  if (!Number.isInteger(value) || value < minimum) fail(code, label);
+}
+
+function assertIdentity(identity, code, label) {
+  if (!Array.isArray(identity) || identity.length !== 4 ||
+      typeof identity[0] !== "string" || identity[0].length === 0 ||
+      typeof identity[1] !== "string" || identity[1].length === 0 ||
+      !Array.isArray(identity[2]) || identity[2].some((item) => typeof item !== "string" || item.length === 0) ||
+      typeof identity[3] !== "string" || identity[3].length === 0) {
+    fail(code, label);
+  }
+}
+
+function linkFailureCode(target, info) {
+  if (!info.isSymbolicLink()) return null;
+  if (process.platform === "win32") {
+    try {
+      if (statSync(target).isDirectory()) return "ARTIFACT_JUNCTION";
+    } catch {
+      // A broken link remains a symlink failure.
+    }
+  }
+  return "ARTIFACT_SYMLINK";
+}
+
+function assertPersistedRegularFile(repoRoot, logicalRoot, target, code, label, expected = {}) {
+  relativePath(logicalRoot, target);
+  rejectLinks(repoRoot, path.dirname(target));
+  if (!existsSync(target)) fail(code, `${label} missing`);
+  const info = lstatSync(target);
+  const linkCode = linkFailureCode(target, info);
+  if (linkCode !== null) fail(linkCode, relativePath(repoRoot, target));
+  if (!info.isFile()) fail(code, `${label} not regular file`);
+  const realRoot = realpathSync(logicalRoot);
+  const realTarget = realpathSync(target);
+  relativePath(realRoot, realTarget);
+  if (expected.nonempty !== false && info.size <= 0) fail(code, `${label} empty`);
+  if (expected.bytes !== undefined && info.size !== expected.bytes) fail(expected.bytesCode ?? code, `${label} size`);
+  const bytes = readFileSync(target);
+  const hash = sha256(bytes);
+  if (expected.sha256 !== undefined && hash !== expected.sha256) fail(expected.hashCode ?? code, `${label} hash`);
+  return { bytes, hash, size: info.size };
+}
+
+function assertPersistedDirectory(repoRoot, logicalRoot, target, label) {
+  if (target !== logicalRoot) relativePath(logicalRoot, target);
+  rejectLinks(repoRoot, target === repoRoot ? target : path.dirname(target));
+  if (!existsSync(target)) fail("ARTIFACT_UNEXPECTED_ENTRY", `${label} missing`);
+  const info = lstatSync(target);
+  const linkCode = linkFailureCode(target, info);
+  if (linkCode !== null) fail(linkCode, relativePath(repoRoot, target));
+  if (!info.isDirectory()) fail("ARTIFACT_UNEXPECTED_ENTRY", `${label} not directory`);
+  const realRoot = realpathSync(logicalRoot);
+  const realTarget = realpathSync(target);
+  if (realTarget !== realRoot) relativePath(realRoot, realTarget);
+}
+
+function assertExactDirectoryEntries(repoRoot, logicalRoot, directory, expectedNames, codes, label) {
+  assertPersistedDirectory(repoRoot, logicalRoot, directory, label);
+  const entries = readdirSync(directory, { withFileTypes: true }).sort((left, right) => ordinal(left.name, right.name));
+  for (const entry of entries) {
+    const target = path.join(directory, entry.name);
+    const linkCode = linkFailureCode(target, entry);
+    if (linkCode !== null) fail(linkCode, relativePath(repoRoot, target));
+  }
+  const actual = entries.map((entry) => entry.name);
+  const expected = [...expectedNames].sort(ordinal);
+  if (sameJson(actual, expected)) return;
+  const missing = expected.filter((name) => !actual.includes(name));
+  const extra = actual.filter((name) => !expected.includes(name));
+  const code = missing.length > 0 && extra.length > 0 && actual.length === expected.length
+    ? codes.renamed
+    : missing.length > 0 ? codes.missing : codes.extra;
+  fail(code, `${label} expected=${JSON.stringify(expected)} actual=${JSON.stringify(actual)}`);
+}
+
+function readPersistedJson(repoRoot, logicalRoot, target, code, label) {
+  const artifact = assertPersistedRegularFile(repoRoot, logicalRoot, target, code, label);
+  try {
+    return { ...artifact, value: JSON.parse(artifact.bytes.toString("utf8")) };
+  } catch {
+    fail(code, `${label} parse`);
+  }
+}
+
+function expectedSegmentPaths(repoRoot, mode, logicalGroupId, id) {
+  return segmentPaths(path.join(repoRoot, ROOTS[mode], logicalGroupId), id);
+}
+
+function validateTaskResults(record, code) {
+  const keys = new Set();
+  for (const [index, item] of record.taskResults.entries()) {
+    assertExactKeys(item, ["identity", "state"], code, `taskResults[${index}]`);
+    assertIdentity(item.identity, code, `taskResults[${index}].identity`);
+    if (!["PASS", "FAIL", "SKIP", "TODO"].includes(item.state)) fail(code, `taskResults[${index}].state`);
+    const key = identityKey(item.identity);
+    if (keys.has(key)) fail(code, `duplicate task identity ${key}`);
+    keys.add(key);
+  }
+  const sorted = [...record.taskResults].sort((left, right) => ordinal(identityKey(left.identity), identityKey(right.identity)));
+  if (!sameJson(record.taskResults, sorted)) fail(code, "taskResults order");
+  for (const [index, error] of record.globalErrors.entries()) {
+    assertExactKeys(error, ["index", "type", "name", "message", "redactedStack"], code, `globalErrors[${index}]`);
+    assertInteger(error.index, code, `globalErrors[${index}].index`);
+    for (const key of ["type", "name", "message", "redactedStack"]) assertString(error[key], code, `globalErrors[${index}].${key}`);
+    if (/[A-Za-z]:[\\/]|\/(?:home|Users|tmp)\//u.test(error.redactedStack)) fail(code, `globalErrors[${index}] redaction`);
+  }
+}
+
+function validatePersistedSegment(repoRoot, cli, mode, logicalGroupId, segment, logicalRoot) {
+  const [segmentId, projects, pattern] = segment;
+  const id = physicalId(logicalGroupId, segmentId);
+  const actual = segmentPaths(logicalRoot, id);
+  const declared = expectedSegmentPaths(repoRoot, mode, logicalGroupId, id);
+  const evidenceArtifact = readPersistedJson(repoRoot, logicalRoot, actual.evidence, "LOGICAL_MANIFEST_INVALID", `${id} evidence`);
+  const envelope = evidenceArtifact.value;
+  assertExactKeys(envelope, [
+    "schemaVersion", "commandIdentity", "mode", "logicalGroupId", "physicalBlobId", "segmentId",
+    "command", "runtime", "process", "reporterRecord", "taskEvidence", "globalErrors", "blob",
+    "singletonDiagnostic", "coverage", "stdout", "stderr", "evidenceStatus", "mergeEligibility", "failureCodes"
+  ], "LOGICAL_MANIFEST_INVALID", `${id} evidence`);
+  if (envelope.schemaVersion !== EVIDENCE_SCHEMA || envelope.mode !== mode ||
+      envelope.logicalGroupId !== logicalGroupId || envelope.physicalBlobId !== id ||
+      envelope.segmentId !== segmentId) fail("LOGICAL_MANIFEST_INVALID", `${id} frozen identifiers`);
+  const expectedIdentity = commandIdentity(repoRoot, mode, logicalGroupId, segmentId, projects, pattern, declared);
+  if (envelope.commandIdentity !== expectedIdentity) fail("SIDECAR_COMMAND_IDENTITY_MISMATCH", id);
+
+  assertExactKeys(envelope.command, ["executable", "cliPath", "args", "cwd", "controlledEnvironment"], "LOGICAL_MANIFEST_INVALID", `${id} command`);
+  const expectedArgs = vitestRunArgs(cli, mode, projects, pattern, declared).slice(1);
+  const expectedEnvironment = controlledEnvironment(expectedIdentity, mode, logicalGroupId, id, segmentId, declared.reporter);
+  if (envelope.command.executable !== process.execPath ||
+      envelope.command.cliPath !== relativePath(repoRoot, cli) ||
+      envelope.command.cwd !== "<repo-root>" ||
+      !sameJson(envelope.command.args, expectedArgs) ||
+      !sameJson(envelope.command.controlledEnvironment, expectedEnvironment)) {
+    fail("SIDECAR_COMMAND_IDENTITY_MISMATCH", `${id} command`);
+  }
+
+  assertExactKeys(envelope.runtime, ["node", "vitest", "platform", "arch"], "LOGICAL_MANIFEST_INVALID", `${id} runtime`);
+  if (envelope.runtime.node !== EXPECTED_NODE || envelope.runtime.vitest !== EXPECTED_VITEST ||
+      envelope.runtime.platform !== process.platform || envelope.runtime.arch !== process.arch) {
+    fail("VERIFICATION_FAILED", `${id} runtime`);
+  }
+  assertExactKeys(envelope.process, ["pid", "exitCode", "signal", "spawnError", "startedAtUnixMs", "endedAtUnixMs", "wallDurationMs"], "LOGICAL_MANIFEST_INVALID", `${id} process`);
+  assertInteger(envelope.process.pid, "VERIFICATION_FAILED", `${id} pid`, 1);
+  for (const key of ["startedAtUnixMs", "endedAtUnixMs", "wallDurationMs"]) assertInteger(envelope.process[key], "VERIFICATION_FAILED", `${id} ${key}`);
+  if (envelope.process.exitCode !== 0) fail("SUBRUN_NONZERO_EXIT", id);
+  if (envelope.process.signal !== null) fail("SUBRUN_SIGNALLED", id);
+  if (envelope.process.spawnError !== null) fail("SUBRUN_SPAWN_FAILED", id);
+  if (envelope.process.endedAtUnixMs < envelope.process.startedAtUnixMs ||
+      envelope.process.wallDurationMs !== envelope.process.endedAtUnixMs - envelope.process.startedAtUnixMs) {
+    fail("VERIFICATION_FAILED", `${id} timing`);
+  }
+
+  assertExactKeys(envelope.reporterRecord, ["path", "sha256", "status"], "LOGICAL_MANIFEST_INVALID", `${id} reporterRecord`);
+  if (envelope.reporterRecord.path !== relativePath(repoRoot, declared.reporter) || envelope.reporterRecord.status !== "AVAILABLE") {
+    fail("SIDECAR_RENAMED", id);
+  }
+  const reporterArtifact = readPersistedJson(repoRoot, logicalRoot, actual.reporter, "SIDECAR_PARSE_FAILED", `${id} reporter`);
+  if (reporterArtifact.hash !== envelope.reporterRecord.sha256) fail("SIDECAR_COMMAND_IDENTITY_MISMATCH", `${id} reporter hash`);
+  const reporter = validateReporter(reporterArtifact.value, {
+    commandIdentity: expectedIdentity, mode, logicalGroupId, physicalBlobId: id, segmentId
+  }, envelope.process.pid);
+  validateTaskResults(reporter, "SIDECAR_SCHEMA_INVALID");
+  if (reporter.globalErrors.length > 0 || !sameJson(envelope.globalErrors, reporter.globalErrors)) fail("GLOBAL_ERROR", id);
+
+  const inventoryArtifact = readPersistedJson(repoRoot, logicalRoot, actual.inventory, "INVENTORY_LIST_FAILED", `${id} inventory`);
+  let selected;
+  try {
+    selected = canonicalizeRawVitestInventory(repoRoot, inventoryArtifact.value).map((item) => [
+      item.project, item.file, item.ancestorPath, item.title
+    ]);
+  } catch (error) {
+    fail("INVENTORY_LIST_FAILED", error instanceof Error ? error.message : String(error));
+  }
+  assertExactKeys(envelope.taskEvidence, [
+    "expectedSelectedIdentities", "observedSelectedIdentities", "filteredComplementIdentities",
+    "counts", "singletonConsistency"
+  ], "LOGICAL_MANIFEST_INVALID", `${id} taskEvidence`);
+  for (const key of ["expectedSelectedIdentities", "observedSelectedIdentities", "filteredComplementIdentities"]) {
+    if (!Array.isArray(envelope.taskEvidence[key])) fail("LOGICAL_MANIFEST_INVALID", `${id} ${key}`);
+    envelope.taskEvidence[key].forEach((identity, index) => assertIdentity(identity, "LOGICAL_MANIFEST_INVALID", `${id} ${key}[${index}]`));
+  }
+  const observed = reporter.taskResults.filter((item) => item.state === "PASS").map((item) => item.identity)
+    .sort((left, right) => ordinal(identityKey(left), identityKey(right)));
+  const complement = reporter.taskResults.filter((item) => item.state === "SKIP").map((item) => item.identity);
+  const expectedSelected = [...selected].sort((left, right) => ordinal(identityKey(left), identityKey(right)));
+  if (!sameJson(envelope.taskEvidence.expectedSelectedIdentities, expectedSelected) ||
+      !sameJson(envelope.taskEvidence.observedSelectedIdentities, observed) ||
+      !sameJson(envelope.taskEvidence.filteredComplementIdentities, complement)) {
+    fail("INVENTORY_UNEXPECTED", id);
+  }
+  assertExactKeys(envelope.taskEvidence.counts, ["selected", "passed", "failed", "skipped", "todo", "complementSkipped"], "LOGICAL_MANIFEST_INVALID", `${id} counts`);
+  const recomputedCounts = {
+    selected: selected.length,
+    passed: observed.length,
+    failed: reporter.taskResults.filter((item) => item.state === "FAIL").length,
+    skipped: complement.length,
+    todo: reporter.taskResults.filter((item) => item.state === "TODO").length,
+    complementSkipped: complement.length
+  };
+  if (!sameJson(envelope.taskEvidence.counts, recomputedCounts) ||
+      envelope.taskEvidence.singletonConsistency !== "CONSISTENT") {
+    fail("SINGLETON_ASSERTION_MISMATCH", id);
+  }
+
+  assertExactKeys(envelope.blob, ["path", "sha256", "bytes", "status"], "LOGICAL_MANIFEST_INVALID", `${id} blob`);
+  if (envelope.blob.path !== relativePath(repoRoot, declared.blob) || envelope.blob.status !== "AVAILABLE") fail("MERGEABLE_BLOB_RENAMED", id);
+  assertString(envelope.blob.sha256, "MERGEABLE_BLOB_HASH_MISMATCH", id, /^[0-9a-f]{64}$/u);
+  assertInteger(envelope.blob.bytes, "MERGEABLE_BLOB_INVALID", id, 1);
+  const blobArtifact = assertPersistedRegularFile(repoRoot, logicalRoot, actual.blob, "MERGEABLE_BLOB_MISSING", `${id} blob`, {
+    sha256: envelope.blob.sha256, bytes: envelope.blob.bytes,
+    hashCode: "MERGEABLE_BLOB_HASH_MISMATCH", bytesCode: "MERGEABLE_BLOB_HASH_MISMATCH"
+  });
+  if (blobArtifact.hash !== envelope.blob.sha256) fail("MERGEABLE_BLOB_HASH_MISMATCH", id);
+  const stagedBlob = path.join(actual.singletonInput, `${id}.blob`);
+  assertPersistedRegularFile(repoRoot, logicalRoot, stagedBlob, "SINGLETON_STAGE_HASH_MISMATCH", `${id} staged blob`, {
+    sha256: envelope.blob.sha256, bytes: envelope.blob.bytes,
+    hashCode: "SINGLETON_STAGE_HASH_MISMATCH", bytesCode: "SINGLETON_STAGE_HASH_MISMATCH"
+  });
+
+  assertExactKeys(envelope.singletonDiagnostic, ["path", "sha256", "status"], "LOGICAL_MANIFEST_INVALID", `${id} singletonDiagnostic`);
+  if (envelope.singletonDiagnostic.path !== relativePath(repoRoot, declared.singletonDiagnostic) ||
+      envelope.singletonDiagnostic.status !== "AVAILABLE") fail("SINGLETON_REPORT_INVALID", `${id} diagnostic path`);
+  const rawArtifact = readPersistedJson(repoRoot, logicalRoot, actual.singletonRaw, "SINGLETON_REPORT_INVALID", `${id} raw singleton`);
+  const diagnosticArtifact = readPersistedJson(repoRoot, logicalRoot, actual.singletonDiagnostic, "SINGLETON_REPORT_INVALID", `${id} singleton diagnostic`);
+  if (diagnosticArtifact.hash !== envelope.singletonDiagnostic.sha256) fail("SINGLETON_REPORT_INVALID", `${id} diagnostic hash`);
+  const recomputedDiagnostic = singletonFromJson(
+    repoRoot, rawArtifact.value, reporter, selected, expectedIdentity, id,
+    relativePath(repoRoot, declared.singletonRaw), rawArtifact.hash
+  );
+  if (!sameJson(diagnosticArtifact.value, recomputedDiagnostic) || recomputedDiagnostic.result !== "CONSISTENT") {
+    fail("SINGLETON_ASSERTION_MISMATCH", id);
+  }
+
+  assertExactKeys(envelope.coverage, ["path", "sha256", "status"], "LOGICAL_MANIFEST_INVALID", `${id} coverage`);
+  if (mode === "coverage") {
+    if (envelope.coverage.path !== relativePath(repoRoot, declared.coverage) ||
+        envelope.coverage.status !== "AVAILABLE") fail("COVERAGE_MISSING", id);
+    const coverageArtifact = readPersistedJson(repoRoot, logicalRoot, actual.coverage, "COVERAGE_MISSING", `${id} coverage`);
+    if (coverageArtifact.hash !== envelope.coverage.sha256 ||
+        coverageArtifact.value === null || typeof coverageArtifact.value !== "object" ||
+        Array.isArray(coverageArtifact.value) || Object.keys(coverageArtifact.value).length === 0) {
+      fail("COVERAGE_FINGERPRINT_MISMATCH", id);
+    }
+  } else if (!sameJson(envelope.coverage, { path: null, sha256: null, status: "NOT_APPLICABLE" })) {
+    fail("LOGICAL_MANIFEST_INVALID", `${id} ordinary coverage`);
+  }
+
+  for (const [name, declaredPath] of [["stdout", declared.stdout], ["stderr", declared.stderr]]) {
+    assertExactKeys(envelope[name], ["path", "sha256", "bytes", "truncated"], "LOGICAL_MANIFEST_INVALID", `${id} ${name}`);
+    if (envelope[name].path !== relativePath(repoRoot, declaredPath) || typeof envelope[name].truncated !== "boolean") {
+      fail("LOGICAL_MANIFEST_INVALID", `${id} ${name} cross-link`);
+    }
+    assertInteger(envelope[name].bytes, "LOGICAL_MANIFEST_INVALID", `${id} ${name} bytes`);
+    assertPersistedRegularFile(repoRoot, logicalRoot, actual[name], "LOGICAL_MANIFEST_INVALID", `${id} ${name}`, {
+      nonempty: false, sha256: envelope[name].sha256, bytes: envelope[name].bytes
+    });
+  }
+
+  const recomputedFailures = [];
+  if (recomputedCounts.failed > 0) recomputedFailures.push("ASSERTION_FAILURE");
+  if (recomputedCounts.todo > 0) recomputedFailures.push("SELECTED_TEST_TODO");
+  if (reporter.taskResults.some((item) => expectedSelected.some((identity) => identityKey(identity) === identityKey(item.identity)) && item.state === "SKIP")) {
+    recomputedFailures.push("SELECTED_TEST_SKIPPED");
+  }
+  if (reporter.globalErrors.length > 0) recomputedFailures.push("GLOBAL_ERROR");
+  const uniqueFailures = [...new Set(recomputedFailures)].sort(ordinal);
+  const eligible = uniqueFailures.length === 0 && recomputedDiagnostic.result === "CONSISTENT" &&
+    observed.length === selected.length && sameJson(observed, expectedSelected);
+  if (!sameJson(envelope.failureCodes, uniqueFailures) ||
+      envelope.evidenceStatus !== (eligible ? "COMPLETE" : "EVIDENCE_INCOMPLETE") ||
+      envelope.mergeEligibility !== eligible || !eligible) {
+    fail("VERIFICATION_FAILED", `${id} recomputed eligibility`);
+  }
+  return envelope;
+}
+
+function validatePersistedLogicalRoot(repoRoot, cli, mode, logicalGroupId, logicalRoot, requireManifest) {
+  const segments = MODE_CONFIG[mode][logicalGroupId];
+  const expectedIds = segments.map(([segmentId]) => physicalId(logicalGroupId, segmentId));
+  assertPersistedDirectory(repoRoot, logicalRoot, logicalRoot, `${mode}/${logicalGroupId}`);
+  const allowedRootEntries = new Set([
+    "physical-blobs", "reporter-records", "singleton-input", "singleton-raw-reports",
+    "singleton-diagnostics", "segment-evidence", "coverage", "logs",
+    "logical-manifest.json", "verification.json"
+  ]);
+  for (const entry of readdirSync(logicalRoot, { withFileTypes: true })) {
+    const target = path.join(logicalRoot, entry.name);
+    const linkCode = linkFailureCode(target, entry);
+    if (linkCode !== null) fail(linkCode, relativePath(repoRoot, target));
+    if (!allowedRootEntries.has(entry.name)) fail("ARTIFACT_UNEXPECTED_ENTRY", `${logicalGroupId}/${entry.name}`);
+  }
+  assertExactDirectoryEntries(repoRoot, logicalRoot, path.join(logicalRoot, "physical-blobs"), expectedIds.map((id) => `${id}.blob`), {
+    missing: "MERGEABLE_BLOB_MISSING", renamed: "MERGEABLE_BLOB_RENAMED", extra: "MERGEABLE_BLOB_EXTRA"
+  }, `${logicalGroupId} physical blobs`);
+  for (const [name, suffix] of [
+    ["reporter-records", ".json"], ["singleton-raw-reports", ".json"],
+    ["singleton-diagnostics", ".json"], ["segment-evidence", ".json"]
+  ]) {
+    assertExactDirectoryEntries(repoRoot, logicalRoot, path.join(logicalRoot, name), expectedIds.map((id) => `${id}${suffix}`), {
+      missing: "SIDECAR_MISSING", renamed: "SIDECAR_RENAMED", extra: "SIDECAR_EXTRA"
+    }, `${logicalGroupId} ${name}`);
+  }
+  assertExactDirectoryEntries(repoRoot, logicalRoot, path.join(logicalRoot, "singleton-input"), expectedIds, {
+    missing: "SINGLETON_REPORT_INVALID", renamed: "SINGLETON_REPORT_INVALID", extra: "ARTIFACT_UNEXPECTED_ENTRY"
+  }, `${logicalGroupId} singleton-input`);
+  for (const id of expectedIds) {
+    assertExactDirectoryEntries(repoRoot, logicalRoot, path.join(logicalRoot, "singleton-input", id), [`${id}.blob`], {
+      missing: "SINGLETON_STAGE_HASH_MISMATCH", renamed: "SINGLETON_STAGE_HASH_MISMATCH", extra: "ARTIFACT_UNEXPECTED_ENTRY"
+    }, `${id} singleton-input`);
+  }
+  assertExactDirectoryEntries(repoRoot, logicalRoot, path.join(logicalRoot, "logs"), expectedIds.flatMap((id) => [
+    `${id}.inventory.json`, `${id}.stderr.txt`, `${id}.stdout.txt`
+  ]), {
+    missing: "ARTIFACT_UNEXPECTED_ENTRY", renamed: "ARTIFACT_UNEXPECTED_ENTRY", extra: "ARTIFACT_UNEXPECTED_ENTRY"
+  }, `${logicalGroupId} logs`);
+  if (mode === "coverage") {
+    assertExactDirectoryEntries(repoRoot, logicalRoot, path.join(logicalRoot, "coverage"), expectedIds, {
+      missing: "COVERAGE_MISSING", renamed: "COVERAGE_MISSING", extra: "ARTIFACT_UNEXPECTED_ENTRY"
+    }, `${logicalGroupId} coverage`);
+    for (const id of expectedIds) {
+      assertExactDirectoryEntries(repoRoot, logicalRoot, path.join(logicalRoot, "coverage", id), ["coverage-final.json"], {
+        missing: "COVERAGE_MISSING", renamed: "COVERAGE_MISSING", extra: "ARTIFACT_UNEXPECTED_ENTRY"
+      }, `${id} coverage`);
+    }
+  } else if (existsSync(path.join(logicalRoot, "coverage"))) {
+    assertExactDirectoryEntries(repoRoot, logicalRoot, path.join(logicalRoot, "coverage"), expectedIds, {
+      missing: "ARTIFACT_UNEXPECTED_ENTRY", renamed: "ARTIFACT_UNEXPECTED_ENTRY", extra: "ARTIFACT_UNEXPECTED_ENTRY"
+    }, `${logicalGroupId} ordinary coverage staging`);
+    for (const id of expectedIds) {
+      assertExactDirectoryEntries(repoRoot, logicalRoot, path.join(logicalRoot, "coverage", id), [], {
+        missing: "ARTIFACT_UNEXPECTED_ENTRY", renamed: "ARTIFACT_UNEXPECTED_ENTRY", extra: "ARTIFACT_UNEXPECTED_ENTRY"
+      }, `${id} ordinary coverage staging`);
+    }
+  }
+  const envelopes = segments.map((segment) => validatePersistedSegment(repoRoot, cli, mode, logicalGroupId, segment, logicalRoot));
   const manifest = buildLogicalManifest(mode, logicalGroupId, envelopes);
+  if (requireManifest) {
+    const persisted = readPersistedJson(repoRoot, logicalRoot, path.join(logicalRoot, "logical-manifest.json"), "LOGICAL_MANIFEST_INVALID", `${logicalGroupId} manifest`).value;
+    assertExactKeys(persisted, [
+      "schemaVersion", "mode", "logicalGroupId", "expectedPhysicalBlobIds", "segmentEvidence",
+      "selectedIdentities", "totals", "discrepancy", "evidenceStatus", "mergeEligibility", "failureCodes"
+    ], "LOGICAL_MANIFEST_INVALID", `${logicalGroupId} manifest`);
+    if (!sameJson(persisted, manifest)) fail("LOGICAL_MANIFEST_INVALID", `${logicalGroupId} manifest mismatch`);
+    const verification = readPersistedJson(repoRoot, logicalRoot, path.join(logicalRoot, "verification.json"), "LOGICAL_MANIFEST_INVALID", `${logicalGroupId} verification`).value;
+    const expectedVerification = {
+      schemaVersion: "botc-vitest-logical-verification-v1",
+      mode, logicalGroupId, result: manifest.mergeEligibility ? "PASS" : "FAIL",
+      failureCodes: manifest.failureCodes
+    };
+    if (!sameJson(verification, expectedVerification)) fail("LOGICAL_MANIFEST_INVALID", `${logicalGroupId} verification mismatch`);
+  }
+  return { manifest, envelopes, logicalRoot };
+}
+
+function verifyLogical(repoRoot, cli, mode, logicalGroupId) {
+  const root = inside(repoRoot, `${ROOTS[mode]}/${logicalGroupId}`);
+  const { manifest } = validatePersistedLogicalRoot(repoRoot, cli, mode, logicalGroupId, root, false);
   atomicWrite(path.join(root, "logical-manifest.json"), jsonBytes(manifest, true));
   atomicWrite(path.join(root, "verification.json"), jsonBytes({
     schemaVersion: "botc-vitest-logical-verification-v1",
@@ -661,41 +1033,31 @@ function verifyLogical(repoRoot, mode, logicalGroupId) {
 
 function findLogicalManifests(repoRoot, mode) {
   const expected = Object.keys(MODE_CONFIG[mode]).sort(ordinal);
-  const candidates = [];
+  const candidates = new Map();
   const localRoot = inside(repoRoot, ROOTS[mode]);
   if (existsSync(localRoot)) {
     for (const logical of expected) {
-      const candidate = path.join(localRoot, logical, "logical-manifest.json");
-      if (existsSync(candidate)) candidates.push(candidate);
+      const root = path.join(localRoot, logical);
+      if (existsSync(path.join(root, "logical-manifest.json"))) candidates.set(logical, root);
     }
   }
   const globalRoot = inside(repoRoot, GLOBAL_ROOTS[mode]);
   const incoming = path.join(globalRoot, "incoming-evidence");
   if (existsSync(incoming)) {
-    for (const artifact of readdirSync(incoming, { withFileTypes: true })) {
-      if (!artifact.isDirectory() || artifact.isSymbolicLink()) fail("ARTIFACT_UNEXPECTED_ENTRY", artifact.name);
-      const stack = [path.join(incoming, artifact.name)];
-      while (stack.length) {
-        const current = stack.pop();
-        for (const entry of readdirSync(current, { withFileTypes: true })) {
-          const candidate = path.join(current, entry.name);
-          if (entry.isSymbolicLink()) fail("ARTIFACT_SYMLINK", candidate);
-          if (entry.isDirectory()) stack.push(candidate);
-          else if (entry.name === "logical-manifest.json") candidates.push(candidate);
-        }
-      }
+    if (candidates.size > 0) fail("ARTIFACT_UNEXPECTED_ENTRY", `${mode} local/incoming mixed`);
+    const prefix = mode === "ordinary" ? "test-evidence-" : "coverage-evidence-";
+    const expectedArtifacts = expected.map((logical) => `${prefix}${logical}`);
+    assertExactDirectoryEntries(repoRoot, incoming, incoming, expectedArtifacts, {
+      missing: "LOGICAL_MANIFEST_INVALID", renamed: "ARTIFACT_UNEXPECTED_ENTRY", extra: "ARTIFACT_UNEXPECTED_ENTRY"
+    }, `${mode} incoming`);
+    for (const logical of expected) {
+      const root = path.join(incoming, `${prefix}${logical}`);
+      if (!existsSync(path.join(root, "logical-manifest.json"))) fail("LOGICAL_MANIFEST_INVALID", `${logical} incoming manifest missing`);
+      candidates.set(logical, root);
     }
   }
-  const byLogical = new Map();
-  for (const candidate of candidates) {
-    const value = JSON.parse(readFileSync(candidate, "utf8"));
-    if (value.mode === mode && expected.includes(value.logicalGroupId)) {
-      if (byLogical.has(value.logicalGroupId)) fail("LOGICAL_MANIFEST_INVALID", `duplicate ${value.logicalGroupId}`);
-      byLogical.set(value.logicalGroupId, { path: candidate, value });
-    }
-  }
-  if (byLogical.size !== expected.length) fail("LOGICAL_MANIFEST_INVALID", `expected ${expected.length}, got ${byLogical.size}`);
-  return expected.map((logical) => byLogical.get(logical));
+  if (candidates.size !== expected.length) fail("LOGICAL_MANIFEST_INVALID", `expected ${expected.length}, got ${candidates.size}`);
+  return expected.map((logical) => ({ logical, root: candidates.get(logical) }));
 }
 
 const COVERAGE_TUPLE_GROUPS = Object.freeze([
@@ -900,7 +1262,10 @@ function compareCoverageTupleArtifacts(baseline, candidate) {
 
 function aggregate(repoRoot, cli, mode) {
   const items = findLogicalManifests(repoRoot, mode);
-  const logical = items.map((item) => item.value);
+  const validated = items.map((item) =>
+    validatePersistedLogicalRoot(repoRoot, cli, mode, item.logical, item.root, true)
+  );
+  const logical = validated.map((item) => item.manifest);
   if (logical.some((item) => !item.mergeEligibility)) fail("LOGICAL_MANIFEST_INVALID", "ineligible");
   const selected = logical.flatMap((item) => item.selectedIdentities);
   const counts = new Map();
@@ -918,7 +1283,12 @@ function aggregate(repoRoot, cli, mode) {
       ensureDirectory(repoRoot, target);
     }
   }
-  for (const item of items) copyFileSync(item.path, path.join(globalRoot, "logical-manifests", `${item.value.logicalGroupId}.json`));
+  for (const item of validated) {
+    copyFileSync(
+      path.join(item.logicalRoot, "logical-manifest.json"),
+      path.join(globalRoot, "logical-manifests", `${item.manifest.logicalGroupId}.json`)
+    );
+  }
   let coverage = {
     status: "NOT_APPLICABLE", coverageFinalPath: null, coverageFinalSha256: null,
     coverageFinalSha256Authority: false, normalizedTupleSetsPath: null,
@@ -929,16 +1299,11 @@ function aggregate(repoRoot, cli, mode) {
   if (mode === "coverage") {
     const mergeRoot = path.join(globalRoot, "coverage-merge-input");
     const envelopes = [];
-    for (const item of items) {
-      const manifestDirectory = path.dirname(item.path);
-      const evidenceDirectory = path.join(manifestDirectory, "segment-evidence");
-      for (const id of item.value.expectedPhysicalBlobIds) {
-        const envelopePath = path.join(evidenceDirectory, `${id}.json`);
-        if (!existsSync(envelopePath)) fail("COVERAGE_MERGE_ROOT_INVALID", id);
-        const envelope = JSON.parse(readFileSync(envelopePath, "utf8"));
+    for (const item of validated) {
+      for (const envelope of item.envelopes) {
+        const id = envelope.physicalBlobId;
         envelopes.push(envelope);
-        const sourceBlob = path.join(manifestDirectory, "physical-blobs", `${id}.blob`);
-        if (!existsSync(sourceBlob)) fail("COVERAGE_MERGE_ROOT_INVALID", id);
+        const sourceBlob = path.join(item.logicalRoot, "physical-blobs", `${id}.blob`);
         const targetBlob = path.join(mergeRoot, `${id}.blob`);
         copyFileSync(sourceBlob, targetBlob, fsConstants.COPYFILE_EXCL);
         if (sha256(readFileSync(targetBlob)) !== envelope.blob.sha256) fail("MERGEABLE_BLOB_HASH_MISMATCH", id);
@@ -1036,6 +1401,123 @@ function stableProjection(envelope) {
     failureCodes: envelope.failureCodes
   };
   return jsonBytes(value, true);
+}
+
+function createPersistedSelfTestFixture() {
+  const repoRoot = mkdtempSync(path.join(tmpdir(), "botc-vitest-persisted-"));
+  const mode = "ordinary";
+  const logicalGroupId = "application";
+  const segment = MODE_CONFIG[mode][logicalGroupId][0];
+  const [segmentId, projects, pattern] = segment;
+  const id = physicalId(logicalGroupId, segmentId);
+  const logicalRoot = path.join(repoRoot, ROOTS[mode], logicalGroupId);
+  const cli = path.join(repoRoot, "node_modules", "vitest", "vitest.mjs");
+  const testFile = path.join(repoRoot, "packages", "synthetic.test.ts");
+  ensureDirectory(repoRoot, path.dirname(cli));
+  ensureDirectory(repoRoot, path.dirname(testFile));
+  writeFileSync(cli, "export {};\n", "utf8");
+  writeFileSync(testFile, "export {};\n", "utf8");
+  for (const name of [
+    "physical-blobs", "reporter-records", "singleton-input", "singleton-raw-reports",
+    "singleton-diagnostics", "segment-evidence", "coverage", "logs"
+  ]) ensureDirectory(repoRoot, path.join(logicalRoot, name));
+  const paths = segmentPaths(logicalRoot, id);
+  for (const directory of new Set(Object.values(paths).map(path.dirname))) ensureDirectory(repoRoot, directory);
+  ensureDirectory(repoRoot, paths.singletonInput);
+  const rawInventory_ = [{ name: "case", file: testFile, projectName: "application" }];
+  atomicWrite(paths.inventory, jsonBytes(rawInventory_, true));
+  const selected = canonicalizeRawVitestInventory(repoRoot, rawInventory_).map((item) => [
+    item.project, item.file, item.ancestorPath, item.title
+  ]);
+  const identity = commandIdentity(repoRoot, mode, logicalGroupId, segmentId, projects, pattern, paths);
+  const reporter = {
+    schemaVersion: REPORTER_SCHEMA, commandIdentity: identity, mode, logicalGroupId,
+    physicalBlobId: id, segmentId,
+    reporterProcess: { pid: 123, node: EXPECTED_NODE, platform: process.platform, arch: process.arch },
+    taskResults: [{ identity: selected[0], state: "PASS" }],
+    globalErrors: []
+  };
+  atomicWrite(paths.reporter, jsonBytes(reporter, true));
+  const blobBytes = Buffer.from("synthetic-vitest-blob\n", "utf8");
+  atomicWrite(paths.blob, blobBytes);
+  const stagedBlob = path.join(paths.singletonInput, `${id}.blob`);
+  atomicWrite(stagedBlob, blobBytes);
+  const rawReport = {
+    testResults: [{
+      name: testFile,
+      assertionResults: [{ ancestorTitles: [], title: "case", status: "passed" }]
+    }]
+  };
+  atomicWrite(paths.singletonRaw, jsonBytes(rawReport, true));
+  const diagnostic = singletonFromJson(
+    repoRoot, rawReport, reporter, selected, identity, id,
+    relativePath(repoRoot, paths.singletonRaw), sha256(readFileSync(paths.singletonRaw))
+  );
+  atomicWrite(paths.singletonDiagnostic, jsonBytes(diagnostic, true));
+  atomicWrite(paths.stdout, Buffer.from("", "utf8"));
+  atomicWrite(paths.stderr, Buffer.from("", "utf8"));
+  const environment = controlledEnvironment(identity, mode, logicalGroupId, id, segmentId, paths.reporter);
+  const envelope = {
+    schemaVersion: EVIDENCE_SCHEMA, commandIdentity: identity, mode, logicalGroupId,
+    physicalBlobId: id, segmentId,
+    command: {
+      executable: process.execPath, cliPath: relativePath(repoRoot, cli),
+      args: vitestRunArgs(cli, mode, projects, pattern, paths).slice(1),
+      cwd: "<repo-root>", controlledEnvironment: environment
+    },
+    runtime: { node: EXPECTED_NODE, vitest: EXPECTED_VITEST, platform: process.platform, arch: process.arch },
+    process: {
+      pid: 123, exitCode: 0, signal: null, spawnError: null,
+      startedAtUnixMs: 1, endedAtUnixMs: 2, wallDurationMs: 1
+    },
+    reporterRecord: {
+      path: relativePath(repoRoot, paths.reporter),
+      sha256: sha256(readFileSync(paths.reporter)), status: "AVAILABLE"
+    },
+    taskEvidence: {
+      expectedSelectedIdentities: selected,
+      observedSelectedIdentities: selected,
+      filteredComplementIdentities: [],
+      counts: { selected: 1, passed: 1, failed: 0, skipped: 0, todo: 0, complementSkipped: 0 },
+      singletonConsistency: "CONSISTENT"
+    },
+    globalErrors: [],
+    blob: {
+      path: relativePath(repoRoot, paths.blob), sha256: sha256(blobBytes),
+      bytes: blobBytes.length, status: "AVAILABLE"
+    },
+    singletonDiagnostic: {
+      path: relativePath(repoRoot, paths.singletonDiagnostic),
+      sha256: sha256(readFileSync(paths.singletonDiagnostic)), status: "AVAILABLE"
+    },
+    coverage: { path: null, sha256: null, status: "NOT_APPLICABLE" },
+    stdout: {
+      path: relativePath(repoRoot, paths.stdout), sha256: sha256(readFileSync(paths.stdout)),
+      bytes: 0, truncated: false
+    },
+    stderr: {
+      path: relativePath(repoRoot, paths.stderr), sha256: sha256(readFileSync(paths.stderr)),
+      bytes: 0, truncated: false
+    },
+    evidenceStatus: "COMPLETE", mergeEligibility: true, failureCodes: []
+  };
+  atomicWrite(paths.evidence, jsonBytes(envelope, true));
+  const manifest = buildLogicalManifest(mode, logicalGroupId, [envelope]);
+  atomicWrite(path.join(logicalRoot, "logical-manifest.json"), jsonBytes(manifest, true));
+  atomicWrite(path.join(logicalRoot, "verification.json"), jsonBytes({
+    schemaVersion: "botc-vitest-logical-verification-v1", mode, logicalGroupId,
+    result: "PASS", failureCodes: []
+  }, true));
+  return {
+    repoRoot, cli, mode, logicalGroupId, logicalRoot, id, paths,
+    cleanup: () => rmSync(repoRoot, { recursive: true, force: true })
+  };
+}
+
+function mutateJson(target, change) {
+  const value = JSON.parse(readFileSync(target, "utf8"));
+  change(value);
+  atomicWrite(target, jsonBytes(value, true));
 }
 
 function selfTest() {
@@ -1165,6 +1647,97 @@ function selfTest() {
       historicalCounts.every((value) => !source.includes(value)),
     "historical coverage literals are non-authoritative"
   );
+  const expectPersistedFailure = (name, code, mutate) => {
+    const fixture = createPersistedSelfTestFixture();
+    try {
+      mutate(fixture);
+      try {
+        validatePersistedLogicalRoot(
+          fixture.repoRoot, fixture.cli, fixture.mode,
+          fixture.logicalGroupId, fixture.logicalRoot, true
+        );
+        check(false, `${name} accepted`);
+      } catch (error_) {
+        check(error_ instanceof VitestEvidenceError && error_.code === code, `${name} rejected`);
+      }
+    } finally {
+      fixture.cleanup();
+    }
+  };
+  expectPersistedFailure("missing blob", "MERGEABLE_BLOB_MISSING", ({ paths }) => rmSync(paths.blob));
+  expectPersistedFailure("renamed blob", "MERGEABLE_BLOB_RENAMED", ({ paths }) => renameSync(paths.blob, `${paths.blob}.renamed`));
+  expectPersistedFailure("corrupt blob", "MERGEABLE_BLOB_HASH_MISMATCH", ({ paths }) => writeFileSync(paths.blob, "corrupt\n"));
+  expectPersistedFailure("extra blob", "MERGEABLE_BLOB_EXTRA", ({ paths }) => writeFileSync(`${paths.blob}.extra`, "extra\n"));
+  expectPersistedFailure("envelope eligibility", "VERIFICATION_FAILED", ({ paths }) => mutateJson(paths.evidence, (value) => { value.mergeEligibility = false; }));
+  expectPersistedFailure("envelope hash", "MERGEABLE_BLOB_HASH_MISMATCH", ({ paths }) => mutateJson(paths.evidence, (value) => { value.blob.sha256 = "0".repeat(64); }));
+  expectPersistedFailure("envelope id", "LOGICAL_MANIFEST_INVALID", ({ paths }) => mutateJson(paths.evidence, (value) => { value.physicalBlobId = "../escape"; }));
+  expectPersistedFailure("envelope process", "SUBRUN_NONZERO_EXIT", ({ paths }) => mutateJson(paths.evidence, (value) => { value.process.exitCode = 1; }));
+  expectPersistedFailure("envelope global error", "GLOBAL_ERROR", ({ paths }) => mutateJson(paths.evidence, (value) => {
+    value.globalErrors = [{ index: 0, type: "object", name: "Error", message: "x", redactedStack: "<path>" }];
+  }));
+  expectPersistedFailure("envelope cross-link", "SIDECAR_RENAMED", ({ paths }) => mutateJson(paths.evidence, (value) => { value.reporterRecord.path = "../escape"; }));
+  expectPersistedFailure("manifest extra key", "LOGICAL_MANIFEST_INVALID", ({ logicalRoot }) => mutateJson(path.join(logicalRoot, "logical-manifest.json"), (value) => { value.extra = true; }));
+  expectPersistedFailure("manifest traversal id", "LOGICAL_MANIFEST_INVALID", ({ logicalRoot }) => mutateJson(path.join(logicalRoot, "logical-manifest.json"), (value) => { value.logicalGroupId = "../application"; }));
+  expectPersistedFailure("manifest selected identity", "LOGICAL_MANIFEST_INVALID", ({ logicalRoot }) => mutateJson(path.join(logicalRoot, "logical-manifest.json"), (value) => { value.selectedIdentities[0][3] = "tampered"; }));
+  {
+    const fixture = createPersistedSelfTestFixture();
+    try {
+      const external = path.join(fixture.repoRoot, "external.blob");
+      writeFileSync(external, "external\n");
+      rmSync(fixture.paths.blob);
+      try {
+        symlinkSync(external, fixture.paths.blob, "file");
+        try {
+          validatePersistedLogicalRoot(fixture.repoRoot, fixture.cli, fixture.mode, fixture.logicalGroupId, fixture.logicalRoot, true);
+          check(false, "symlinked blob accepted");
+        } catch (error_) {
+          check(error_ instanceof VitestEvidenceError && error_.code === "ARTIFACT_SYMLINK", "symlinked blob rejected");
+        }
+      } catch (error_) {
+        if (error_?.code !== "EPERM") throw error_;
+        check(linkFailureCode(external, { isSymbolicLink: () => true }) === "ARTIFACT_SYMLINK", "symlink classification");
+      }
+    } finally {
+      fixture.cleanup();
+    }
+  }
+  {
+    const fixture = createPersistedSelfTestFixture();
+    try {
+      const physical = path.dirname(fixture.paths.blob);
+      const target = path.join(fixture.repoRoot, "junction-target");
+      mkdirSync(target);
+      copyFileSync(fixture.paths.blob, path.join(target, path.basename(fixture.paths.blob)));
+      rmSync(physical, { recursive: true });
+      symlinkSync(target, physical, process.platform === "win32" ? "junction" : "dir");
+      try {
+        validatePersistedLogicalRoot(fixture.repoRoot, fixture.cli, fixture.mode, fixture.logicalGroupId, fixture.logicalRoot, true);
+        check(false, "junction-backed blob accepted");
+      } catch (error_) {
+        const expectedCode = process.platform === "win32" ? "ARTIFACT_JUNCTION" : "ARTIFACT_SYMLINK";
+        check(error_ instanceof VitestEvidenceError && error_.code === expectedCode, "junction-backed blob rejected");
+      }
+    } finally {
+      fixture.cleanup();
+    }
+  }
+  {
+    const root = mkdtempSync(path.join(tmpdir(), "botc-vitest-incoming-"));
+    try {
+      const hostile = path.join(root, "hostile");
+      mkdirSync(hostile);
+      try {
+        assertExactDirectoryEntries(root, root, root, ["test-evidence-application"], {
+          missing: "LOGICAL_MANIFEST_INVALID", renamed: "ARTIFACT_UNEXPECTED_ENTRY", extra: "ARTIFACT_UNEXPECTED_ENTRY"
+        }, "hostile incoming");
+        check(false, "hostile incoming accepted");
+      } catch (error_) {
+        check(error_ instanceof VitestEvidenceError && error_.code === "ARTIFACT_UNEXPECTED_ENTRY", "hostile incoming rejected");
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
   process.stdout.write(`run-vitest-logical-group self-test: PASS ${passed}/${passed}\n`);
 }
 
@@ -1176,11 +1749,11 @@ function runCommand(options) {
     const envelopes = MODE_CONFIG[options.mode][options.logicalGroupId].map((segment) =>
       runSegment(repoRoot, cli, options.mode, options.logicalGroupId, segment, root)
     );
-    const manifest = verifyLogical(repoRoot, options.mode, options.logicalGroupId);
+    const manifest = verifyLogical(repoRoot, cli, options.mode, options.logicalGroupId);
     if (envelopes.some((item) => !item.mergeEligibility)) fail("VERIFICATION_FAILED", options.logicalGroupId);
     process.stdout.write(`${options.mode}/${options.logicalGroupId}: PASS ${manifest.selectedIdentities.length}\n`);
   } else if (options.action === "verify") {
-    const manifest = verifyLogical(repoRoot, options.mode, options.logicalGroupId);
+    const manifest = verifyLogical(repoRoot, cli, options.mode, options.logicalGroupId);
     process.stdout.write(`${options.mode}/${options.logicalGroupId}: VERIFY PASS ${manifest.selectedIdentities.length}\n`);
   } else {
     const manifest = aggregate(repoRoot, cli, options.mode);
