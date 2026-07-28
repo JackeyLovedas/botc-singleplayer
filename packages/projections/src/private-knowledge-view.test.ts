@@ -2487,3 +2487,43 @@ describe("Phase 3 Slice 2B19A3A accepted-stream Dreamer projection", () => {
     expect(() => buildAiPrivateKnowledgeView(state, delivery.sourcePlayerId))
       .toThrowError(DomainError);
   });
+
+  it("[2B20A-C28] rejects state-only V7 for both player and AI projection authority", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const state = structuredClone(captured.finalState);
+    const delivery = state.dreamerInformation?.deliveries[0];
+    if (delivery === undefined || !("deliverySchemaVersion" in delivery)) throw new Error("Expected versioned delivery");
+    (delivery as unknown as Record<string, unknown>).deliverySchemaVersion = "dreamer-information-delivered-v7";
+    for (const project of [buildPlayerPrivateKnowledgeView, buildAiPrivateKnowledgeView]) {
+      try {
+        project(state, delivery.sourcePlayerId);
+        throw new Error("Expected PrivateKnowledgeUnavailable");
+      } catch (error) {
+        expect(error).toMatchObject({ code: "PrivateKnowledgeUnavailable" });
+      }
+    }
+  });
+
+  it("[2B20A-C29] rejects hostile state-only V7 accessors and proxies without invoking getters", () => {
+    const captured = loadAcceptedBaseDreamerVortoxV3StreamFixture("GOOD");
+    const sourcePlayerId = captured.finalState.dreamerInformation?.deliveries[0]?.sourcePlayerId;
+    if (sourcePlayerId === undefined) throw new Error("Expected Dreamer source");
+    let getterCalls = 0;
+    const accessorState = structuredClone(captured.finalState);
+    const accessor = accessorState.dreamerInformation?.deliveries[0] as unknown as Record<string, unknown>;
+    Object.defineProperty(accessor, "deliverySchemaVersion", { enumerable: true, get: () => {
+      getterCalls += 1; throw new Error("getter");
+    } });
+    const proxyState = structuredClone(captured.finalState);
+    const proxy = Proxy.revocable(proxyState.dreamerInformation!.deliveries[0]!, {}); proxy.revoke();
+    (proxyState.dreamerInformation!.deliveries as unknown as unknown[])[0] = proxy.proxy;
+    for (const state of [accessorState, proxyState]) {
+      try {
+        buildPlayerPrivateKnowledgeView(state, sourcePlayerId);
+        throw new Error("Expected PrivateKnowledgeUnavailable");
+      } catch (error) {
+        expect(error).toMatchObject({ code: "PrivateKnowledgeUnavailable" });
+      }
+    }
+    expect(getterCalls).toBe(0);
+  });

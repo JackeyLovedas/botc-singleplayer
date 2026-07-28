@@ -1,5 +1,1676 @@
 # Project State
 
+## Current state — 2B20A local restoration review passed; exact-head CI pending
+
+- Active state:
+  `WAITING_CI / 2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI`.
+- The complete independent local restoration implementation review examined
+  exact HEAD `0326c2cd08eed768d4f6097f11dad671f0271143` and returned
+  `ACCEPTED_BEHAVIOR_RESTORATION_REVIEW_PASS`, `findings=[]`,
+  `backlogNonGating=[]`, and no review blockers.
+- Complete review archive:
+  `docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md`,
+  SHA-256
+  `c8991ece223ab6a679b31b56392a04e6c6d24a3b02986ab6d553ec740919bdbf`,
+  `9049` bytes, `143` LF lines.
+- The accepted-behavior restoration is locally reviewed and passing. This
+  checkpoint is not exact-head CI authority and does not claim remote
+  publication, CI success, final PR review, merge, or acceptance.
+- Coverage-profile review remains `COVERAGE_PROFILE_REVIEW_PASS`; source HEAD
+  remains `4d576e205cb20c37ba913b923a1cd39e8d800d18`; profile child remains
+  `3cdb60b7de12b010a5b076800f3c8ab705b0108a`.
+- Product Repair stays `2/2`; no Round 3 exists;
+  `newProductRepairRoundCreated=false`;
+  `acceptedBehaviorRestorationOverrideUsed=true`; Dreamer stays `PARTIAL`.
+- Sole blocker: `PENDING_EXACT_HEAD_PUSH_AND_PR_CI`; next action:
+  `PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI`.
+- Only the implementation-review archive and four active controls change.
+  Production, tests, profiles, workflow, audit, rules, role matrix, and remote
+  state remain unchanged.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20A profile review passed; restoration review pending
+
+- Active state:
+  `HUMAN_BLOCKED / PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW`.
+- Exact profile child HEAD
+  `3cdb60b7de12b010a5b076800f3c8ab705b0108a` passed independent
+  coverage-profile review with verdict `COVERAGE_PROFILE_REVIEW_PASS`,
+  `findings=[]`, `profileDeltaEvidenceInsufficient=false`, and no profile
+  blockers.
+- Complete review archive:
+  `docs/implementation/phase-3-slice-2b20a-final-restoration-coverage-profile-review.md`,
+  SHA-256
+  `51e3c773075b71b1a493c2344f1eb02e12bc726edc9c4c0d7dde0c69c3ebdb40`,
+  `5257` bytes, `81` LF lines.
+- The accepted-behavior restoration implementation review remains pending.
+  No implementation-review verdict has been promoted to pass.
+- Source HEAD remains
+  `4d576e205cb20c37ba913b923a1cd39e8d800d18`; its new exact profile and
+  the preserved old profile both match their authorities. Tuple-delta
+  evidence remains sufficient and confined to the authorized `dreamer.ts`
+  restoration.
+- Product Repair stays `2/2`; no Round 3 exists;
+  `newProductRepairRoundCreated=false`;
+  `acceptedBehaviorRestorationOverrideUsed=true`; Dreamer stays `PARTIAL`.
+- Sole blocker:
+  `PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW`; next action:
+  `RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW`.
+- Only the review archive and four active controls change. Production, tests,
+  profiles, workflow, audit, rules, role matrix, remote state, PR state, CI,
+  merge, and acceptance remain unchanged.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20A final restoration profile child pending review
+
+- Active state:
+  `HUMAN_BLOCKED / 2B20A_FINAL_RESTORATION_COVERAGE_PROFILE_CHILD_PENDING_INDEPENDENT_REVIEW`.
+- Source HEAD `4d576e205cb20c37ba913b923a1cd39e8d800d18` has one complete
+  exact-source segmented authority: `12 physical -> 11 logical -> 1572`,
+  Dreamer core `36`, gained `10`, and no semantic, routing, process, merge, or
+  coverage failure.
+- Closed-schema tuple evidence
+  `8e6ed9ebe2239b48dafd33e3ce1973054d8a5e6225d8f64c1513f3720090e206`
+  proves `63` source files remain present, all zero-hit added/removed tuples are
+  confined to `dreamer.ts`, helper zero delta is exact, and no stable or
+  relocated positive tuple became zero.
+- New exact profile
+  `phase-3-slice-2b20a-4d576e2-final-restoration-v1` binds the complete source
+  SHA. Both old-authority/old-profile and new-authority/new-profile verification
+  return `COVERAGE_APPROVED_PROFILE_MATCH`.
+- The old AP2 profile record remains verbatim at `2931` Git-canonical LF bytes
+  and SHA-256
+  `15f755ab1786d5f2ecb73bb3eacd06951470a7e232c3fd35e97b95233516ed1c`.
+  Only the new profile is appended and only the workflow's exact selector is
+  switched.
+- Audit:
+  `docs/implementation/phase-3-slice-2b20a-final-restoration-coverage-profile-audit.md`,
+  hash `4fb594fd839434b1fc8c457e4ef63036e54d6f4679d2fb5b70ebef4d32a1c73f`.
+- Raw unsegmented coverage is still not authority: `35/1572` assertions were
+  green, then the known worker `onTaskUpdate` timeout caused exit `1`.
+- Inventory remains `1572 / 37 / 37`; Dreamer remains `PARTIAL`; Product Repair
+  remains `2/2`, no Round 3 exists, and the accepted-restoration override stays
+  active.
+- Sole blocker: `PENDING_INDEPENDENT_COVERAGE_PROFILE_REVIEW`; next action:
+  `RUN_INDEPENDENT_2B20A_FINAL_RESTORATION_COVERAGE_PROFILE_REVIEW`.
+- Product source/tests/helper, rules, role matrix, old profile, and all remote
+  state remain unchanged.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20A restoration source ready; coverage profile child pending
+
+- Active state:
+  `RUNNING / 2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD`.
+- The complete independent Correction 1 design-release review of exact HEAD
+  `ba56c05fe4b3f3e2a6acc1c80a83a2ac5fca5b0a` is archived at
+  `docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md`,
+  hash `2d69ee926a9abf27fbbcaedd60e49090de2c6330158612248e8dc87664f1e042`.
+  It returned `DESIGN_RELEASE_PASS`, no findings, and no blockers.
+- The authorized one-symbol restoration and four bounded test/helper changes are
+  complete. Healthy exact-match Vigormortis is normal; every frozen Fang Gu V7,
+  represented impairment, mismatch, No Dashii, Vortox, gained-Dreamer, replay,
+  schema, routing, and ownership boundary remains unchanged.
+- Release-authority validation passes: focused C34/C07/C30/A3B1/C20/C37,
+  modified test files, typecheck, lint, ordinary `35/1572`, AP1 ownership and
+  inventories, Windows `305`, and AP2 segmented `11/1572`.
+- Raw unsegmented coverage is not a pass. Its `35` files and `1572` assertions
+  were green, then one Vitest worker `onTaskUpdate` timeout produced exit `1`.
+  The authoritative segmented gate passed and the raw command was not rerun.
+- Exact profile verification reports
+  `COVERAGE_REQUESTED_PROFILE_MISMATCH`; canonical tuple comparison isolates the
+  mismatch solely to the authorized `dreamer.ts` source delta. Profile and
+  workflow are therefore unchanged in this source commit.
+- Product Repair stays `2/2`; inventory remains `1572 / 37 / 37`; Dreamer
+  remains `PARTIAL`.
+- Sole blocker: `PENDING_COVERAGE_PROFILE_CHILD`; next action:
+  `CREATE_AND_INDEPENDENTLY_REVIEW_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_COVERAGE_PROFILE_CHILD`.
+- The later child must use this source commit as `sourceHead`. No remote action,
+  hosted CI, final review, merge, or acceptance is claimed.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20A restoration design Correction 1 pending review
+
+- Active state:
+  `HUMAN_BLOCKED / 2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW`.
+- Round-1 independent review at
+  `9c3fae097484e04eb85bc3e6b12eddda39982826` returned
+  `DESIGN_RELEASE_FIX_REQUIRED` with exactly two bounded RST-C03 contract
+  blockers. Its complete reviewer body is preserved in the `2bb05599...e3eb`
+  archive.
+- Correction `1/2`, hash `755c5175...4d77`, is self-contained and supersedes
+  only the two defective RST-C03 clauses. All other accepted-normal-Dreamer
+  contracts remain inherited unchanged.
+- Existing canonical `[2B20A-C30]` is the sole
+  `LEGACY_REPLAY_COMPATIBILITY / R2 / T1` primary. The A3B1 hostile test remains
+  supporting-only under its accepted `HOSTILE_REPLAY_REJECTION / R3 / T1`
+  primary classification.
+- Every public V2 validator input is frozen to the one canonical prefix after
+  target and before delivery, including
+  `deliveries: prefixState.dreamerInformation`; final-state and hand-assembled
+  substitutes are forbidden.
+- The production boundary remains one file and one resolver. The corrected test
+  scope permits the existing `rebuild.test.ts` C30 and, only if necessary, an
+  existing test-harness helper parameterization that preserves default Fang Gu
+  output byte-for-byte.
+- Original audit/design hashes remain unchanged. Inventory remains
+  `1572 / 37 / 37`; Dreamer remains `PARTIAL`.
+- Product Repair remains exhausted at `2/2`; no new repair round exists and
+  implementation remains unauthorized.
+- Sole blocker: `PENDING_DESIGN_RELEASE_REVIEW_CORRECTION_1`; next action:
+  `RUN_INDEPENDENT_DESIGN_RELEASE_REVIEW_CORRECTION_1`.
+- No production/test/script/workflow mutation, remote action, future SHA, CI
+  authority, or passing verdict is recorded.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20A accepted behavior restoration pending design release
+
+- Active state:
+  `HUMAN_BLOCKED / 2B20A_ACCEPTED_BEHAVIOR_RESTORATION_PENDING_DESIGN_RELEASE`.
+- PR #46 failed final review at exact HEAD
+  `70ee998a631a347ced5975dc71923a71072fa5cb` with exactly one finding and
+  blocker:
+  `BASE_DREAMER_NON_FANG_GU_NORMAL_AND_REPLAY_REGRESSION`;
+  verdicts were `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`.
+- Accepted main
+  `5a69c90f2d3947556ff45c15c467902b1e28ca43` proves the bounded contract:
+  after unique-Demon and exact catalog matching, every healthy Demon other
+  than Vortox and No Dashii returns `NORMAL_INFORMATION_SUPPORTED`.
+- The regression audit is frozen at
+  `06b441d15f28c5b22a0d4ed4e97d5e167d0cba929b98258aab89c4b6c2b36d19`
+  (`4652` bytes, `111` LF lines). The restoration design is frozen at
+  `67c7dc990388345e3309efa984da02c68363869703f1ced039257095ec24ef23`
+  (`12445` bytes, `286` LF lines).
+- The later implementation is bounded to one production file and one symbol:
+  `packages/domain-core/src/dreamer.ts::resolveBaseDreamerV2NormalCapability`.
+  No schema, public API, support matrix, event version, or role-coverage
+  expansion is designed; Dreamer remains `PARTIAL`.
+- `RST-C01`–`RST-C04` freeze direct resolver, real service, accepted V2 replay,
+  and real mismatch evidence. Inventory remains `1572`; primary and supporting
+  authorities remain `37/37`.
+- Product Repair is exhausted at `2/2`; no Product Repair Round 3 exists.
+  The user-authorized accepted-behavior restoration override is active, but
+  implementation is not authorized until independent design-release review.
+- Sole blocker:
+  `PENDING_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_RELEASE_REVIEW`; next action:
+  `RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_RELEASE_REVIEW`.
+- No production/test/script/workflow change, push, PR mutation, CI run, merge,
+  acceptance, future SHA, or controller-authored passing verdict is recorded.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20AP2 final review Round 1 fix required
+
+- PR #47 final review Round 1 examined exact HEAD
+  `c84b4a2bea37a270c048bee2d724a27f53d05aa6` and returned
+  `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`.
+- The complete verbatim report is
+  `docs/implementation/phase-3-slice-2b20ap2-pr47-final-review-round-1.md`.
+  The only blocker is
+  `CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION`.
+- Operational Recovery synchronizes only docs/control authority under one
+  canonical validation invariant. CI remediation remains `2/2`; rule,
+  profile, source, implementation, workflow, product, and tests are unchanged.
+- This checkpoint does not pass final review or grant acceptance. A new
+  exact-head push and pull-request CI plus a new complete final review are
+  mandatory.
+- Sole blocker:
+  `PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW`; next action:
+  `UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20AP2 initial published hosted CI PASS
+
+- PR #47 hosted authority for exact HEAD
+  `da43ad096fb8c738028f9da2aaaf052dd62282f2` is green:
+  push `30325116297` and pull request `30325119014`, both attempt `1`,
+  completed `success`, each `24/24` jobs and `21/21` unexpired artifacts,
+  with no failed job or artifact.
+- The complete Operational Recovery record is
+  `docs/implementation/phase-3-slice-2b20ap2-hosted-ci-execution-checkpoint.md`
+  (`e55e5a013a039c4cf4bb47caddfc6b56de058b307bfc07eb88f881f81b52695f`,
+  `2721` bytes, `71` LF lines). Old runs were not rerun.
+- Local implementation review remains PASS at
+  `5b371308074e03c24f6e2a6688b64b4b8268bad3`; design remains `2/2`, CI
+  remediation remains `2/2`, and rule/profile/source values are unchanged.
+- This newer docs/control checkpoint cannot inherit `da43ad0` CI. It requires
+  its own exact-head push and pull-request CI before final review.
+- Sole blocker:
+  `PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW`; next action:
+  `UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20AP2 local implementation re-review PASS
+
+- Independent Round-2 rereview of exact HEAD
+  `5b371308074e03c24f6e2a6688b64b4b8268bad3` returned
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS`, `findings=[]`, and local
+  `remainingBlockers=[]`.
+- Its complete verbatim archive is
+  `docs/implementation/phase-3-slice-2b20ap2-local-implementation-rereview-round-2.md`
+  (`006458386fcf9542885448e1b79954f0d8539ac2c4aa16b8378b764a6ca9c715`,
+  `5369` bytes, `87` LF lines).
+- Both Round-1 implementation blockers are closed. Design remains `2/2`, CI
+  remediation remains `2/2`, the rule gate remains `RULE_READY /
+  RULE_DESIGN_PASS`, and the coverage-profile review remains
+  `COVERAGE_PROFILE_REVIEW_PASS` at
+  `da14b5dbdf705bc7776f1c83b799f07b0a29e405`.
+- No source, workflow, profile, product, test, rule, role-matrix, dependency,
+  timeout, include, project, logical-group, PR, push, hosted-CI, or merge
+  mutation is included in this checkpoint.
+- Sole blocker:
+  `PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION`; next action:
+  `UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI`.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20AP2 final CI remediation complete; re-review pending
+
+- The complete Round-1 independent local implementation review of exact HEAD
+  `73563e6ae6b53dd30bbe3eb674a33eace750c166` is preserved verbatim in
+  `docs/implementation/phase-3-slice-2b20ap2-local-implementation-review-round-1.md`
+  (`7c8a12df66f61ab56cb9699b30d7166fe9da964fead6bba409619278cee33279`,
+  `8590` bytes, `145` LF lines).
+- Final CI remediation `2/2` closes its two blockers with strict persisted
+  artifact validation/aggregation and one canonical top-level Autopilot state.
+  No rule, product, test, workflow, profile, profile-audit, dependency,
+  timeout, include, project, logical-group, accepted-history, or role-matrix
+  authority changed.
+- Runner hostile checks pass `36/36`; the exact missing-blob probe now exits
+  `22` with `MERGEABLE_BLOB_MISSING`. Ownership/H1, old/new profiles,
+  ordinary segmented `11 -> 9 -> 1572`, coverage segmented
+  `12 -> 11 -> 1572`, Windows W1-W7 `305`, typecheck, lint, and ordinary full
+  `35/1572` all pass. Raw unsegmented coverage was not run.
+- Design remains `2/2`; `ruleReady=true`, `ruleDesignPass=true`,
+  `designReleasePass=true`, profile review remains
+  `COVERAGE_PROFILE_REVIEW_PASS` at
+  `da14b5dbdf705bc7776f1c83b799f07b0a29e405`, and
+  `ciRemediationRound=2/2`.
+- Sole blocker:
+  `PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`; next
+  action: `RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW`.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20AP2 profile review passed; local implementation review pending
+
+- Independent coverage-profile review of exact child HEAD
+  `da14b5dbdf705bc7776f1c83b799f07b0a29e405` returned
+  `COVERAGE_PROFILE_REVIEW_PASS`, `findings=[]`, and
+  `remainingBlockers=[]`. The complete verbatim archive is
+  `docs/implementation/phase-3-slice-2b20ap2-coverage-profile-review.md`,
+  SHA-256
+  `d59d3e556698fd7ad84712a1710b00325eadc767994de1ce8ab8fcfde146a0e8`.
+
+- Independent recovery review of exact HEAD
+  `cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1` returned
+  `RULE_DESIGN_PASS`, `findings=[]`, and `remainingBlockers=[]`.
+- The exact-source segmented authority passes
+  `12 physical -> 11 logical -> 1572`, Dreamer/Vortox core `36`, gained `10`,
+  with zero discrepancy or failure. Raw unsegmented coverage was not rerun.
+- Profile `phase-3-slice-2b20ap2-cc82a95-hosted-execution-v1` is appended and
+  the intended workflow selector points to it. The old profile record remains
+  Git-canonical byte-identical.
+- Complete full-delta and no-lost-hit evidence is recorded in
+  `docs/implementation/phase-3-slice-2b20ap2-coverage-profile-audit.md` and
+  preserved under
+  `<os-temp>/botc-2b20ap2-profile-child-cc82a95/.vitest-coverage`.
+- Design remains `2/2`; `ruleDesignPass=true`, `designReleasePass=true`, and
+  `ciRemediationRound=1/2`. Product/tests/rules/matrix/include/timeout/
+  dependency/project/logical-group authority is unchanged.
+- Profile-review blockers are empty. Sole next blocker:
+  `PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW`; next
+  action: `RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20AP2 source ready; profile child pending
+
+- The Design Release-authorized infrastructure source implementation is ready
+  in the current commit and documented at
+  `docs/implementation/phase-3-slice-2b20ap2-implementation-status.md`.
+- Production topology is ordinary `11 -> 9 -> 1572`, coverage
+  `12 -> 11 -> 1572`, and Windows W1-W7 `305`; W7 is isolated as
+  `14/22/10 -> 46`.
+- Five canonical coverage tuple sets are complete and relationally equal after
+  persisted-artifact round-trip; raw coverage JSON hashes are diagnostic only.
+- `ciRemediationRound=1/2`, `implementationStarted=true`, source implementation
+  is ready, and no remote action occurred.
+- The raw unsegmented coverage command retained the known H3
+  `onTaskUpdate` diagnostic at exit `1`; the full segmented coverage authority
+  passed and is the release gate.
+- The old profile remains byte-identical and intentionally mismatches the new
+  exact-source coverage. Sole blocker:
+  `PENDING_COVERAGE_PROFILE_CHILD`; next action:
+  `CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD`.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20AP2 Replacement Design Release PASS
+
+- Independent replacement review of Correction 1 at exact HEAD
+  `0bc5db4e46445cd97a3193131086fb1f630fde7c` returned
+  `DESIGN_RELEASE_PASS`, `findings=[]`, and `remainingBlockers=[]`. The complete
+  verbatim replacement report is
+  `docs/implementation/phase-3-slice-2b20ap2-design-release-review-correction-v1-correction-1-replacement-1.md`,
+  SHA-256
+  `7bebc7f15412f0ec9784d9df500786dd5ecfc8d4c63ea2574b2b2060f4f52137`.
+- The prior Correction 1 review archive is retained only as
+  `INVALID_PROVENANCE_HASH_TRANSCRIPTION`; it is not current authority.
+- Design remains `2/2`; this docs-only correction is `1/2` and is not Round 3.
+  Root and slice remain `RUNNING`; `designReleasePass=true`,
+  `designReleaseVerdict=DESIGN_RELEASE_PASS`,
+  `implementationAuthorized=true`, `sourceImplementationPaused=false`, and CI
+  remediation remains `0/2`.
+- The four source WIP files remain byte-identical, unstaged, and outside this
+  selective replacement-review/control commit.
+- Sole blocker is
+  `PENDING_SOURCE_IMPLEMENTATION_REMOVE_HISTORICAL_LITERAL_GATE`. Required next
+  action is `RESUME_SOURCE_IMPLEMENTATION_WITH_RELATIONAL_COVERAGE_GATE`.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20AP2 infrastructure implementation released
+
+- Independent Design Release review of
+  `e1268299ffa21bd3ae86181554bd38c30acc52df` passed with no findings or
+  blockers; the complete report is archived verbatim in the named Correction
+  V1 review file.
+- Design remains `2/2`, no Round 3 exists, `ruleReady=true`, and the old
+  `ruleDesignPass=false` is preserved. The separate release gate is now
+  `designReleasePass=true`, `designReleaseVerdict=DESIGN_RELEASE_PASS`.
+- Root and slice remain `RUNNING`; implementation is authorized but has not
+  started. CI remediation remains `0/2`.
+- Sole blocker: `PENDING_2B20AP2_SOURCE_IMPLEMENTATION`. Required next action:
+  `IMPLEMENT_2B20AP2_SOURCE_COMMIT`.
+- Only the review archive and four controls change.
+
+All sections below are chronological history and do not override this state.
+
+## Current state — 2B20AP2 Design Release Appendix pending independent review
+
+- One docs-only release correction is authorized by
+  `USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT`
+  and materialized as
+  `docs/implementation/phase-3-slice-2b20ap2-design-release-correction-v1.md`.
+- This is an authorized Appendix, not Design Round 3. Design remains `2/2`;
+  `ruleReady=true`, `ruleDesignPass=false`, `designReleasePass=false`,
+  `implementationAuthorized=false`, and CI remediation remains `0/2`.
+- The Appendix preserves the Round 2 design/review as immutable history and
+  replaces only their three blocked release contracts with executed-probe,
+  42-row traceability, singleton-authority, direct-public-bin, fixed-root,
+  exact-schema/failure/test/allowlist/stop-loss contracts.
+- Root and slice are `RUNNING`. Their only blocker is
+  `PENDING_INDEPENDENT_2B20AP2_DESIGN_RELEASE_REVIEW_CORRECTION_V1`; required
+  next action is
+  `RUN_INDEPENDENT_2B20AP2_DESIGN_RELEASE_REVIEW_CORRECTION_V1`.
+- Product, rule, test, profile, dependency, timeout, topology, role coverage,
+  accepted history, PRs, remotes, and CI are unchanged.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this authorized Design Release Appendix state.
+
+## Current state — 2B20AP2 design stop-loss HUMAN_BLOCKED
+
+- The final independent reviewer examined exact Round-2 HEAD
+  `53872611e2782c28afd16584134616dcb2fafcaa` and returned
+  `HUMAN_BLOCKED`. Its complete original report is archived within explicit
+  verbatim boundaries at
+  `docs/implementation/phase-3-slice-2b20ap2-design-review-round-2.md`
+  (`d6e13ba8de627dec662eceb4babc92366526ae30aaaa0ece0742bbd65d43b4d7`,
+  `13282` bytes, `201` LF lines).
+- Design budget `2/2` is exhausted. No additional design round or
+  implementation is authorized. CI remediation remains unconsumed at `0/2`.
+- The three active blockers are exactly the governance R/T classification,
+  mergeable blob/sidecar contract, and executable pnpm/artifact-root trust
+  anchor IDs recorded by the reviewer.
+- Root and slice controls are `HUMAN_BLOCKED`; `ruleReady=true`,
+  `ruleDesignPass=false`, and `implementationAuthorized=false`.
+- Required next action is `HUMAN_RESLICE_OR_GOVERNANCE_DECISION`.
+- This checkpoint changes only the review archive and four active controls.
+  No workflow, script, product, test, profile, dependency, timeout, PR, push,
+  CI, or role-coverage mutation occurred.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this terminal design stop-loss state.
+
+## Current state — 2B20AP2 Design Round 2 pending final independent review
+
+- Round-1 independent review of exact HEAD
+  `f71fffa9a043334283e8e95da27af33833976da1` is materialized in full in
+  `phase-3-slice-2b20ap2-design-review-round-1.md` with
+  `RULE_DESIGN_FIX_REQUIRED` and the exact three design blockers.
+- Standalone Design Round 2 is materialized at
+  `docs/implementation/phase-3-slice-2b20ap2-design-round-2.md`
+  (`c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c`,
+  `46499` bytes, `1304` LF lines).
+- Round 2 closes the proposed contract at design level with a complete
+  C01-C15/SUP registry, explicit R1-R4/T1-T3 authority separation, fixed roots
+  and launcher resolution, true Vitest mergeable blobs, separate same-process
+  sidecars, exact physical/logical mappings, and mandatory hostile correction
+  tests.
+- Design budget is now `2/2`; CI remediation remains untouched at `0/2`.
+  `ruleReady=true`, `ruleDesignPass=false`, and implementation is unauthorized.
+- Product Repair `2/2` and 2B20AP1 Infrastructure Repair `2/2` remain immutable.
+  Dreamer remains `PARTIAL`; product/rule/event/replay/projection/privacy,
+  tests, titles, role coverage, and old profile remain unchanged.
+- Sole blocker:
+  `PENDING_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2`.
+  Required next action:
+  `RUN_FINAL_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW_ROUND_2`.
+- Only the Round-1 review, Round-2 design, and four controls change. No
+  implementation or remote operation occurred.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-final-Round-2-review state.
+
+## Current state — 2B20AP2 complete design pending independent review
+
+- Exact baseline `8881f54bcc8467502d56634be993ebffc53d009b` now has one
+  complete frozen 2B20AP2 design:
+  `docs/implementation/phase-3-slice-2b20ap2-design.md`
+  (`7cc3e31ce9d1a15eab4b392652e63cd00828becddc7a4342fa73d276e4bc5201`,
+  `31184` bytes, `989` LF lines).
+- The design consumes Design Round `1/2`, but no implementation or CI
+  remediation round. `ruleReady=true`, `ruleDesignPass=false`,
+  `implementationAuthorized=false`, and `ciRemediationRound=0/2`.
+- The design fully fixes the future implementation contract for H1-H4,
+  logical/physical execution separation, same-process diagnostics, true
+  process exits, strict artifacts, append-only coverage profile provenance,
+  exact source/profile-child allowlists, local and hosted gates, independent
+  reviews, rollback, and two-round stop-loss.
+- Product Repair `2/2` and 2B20AP1 Infrastructure Repair `2/2` remain
+  immutable history. Product behavior, BOTC rules, events, replay,
+  projections, privacy, tests, LF titles, role coverage, and the old profile
+  remain unchanged.
+- The sole blocker is
+  `PENDING_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW`; next action is
+  `RUN_INDEPENDENT_2B20AP2_RULE_DESIGN_REVIEW`.
+- Only the design and four active controls change. No implementation,
+  workflow, script, test, product, profile, remote, PR, or CI mutation has
+  occurred.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-independent-design-review state.
+
+## Current state — 2B20AP2 rule/governance gates ready; design pending
+
+- The active slice is `2B20AP2 — Hosted Exact-Head CI Execution Closure V1`,
+  classified `CI_TEST_INFRASTRUCTURE / NON_PRODUCT`, on exact initial HEAD
+  `03a4184282cde5f972a9ccab94f36e3a2aa79ed5`.
+- Fresh rule evidence is `RULE_READY` with `unresolvedConflicts=[]`; Dreamer
+  remains `PARTIAL`, and product behavior, rule semantics, production files,
+  role coverage, and new role declarations remain unchanged.
+- The old push/PR failures have been fully classified as H1 accepted-history
+  shallow-checkout unavailability, H2 stale append-only coverage profile, H3
+  duration-sensitive Linux worker-RPC/shutdown evidence, and H4 Windows W7
+  nonzero exit without a same-process global-error channel. The old runs are
+  immutable and must not be rerun.
+- Governance verdict is `GO` only for the next complete design plus independent
+  rule-design review. The active state is `RUNNING`; `designRound=0/2`,
+  `ruleDesignPass=false`, and implementation remains unauthorized.
+- A separate 2B20AP2 `ciRemediationRound=0/2` budget is active. It is not
+  2B20AP1 Repair 3 and does not rewrite Product Repair `2/2` or 2B20AP1
+  Infrastructure Repair `2/2`.
+- Logical topology is frozen at ordinary `9`, coverage `11`, and Windows
+  `W1-W7`. Physical execution may become ordinary `11` blobs and coverage `12`
+  blobs only inside those logical groups, with Dreamer/Vortox partition
+  `14/22/10`, union `46`, and zero overlap/missing/unexpected identities.
+- The old coverage profile remains immutable. Any future profile must use the
+  authorized source-commit/profile-child structure, exact local coverage delta,
+  and independent profile review.
+- The sole blocker is
+  `PENDING_2B20AP2_COMPLETE_DESIGN_AND_INDEPENDENT_REVIEW`; next action is
+  `CREATE_2B20AP2_COMPLETE_DESIGN_AND_RUN_INDEPENDENT_REVIEW`.
+- This checkpoint changes only three new evidence/audit/governance documents
+  and the four active controls. It makes no code, test, workflow, profile,
+  dependency, timeout, remote, PR, CI, or merge change.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this 2B20AP2 pre-design state.
+
+## Current state — 2B20AP1 local review passed; stacked publication and exact-head CI pending
+
+- Independent control review of exact HEAD
+  `140d64e86a03244972246ec8027f8a2943eb71e4` passed with
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS`, no findings, and no review
+  blockers. Its complete output is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-control-operational-recovery-review-final.md`
+  (`28238d60f88570ec51974f02b6c980a7f6eb01767b6902b3b7d2aab01c6ac811`,
+  `10864` bytes, `260` LF, one terminal LF).
+- Root, slice, file-URL override, and control-recovery state now agree on
+  `HUMAN_BLOCKED /
+  2B20AP1_LOCAL_CLOSURE_COMPLETE_READY_FOR_STACKED_PUBLICATION_AND_EXACT_HEAD_CI`.
+  `local2B20AP1Status` is
+  `LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI`,
+  and `2B20AP1Acceptance` is `UNACCEPTED_LOCAL_CANDIDATE`.
+- Active blockers are exactly
+  `PENDING_2B20AP1_STACKED_PUBLICATION_AND_EXACT_HEAD_CI`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`; next action is
+  `PUBLISH_PRODUCT_AND_2B20AP1_STACKED_BRANCHES_AND_RUN_EXACT_HEAD_CI`.
+- Product Repair remains complete `2/2`; Infrastructure Repair remains
+  consumed/stopped/overridden `2/2`; the historical bounded correction
+  remains consumed `1/1`. No new round, Repair 3, second correction, or
+  implementation authorization is created.
+- Candidate, ownership, traceability, supporting-authority, ordinary routing,
+  coverage routing, Windows routing, C32 static, and retained test evidence
+  remain as independently reviewed. C32 hosted evidence is still pending
+  exact-head CI.
+- Only one review archive and the four active controls change in this
+  checkpoint. No publication, remote operation, PR mutation, CI run, review
+  comment, implementation, test, workflow, profile, dependency, or timeout
+  change has occurred.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this local-closure-ready-for-publication state.
+
+## Current state — 2B20AP1 control recovery pending independent control review
+
+- The control-only Operational Recovery authorized by
+  `USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT`
+  is materialized on parent
+  `997161fb1dccbfcd672ce14ba28799cb79809ba7`. Only
+  `AUTOPILOT_STATE.json`, `CURRENT_TASK.md`, `PROJECT_STATE.md`, and
+  `AUTOPILOT_LOG.md` change.
+- The prior independent reviewer found the `997161fb…` implementation
+  technically complete and returned one control finding:
+  `CONTROL_ACTIVE_FILE_URL_OVERRIDE_BLOCKER_STATE_CONTRADICTION`. The
+  top-level active blocker still named
+  `LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION`, while the slice
+  already recorded pending independent review. No code, test, candidate,
+  ownership, traceability, routing, or confidentiality defect remained open.
+- Root and slice now agree on `HUMAN_BLOCKED /
+  2B20AP1_FILE_URL_OVERRIDE_IMPLEMENTED_PENDING_INDEPENDENT_CONTROL_REVIEW`,
+  next action
+  `RUN_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW`, and exactly
+  three active blockers:
+  `PENDING_INDEPENDENT_2B20AP1_FILE_URL_OVERRIDE_CONTROL_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Branch/product/PR authority remains
+  `infra/2b20ap1-ownership-supersession-routing-v1`,
+  `phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93`,
+  and PR #46 product context. Product Repair remains `2/2 /
+  COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE`; Infrastructure Repair
+  remains consumed, stop-loss reached, and override used at `2/2`. No new
+  repair round exists and implementation remains unauthorized.
+- Historical review findings remain in their original review objects with
+  their original verdicts. Active disposition metadata records technical
+  findings as `CLOSED_BY_IMPLEMENTATION`, replaced lifecycle assumptions as
+  `SUPERSEDED_BY_PUBLIC_API_LIFECYCLE_OVERRIDE`, the control finding as
+  `ADDRESSED_PENDING_INDEPENDENT_CONTROL_REVIEW`, and completed LF/ownership
+  implementation as `LOCAL_IMPLEMENTATION_COMPLETE_PENDING_PUBLICATION`.
+- No review archive, script, production, test, workflow, profile, dependency,
+  timeout, remote, PR, or CI change is part of this checkpoint. The local
+  result remains unaccepted until a new independent read-only control review.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-independent-control-review state.
+
+## Current state — 2B20AP1 file-URL single-classification override pending independent review
+
+- Exact authorization
+  `USER_AUTHORIZED_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_STOP_LOSS_OVERRIDE_AND_PUBLICATION_PIPELINE`
+  permits one bounded local change on parent
+  `2e3ee6457dbf5fd22062db7f28104e5040be1fd8`. The verifier plus four active
+  controls are the complete allowlist; there is no review archive in this
+  phase.
+- Structured file-URL parsing now feeds exactly one root classification and
+  direct safe rendering. Repository, home, temporary, runner-workspace,
+  absolute, and UNC outputs cannot be passed back through the generic path
+  matcher after placeholder rendering.
+- The prior final-review witness now renders
+  `<repo-root>/private/repo.ts:1:2` instead of
+  `<unc-path>/<basename><repo-root>/private/repo.ts:1:2`. No raw sensitive
+  absolute path was exposed by the prior defect. Windows and POSIX root forms,
+  spaces, encoded non-ASCII, line/column suffixes, multi-URL messages, native
+  Error message/stack, exact placeholder cardinality, and idempotence are
+  covered inside existing lifecycle group 1/check 26; the suite remains
+  `37/37` with twelve groups.
+- Candidate/inventory evidence remains
+  `d8ae2d1f...9129 / 391257 bytes` and
+  `58bd4b69...e1b8 / 1572 identities / 12 LF titles`; ordinary routing is
+  `9/9`, coverage routing `11/11`, ownership `5/5`, and Windows inventory
+  `305 (9/90/52/73/9/26/46)`. C32 static wiring is `PASS`; hosted evidence is
+  still pending and is not inherited.
+- Root and slice controls are `HUMAN_BLOCKED /
+  2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_PENDING_REVIEW` with the
+  sole local blocker
+  `PENDING_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW`.
+  Infrastructure Repair remains exhausted `2/2`; all consumed/reached/override
+  flags remain true; no Repair 3 or new round exists. The historical bounded
+  correction remains consumed `1/1` and is not rewritten.
+- Product Repair stays `2/2 /
+  COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE`; PR #46 is product context
+  only. Implementation and continuation are false. No full coverage, hosted
+  CI, profile refresh, remote operation, push, PR mutation, or downstream
+  Linux/Windows work is authorized in this phase.
+- Required next action:
+  `RUN_INDEPENDENT_2B20AP1_FILE_URL_SINGLE_CLASSIFICATION_OVERRIDE_REVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this pending-independent-review state.
+
+## Current state — 2B20AP1 correction budget exhausted; HUMAN_BLOCKED
+
+- Two complete independent diagnostic stop-loss reports are now preserved
+  verbatim. Round 1 is
+  `docs/implementation/phase-3-slice-2b20ap1-diagnostic-stop-loss-override-review-round-1.md`
+  (`8ebcf7d5dd0535aa0075538c3228510891aa6b3c3d036eb63d2202164a92d0c0`,
+  `10916` bytes, `177` LF), reviewed HEAD
+  `203f75d01f42dcb2a3e177875405f02d3f52dc6d`, timestamp
+  `2026-07-27T02:50:37.0878515Z`, verdict
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED`.
+- The final report is
+  `docs/implementation/phase-3-slice-2b20ap1-diagnostic-stop-loss-override-review-final.md`
+  (`0d9a38d9d329e47c6285254b0fcf589772de91a6136a0e37f9da862635c5a3aa`,
+  `12454` bytes, `244` LF), reviewed HEAD
+  `48d9071038757c66281e4f8bb348d82306894bf2`, timestamp
+  `2026-07-27T03:26:55.2764579Z`, verdict `HUMAN_BLOCKED`.
+- The unique active local blocker is
+  `LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION`. The correction
+  closes the first review's Windows/UNC-space, compound-query-secret, and
+  control-reconciliation blockers only as historical correction evidence; it
+  does not satisfy exact repository/home/temp Windows file-URL root
+  classification.
+- Root and slice controls are `HUMAN_BLOCKED /
+  2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_CORRECTION_BUDGET_EXHAUSTED`.
+  Infrastructure Repair is exhausted at `2/2`; the bounded correction is
+  consumed at `1/1`; stop-loss override remains used; Repair 3, a new repair
+  round, and a second correction are not authorized. Implementation and
+  continuation authorization are false.
+- PR #46 is retained only as product-PR context. No infrastructure PR exists;
+  the infrastructure candidate is unpublished and local. No hosted CI,
+  full-coverage, or profile result exists for this terminal docs/control
+  recovery, and no prior result is inherited as acceptance.
+- Downstream blockers remain separately
+  `LINUX_WORKER_RPC_CI_BLOCKER` and `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`. This
+  recovery changed no script, test, workflow, product, rule, coverage profile,
+  dependency, timeout, routing topology, or accepted history.
+- Required next action:
+  `REQUEST_NEW_USER_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_FILE_URL_ROOT_CLASSIFICATION`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this terminal active state.
+
+## Current state — 2B20AP1 bounded correction pending second independent review
+
+- Independent review of
+  `203f75d01f42dcb2a3e177875405f02d3f52dc6d` returned
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED` at
+  `2026-07-27T02:50:37.0878515Z`. The single authorized correction is
+  materialized locally without creating a review archive, Infrastructure
+  Repair 3, or a new repair round.
+- Only the verifier and four active controls change. The verifier now fully
+  consumes Windows drive/UNC/file-URL paths containing spaces and retains only
+  the authorized placeholder plus safe basename and optional line/column.
+  Existing probes cover message, stack, native cause, injected stderr, mixed
+  separators, case, idempotence, and deterministic output.
+- Compound query names are segmented on `_`/`-`; an exact
+  token/key/secret/signature/sig/credential/authorization segment redacts its
+  value to `<redacted>`. Required compound names and case/multi-parameter
+  forms pass, while view/monkey/hockey, host, and safe path remain unchanged.
+- The six-key/three-source external lifecycle format, candidate bytes,
+  identity encoding, accepted histories, product behavior, rule semantics,
+  test titles/bodies, routing topology, coverage profile, workspace,
+  dependency, timeout, and process-group contracts remain unchanged. The
+  non-gating truncation-marker suggestion is explicitly not implemented.
+- Fresh gates pass: lint and safety self-test `37/37` in twelve existing
+  groups; candidate
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`
+  (`391257` bytes), inventory
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`
+  (`1572/12`), coverage `7/7`, routing `9/11`, ownership `5/5`, Windows
+  `305`, focused `296+207`, typecheck, full lint, and ordinary
+  `35 files / 1572 tests`.
+- Root and slice are `HUMAN_BLOCKED /
+  2B20AP1_BOUNDED_CORRECTION_PENDING_SECOND_INDEPENDENT_REVIEW`.
+  `overrideKind` is exactly
+  `DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION_ONLY`; all three exact
+  Infrastructure Repair consumed/stop-loss/override flags are true; Repair
+  remains `2/2`; new-round and implementation authorization are false.
+- Product authority is explicitly
+  `phase-3/reachable-base-dreamer-settleability-closure@167d800e20bed5431764092877085886df4b7c93`;
+  PR remains #46. The unique correction is `1/1`, parent
+  `203f75d01f42dcb2a3e177875405f02d3f52dc6d`, with no future SHA recorded.
+- The only local blocker is
+  `PENDING_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW`. Linux
+  worker-RPC and Windows W7 remain separate downstream blockers. Full
+  coverage, hosted CI, profile refresh, remote calls, push, and PR mutation
+  were not performed. Next:
+  `RUN_SECOND_INDEPENDENT_2B20AP1_BOUNDED_CORRECTION_REVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this single bounded correction.
+
+## Current state — 2B20AP1 diagnostic-redaction stop-loss override pending independent review
+
+- Exact authorization:
+  `USER_AUTHORIZED_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_STACKED_PUBLICATION_AND_CONDITIONAL_2B20A_CLOSEOUT`.
+  The local implementation is stacked on parent
+  `611f3289a19bb630176b1638124abbef48bbd23f`; no future commit SHA is
+  recorded in active controls.
+- The stop-loss override changes only
+  `scripts/verify-vitest-ownership-contracts.mjs` plus the four active
+  controls. It introduces the versioned
+  `vitest-lifecycle-diagnostic-redaction-v1` confidentiality boundary without
+  changing candidate bytes, identity encoding, accepted histories,
+  ownership/routing topology, test titles/bodies, workflow, production code,
+  rule semantics, coverage profile, workspace, dependencies, timeout, or
+  process groups.
+- The exact external lifecycle JSONL remains six keys in fixed order and
+  three public sources. Safe output classifies repository, home, temporary,
+  GitHub runner workspace, other absolute, UNC, and file-URL paths; redacts
+  bearer/GitHub/npm/API tokens, URL userinfo, sensitive query values, and
+  candidate/baseline/canonical secrets; bounds input to `4096`, output to
+  `500`, and native-error cause depth to `4`.
+- Native Error inspection is limited to own data descriptors for
+  `name/message/stack/cause` after `isNativeError`. Unknown objects and
+  proxies are opaque. Existing self-test groups cover nested and cyclic
+  causes, a safe primitive cause, multiple stack paths, getter/trap
+  non-invocation, CRLF normalization, deterministic repeated JSONL, all three
+  sources, and primary/close/warning/capture paths. Counts remain `37/37` and
+  twelve lifecycle groups.
+- Fresh candidate bytes remain
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`;
+  structured inventory remains
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`,
+  `1572` identities and `12` LF titles. Coverage verification, ordinary and
+  coverage routing, Windows inventory, focused application/rebuild, targeted
+  lint, typecheck, full lint, and the full ordinary `1572` tests pass.
+- Active root and slice controls are `HUMAN_BLOCKED /
+  2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_PENDING_REVIEW`.
+  The exhausted Infrastructure Repair count remains `2/2`; no Repair 3 or
+  new infrastructure repair round exists. Implementation and continuation
+  authorization are false.
+- The only local blocker is
+  `PENDING_INDEPENDENT_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_REVIEW`.
+  `LINUX_WORKER_RPC_CI_BLOCKER` and `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER` remain
+  separate downstream blockers. Full local coverage, hosted CI, profile
+  refresh, remote calls, push, and PR mutation were not performed.
+- Required next action:
+  `RUN_INDEPENDENT_2B20AP1_DIAGNOSTIC_REDACTION_STOP_LOSS_OVERRIDE_REVIEW`.
+  Publication and conditional 2B20A closeout remain unauthorized until that
+  review returns its exact verdict.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this current local stop-loss closure.
+
+## Current state — 2B20AP1 HUMAN_BLOCKED; Infrastructure Repair 2/2 exhausted
+
+- The independent final implementation review examined exact HEAD
+  `de2e008fb85fd3c1ed933936af58cdbd970f879d` and returned `HUMAN_BLOCKED`.
+  Its complete output is preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-infrastructure-implementation-review-final.md`
+  (`81022f93b993f0ba02febfeadf2789595539eef1c260ff71546635fc2c881a01`,
+  `10092` bytes, `172` LF lines).
+- Active local blockers are exactly
+  `LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE` and
+  `CONTROL_ACTIVE_REPAIR_STATE_CONTRADICTION`. The first is an unresolved
+  implementation confidentiality boundary; the second review finding is
+  recorded without claiming code acceptance.
+- Active root and slice controls are synchronized to `HUMAN_BLOCKED /
+  2B20AP1_INFRASTRUCTURE_REPAIR_BUDGET_EXHAUSTED`, Infrastructure Repair
+  `2/2`, and `implementationAuthorized=false`. No Repair 3 is authorized.
+- The candidate and authorized local gates remain historical PASS evidence, but
+  local acceptance is blocked. No code, test, workflow, rule, production,
+  coverage-profile, workspace, dependency or timeout file changed in this
+  operational recovery.
+- Linux worker-RPC and Windows W7 remain separately recorded downstream
+  blockers. No hosted CI, profile, full coverage, candidate generation,
+  push or PR mutation was performed.
+- Continuation requires
+  `REQUEST_NEW_USER_REPAIR_AUTHORIZATION_OR_RESLICE_FOR_2B20AP1_DIAGNOSTIC_REDACTION_AND_CONTROL_RECONCILIATION`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this terminal stop-loss state.
+
+## Current state — final Infra Repair 2/2 locally closed pending review
+
+- The final bounded implementation repair modifies only the lifecycle verifier
+  and four active controls. It closes the three exact Repair-1 review findings
+  locally without changing product behavior, rule semantics, accepted
+  histories, test titles/bodies, ownership/routing topology, coverage profile,
+  workspace, dependencies, timeout or process groups.
+- External lifecycle diagnostics now have one exact six-key JSONL serializer,
+  the approved three sources, deterministic category ordinals and preserved
+  safe messages. Capture integrity failures remain distinct and no lifecycle
+  JSON output is followed by a bare code.
+- The existing twelve lifecycle groups are now explicitly checks 26–37 and
+  include every required failure injection plus real Vitest `1572/12`,
+  wrapper-entry-one, public close and natural return. No thirteenth group was
+  created.
+- Candidate TestCase state is read only through public `result()`. Exact
+  pending is accepted; executed/skipped/malformed/throwing results fail closed;
+  the candidate path contains no private task access.
+- Fresh candidates are byte-identical at
+  `d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129`;
+  all candidate and Windows-inventory OS-temp outputs were removed.
+- Ownership/lifecycle `37/37`, coverage `7/7`, 9/11 routing over 1572, Windows
+  305, focused `296+207`, targeted lint, typecheck, full lint and full ordinary
+  `35/1572` pass.
+- Infrastructure Repair is now exhausted at `2/2`; no Repair 3 is available.
+  Status is `RUNNING /
+  2B20AP1_INFRA_REPAIR_2_LOCALLY_CLOSED_PENDING_FINAL_INDEPENDENT_IMPLEMENTATION_REVIEW`.
+  A complete independent implementation review is mandatory next.
+- Full coverage, hosted CI/profile, downstream Linux worker-RPC and Windows W7,
+  push/PR mutation and the next slice remain outside this local closure.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the final Repair-2 local closure.
+
+## Current state — Infra Repair 1 review failed; final Repair 2/2 authorized
+
+- The independent implementation review of commit
+  `2e7ecb95e589eceff38484d928017260314bfb36` is preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-infrastructure-implementation-review-repair-1.md`,
+  SHA-256
+  `b6dacc4f4c37ea7abc47e7af357b752711cc0a71ed3ef709d8316bbf4792fb01`,
+  `9074` bytes and `120` LF lines.
+- Verdict is `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_FIX_REQUIRED`. The
+  reviewer independently reconfirmed the 5/5 ownership contracts, 37/37
+  trace/support rows, 1572-test 9/11 routing, Windows 305 split, immutable
+  accepted baselines, exact allowlist, title-only test edits, and no product
+  or rule change.
+- Three local blockers remain: exact external lifecycle diagnostic shape,
+  complete evidence for the frozen twelve lifecycle groups, and removal of
+  private `TestCase.task` access in favor of public `result()`.
+- Infrastructure Repair remains `1/2` during this docs/control checkpoint.
+  The final authorized implementation is Repair `2/2`, limited to those three
+  findings. Any remaining blocker after Repair 2 is terminal
+  `HUMAN_BLOCKED`; no Repair 3 is permitted.
+- Control is `RUNNING /
+  2B20AP1_INFRA_REPAIR_1_REVIEW_FIX_REQUIRED_REPAIR_2_AUTHORIZED`.
+  Implementation continuation is authorized only for the final bounded
+  repair.
+- Full local coverage, hosted CI/profile, Linux worker-RPC, Windows W7,
+  push/PR mutation, production, rules, role coverage and the next slice remain
+  untouched.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this final Repair-2 authorization.
+
+## Current state — 2B20AP1 Infra Repair 1/2 locally closed
+
+- The approved ownership/supersession/routing implementation is complete
+  locally in the exact eleven-file allowlist. Infrastructure Repair is now
+  `1/2`; production behavior, rule semantics, topology, profile, workspace,
+  dependencies, timeouts and role-coverage status are unchanged.
+- Four accepted supersessions and two virtual whole-test predecessors preserve
+  immutable A3A/A3B1 baselines. Current 2B20A authority resolves exactly
+  `37/37` primaries and `37/37` supporting authorities, with `22/22`
+  application executions and zero compound/borrowed/collision findings.
+- Public structured candidate v2 collection closed naturally and verified
+  byte-for-byte. It contains all `1572` tuples and exactly `12` LF-bearing
+  titles. Inventory SHA-256 is
+  `58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8`;
+  traceability SHA-256 is
+  `a801af97875d7ea6921b0bc21b7b66b0f50d7ef2b2d15df81f127b7953331eb5`.
+  No candidate artifact remains.
+- Ownership `37/37`, coverage `7/7`, live `9/9` ordinary and `11/11`
+  coverage routing, five ownership contracts, Windows inventory `305`,
+  focused tests `296+207`, targeted lint, full typecheck, full lint and full
+  ordinary test `1572/1572` all pass.
+- C32 static wiring is `PASS`; hosted evidence remains
+  `PENDING_EXACT_HEAD_CI`. Full local coverage was intentionally not run by
+  the approved Section 8 boundary. No push or PR/CI mutation occurred.
+- Control is `RUNNING /
+  2B20AP1_INFRA_REPAIR_1_LOCALLY_CLOSED_PENDING_CONTROLLER_REVIEW`;
+  implementation authorization is consumed and continuation is not
+  authorized.
+- Remaining blockers are only `LINUX_WORKER_RPC_CI_BLOCKER` and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`. Next action is
+  `REPORT_2B20AP1_INFRA_REPAIR_1_LOCAL_CLOSURE_TO_CONTROLLER`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override this completed local implementation checkpoint.
+
+## Current state — public lifecycle design passed; implementation authorized
+
+- The final complete independent review of public lifecycle Correction 1 is
+  preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-review-final.md`,
+  SHA-256
+  `2af6aa65ef1ae4f9f8cbf9a9d3f651fa89f4e28ecd651dafaf2bb5a3a045f911`,
+  `4694` bytes and `85` LF lines, bound to exact reviewed HEAD
+  `2e97457a0f37ee10f501957eaba084a1ddf10ead` and timestamp
+  `2026-07-26T11:55:29.4291682Z`.
+- The reviewer returned `RULE_DESIGN_PASS`, no findings, no blockers and
+  `implementationAuthorized=true`. Create, collect, corrected close and
+  candidate publication contracts all passed. LF compatibility and topology
+  passed statically; the exact eleven-file implementation upper bound passed.
+- `LFC1-PUBLIC-CLOSE-FULFILLED-WITH-ERROR-DIAGNOSTIC` is closed. Close success
+  requires Promise fulfillment plus zero normalized close-error records during
+  observable `CLOSING`; Promise rejection, fulfilled-with-error, invalid
+  capture and combined-primary paths all prevent candidate creation or
+  publication.
+- Warning-only close stderr remains deterministic non-error output. Actual
+  integration must still prove zero close-stage diagnostics, fulfilled public
+  close and natural process exit. No private state, hook order, internal glob
+  count or pre-return close is an acceptance authority.
+- The approved implementation authority is governance `GO`, Round 3 and its
+  pass, LF-safe Correction 2, public lifecycle Correction 1 and this pass.
+  Candidate-v2, `1572`/`12` identities, four accepted histories, ownership,
+  supersession, traceability and ordinary/coverage/Windows routing remain
+  frozen.
+- Lifecycle correction is `1/2`; Correction `2/2` is unnecessary.
+  Infrastructure Repair is still `0/2`. It will become `1/2` only in the first
+  formal implementation commit after all authorized local evidence is
+  recorded.
+- Control is `RUNNING /
+  2B20AP1_PUBLIC_VITEST_LIFECYCLE_RULE_DESIGN_PASS_IMPLEMENTATION_AUTHORIZED`;
+  `implementationAuthorized=true`.
+- Remaining blockers are `OWNERSHIP_SUPERSESSION_AND_ROUTING_REQUIRED`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `IMPLEMENT_2B20AP1_PUBLIC_LIFECYCLE_AND_LOCAL_CLOSURE`.
+- Product Repair remains complete and unchanged. No script, test, workflow,
+  production, candidate, coverage, Infrastructure Repair, push, PR, CI or
+  Linux/Windows work was performed during the review closeout.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active implementation authorization.
+
+## Current state — public Vitest lifecycle Correction 1 pending review
+
+- The first complete independent review of the public lifecycle override is
+  preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-review-round-1.md`,
+  SHA-256
+  `275a0fe3bd0ea99a6f5e7b917a033de1ed8936992a7d64b8d7474b54b248b0aa`,
+  `5969` bytes and `101` LF lines. It is bound to reviewed HEAD
+  `99be3e69957bc4ca53b9cab9785b079be73fbf8d` and timestamp
+  `2026-07-26T11:34:14.0459835Z`.
+- Reviewer verdict is `RULE_DESIGN_FIX_REQUIRED` with only
+  `LFC1-PUBLIC-CLOSE-FULFILLED-WITH-ERROR-DIAGNOSTIC`. Vitest `3.2.6` can
+  fulfill public `close()` after member close rejections because it uses
+  `Promise.allSettled` and reports each rejection through public injected
+  stderr as `error during close`. The parent gate checked only Promise
+  rejection and could therefore publish an invalid candidate.
+- Complete standalone Correction 1 is
+  `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-v1-correction-1.md`,
+  SHA-256
+  `12b8adf1bdf5c8b057a8303a0861499d08c788f5334afd0ef6950fad316bc276`,
+  `26817` bytes and `650` LF lines, with terminal
+  `READY_FOR_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW`.
+  It is lifecycle Correction `1/2`, not Design Round 4, and inherits parent
+  commit `99be3e69957bc4ca53b9cab9785b079be73fbf8d`.
+- Correction 1 closes only `LFC1` at design-contract level. All parent PASS
+  contracts remain self-contained and unchanged: returned-instance-only close,
+  one repository collection wrapper entry, public collection APIs, structured
+  identity, `1572`/`12` LF preservation, candidate-v2, same-directory atomic
+  publication, historical finding dispositions, topology and eleven-file
+  upper bound.
+- Close now succeeds if and only if public `close()` fulfills and the public
+  injected stderr captured zero normalized close-error records while the
+  observable wrapper phase was `CLOSING`. Promise rejection, an exact anchored
+  `error during close` record or invalid close capture maps to `CLOSE_FAILED`.
+  All discard candidate bytes and prohibit any publication.
+- The capture boundary is one public `VitestOptions.stderr` Writable per
+  lifecycle invocation. It records each write before callback, tags the
+  repository phase, strictly decodes UTF-8, normalizes only line endings and
+  uses exact anchored, case-sensitive sentinel matching. It observes no
+  `closingPromise`, private collection or plugin-hook order.
+- Non-error close stderr is retained, safely redacted and emitted as
+  `CLOSE_STDERR_NON_ERROR_DIAGNOSTIC`; it is neither swallowed nor promoted
+  into a false close failure. External diagnostics use fixed-order,
+  fixed-key JSON-lines without timestamps, locale collation or random IDs.
+- A primary failure plus Promise or stderr close failure retains both channels
+  in deterministic order. Fulfilled-with-close-error is `CLOSE_FAILED` even
+  though the Promise resolved; no candidate or partial final exists.
+- Existing groups 2, 6 and 7 gain clean/warning success, rejected and
+  fulfilled-with-close-error, plus combined-primary subcases. Existing group
+  12 requires real Vitest close with zero close diagnostics and natural exit.
+  The total remains twelve groups; no new script/test file, timeout, profile,
+  project or process group is introduced.
+- Control is `HUMAN_BLOCKED /
+  PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_CORRECTION_1_REVIEW`.
+  Only independent `RULE_DESIGN_PASS` with empty blockers may authorize later
+  implementation. Correction `2/2` remains available only for a wholly
+  in-scope fix-required verdict and consumes no Infrastructure Repair.
+- Product Repair remains complete. Rules, product behavior, test identities
+  and titles, accepted hashes, role coverage, scripts, tests, workflow,
+  workspace, package, lockfile, topology, profile, process groups, timeouts
+  and dependencies are unchanged. No candidate, test, coverage,
+  implementation, Infrastructure Repair, push, PR, CI or downstream
+  investigation was performed.
+
+All sections below this historical checkpoint are retained as history; they do
+not override the active implementation authorization.
+
+## Current state — public Vitest lifecycle override pending independent review
+
+- User authorization
+  `USER_AUTHORIZED_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_AND_LOCAL_END_TO_END_CLOSURE`
+  opened one bounded docs/control-only replacement of the Vitest lifecycle
+  contract. It did not authorize implementation.
+- Complete override authority is
+  `docs/implementation/phase-3-slice-2b20ap1-public-vitest-lifecycle-override-v1.md`,
+  SHA-256
+  `f944d431e9003a52eb4b0d1c8d5f5fcc20e820430d185f3649521e1605010d0b`,
+  `22587` bytes and `494` LF lines, with terminal
+  `READY_FOR_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW`.
+  Override ID is `2B20AP1-PUBLIC-VITEST-LIFECYCLE-OVERRIDE-V1`; parent HEAD is
+  `0b895c4a2056fbe2bac41802b3a5efd6dcc82600`. This is not Design Round 4
+  and the document contains no future materialization SHA.
+- Round 3 and its passing review, the LF amendment, both corrections and all
+  LF reviews remain immutable. Compatible identity/candidate contracts are
+  inherited; only Correction 2's contradictory internal lifecycle
+  requirements are replaced.
+- The observable lifecycle is create, one repository-owned
+  `collectSemanticInventory` wrapper entry, structured validation/encoding,
+  public close and only then same-directory atomic candidate publication.
+  A rejected create returns no usable instance and no caller close obligation.
+  Every successfully returned instance is closed exactly once. Collection,
+  validation, encoding or close failure publishes no candidate. Combined
+  primary/close failure retains both diagnostics. Any publication failure
+  leaves no partial final.
+- Collection uses only public Vitest `3.2.6`
+  `globTestSpecifications`, `collect` or `collectTests` and structured
+  `TestModule` / `TestCase` data. Repository-wrapper entry count is exactly
+  one; Vitest's internal glob invocation count is explicitly non-authoritative.
+  No private hook, generated chunk, `closingPromise`, pre-return close or
+  internal cleanup ordering may become an acceptance gate.
+- Diagnostics are assigned to observable repository-wrapper phases. A warning
+  or deprecation observed while awaiting `createVitest` belongs to the create
+  outcome/diagnostic record; its private emission order, raw ANSI form,
+  internal occurrence count and source chunk are not frozen.
+- Exact LF-safe identity remains
+  `[project,file,ancestorPath,title]` with literal LF/CR/CRLF preserved,
+  locale-independent ordinal sort and
+  `vitest-semantic-identity-json-tuple-v1`. All `1572` identities and `12` LF
+  titles remain unchanged, as do candidate-v2 schema and accepted ownership
+  histories.
+- Historical final-review findings are preserved with replacement
+  dispositions:
+  `LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN` →
+  `DESIGN_CONTRACT_REPLACED_BY_PUBLIC_API_PHASE_AWARE_DIAGNOSTICS`;
+  `LF1-GLOB_INVOCATION_COUNT_CONTRADICTION` →
+  `INTERNAL_INVOCATION_COUNT_NOT_AN_ACCEPTANCE_AUTHORITY`; and
+  `LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE` →
+  `PRE_RETURN_CLOSE_NOT_REQUIRED_AND_NOT_EXPRESSIBLE`. They are not active
+  blockers while the replacement awaits review.
+- A later implementation must add the exact twelve lifecycle self-test groups
+  inside existing ownership surfaces and prove real Vitest `3.2.6`
+  `1572`/`12` integration, byte-deterministic candidate output and ordinary
+  no-hang exit. No new script/test, project, process, profile, dependency or
+  timeout is permitted.
+- The exact future eleven-file allowlist inherits Round 3 plus the LF
+  amendment: three ownership scripts, the CI workflow, two existing test
+  files, the 2B20A traceability file and four controls. Production and
+  mathematician-title files remain forbidden.
+- Control is `HUMAN_BLOCKED /
+  PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_PUBLIC_VITEST_LIFECYCLE_OVERRIDE_REVIEW`.
+  Only independent `RULE_DESIGN_PASS` with empty blockers can authorize later
+  implementation. Up to two bounded docs/control-only corrections may follow
+  `RULE_DESIGN_FIX_REQUIRED` and consume no Infrastructure Repair round.
+- Product Repair remains complete under its evidence-only stop-loss override.
+  Rules, product behavior, test titles, accepted hashes, role coverage,
+  scripts, tests, workflow, workspace, package, lockfile, profile, topology,
+  process groups, timeouts and dependencies are unchanged. No candidate,
+  product test, coverage, implementation, Infrastructure Repair, push, PR, CI
+  or downstream investigation was performed.
+
+All sections below this historical checkpoint are retained as history; they do
+not override the active Correction-1 review gate.
+
+## Current state — 2B20AP1-LF1 amendment correction budget exhausted
+
+- The complete final independent amendment review is preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-final.md`,
+  SHA-256
+  `df96cfa33fb2c23e570896ab3722d1ceece6f223568301a3459eac135960a1b9`,
+  `9377` bytes and `141` LF lines, bound to exact HEAD
+  `070ac746bc25f93a0a3f391fe7b97a95336d87d6`.
+- The reviewer returned `HUMAN_BLOCKED` with exactly
+  `LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN`,
+  `LF1-GLOB_INVOCATION_COUNT_CONTRADICTION`, and
+  `LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE`.
+- LF2 remains closed. LF1 and LF3 are not closed: the frozen lifecycle's glob
+  count is false, the exact workspace diagnostic precedes `createVitest`
+  promise resolution and the frozen `INITIALIZING` phase, and the public API
+  cannot prove exact-once close of a context created before a rejected
+  `createVitest` returns.
+- The final amendment correction budget is exhausted:
+  `amendmentCorrectionRound=2/2`, `thirdCorrectionAuthorized=false`,
+  `implementationAuthorized=false`, and Infrastructure Repair remains `0/2`.
+  There is no Correction 3 and no implementation commit.
+- Control is `HUMAN_BLOCKED /
+  2B20AP1_LF_AMENDMENT_CORRECTION_BUDGET_EXHAUSTED`.
+- Remaining blockers are
+  `LF3-DIAGNOSTIC_PHASE_PRECEDES_CREATEVITEST_RETURN`,
+  `LF1-GLOB_INVOCATION_COUNT_CONTRADICTION`,
+  `LF3-CREATEVITEST_PRE_RETURN_CLOSE_UNPROVABLE`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `REQUEST_NEW_USER_AUTHORIZATION_FOR_2B20AP1_LF_LIFECYCLE_DESIGN_CORRECTION_OR_RESLICE`.
+- Product Repair remains completed under the accepted evidence-only stop-loss
+  override. Rules, product behavior, LF titles, accepted hashes, role coverage,
+  scripts, tests, workflow, workspace, package, lockfile, profile, topology,
+  timeouts and dependencies are unchanged.
+- No candidate, test, coverage, implementation, Infrastructure Repair, push,
+  PR, CI, Linux/Windows investigation or next-slice work was performed.
+
+All sections below this historical checkpoint are retained as history; they do
+not override the active public-lifecycle-override review gate.
+
+## Historical checkpoint — final Correction 2 pending independent review
+
+- The second complete independent amendment review is preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-2.md`,
+  SHA-256
+  `fcc833748531d3c05a7e130f25efbea0eaccc23e23105714071d1b3256f97cef`,
+  `6600` bytes and `121` LF lines, bound to exact HEAD
+  `41d3eac2cd0184bb2063b0f4de6b79dafbc78c66`.
+- Its verdict is `RULE_DESIGN_FIX_REQUIRED`; the sole blocker is
+  `LF3-VITEST-WORKSPACE-DEPRECATION_CAPTURE_CONTRADICTION`. LF2 passed, while
+  LF1 remained blocked only because Vitest 3.2.6 necessarily emits its
+  workspace-file deprecation during initialization.
+- Standalone final replacement authority Correction 2 is
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1-correction-2.md`,
+  SHA-256
+  `2b07ac52427a9bd95ee535e71de37d6d0a7c2eb662b28048115ce4377d09b10c`,
+  `27099` bytes and `571` LF lines, with terminal
+  `READY_FOR_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`.
+- This is the final amendment correction, `2/2`, not Design Round 4. Round 3,
+  the original amendment, Correction 1, and both reviews remain immutable.
+  No Correction 3 is available.
+- Correction 2 inherits the complete LF1 same-object single-discovery and LF2
+  candidate-v2 contracts, and closes only LF3 at design-contract level. It
+  freezes the exact Vitest `3.2.6` diagnostic source phase, root-config label,
+  plain bytes and permitted six-SGR colored bytes, one occurrence, internal
+  consumption, and fail-closed handling.
+- The one-instance/one-public-`collectTests`/no-callback lifecycle remains.
+  Exact raw diagnostic validation precedes ANSI confirmation; all altered,
+  additional, repeated, non-string or wrong-phase diagnostics, internal
+  stdout, missing APIs, malformed results and lifecycle errors reject.
+  Exception-safe close is attempted once, and no candidate bytes are usable
+  until close and diagnostic validation both succeed.
+- All LF1/LF2 tests remain required and five LF3 test groups are added. The
+  exact future implementation allowlist remains frozen, but implementation is
+  unauthorized until a fresh complete independent review returns exact
+  `RULE_DESIGN_PASS` with `remainingBlockers=[]`.
+- Control is `HUMAN_BLOCKED /
+  PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_FINAL_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_2_REVIEW`.
+- A non-pass final review exhausts the amendment correction budget and returns
+  the slice to `HUMAN_BLOCKED`; no Correction 3 or implementation follows.
+- Product branch, PR #46, rules, product behavior, test titles, role coverage,
+  scripts, tests, workflow, profile, topology, timeouts and dependencies are
+  unchanged. No implementation or validation gate was run.
+
+The historical final-Correction-2-review-pending checkpoint above returned
+`HUMAN_BLOCKED`; it does not authorize implementation.
+
+## Historical checkpoint — 2B20AP1-LF1 Correction 1 pending independent review
+
+- The complete independent amendment review is preserved verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-review-round-1.md`,
+  SHA-256
+  `d6b386265d30ebfc6fff2b190179909a168b0f673789027f4097d628f9dd9e8b`,
+  `11007` bytes and `140` LF lines, bound to exact HEAD
+  `609b01d352c194424c778fcb7013a868cc768af8`.
+- Its verdict is `RULE_DESIGN_FIX_REQUIRED`; exact blockers are
+  `LF1-SAME-DISCOVERY-CONTRACT` and
+  `LF2-CANDIDATE-SCHEMA-CONTRACT`.
+- Standalone replacement Correction 1 is
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1-correction-1.md`,
+  SHA-256
+  `7731bd5092689e8b0604090736955bd54f649bf8d5070ce9f6266b49dc30efe7`,
+  `28642` bytes and `639` LF lines, with terminal
+  `READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`.
+- This is `amendmentCorrectionRound=1/2`, not Design Round 4. The parent Round
+  3 design, amendment, and Round-1 review are immutable.
+- The replacement freezes one exact collection per emit/verify invocation
+  using one Node process, one Vitest instance and one public
+  `collectTests` call. The same `TestCase` references derive raw `fullName`
+  and structured `[project,file,ancestorPath,title]`; the old external
+  raw-list/`--inventory` gate is superseded.
+- Candidate authority is exact
+  `vitest-ownership-candidate-baseline-v2`, containing all 1572 sorted
+  structured tuples, 12 LF identities, the LF-safe hash, complete 2B20A
+  baseline, and complete immutable accepted baselines ordered
+  `2B19A3A,2B19A3B1,2B19A3B2,2B19B`.
+- Verify regenerates expected bytes from its one fresh collection and performs
+  raw byte equality before parsing. Duplicate JSON keys, wrong key order,
+  missing/extra fields, accepted-baseline drift and bridge fields reject.
+- The prior 12-title facts, no-title-change audit, legacy hash protection,
+  no-bridge decision, topology and exact future implementation allowlist are
+  inherited unchanged.
+- Control is `HUMAN_BLOCKED /
+  PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair remains `0/2`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_CORRECTION_1_REVIEW`.
+- Product branch, PR #46, rules, product behavior, test titles, role coverage,
+  scripts, tests, workflow, profile, topology, timeouts and dependencies are
+  unchanged. No implementation or validation gate was run.
+
+The historical Correction 1 checkpoint above was independently reviewed and
+returned `RULE_DESIGN_FIX_REQUIRED`; it does not authorize implementation.
+
+## Historical checkpoint — 2B20AP1-LF1 amendment pending independent review
+
+- Authorization is
+  `USER_AUTHORIZED_2B20AP1_LF_SAFE_IDENTITY_ENCODING_AMENDMENT_AND_LOCAL_END_TO_END_CLOSURE`.
+- The bounded amendment is
+  `docs/implementation/phase-3-slice-2b20ap1-lf-safe-identity-encoding-amendment-v1.md`,
+  SHA-256
+  `8afd177afb888a55f5482cb633207d974f79248d968c99d70651ee112c274b20`,
+  `18650` bytes and `357` LF lines, with terminal
+  `READY_FOR_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW`.
+- This amendment changes only identity encoding/framing. It is not Design
+  Round 4 and does not modify the immutable Round 3 design or review.
+- Fresh Node `v24.15.0` / Corepack pnpm `11.7.0` evidence has `1572` records
+  and exactly `12` legal LF-bearing 2B18B identities, all in
+  `packages/application/src/mathematician-information.test.ts`. LF occurs only
+  in each complete title; no title or test semantics changed.
+- The fresh raw inventory was `436062` bytes, SHA-256
+  `f596c3ef79d5f37dcbd06326ea97efc59bddc35588a00702c364c57b76064bcf`.
+  It and the JSON-escaped repository-local analysis result were removed.
+- The amendment freezes
+  `vitest-semantic-identity-json-tuple-v1` over the exact tuple
+  `[project,file,ancestorPath,title]`. Canonical inventory bytes are
+  `UTF-8(JSON.stringify(sortedCanonicalTuples) + LF)`; raw names are
+  transport/display metadata only and cannot be identity authority.
+- Accepted A3A/A3B1/A3B2/B19B frozen hashes do not include the twelve
+  identities and remain byte-exact. No accepted inventory migration occurs;
+  `dualHashBridgeRequired=false`.
+- The two old OS-temp artifacts remain after one safe literal-path,
+  non-recursive deletion attempt was rejected before execution. Their status
+  is `OPERATIONAL_RECOVERY_TEMP_ARTIFACT_RETAINED_NON_GATING`; later work is
+  prohibited from depending on them.
+- Control is `HUMAN_BLOCKED /
+  PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW`;
+  `implementationAuthorized=false`; Infrastructure Repair is still `0/2`.
+- Remaining blockers are
+  `PENDING_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is
+  `RUN_INDEPENDENT_2B20AP1_LF_AMENDMENT_REVIEW`.
+- Product branch, PR #46, rules, product behavior, coverage profile,
+  topology, process groups, timeouts, dependencies, and role coverage remain
+  unchanged. No implementation or validation gate was run.
+
+The historical amendment checkpoint above was independently reviewed and
+returned `RULE_DESIGN_FIX_REQUIRED`; it does not authorize implementation.
+
+## Historical checkpoint — 2B20AP1 frozen raw Vitest name conflict
+
+- The complete final replacement design is
+  `docs/implementation/phase-3-slice-2b20ap1-design-round-3.md`, exact UTF-8
+  `finalDesignSha256=4f2fab7b877ca98e1fb46974661874353dd78a1c6b388cb91d3031c59608e003`,
+  `30091` bytes and `176` LF-normalized lines.
+- The complete final independent review is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-design-review-round-3.md`,
+  SHA-256
+  `25489a5f49b599c62a7db5c69e50d7f2948df9c7c106669189184454cc393d14`,
+  `5689` bytes and `102` LF-normalized lines. It is bound to exact reviewed HEAD
+  `814c8b2de8ec164db84155031f26e661fb0f9482`.
+- The reviewer returned `RULE_DESIGN_PASS`, `findings=[]`,
+  `remainingBlockers=[]`, `behaviorDesignChanged=false`,
+  `ruleSemanticsChanged=false`, and `implementationAuthorized=true`.
+- Independent feasibility triage is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap1-frozen-raw-inventory-conflict-triage.md`,
+  exact UTF-8 SHA-256
+  `0d0aa020e713ed09f0d79d79fdcc6b57a6883def4feecc29ef00f1e484c7b45e`,
+  `5812` bytes and `115` LF lines. It returns `HUMAN_BLOCKED` with blocker
+  `FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT`.
+- The required unfiltered `1572`-entry Vitest inventory has `12` existing
+  legal names with LF at indexes `518–529`. The frozen canonicalizer requires
+  LF rejection, so no design-conforming candidate or live audit is feasible.
+- The first and only candidate attempt exited `1` with
+  `VITEST_RAW_INVENTORY_INVALID_NAME`, produced no stdout and created no
+  candidate. All seven phase-2 drafts were restored exactly to HEAD
+  `3c9ff67e7a08eccb336936883be5b8e1fe1768db`; no phase-2 implementation commit
+  exists.
+- Tool policy rejected the validated, non-recursive literal-path cleanup
+  before execution. The OS-temp seed and inventory remain; the candidate path
+  does not exist.
+- Control is `HUMAN_BLOCKED /
+  2B20AP1_FROZEN_RAW_VITEST_NAME_LF_CONTRACT_CONFLICT`;
+  `designRound=3/3`, `designCorrectionRound=2/2`, `maxCorrection=2`,
+  and `ruleDesignPass=true`; implementation continuation is unauthorized.
+- Infrastructure Repair remains `0/2`; Product Repair is untouched.
+  Governance remains `GO`; rules, product behavior, coverage profiles,
+  topology, processes, timeouts, dependencies and role coverage are unchanged.
+- Final design and review bytes are immutable and absent from the
+  implementation allowlist. There is no Design Round 4, and Infrastructure
+  Repair cannot change this frozen contract.
+- Linux worker RPC and Windows W7 unknown-exit blockers remain downstream.
+- Required next action is
+  `REQUEST_NEW_USER_DESIGN_AUTHORIZATION_OR_RESLICE_FOR_LF_IDENTITY_ENCODING_OR_12_TITLE_ADJUSTMENT`,
+  choosing either a reversible collision-free legal-LF identity encoding or
+  explicit authority to adjust the 12 existing titles and inventory authority.
+- No push, PR, hosted CI, candidate rerun, implementation, full local coverage,
+  Linux/Windows investigation, product/profile change, or 2B20B work is
+  authorized.
+
+The historical conflict above is the target of the pending amendment review;
+it is not claimed closed before an independent `RULE_DESIGN_PASS`.
+
+## Historical checkpoint — 2B20AP1 design awaiting independent rule-design review
+
+- The complete bounded design is
+  `docs/implementation/phase-3-slice-2b20ap1-design.md`, exact UTF-8 SHA-256
+  `622d5e8572e933a38c5503fa80ee342c8acee084b62ed1578ede0569a3e22c46`,
+  `26534` bytes and `228` LF-normalized lines.
+- Its terminal is exactly `READY_FOR_RULE_DESIGN_REVIEW`.
+- Governance remains `GO`; task type remains
+  `CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT`.
+- Control is `HUMAN_BLOCKED /
+  2B20AP1_DESIGN_MATERIALIZED_PENDING_INDEPENDENT_RULE_DESIGN_REVIEW`;
+  `designRound=1/2`, `ruleDesignPass=false`, and
+  `implementationAuthorized=false`.
+- Infrastructure Repair remains `0/2`; Product Repair is untouched. Rules and
+  product behavior remain unchanged, and ownership remains not locally closed.
+- Active blockers are
+  `PENDING_2B20AP1_INDEPENDENT_RULE_DESIGN_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is `RUN_2B20AP1_INDEPENDENT_DESIGN_REVIEW`.
+- No implementation, script/test/workflow/profile mutation, push, PR, CI,
+  Linux/Windows investigation, or 2B20B work is authorized.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active 2B20AP1 design-review-pending state.
+
+## Historical checkpoint — 2B20AP1 governance GO, design pending
+
+- Active work is `CI_TEST_INFRASTRUCTURE_PREREQUISITE / NON_PRODUCT`, Slice
+  `2B20AP1`, on local branch
+  `infra/2b20ap1-ownership-supersession-routing-v1`.
+- Exact base is `167d800e20bed5431764092877085886df4b7c93`.
+- Governance authority is
+  `docs/architecture/2B20AP1-go-no-go-under-governance-v1.md`, SHA-256
+  `583f1778582c168935b380b19e453117b000d8caf18dd3a4cd7731365cdb3537`,
+  `21690` bytes and `588` lines. Verdict is `GO`.
+- Governance authorizes only one bounded complete infrastructure design and
+  independent review. `implementationAuthorized=false`.
+- Infrastructure Repair is `0/2`; Product Repair is untouched. Rule semantics
+  and product behavior remain unchanged.
+- Ownership is `GOVERNANCE_GO_NOT_LOCALLY_CLOSED`; no coverage profile,
+  coverage project, or new coverage process group is required.
+- Canonical control is `RUNNING /
+  2B20AP1_GOVERNANCE_GO_READY_FOR_COMPLETE_INFRASTRUCTURE_DESIGN`.
+- Remaining blockers are
+  `PENDING_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN_AND_INDEPENDENT_REVIEW`,
+  `LINUX_WORKER_RPC_CI_BLOCKER`, and
+  `WINDOWS_W7_UNKNOWN_EXIT_BLOCKER`.
+- Required next action is `CREATE_2B20AP1_COMPLETE_INFRASTRUCTURE_DESIGN`.
+- No implementation, push, PR creation, CI rerun, Linux/Windows investigation,
+  or 2B20B work is authorized.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active 2B20AP1 governance-GO design-pending state.
+
+## Historical checkpoint — Phase 3 Slice 2B20A evidence-only stop-loss override complete
+
+- Explicit authorization is
+  `USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE`.
+- Product Repair remains `2/2`; `productRepairStopLossOverrideUsed=true`,
+  `overrideKind=EVIDENCE_ONLY_TEST_COMPLETION`,
+  `productionBehaviorChangeAuthorized=false`, and
+  `newProductRepairRoundCreated=false`. No Product Repair Round 3 was created.
+- The independent evidence-only implementation review is bound to exact HEAD
+  `29fefae499fc905995d0b30d3ed7d94fb819e8bf` and archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-evidence-only-stop-loss-override-implementation-review.md`,
+  SHA-256
+  `1f55a6e3b38305cc57030788a448223ecda2a9ecbff2cd70ff034db7f75d8142`.
+- The reviewer returned `PRODUCT_REPAIR_IMPLEMENTATION_REVIEW_PASS`,
+  `findings=[]`, and `remainingRepairBlockers=[]`.
+- The original reviewer message was `7977` UTF-8 bytes without a terminal LF,
+  SHA-256
+  `0cdb28ecc3ddf0c3e60cda1923dfd94eef74347489c77967faaaf2fb56b98172`.
+  The 204-line repository archive adds exactly one standard terminal LF and is
+  therefore `7978` bytes with the archive hash above.
+- `productRepairStatus=COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE`.
+- The override starts from
+  `5e2d31635d5296ef04dbfe9b585daadf145a8f93` and changes only
+  `packages/domain-core/src/dreamer.test.ts` plus the four active control files.
+- The unchanged `[2B20A-C20]` test now reads and asserts the original index `0`
+  data descriptor, preserves `value`, `writable`, and `configurable`, changes
+  only `enumerable` to `false`, and reasserts the same legal candidate, no
+  accessor slots, canonical array prototype, unchanged length, dense own
+  indices, and canonical own keys.
+- Existing direct/public/stored rejection, legal enumerable controls, getter
+  count `0`, C34, and C37 remain unchanged in behavior.
+- No production code, application test, marker/title, resolver, event schema,
+  ownership, traceability, routing, workflow, profile, timeout, dependency, or
+  role coverage changed.
+- All eight authorized local gates passed under Node `v24.15.0` and Corepack
+  pnpm `11.7.0`: focused C20 `1/1`, focused C34 `1/1`, focused C37 `1/1`,
+  Dreamer `77/77`, application service `296/296`, typecheck, lint, and ordinary
+  `35 files / 1572 tests`. Coverage, ownership, GitHub CI, and Windows W1-W7
+  were not run.
+- PR #46 remains open, unmerged, and unaccepted at remote HEAD
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
+- Control is `RUNNING /
+  COMPLETE_WITH_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_READY_FOR_2B20AP1_GOVERNANCE`;
+  `implementationAuthorized=false`.
+- Active repair blockers are empty. Downstream blockers remain ownership
+  supersession/routing, Linux worker RPC, and Windows W7 unknown exit.
+- Required next action:
+  `CREATE_2B20AP1_INFRASTRUCTURE_BRANCH_AND_RUN_GOVERNANCE_PRECHECK`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the completed evidence-only stop-loss override state.
+
+## Historical checkpoint — Design Correction V1 awaiting independent rereview
+
+- Design Correction V1 is authorized by
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_CORRECTION_V1_PATH_GATE_BRANCH_ONLY`
+  and is based on local review commit
+  `def473e7b84d7b568dcc3d689dcabf5381d48377`.
+- The corrected design SHA-256 is
+  `effb7782bffa0daff963789a42f6ec0139cc355e96f6346dbaa8de5654bee4d1`;
+  its prior design and review hashes remain immutable history.
+- The governance ADR path now resolves. Three explicit gate layers separate
+  design-to-implementation entry, bounded local implementation verification,
+  and downstream PR acceptance/final review.
+- Ownership, routing, Linux CI, and Windows CI no longer block beginning the
+  F01/F04/F05 implementation after a new independent `RULE_DESIGN_PASS` and
+  explicit user authorization. They still block PR acceptance and merge.
+- Active `currentBranch` and `implementationBranch` both point to
+  `phase-3/reachable-base-dreamer-settleability-closure`; repair base and
+  remote PR #46 HEAD remain
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
+- The three findings from the immutable prior review are closed in active
+  state and preserved in review history. No rereview has run.
+- No production code, tests, scripts, workflow, profile, dependency, timeout,
+  PR metadata, or GitHub thread changed. The F01/F04/F05 behavior design is
+  unchanged.
+- Control is `HUMAN_BLOCKED /
+  READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REREVIEW`,
+  `implementationAuthorized=false`, `repairRound=0/2`, and
+  `productRepairRoundConsumed=false`.
+- Active blockers are the pending independent design rereview plus downstream
+  ownership/routing, Linux worker-RPC, and Windows W7 exit gates.
+- Required next action:
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REREVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Design Correction V1 state.
+
+## Historical checkpoint — Product Repair Round 1 design fix required
+
+- Independent review of local design HEAD
+  `627dc709dcbf94e92b61a82cef0b75020b936146` returned
+  `RULE_DESIGN_FIX_REQUIRED`.
+- The unmodified design remains
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design.md`,
+  SHA-256
+  `eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8`.
+- The complete review is archived without editing or reordering at
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design-review.md`,
+  SHA-256
+  `c32cf7ce8f58a75d9a56b5e17383e3247c0c1ad5892db961565846167c78f7e2`.
+- Three P1 blockers remain: the design's governance ADR path does not resolve;
+  the implementation gate ambiguously treats ownership/Linux/Windows work as
+  prerequisites rather than post-implementation acceptance gates; and the
+  active `implementationBranch` still points to archived 2B20.
+- Product behavior and rule semantics remain unchanged. No repair was
+  implemented and no repair round was consumed.
+- Control is `HUMAN_BLOCKED /
+  PRODUCT_REPAIR_ROUND_1_DESIGN_FIX_REQUIRED`,
+  `implementationAuthorized=false`, `repairRound=0/2`, and
+  `productRepairRoundConsumed=false`.
+- Required next action:
+  `REQUEST_BOUNDED_PRODUCT_REPAIR_DESIGN_CORRECTION_AUTHORIZATION`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Product Repair Round 1 review state.
+
+## Historical checkpoint — Product Repair Round 1 design awaiting review
+
+- PR #46 product authority is frozen at
+  `dbfa424c96a8bcf06a0d2a77205626a532aa2ec8`.
+- User authorization
+  `USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY`
+  permits design and control synchronization only.
+- The complete repair design is
+  `docs/implementation/phase-3-slice-2b20a-product-repair-round-1-design.md`,
+  SHA-256
+  `eb8f23f5f8696125ff106a214031c57c4901f67031c270b94f8c9ba74980d6e8`.
+- Its only product findings are `F01/C20`, `F04/C34`, and `F05/C37`. The future
+  production allowlist contains only `packages/domain-core/src/dreamer.ts`;
+  the future formal-test allowlist contains only the Dreamer domain test and
+  application-service test.
+- The design preserves the frozen 2B20A behavior, rules, event schema,
+  information algorithm, ledger, projection, receipt, replay, idempotency, and
+  supported/unsupported state boundaries.
+- Ownership authority requires an explicit downstream supersession. That
+  2B20AP1 ownership/traceability/routing prerequisite, Linux worker-RPC
+  infrastructure, and Windows W7 observability remain separate blockers and
+  are not part of this repair design.
+- Exact-head CI remains failed and commit-specific:
+  push `30077541075` is the Linux post-test worker-RPC failure; pull-request
+  `30077586762` is the Windows W7 unknown nonzero exit after a successful JSON
+  report.
+- No production code, tests, scripts, workflows, profiles, dependencies,
+  timeouts, or PR metadata changed. No product repair round was consumed.
+- Control is `HUMAN_BLOCKED /
+  READY_FOR_INDEPENDENT_PRODUCT_REPAIR_DESIGN_REVIEW`,
+  `repairRound=0/2`, `implementationAuthorized=false`, and
+  `productRepairRoundConsumed=false`.
+- Remaining blockers are the independent repair-design review, explicit
+  ownership supersession/routing, Linux worker-RPC CI, and Windows W7 unknown
+  exit.
+- Required next action:
+  `RUN_INDEPENDENT_PRODUCT_REPAIR_ROUND_1_DESIGN_REVIEW`.
+
+All sections below are chronological checkpoints retained as history; they do
+not override the active Product Repair Round 1 design state.
+
+## Historical checkpoint — Phase 3 Slice 2B20A product candidate
+
+- The frozen design has been implemented without a Design Round 3, rule change,
+  scope expansion, or repair round.
+- Product changes are limited to the authorized Dreamer capability, prospective
+  batch semantics, first-night outcome ledger, application service, and private
+  projection files. Added V7 is replay-additive; `event-applier.ts`, event
+  versions, commands, top-level state, fixtures, workflow, dependencies,
+  timeouts, ownership, and coverage topology remain unchanged.
+- A real accepted command stream proves Dreamer `ai-seat-01`, Philosopher
+  `ai-seat-10`, canonical duplicate-choice drunkenness, Mathematician, unique
+  Fang Gu, no current Vortox/No Dashii, and natural TRUE/FALSE settlement.
+- The planned base Dreamer task now formally settles and its V3 opportunity
+  closes. TRUE yields no abnormal contribution; FALSE counts the base Dreamer
+  once and never Philosopher.
+- Player/AI accepted-history projection exposes only target and apparent pair to
+  the source. State-only, malformed, accessor, Proxy, forged, and mutated V7
+  inputs fail closed without leaking impairment or audit data.
+- Six focused suites, typecheck, lint, the full ordinary suite (`35 / 1572`),
+  ownership self-test (`22 / 22`), traceability inventory, scope, and
+  deterministic-source checks pass.
+- Full coverage passes all `35 / 1572` tests and generates its report but exits
+  `1` after one unhandled `[vitest-worker]: Timeout calling "onTaskUpdate"`.
+  The shell uses pnpm `11.9.0`, the repository pins `pnpm@11.7.0`, and Node is
+  `v24.15.0`. Independent classification is
+  `CONDITIONAL_PRODUCT_CANDIDATE_ALLOWED`; it consumes no repair round and
+  cannot satisfy C32, which remains pending exact-head CI.
+- The single attributed product candidate commit is the final local action.
+  Push, exact-head CI, PR final review, and merge remain controller work.
+- Traceability is `37/37`, coverage remains
+  `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`, Dreamer remains
+  `PARTIAL`, repair is `0/2`, and `FIRST_NIGHT -> DAY` is not implemented.
+- Remaining blocker:
+  `PENDING_CONTROLLER_PUSH_PR_EXACT_HEAD_CI_AND_FINAL_REVIEW`.
+
+All sections below are chronological preimplementation checkpoints retained as
+history; they do not override the active implementation state.
+
+## Current state — Phase 3 Slice 2B20A READY_FOR_IMPLEMENTATION
+
+- User authorization `USER_AUTHORIZED_2B20_RESLICE_BASE_DREAMER_SETTLEABILITY_CLOSURE` archives 2B20 as `RESLICE_REQUIRED / UNACCEPTED` and opens only `2B20A — Reachable Base Dreamer Settleability Closure`.
+- 2B20A runs on `phase-3/reachable-base-dreamer-settleability-closure` from parent governance commit `2b56a9a0891de9fda9954d9d635bcbda9d4248a3`, whose parent is accepted main `5a69c90f2d3947556ff45c15c467902b1e28ca43`.
+- Governance record `docs/architecture/2B20A-go-no-go-under-governance-v1.md`, SHA-256 `9ab18f66a1a64372b3a629a8ab42fad1c8455de61647b11c167ef6d862ee2bf1`, returns `GO` only for fresh rule research and design gates.
+- Original rule evidence `docs/rules/evidence/2B20A.md`, SHA-256 `1a51a2aebae79e831ca2146aaae47f423b472108bb9759cfc3d452dc344efe00`, remains immutable. Standalone attribution-only resolution `docs/rules/evidence/2B20A-resolved.md`, SHA-256 `47e6c5a70b1eae70f51e9a4e0d78c8ab0d2ddf272babb3f9c76e51970c893189`, preserves all pinned sources, returns `RULE_READY`, and keeps `unresolvedConflicts=[]`.
+- Complete standalone Round 1 design `docs/implementation/phase-3-slice-2b20a-design.md`, SHA-256 `9323681b5aa61106b81d1580c0502eaf085f56ee5f51801aaa7fe771e15cdf02`, freezes the V7 delivery, deterministic apparent-pair policy, exact Fang Gu capability, atomic batch/replay, unchanged ledger schema, projection privacy, file allowlists, RC-01 through RC-22, and stop conditions.
+- Independent Round 1 review `docs/implementation/phase-3-slice-2b20a-design-review-round-1.md`, SHA-256 `7a94445b31fb49b1c504d37fcb842d8c92ee96e78149ca3c50f9d0645a02543e`, returns `RULE_DESIGN_FIX_REQUIRED` against reviewed HEAD `257012175e2a21360c4fc9477ac52e6b7bbea0f4`.
+- Complete standalone Round 2 design `docs/implementation/phase-3-slice-2b20a-design-round-2.md`, SHA-256 `22c79b8965549a2c32cb2c9199aa1a020fbb17ca3dc1af0b9e080d8825ae120f`, closes the attribution, projection-provenance, and Governance Traceability V1.1 blockers without changing rule semantics or Round 1 behavior scope; state-only or hostile V7 projection is rejected with `PrivateKnowledgeUnavailable`.
+- Complete independent Round 2 review `docs/implementation/phase-3-slice-2b20a-design-review-round-2.md`, SHA-256 `4b8b24d65ebd8a806bcdeecc73d343780866b1526254706e053e101e6f1c44d3`, reviewed exact HEAD `08bea1108037e86d8e01a24bb4fcedc6601ccf8c` and returned `HUMAN_BLOCKED`.
+- Authorized classification appendix `docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md`, SHA-256 `ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb`, supersedes only original C02/C08/C09 with corrected C34–C40. It changes no behavior, rule, scope, override, production, test, or design round and returns `APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW`.
+- Complete independent design release review `docs/implementation/phase-3-slice-2b20a-design-release-review.md`, SHA-256 `72017917861325619bd6216f437ece3c8758922db51572306113d1d0a4eaae1f`, reviewed exact HEAD `313a39a614a2a46a1026e3a272879cbcdd49324b` and returned `DESIGN_RELEASE_PASS / findings=[] / remainingBlockers=[]`. This releases the historical classification blocker without asserting a new `RULE_DESIGN_PASS`.
+- Exact reachable authority is accepted test `[2B19A3A-C17]`: base Dreamer `ai-seat-01` / seat `1`; Philosopher `ai-seat-10` / seat `10`; accepted `AbilityImpairmentApplied` provenance `DRUNK / PHILOSOPHER_CHOSEN_DUPLICATE / chosenRoleId=dreamer`; current Demon `fang_gu`; current Vortox absent.
+- The planned base `DREAMER_ACTION` and open V3 opportunity are valid, but `SubmitDreamerAction` maps the unsupported source state to retryable `ApplicationNotConfigured`. No target, delivery, settlement, or receipt is committed, the opportunity remains `OPEN`, and the task remains pending.
+- Resolved evidence freezes true/false apparent pair legality, Storyteller discretion, privacy, and exact Mathematician semantics: TRUE produces a base-Dreamer NORMAL fact and `0`; FALSE produces a base-Dreamer ABNORMAL fact and counts that base Dreamer once; Philosopher is causal impairment provenance only; no delivery produces no fact and `0`.
+- Coverage target is `PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY`; Dreamer remains `PARTIAL`.
+- Control is `status=READY_FOR_IMPLEMENTATION`, `disposition=UNACCEPTED`, `taskType=PRODUCT_SLICE`, `currentSlice=2B20A`, `currentPR=null`, `ruleReady=true`, `ruleDesignPass=true` through the release-pass gate, `designReleasePass=true`, `designRound=2/2`, `repairRound=0/2`, `implementationAuthorized=true`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
+- No production, test, workflow, dependency, profile, ownership, or role-matrix change has been made.
+- Parent blocker `DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY` remains archived for a separate later authorization and is explicitly outside 2B20A.
+- Remaining blocker is `PENDING_IMPLEMENTATION`. No Round 3 is authorized; production/tests remain unchanged and `FIRST_NIGHT → DAY` is not implemented. Required next action is `IMPLEMENT_2B20A_FROZEN_SCOPE`.
+
+All sections below are chronological prior-slice checkpoints retained as history; they do not override the active 2B20A state.
+
+## Current state — Phase 3 Slice 2B20 RESLICE_REQUIRED / UNACCEPTED
+
+- Recovery authorization `USER_AUTHORIZED_2B20_ACCEPTED_MAIN_RECOVERY_AND_CONTINUE_EXISTING_AUTHORIZATION` and product authorization `USER_AUTHORIZED_2B20_FIRST_NIGHT_COMPLETION_AND_DAY_ENTRY` recovered accepted base `5a69c90f2d3947556ff45c15c467902b1e28ca43` on `phase-3/first-night-completion-day-entry`.
+- Complete governance precheck `docs/architecture/2B20-go-no-go-under-governance-v1.md`, SHA-256 `631fb1938189fac551407c016ac0632b7d2cf31a0afe3642f1ee7df034932af5`, returned `RESLICE_REQUIRED` after answering all 14 questions and inventorying all 11 first-night task types.
+- Current accepted product can plan and open base `DREAMER_ACTION` without guaranteeing settlement. `SOURCE_REPRESENTED_IMPAIRED` and `NO_DASHII_EFFECT_UNRESOLVED` map to retryable, receipt-free, mutation-free `ApplicationNotConfigured`; accepted application tests prove canonical Philosopher-caused `DRUNK` and current No Dashii reachability.
+- Existing phase policy requires two events and preserves exact counters: `FIRST_NIGHT (0/1) --FIRST_NIGHT_COMPLETED--> DAWN_RESOLUTION (0/1) --DAWN_COMPLETED--> DAY_DISCUSSION (1/1)`. A direct jump is not expressible, and both reasons remain outside `INTEGRATED_TRANSITION_REASONS`.
+- Remaining blockers are exactly `[PLANNED_BASE_DREAMER_CAN_REMAIN_UNSETTLEABLE, DIRECT_FIRST_NIGHT_TO_DAY_NOT_EXPRESSIBLE_BY_EXISTING_POLICY]`.
+- Control is `status=RESLICE_REQUIRED`, `disposition=UNACCEPTED`, `taskType=PRODUCT_SLICE`, `currentSlice=2B20`, `currentPR=null`, `ruleReady=false`, `ruleDesignPass=false`, `designRound=0/2`, `repairRound=0/2`, `implementationAuthorized=false`, `productRepairRoundConsumed=false`, and `phase2CStarted=false`.
+- Stop-loss fired before rule research and design. No 2B20 rule evidence, design, production, test, workflow, dependency, profile, ownership, or role-matrix change exists.
+- The minimum candidate reslice is exactly Base Dreamer Canonical-DRUNK Non-Vortox Settlement under fresh mandatory gates; No Dashii and later two-step completion remain separate and unauthorized.
+- Required next action is `STOP_REQUIRE_NEW_USER_RESLICE_AUTHORIZATION_NO_AUTOMATIC_NEXT_SLICE`.
+
+All sections below are chronological prior-slice checkpoints retained as history; they do not override the 2B20 governance stop above.
+
 ## Current state — Phase 3 Slice 2B19A3B2 COMPLETED / ACCEPTED
 
 - PR #44 frozen feature HEAD `8cb921c5130454c90c0a63fc4b03a1d24f789b0f` passed product-head push run `30011473350` on attempt 2 and pull-request run `30011477353` on attempt 1, each with `24 / 24` final successful jobs. Push attempt 1 remains recorded as `FAILURE`: the existing frozen Witch replay test exceeded 5,000 ms in `coverage shard (domain-core-rebuild)`.

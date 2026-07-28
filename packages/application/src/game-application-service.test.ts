@@ -580,9 +580,10 @@ const convertStoredDreamerOpportunityToAcceptedV2 = async (
 const reachOpenExactPhilosopherOpportunity = async (
   service: GameApplicationService,
   store: MemoryCommandCommitStore,
-  exactRoleIds: readonly ReturnType<typeof roleId>[] = philosopherClockmakerExactRoleIds
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = philosopherClockmakerExactRoleIds,
+  rootSeed?: string
 ) => {
-  await reachNoPhilosopherFirstNightTaskPlan(service, exactRoleIds);
+  await reachNoPhilosopherFirstNightTaskPlan(service, exactRoleIds, rootSeed);
   const planned = rebuildOptionalGameState(await store.loadDomainEvents(ids.game));
   const task = planned?.firstNightTaskPlan?.tasks.find((entry) => entry.taskType === "PHILOSOPHER_ACTION");
   if (planned === undefined || task === undefined) throw new Error("Expected exact Philosopher task");
@@ -625,6 +626,12 @@ const noPhilosopherExactRoleIds = [
   "fang_gu"
 ].map(roleId);
 
+const noPhilosopherVigormortisExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
+  id === "fang_gu" ? roleId("vigormortis") :
+  id === "mutant" ? roleId("sage") :
+  id === "barber" ? roleId("artist") :
+  id
+);
 const noPhilosopherVortoxExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
   id === "fang_gu" ? roleId("vortox") : id === "barber" ? roleId("artist") : id
 );
@@ -646,6 +653,20 @@ const philosopherClockmakerExactRoleIds = clockmakerExactRoleIds.map((id) =>
 const philosopherDreamerExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
   id === "flowergirl" ? roleId("philosopher") : id
 );
+const twoB20AExactRoleIds = [
+  "dreamer",
+  "snake_charmer",
+  "mathematician",
+  "flowergirl",
+  "town_crier",
+  "philosopher",
+  "mutant",
+  "sweetheart",
+  "barber",
+  "evil_twin",
+  "witch",
+  "fang_gu",
+].map(roleId);
 const philosopherClockmakerVortoxExactRoleIds = philosopherClockmakerExactRoleIds.map((id) =>
   id === "fang_gu" ? roleId("vortox") : id === "barber" ? roleId("artist") : id
 );
@@ -707,9 +728,13 @@ const reachOpenCerenovusActionOpportunity = async (
 
 const reachNoPhilosopherFirstNightTaskPlan = async (
   service: GameApplicationService,
-  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = noPhilosopherExactRoleIds,
+  rootSeed?: string
 ): Promise<void> => {
-  await service.execute(createGameCommand());
+  const create = createGameCommand();
+  await service.execute(rootSeed === undefined
+    ? create
+    : { ...create, payload: { ...create.payload, rootSeed } });
   await service.execute(selectScriptCommand());
   await service.execute(generateSetupCommand({
     payload: {
@@ -1231,12 +1256,14 @@ const reachCanonicalDrunkVortoxDreamerOpportunity = async (
   service: GameApplicationService,
   commandStore: MemoryCommandCommitStore,
   idPrefix: string,
-  exactRoleIds: readonly ReturnType<typeof roleId>[] = philosopherClockmakerVortoxExactRoleIds
+  exactRoleIds: readonly ReturnType<typeof roleId>[] = philosopherClockmakerVortoxExactRoleIds,
+  rootSeed?: string
 ) => {
   const philosopher = await reachOpenExactPhilosopherOpportunity(
     service,
     commandStore,
-    exactRoleIds
+    exactRoleIds,
+    rootSeed
   );
   expectAcceptedResult(await service.execute(
     chooseExactPhilosopherRole("dreamer", philosopher, `${idPrefix}-choose-dreamer`)
@@ -1367,6 +1394,37 @@ const captureAcceptedPhilosopherGainedVortoxDreamerStream = async () => {
     );
   })();
   return structuredClone(await acceptedPhilosopherGainedVortoxDreamerStream);
+};
+
+const executeAccepted2B20ADreamer = async (truthClass: "TRUE" | "FALSE", suffix: string) => {
+  const { service, commandStore } = makeService();
+  const opened = await reachCanonicalDrunkVortoxDreamerOpportunity(
+    service, commandStore, `2b20a-${suffix}`, twoB20AExactRoleIds, "2b20a-seed-3"
+  );
+  const impairment = opened.state.abilityImpairments?.impairments.find((entry) =>
+    entry.affectedPlayerId === opened.opportunity.sourcePlayerId && entry.kind === "DRUNK");
+  if (impairment === undefined) throw new Error("Expected 2B20A canonical impairment");
+  const target = opened.state.currentCharacterState?.entries.find((entry) => {
+    if (entry.playerId === opened.opportunity.sourcePlayerId) return false;
+    const material = `${impairment.impairmentId}\0${entry.playerId}\0${entry.role.roleId}`;
+    let sum = 0;
+    for (let index = 0; index < material.length; index += 1) sum += material.charCodeAt(index);
+    return (sum % 2 === 0 ? "TRUE" : "FALSE") === truthClass;
+  });
+  if (target === undefined) throw new Error(`Expected naturally reachable ${truthClass} target`);
+  const command = submitDreamerActionCommand({
+    commandId: commandId(`2b20a-${suffix}-submit`),
+    expectedGameVersion: opened.state.gameVersion,
+    payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
+      opportunityId: opened.opportunity.opportunityId,
+      decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+  });
+  const result = await service.execute(command);
+  expectAcceptedResult(result);
+  const events = await commandStore.loadDomainEvents(ids.game);
+  const state = rebuildOptionalGameState(events);
+  if (state === undefined) throw new Error("Expected accepted 2B20A state");
+  return { service, commandStore, opened, target, command, result, events, state };
 };
 
 describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canonical-drunk Vortox Dreamer", () => {
@@ -2033,34 +2091,443 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     }
   }, 30_000);
 
-  it("[2B19A3B1-C18/C28] keeps canonical DRUNK without effective Vortox receipt-free, OPEN, and retryable", async () => {
+  it("[2B20A-C03] reaches a naturally selected TRUE V7 stream through the real command boundary", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "true");
+    const delivery = captured.result.events.find((event) => event.eventType === "DreamerInformationDelivered");
+    if (delivery?.eventType !== "DreamerInformationDelivered" ||
+        !("deliverySchemaVersion" in delivery.payload) ||
+        delivery.payload.deliverySchemaVersion !== "dreamer-information-delivered-v7") {
+      throw new Error("Expected V7 delivery");
+    }
+    const v7 = delivery.payload;
+    const selected = v7.apparentPairDecision.legalCandidates.find((candidate) =>
+      candidate.candidateId === v7.apparentPairDecision.selectedCandidateId);
+    expect(selected?.truthClassification).toBe("TRUE");
+    expect(await captured.commandStore.findCommandReceipt(ids.game, captured.command.commandId)).toBeDefined();
+  }, 15_000);
+
+  it("[2B20A-C04] reaches a naturally selected FALSE V7 stream through the real command boundary", async () => {
+    const captured = await executeAccepted2B20ADreamer("FALSE", "false");
+    const delivery = captured.result.events.find((event) => event.eventType === "DreamerInformationDelivered");
+    if (delivery?.eventType !== "DreamerInformationDelivered" ||
+        !("deliverySchemaVersion" in delivery.payload) ||
+        delivery.payload.deliverySchemaVersion !== "dreamer-information-delivered-v7") {
+      throw new Error("Expected FALSE V7 delivery");
+    }
+    const v7 = delivery.payload;
+    expect(v7.apparentPairDecision.legalCandidates.find((candidate) =>
+      candidate.candidateId === v7.apparentPairDecision.selectedCandidateId)?.truthClassification).toBe("FALSE");
+  }, 15_000);
+
+  it("[2B20A-C05] settles the base Dreamer task and closes its V3 opportunity atomically", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "settlement");
+    expect(captured.result.events.map((event) => event.eventType)).toStrictEqual([
+      "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
+    ]);
+    expect(captured.state.firstNightTaskProgress?.settlements.some((entry) =>
+      entry.taskId === captured.opened.dreamerTask.taskId)).toBe(true);
+    expect(captured.state.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === captured.opened.opportunity.opportunityId)?.opportunityStatus).toBe("CLOSED");
+    expect(new Set(captured.result.events.map((event) => event.gameVersion))).toStrictEqual(
+      new Set([captured.opened.state.gameVersion + 1])
+    );
+  }, 15_000);
+
+  it("[2B20A-C06] derives TRUE as a normal base-Dreamer fact with zero contribution", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "true-ledger");
+    const fact = captured.state.firstNightAbilityOutcomeLedger?.facts.find((entry) =>
+      entry.abilityTaskId === captured.opened.dreamerTask.taskId);
+    expect(fact).toMatchObject({
+      sourcePlayerId: captured.opened.opportunity.sourcePlayerId,
+      abilityRoleId: "dreamer",
+      outcomeStatus: "NORMAL",
+      causeKind: "NO_OTHER_CHARACTER_ABILITY",
+      causedByAnotherCharacterAbility: false,
+      abilityInstance: { kind: "BASE_ROLE_TASK" }
+    });
+  }, 15_000);
+
+  it("[2B20A-C07] derives FALSE as one abnormal base-Dreamer drunkenness contribution", async () => {
+    const captured = await executeAccepted2B20ADreamer("FALSE", "false-ledger");
+    const facts = captured.state.firstNightAbilityOutcomeLedger?.facts.filter((entry) =>
+      entry.abilityTaskId === captured.opened.dreamerTask.taskId) ?? [];
+    expect(facts).toHaveLength(1);
+    expect(facts[0]).toMatchObject({
+      sourcePlayerId: captured.opened.opportunity.sourcePlayerId,
+      abilityRoleId: "dreamer",
+      outcomeStatus: "ABNORMAL",
+      causeKind: "SOURCE_DRUNKENNESS",
+      causedByAnotherCharacterAbility: true,
+      abilityInstance: { kind: "BASE_ROLE_TASK" }
+    });
+  }, 15_000);
+
+  it("[2B20A-C10] records the exact nine existing evidence variants for V7", async () => {
+    const captured = await executeAccepted2B20ADreamer("FALSE", "evidence");
+    const fact = captured.state.firstNightAbilityOutcomeLedger?.facts.find((entry) =>
+      entry.abilityTaskId === captured.opened.dreamerTask.taskId);
+    expect(fact?.evidenceReferences).toHaveLength(9);
+    expect(fact?.evidenceReferences.map((entry) => entry.kind)).toStrictEqual([
+      "SOURCE_EVENT", "TASK", "ACTION_OPPORTUNITY", "ABILITY_IMPAIRMENT", "ROLE_TENURE",
+      "CHARACTER_STATE", "PLAYER_ROLE_AT_REVISION", "PLAYER_ROLE_AT_REVISION", "DREAMER_DELIVERY"
+    ]);
+  }, 15_000);
+
+  it("[2B20A-C12] rejects an unrepresented Traveller target id at the real command boundary", async () => {
     const { service, commandStore } = makeService();
     const opened = await reachCanonicalDrunkVortoxDreamerOpportunity(
-      service,
-      commandStore,
-      "2b19a3b1-no-vortox",
-      philosopherClockmakerExactRoleIds
+      service, commandStore, "2b20a-traveller", twoB20AExactRoleIds, "2b20a-seed-3"
     );
-    const target = opened.state.currentCharacterState?.entries.find((entry) =>
-      entry.playerId !== opened.opportunity.sourcePlayerId
-    );
-    if (target === undefined) throw new Error("Expected no-Vortox target");
     const command = submitDreamerActionCommand({
-      commandId: commandId("2b19a3b1-no-vortox-submit"),
+      commandId: commandId("2b20a-traveller-submit"),
       expectedGameVersion: opened.state.gameVersion,
       payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
         opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: playerId("traveller-seat-13") } }
+    });
+    const before = await commandStore.loadDomainEvents(ids.game);
+    await expect(service.execute(command)).resolves.toMatchObject({
+      status: "rejected", code: "InvalidDreamerTarget"
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeDefined();
+  }, 15_000);
+
+  it("[2B20A-C13] rejects a forged V3 opportunity id without appending a batch", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachCanonicalDrunkVortoxDreamerOpportunity(
+      service, commandStore, "2b20a-opportunity", twoB20AExactRoleIds, "2b20a-seed-3"
+    );
+    const target = opened.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== opened.opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected opportunity-provenance target");
+    const command = submitDreamerActionCommand({
+      commandId: commandId("2b20a-forged-opportunity-submit"),
+      expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
+        opportunityId: actionOpportunityId("first-night-v1:DREAMER_ACTION:seat-01:opportunity-99"),
         decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
     });
     const before = await commandStore.loadDomainEvents(ids.game);
     await expect(service.execute(command)).resolves.toMatchObject({
-      status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action",
-      retryable: true, currentGameVersion: opened.state.gameVersion
+      status: "rejected", code: "ActionOpportunityNotFound"
     });
-    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
     expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
-    expect(rebuildOptionalGameState(before)?.firstNightActionOpportunities?.opportunities.find((entry) =>
-      entry.opportunityId === opened.opportunity.opportunityId)?.opportunityStatus).toBe("OPEN");
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeDefined();
+  }, 15_000);
+
+  it("[2B20A-C14] preserves success receipt replay and fingerprint conflict semantics", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "receipt");
+    const before = await captured.commandStore.loadDomainEvents(ids.game);
+    await expect(captured.service.execute(captured.command)).resolves.toMatchObject({
+      status: "accepted", idempotent: true
+    });
+    expect(await captured.commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    await expect(captured.service.execute({
+      ...captured.command,
+      payload: { ...captured.command.payload,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: captured.opened.opportunity.sourcePlayerId } }
+    })).resolves.toMatchObject({ status: "rejected", code: "CommandIdempotencyConflict" });
+  }, 15_000);
+
+  it("[2B20A-C21] rebuilds the complete accepted V7 stream identically", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "rebuild");
+    expect(rebuildOptionalGameState(captured.events)).toStrictEqual(captured.state);
+    expect(() => validateDomainEventStream(captured.events)).not.toThrow();
+  }, 15_000);
+
+  it("[2B20A-C22] rejects reordered or missing V7 batch members during replay", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "ordering");
+    const deliveryIndex = captured.events.findIndex((event) => event.eventType === "DreamerInformationDelivered" &&
+      "deliverySchemaVersion" in event.payload && event.payload.deliverySchemaVersion === "dreamer-information-delivered-v7");
+    expect(deliveryIndex).toBeGreaterThan(0);
+    const missing = captured.events.filter((_, index) => index !== deliveryIndex);
+    expect(() => rebuildOptionalGameState(missing)).toThrowError(DomainError);
+    const reordered = [...captured.events];
+    [reordered[deliveryIndex - 1], reordered[deliveryIndex]] = [reordered[deliveryIndex]!, reordered[deliveryIndex - 1]!];
+    expect(() => rebuildOptionalGameState(reordered)).toThrowError(DomainError);
+  }, 15_000);
+
+  it("[2B20A-C23] rejects persisted V7 candidate and policy mutations during replay", async () => {
+    const captured = await executeAccepted2B20ADreamer("FALSE", "payload-mutation");
+    for (const mutate of [
+      (payload: Record<string, unknown>) => {
+        const decision = payload.apparentPairDecision as Record<string, unknown>;
+        decision.simulationPolicyVersion = "forged";
+      },
+      (payload: Record<string, unknown>) => {
+        const decision = payload.apparentPairDecision as Record<string, unknown>;
+        const candidates = decision.legalCandidates as Record<string, unknown>[];
+        candidates.reverse();
+      }
+    ]) {
+      const events = structuredClone(captured.events);
+      const delivery = events.find((event) => event.eventType === "DreamerInformationDelivered" &&
+        "deliverySchemaVersion" in event.payload && event.payload.deliverySchemaVersion === "dreamer-information-delivered-v7");
+      if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected V7 event");
+      mutate(delivery.payload);
+      expect(() => rebuildOptionalGameState(events)).toThrowError(DomainError);
+    }
+  }, 15_000);
+
+  it("[2B20A-C25] projects the accepted V7 pair only to its source player", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "source-projection");
+    const view = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+      captured.events, captured.opened.opportunity.sourcePlayerId
+    );
+    expect(view.dreamerInformation).toMatchObject({
+      target: { playerId: captured.target.playerId }
+    });
+  }, 15_000);
+
+  it("[2B20A-C26] omits accepted V7 information from every other player", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "other-projection");
+    for (const viewer of captured.state.roster?.entries ?? []) {
+      if (viewer.playerId !== captured.opened.opportunity.sourcePlayerId) {
+        expect(buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+          captured.events, viewer.playerId
+        ).dreamerInformation).toBeUndefined();
+      }
+    }
+  }, 15_000);
+
+  it("[2B20A-C27] leaks no V7 impairment candidate policy Demon or ledger metadata", async () => {
+    const captured = await executeAccepted2B20ADreamer("FALSE", "projection-secrets");
+    const view = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+      captured.events, captured.opened.opportunity.sourcePlayerId
+    );
+    const serialized = JSON.stringify(view);
+    for (const secret of [
+      "dreamer-information-delivered-v7", "CANONICAL_SOURCE_DRUNK", "PHILOSOPHER",
+      "truthClassification", "legalCandidates", "simulationPolicyVersion",
+      "UNIQUE_CURRENT_FANG_GU", "firstNightAbilityOutcomeLedger"
+    ]) expect(serialized).not.toContain(secret);
+  }, 15_000);
+
+  it("[2B20A-C01] proves the exact reachable source impairment and Fang Gu precondition snapshot", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "preconditions");
+    const source = captured.opened.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId === captured.opened.opportunity.sourcePlayerId);
+    const impairment = captured.opened.state.abilityImpairments?.impairments.filter((entry) =>
+      entry.affectedPlayerId === captured.opened.opportunity.sourcePlayerId);
+    const demons = captured.opened.state.currentCharacterState?.entries.filter((entry) =>
+      entry.role.characterType === "DEMON");
+    expect(source).toMatchObject({ seatNumber: 1, role: { roleId: "dreamer" } });
+    expect(impairment).toMatchObject([{ kind: "DRUNK", sourceKind: "PHILOSOPHER_CHOSEN_DUPLICATE",
+      chosenRoleId: "dreamer" }]);
+    expect(demons).toMatchObject([{ role: { roleId: "fang_gu" } }]);
+  }, 15_000);
+
+  it("[2B20A-C31] preserves Philosopher Dreamer Mathematician first-night order without phase transition", async () => {
+    const captured = await executeAccepted2B20ADreamer("TRUE", "order");
+    const definitions = captured.state.firstNightTaskPlan?.taskCatalogSnapshot.definitions ?? [];
+    const orderOf = (taskType: string) => definitions.find((entry) => entry.taskType === taskType)?.baseOrder;
+    const relativeOrder = [
+      orderOf("PHILOSOPHER_ACTION"),
+      orderOf("DREAMER_ACTION"),
+      orderOf("MATHEMATICIAN_INFORMATION"),
+    ];
+    expect(relativeOrder).toStrictEqual([100, 900, 1100]);
+    expect(relativeOrder[0]).toBeLessThan(relativeOrder[1] ?? Number.NEGATIVE_INFINITY);
+    expect(relativeOrder[1]).toBeLessThan(relativeOrder[2] ?? Number.NEGATIVE_INFINITY);
+    expect(captured.state).toMatchObject({ phase: "FIRST_NIGHT", nightNumber: 1, dayNumber: 0 });
+  }, 15_000);
+
+  it("[2B20A-C37] attributes the FALSE contribution to Dreamer and never to Philosopher", async () => {
+    const captured = await executeAccepted2B20ADreamer("FALSE", "attribution");
+    const dreamerDelivery = captured.result.events.find((event) =>
+      event.eventType === "DreamerInformationDelivered"
+    );
+    if (dreamerDelivery?.eventType !== "DreamerInformationDelivered" ||
+        !("deliverySchemaVersion" in dreamerDelivery.payload) ||
+        dreamerDelivery.payload.deliverySchemaVersion !== "dreamer-information-delivered-v7") {
+      throw new Error("Expected accepted FALSE V7 Dreamer delivery");
+    }
+    const v7Delivery = dreamerDelivery.payload;
+    expect(captured.result.events.map((event) => event.eventType)).toStrictEqual([
+      "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
+    ]);
+    expect(v7Delivery.apparentPairDecision.legalCandidates.find((candidate) =>
+      candidate.candidateId === v7Delivery.apparentPairDecision.selectedCandidateId
+    )?.truthClassification).toBe("FALSE");
+
+    const gainedTask = captured.state.firstNightTaskPlan?.tasks.find((task) =>
+      task.taskType === "DREAMER_ACTION" && task.source.kind === "PHILOSOPHER_GAINED_ABILITY"
+    );
+    if (gainedTask === undefined) throw new Error("Expected gained Dreamer task before Mathematician");
+    expectAcceptedResult(await captured.service.execute(openFirstNightRoleActionOpportunityCommand({
+      commandId: commandId("2b20a-attribution-open-gained"),
+      expectedGameVersion: captured.state.gameVersion,
+      payload: {
+        commandType: "OpenFirstNightRoleActionOpportunity",
+        taskId: gainedTask.taskId
+      }
+    })));
+    const gainedOpenState = rebuildOptionalGameState(
+      await captured.commandStore.loadDomainEvents(ids.game)
+    );
+    const gainedOpportunity = gainedOpenState?.firstNightActionOpportunities?.opportunities.find(
+      (entry) => entry.taskId === gainedTask.taskId
+    );
+    const gainedTarget = gainedOpenState?.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== gainedOpportunity?.sourcePlayerId
+    );
+    if (gainedOpenState === undefined || gainedOpportunity === undefined || gainedTarget === undefined) {
+      throw new Error("Expected formal gained Dreamer opportunity and target");
+    }
+    expectAcceptedResult(await captured.service.execute(submitDreamerActionCommand({
+      commandId: commandId("2b20a-attribution-submit-gained"),
+      expectedGameVersion: gainedOpenState.gameVersion,
+      payload: {
+        commandType: "SubmitDreamerAction",
+        taskId: gainedTask.taskId,
+        opportunityId: gainedOpportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: gainedTarget.playerId }
+      }
+    })));
+
+    const beforeMathEvents = await captured.commandStore.loadDomainEvents(ids.game);
+    const beforeMath = rebuildOptionalGameState(beforeMathEvents);
+    const mathTask = beforeMath?.firstNightTaskPlan?.tasks.find((task) =>
+      !beforeMath.firstNightTaskProgress?.settlements.some((settlement) =>
+        settlement.taskId === task.taskId)
+    );
+    if (beforeMath === undefined || mathTask?.taskType !== "MATHEMATICIAN_INFORMATION" ||
+        mathTask.source.kind !== "ROLE") {
+      throw new Error("Expected formal base Mathematician task after gained Dreamer");
+    }
+    const mathCommand: SettleMathematicianInformationCommand = {
+      commandId: commandId("2b20a-attribution-settle-mathematician"),
+      gameId: ids.game,
+      expectedGameVersion: beforeMath.gameVersion,
+      actor: systemActor,
+      issuedAt: "2026-07-25T00:00:00.000Z",
+      correlationId: correlationId("2b20a-attribution-settle-mathematician"),
+      payload: {
+        commandType: "SettleMathematicianInformation",
+        taskId: mathTask.taskId
+      }
+    };
+    const mathResult = await captured.service.execute(mathCommand);
+    expectEventSummaryAcceptedResult(mathResult);
+    const firstTerminalEvents = await captured.commandStore.loadDomainEvents(ids.game);
+    const terminal = firstTerminalEvents.slice(beforeMathEvents.length);
+    expect(terminal.map((event) => event.eventType)).toStrictEqual([
+      "MathematicianInformationDelivered", "ScheduledTaskSettled"
+    ]);
+    expect(() => validateDomainBatchSemantics(beforeMath, terminal)).not.toThrow();
+    const mathDeliveryEvent = terminal[0];
+    if (mathDeliveryEvent?.eventType !== "MathematicianInformationDelivered") {
+      throw new Error("Expected formal Mathematician delivery");
+    }
+    const mathDelivery = mathDeliveryEvent.payload;
+    expect(mathDelivery).toMatchObject({
+      trueCount: 1,
+      selectedCount: 1,
+      informationReliability: "RULE_CORRECT",
+      vortoxConstraint: { kind: "NONE_NO_CURRENT_VORTOX" }
+    });
+    expect(mathDelivery.distinctAbnormalPlayers).toStrictEqual([{
+      playerId: captured.opened.opportunity.sourcePlayerId,
+      seatNumber: captured.opened.opportunity.sourceSeatNumber,
+      supportingFactIds: mathDelivery.qualifyingAbnormalFactIds
+    }]);
+    expect(mathDelivery.qualifyingAbnormalFactIds).toHaveLength(1);
+
+    const abnormal = beforeMath.firstNightAbilityOutcomeLedger?.facts.filter((entry) =>
+      entry.outcomeStatus === "ABNORMAL" && entry.causeKind === "SOURCE_DRUNKENNESS") ?? [];
+    const dreamerFacts = abnormal.filter((entry) => entry.abilityTaskId === captured.opened.dreamerTask.taskId);
+    expect(dreamerFacts).toHaveLength(1);
+    expect(dreamerFacts[0]?.sourcePlayerId).toBe(captured.opened.opportunity.sourcePlayerId);
+    expect(abnormal.some((entry) => entry.sourcePlayerId === playerId("ai-seat-10"))).toBe(false);
+    expect(abnormal.some((entry) => entry.sourcePlayerId === captured.target.playerId)).toBe(false);
+    expect(mathDelivery.qualifyingAbnormalFactIds).toStrictEqual([dreamerFacts[0]!.auditFactId]);
+    expect(mathDelivery.distinctAbnormalPlayers.flatMap((entry) => entry.supportingFactIds))
+      .toStrictEqual([dreamerFacts[0]!.auditFactId]);
+
+    const sourcePlayerId = mathDelivery.sourceContract.sourcePlayerId;
+    const playerView = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+      firstTerminalEvents,
+      sourcePlayerId
+    );
+    const aiView = buildAiPrivateKnowledgeViewFromAcceptedEventStream(
+      firstTerminalEvents,
+      sourcePlayerId
+    );
+    expect(playerView.mathematicianInformation).toStrictEqual({ count: 1 });
+    expect(aiView.mathematicianInformation).toStrictEqual({ count: 1 });
+    expect(JSON.stringify({ playerView, aiView })).not.toContain("trueCount");
+    for (const entry of beforeMath.currentCharacterState?.entries ?? []) {
+      if (entry.playerId === sourcePlayerId) continue;
+      expect(buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
+        firstTerminalEvents,
+        entry.playerId
+      ).mathematicianInformation).toBeUndefined();
+      expect(buildAiPrivateKnowledgeViewFromAcceptedEventStream(
+        firstTerminalEvents,
+        entry.playerId
+      ).mathematicianInformation).toBeUndefined();
+    }
+
+    expect(await captured.commandStore.findCommandReceipt(ids.game, mathCommand.commandId))
+      .toBeDefined();
+    await expect(captured.service.execute(mathCommand)).resolves.toMatchObject({
+      status: "accepted",
+      idempotent: true
+    });
+    expect(await captured.commandStore.loadDomainEvents(ids.game)).toStrictEqual(firstTerminalEvents);
+    const finalState = rebuildOptionalGameState(firstTerminalEvents);
+    expect(finalState?.mathematicianInformation?.deliveries).toHaveLength(1);
+    expect(finalState?.firstNightTaskProgress?.settlements.some((entry) =>
+      entry.taskId === mathTask.taskId)).toBe(true);
+    expect(rebuildOptionalGameState(structuredClone(firstTerminalEvents))).toStrictEqual(finalState);
+  }, 15_000);
+
+  it("[2B20A-C38] rejects direct malformed V7 ledger source cross-links fail closed", async () => {
+    const captured = await executeAccepted2B20ADreamer("FALSE", "fact-shape");
+    const fact = captured.state.firstNightAbilityOutcomeLedger?.facts.find((entry) =>
+      entry.abilityTaskId === captured.opened.dreamerTask.taskId);
+    if (fact === undefined) throw new Error("Expected V7 fact");
+    const malformed = structuredClone(fact) as unknown as {
+      abilityInstance: Record<string, unknown>;
+    };
+    malformed.abilityInstance.sourcePlayerId = playerId("ai-seat-10");
+    expect(domainCore.validateFirstNightAbilityOutcomeFactShape(malformed).valid).toBe(false);
+  }, 15_000);
+
+  it("[2B20A-C39] rejects coordinated persisted V7 source and impairment substitution", async () => {
+    const captured = await executeAccepted2B20ADreamer("FALSE", "source-substitution");
+    const events = structuredClone(captured.events);
+    const delivery = events.find((event) => event.eventType === "DreamerInformationDelivered" &&
+      "deliverySchemaVersion" in event.payload && event.payload.deliverySchemaVersion === "dreamer-information-delivered-v7");
+    if (delivery?.eventType !== "DreamerInformationDelivered") throw new Error("Expected V7 event");
+    const payload = delivery.payload as domainCore.DreamerInformationDeliveredPayloadV7;
+    (payload as unknown as Record<string, unknown>).sourcePlayerId = playerId("ai-seat-10");
+    (payload.sourceContract as unknown as Record<string, unknown>).sourcePlayerId = playerId("ai-seat-10");
+    (payload.sourceImpairment as unknown as Record<string, unknown>).affectedPlayerId = playerId("ai-seat-10");
+    expect(() => rebuildOptionalGameState(events)).toThrowError(DomainError);
+  }, 15_000);
+
+  it("[2B20A-C40] leaves no delivery fact or contribution when the real No Dashii command fails", async () => {
+    const { service, commandStore } = makeService();
+    const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore, noPhilosopherNoDashiiExactRoleIds);
+    const target = opened.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== opened.opportunity.sourcePlayerId);
+    if (target === undefined) throw new Error("Expected unsupported target");
+    const before = await commandStore.loadDomainEvents(ids.game);
+    const command = submitDreamerActionCommand({
+      commandId: commandId("2b20a-no-delivery"), expectedGameVersion: opened.state.gameVersion,
+      payload: { commandType: "SubmitDreamerAction", taskId: opened.dreamerTask.taskId,
+        opportunityId: opened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
+    });
+    await expect(service.execute(command)).resolves.toMatchObject({
+      status: "failed", code: "ApplicationNotConfigured", retryable: true
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
+    expect(rebuildOptionalGameState(before)?.firstNightAbilityOutcomeLedger?.facts.some((entry) =>
+      entry.abilityTaskId === opened.dreamerTask.taskId)).toBe(false);
   }, 15_000);
 
   it("[2B19A3B1-C31/C40] stops with the Philosopher-gained Dreamer task next and unsettled", async () => {
@@ -8865,6 +9332,91 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
       settlementEventIndex: fixture.settlementEventIndex
     });
     expect(captured.finalState).toStrictEqual(rebuildOptionalGameState(fixture.events));
+
+    const vigormortis = makeService();
+    const vigormortisOpened = await reachOpenDreamerV3ActionOpportunity(
+      vigormortis.service,
+      vigormortis.commandStore,
+      noPhilosopherVigormortisExactRoleIds
+    );
+    expect(vigormortisOpened.opportunity.opportunityStatus).toBe("OPEN");
+    const vigormortisTarget = vigormortisOpened.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== vigormortisOpened.opportunity.sourcePlayerId
+    );
+    if (vigormortisTarget === undefined) throw new Error("Expected healthy Vigormortis Dreamer target");
+    const vigormortisCommand = submitDreamerActionCommand({
+      commandId: commandId("2b19a2-valid-target-vigormortis"),
+      expectedGameVersion: vigormortisOpened.state.gameVersion,
+      payload: {
+        commandType: "SubmitDreamerAction",
+        taskId: vigormortisOpened.dreamerTask.taskId,
+        opportunityId: vigormortisOpened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: vigormortisTarget.playerId }
+      }
+    });
+    const beforeVigormortisEvents = await vigormortis.commandStore.loadDomainEvents(ids.game);
+    const beforeAcceptedCount = vigormortis.commandStore.acceptedCount;
+    const vigormortisResult = await vigormortis.service.execute(vigormortisCommand);
+    expectAcceptedResult(vigormortisResult);
+    expect(vigormortisResult).toMatchObject({ idempotent: false });
+    expect(vigormortisResult.events.map((event) => event.eventType)).toStrictEqual([
+      "DreamerTargetChosen",
+      "DreamerInformationDelivered",
+      "ScheduledTaskSettled"
+    ]);
+    expect(new Set(vigormortisResult.events.map((event) => event.batchId)).size).toBe(1);
+    const priorSequence = beforeVigormortisEvents.at(-1)?.eventSequence ?? 0;
+    expect(vigormortisResult.events.map((event) => event.eventSequence)).toStrictEqual([
+      priorSequence + 1,
+      priorSequence + 2,
+      priorSequence + 3
+    ]);
+    const persistedVigormortisEvents = await vigormortis.commandStore.loadDomainEvents(ids.game);
+    expect(persistedVigormortisEvents).toHaveLength(beforeVigormortisEvents.length + 3);
+    expect(persistedVigormortisEvents.slice(-3)).toStrictEqual(vigormortisResult.events);
+    expect(vigormortis.commandStore.acceptedCount).toBe(beforeAcceptedCount + 1);
+    const vigormortisReceipt = await vigormortis.commandStore.findCommandReceipt(
+      ids.game,
+      vigormortisCommand.commandId
+    );
+    expect(vigormortisReceipt).toBeDefined();
+    const rebuiltVigormortis = rebuildOptionalGameState(persistedVigormortisEvents);
+    if (rebuiltVigormortis === undefined) throw new Error("Expected rebuilt healthy Vigormortis state");
+    expect(rebuiltVigormortis.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === vigormortisOpened.opportunity.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(rebuiltVigormortis.firstNightTaskProgress?.settlements.at(-1)).toMatchObject({
+      taskId: vigormortisOpened.dreamerTask.taskId,
+      taskType: "DREAMER_ACTION",
+      outcomeType: "DREAMER_INFORMATION_DELIVERED"
+    });
+    const vigormortisDelivery = vigormortisResult.events[1];
+    if (vigormortisDelivery?.eventType !== "DreamerInformationDelivered" ||
+        !("deliverySchemaVersion" in vigormortisDelivery.payload)) {
+      throw new Error("Expected healthy Vigormortis V2 delivery");
+    }
+    expect(vigormortisDelivery.payload.deliverySchemaVersion).toBe("dreamer-information-delivered-v2");
+    expect(vigormortisDelivery.payload.informationReliability).toStrictEqual({ kind: "EFFECTIVE" });
+    expect("vortoxConstraint" in vigormortisDelivery.payload).toBe(false);
+    expect([
+      vigormortisDelivery.payload.goodRole.defaultAlignment,
+      vigormortisDelivery.payload.evilRole.defaultAlignment
+    ].sort()).toStrictEqual(["EVIL", "GOOD"]);
+    expect([
+      vigormortisDelivery.payload.goodRole.roleId,
+      vigormortisDelivery.payload.evilRole.roleId
+    ]).toContain(vigormortisTarget.role.roleId);
+
+    await expect(vigormortis.service.execute(vigormortisCommand)).resolves.toMatchObject({
+      status: "accepted",
+      idempotent: true
+    });
+    expect(await vigormortis.commandStore.loadDomainEvents(ids.game)).toStrictEqual(persistedVigormortisEvents);
+    expect(await vigormortis.commandStore.findCommandReceipt(ids.game, vigormortisCommand.commandId))
+      .toStrictEqual(vigormortisReceipt);
+    expect(vigormortis.commandStore.acceptedCount).toBe(beforeAcceptedCount + 1);
+    expect(rebuildOptionalGameState(await vigormortis.commandStore.loadDomainEvents(ids.game)))
+      .toStrictEqual(rebuiltVigormortis);
   });
 
 });
@@ -9002,7 +9554,7 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
 });
 
 describeApplicationServiceShard("dreamer-vortox", "GameApplicationService", () => {
-  it("[2B19A3A-C17] fails a represented DRUNK base Dreamer receipt-free through the real Philosopher chain", async () => {
+  it("[2B20A-C35] accepts the reachable canonical-drunk base Dreamer through the real Philosopher chain", async () => {
     const { service, commandStore } = makeService();
     const philosopher = await reachOpenExactPhilosopherOpportunity(service, commandStore);
     expectAcceptedResult(await service.execute(chooseExactPhilosopherRole("dreamer", philosopher, "2b19a2-choose-dreamer")));
@@ -9025,12 +9577,20 @@ describeApplicationServiceShard("dreamer-vortox", "GameApplicationService", () =
       payload: { commandType: "SubmitDreamerAction", taskId: baseTask.taskId, opportunityId: opportunity.opportunityId,
         decision: { kind: "CHOOSE_PLAYER", targetPlayerId: target.playerId } }
     });
-    const before = await commandStore.loadDomainEvents(ids.game);
-    await expect(service.execute(command)).resolves.toMatchObject({ status: "failed", code: "ApplicationNotConfigured", failureStage: "first-night-role-action" });
-    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeUndefined();
-    expect(await commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
-    expect(rebuildOptionalGameState(before)?.firstNightActionOpportunities?.opportunities.find((entry) =>
-      entry.opportunityId === opportunity.opportunityId)?.opportunityStatus).toBe("OPEN");
+    const result = await service.execute(command);
+    expectAcceptedResult(result);
+    expect(result.events.map((event) => event.eventType)).toStrictEqual([
+      "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
+    ]);
+    expect(result.events[1]?.eventType === "DreamerInformationDelivered" &&
+      "deliverySchemaVersion" in result.events[1].payload
+      ? result.events[1].payload.deliverySchemaVersion : undefined).toBe("dreamer-information-delivered-v7");
+    expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeDefined();
+    const finalState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(finalState?.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === opportunity.opportunityId)?.opportunityStatus).toBe("CLOSED");
+    expect(finalState?.firstNightTaskProgress?.settlements.some((entry) =>
+      entry.taskId === baseTask.taskId && entry.outcomeType === "DREAMER_INFORMATION_DELIVERED")).toBe(true);
   });
 
 });
@@ -9098,26 +9658,6 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
       await exercise({ name, service: context.service, store: context.commandStore, opened,
         expectedCode: "ApplicationNotConfigured", expectedStage: "first-night-role-action" });
     }
-
-    const drunk = makeService();
-    const philosopher = await reachOpenExactPhilosopherOpportunity(drunk.service, drunk.commandStore);
-    expectAcceptedResult(await drunk.service.execute(chooseExactPhilosopherRole("dreamer", philosopher, "2b19a2-c20-choose-dreamer")));
-    const afterChoice = rebuildOptionalGameState(await drunk.commandStore.loadDomainEvents(ids.game));
-    const baseTask = afterChoice?.firstNightTaskPlan?.tasks.find((task) =>
-      task.taskType === "DREAMER_ACTION" && task.source.kind === "ROLE");
-    if (baseTask === undefined) throw new Error("Expected C20 impaired base Dreamer task");
-    const ready = await advanceToScheduledTask(drunk.service, drunk.commandStore, baseTask.taskId, "2b19a2-c20-drunk-advance");
-    expectAcceptedResult(await drunk.service.execute(openFirstNightRoleActionOpportunityCommand({
-      commandId: commandId("2b19a2-c20-drunk-open"), expectedGameVersion: ready.gameVersion,
-      payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: baseTask.taskId }
-    })));
-    const drunkState = rebuildOptionalGameState(await drunk.commandStore.loadDomainEvents(ids.game));
-    const drunkOpportunity = drunkState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === baseTask.taskId);
-    if (drunkState === undefined || drunkOpportunity === undefined ||
-        !domainCore.isDreamerActionOpportunityV3(drunkOpportunity)) throw new Error("Expected C20 impaired V3 opportunity");
-    await exercise({ name: "drunk", service: drunk.service, store: drunk.commandStore,
-      opened: { dreamerTask: baseTask, opportunity: drunkOpportunity, state: drunkState },
-      expectedCode: "ApplicationNotConfigured", expectedStage: "first-night-role-action" });
 
     const dependencyStore = new OneShotDomainEventLoadFailureStore();
     const dependency = makeService(dependencyStore);

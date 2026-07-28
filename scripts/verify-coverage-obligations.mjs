@@ -730,6 +730,156 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
         sha256: "6d8ba5d94a86dddf1b045f73e58e4e2c826bcf7c6d004a8ed7fd8d575aa315f5"
       })
     })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b20ap2-cc82a95-hosted-execution-v1",
+    sourceHead: "cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1",
+    sourceKind: "EXACT_SOURCE_SEGMENTED_COVERAGE_AUTHORITY",
+    topology: Object.freeze({
+      id: "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS",
+      ordinaryGroups: 9,
+      ordinaryPhysicalBlobs: 11,
+      coverageGroups: Object.freeze([
+        Object.freeze({ id: "domain-core-rebuild", tests: 207 }),
+        Object.freeze({ id: "domain-core-rest", tests: 363 }),
+        Object.freeze({ id: "application", tests: 465 }),
+        Object.freeze({ id: "application-service-core", tests: 90 }),
+        Object.freeze({ id: "application-service-role-actions", tests: 52 }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions-base",
+          tests: 73
+        }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions-a3b2",
+          tests: 9
+        }),
+        Object.freeze({
+          id: "application-service-compatibility-and-failure-boundaries",
+          tests: 26
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-core",
+          tests: 36,
+          physicalSegments: Object.freeze([
+            Object.freeze({ id: "legacy", tests: 14 }),
+            Object.freeze({ id: "2b20a", tests: 22 })
+          ])
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-gained",
+          tests: 10
+        }),
+        Object.freeze({ id: "engines-and-projections", tests: 241 })
+      ]),
+      coveragePhysicalBlobs: 12,
+      coverageLogicalGroups: 11,
+      semanticTests: 1572,
+      coverageGlobalManifestSha256:
+        "02d152e2c223f98c09b57e696b263acd0494a35b5e0a8e71914afbe5529dfca4",
+      coverageFinalSha256:
+        "e97ab10ab7d763aee40f1cba0ff288aca2bcff963d21d4acf6b14780004dfe2b",
+      normalizedTupleSetsSha256:
+        "5e6d1e333f99f77fb5d4b8c71adc2d00146f0d1f52c72b933a36f3a807448f82",
+      fullTupleDeltaSha256:
+        "4f45f1b09311f8994c2fb0fff336303e2ef2e742233b96a400070a47f855338a"
+    }),
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3217,
+        sha256: "851add3e897ea59b8b1d86fbde3c52b792d466902f3705958d97dfba174224fe"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "f4c97e3e3270830939cf6a337358de3dbe4ce0ae354f000d3e6001c7cb7a00be"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3217,
+        sha256: "c37a009f8cbca2bfa30ece8349b5864751e4274b4e4c19ca29bf0ea03acb166f"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1808,
+        sha256: "12e72ae3e8a02fa18425f14f804c9f630537dff1534e9dcb0168833718622a7d"
+      })
+    })
+  }),
+  Object.freeze({
+    id: "phase-3-slice-2b20a-4d576e2-final-restoration-v1",
+    sourceHead: "4d576e205cb20c37ba913b923a1cd39e8d800d18",
+    sourceKind: "EXACT_SOURCE_SEGMENTED_COVERAGE_AUTHORITY",
+    topology: Object.freeze({
+      id: "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS",
+      ordinaryGroups: 9,
+      ordinaryPhysicalBlobs: 11,
+      coverageGroups: Object.freeze([
+        Object.freeze({ id: "domain-core-rebuild", tests: 207 }),
+        Object.freeze({ id: "domain-core-rest", tests: 363 }),
+        Object.freeze({ id: "application", tests: 465 }),
+        Object.freeze({ id: "application-service-core", tests: 90 }),
+        Object.freeze({ id: "application-service-role-actions", tests: 52 }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions-base",
+          tests: 73
+        }),
+        Object.freeze({
+          id: "application-service-information-and-later-actions-a3b2",
+          tests: 9
+        }),
+        Object.freeze({
+          id: "application-service-compatibility-and-failure-boundaries",
+          tests: 26
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-core",
+          tests: 36,
+          physicalSegments: Object.freeze([
+            Object.freeze({ id: "legacy", tests: 14 }),
+            Object.freeze({ id: "2b20a", tests: 22 })
+          ])
+        }),
+        Object.freeze({
+          id: "application-service-dreamer-vortox-gained",
+          tests: 10
+        }),
+        Object.freeze({ id: "engines-and-projections", tests: 241 })
+      ]),
+      coveragePhysicalBlobs: 12,
+      coverageLogicalGroups: 11,
+      semanticTests: 1572,
+      coverageGlobalManifestSha256:
+        "1696dd46a40fe776423bb8fe7594d90906cc0376e25fcb587cca149e7259ce57",
+      coverageFinalSha256:
+        "79d0577a13a81ead79c47e55cb6a5010b129fb030e60a11b403438b1dffae22a",
+      normalizedTupleSetsSha256:
+        "624e27cab000978c3c009fdf5fb613f29a8d7a04d4b40240780bdc0d8bf1967a",
+      fullTupleDeltaSha256:
+        "8e6ed9ebe2239b48dafd33e3ce1973054d8a5e6225d8f64c1513f3720090e206"
+    }),
+    obligations: Object.freeze({
+      sourceFiles: Object.freeze({
+        count: 63,
+        sha256: "f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691"
+      }),
+      zeroHitStatements: Object.freeze({
+        count: 3213,
+        sha256: "b493744842f7a96e4bb82b54584d0db416c87719b6a69fcb39140fe2aeeff81a"
+      }),
+      zeroHitFunctions: Object.freeze({
+        count: 23,
+        sha256: "f4c97e3e3270830939cf6a337358de3dbe4ce0ae354f000d3e6001c7cb7a00be"
+      }),
+      zeroHitLines: Object.freeze({
+        count: 3213,
+        sha256: "e611244a0d6e1f1720db6b1f83260ae17dd40af34a04b035a9c1116a318d0c86"
+      }),
+      zeroHitBranchArms: Object.freeze({
+        count: 1807,
+        sha256: "6637b557feb45600e3904a16373b00bc65d76500d3e339c594879a745e0d96a3"
+      })
+    })
   })
 ]);
 

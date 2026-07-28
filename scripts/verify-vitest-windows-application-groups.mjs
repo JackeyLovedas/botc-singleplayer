@@ -1,19 +1,23 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
-  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
+  statSync,
   writeFileSync
 } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, resolve, sep } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const REQUIRE = createRequire(import.meta.url);
+const EXPECTED_VITEST_VERSION = "3.2.6";
 const APPLICATION_SERVICE_TEST = "packages/application/src/game-application-service.test.ts";
 const BASELINE_FILES = [
   "packages/application/src/game-command-bus.test.ts",
@@ -81,26 +85,24 @@ function parseCli(argv) {
   return { mode: argv[0], target: argv[2] };
 }
 
-function resolvePnpm() {
-  if (process.platform !== "win32") return { command: "pnpm", prefix: [] };
-  const direct = process.env.npm_execpath;
-  if (direct && /pnpm\.(?:cjs|mjs)$/i.test(direct) && existsSync(direct)) {
-    return { command: process.execPath, prefix: [direct] };
+function resolveVitestPublicBin() {
+  const packagePath = realpathSync(REQUIRE.resolve("vitest/package.json", { paths: [REPO_ROOT] }));
+  const packageRoot = realpathSync(dirname(packagePath));
+  const packageValue = JSON.parse(readFileSync(packagePath, "utf8"));
+  if (packageValue.name !== "vitest" || packageValue.version !== EXPECTED_VITEST_VERSION) {
+    throw new Error(`Expected vitest ${EXPECTED_VITEST_VERSION}, got ${packageValue.name}@${packageValue.version}`);
   }
-  const located = spawnSync("where.exe", ["pnpm.cmd"], { encoding: "utf8", windowsHide: true });
-  if (located.status !== 0) throw new Error("Unable to locate pnpm.cmd on PATH");
-  for (const shim of located.stdout.split(/\r?\n/u).filter(Boolean)) {
-    const text = readFileSync(shim, "utf8");
-    for (const match of text.matchAll(/["'](%~?dp0%?[^"']*?pnpm\.(?:cjs|mjs))["']/giu)) {
-      const expanded = match[1]
-        .replace(/^%~dp0/iu, `${dirname(shim)}${sep}`)
-        .replace(/^%dp0%/iu, `${dirname(shim)}${sep}`)
-        .replace(/[\\/]/gu, sep);
-      const entry = resolve(expanded);
-      if (existsSync(entry)) return { command: process.execPath, prefix: [entry] };
-    }
+  const binRelative = typeof packageValue.bin === "string"
+    ? packageValue.bin
+    : packageValue.bin?.vitest;
+  if (typeof binRelative !== "string") throw new Error("Vitest package has no public bin");
+  const bin = realpathSync(resolve(packageRoot, binRelative));
+  const binRelativeToPackage = relative(packageRoot, bin);
+  if (binRelativeToPackage === ".." || binRelativeToPackage.startsWith(`..${sep}`) ||
+      isAbsolute(binRelativeToPackage) || !statSync(bin).isFile()) {
+    throw new Error("Vitest public bin escapes its installed package");
   }
-  throw new Error("Unable to resolve the pnpm JavaScript entry point without a shell");
+  return bin;
 }
 
 function canonicalFile(rawFile) {
@@ -145,10 +147,10 @@ function publicIdentity(item) {
   };
 }
 
-function runList(pnpm, tempRoot, label, filters) {
+function runList(vitest, tempRoot, label, filters) {
   const output = resolve(tempRoot, `${label}.json`);
-  const args = ["exec", "vitest", "list", "--workspace", "vitest.workspace.ts", ...filters, "--json", output];
-  const result = spawnSync(pnpm.command, [...pnpm.prefix, ...args], {
+  const args = [vitest, "list", "--workspace", "vitest.workspace.ts", ...filters, "--json", output];
+  const result = spawnSync(process.execPath, args, {
     cwd: REPO_ROOT,
     encoding: "utf8",
     env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1" },
@@ -163,7 +165,9 @@ function runList(pnpm, tempRoot, label, filters) {
 
 function artifactNames(groupId) {
   return {
-    report: `${groupId}-report.json`,
+    report: groupId === "W7"
+      ? "segmented/W7/logical-manifest.json"
+      : `${groupId}-report.json`,
     stdout: `${groupId}-stdout.txt`,
     stderr: `${groupId}-stderr.txt`
   };
@@ -190,20 +194,20 @@ function riskStrings(stdout, stderr) {
   };
 }
 
-function captureExpectedInventory(pnpm, outputDir) {
+function captureExpectedInventory(vitest, outputDir) {
   const tempRoot = mkdtempSync(resolve(tmpdir(), "botc-vitest-windows-expected-"));
   const issues = [];
   let baseline = [];
   const grouped = new Map(GROUPS.map((group) => [group.id, []]));
   try {
     try {
-      baseline = runList(pnpm, tempRoot, "baseline", BASELINE_FILES);
+      baseline = runList(vitest, tempRoot, "baseline", BASELINE_FILES);
     } catch (error) {
       issues.push(`baseline inventory failed: ${error instanceof Error ? error.message : String(error)}`);
     }
     for (const group of GROUPS) {
       try {
-        grouped.set(group.id, runList(pnpm, tempRoot, group.id, group.filters));
+        grouped.set(group.id, runList(vitest, tempRoot, group.id, group.filters));
       } catch (error) {
         issues.push(`${group.id} inventory failed: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -220,23 +224,33 @@ function captureExpectedInventory(pnpm, outputDir) {
 }
 
 function runGroups(outputDir) {
+  const fixedOutputDir = resolve(REPO_ROOT, ".vitest-windows-application");
+  if (resolve(outputDir) !== fixedOutputDir) {
+    throw new Error(`run output directory must be the fixed repository root: ${fixedOutputDir}`);
+  }
   mkdirSync(outputDir, { recursive: true });
-  const pnpm = resolvePnpm();
+  const vitest = resolveVitestPublicBin();
   const manifestGroups = [];
   rmSync(resolve(outputDir, "manifest.json"), { force: true });
   rmSync(resolve(outputDir, "verification.json"), { force: true });
   rmSync(resolve(outputDir, "expected-inventory.json"), { force: true });
-  captureExpectedInventory(pnpm, outputDir);
+  captureExpectedInventory(vitest, outputDir);
   for (const group of GROUPS) {
     const names = artifactNames(group.id);
     const reportPath = resolve(outputDir, names.report);
-    rmSync(reportPath, { force: true });
-    const args = [
-      "exec", "vitest", "run", "--workspace", "vitest.workspace.ts", ...group.filters,
-      "--reporter=json", `--outputFile=${reportPath}`
-    ];
+    if (group.id !== "W7") rmSync(reportPath, { force: true });
+    const args = group.id === "W7"
+      ? [
+          resolve(REPO_ROOT, "scripts/run-vitest-logical-group.mjs"),
+          "run", "--mode", "windows", "--logical-group-id", "W7"
+        ]
+      : [
+          vitest, "run", "--workspace", "vitest.workspace.ts", ...group.filters,
+          "--reporter=json", `--outputFile=${reportPath}`
+        ];
+    const command = process.execPath;
     const started = process.hrtime.bigint();
-    const result = spawnSync(pnpm.command, [...pnpm.prefix, ...args], {
+    const result = spawnSync(command, args, {
       cwd: REPO_ROOT,
       encoding: "utf8",
       env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", VITEST_MAX_FORKS: "1" },
@@ -249,7 +263,11 @@ function runGroups(outputDir) {
     manifestGroups.push({
       id: group.id,
       project: group.project,
-      command: ["pnpm", ...args.map((arg) => arg === `--outputFile=${reportPath}` ? `--outputFile=${names.report}` : arg)],
+      command: group.id === "W7"
+        ? ["node", "scripts/run-vitest-logical-group.mjs", "run", "--mode", "windows", "--logical-group-id", "W7"]
+        : ["node", "node_modules/vitest/vitest.mjs", ...args.slice(1).map(
+            (arg) => arg === `--outputFile=${reportPath}` ? `--outputFile=${names.report}` : arg
+          )],
       report: names.report,
       stdout: names.stdout,
       stderr: names.stderr,
@@ -266,6 +284,51 @@ function runGroups(outputDir) {
   };
   writeJson(resolve(outputDir, "manifest.json"), manifest);
   return manifest;
+}
+
+function parseW7LogicalManifest(value, label, issues) {
+  const expectedPhysical = ["W7--legacy", "W7--2b20a", "W7--gained"];
+  if (!value || typeof value !== "object" ||
+      value.schemaVersion !== "botc-vitest-logical-manifest-v1" ||
+      value.mode !== "windows" || value.logicalGroupId !== "W7" ||
+      JSON.stringify(value.expectedPhysicalBlobIds) !== JSON.stringify(expectedPhysical) ||
+      value.mergeEligibility !== true || !Array.isArray(value.failureCodes) ||
+      value.failureCodes.length !== 0 || !Array.isArray(value.selectedIdentities)) {
+    throw new Error(`${label} does not match the isolated W7 logical-manifest schema`);
+  }
+  const passedItems = value.selectedIdentities.map((identity, index) => {
+    if (!Array.isArray(identity) || identity.length !== 4 ||
+        typeof identity[0] !== "string" || typeof identity[1] !== "string" ||
+        !Array.isArray(identity[2]) || identity[2].some((part) => typeof part !== "string") ||
+        typeof identity[3] !== "string") {
+      throw new Error(`${label}.selectedIdentities[${index}] is malformed`);
+    }
+    const canonical = {
+      project: identity[0],
+      file: canonicalFile(identity[1]),
+      ancestorPath: identity[2],
+      testTitle: identity[3]
+    };
+    return { ...canonical, key: JSON.stringify(canonical) };
+  }).sort((left, right) => compareCodeUnits(left.key, right.key));
+  if (passedItems.length !== 46 || new Set(passedItems.map((item) => item.key)).size !== 46) {
+    issues.push("W7 isolated logical manifest must contain exactly 46 unique identities");
+  }
+  return {
+    passedItems,
+    skippedItems: [],
+    counts: {
+      total: passedItems.length,
+      passed: passedItems.length,
+      failed: 0,
+      pending: 0,
+      todo: 0,
+      skipped: 0,
+      discoveredTotal: passedItems.length,
+      filteredComplement: 0
+    },
+    rawReportCounts: null
+  };
 }
 
 function parseRuntimeReport(value, group, label, issues) {
@@ -494,7 +557,9 @@ function verifyDirectory(outputDir) {
     let parsed = { passedItems: [], skippedItems: [], counts: null, rawReportCounts: null };
     try {
       const report = JSON.parse(readFileSync(resolve(outputDir, names.report), "utf8"));
-      parsed = parseRuntimeReport(report, group, `${group.id} report`, issues);
+      parsed = group.id === "W7"
+        ? parseW7LogicalManifest(report, `${group.id} report`, issues)
+        : parseRuntimeReport(report, group, `${group.id} report`, issues);
     } catch (error) {
       issues.push(`${group.id} report unavailable or invalid: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -557,9 +622,9 @@ function main() {
   if (mode === "inventory") {
     const tempRoot = mkdtempSync(resolve(tmpdir(), "botc-vitest-windows-inventory-"));
     try {
-      const pnpm = resolvePnpm();
-      const baseline = runList(pnpm, tempRoot, "baseline", BASELINE_FILES);
-      const grouped = new Map(GROUPS.map((group) => [group.id, runList(pnpm, tempRoot, group.id, group.filters)]));
+      const vitest = resolveVitestPublicBin();
+      const baseline = runList(vitest, tempRoot, "baseline", BASELINE_FILES);
+      const grouped = new Map(GROUPS.map((group) => [group.id, runList(vitest, tempRoot, group.id, group.filters)]));
       const report = buildReport(baseline, grouped);
       mkdirSync(dirname(target), { recursive: true });
       writeJson(target, report);
