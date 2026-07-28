@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { testFirstNightTaskCatalog } from "@botc/test-harness";
 import {
   DREAMER_FALSE_ROLE_POLICY_VERSION,
+  DREAMER_BASE_SOURCE_EFFECTIVENESS_MODEL_VERSION,
   DREAMER_INFORMATION_STAGE,
   SUPPORTED_DREAMER_INFORMATION_MODEL_VERSION,
   createDreamerTargetChosenPayload,
@@ -763,6 +764,18 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
         impairmentId: canonicalDrunk.impairmentId,
         impairmentKind: "DRUNK"
       });
+    const expectedHealthyCapability = {
+      kind: "NORMAL_INFORMATION_SUPPORTED",
+      evaluationModelVersion: DREAMER_BASE_SOURCE_EFFECTIVENESS_MODEL_VERSION,
+      evaluatedCharacterStateRevision: 1,
+      sourceRoleTenureId: facts.opportunity.sourceContract.sourceRoleTenureId,
+      sourceAbilityInstanceId: facts.opportunity.sourceContract.sourceAbilityInstanceId
+    } as const;
+    expect(resolve({
+      currentCharacterState: anotherDemonState,
+      setup: anotherDemonSetup,
+      abilityImpairments: undefined
+    })).toStrictEqual(expectedHealthyCapability);
     const mismatchedFangGuRole: RoleSetupSnapshot = {
       ...fangGuRole,
       setupModifier: { outsiderDelta: 1, townsfolkDelta: -1 }
@@ -795,10 +808,7 @@ describe("Phase 3 Slice 2B20A canonical-drunk Fang Gu Dreamer", () => {
       setup: setup([...facts.setup.roleCatalogSnapshot.roles, vigormortisRole])
     })).toStrictEqual({ kind: "EFFECTIVENESS_UNRESOLVED", reason: "CURRENT_DEMON_IDENTITY_NOT_UNIQUE" });
 
-    expect(resolve({ abilityImpairments: undefined })).toMatchObject({
-      kind: "NORMAL_INFORMATION_SUPPORTED",
-      evaluatedCharacterStateRevision: 1
-    });
+    expect(resolve({ abilityImpairments: undefined })).toStrictEqual(expectedHealthyCapability);
     const missingSourceTenure: RoleTenureState = {
       records: [],
       processedTransitionFactIds: []

@@ -68,6 +68,8 @@ import {
   seatNumber,
   scheduledTaskFromFirstNightTaskInsertedPayload,
   rebuildGameState,
+  rebuildOptionalGameState,
+  validateDreamerInformationDeliveredPayload,
   validateFirstNightTaskPlanCreatedPayload,
   validateFirstNightTaskPlanRuntimeState,
   validateFirstNightTaskProgress,
@@ -80,6 +82,7 @@ import {
 } from "./first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "./role-tenure-replay.js";
 import { loadAcceptedBaseDreamerV3NormalStreamFixture } from "@botc/test-harness";
+import { captureAcceptedBaseDreamerV3NormalStream } from "../../test-harness/src/dreamer-v3-accepted-stream.js";
 import { loadAcceptedBaseDreamerVortoxV3StreamFixture } from "../../test-harness/src/dreamer-vortox-v3-accepted-stream-fixture.js";
 import type {
   AnyDomainEventEnvelope,
@@ -4813,7 +4816,7 @@ describe("domain event rebuild", () => {
     expect(seamstress.seamstressRoleTenureState).toStrictEqual(legacyDreamer.seamstressRoleTenureState);
   }, 15_000);
 
-  it("[2B20A-C30] rebuilds accepted legacy Dreamer information for an EVIL target without reinterpretation", () => {
+  it("[2B20A-C30] rebuilds accepted legacy Dreamer information for an EVIL target without reinterpretation", async () => {
     const [targetChosen, information, settlement] = dreamerInformationBatchEvents("EVIL");
     const state = rebuildGameState([
       ...openDreamerActionStream(),
@@ -4831,6 +4834,87 @@ describe("domain event rebuild", () => {
     expect(targetEntry.role.defaultAlignment).toBe("EVIL");
     expect(information.payload.evilRole).toStrictEqual(targetEntry.role);
     expect(information.payload.goodRole.defaultAlignment).toBe("GOOD");
+
+    const captured = await captureAcceptedBaseDreamerV3NormalStream({
+      currentDemonRoleId: "vigormortis"
+    });
+    expect(() => validateDomainEventStream(captured.events)).not.toThrow();
+    expect(rebuildGameState(captured.events)).toStrictEqual(captured.finalState);
+    expect(rebuildOptionalGameState(captured.events)).toStrictEqual(captured.finalState);
+    const targetEvent = captured.events[captured.targetEventIndex];
+    const deliveryEvent = captured.events[captured.deliveryEventIndex];
+    const settlementEvent = captured.events[captured.settlementEventIndex];
+    if (targetEvent?.eventType !== "DreamerTargetChosen" ||
+        deliveryEvent?.eventType !== "DreamerInformationDelivered" ||
+        !("deliverySchemaVersion" in deliveryEvent.payload) ||
+        !("sourceContract" in targetEvent.payload) ||
+        !("sourceContract" in deliveryEvent.payload) ||
+        settlementEvent?.eventType !== "ScheduledTaskSettled") {
+      throw new Error("Expected real healthy Vigormortis V2 terminal batch");
+    }
+    const stateBeforeTarget = rebuildGameState(captured.events.slice(0, captured.targetEventIndex));
+    // This single-event derivation supplies validator input only; the complete accepted
+    // stream above remains the replay authority and is validated/rebuilt independently.
+    const prefixState = applyDomainEvent(stateBeforeTarget, targetEvent);
+    if (prefixState.setup === undefined ||
+        prefixState.currentCharacterState === undefined ||
+        prefixState.firstNightActionOpportunities === undefined ||
+        prefixState.firstNightTaskPlan === undefined ||
+        prefixState.firstNightTaskProgress === undefined ||
+        prefixState.seamstressRoleTenureState === undefined) {
+      throw new Error("Expected canonical healthy Vigormortis delivery prefix state");
+    }
+    const prefixOpportunity = prefixState.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === deliveryEvent.payload.opportunityId
+    );
+    expect(targetEvent.payload.sourceContract).toStrictEqual(deliveryEvent.payload.sourceContract);
+    expect(targetEvent.payload.targetSchemaVersion).toBe("dreamer-target-chosen-v2");
+    expect(prefixOpportunity).toMatchObject({
+      opportunityKind: "DREAMER_FIRST_NIGHT_ACTION_V3",
+      opportunitySchemaVersion: "dreamer-first-night-action-opportunity-v3",
+      opportunityStatus: "OPEN",
+      sourceContract: deliveryEvent.payload.sourceContract
+    });
+    const validationInput = {
+      choices: prefixState.dreamerTargetChoices,
+      deliveries: prefixState.dreamerInformation,
+      setup: prefixState.setup,
+      currentCharacterState: prefixState.currentCharacterState,
+      abilityImpairments: prefixState.abilityImpairments,
+      firstNightActionOpportunities: prefixState.firstNightActionOpportunities,
+      firstNightTaskPlan: prefixState.firstNightTaskPlan,
+      firstNightTaskProgress: prefixState.firstNightTaskProgress,
+      roleTenures: prefixState.seamstressRoleTenureState
+    };
+    expect(validateDreamerInformationDeliveredPayload(deliveryEvent.payload, validationInput))
+      .toStrictEqual({ valid: true });
+    expect(deliveryEvent.payload.deliverySchemaVersion).toBe("dreamer-information-delivered-v2");
+    expect("currentDemonConstraint" in deliveryEvent.payload).toBe(false);
+    expect("vortoxConstraint" in deliveryEvent.payload).toBe(false);
+
+    const semanticTamper = {
+      ...deliveryEvent.payload,
+      targetPlayerId: deliveryEvent.payload.sourcePlayerId
+    };
+    expect(validateDreamerInformationDeliveredPayload(semanticTamper, validationInput))
+      .toMatchObject({ valid: false });
+    const tamperedStream: AnyDomainEventEnvelope[] = structuredClone([...captured.events]);
+    tamperedStream[captured.deliveryEventIndex] = {
+      ...deliveryEvent,
+      payload: semanticTamper
+    };
+    expect(() => rebuildOptionalGameState(tamperedStream)).toThrowError(DomainError);
+    expect(() => rebuildOptionalGameState(captured.events.filter((_, index) =>
+      index !== captured.settlementEventIndex
+    ))).toThrowError(DomainError);
+    const reorderedTerminalBatch = [
+      ...captured.events.slice(0, captured.targetEventIndex),
+      targetEvent,
+      settlementEvent,
+      deliveryEvent,
+      ...captured.events.slice(captured.settlementEventIndex + 1)
+    ];
+    expect(() => rebuildOptionalGameState(reorderedTerminalBatch)).toThrowError(DomainError);
   }, 15_000);
 
   it("rejects malformed Dreamer replay batches", () => {

@@ -1,5 +1,46 @@
 # Current Task
 
+## 2B20A — restoration source ready; coverage profile child pending
+
+- Status:
+  `RUNNING / 2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD`.
+- Independent Correction 1 design-release review passed at exact HEAD
+  `ba56c05fe4b3f3e2a6acc1c80a83a2ac5fca5b0a`; its complete output is
+  archived verbatim at
+  `docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md`
+  (`2d69ee926a9abf27fbbcaedd60e49090de2c6330158612248e8dc87664f1e042`,
+  `3174` bytes, `63` LF lines). Verdict:
+  `DESIGN_RELEASE_PASS`; `findings=[]`; `remainingBlockers=[]`.
+- The bounded source restoration changes only
+  `resolveBaseDreamerV2NormalCapability` in `dreamer.ts`: healthy exact-match
+  Vigormortis now returns the full `NORMAL_INFORMATION_SUPPORTED` capability.
+  Fang Gu V7, represented drunk, real catalog mismatch, No Dashii, Vortox,
+  gained Dreamer, event versions, schemas, routing, and ownership remain
+  unchanged.
+- C34, real-service C07, canonical accepted-history C30, A3B1, C20, and C37
+  evidence pass. Modified test files, typecheck, lint, full ordinary
+  `35/1572`, AP1 ownership/inventories, Windows `305`, and authoritative AP2
+  segmented coverage `11 logical groups / 1572 tests` pass.
+- Raw unsegmented `pnpm test:coverage` is explicitly not a pass: all `35` files
+  and `1572` assertions were green before one
+  `[vitest-worker]: Timeout calling "onTaskUpdate"` infrastructure error caused
+  exit `1`. It was not rerun and is not release authority.
+- Existing exact profile
+  `phase-3-slice-2b20ap2-cc82a95-hosted-execution-v1` mismatches only because
+  of the authorized `packages/domain-core/src/dreamer.ts` restoration. Source
+  files and function obligations are unchanged; statement, line, and branch
+  tuple deltas are isolated to that one file. Profile and workflow remain
+  untouched.
+- Inventory remains `1572 / 37 / 37`; Dreamer remains `PARTIAL`; Product Repair
+  remains `2/2`; no Product Repair Round 3 exists.
+- Sole remaining blocker: `PENDING_COVERAGE_PROFILE_CHILD`.
+- Required next action:
+  `CREATE_AND_INDEPENDENTLY_REVIEW_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_COVERAGE_PROFILE_CHILD`.
+- The separate profile child must bind `sourceHead` to this attributed source
+  commit. No push, PR mutation, hosted CI, merge, or acceptance occurred.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20A — restoration design Correction 1 pending review
 
 - Status:

@@ -626,6 +626,12 @@ const noPhilosopherExactRoleIds = [
   "fang_gu"
 ].map(roleId);
 
+const noPhilosopherVigormortisExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
+  id === "fang_gu" ? roleId("vigormortis") :
+  id === "mutant" ? roleId("sage") :
+  id === "barber" ? roleId("artist") :
+  id
+);
 const noPhilosopherVortoxExactRoleIds = noPhilosopherExactRoleIds.map((id) =>
   id === "fang_gu" ? roleId("vortox") : id === "barber" ? roleId("artist") : id
 );
@@ -9326,6 +9332,91 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
       settlementEventIndex: fixture.settlementEventIndex
     });
     expect(captured.finalState).toStrictEqual(rebuildOptionalGameState(fixture.events));
+
+    const vigormortis = makeService();
+    const vigormortisOpened = await reachOpenDreamerV3ActionOpportunity(
+      vigormortis.service,
+      vigormortis.commandStore,
+      noPhilosopherVigormortisExactRoleIds
+    );
+    expect(vigormortisOpened.opportunity.opportunityStatus).toBe("OPEN");
+    const vigormortisTarget = vigormortisOpened.state.currentCharacterState?.entries.find((entry) =>
+      entry.playerId !== vigormortisOpened.opportunity.sourcePlayerId
+    );
+    if (vigormortisTarget === undefined) throw new Error("Expected healthy Vigormortis Dreamer target");
+    const vigormortisCommand = submitDreamerActionCommand({
+      commandId: commandId("2b19a2-valid-target-vigormortis"),
+      expectedGameVersion: vigormortisOpened.state.gameVersion,
+      payload: {
+        commandType: "SubmitDreamerAction",
+        taskId: vigormortisOpened.dreamerTask.taskId,
+        opportunityId: vigormortisOpened.opportunity.opportunityId,
+        decision: { kind: "CHOOSE_PLAYER", targetPlayerId: vigormortisTarget.playerId }
+      }
+    });
+    const beforeVigormortisEvents = await vigormortis.commandStore.loadDomainEvents(ids.game);
+    const beforeAcceptedCount = vigormortis.commandStore.acceptedCount;
+    const vigormortisResult = await vigormortis.service.execute(vigormortisCommand);
+    expectAcceptedResult(vigormortisResult);
+    expect(vigormortisResult).toMatchObject({ idempotent: false });
+    expect(vigormortisResult.events.map((event) => event.eventType)).toStrictEqual([
+      "DreamerTargetChosen",
+      "DreamerInformationDelivered",
+      "ScheduledTaskSettled"
+    ]);
+    expect(new Set(vigormortisResult.events.map((event) => event.batchId)).size).toBe(1);
+    const priorSequence = beforeVigormortisEvents.at(-1)?.eventSequence ?? 0;
+    expect(vigormortisResult.events.map((event) => event.eventSequence)).toStrictEqual([
+      priorSequence + 1,
+      priorSequence + 2,
+      priorSequence + 3
+    ]);
+    const persistedVigormortisEvents = await vigormortis.commandStore.loadDomainEvents(ids.game);
+    expect(persistedVigormortisEvents).toHaveLength(beforeVigormortisEvents.length + 3);
+    expect(persistedVigormortisEvents.slice(-3)).toStrictEqual(vigormortisResult.events);
+    expect(vigormortis.commandStore.acceptedCount).toBe(beforeAcceptedCount + 1);
+    const vigormortisReceipt = await vigormortis.commandStore.findCommandReceipt(
+      ids.game,
+      vigormortisCommand.commandId
+    );
+    expect(vigormortisReceipt).toBeDefined();
+    const rebuiltVigormortis = rebuildOptionalGameState(persistedVigormortisEvents);
+    if (rebuiltVigormortis === undefined) throw new Error("Expected rebuilt healthy Vigormortis state");
+    expect(rebuiltVigormortis.firstNightActionOpportunities?.opportunities.find((entry) =>
+      entry.opportunityId === vigormortisOpened.opportunity.opportunityId
+    )?.opportunityStatus).toBe("CLOSED");
+    expect(rebuiltVigormortis.firstNightTaskProgress?.settlements.at(-1)).toMatchObject({
+      taskId: vigormortisOpened.dreamerTask.taskId,
+      taskType: "DREAMER_ACTION",
+      outcomeType: "DREAMER_INFORMATION_DELIVERED"
+    });
+    const vigormortisDelivery = vigormortisResult.events[1];
+    if (vigormortisDelivery?.eventType !== "DreamerInformationDelivered" ||
+        !("deliverySchemaVersion" in vigormortisDelivery.payload)) {
+      throw new Error("Expected healthy Vigormortis V2 delivery");
+    }
+    expect(vigormortisDelivery.payload.deliverySchemaVersion).toBe("dreamer-information-delivered-v2");
+    expect(vigormortisDelivery.payload.informationReliability).toStrictEqual({ kind: "EFFECTIVE" });
+    expect("vortoxConstraint" in vigormortisDelivery.payload).toBe(false);
+    expect([
+      vigormortisDelivery.payload.goodRole.defaultAlignment,
+      vigormortisDelivery.payload.evilRole.defaultAlignment
+    ].sort()).toStrictEqual(["EVIL", "GOOD"]);
+    expect([
+      vigormortisDelivery.payload.goodRole.roleId,
+      vigormortisDelivery.payload.evilRole.roleId
+    ]).toContain(vigormortisTarget.role.roleId);
+
+    await expect(vigormortis.service.execute(vigormortisCommand)).resolves.toMatchObject({
+      status: "accepted",
+      idempotent: true
+    });
+    expect(await vigormortis.commandStore.loadDomainEvents(ids.game)).toStrictEqual(persistedVigormortisEvents);
+    expect(await vigormortis.commandStore.findCommandReceipt(ids.game, vigormortisCommand.commandId))
+      .toStrictEqual(vigormortisReceipt);
+    expect(vigormortis.commandStore.acceptedCount).toBe(beforeAcceptedCount + 1);
+    expect(rebuildOptionalGameState(await vigormortis.commandStore.loadDomainEvents(ids.game)))
+      .toStrictEqual(rebuiltVigormortis);
   });
 
 });

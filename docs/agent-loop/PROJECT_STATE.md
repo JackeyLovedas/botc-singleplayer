@@ -1,5 +1,37 @@
 # Project State
 
+## Current state — 2B20A restoration source ready; coverage profile child pending
+
+- Active state:
+  `RUNNING / 2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD`.
+- The complete independent Correction 1 design-release review of exact HEAD
+  `ba56c05fe4b3f3e2a6acc1c80a83a2ac5fca5b0a` is archived at
+  `docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md`,
+  hash `2d69ee926a9abf27fbbcaedd60e49090de2c6330158612248e8dc87664f1e042`.
+  It returned `DESIGN_RELEASE_PASS`, no findings, and no blockers.
+- The authorized one-symbol restoration and four bounded test/helper changes are
+  complete. Healthy exact-match Vigormortis is normal; every frozen Fang Gu V7,
+  represented impairment, mismatch, No Dashii, Vortox, gained-Dreamer, replay,
+  schema, routing, and ownership boundary remains unchanged.
+- Release-authority validation passes: focused C34/C07/C30/A3B1/C20/C37,
+  modified test files, typecheck, lint, ordinary `35/1572`, AP1 ownership and
+  inventories, Windows `305`, and AP2 segmented `11/1572`.
+- Raw unsegmented coverage is not a pass. Its `35` files and `1572` assertions
+  were green, then one Vitest worker `onTaskUpdate` timeout produced exit `1`.
+  The authoritative segmented gate passed and the raw command was not rerun.
+- Exact profile verification reports
+  `COVERAGE_REQUESTED_PROFILE_MISMATCH`; canonical tuple comparison isolates the
+  mismatch solely to the authorized `dreamer.ts` source delta. Profile and
+  workflow are therefore unchanged in this source commit.
+- Product Repair stays `2/2`; inventory remains `1572 / 37 / 37`; Dreamer
+  remains `PARTIAL`.
+- Sole blocker: `PENDING_COVERAGE_PROFILE_CHILD`; next action:
+  `CREATE_AND_INDEPENDENTLY_REVIEW_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_COVERAGE_PROFILE_CHILD`.
+- The later child must use this source commit as `sourceHead`. No remote action,
+  hosted CI, final review, merge, or acceptance is claimed.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20A restoration design Correction 1 pending review
 
 - Active state:

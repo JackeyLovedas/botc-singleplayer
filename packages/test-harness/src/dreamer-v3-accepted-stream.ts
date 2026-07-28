@@ -77,7 +77,7 @@ export type AcceptedDreamerV3StreamCapture = {
   readonly settlementEventIndex: number;
 };
 
-export const captureAcceptedBaseDreamerV3NormalStream = async (): Promise<AcceptedDreamerV3StreamCapture> => {
+export const captureAcceptedBaseDreamerV3NormalStream = async (options: { readonly currentDemonRoleId?: "fang_gu" | "vigormortis" } = {}): Promise<AcceptedDreamerV3StreamCapture> => {
   const store = new MemoryCommandCommitStore();
   const service = new GameApplicationService({
     commandStore: store,
@@ -94,7 +94,7 @@ export const captureAcceptedBaseDreamerV3NormalStream = async (): Promise<Accept
   await requireAccepted(service, createGameCommand());
   await requireAccepted(service, selectScriptCommand());
   await requireAccepted(service, generateSetupCommand({
-    payload: { commandType: "GenerateSetup", constraints: { exactRoleIds: BASE_DREAMER_NORMAL_ROLE_IDS } }
+    payload: { commandType: "GenerateSetup", constraints: { exactRoleIds: options.currentDemonRoleId === "vigormortis" ? BASE_DREAMER_NORMAL_ROLE_IDS.map((id) => id === "fang_gu" ? roleId("vigormortis") : id === "mutant" ? roleId("sage") : id === "barber" ? roleId("artist") : id) : BASE_DREAMER_NORMAL_ROLE_IDS } }
   }));
   await requireAccepted(service, createPlayerRosterCommand());
   await requireAccepted(service, assignCharactersCommand());

@@ -1448,7 +1448,13 @@ export const resolveBaseDreamerV2NormalCapability = (input: {
         impairmentKind: "DRUNK"
       };
     }
-    return unresolved("CURRENT_DEMON_CATALOG_MISMATCH");
+    return {
+      kind: "NORMAL_INFORMATION_SUPPORTED",
+      evaluationModelVersion: DREAMER_BASE_SOURCE_EFFECTIVENESS_MODEL_VERSION,
+      evaluatedCharacterStateRevision: input.currentCharacterState.revision,
+      sourceRoleTenureId: tenure.roleTenureId,
+      sourceAbilityInstanceId: expectedAbility
+    };
   } catch {
     return unresolved("SOURCE_PROVENANCE_INVALID");
   }

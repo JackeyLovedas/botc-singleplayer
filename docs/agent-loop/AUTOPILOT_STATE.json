@@ -1,7 +1,7 @@
 {
-  "status": "HUMAN_BLOCKED",
-  "detailedStatus": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW",
-  "disposition": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW",
+  "status": "RUNNING",
+  "detailedStatus": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+  "disposition": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
   "canonicalActiveControlInvariant": {
     "schemaVersion": "2B20A-ACCEPTED-BEHAVIOR-RESTORATION-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
     "role": "VALIDATION_CONTRACT_ONLY / NOT_A_SECOND_STATUS_AUTHORITY",
@@ -27,10 +27,10 @@
       "$.slice2B20AGate.nextAction"
     ],
     "activeTextMarkers": {
-      "docs/agent-loop/CURRENT_TASK.md": "## 2B20A — restoration design Correction 1 pending review",
-      "docs/agent-loop/PROJECT_STATE.md": "## Current state — 2B20A restoration design Correction 1 pending review",
-      "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-v1-correction-1.md": "## Metadata",
-      "docs/agent-loop/AUTOPILOT_LOG.md": "2b20a-restoration-design-correction-1-materialized"
+      "docs/agent-loop/CURRENT_TASK.md": "## 2B20A — restoration source ready; coverage profile child pending",
+      "docs/agent-loop/PROJECT_STATE.md": "## Current state — 2B20A restoration source ready; coverage profile child pending",
+      "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md": "<!-- REVIEWER_BODY_BEGIN -->",
+      "docs/agent-loop/AUTOPILOT_LOG.md": "2b20a-restoration-source-ready-profile-child-pending"
     },
     "negativeFixture": {
       "mutationPath": "$.detailedStatus",
@@ -42,10 +42,10 @@
   "taskType": "ACCEPTED_BEHAVIOR_RESTORATION / PRODUCT",
   "correctionId": "2B20A-ACCEPTED-NORMAL-DREAMER-RESTORATION-V1-CORRECTION-1",
   "authorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
-  "designReleasePass": false,
-  "designReleaseVerdict": "DESIGN_RELEASE_FIX_REQUIRED",
+  "designReleasePass": true,
+  "designReleaseVerdict": "DESIGN_RELEASE_PASS",
   "ruleReady": true,
-  "ruleDesignPass": false,
+  "ruleDesignPass": true,
   "ruleConflict": false,
   "ruleCoverageStatus": "PARTIAL",
   "profileReviewVerdict": "COVERAGE_PROFILE_REVIEW_PASS",
@@ -71,9 +71,9 @@
   "stopLossOverrideAuthorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
   "controlRecoveryAuthorization": "USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT",
   "overrideKind": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
-  "productionBehaviorChangeAuthorized": false,
-  "implementationAuthorized": false,
-  "implementationStarted": false,
+  "productionBehaviorChangeAuthorized": true,
+  "implementationAuthorized": true,
+  "implementationStarted": true,
   "implementationContinuationAuthorized": false,
   "acceptedBehaviorRestorationOverrideUsed": true,
   "newProductRepairRoundCreated": false,
@@ -1263,9 +1263,9 @@
     ]
   },
   "slice2B20AGate": {
-    "status": "HUMAN_BLOCKED",
-    "detailedStatus": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW",
-    "disposition": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW",
+    "status": "RUNNING",
+    "detailedStatus": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+    "disposition": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
     "authorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
     "scopeMode": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
     "acceptedBase": "5a69c90f2d3947556ff45c15c467902b1e28ca43",
@@ -1288,9 +1288,11 @@
     "coverageTarget": "PARTIAL / REACHABLE_BASE_DREAMER_SETTLEABILITY_ONLY",
     "dreamerRoleCoverage": "PARTIAL",
     "ruleReady": true,
-    "ruleDesignPass": false,
-    "implementationAuthorized": false,
-    "implementationAuthorization": "PENDING_INDEPENDENT_DESIGN_RELEASE_REVIEW_CORRECTION_1",
+    "ruleDesignPass": true,
+    "implementationAuthorized": true,
+    "implementationAuthorization": "AUTHORIZED_BY_INDEPENDENT_DESIGN_RELEASE_PASS_CORRECTION_1",
+    "implementationStarted": true,
+    "sourceImplementationPaused": true,
     "designRound": 2,
     "maxDesignRounds": 2,
     "repairRound": 2,
@@ -1302,7 +1304,7 @@
     "productRepairRoundConsumed": true,
     "productRepairStopLossOverrideUsed": true,
     "overrideKind": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
-    "productionBehaviorChangeAuthorized": false,
+    "productionBehaviorChangeAuthorized": true,
     "newProductRepairRoundCreated": false,
     "acceptedBehaviorRestorationOverrideUsed": true,
     "acceptedBehaviorRestoration": {
@@ -1327,7 +1329,7 @@
       "publicAPIChanged": false,
       "supportMatrixExpanded": false,
       "roleCoverageChanged": false,
-      "implementationAuthorized": false,
+      "implementationAuthorized": true,
       "exactProductionFile": "packages/domain-core/src/dreamer.ts",
       "exactProductionSymbol": "resolveBaseDreamerV2NormalCapability",
       "regressionAuditPath": "docs/implementation/phase-3-slice-2b20a-final-accepted-behavior-regression-audit.md",
@@ -1348,8 +1350,8 @@
       "semanticInventory": 1572,
       "primaryAuthorityCount": 37,
       "supportingAuthorityCount": 37,
-      "designReleasePass": false,
-      "designReleaseVerdict": "DESIGN_RELEASE_FIX_REQUIRED",
+      "designReleasePass": true,
+      "designReleaseVerdict": "DESIGN_RELEASE_PASS",
       "designCorrectionPass": "1/2",
       "designReleaseReviewRound1": {
         "path": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-round-1.md",
@@ -1390,12 +1392,74 @@
         "semanticInventory": 1572,
         "primaryAuthorityCount": 37,
         "supportingAuthorityCount": 37,
-        "implementationAuthorized": false
+        "implementationAuthorized": true
+      },
+      "designReleaseReviewCorrection1": {
+        "path": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md",
+        "sha256": "2d69ee926a9abf27fbbcaedd60e49090de2c6330158612248e8dc87664f1e042",
+        "bytes": 3174,
+        "lfLineCount": 63,
+        "reviewerBodySha256": "64de16ab5c0fa0cdc722e2175e19e7ca208e417a71ae2e1dca2e070e1df33ed5",
+        "reviewerBodyBytes": 2820,
+        "reviewerBodyLfLineCount": 55,
+        "reviewedHead": "ba56c05fe4b3f3e2a6acc1c80a83a2ac5fca5b0a",
+        "reviewTimestamp": "2026-07-28T07:19:59.5197385Z",
+        "verdict": "DESIGN_RELEASE_PASS",
+        "verbatimMarkdownHardBreakCount": 18,
+        "findings": [],
+        "remainingBlockers": []
+      },
+      "sourceImplementation": {
+        "status": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+        "sourceCommitIsThisCommit": true,
+        "sourceHeadRecorded": false,
+        "sourceImplementationPaused": true,
+        "productionFilesChanged": [
+          "packages/domain-core/src/dreamer.ts"
+        ],
+        "testFilesChanged": [
+          "packages/domain-core/src/dreamer.test.ts",
+          "packages/application/src/game-application-service.test.ts",
+          "packages/domain-core/src/rebuild.test.ts",
+          "packages/test-harness/src/dreamer-v3-accepted-stream.ts"
+        ],
+        "roleCoverage": "PARTIAL",
+        "semanticInventory": 1572,
+        "primaryAuthorityCount": 37,
+        "supportingAuthorityCount": 37,
+        "ordinaryTopology": "35 files / 1572 tests",
+        "segmentedCoverageAuthority": "PASS / 11 logical groups / 1572 tests",
+        "rawCoverageDiagnostic": "NOT_PASS / 35 files and 1572 assertions green / exit 1 / [vitest-worker] Timeout calling onTaskUpdate",
+        "profileVerification": "COVERAGE_REQUESTED_PROFILE_MISMATCH",
+        "profileMismatchAttribution": "SOLELY_PACKAGES_DOMAIN_CORE_SRC_DREAMER_TS",
+        "profileExpectedObligations": {
+          "sourceFiles": "63 / f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691",
+          "zeroHitStatements": "3217 / 851add3e897ea59b8b1d86fbde3c52b792d466902f3705958d97dfba174224fe",
+          "zeroHitFunctions": "23 / f4c97e3e3270830939cf6a337358de3dbe4ce0ae354f000d3e6001c7cb7a00be",
+          "zeroHitLines": "3217 / c37a009f8cbca2bfa30ece8349b5864751e4274b4e4c19ca29bf0ea03acb166f",
+          "zeroHitBranchArms": "1808 / 12e72ae3e8a02fa18425f14f804c9f630537dff1534e9dcb0168833718622a7d"
+        },
+        "profileCandidateObligations": {
+          "sourceFiles": "63 / f2373c250e1a0757dd6bb329a16417f16b9459a9dabac7eeb56b81e930c3e691",
+          "zeroHitStatements": "3213 / b493744842f7a96e4bb82b54584d0db416c87719b6a69fcb39140fe2aeeff81a",
+          "zeroHitFunctions": "23 / f4c97e3e3270830939cf6a337358de3dbe4ce0ae354f000d3e6001c7cb7a00be",
+          "zeroHitLines": "3213 / e611244a0d6e1f1720db6b1f83260ae17dd40af34a04b035a9c1116a318d0c86",
+          "zeroHitBranchArms": "1807 / 6637b557feb45600e3904a16373b00bc65d76500d3e339c594879a745e0d96a3"
+        },
+        "canonicalTupleDiff": {
+          "sourceFiles": "added 0 / removed 0",
+          "zeroHitStatements": "added 86 / removed 90 / dreamer.ts only",
+          "zeroHitFunctions": "added 0 / removed 0",
+          "zeroHitLines": "added 78 / removed 82 / dreamer.ts only",
+          "zeroHitBranchArms": "added 63 / removed 64 / dreamer.ts only"
+        },
+        "profileChanged": false,
+        "workflowChanged": false
       },
       "remainingBlockers": [
-        "PENDING_DESIGN_RELEASE_REVIEW_CORRECTION_1"
+        "PENDING_COVERAGE_PROFILE_CHILD"
       ],
-      "requiredNextAction": "RUN_INDEPENDENT_DESIGN_RELEASE_REVIEW_CORRECTION_1"
+      "requiredNextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_COVERAGE_PROFILE_CHILD"
     },
     "evidenceOverrideAuthorization": "USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE",
     "productRepairDesignAuthorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY",
@@ -1750,10 +1814,10 @@
       }
     },
     "remainingBlockers": [
-      "PENDING_DESIGN_RELEASE_REVIEW_CORRECTION_1"
+      "PENDING_COVERAGE_PROFILE_CHILD"
     ],
-    "requiredNextAction": "RUN_INDEPENDENT_DESIGN_RELEASE_REVIEW_CORRECTION_1",
-    "nextAction": "RUN_INDEPENDENT_DESIGN_RELEASE_REVIEW_CORRECTION_1"
+    "requiredNextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_COVERAGE_PROFILE_CHILD",
+    "nextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_COVERAGE_PROFILE_CHILD"
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
@@ -3126,21 +3190,21 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-v1-correction-1.md",
   "currentDesignHash": "755c5175f304b9dd34783876286d12262f686c95a919561df5a9bb7dc9a84d77",
-  "currentDesignStatus": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW",
-  "currentDesignTerminal": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW",
+  "currentDesignStatus": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+  "currentDesignTerminal": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
   "currentDesignSource": "AUTHORIZED_DOCS_ONLY_DESIGN_CORRECTION_1",
-  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-round-1.md",
-  "currentDesignReviewHash": "2bb05599f15c9b0adff992b083519e04adf7bdb74cb1086e832d9b458dc8e3eb",
-  "currentDesignReviewVerdict": "DESIGN_RELEASE_FIX_REQUIRED",
+  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md",
+  "currentDesignReviewHash": "2d69ee926a9abf27fbbcaedd60e49090de2c6330158612248e8dc87664f1e042",
+  "currentDesignReviewVerdict": "DESIGN_RELEASE_PASS",
   "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
   "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
   "traceabilityClassificationCorrectionHash": "ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb",
   "traceabilityClassificationCorrectionStatus": "APPENDIX_READY_FOR_DESIGN_RELEASE_REVIEW",
-  "currentDesignReleasePass": false,
-  "currentDesignReleaseReviewPath": null,
-  "currentDesignReleaseReviewHash": null,
-  "currentDesignReleaseReviewVerdict": null,
-  "currentDesignReleaseReviewedHead": null,
+  "currentDesignReleasePass": true,
+  "currentDesignReleaseReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md",
+  "currentDesignReleaseReviewHash": "2d69ee926a9abf27fbbcaedd60e49090de2c6330158612248e8dc87664f1e042",
+  "currentDesignReleaseReviewVerdict": "DESIGN_RELEASE_PASS",
+  "currentDesignReleaseReviewedHead": "ba56c05fe4b3f3e2a6acc1c80a83a2ac5fca5b0a",
   "historicalSecurityDesignReviewPath": "docs/implementation/command-capture-proxy-rejection-v1-design-review.md",
   "historicalSecurityDesignReviewHash": "247b302d22aca5dc6249a541cc2d8a5d712b89002d685250a862226553406cd8",
   "historicalSecurityDesignReviewVerdict": "SECURITY_DESIGN_PASS",
@@ -3647,7 +3711,7 @@
   "historicalSlice2B18ARuleReady": true,
   "historicalSlice2B18ARuleDesignPass": false,
   "historicalSlice2B18AImplementationAuthorized": true,
-  "implementationStatus": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW",
+  "implementationStatus": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
   "localImplementationReviewVerdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
   "localImplementationReviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
   "localImplementationReviewFindings": [],
@@ -4090,7 +4154,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_DESIGN_RELEASE_REVIEW_CORRECTION_1"
+    "PENDING_COVERAGE_PROFILE_CHILD"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -4869,8 +4933,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent restoration design-release Round-1 review for exact HEAD 9c3fae097484e04eb85bc3e6b12eddda39982826 and materialized Correction 1/2. The review returned DESIGN_RELEASE_FIX_REQUIRED with exactly RST_C03_PRIMARY_AUTHORITY_LAYER_COLLISION and RST_C03_PUBLIC_VALIDATOR_INPUT_CONTRACT_INCOMPLETE. Correction 1 binds RST-C03 to existing canonical [2B20A-C30], keeps A3B1 hostile evidence supporting-only, and freezes the complete same-prefix validator input including deliveries. Product Repair remains 2/2; no new repair round exists; implementation remains unauthorized. No production, test, script, workflow, push, PR, CI, merge, or acceptance action occurred.",
-  "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_DESIGN_RELEASE_REVIEW_CORRECTION_1",
-  "nextAction": "RUN_INDEPENDENT_DESIGN_RELEASE_REVIEW_CORRECTION_1"
+  "lastAction": "Archived the complete independent Correction 1 design-release pass for exact HEAD ba56c05fe4b3f3e2a6acc1c80a83a2ac5fca5b0a and completed the bounded accepted-normal-Dreamer restoration. Healthy exact-match Vigormortis now resolves to the full NORMAL_INFORMATION_SUPPORTED capability while Fang Gu V7, canonical drunk, mismatch, No Dashii, Vortox, gained Dreamer, schemas, identities, routing, and PARTIAL coverage remain unchanged. Focused, modified-file, typecheck, lint, full ordinary, ownership, inventories, Windows, and authoritative AP2 segmented coverage passed. Raw unsegmented coverage is not a pass: all 35 files and 1572 assertions were green before one [vitest-worker] onTaskUpdate timeout caused exit 1. Existing exact profile mismatch is isolated solely to dreamer.ts, so profile and workflow remain untouched pending a separate profile child. Product Repair remains 2/2; no push, PR mutation, hosted CI, merge, or acceptance occurred.",
+  "lastError": "NON_AUTHORITATIVE_RAW_COVERAGE_EXIT_1_VITEST_WORKER_ON_TASK_UPDATE_TIMEOUT",
+  "requiredNextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_COVERAGE_PROFILE_CHILD",
+  "nextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_COVERAGE_PROFILE_CHILD"
 }
