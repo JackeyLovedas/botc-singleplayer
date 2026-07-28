@@ -1,5 +1,41 @@
 # Project State
 
+## Current state — 2B20A accepted behavior restoration pending design release
+
+- Active state:
+  `HUMAN_BLOCKED / 2B20A_ACCEPTED_BEHAVIOR_RESTORATION_PENDING_DESIGN_RELEASE`.
+- PR #46 failed final review at exact HEAD
+  `70ee998a631a347ced5975dc71923a71072fa5cb` with exactly one finding and
+  blocker:
+  `BASE_DREAMER_NON_FANG_GU_NORMAL_AND_REPLAY_REGRESSION`;
+  verdicts were `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`.
+- Accepted main
+  `5a69c90f2d3947556ff45c15c467902b1e28ca43` proves the bounded contract:
+  after unique-Demon and exact catalog matching, every healthy Demon other
+  than Vortox and No Dashii returns `NORMAL_INFORMATION_SUPPORTED`.
+- The regression audit is frozen at
+  `06b441d15f28c5b22a0d4ed4e97d5e167d0cba929b98258aab89c4b6c2b36d19`
+  (`4652` bytes, `111` LF lines). The restoration design is frozen at
+  `67c7dc990388345e3309efa984da02c68363869703f1ced039257095ec24ef23`
+  (`12445` bytes, `286` LF lines).
+- The later implementation is bounded to one production file and one symbol:
+  `packages/domain-core/src/dreamer.ts::resolveBaseDreamerV2NormalCapability`.
+  No schema, public API, support matrix, event version, or role-coverage
+  expansion is designed; Dreamer remains `PARTIAL`.
+- `RST-C01`–`RST-C04` freeze direct resolver, real service, accepted V2 replay,
+  and real mismatch evidence. Inventory remains `1572`; primary and supporting
+  authorities remain `37/37`.
+- Product Repair is exhausted at `2/2`; no Product Repair Round 3 exists.
+  The user-authorized accepted-behavior restoration override is active, but
+  implementation is not authorized until independent design-release review.
+- Sole blocker:
+  `PENDING_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_RELEASE_REVIEW`; next action:
+  `RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_RELEASE_REVIEW`.
+- No production/test/script/workflow change, push, PR mutation, CI run, merge,
+  acceptance, future SHA, or controller-authored passing verdict is recorded.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20AP2 final review Round 1 fix required
 
 - PR #47 final review Round 1 examined exact HEAD

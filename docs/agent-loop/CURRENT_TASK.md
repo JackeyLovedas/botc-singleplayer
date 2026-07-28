@@ -1,5 +1,48 @@
 # Current Task
 
+## 2B20A — accepted behavior restoration pending design release
+
+- Status:
+  `HUMAN_BLOCKED / 2B20A_ACCEPTED_BEHAVIOR_RESTORATION_PENDING_DESIGN_RELEASE`.
+- Exact repair base and failed-final-review head:
+  `70ee998a631a347ced5975dc71923a71072fa5cb`; accepted behavior head:
+  `5a69c90f2d3947556ff45c15c467902b1e28ca43`.
+- The complete failed PR #46 final review contains exactly one finding and one
+  blocker:
+  `BASE_DREAMER_NON_FANG_GU_NORMAL_AND_REPLAY_REGRESSION`. It returned
+  `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_FIX_REQUIRED`.
+- The regression audit is
+  `docs/implementation/phase-3-slice-2b20a-final-accepted-behavior-regression-audit.md`
+  (`06b441d15f28c5b22a0d4ed4e97d5e167d0cba929b98258aab89c4b6c2b36d19`,
+  `4652` bytes, `111` LF lines).
+- The bounded restoration design is
+  `docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-v1.md`
+  (`67c7dc990388345e3309efa984da02c68363869703f1ced039257095ec24ef23`,
+  `12445` bytes, `286` LF lines).
+- The future production boundary is exactly
+  `packages/domain-core/src/dreamer.ts::resolveBaseDreamerV2NormalCapability`.
+  The design restores healthy exact-match non-Vortox/non-No-Dashii Demons to
+  `NORMAL_INFORMATION_SUPPORTED` while preserving No Dashii, Vortox, Fang Gu
+  V7, represented impairment, gained Dreamer, receipts, projection, event
+  versions, and V1–V7 replay.
+- Governance traceability contains `RST-C01` through `RST-C04`, each with the
+  exact nine design-time fields and no Actual fields. Semantic inventory and
+  authority counts remain `1572 / 37 / 37`; existing test titles, markers,
+  logical routing, and ownership remain unchanged.
+- Product Repair remains `2/2`;
+  `newProductRepairRoundCreated=false`;
+  `acceptedBehaviorRestorationOverrideUsed=true`;
+  `implementationAuthorized=false`.
+- Sole remaining blocker:
+  `PENDING_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_RELEASE_REVIEW`.
+- Required next action:
+  `RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_RELEASE_REVIEW`.
+- This checkpoint changes only the two design-stage documents and four active
+  controls. It performs no production, test, script, workflow, role-matrix,
+  push, PR, CI, merge, or acceptance action and records no future SHA or pass.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20AP2 — final review Round 1 fix required; reconciliation exact-head CI pending
 
 - The complete independent PR #47 final review of exact HEAD
