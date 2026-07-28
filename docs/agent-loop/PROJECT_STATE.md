@@ -1,5 +1,40 @@
 # Project State
 
+## Current state — 2B20A restoration design Correction 1 pending review
+
+- Active state:
+  `HUMAN_BLOCKED / 2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW`.
+- Round-1 independent review at
+  `9c3fae097484e04eb85bc3e6b12eddda39982826` returned
+  `DESIGN_RELEASE_FIX_REQUIRED` with exactly two bounded RST-C03 contract
+  blockers. Its complete reviewer body is preserved in the `2bb05599...e3eb`
+  archive.
+- Correction `1/2`, hash `755c5175...4d77`, is self-contained and supersedes
+  only the two defective RST-C03 clauses. All other accepted-normal-Dreamer
+  contracts remain inherited unchanged.
+- Existing canonical `[2B20A-C30]` is the sole
+  `LEGACY_REPLAY_COMPATIBILITY / R2 / T1` primary. The A3B1 hostile test remains
+  supporting-only under its accepted `HOSTILE_REPLAY_REJECTION / R3 / T1`
+  primary classification.
+- Every public V2 validator input is frozen to the one canonical prefix after
+  target and before delivery, including
+  `deliveries: prefixState.dreamerInformation`; final-state and hand-assembled
+  substitutes are forbidden.
+- The production boundary remains one file and one resolver. The corrected test
+  scope permits the existing `rebuild.test.ts` C30 and, only if necessary, an
+  existing test-harness helper parameterization that preserves default Fang Gu
+  output byte-for-byte.
+- Original audit/design hashes remain unchanged. Inventory remains
+  `1572 / 37 / 37`; Dreamer remains `PARTIAL`.
+- Product Repair remains exhausted at `2/2`; no new repair round exists and
+  implementation remains unauthorized.
+- Sole blocker: `PENDING_DESIGN_RELEASE_REVIEW_CORRECTION_1`; next action:
+  `RUN_INDEPENDENT_DESIGN_RELEASE_REVIEW_CORRECTION_1`.
+- No production/test/script/workflow mutation, remote action, future SHA, CI
+  authority, or passing verdict is recorded.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20A accepted behavior restoration pending design release
 
 - Active state:

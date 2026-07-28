@@ -1,5 +1,46 @@
 # Current Task
 
+## 2B20A — restoration design Correction 1 pending review
+
+- Status:
+  `HUMAN_BLOCKED / 2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_PENDING_REVIEW`.
+- The complete independent design-release review of exact HEAD
+  `9c3fae097484e04eb85bc3e6b12eddda39982826` is archived at
+  `docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-round-1.md`
+  (`2bb05599f15c9b0adff992b083519e04adf7bdb74cb1086e832d9b458dc8e3eb`,
+  `6204` bytes, `67` LF lines).
+- Verdict: `DESIGN_RELEASE_FIX_REQUIRED`; blockers exactly:
+  `RST_C03_PRIMARY_AUTHORITY_LAYER_COLLISION` and
+  `RST_C03_PUBLIC_VALIDATOR_INPUT_CONTRACT_INCOMPLETE`.
+- Correction `1/2` is the self-contained final implementation authority:
+  `docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-v1-correction-1.md`
+  (`755c5175f304b9dd34783876286d12262f686c95a919561df5a9bb7dc9a84d77`,
+  `16174` bytes, `358` LF lines).
+- RST-C03 legacy replay primary is now exactly the existing title
+  `[2B20A-C30] rebuilds accepted legacy Dreamer information for an EVIL target without reinterpretation`
+  in `rebuild.test.ts`. The A3B1 hostile identity is supporting-only and keeps
+  `HOSTILE_REPLAY_REJECTION / R3 / T1`.
+- The public validator contract now contains every exact input from the single
+  canonical state after `DreamerTargetChosen` and before
+  `DreamerInformationDelivered`, including
+  `deliveries: prefixState.dreamerInformation`. Final or manually rebuilt state
+  is forbidden.
+- The original audit and appendix remain byte-identical at
+  `06b441d15f28c5b22a0d4ed4e97d5e167d0cba929b98258aab89c4b6c2b36d19`
+  and `67c7dc990388345e3309efa984da02c68363869703f1ced039257095ec24ef23`.
+- Inventory remains `1572 / 37 / 37`; no title, marker, identity, primary
+  classification, routing, ownership, schema, public API, event version, or
+  support-matrix change is authorized.
+- Product Repair remains `2/2`; no Product Repair Round 3 exists;
+  `implementationAuthorized=false`.
+- Sole remaining blocker: `PENDING_DESIGN_RELEASE_REVIEW_CORRECTION_1`.
+- Required next action: `RUN_INDEPENDENT_DESIGN_RELEASE_REVIEW_CORRECTION_1`.
+- This checkpoint changes only the two new design-stage documents and four active
+  controls. It performs no implementation, test, workflow, push, PR, CI, merge,
+  or acceptance action.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20A — accepted behavior restoration pending design release
 
 - Status:
