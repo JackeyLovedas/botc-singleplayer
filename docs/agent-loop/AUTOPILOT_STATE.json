@@ -1,7 +1,44 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "2B20AP2_CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
-  "disposition": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+  "detailedStatus": "PR47_FINAL_REVIEW_ROUND_1_CODE_FIX_REQUIRED_RULE_PASS_OPERATIONAL_RECOVERY_PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW",
+  "disposition": "PR47_FINAL_REVIEW_ROUND_1_CODE_FIX_REQUIRED_RULE_PASS_OPERATIONAL_RECOVERY_PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW",
+  "canonicalActiveControlInvariant": {
+    "schemaVersion": "2B20AP2-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
+    "role": "VALIDATION_CONTRACT_ONLY / NOT_A_SECOND_STATUS_AUTHORITY",
+    "authority": "ROOT_ACTIVE_CONTROL_TUPLE",
+    "findingCode": "CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION",
+    "statusEqualityPaths": [
+      "$.detailedStatus",
+      "$.disposition",
+      "$.slice2B20AP2Gate.detailedStatus",
+      "$.slice2B20AP2Gate.disposition",
+      "$.currentDesignStatus",
+      "$.currentDesignTerminal",
+      "$.implementationStatus"
+    ],
+    "remainingBlockerEqualityPaths": [
+      "$.remainingBlockers",
+      "$.slice2B20AP2Gate.remainingBlockers"
+    ],
+    "requiredNextActionEqualityPaths": [
+      "$.requiredNextAction",
+      "$.nextAction",
+      "$.slice2B20AP2Gate.requiredNextAction",
+      "$.slice2B20AP2Gate.nextAction"
+    ],
+    "activeTextMarkers": {
+      "docs/agent-loop/CURRENT_TASK.md": "## 2B20AP2 — final review Round 1 fix required; reconciliation exact-head CI pending",
+      "docs/agent-loop/PROJECT_STATE.md": "## Current state — 2B20AP2 final review Round 1 fix required",
+      "docs/implementation/phase-3-slice-2b20ap2-implementation-status.md": "## PR #47 final review Round 1 fix required",
+      "docs/agent-loop/AUTOPILOT_LOG.md": "2b20ap2-pr47-final-review-round-1-control-reconciliation"
+    },
+    "negativeFixture": {
+      "mutationPath": "$.detailedStatus",
+      "mutatedValue": "2B20AP2_CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+      "expectedFindingCode": "CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION",
+      "expectedExitCode": 17
+    }
+  },
   "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
   "correctionId": "2B20AP2-DESIGN-RELEASE-CORRECTION-V1",
   "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
@@ -2561,8 +2598,8 @@
   },
   "slice2B20AP2Gate": {
     "status": "RUNNING",
-    "detailedStatus": "2B20AP2_HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
-    "disposition": "HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+    "detailedStatus": "PR47_FINAL_REVIEW_ROUND_1_CODE_FIX_REQUIRED_RULE_PASS_OPERATIONAL_RECOVERY_PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW",
+    "disposition": "PR47_FINAL_REVIEW_ROUND_1_CODE_FIX_REQUIRED_RULE_PASS_OPERATIONAL_RECOVERY_PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW",
     "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
     "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
     "originalAuthorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
@@ -2906,6 +2943,40 @@
       "checkpointCommitInheritsAuthority": false,
       "checkpointExactHeadCIRequired": true
     },
+    "finalReviewRound1": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-pr47-final-review-round-1.md",
+      "sha256": "636643f8ae5c9ae08c96b53426e33d78cf2d0d893216998198c079a97e01a443",
+      "bytes": 9824,
+      "lfLineCount": 129,
+      "bodySha256": "739b5122b42c1ca7e9d5d8f4f557c361c5ea3e59ed604c2ce9a5e4b6f35a6660",
+      "bodyBytes": 9500,
+      "bodyLfLineCount": 120,
+      "reviewedPR": 47,
+      "reviewedHead": "c84b4a2bea37a270c048bee2d724a27f53d05aa6",
+      "reviewTimestamp": "2026-07-28T03:37:12.8367671Z",
+      "codeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+      "ruleVerdict": "RULE_REVIEW_PASS",
+      "findings": [
+        "CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION"
+      ],
+      "remainingBlockers": [
+        "CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION"
+      ]
+    },
+    "controlStateReconciliation": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-final-control-state-reconciliation.md",
+      "sha256": "e4db2636af573fdea90d93779089d09d997b7bd8cc1030292d13c64b5f0a26a6",
+      "bytes": 5456,
+      "lfLineCount": 133,
+      "findingCode": "CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION",
+      "nodePositiveInvariant": "PASS",
+      "powershellJsonParse": "PASS",
+      "pythonJsonParseAndAllLevelDuplicateKeyAudit": "PASS",
+      "negativeFixtureFindingCode": "CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION",
+      "negativeFixtureExitCode": 17,
+      "implementationChanged": false,
+      "ciRemediationRoundConsumed": false
+    },
     "sourceImplementation": {
       "statusPath": "docs/implementation/phase-3-slice-2b20ap2-implementation-status.md",
       "sourceBaseline": "bdbbe8bc051c5b6ff832aecec3202bee27e3b53f",
@@ -2945,10 +3016,10 @@
     "prChanged": false,
     "ciRerunPerformed": false,
     "remainingBlockers": [
-      "PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW"
+      "PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW"
     ],
-    "requiredNextAction": "UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW",
-    "nextAction": "UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW"
+    "requiredNextAction": "UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW",
+    "nextAction": "UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2960,8 +3031,8 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
   "currentDesignHash": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
-  "currentDesignStatus": "HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
-  "currentDesignTerminal": "HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+  "currentDesignStatus": "PR47_FINAL_REVIEW_ROUND_1_CODE_FIX_REQUIRED_RULE_PASS_OPERATIONAL_RECOVERY_PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW",
+  "currentDesignTerminal": "PR47_FINAL_REVIEW_ROUND_1_CODE_FIX_REQUIRED_RULE_PASS_OPERATIONAL_RECOVERY_PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW",
   "currentDesignSource": "READ_ONLY_ARCHITECT_STANDALONE_ROUND_2_CORRECTION",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-rule-design-review-recovery.md",
   "currentDesignReviewHash": "71c77072b53c57d6a3d67bb956af98fda867c5209585791a09641828b084b633",
@@ -3481,7 +3552,7 @@
   "historicalSlice2B18ARuleReady": true,
   "historicalSlice2B18ARuleDesignPass": false,
   "historicalSlice2B18AImplementationAuthorized": true,
-  "implementationStatus": "HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+  "implementationStatus": "PR47_FINAL_REVIEW_ROUND_1_CODE_FIX_REQUIRED_RULE_PASS_OPERATIONAL_RECOVERY_PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW",
   "localImplementationReviewVerdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
   "localImplementationReviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
   "localImplementationReviewFindings": [],
@@ -3491,6 +3562,15 @@
   "PR47PushRunStatus": "SUCCESS",
   "PR47PullRequestRun": 30325119014,
   "PR47PullRequestRunStatus": "SUCCESS",
+  "finalReviewRound1ReviewedHead": "c84b4a2bea37a270c048bee2d724a27f53d05aa6",
+  "finalReviewRound1CodeVerdict": "CODE_REVIEW_FIX_REQUIRED",
+  "finalReviewRound1RuleVerdict": "RULE_REVIEW_PASS",
+  "finalReviewRound1Findings": [
+    "CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION"
+  ],
+  "finalReviewRound1RemainingBlockers": [
+    "CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION"
+  ],
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -3914,7 +3994,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW"
+    "PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -4696,8 +4776,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Recorded the successful hosted-CI authority for initial published infrastructure HEAD da43ad096fb8c738028f9da2aaaf052dd62282f2: PR #47 push run 30325116297 and pull-request run 30325119014 both completed success on attempt 1 with 24/24 jobs, 21 unexpired artifacts, and no failures. This Operational Recovery checkpoint consumes no repair round and changes no implementation. Its newer docs/control commit cannot inherit da43ad0 CI and requires its own exact-head CI before final review. No push, PR mutation, CI trigger, final review, or merge was performed by this checkpoint.",
+  "lastAction": "Archived the complete PR #47 final review Round 1 for exact HEAD c84b4a2bea37a270c048bee2d724a27f53d05aa6. The independent reviewer returned CODE_REVIEW_FIX_REQUIRED and RULE_REVIEW_PASS with the sole blocker CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION. Operational Recovery atomically reconciles the canonical root, AP2 slice, currentDesign, implementation, blocker, action, and text-control markers under one validation-only invariant. CI remediation remains 2/2; this reconciliation requires its own exact-head CI and a new complete final review. No push, PR mutation, CI trigger, merge, or acceptance occurred.",
   "lastError": null,
-  "requiredNextAction": "UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW",
-  "nextAction": "UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW"
+  "requiredNextAction": "UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW",
+  "nextAction": "UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW"
 }

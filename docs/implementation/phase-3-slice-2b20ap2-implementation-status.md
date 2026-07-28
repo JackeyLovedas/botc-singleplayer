@@ -1,5 +1,31 @@
 # 2B20AP2 source implementation status
 
+## PR #47 final review Round 1 fix required
+
+- The complete independent final review of PR #47 at exact HEAD
+  `c84b4a2bea37a270c048bee2d724a27f53d05aa6` is preserved verbatim in
+  `docs/implementation/phase-3-slice-2b20ap2-pr47-final-review-round-1.md`.
+- Verdicts are `CODE_REVIEW_FIX_REQUIRED` and `RULE_REVIEW_PASS`; the exact
+  sole blocker is
+  `CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION`.
+- The finding is limited to stale root `detailedStatus` and `disposition`
+  conflicting with the already advanced AP2 slice/current-design/
+  implementation/blocker/action/text controls. No implementation or rule
+  finding exists.
+- Operational Recovery atomically synchronizes those active controls and adds
+  one canonical validation-only invariant with deterministic positive and
+  negative checks. CI remediation remains final at `2/2`; no repair round is
+  consumed or added.
+- This reconciliation is not a final-review pass or acceptance. The resulting
+  commit needs fresh exact-head hosted CI and a new complete independent final
+  review.
+- Sole remaining blocker:
+  `PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW`.
+- Required next action:
+  `UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## Hosted-CI Operational Recovery checkpoint
 
 - Initial published infrastructure HEAD:

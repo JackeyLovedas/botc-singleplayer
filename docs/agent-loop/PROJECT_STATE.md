@@ -1,5 +1,26 @@
 # Project State
 
+## Current state — 2B20AP2 final review Round 1 fix required
+
+- PR #47 final review Round 1 examined exact HEAD
+  `c84b4a2bea37a270c048bee2d724a27f53d05aa6` and returned
+  `CODE_REVIEW_FIX_REQUIRED / RULE_REVIEW_PASS`.
+- The complete verbatim report is
+  `docs/implementation/phase-3-slice-2b20ap2-pr47-final-review-round-1.md`.
+  The only blocker is
+  `CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION`.
+- Operational Recovery synchronizes only docs/control authority under one
+  canonical validation invariant. CI remediation remains `2/2`; rule,
+  profile, source, implementation, workflow, product, and tests are unchanged.
+- This checkpoint does not pass final review or grant acceptance. A new
+  exact-head push and pull-request CI plus a new complete final review are
+  mandatory.
+- Sole blocker:
+  `PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW`; next action:
+  `UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20AP2 initial published hosted CI PASS
 
 - PR #47 hosted authority for exact HEAD

@@ -1,5 +1,31 @@
 # Current Task
 
+## 2B20AP2 — final review Round 1 fix required; reconciliation exact-head CI pending
+
+- The complete independent PR #47 final review of exact HEAD
+  `c84b4a2bea37a270c048bee2d724a27f53d05aa6` is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap2-pr47-final-review-round-1.md`.
+- The reviewer returned `CODE_REVIEW_FIX_REQUIRED` and `RULE_REVIEW_PASS`.
+  Its sole finding and blocker is
+  `CANONICAL_TOP_LEVEL_AP2_CONTROL_STATE_CONTRADICTION`; no rule correction
+  or implementation change is required.
+- Operational Recovery reconciles the canonical root, AP2 slice,
+  current-design, implementation-status, blocker, action, and current text
+  markers under one validation-only invariant. It does not consume or create
+  a CI remediation round; `ciRemediationRound` remains `2/2`.
+- This reconciliation is not a review pass or acceptance. Its new docs/control
+  commit must receive fresh exact-head CI and then a new complete independent
+  final review.
+- Sole remaining blocker:
+  `PENDING_RECONCILIATION_EXACT_HEAD_CI_AND_NEW_FINAL_REVIEW`.
+- Required next action:
+  `UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW`.
+- No workflow, implementation, profile, product, test, rule, role-matrix,
+  dependency, timeout, include, project, logical-group, PR body, push, CI
+  trigger, merge, or acceptance change is included.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20AP2 — da43ad0 hosted CI passed; checkpoint exact-head CI pending
 
 - Initial published infrastructure HEAD
