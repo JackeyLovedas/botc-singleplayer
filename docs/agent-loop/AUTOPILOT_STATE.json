@@ -1,20 +1,26 @@
 {
-  "status": "WAITING_CI",
-  "detailedStatus": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
-  "disposition": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
+  "status": "COMPLETED",
+  "detailedStatus": "2B20A_ACCEPTED_AND_CLOSED_OUT",
+  "disposition": "ACCEPTED",
   "canonicalActiveControlInvariant": {
-    "schemaVersion": "2B20A-ACCEPTED-BEHAVIOR-RESTORATION-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
+    "schemaVersion": "2B20A-POST-MERGE-CLOSEOUT-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
     "role": "VALIDATION_CONTRACT_ONLY / NOT_A_SECOND_STATUS_AUTHORITY",
     "authority": "ROOT_ACTIVE_CONTROL_TUPLE",
     "findingCode": "CANONICAL_TOP_LEVEL_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_CONTROL_STATE_CONTRADICTION",
     "statusEqualityPaths": [
       "$.detailedStatus",
-      "$.disposition",
       "$.slice2B20AGate.detailedStatus",
-      "$.slice2B20AGate.disposition",
       "$.currentDesignStatus",
       "$.currentDesignTerminal",
       "$.implementationStatus"
+    ],
+    "statusEnumEqualityPaths": [
+      "$.status",
+      "$.slice2B20AGate.status"
+    ],
+    "dispositionEqualityPaths": [
+      "$.disposition",
+      "$.slice2B20AGate.disposition"
     ],
     "remainingBlockerEqualityPaths": [
       "$.remainingBlockers",
@@ -27,14 +33,14 @@
       "$.slice2B20AGate.nextAction"
     ],
     "activeTextMarkers": {
-      "docs/agent-loop/CURRENT_TASK.md": "## 2B20A — local restoration review passed; exact-head CI pending",
-      "docs/agent-loop/PROJECT_STATE.md": "## Current state — 2B20A local restoration review passed; exact-head CI pending",
-      "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md": "<!-- REVIEWER_BODY_BEGIN -->",
-      "docs/agent-loop/AUTOPILOT_LOG.md": "2b20a-local-restoration-review-pass-exact-head-ci-pending"
+      "docs/agent-loop/CURRENT_TASK.md": "## 2B20A — accepted and closed out",
+      "docs/agent-loop/PROJECT_STATE.md": "## Current state — 2B20A accepted and closed out",
+      "docs/reviews/pr-46-code-review-final.md": "<!-- ORIGINAL_COMMENT_BODY_BEGIN -->",
+      "docs/agent-loop/AUTOPILOT_LOG.md": "2b20a-post-merge-closeout"
     },
     "negativeFixture": {
       "mutationPath": "$.detailedStatus",
-      "mutatedValue": "2B20A_ACCEPTED_BEHAVIOR_RESTORATION_DESIGN_CORRECTION_1_REVIEW_PASS",
+      "mutatedValue": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
       "expectedFindingCode": "CANONICAL_TOP_LEVEL_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_CONTROL_STATE_CONTRADICTION",
       "expectedExitCode": 17
     }
@@ -44,8 +50,8 @@
   "authorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
   "designReleasePass": true,
   "designReleaseVerdict": "DESIGN_RELEASE_PASS",
-  "ruleReady": true,
-  "ruleDesignPass": true,
+  "ruleReady": false,
+  "ruleDesignPass": false,
   "ruleConflict": false,
   "ruleCoverageStatus": "PARTIAL",
   "profileReviewVerdict": "COVERAGE_PROFILE_REVIEW_PASS",
@@ -84,14 +90,14 @@
   "controlRecoveryAuthorization": "USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT",
   "overrideKind": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
   "productionBehaviorChangeAuthorized": true,
-  "implementationAuthorized": true,
+  "implementationAuthorized": false,
   "implementationStarted": true,
   "implementationContinuationAuthorized": false,
   "acceptedBehaviorRestorationOverrideUsed": true,
   "newProductRepairRoundCreated": false,
-  "currentPR": 46,
-  "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/46",
-  "currentPRContext": "PRODUCT_PR_CONTEXT",
+  "currentPR": null,
+  "currentPRUrl": null,
+  "currentPRContext": null,
   "infrastructurePR": 47,
   "infrastructurePRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/47",
   "infrastructurePublished": true,
@@ -100,8 +106,8 @@
   "productBranch": "phase-3/reachable-base-dreamer-settleability-closure",
   "productHead": "70ee998a631a347ced5975dc71923a71072fa5cb",
   "productBranchHead": "phase-3/reachable-base-dreamer-settleability-closure@70ee998a631a347ced5975dc71923a71072fa5cb",
-  "currentBranch": "phase-3/reachable-base-dreamer-settleability-closure",
-  "currentSlice": "2B20A",
+  "currentBranch": "main",
+  "currentSlice": null,
   "local2B20AP1Status": "LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
   "2B20AP1Acceptance": "UNACCEPTED_LOCAL_CANDIDATE",
   "currentFoundation": null,
@@ -1199,12 +1205,12 @@
     },
     "remainingBlockers": []
   },
-  "reviewedHead": "70ee998a631a347ced5975dc71923a71072fa5cb",
-  "currentReviewHeadAuthority": "The complete independent failed final review is bound to PR #46 exact HEAD 70ee998a631a347ced5975dc71923a71072fa5cb. It returned exactly one finding and one blocker, BASE_DREAMER_NON_FANG_GU_NORMAL_AND_REPLAY_REGRESSION, with CODE_REVIEW_FIX_REQUIRED and RULE_REVIEW_FIX_REQUIRED. It supplies no implementation or passing-review authority.",
-  "exactHeadCIAuthority": "The failed final review records exact-head CI at 70ee998a631a347ced5975dc71923a71072fa5cb only. No future restoration HEAD or CI result exists or is inherited.",
-  "currentFeatureHead": "70ee998a631a347ced5975dc71923a71072fa5cb",
+  "reviewedHead": "37891002e6144b984f58ac4f5b819398500f97b0",
+  "currentReviewHeadAuthority": "The complete independent final review is bound to PR #46 frozen feature HEAD 37891002e6144b984f58ac4f5b819398500f97b0 and returned CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]. The two original GitHub audit comments were re-read after merge and archived verbatim.",
+  "exactHeadCIAuthority": "Product-head push run 30344384777 and pull-request run 30344390996 each bind exact frozen feature HEAD 37891002e6144b984f58ac4f5b819398500f97b0, attempt 1, completed/success, 24/24 jobs. Merge run 30345863036 binds only merge SHA ff5c824b890f7a4d5d33b4b35184d3cdc6b1e16c, attempt 1, completed/success, 24/24 jobs. The docs-only closeout commit requires its own external CI and inherits neither result.",
+  "currentFeatureHead": "37891002e6144b984f58ac4f5b819398500f97b0",
   "repairBaseHead": "70ee998a631a347ced5975dc71923a71072fa5cb",
-  "remotePRHead": "70ee998a631a347ced5975dc71923a71072fa5cb",
+  "remotePRHead": "37891002e6144b984f58ac4f5b819398500f97b0",
   "priorDesignCommit": "627dc709dcbf94e92b61a82cef0b75020b936146",
   "priorReviewCommit": "def473e7b84d7b568dcc3d689dcabf5381d48377",
   "designCorrectionRound": 2,
@@ -1275,14 +1281,16 @@
     ]
   },
   "slice2B20AGate": {
-    "status": "WAITING_CI",
-    "detailedStatus": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
-    "disposition": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
+    "status": "COMPLETED",
+    "detailedStatus": "2B20A_ACCEPTED_AND_CLOSED_OUT",
+    "disposition": "ACCEPTED",
     "authorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
     "scopeMode": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
     "acceptedBase": "5a69c90f2d3947556ff45c15c467902b1e28ca43",
     "parentGovernanceCommit": "2b56a9a0891de9fda9954d9d635bcbda9d4248a3",
     "branch": "phase-3/reachable-base-dreamer-settleability-closure",
+    "currentBranch": "main",
+    "currentSlice": null,
     "governanceDecision": "GO",
     "governancePath": "docs/architecture/2B20A-go-no-go-under-governance-v1.md",
     "governanceSha256": "9ab18f66a1a64372b3a629a8ab42fad1c8455de61647b11c167ef6d862ee2bf1",
@@ -1301,7 +1309,7 @@
     "dreamerRoleCoverage": "PARTIAL",
     "ruleReady": true,
     "ruleDesignPass": true,
-    "implementationAuthorized": true,
+    "implementationAuthorized": false,
     "implementationAuthorization": "AUTHORIZED_BY_INDEPENDENT_DESIGN_RELEASE_PASS_CORRECTION_1",
     "implementationStarted": true,
     "sourceImplementationPaused": true,
@@ -1341,7 +1349,7 @@
       "publicAPIChanged": false,
       "supportMatrixExpanded": false,
       "roleCoverageChanged": false,
-      "implementationAuthorized": true,
+      "implementationAuthorized": false,
       "exactProductionFile": "packages/domain-core/src/dreamer.ts",
       "exactProductionSymbol": "resolveBaseDreamerV2NormalCapability",
       "regressionAuditPath": "docs/implementation/phase-3-slice-2b20a-final-accepted-behavior-regression-audit.md",
@@ -1519,10 +1527,9 @@
       "acceptedBehaviorRestorationReviewTimestamp": "2026-07-28T08:48:31.0884124Z",
       "acceptedBehaviorRestorationReviewFindings": [],
       "acceptedBehaviorRestorationReviewRemainingBlockers": [],
-      "remainingBlockers": [
-        "PENDING_EXACT_HEAD_PUSH_AND_PR_CI"
-      ],
-      "requiredNextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI"
+      "disposition": "ACCEPTED",
+      "remainingBlockers": [],
+      "requiredNextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED"
     },
     "evidenceOverrideAuthorization": "USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE",
     "productRepairDesignAuthorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY",
@@ -1537,8 +1544,8 @@
     "priorReviewSha256": "c32cf7ce8f58a75d9a56b5e17383e3247c0c1ad5892db961565846167c78f7e2",
     "productRepairBaseHead": "dbfa424c96a8bcf06a0d2a77205626a532aa2ec8",
     "remotePRHead": "70ee998a631a347ced5975dc71923a71072fa5cb",
-    "currentPR": 46,
-    "currentPRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/46",
+    "currentPR": null,
+    "currentPRUrl": null,
     "productHeadPushCI": {
       "runId": 30077541075,
       "headSha": "dbfa424c96a8bcf06a0d2a77205626a532aa2ec8",
@@ -1876,11 +1883,76 @@
         "remainingRepairBlockers": []
       }
     },
-    "remainingBlockers": [
-      "PENDING_EXACT_HEAD_PUSH_AND_PR_CI"
-    ],
-    "requiredNextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI",
-    "nextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI"
+    "acceptance": {
+      "disposition": "ACCEPTED",
+      "pr": 46,
+      "prUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/46",
+      "frozenFeatureHead": "37891002e6144b984f58ac4f5b819398500f97b0",
+      "mergeCommit": "ff5c824b890f7a4d5d33b4b35184d3cdc6b1e16c",
+      "acceptedTag": "phase-3-slice-2b20a-reachable-base-dreamer-settleability-closure",
+      "acceptedTagCommit": "ff5c824b890f7a4d5d33b4b35184d3cdc6b1e16c",
+      "productRepairRound": 2,
+      "maxProductRepairRounds": 2,
+      "newProductRepairRoundCreated": false,
+      "acceptedBehaviorRestorationOverrideUsed": true,
+      "roleCoverage": "PARTIAL",
+      "phase2CStarted": false,
+      "nextSlicesStarted": false
+    },
+    "finalReview": {
+      "reviewedPR": 46,
+      "reviewedHead": "37891002e6144b984f58ac4f5b819398500f97b0",
+      "codeVerdict": "CODE_REVIEW_PASS",
+      "ruleVerdict": "RULE_REVIEW_PASS",
+      "remainingBlockers": [],
+      "codeCommentId": 5102226458,
+      "codeCommentUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/46#issuecomment-5102226458",
+      "codeCommentTimestamp": "2026-07-28T09:15:42Z",
+      "codeCommentBytes": 8546,
+      "codeCommentSha256": "39a05d24bc5222c10a325714c85f25e382553f344bc7e58bfa2bd6d510047c8d",
+      "codeArchive": "docs/reviews/pr-46-code-review-final.md",
+      "codeArchiveSha256": "4a29844bb3ea9efec5acd435886f5720ceec1e9f24b5ba6e078fcb4179f5fb89",
+      "ruleCommentId": 5102226749,
+      "ruleCommentUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/46#issuecomment-5102226749",
+      "ruleCommentTimestamp": "2026-07-28T09:15:44Z",
+      "ruleCommentBytes": 8546,
+      "ruleCommentSha256": "ce88860638fc6922fc753ba4870faa3a39be81df3d05d8ed9fffccd52c1b6266",
+      "ruleArchive": "docs/reviews/pr-46-rule-review-final.md",
+      "ruleArchiveSha256": "9ee469192970e143a94deceb08947d496e6d1d0156548382e9dd1ea641de1d11"
+    },
+    "productHeadCI": {
+      "commitSha": "37891002e6144b984f58ac4f5b819398500f97b0",
+      "pushRun": 30344384777,
+      "pushUrl": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30344384777",
+      "pushAttempt": 1,
+      "pullRequestRun": 30344390996,
+      "pullRequestUrl": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30344390996",
+      "pullRequestAttempt": 1,
+      "status": "SUCCESS",
+      "jobs": "24/24",
+      "scope": "FROZEN_PRODUCT_HEAD"
+    },
+    "mergeCommitCI": {
+      "commitSha": "ff5c824b890f7a4d5d33b4b35184d3cdc6b1e16c",
+      "run": 30345863036,
+      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30345863036",
+      "attempt": 1,
+      "status": "SUCCESS",
+      "jobs": "24/24",
+      "scope": "MERGE_COMMIT"
+    },
+    "closeoutCommitCI": {
+      "commitSha": null,
+      "run": null,
+      "url": null,
+      "status": "PENDING_EXTERNAL_VERIFICATION_AFTER_PUBLICATION",
+      "jobs": null,
+      "scope": "DOCS_ONLY_CLOSEOUT / THIS_COMMIT / NO_CI_INHERITANCE",
+      "provenance": "Must be resolved against the exact docs-only closeout commit after ordinary push to main; productHeadCI and mergeCommitCI do not transfer."
+    },
+    "remainingBlockers": [],
+    "requiredNextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED",
+    "nextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED"
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
@@ -3253,8 +3325,8 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-v1-correction-1.md",
   "currentDesignHash": "755c5175f304b9dd34783876286d12262f686c95a919561df5a9bb7dc9a84d77",
-  "currentDesignStatus": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
-  "currentDesignTerminal": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
+  "currentDesignStatus": "2B20A_ACCEPTED_AND_CLOSED_OUT",
+  "currentDesignTerminal": "2B20A_ACCEPTED_AND_CLOSED_OUT",
   "currentDesignSource": "AUTHORIZED_DOCS_ONLY_DESIGN_CORRECTION_1",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md",
   "currentDesignReviewHash": "2d69ee926a9abf27fbbcaedd60e49090de2c6330158612248e8dc87664f1e042",
@@ -3774,7 +3846,7 @@
   "historicalSlice2B18ARuleReady": true,
   "historicalSlice2B18ARuleDesignPass": false,
   "historicalSlice2B18AImplementationAuthorized": true,
-  "implementationStatus": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
+  "implementationStatus": "2B20A_ACCEPTED_AND_CLOSED_OUT",
   "localImplementationReviewVerdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
   "localImplementationReviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
   "localImplementationReviewFindings": [],
@@ -4216,9 +4288,7 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [
-    "PENDING_EXACT_HEAD_PUSH_AND_PR_CI"
-  ],
+  "remainingBlockers": [],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
     "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE": "CLOSED_BY_IMPLEMENTATION",
@@ -4996,8 +5066,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent accepted-behavior restoration implementation review for exact local HEAD 0326c2cd08eed768d4f6097f11dad671f0271143. The reviewer returned ACCEPTED_BEHAVIOR_RESTORATION_REVIEW_PASS with findings=[], backlogNonGating=[], and remainingBlockers=[]; the exact archive is docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md (SHA-256 c8991ece223ab6a679b31b56392a04e6c6d24a3b02986ab6d553ec740919bdbf, 9049 bytes, 143 LF). Local restoration review is closed, while publication and exact-head PR CI remain pending. Coverage profile review remains COVERAGE_PROFILE_REVIEW_PASS. Product Repair remains 2/2; no new round, production/test/profile/workflow/audit/rule/matrix change, push, PR mutation, hosted CI, merge, or acceptance occurred.",
+  "lastAction": "Accepted and closed out Phase 3 Slice 2B20A after PR #46 merged as ff5c824b890f7a4d5d33b4b35184d3cdc6b1e16c. Re-read the two original GitHub audit comments, verified markers and reviewed HEAD 37891002e6144b984f58ac4f5b819398500f97b0, CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[], and archived both exact UTF-8 bodies. Recorded product-head CI runs 30344384777 and 30344390996 at exact frozen feature HEAD, merge CI run 30345863036 at the exact merge SHA, and accepted tag phase-3-slice-2b20a-reachable-base-dreamer-settleability-closure at the merge SHA. The docs-only closeout commit remains pending its own external CI after publication and inherits no earlier CI. Dreamer remains PARTIAL; Product Repair remains 2/2; no new round or next slice was created.",
   "lastError": null,
-  "requiredNextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI",
-  "nextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI"
+  "requiredNextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED",
+  "nextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED"
 }
