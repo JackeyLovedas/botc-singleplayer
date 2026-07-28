@@ -2561,8 +2561,8 @@
   },
   "slice2B20AP2Gate": {
     "status": "RUNNING",
-    "detailedStatus": "2B20AP2_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
-    "disposition": "LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
+    "detailedStatus": "2B20AP2_HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+    "disposition": "HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
     "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
     "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
     "originalAuthorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
@@ -2865,6 +2865,47 @@
       "findings": [],
       "remainingBlockers": []
     },
+    "initialPublishedInfrastructureHead": "da43ad096fb8c738028f9da2aaaf052dd62282f2",
+    "PR47PushRun": 30325116297,
+    "PR47PushRunStatus": "SUCCESS",
+    "PR47PullRequestRun": 30325119014,
+    "PR47PullRequestRunStatus": "SUCCESS",
+    "hostedCIExecutionCheckpoint": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-hosted-ci-execution-checkpoint.md",
+      "sha256": "e55e5a013a039c4cf4bb47caddfc6b56de058b307bfc07eb88f881f81b52695f",
+      "bytes": 2721,
+      "lfLineCount": 71,
+      "authorityHead": "da43ad096fb8c738028f9da2aaaf052dd62282f2",
+      "push": {
+        "runId": 30325116297,
+        "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30325116297",
+        "event": "push",
+        "attempt": 1,
+        "status": "completed",
+        "conclusion": "success",
+        "jobsSuccessful": 24,
+        "jobsFailed": 0,
+        "artifacts": 21,
+        "artifactsExpired": 0,
+        "failedArtifacts": []
+      },
+      "pullRequest": {
+        "runId": 30325119014,
+        "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30325119014",
+        "event": "pull_request",
+        "attempt": 1,
+        "status": "completed",
+        "conclusion": "success",
+        "jobsSuccessful": 24,
+        "jobsFailed": 0,
+        "artifacts": 21,
+        "artifactsExpired": 0,
+        "failedArtifacts": []
+      },
+      "oldRunsRerun": false,
+      "checkpointCommitInheritsAuthority": false,
+      "checkpointExactHeadCIRequired": true
+    },
     "sourceImplementation": {
       "statusPath": "docs/implementation/phase-3-slice-2b20ap2-implementation-status.md",
       "sourceBaseline": "bdbbe8bc051c5b6ff832aecec3202bee27e3b53f",
@@ -2904,10 +2945,10 @@
     "prChanged": false,
     "ciRerunPerformed": false,
     "remainingBlockers": [
-      "PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION"
+      "PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW"
     ],
-    "requiredNextAction": "UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI",
-    "nextAction": "UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI"
+    "requiredNextAction": "UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW",
+    "nextAction": "UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2919,8 +2960,8 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
   "currentDesignHash": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
-  "currentDesignStatus": "LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
-  "currentDesignTerminal": "LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
+  "currentDesignStatus": "HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
+  "currentDesignTerminal": "HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
   "currentDesignSource": "READ_ONLY_ARCHITECT_STANDALONE_ROUND_2_CORRECTION",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-rule-design-review-recovery.md",
   "currentDesignReviewHash": "71c77072b53c57d6a3d67bb956af98fda867c5209585791a09641828b084b633",
@@ -3440,11 +3481,16 @@
   "historicalSlice2B18ARuleReady": true,
   "historicalSlice2B18ARuleDesignPass": false,
   "historicalSlice2B18AImplementationAuthorized": true,
-  "implementationStatus": "LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
+  "implementationStatus": "HOSTED_CI_DA43AD0_SUCCESS_PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW",
   "localImplementationReviewVerdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
   "localImplementationReviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
   "localImplementationReviewFindings": [],
   "localImplementationReviewRemainingBlockers": [],
+  "initialPublishedInfrastructureHead": "da43ad096fb8c738028f9da2aaaf052dd62282f2",
+  "PR47PushRun": 30325116297,
+  "PR47PushRunStatus": "SUCCESS",
+  "PR47PullRequestRun": 30325119014,
+  "PR47PullRequestRunStatus": "SUCCESS",
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -3868,7 +3914,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION"
+    "PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -4650,8 +4696,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent 2B20AP2 local infrastructure implementation rereview for exact HEAD 5b371308074e03c24f6e2a6688b64b4b8268bad3. The reviewer returned INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS with findings=[] and remainingBlockers=[] after independently closing both Round-1 blockers and confirming all local release gates. CI remediation remains exhausted at 2/2; the sole next blocker is PR #47 body reconciliation and publication. No push, PR mutation, hosted CI, or merge occurred.",
+  "lastAction": "Recorded the successful hosted-CI authority for initial published infrastructure HEAD da43ad096fb8c738028f9da2aaaf052dd62282f2: PR #47 push run 30325116297 and pull-request run 30325119014 both completed success on attempt 1 with 24/24 jobs, 21 unexpired artifacts, and no failures. This Operational Recovery checkpoint consumes no repair round and changes no implementation. Its newer docs/control commit cannot inherit da43ad0 CI and requires its own exact-head CI before final review. No push, PR mutation, CI trigger, final review, or merge was performed by this checkpoint.",
   "lastError": null,
-  "requiredNextAction": "UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI",
-  "nextAction": "UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI"
+  "requiredNextAction": "UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW",
+  "nextAction": "UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW"
 }

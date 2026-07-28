@@ -1,5 +1,35 @@
 # Current Task
 
+## 2B20AP2 — da43ad0 hosted CI passed; checkpoint exact-head CI pending
+
+- Initial published infrastructure HEAD
+  `da43ad096fb8c738028f9da2aaaf052dd62282f2` passed both required PR #47
+  hosted runs on attempt `1`:
+  push run `30325116297` and pull-request run `30325119014`.
+- Each run completed with conclusion `success`, `24/24` successful jobs,
+  `0` failed jobs, `21` artifacts, `0` expired artifacts, and no failed
+  artifacts. Historical runs were not rerun.
+- Complete URLs, IDs, events, exact head, job/artifact summaries, and
+  non-inheritance rules are recorded at
+  `docs/implementation/phase-3-slice-2b20ap2-hosted-ci-execution-checkpoint.md`,
+  SHA-256
+  `e55e5a013a039c4cf4bb47caddfc6b56de058b307bfc07eb88f881f81b52695f`,
+  `2721` bytes, `71` LF lines.
+- Local implementation review remains
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS` at
+  `5b371308074e03c24f6e2a6688b64b4b8268bad3`; CI remediation remains
+  `2/2`. This Operational Recovery checkpoint consumes no repair round and
+  changes no implementation or frozen rule/profile/source authority.
+- The new docs/control checkpoint commit cannot inherit the hosted authority
+  of `da43ad096fb8c738028f9da2aaaf052dd62282f2`. It must receive its own
+  exact-head hosted CI before final review.
+- Sole remaining blocker:
+  `PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW`.
+- Required next action:
+  `UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20AP2 — local implementation re-review passed; PR #47 publication pending
 
 - The complete independent Round-2 local infrastructure implementation

@@ -1,5 +1,27 @@
 # Project State
 
+## Current state — 2B20AP2 initial published hosted CI PASS
+
+- PR #47 hosted authority for exact HEAD
+  `da43ad096fb8c738028f9da2aaaf052dd62282f2` is green:
+  push `30325116297` and pull request `30325119014`, both attempt `1`,
+  completed `success`, each `24/24` jobs and `21/21` unexpired artifacts,
+  with no failed job or artifact.
+- The complete Operational Recovery record is
+  `docs/implementation/phase-3-slice-2b20ap2-hosted-ci-execution-checkpoint.md`
+  (`e55e5a013a039c4cf4bb47caddfc6b56de058b307bfc07eb88f881f81b52695f`,
+  `2721` bytes, `71` LF lines). Old runs were not rerun.
+- Local implementation review remains PASS at
+  `5b371308074e03c24f6e2a6688b64b4b8268bad3`; design remains `2/2`, CI
+  remediation remains `2/2`, and rule/profile/source values are unchanged.
+- This newer docs/control checkpoint cannot inherit `da43ad0` CI. It requires
+  its own exact-head push and pull-request CI before final review.
+- Sole blocker:
+  `PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW`; next action:
+  `UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20AP2 local implementation re-review PASS
 
 - Independent Round-2 rereview of exact HEAD

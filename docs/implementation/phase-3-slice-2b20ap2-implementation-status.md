@@ -1,5 +1,38 @@
 # 2B20AP2 source implementation status
 
+## Hosted-CI Operational Recovery checkpoint
+
+- Initial published infrastructure HEAD:
+  `da43ad096fb8c738028f9da2aaaf052dd62282f2`.
+- PR #47 push run
+  [`30325116297`](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30325116297)
+  and pull-request run
+  [`30325119014`](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30325119014)
+  both completed `success` on attempt `1` for that exact HEAD.
+- Each run reports `24/24` successful jobs, `0` failed jobs, `21` artifacts,
+  `0` expired artifacts, and no failed artifacts. Old runs were not rerun.
+- The complete checkpoint is
+  `docs/implementation/phase-3-slice-2b20ap2-hosted-ci-execution-checkpoint.md`,
+  SHA-256
+  `e55e5a013a039c4cf4bb47caddfc6b56de058b307bfc07eb88f881f81b52695f`,
+  `2721` bytes, `71` LF lines.
+- Local implementation review remains
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS` at
+  `5b371308074e03c24f6e2a6688b64b4b8268bad3`; CI remediation remains final
+  at `2/2`. This checkpoint consumes no repair round and makes no
+  implementation change.
+- The checkpoint commit is newer than `da43ad0` and cannot inherit its hosted
+  CI. Its own exact-head push and pull-request CI must pass before final
+  review; no future commit SHA or CI result is asserted.
+- No push, PR mutation, CI trigger, final review, or merge was performed by
+  this docs/control checkpoint.
+- Sole remaining blocker:
+  `PENDING_CHECKPOINT_EXACT_HEAD_CI_AND_FINAL_REVIEW`.
+- Required next action:
+  `UPDATE_PR47_BODY_PUSH_CHECKPOINT_HEAD_WAIT_EXACT_CI_THEN_FINAL_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## Independent local implementation re-review passed
 
 - The complete independent Round-2 local infrastructure implementation
