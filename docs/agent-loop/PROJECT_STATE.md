@@ -1,5 +1,28 @@
 # Project State
 
+## Current state — 2B20AP2 profile child candidate ready; independent review pending
+
+- Independent recovery review of exact HEAD
+  `cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1` returned
+  `RULE_DESIGN_PASS`, `findings=[]`, and `remainingBlockers=[]`.
+- The exact-source segmented authority passes
+  `12 physical -> 11 logical -> 1572`, Dreamer/Vortox core `36`, gained `10`,
+  with zero discrepancy or failure. Raw unsegmented coverage was not rerun.
+- Profile `phase-3-slice-2b20ap2-cc82a95-hosted-execution-v1` is appended and
+  the intended workflow selector points to it. The old profile record remains
+  Git-canonical byte-identical.
+- Complete full-delta and no-lost-hit evidence is recorded in
+  `docs/implementation/phase-3-slice-2b20ap2-coverage-profile-audit.md` and
+  preserved under
+  `<os-temp>/botc-2b20ap2-profile-child-cc82a95/.vitest-coverage`.
+- Design remains `2/2`; `ruleDesignPass=true`, `designReleasePass=true`, and
+  `ciRemediationRound=1/2`. Product/tests/rules/matrix/include/timeout/
+  dependency/project/logical-group authority is unchanged.
+- Sole blocker: `PENDING_INDEPENDENT_COVERAGE_PROFILE_REVIEW`; next action:
+  `RUN_INDEPENDENT_COVERAGE_PROFILE_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20AP2 source ready; profile child pending
 
 - The Design Release-authorized infrastructure source implementation is ready

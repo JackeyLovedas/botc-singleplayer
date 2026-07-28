@@ -1,5 +1,36 @@
 # Current Task
 
+## 2B20AP2 — recovery RULE_DESIGN_PASS; profile child candidate ready for review
+
+- A new independent read-only recovery review of exact HEAD
+  `cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1` returned exact
+  `RULE_DESIGN_PASS`, `findings=[]`, and `remainingBlockers=[]`. Its complete
+  output is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap2-rule-design-review-recovery.md`,
+  SHA-256
+  `71c77072b53c57d6a3d67bb956af98fda867c5209585791a09641828b084b633`.
+- Design remains `2/2`; rule semantics and role coverage are unchanged.
+  `ruleDesignPass=true`, `designReleasePass=true`,
+  `implementationAuthorized=true`, and `ciRemediationRound=1/2`.
+- The interrupted generated coverage directory was replaced by exactly one
+  complete segmented authority: `12 -> 11 -> 1572`, core `36`, gained `10`,
+  with all discrepancy/failure sets empty. Raw `pnpm test:coverage` was not
+  run.
+- New profile
+  `phase-3-slice-2b20ap2-cc82a95-hosted-execution-v1` is appended against full
+  source HEAD `cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1`; the workflow selector
+  targets it and the old profile record remains byte-identical.
+- Complete audit:
+  `docs/implementation/phase-3-slice-2b20ap2-coverage-profile-audit.md`.
+  Full generated evidence is preserved under
+  `<os-temp>/botc-2b20ap2-profile-child-cc82a95/.vitest-coverage`.
+- Current status:
+  `COVERAGE_PROFILE_CHILD_CANDIDATE_READY_PENDING_INDEPENDENT_PROFILE_REVIEW`.
+- Sole blocker: `PENDING_INDEPENDENT_COVERAGE_PROFILE_REVIEW`.
+- Required next action: `RUN_INDEPENDENT_COVERAGE_PROFILE_REVIEW`.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20AP2 — source commit ready; coverage profile child pending
 
 - The authorized source implementation is complete on source baseline

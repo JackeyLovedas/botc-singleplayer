@@ -1,12 +1,13 @@
 {
   "status": "RUNNING",
-  "detailedStatus": "2B20AP2_SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
-  "disposition": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+  "detailedStatus": "2B20AP2_COVERAGE_PROFILE_CHILD_CANDIDATE_READY_PENDING_INDEPENDENT_PROFILE_REVIEW",
+  "disposition": "COVERAGE_PROFILE_CHILD_CANDIDATE_READY_PENDING_INDEPENDENT_PROFILE_REVIEW",
   "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
   "correctionId": "2B20AP2-DESIGN-RELEASE-CORRECTION-V1",
   "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
   "designReleasePass": true,
   "designReleaseVerdict": "DESIGN_RELEASE_PASS",
+  "ruleDesignPass": true,
   "docsOnlyCorrectionRound": 1,
   "maxDocsOnlyCorrectionRounds": 2,
   "sourceImplementationPaused": false,
@@ -2643,8 +2644,8 @@
         "RUNNER_PNPM_AND_ARTIFACT_ROOT_TRUST_ANCHORS_NOT_EXECUTABLE_AS_DESIGNED"
       ]
     },
-    "designVerdict": "HUMAN_BLOCKED",
-    "ruleDesignPass": false,
+    "designVerdict": "RULE_DESIGN_PASS",
+    "ruleDesignPass": true,
     "designReleasePass": true,
     "designReleaseVerdict": "DESIGN_RELEASE_PASS",
     "implementationAuthorized": true,
@@ -2673,6 +2674,17 @@
       "implementationAuthorized": false,
       "stopLossReached": true,
       "additionalDesignRoundAuthorized": false
+    },
+    "ruleDesignReviewRecovery": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-rule-design-review-recovery.md",
+      "sha256": "71c77072b53c57d6a3d67bb956af98fda867c5209585791a09641828b084b633",
+      "bytes": 4155,
+      "lfLineCount": 39,
+      "reviewedHead": "cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1",
+      "reviewTimestamp": "2026-07-28T00:46:06.8378548Z",
+      "verdict": "RULE_DESIGN_PASS",
+      "findings": [],
+      "remainingBlockers": []
     },
     "designReleaseCorrectionV1": {
       "correctionId": "2B20AP2-DESIGN-RELEASE-CORRECTION-V1",
@@ -2796,13 +2808,20 @@
     "coverageProfile": {
       "oldProfileId": "phase-3-slice-2b19a3b2-6a4705c-hosted-stability-v2",
       "oldProfileChanged": false,
-      "newProfileCreated": false,
+      "oldProfileCanonicalBytes": 3648,
+      "oldProfileCanonicalSha256": "76b668f49635373bff2df22adc7d2638720ff6620f00b378f6e59eade8d9c76e",
+      "newProfileId": "phase-3-slice-2b20ap2-cc82a95-hosted-execution-v1",
+      "newProfileSourceHead": "cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1",
+      "newProfileCreated": true,
       "sourceCommitCreated": true,
-      "profileChildCommitCreated": false,
+      "profileChildCommitCreated": true,
       "profileReviewVerdict": null,
-      "exactSourceEvidenceRoot": "<os-temp>/botc-2b20ap2-source-evidence-bdbbe8b",
-      "rawCoverageSha256": "52e01a01aede65da8c660ccfc2b5779ea6ea3918b170fc9e13a153befbdc250d",
-      "normalizedTuplesSha256": "5e6d1e333f99f77fb5d4b8c71adc2d00146f0d1f52c72b933a36f3a807448f82"
+      "exactSourceEvidenceRoot": "<os-temp>/botc-2b20ap2-profile-child-cc82a95/.vitest-coverage",
+      "rawCoverageSha256": "e97ab10ab7d763aee40f1cba0ff288aca2bcff963d21d4acf6b14780004dfe2b",
+      "normalizedTuplesSha256": "5e6d1e333f99f77fb5d4b8c71adc2d00146f0d1f52c72b933a36f3a807448f82",
+      "fullTupleDeltaSha256": "4f45f1b09311f8994c2fb0fff336303e2ef2e742233b96a400070a47f855338a",
+      "auditPath": "docs/implementation/phase-3-slice-2b20ap2-coverage-profile-audit.md",
+      "auditSha256": "930989dc333c301041043f907c5871ef5083150e016e3c92a55b8b31cfe1b271"
     },
     "sourceImplementation": {
       "statusPath": "docs/implementation/phase-3-slice-2b20ap2-implementation-status.md",
@@ -2843,10 +2862,10 @@
     "prChanged": false,
     "ciRerunPerformed": false,
     "remainingBlockers": [
-      "PENDING_COVERAGE_PROFILE_CHILD"
+      "PENDING_INDEPENDENT_COVERAGE_PROFILE_REVIEW"
     ],
-    "requiredNextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD",
-    "nextAction": "CREATE_AND_INDEPENDENTLY_REVIEW_COVERAGE_PROFILE_CHILD"
+    "requiredNextAction": "RUN_INDEPENDENT_COVERAGE_PROFILE_REVIEW",
+    "nextAction": "RUN_INDEPENDENT_COVERAGE_PROFILE_REVIEW"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2858,12 +2877,12 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
   "currentDesignHash": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
-  "currentDesignStatus": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
-  "currentDesignTerminal": "SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD",
+  "currentDesignStatus": "COVERAGE_PROFILE_CHILD_CANDIDATE_READY_PENDING_INDEPENDENT_PROFILE_REVIEW",
+  "currentDesignTerminal": "COVERAGE_PROFILE_CHILD_CANDIDATE_READY_PENDING_INDEPENDENT_PROFILE_REVIEW",
   "currentDesignSource": "READ_ONLY_ARCHITECT_STANDALONE_ROUND_2_CORRECTION",
-  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-design-review-round-2.md",
-  "currentDesignReviewHash": "d6e13ba8de627dec662eceb4babc92366526ae30aaaa0ece0742bbd65d43b4d7",
-  "currentDesignReviewVerdict": "HUMAN_BLOCKED",
+  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-rule-design-review-recovery.md",
+  "currentDesignReviewHash": "71c77072b53c57d6a3d67bb956af98fda867c5209585791a09641828b084b633",
+  "currentDesignReviewVerdict": "RULE_DESIGN_PASS",
   "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
   "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
   "traceabilityClassificationCorrectionHash": "ea202534324ac9ce691b29078ab9fb342047b345d63a6cab08e3dca4249e08fb",
@@ -2876,7 +2895,7 @@
   "historicalSecurityDesignReviewPath": "docs/implementation/command-capture-proxy-rejection-v1-design-review.md",
   "historicalSecurityDesignReviewHash": "247b302d22aca5dc6249a541cc2d8a5d712b89002d685250a862226553406cd8",
   "historicalSecurityDesignReviewVerdict": "SECURITY_DESIGN_PASS",
-  "ruleDesignVerdict": "HUMAN_BLOCKED",
+  "ruleDesignVerdict": "RULE_DESIGN_PASS",
   "slice2B19A3AReleaseReview": {
     "path": "docs/implementation/phase-3-slice-2b19a3a-design-release-review-under-governance-v1-1.md",
     "sha256": "cc5fb0b1443cd4a4b08ccedacfa038d8f51a2a358e22df49838ea01fe9b3ad6c",

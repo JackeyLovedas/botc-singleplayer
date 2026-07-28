@@ -1,14 +1,47 @@
 # 2B20AP2 source implementation status
 
+## Coverage profile child candidate
+
+- Independent recovery rule-design review of exact HEAD
+  `cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1` returned
+  `RULE_DESIGN_PASS`, `findings=[]`, and `remainingBlockers=[]`; its complete
+  output is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap2-rule-design-review-recovery.md`,
+  SHA-256
+  `71c77072b53c57d6a3d67bb956af98fda867c5209585791a09641828b084b633`.
+- The incomplete interrupted `.vitest-coverage` directory was verified to
+  resolve exactly inside the repository, removed by literal path, and replaced
+  by one complete segmented exact-source execution. No raw
+  `pnpm test:coverage` command was run.
+- Segmented authority passed `12 physical -> 11 logical -> 1572`, core `36`,
+  gained `10`, with empty duplicate/intersection/missing/unexpected/failure
+  sets.
+- The complete audit is
+  `docs/implementation/phase-3-slice-2b20ap2-coverage-profile-audit.md`.
+  Full tuple evidence is preserved at
+  `<os-temp>/botc-2b20ap2-profile-child-cc82a95/.vitest-coverage`.
+- Appended profile:
+  `phase-3-slice-2b20ap2-cc82a95-hosted-execution-v1`, source HEAD
+  `cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1`.
+- The old profile record is Git-canonical byte-identical:
+  `3648` bytes, SHA-256
+  `76b668f49635373bff2df22adc7d2638720ff6620f00b378f6e59eade8d9c76e`
+  before and after.
+- Current status:
+  `COVERAGE_PROFILE_CHILD_CANDIDATE_READY_PENDING_INDEPENDENT_PROFILE_REVIEW`.
+- Sole blocker: `PENDING_INDEPENDENT_COVERAGE_PROFILE_REVIEW`.
+- `ciRemediationRound=1/2`; no push, PR mutation, hosted CI, or merge occurred.
+
 ## Disposition
 
-- Status: `SOURCE_COMMIT_READY_PENDING_COVERAGE_PROFILE_CHILD`.
+- Status:
+  `COVERAGE_PROFILE_CHILD_CANDIDATE_READY_PENDING_INDEPENDENT_PROFILE_REVIEW`.
 - Source baseline: `bdbbe8bc051c5b6ff832aecec3202bee27e3b53f`.
 - Branch: `infra/2b20ap1-ownership-supersession-routing-v1`.
 - Design remains Round `2/2`; Correction 1 remains docs-only Round `1/2`.
 - Replacement Design Release verdict remains `DESIGN_RELEASE_PASS`.
 - This source commit consumes `ciRemediationRound=1/2`.
-- Sole remaining blocker: `PENDING_COVERAGE_PROFILE_CHILD`.
+- Sole remaining blocker: `PENDING_INDEPENDENT_COVERAGE_PROFILE_REVIEW`.
 - No push, pull-request mutation, hosted CI run, or merge was performed.
 
 ## Implemented source scope
