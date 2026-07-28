@@ -1,7 +1,7 @@
 {
-  "status": "HUMAN_BLOCKED",
-  "detailedStatus": "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW",
-  "disposition": "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW",
+  "status": "WAITING_CI",
+  "detailedStatus": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
+  "disposition": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
   "canonicalActiveControlInvariant": {
     "schemaVersion": "2B20A-ACCEPTED-BEHAVIOR-RESTORATION-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
     "role": "VALIDATION_CONTRACT_ONLY / NOT_A_SECOND_STATUS_AUTHORITY",
@@ -27,10 +27,10 @@
       "$.slice2B20AGate.nextAction"
     ],
     "activeTextMarkers": {
-      "docs/agent-loop/CURRENT_TASK.md": "## 2B20A — profile review passed; restoration review pending",
-      "docs/agent-loop/PROJECT_STATE.md": "## Current state — 2B20A profile review passed; restoration review pending",
-      "docs/implementation/phase-3-slice-2b20a-final-restoration-coverage-profile-review.md": "<!-- REVIEWER_BODY_BEGIN -->",
-      "docs/agent-loop/AUTOPILOT_LOG.md": "2b20a-profile-review-pass-restoration-review-pending"
+      "docs/agent-loop/CURRENT_TASK.md": "## 2B20A — local restoration review passed; exact-head CI pending",
+      "docs/agent-loop/PROJECT_STATE.md": "## Current state — 2B20A local restoration review passed; exact-head CI pending",
+      "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md": "<!-- REVIEWER_BODY_BEGIN -->",
+      "docs/agent-loop/AUTOPILOT_LOG.md": "2b20a-local-restoration-review-pass-exact-head-ci-pending"
     },
     "negativeFixture": {
       "mutationPath": "$.detailedStatus",
@@ -50,6 +50,18 @@
   "ruleCoverageStatus": "PARTIAL",
   "profileReviewVerdict": "COVERAGE_PROFILE_REVIEW_PASS",
   "profileReviewedHead": "3cdb60b7de12b010a5b076800f3c8ab705b0108a",
+  "localRestorationReviewVerdict": "ACCEPTED_BEHAVIOR_RESTORATION_REVIEW_PASS",
+  "localRestorationReviewedHead": "0326c2cd08eed768d4f6097f11dad671f0271143",
+  "localRestorationReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md",
+  "localRestorationReviewSha256": "c8991ece223ab6a679b31b56392a04e6c6d24a3b02986ab6d553ec740919bdbf",
+  "localRestorationReviewBytes": 9049,
+  "localRestorationReviewLfLineCount": 143,
+  "localRestorationReviewerBodySha256": "15020a8afbdd6442c368976a812177201f7a426bcab40d83c882f035f3fd0cfd",
+  "localRestorationReviewerBodyBytes": 8708,
+  "localRestorationReviewerBodyLfLineCount": 135,
+  "localRestorationReviewTimestamp": "2026-07-28T08:48:31.0884124Z",
+  "localRestorationReviewFindings": [],
+  "localRestorationReviewRemainingBlockers": [],
   "docsOnlyCorrectionRound": 1,
   "maxDocsOnlyCorrectionRounds": 2,
   "sourceImplementationPaused": true,
@@ -1263,9 +1275,9 @@
     ]
   },
   "slice2B20AGate": {
-    "status": "HUMAN_BLOCKED",
-    "detailedStatus": "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW",
-    "disposition": "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW",
+    "status": "WAITING_CI",
+    "detailedStatus": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
+    "disposition": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
     "authorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
     "scopeMode": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
     "acceptedBase": "5a69c90f2d3947556ff45c15c467902b1e28ca43",
@@ -1495,12 +1507,22 @@
         "profileDeltaEvidenceInsufficient": false,
         "remainingBlockers": []
       },
-      "acceptedBehaviorRestorationReviewVerdict": "PENDING_INDEPENDENT_REVIEW",
-      "acceptedBehaviorRestorationReviewedHead": null,
+      "acceptedBehaviorRestorationReviewVerdict": "ACCEPTED_BEHAVIOR_RESTORATION_REVIEW_PASS",
+      "acceptedBehaviorRestorationReviewedHead": "0326c2cd08eed768d4f6097f11dad671f0271143",
+      "acceptedBehaviorRestorationReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md",
+      "acceptedBehaviorRestorationReviewSha256": "c8991ece223ab6a679b31b56392a04e6c6d24a3b02986ab6d553ec740919bdbf",
+      "acceptedBehaviorRestorationReviewBytes": 9049,
+      "acceptedBehaviorRestorationReviewLfLineCount": 143,
+      "acceptedBehaviorRestorationReviewerBodySha256": "15020a8afbdd6442c368976a812177201f7a426bcab40d83c882f035f3fd0cfd",
+      "acceptedBehaviorRestorationReviewerBodyBytes": 8708,
+      "acceptedBehaviorRestorationReviewerBodyLfLineCount": 135,
+      "acceptedBehaviorRestorationReviewTimestamp": "2026-07-28T08:48:31.0884124Z",
+      "acceptedBehaviorRestorationReviewFindings": [],
+      "acceptedBehaviorRestorationReviewRemainingBlockers": [],
       "remainingBlockers": [
-        "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW"
+        "PENDING_EXACT_HEAD_PUSH_AND_PR_CI"
       ],
-      "requiredNextAction": "RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW"
+      "requiredNextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI"
     },
     "evidenceOverrideAuthorization": "USER_AUTHORIZED_2B20A_EVIDENCE_ONLY_STOP_LOSS_OVERRIDE_AND_2B20AP1_LOCAL_END_TO_END_CLOSURE",
     "productRepairDesignAuthorization": "USER_AUTHORIZED_2B20A_PRODUCT_REPAIR_ROUND_1_DESIGN_C20_C34_C37_ONLY",
@@ -1855,10 +1877,10 @@
       }
     },
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW"
+      "PENDING_EXACT_HEAD_PUSH_AND_PR_CI"
     ],
-    "requiredNextAction": "RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW",
-    "nextAction": "RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW"
+    "requiredNextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI",
+    "nextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI"
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
@@ -3231,8 +3253,8 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-v1-correction-1.md",
   "currentDesignHash": "755c5175f304b9dd34783876286d12262f686c95a919561df5a9bb7dc9a84d77",
-  "currentDesignStatus": "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW",
-  "currentDesignTerminal": "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW",
+  "currentDesignStatus": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
+  "currentDesignTerminal": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
   "currentDesignSource": "AUTHORIZED_DOCS_ONLY_DESIGN_CORRECTION_1",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md",
   "currentDesignReviewHash": "2d69ee926a9abf27fbbcaedd60e49090de2c6330158612248e8dc87664f1e042",
@@ -3752,7 +3774,7 @@
   "historicalSlice2B18ARuleReady": true,
   "historicalSlice2B18ARuleDesignPass": false,
   "historicalSlice2B18AImplementationAuthorized": true,
-  "implementationStatus": "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW",
+  "implementationStatus": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
   "localImplementationReviewVerdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
   "localImplementationReviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
   "localImplementationReviewFindings": [],
@@ -4195,7 +4217,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW"
+    "PENDING_EXACT_HEAD_PUSH_AND_PR_CI"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -4974,8 +4996,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Archived the complete independent coverage-profile review for profile child HEAD 3cdb60b7de12b010a5b076800f3c8ab705b0108a. The reviewer returned COVERAGE_PROFILE_REVIEW_PASS with findings=[], profileDeltaEvidenceInsufficient=false, and remainingBlockers=[]; the exact archive is docs/implementation/phase-3-slice-2b20a-final-restoration-coverage-profile-review.md (SHA-256 51e3c773075b71b1a493c2344f1eb02e12bc726edc9c4c0d7dde0c69c3ebdb40, 5257 bytes, 81 LF). The coverage-profile gate is closed, while the independent accepted-behavior restoration implementation review remains pending. Product Repair remains 2/2; no new round, production/test/profile/workflow/audit/rule/matrix change, push, PR mutation, hosted CI, merge, or acceptance occurred.",
+  "lastAction": "Archived the complete independent accepted-behavior restoration implementation review for exact local HEAD 0326c2cd08eed768d4f6097f11dad671f0271143. The reviewer returned ACCEPTED_BEHAVIOR_RESTORATION_REVIEW_PASS with findings=[], backlogNonGating=[], and remainingBlockers=[]; the exact archive is docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md (SHA-256 c8991ece223ab6a679b31b56392a04e6c6d24a3b02986ab6d553ec740919bdbf, 9049 bytes, 143 LF). Local restoration review is closed, while publication and exact-head PR CI remain pending. Coverage profile review remains COVERAGE_PROFILE_REVIEW_PASS. Product Repair remains 2/2; no new round, production/test/profile/workflow/audit/rule/matrix change, push, PR mutation, hosted CI, merge, or acceptance occurred.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW",
-  "nextAction": "RUN_INDEPENDENT_ACCEPTED_BEHAVIOR_RESTORATION_REVIEW"
+  "requiredNextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI",
+  "nextAction": "PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI"
 }

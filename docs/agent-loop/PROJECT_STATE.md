@@ -1,5 +1,35 @@
 # Project State
 
+## Current state — 2B20A local restoration review passed; exact-head CI pending
+
+- Active state:
+  `WAITING_CI / 2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI`.
+- The complete independent local restoration implementation review examined
+  exact HEAD `0326c2cd08eed768d4f6097f11dad671f0271143` and returned
+  `ACCEPTED_BEHAVIOR_RESTORATION_REVIEW_PASS`, `findings=[]`,
+  `backlogNonGating=[]`, and no review blockers.
+- Complete review archive:
+  `docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md`,
+  SHA-256
+  `c8991ece223ab6a679b31b56392a04e6c6d24a3b02986ab6d553ec740919bdbf`,
+  `9049` bytes, `143` LF lines.
+- The accepted-behavior restoration is locally reviewed and passing. This
+  checkpoint is not exact-head CI authority and does not claim remote
+  publication, CI success, final PR review, merge, or acceptance.
+- Coverage-profile review remains `COVERAGE_PROFILE_REVIEW_PASS`; source HEAD
+  remains `4d576e205cb20c37ba913b923a1cd39e8d800d18`; profile child remains
+  `3cdb60b7de12b010a5b076800f3c8ab705b0108a`.
+- Product Repair stays `2/2`; no Round 3 exists;
+  `newProductRepairRoundCreated=false`;
+  `acceptedBehaviorRestorationOverrideUsed=true`; Dreamer stays `PARTIAL`.
+- Sole blocker: `PENDING_EXACT_HEAD_PUSH_AND_PR_CI`; next action:
+  `PUSH_EXACT_HEAD_UPDATE_PR46_AND_WAIT_EXACT_HEAD_CI`.
+- Only the implementation-review archive and four active controls change.
+  Production, tests, profiles, workflow, audit, rules, role matrix, and remote
+  state remain unchanged.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — 2B20A profile review passed; restoration review pending
 
 - Active state:
