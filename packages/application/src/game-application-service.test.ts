@@ -2085,7 +2085,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     }
   }, 30_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C03] reaches a naturally selected TRUE V7 stream through the real command boundary", async () => {
+  it("[2B20A-C03] reaches a naturally selected TRUE V7 stream through the real command boundary", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "true");
     const delivery = captured.result.events.find((event) => event.eventType === "DreamerInformationDelivered");
     if (delivery?.eventType !== "DreamerInformationDelivered" ||
@@ -2100,7 +2100,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     expect(await captured.commandStore.findCommandReceipt(ids.game, captured.command.commandId)).toBeDefined();
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C04] reaches a naturally selected FALSE V7 stream through the real command boundary", async () => {
+  it("[2B20A-C04] reaches a naturally selected FALSE V7 stream through the real command boundary", async () => {
     const captured = await executeAccepted2B20ADreamer("FALSE", "false");
     const delivery = captured.result.events.find((event) => event.eventType === "DreamerInformationDelivered");
     if (delivery?.eventType !== "DreamerInformationDelivered" ||
@@ -2113,7 +2113,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
       candidate.candidateId === v7.apparentPairDecision.selectedCandidateId)?.truthClassification).toBe("FALSE");
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C05] settles the base Dreamer task and closes its V3 opportunity atomically", async () => {
+  it("[2B20A-C05] settles the base Dreamer task and closes its V3 opportunity atomically", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "settlement");
     expect(captured.result.events.map((event) => event.eventType)).toStrictEqual([
       "DreamerTargetChosen", "DreamerInformationDelivered", "ScheduledTaskSettled"
@@ -2127,7 +2127,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     );
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C06] derives TRUE as a normal base-Dreamer fact with zero contribution", async () => {
+  it("[2B20A-C06] derives TRUE as a normal base-Dreamer fact with zero contribution", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "true-ledger");
     const fact = captured.state.firstNightAbilityOutcomeLedger?.facts.find((entry) =>
       entry.abilityTaskId === captured.opened.dreamerTask.taskId);
@@ -2141,7 +2141,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     });
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C07] derives FALSE as one abnormal base-Dreamer drunkenness contribution", async () => {
+  it("[2B20A-C07] derives FALSE as one abnormal base-Dreamer drunkenness contribution", async () => {
     const captured = await executeAccepted2B20ADreamer("FALSE", "false-ledger");
     const facts = captured.state.firstNightAbilityOutcomeLedger?.facts.filter((entry) =>
       entry.abilityTaskId === captured.opened.dreamerTask.taskId) ?? [];
@@ -2156,7 +2156,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     });
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C10] records the exact nine existing evidence variants for V7", async () => {
+  it("[2B20A-C10] records the exact nine existing evidence variants for V7", async () => {
     const captured = await executeAccepted2B20ADreamer("FALSE", "evidence");
     const fact = captured.state.firstNightAbilityOutcomeLedger?.facts.find((entry) =>
       entry.abilityTaskId === captured.opened.dreamerTask.taskId);
@@ -2167,7 +2167,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     ]);
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C12] rejects an unrepresented Traveller target id at the real command boundary", async () => {
+  it("[2B20A-C12] rejects an unrepresented Traveller target id at the real command boundary", async () => {
     const { service, commandStore } = makeService();
     const opened = await reachCanonicalDrunkVortoxDreamerOpportunity(
       service, commandStore, "2b20a-traveller", twoB20AExactRoleIds, "2b20a-seed-3"
@@ -2187,7 +2187,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeDefined();
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C13] rejects a forged V3 opportunity id without appending a batch", async () => {
+  it("[2B20A-C13] rejects a forged V3 opportunity id without appending a batch", async () => {
     const { service, commandStore } = makeService();
     const opened = await reachCanonicalDrunkVortoxDreamerOpportunity(
       service, commandStore, "2b20a-opportunity", twoB20AExactRoleIds, "2b20a-seed-3"
@@ -2210,7 +2210,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     expect(await commandStore.findCommandReceipt(ids.game, command.commandId)).toBeDefined();
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C14] preserves success receipt replay and fingerprint conflict semantics", async () => {
+  it("[2B20A-C14] preserves success receipt replay and fingerprint conflict semantics", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "receipt");
     const before = await captured.commandStore.loadDomainEvents(ids.game);
     await expect(captured.service.execute(captured.command)).resolves.toMatchObject({
@@ -2224,13 +2224,13 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     })).resolves.toMatchObject({ status: "rejected", code: "CommandIdempotencyConflict" });
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C21] rebuilds the complete accepted V7 stream identically", async () => {
+  it("[2B20A-C21] rebuilds the complete accepted V7 stream identically", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "rebuild");
     expect(rebuildOptionalGameState(captured.events)).toStrictEqual(captured.state);
     expect(() => validateDomainEventStream(captured.events)).not.toThrow();
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C22] rejects reordered or missing V7 batch members during replay", async () => {
+  it("[2B20A-C22] rejects reordered or missing V7 batch members during replay", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "ordering");
     const deliveryIndex = captured.events.findIndex((event) => event.eventType === "DreamerInformationDelivered" &&
       "deliverySchemaVersion" in event.payload && event.payload.deliverySchemaVersion === "dreamer-information-delivered-v7");
@@ -2242,7 +2242,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     expect(() => rebuildOptionalGameState(reordered)).toThrowError(DomainError);
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C23] rejects persisted V7 candidate and policy mutations during replay", async () => {
+  it("[2B20A-C23] rejects persisted V7 candidate and policy mutations during replay", async () => {
     const captured = await executeAccepted2B20ADreamer("FALSE", "payload-mutation");
     for (const mutate of [
       (payload: Record<string, unknown>) => {
@@ -2264,7 +2264,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     }
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C25] projects the accepted V7 pair only to its source player", async () => {
+  it("[2B20A-C25] projects the accepted V7 pair only to its source player", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "source-projection");
     const view = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
       captured.events, captured.opened.opportunity.sourcePlayerId
@@ -2274,7 +2274,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     });
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C26] omits accepted V7 information from every other player", async () => {
+  it("[2B20A-C26] omits accepted V7 information from every other player", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "other-projection");
     for (const viewer of captured.state.roster?.entries ?? []) {
       if (viewer.playerId !== captured.opened.opportunity.sourcePlayerId) {
@@ -2285,7 +2285,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     }
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C27] leaks no V7 impairment candidate policy Demon or ledger metadata", async () => {
+  it("[2B20A-C27] leaks no V7 impairment candidate policy Demon or ledger metadata", async () => {
     const captured = await executeAccepted2B20ADreamer("FALSE", "projection-secrets");
     const view = buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(
       captured.events, captured.opened.opportunity.sourcePlayerId
@@ -2298,7 +2298,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     ]) expect(serialized).not.toContain(secret);
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C01] proves the exact reachable source impairment and Fang Gu precondition snapshot", async () => {
+  it("[2B20A-C01] proves the exact reachable source impairment and Fang Gu precondition snapshot", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "preconditions");
     const source = captured.opened.state.currentCharacterState?.entries.find((entry) =>
       entry.playerId === captured.opened.opportunity.sourcePlayerId);
@@ -2312,7 +2312,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     expect(demons).toMatchObject([{ role: { roleId: "fang_gu" } }]);
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C31] preserves Philosopher Dreamer Mathematician first-night order without phase transition", async () => {
+  it("[2B20A-C31] preserves Philosopher Dreamer Mathematician first-night order without phase transition", async () => {
     const captured = await executeAccepted2B20ADreamer("TRUE", "order");
     const definitions = captured.state.firstNightTaskPlan?.taskCatalogSnapshot.definitions ?? [];
     const orderOf = (taskType: string) => definitions.find((entry) => entry.taskType === taskType)?.baseOrder;
@@ -2327,7 +2327,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     expect(captured.state).toMatchObject({ phase: "FIRST_NIGHT", nightNumber: 1, dayNumber: 0 });
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C37] attributes the FALSE contribution to Dreamer and never to Philosopher", async () => {
+  it("[2B20A-C37] attributes the FALSE contribution to Dreamer and never to Philosopher", async () => {
     const captured = await executeAccepted2B20ADreamer("FALSE", "attribution");
     const dreamerDelivery = captured.result.events.find((event) =>
       event.eventType === "DreamerInformationDelivered"
@@ -2477,7 +2477,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     expect(rebuildOptionalGameState(structuredClone(firstTerminalEvents))).toStrictEqual(finalState);
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C38] rejects direct malformed V7 ledger source cross-links fail closed", async () => {
+  it("[2B20A-C38] rejects direct malformed V7 ledger source cross-links fail closed", async () => {
     const captured = await executeAccepted2B20ADreamer("FALSE", "fact-shape");
     const fact = captured.state.firstNightAbilityOutcomeLedger?.facts.find((entry) =>
       entry.abilityTaskId === captured.opened.dreamerTask.taskId);
@@ -2489,7 +2489,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     expect(domainCore.validateFirstNightAbilityOutcomeFactShape(malformed).valid).toBe(false);
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C39] rejects coordinated persisted V7 source and impairment substitution", async () => {
+  it("[2B20A-C39] rejects coordinated persisted V7 source and impairment substitution", async () => {
     const captured = await executeAccepted2B20ADreamer("FALSE", "source-substitution");
     const events = structuredClone(captured.events);
     const delivery = events.find((event) => event.eventType === "DreamerInformationDelivered" &&
@@ -2502,7 +2502,7 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3B1 canoni
     expect(() => rebuildOptionalGameState(events)).toThrowError(DomainError);
   }, 15_000);
 
-  it("[2B19A3B1-2B20A][2B20A-C40] leaves no delivery fact or contribution when the real No Dashii command fails", async () => {
+  it("[2B20A-C40] leaves no delivery fact or contribution when the real No Dashii command fails", async () => {
     const { service, commandStore } = makeService();
     const opened = await reachOpenDreamerV3ActionOpportunity(service, commandStore, noPhilosopherNoDashiiExactRoleIds);
     const target = opened.state.currentCharacterState?.entries.find((entry) =>
@@ -9463,7 +9463,7 @@ describeApplicationServiceShard("information-and-later-actions", "GameApplicatio
 });
 
 describeApplicationServiceShard("dreamer-vortox", "GameApplicationService", () => {
-  it("[2B19A3A-C17][2B20A-C35] accepts the reachable canonical-drunk base Dreamer through the real Philosopher chain", async () => {
+  it("[2B20A-C35] accepts the reachable canonical-drunk base Dreamer through the real Philosopher chain", async () => {
     const { service, commandStore } = makeService();
     const philosopher = await reachOpenExactPhilosopherOpportunity(service, commandStore);
     expectAcceptedResult(await service.execute(chooseExactPhilosopherRole("dreamer", philosopher, "2b19a2-choose-dreamer")));
