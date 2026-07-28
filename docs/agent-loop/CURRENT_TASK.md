@@ -1,6 +1,14 @@
 # Current Task
 
-## 2B20AP2 — recovery RULE_DESIGN_PASS; profile child candidate ready for review
+## 2B20AP2 — coverage profile review passed; local implementation review pending
+
+- Independent read-only coverage-profile review of exact child HEAD
+  `da14b5dbdf705bc7776f1c83b799f07b0a29e405` returned exact
+  `COVERAGE_PROFILE_REVIEW_PASS`, `findings=[]`, and
+  `remainingBlockers=[]`. Its complete output is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap2-coverage-profile-review.md`,
+  SHA-256
+  `d59d3e556698fd7ad84712a1710b00325eadc767994de1ce8ab8fcfde146a0e8`.
 
 - A new independent read-only recovery review of exact HEAD
   `cc82a95a258ad943e1d1a28b9c44ea51fe45bfa1` returned exact
@@ -25,9 +33,12 @@
   Full generated evidence is preserved under
   `<os-temp>/botc-2b20ap2-profile-child-cc82a95/.vitest-coverage`.
 - Current status:
-  `COVERAGE_PROFILE_CHILD_CANDIDATE_READY_PENDING_INDEPENDENT_PROFILE_REVIEW`.
-- Sole blocker: `PENDING_INDEPENDENT_COVERAGE_PROFILE_REVIEW`.
-- Required next action: `RUN_INDEPENDENT_COVERAGE_PROFILE_REVIEW`.
+  `COVERAGE_PROFILE_REVIEW_PASS_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW`.
+- Profile-review blockers are empty.
+- Sole next blocker:
+  `PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW`.
+- Required next action:
+  `RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REVIEW`.
 
 All sections below are chronological history and do not override this state.
 
