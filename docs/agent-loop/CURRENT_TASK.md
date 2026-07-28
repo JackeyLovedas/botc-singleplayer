@@ -1,5 +1,33 @@
 # Current Task
 
+## 2B20AP2 — local implementation re-review passed; PR #47 publication pending
+
+- The complete independent Round-2 local infrastructure implementation
+  re-review of exact HEAD
+  `5b371308074e03c24f6e2a6688b64b4b8268bad3` is archived verbatim at
+  `docs/implementation/phase-3-slice-2b20ap2-local-implementation-rereview-round-2.md`,
+  SHA-256
+  `006458386fcf9542885448e1b79954f0d8539ac2c4aa16b8378b764a6ca9c715`,
+  `5369` bytes, `87` LF lines.
+- The reviewer returned
+  `INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS`, `findings=[]`, and local
+  `remainingBlockers=[]`. Both Round-1 blockers are independently confirmed
+  closed.
+- `localImplementationReviewedHead` is
+  `5b371308074e03c24f6e2a6688b64b4b8268bad3`; CI remediation remains final at
+  `2/2`. Rule, profile, source, workflow, product, test, role-matrix,
+  dependency, timeout, include, project, and logical-group values are
+  unchanged.
+- PR #47 remains stale remotely; no hosted CI exists yet for the reviewed
+  local HEAD. This docs/control checkpoint performs no push, PR mutation,
+  hosted CI, or merge.
+- Sole next blocker:
+  `PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION`.
+- Required next action:
+  `UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI`.
+
+All sections below are chronological history and do not override this state.
+
 ## 2B20AP2 — final CI remediation round complete; local re-review pending
 
 - The complete independent local infrastructure implementation review of exact

@@ -2561,8 +2561,8 @@
   },
   "slice2B20AP2Gate": {
     "status": "RUNNING",
-    "detailedStatus": "2B20AP2_CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
-    "disposition": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+    "detailedStatus": "2B20AP2_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
+    "disposition": "LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
     "taskType": "CI_TEST_INFRASTRUCTURE / NON_PRODUCT",
     "authorization": "USER_AUTHORIZED_2B20AP2_DESIGN_RELEASE_CORRECTION_CONDITIONAL_IMPLEMENTATION_AND_CLOSEOUT",
     "originalAuthorization": "USER_AUTHORIZED_2B20AP2_HOSTED_HISTORY_DREAMER_PROCESS_ISOLATION_COVERAGE_PROFILE_AND_CONDITIONAL_2B20A_CLOSEOUT",
@@ -2850,6 +2850,21 @@
         "CANONICAL_TOP_LEVEL_AUTOPILOT_STATE_CONTRADICTION"
       ]
     },
+    "localImplementationReviewVerdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
+    "localImplementationReviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
+    "localImplementationReviewFindings": [],
+    "localImplementationReviewRemainingBlockers": [],
+    "localImplementationRereviewRound2": {
+      "path": "docs/implementation/phase-3-slice-2b20ap2-local-implementation-rereview-round-2.md",
+      "sha256": "006458386fcf9542885448e1b79954f0d8539ac2c4aa16b8378b764a6ca9c715",
+      "bytes": 5369,
+      "lfLineCount": 87,
+      "reviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
+      "reviewTimestamp": "2026-07-28T03:02:37.9827917Z",
+      "verdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
+      "findings": [],
+      "remainingBlockers": []
+    },
     "sourceImplementation": {
       "statusPath": "docs/implementation/phase-3-slice-2b20ap2-implementation-status.md",
       "sourceBaseline": "bdbbe8bc051c5b6ff832aecec3202bee27e3b53f",
@@ -2889,10 +2904,10 @@
     "prChanged": false,
     "ciRerunPerformed": false,
     "remainingBlockers": [
-      "PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW"
+      "PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION"
     ],
-    "requiredNextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
-    "nextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW"
+    "requiredNextAction": "UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI",
+    "nextAction": "UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI"
   },
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -2904,8 +2919,8 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20ap2-design-round-2.md",
   "currentDesignHash": "c10e94186566b399bee42c8ed145e216cc6f4abae819800bd30c407400b50f6c",
-  "currentDesignStatus": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
-  "currentDesignTerminal": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+  "currentDesignStatus": "LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
+  "currentDesignTerminal": "LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
   "currentDesignSource": "READ_ONLY_ARCHITECT_STANDALONE_ROUND_2_CORRECTION",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20ap2-rule-design-review-recovery.md",
   "currentDesignReviewHash": "71c77072b53c57d6a3d67bb956af98fda867c5209585791a09641828b084b633",
@@ -3425,7 +3440,11 @@
   "historicalSlice2B18ARuleReady": true,
   "historicalSlice2B18ARuleDesignPass": false,
   "historicalSlice2B18AImplementationAuthorized": true,
-  "implementationStatus": "CI_REMEDIATION_ROUND_2_COMPLETE_PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
+  "implementationStatus": "LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW_PASS_PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION",
+  "localImplementationReviewVerdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
+  "localImplementationReviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
+  "localImplementationReviewFindings": [],
+  "localImplementationReviewRemainingBlockers": [],
   "repairRound3Authorization": null,
   "repairRound3BaseHead": null,
   "repairRound3Scope": null,
@@ -3849,7 +3868,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
-    "PENDING_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW"
+    "PENDING_PR47_BODY_RECONCILIATION_AND_PUBLICATION"
   ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
@@ -4631,8 +4650,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Completed the final authorized 2B20AP2 CI remediation round 2/2 for the two independent implementation-review blockers. Persisted Vitest verification and aggregation now share strict physical-artifact, schema, identity, path, hash, cross-link, process, global-error, eligibility, manifest, and incoming-layout validation; canonical top-level active state now agrees with the AP2 gate and profile review. The sole remaining blocker is independent local infrastructure implementation rereview. No push, PR mutation, hosted CI, or merge occurred.",
+  "lastAction": "Archived the complete independent 2B20AP2 local infrastructure implementation rereview for exact HEAD 5b371308074e03c24f6e2a6688b64b4b8268bad3. The reviewer returned INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS with findings=[] and remainingBlockers=[] after independently closing both Round-1 blockers and confirming all local release gates. CI remediation remains exhausted at 2/2; the sole next blocker is PR #47 body reconciliation and publication. No push, PR mutation, hosted CI, or merge occurred.",
   "lastError": null,
-  "requiredNextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW",
-  "nextAction": "RUN_INDEPENDENT_LOCAL_INFRASTRUCTURE_IMPLEMENTATION_REREVIEW"
+  "requiredNextAction": "UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI",
+  "nextAction": "UPDATE_PR47_BODY_PUSH_EXACT_HEAD_AND_WAIT_CI"
 }
