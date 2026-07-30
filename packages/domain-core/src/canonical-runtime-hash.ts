@@ -1100,15 +1100,19 @@ const verifyDirect = (
   if (!admitted.ok) {
     return admitted;
   }
+  const record = stored.record as DirectCanonicalRuntimeIntegrityRecord;
+  if (record.payloadByteLength !== admitted.bytes.length) {
+    return failure(
+      "METADATA_LENGTH_MISMATCH",
+      "BINDING_METADATA_VALIDATION",
+      "BINDING_METADATA"
+    );
+  }
   const preimage = buildPreimage(domain, admitted.bytes);
   if (!preimage.ok) {
     return preimage;
   }
-  const record = stored.record as DirectCanonicalRuntimeIntegrityRecord;
-  if (
-    record.payloadByteLength !== admitted.bytes.length ||
-    record.framedPreimageByteLength !== preimage.bytes.length
-  ) {
+  if (record.framedPreimageByteLength !== preimage.bytes.length) {
     return failure(
       "METADATA_LENGTH_MISMATCH",
       "BINDING_METADATA_VALIDATION",
@@ -1152,21 +1156,33 @@ export const verifyFutureBindingIntegrity = (
   if (!payload.ok) {
     return payload;
   }
+  const record = stored.record as FutureBindingIntegrityRecord;
+  if (
+    record.bindingMetadataTlvByteLength !== metadata.bytes.length ||
+    record.boundPayloadTlvByteLength !== payload.bytes.length
+  ) {
+    return failure(
+      "METADATA_LENGTH_MISMATCH",
+      "BINDING_METADATA_VALIDATION",
+      "BINDING_METADATA"
+    );
+  }
   const envelope = buildBindingEnvelope(metadata.bytes, payload.bytes);
   if (!envelope.ok) {
     return envelope;
+  }
+  if (record.payloadByteLength !== envelope.bytes.length) {
+    return failure(
+      "METADATA_LENGTH_MISMATCH",
+      "BINDING_METADATA_VALIDATION",
+      "BINDING_METADATA"
+    );
   }
   const preimage = buildPreimage("FUTURE_BINDING_INTEGRITY", envelope.bytes);
   if (!preimage.ok) {
     return preimage;
   }
-  const record = stored.record as FutureBindingIntegrityRecord;
-  if (
-    record.bindingMetadataTlvByteLength !== metadata.bytes.length ||
-    record.boundPayloadTlvByteLength !== payload.bytes.length ||
-    record.payloadByteLength !== envelope.bytes.length ||
-    record.framedPreimageByteLength !== preimage.bytes.length
-  ) {
+  if (record.framedPreimageByteLength !== preimage.bytes.length) {
     return failure(
       "METADATA_LENGTH_MISMATCH",
       "BINDING_METADATA_VALIDATION",

@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -95,8 +96,16 @@ type FailureMatrixEntry = {
   readonly code: CanonicalRuntimeIntegrityFailure["code"];
   readonly phase: CanonicalRuntimeIntegrityFailure["phase"];
   readonly inputKind: CanonicalRuntimeIntegrityFailure["inputKind"];
+  readonly branchLocation: string;
   readonly expectedFailClosedBehavior:
-    "RETURN_EXACT_FAILURE_NO_THROW_NO_PARTIAL_RESULT";
+    | "FC-A_BYTE_REJECT"
+    | "FC-B_RECORD_REJECT"
+    | "FC-C_PREIMAGE_REJECT"
+    | "FC-D_DIGEST_REJECT"
+    | "FC-E_VERIFY_REJECT";
+  readonly primaryTestBinding:
+    "B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads";
+  readonly sourceNeedles?: readonly string[];
   readonly invoke?: () => FailableResult;
 };
 
@@ -110,6 +119,45 @@ const exerciseCompleteFailureMatrix = (): void => {
     createFutureBindingIntegrity(bindingMetadata, boundPayload)
   );
   const entries: FailureMatrixEntry[] = [];
+  const behaviorFor = (
+    phase: CanonicalRuntimeIntegrityFailure["phase"]
+  ): FailureMatrixEntry["expectedFailClosedBehavior"] => {
+    switch (phase) {
+      case "TLV_INPUT_ACCEPTANCE":
+        return "FC-A_BYTE_REJECT";
+      case "BINDING_METADATA_VALIDATION":
+        return "FC-B_RECORD_REJECT";
+      case "HASH_PREIMAGE_BUILD":
+        return "FC-C_PREIMAGE_REJECT";
+      case "DIGEST_COMPUTATION":
+        return "FC-D_DIGEST_REJECT";
+      case "DIGEST_VERIFICATION":
+        return "FC-E_VERIFY_REJECT";
+    }
+  };
+  const branchFor = (
+    code: CanonicalRuntimeIntegrityFailure["code"],
+    phase: CanonicalRuntimeIntegrityFailure["phase"],
+    inputKind: CanonicalRuntimeIntegrityFailure["inputKind"]
+  ): string => {
+    if (phase === "TLV_INPUT_ACCEPTANCE") {
+      return `canonical-runtime-hash.ts:admitBytes/${code}/${inputKind}`;
+    }
+    if (phase === "BINDING_METADATA_VALIDATION") {
+      return code === "METADATA_LENGTH_MISMATCH"
+        ? "canonical-runtime-hash.ts:verifyDirect-or-verifyFutureBindingIntegrity/length-preimage-gate"
+        : `canonical-runtime-hash.ts:admitRecord/${code}/${inputKind}`;
+    }
+    if (phase === "HASH_PREIMAGE_BUILD") {
+      return inputKind === "HASH_DOMAIN"
+        ? `canonical-runtime-hash.ts:buildPreimage/${code}`
+        : `canonical-runtime-hash.ts:buildBindingEnvelope/${code}`;
+    }
+    if (phase === "DIGEST_COMPUTATION") {
+      return `canonical-runtime-hash.ts:digestPreimage/${code}`;
+    }
+    return `canonical-runtime-hash.ts:compareDigest/${code}`;
+  };
   const addRuntime = (
     name: string,
     invoke: () => FailableResult,
@@ -122,8 +170,10 @@ const exerciseCompleteFailureMatrix = (): void => {
       code,
       phase,
       inputKind,
-      expectedFailClosedBehavior:
-        "RETURN_EXACT_FAILURE_NO_THROW_NO_PARTIAL_RESULT",
+      branchLocation: branchFor(code, phase, inputKind),
+      expectedFailClosedBehavior: behaviorFor(phase),
+      primaryTestBinding:
+        "B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads",
       invoke
     });
   };
@@ -131,15 +181,19 @@ const exerciseCompleteFailureMatrix = (): void => {
     name: string,
     code: CanonicalRuntimeIntegrityFailure["code"],
     phase: CanonicalRuntimeIntegrityFailure["phase"],
-    inputKind: CanonicalRuntimeIntegrityFailure["inputKind"]
+    inputKind: CanonicalRuntimeIntegrityFailure["inputKind"],
+    sourceNeedles: readonly string[]
   ): void => {
     entries.push({
       name,
       code,
       phase,
       inputKind,
-      expectedFailClosedBehavior:
-        "RETURN_EXACT_FAILURE_NO_THROW_NO_PARTIAL_RESULT"
+      branchLocation: branchFor(code, phase, inputKind),
+      expectedFailClosedBehavior: behaviorFor(phase),
+      primaryTestBinding:
+        "B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads",
+      sourceNeedles
     });
   };
   const withoutField = (source: object, field: string) => {
@@ -193,134 +247,103 @@ const exerciseCompleteFailureMatrix = (): void => {
       }
     });
 
-  addRuntime(
-    "invalid raw TLV position",
-    () => createRawATlvIntegrity(null),
-    "INVALID_BYTE_INPUT",
-    "TLV_INPUT_ACCEPTANCE",
-    "TLV_BYTES"
+  const detachedBytes = (): Uint8Array => {
+    const buffer = new ArrayBuffer(1);
+    const view = new Uint8Array(buffer);
+    structuredClone(buffer, { transfer: [buffer] });
+    return view;
+  };
+  const oversized = new Uint8Array(
+    CANONICAL_RUNTIME_INTEGRITY_MAX_A_TLV_BYTES + 1
   );
-  addRuntime(
-    "invalid canonical-value TLV position",
-    () => createCanonicalValueIntegrity(null),
-    "INVALID_BYTE_INPUT",
-    "TLV_INPUT_ACCEPTANCE",
-    "TLV_BYTES"
-  );
-  addRuntime(
-    "invalid future metadata position",
-    () => createFutureBindingIntegrity(null, laterBytes),
-    "INVALID_BYTE_INPUT",
-    "TLV_INPUT_ACCEPTANCE",
-    "BINDING_METADATA"
-  );
-  addRuntime(
-    "invalid future bound-payload position",
-    () => createFutureBindingIntegrity(bindingMetadata, null),
-    "INVALID_BYTE_INPUT",
-    "TLV_INPUT_ACCEPTANCE",
-    "TLV_BYTES"
-  );
-  addRuntime(
-    "proxy TLV bytes",
-    () => createRawATlvIntegrity(laterBytes),
-    "PROXY_BYTE_INPUT",
-    "TLV_INPUT_ACCEPTANCE",
-    "TLV_BYTES"
-  );
-  addRuntime(
-    "proxy binding metadata",
-    () => createFutureBindingIntegrity(laterBytes, boundPayload),
-    "PROXY_BYTE_INPUT",
-    "TLV_INPUT_ACCEPTANCE",
-    "BINDING_METADATA"
-  );
-  addRuntime(
-    "wrong TLV view",
-    () => createCanonicalValueIntegrity(new Uint16Array(1)),
-    "WRONG_BYTE_VIEW",
-    "TLV_INPUT_ACCEPTANCE",
-    "TLV_BYTES"
-  );
-  addRuntime(
-    "wrong metadata view",
-    () => createFutureBindingIntegrity(new Uint16Array(1), boundPayload),
-    "WRONG_BYTE_VIEW",
-    "TLV_INPUT_ACCEPTANCE",
-    "BINDING_METADATA"
-  );
-  if (typeof SharedArrayBuffer !== "undefined") {
+  const byteFailureFamilies = [
+    {
+      label: "invalid",
+      code: "INVALID_BYTE_INPUT" as const,
+      candidate: (): unknown => null
+    },
+    {
+      label: "proxy",
+      code: "PROXY_BYTE_INPUT" as const,
+      candidate: (): unknown =>
+        new Proxy(new Uint8Array([1]), {
+          get: (target, property, receiver) => {
+            byteTrapCalls += 1;
+            return Reflect.get(target, property, receiver) as unknown;
+          }
+        })
+    },
+    {
+      label: "wrong-view",
+      code: "WRONG_BYTE_VIEW" as const,
+      candidate: (): unknown => new Uint16Array(1)
+    },
+    {
+      label: "shared",
+      code: "SHARED_BYTE_BUFFER" as const,
+      candidate: (): unknown =>
+        new Uint8Array(new SharedArrayBuffer(1))
+    },
+    {
+      label: "detached",
+      code: "DETACHED_BYTE_BUFFER" as const,
+      candidate: detachedBytes
+    },
+    {
+      label: "oversized",
+      code: "BYTE_INPUT_TOO_LARGE" as const,
+      candidate: (): unknown => oversized
+    }
+  ];
+  for (const family of byteFailureFamilies) {
     addRuntime(
-      "shared TLV backing",
-      () =>
-        createRawATlvIntegrity(new Uint8Array(new SharedArrayBuffer(1))),
-      "SHARED_BYTE_BUFFER",
+      `${family.label} raw TLV position`,
+      () => createRawATlvIntegrity(family.candidate()),
+      family.code,
       "TLV_INPUT_ACCEPTANCE",
       "TLV_BYTES"
     );
     addRuntime(
-      "shared metadata backing",
-      () =>
-        createFutureBindingIntegrity(
-          new Uint8Array(new SharedArrayBuffer(1)),
-          boundPayload
-        ),
-      "SHARED_BYTE_BUFFER",
+      `${family.label} canonical-value TLV position`,
+      () => createCanonicalValueIntegrity(family.candidate()),
+      family.code,
+      "TLV_INPUT_ACCEPTANCE",
+      "TLV_BYTES"
+    );
+    addRuntime(
+      `${family.label} future metadata position`,
+      () => createFutureBindingIntegrity(family.candidate(), laterBytes),
+      family.code,
       "TLV_INPUT_ACCEPTANCE",
       "BINDING_METADATA"
     );
+    addRuntime(
+      `${family.label} future bound-payload position`,
+      () =>
+        createFutureBindingIntegrity(bindingMetadata, family.candidate()),
+      family.code,
+      "TLV_INPUT_ACCEPTANCE",
+      "TLV_BYTES"
+    );
   }
-  const detachedTlvBuffer = new ArrayBuffer(1);
-  const detachedTlv = new Uint8Array(detachedTlvBuffer);
-  structuredClone(detachedTlvBuffer, { transfer: [detachedTlvBuffer] });
-  const detachedMetadataBuffer = new ArrayBuffer(1);
-  const detachedMetadata = new Uint8Array(detachedMetadataBuffer);
-  structuredClone(detachedMetadataBuffer, {
-    transfer: [detachedMetadataBuffer]
-  });
-  addRuntime(
-    "detached TLV backing",
-    () => createRawATlvIntegrity(detachedTlv),
-    "DETACHED_BYTE_BUFFER",
-    "TLV_INPUT_ACCEPTANCE",
-    "TLV_BYTES"
-  );
-  addRuntime(
-    "detached metadata backing",
-    () => createFutureBindingIntegrity(detachedMetadata, boundPayload),
-    "DETACHED_BYTE_BUFFER",
-    "TLV_INPUT_ACCEPTANCE",
-    "BINDING_METADATA"
-  );
-  const oversized = new Uint8Array(
-    CANONICAL_RUNTIME_INTEGRITY_MAX_A_TLV_BYTES + 1
-  );
-  addRuntime(
-    "oversized TLV bytes",
-    () => createRawATlvIntegrity(oversized),
-    "BYTE_INPUT_TOO_LARGE",
-    "TLV_INPUT_ACCEPTANCE",
-    "TLV_BYTES"
-  );
-  addRuntime(
-    "oversized metadata bytes",
-    () => createFutureBindingIntegrity(oversized, boundPayload),
-    "BYTE_INPUT_TOO_LARGE",
-    "TLV_INPUT_ACCEPTANCE",
-    "BINDING_METADATA"
-  );
   for (const inputKind of ["TLV_BYTES", "BINDING_METADATA"] as const) {
     addStatic(
       `${inputKind} copy allocation failure`,
       "BYTE_COPY_ALLOCATION_FAILED",
       "TLV_INPUT_ACCEPTANCE",
-      inputKind
+      inputKind,
+      [
+        '"BYTE_COPY_ALLOCATION_FAILED"',
+        '"TLV_INPUT_ACCEPTANCE"',
+        "inputKind"
+      ]
     );
     addStatic(
       `${inputKind} intrinsic copy failure`,
       "BYTE_COPY_FAILED",
       "TLV_INPUT_ACCEPTANCE",
-      inputKind
+      inputKind,
+      ['"BYTE_COPY_FAILED"', '"TLV_INPUT_ACCEPTANCE"', "inputKind"]
     );
   }
 
@@ -551,31 +574,51 @@ const exerciseCompleteFailureMatrix = (): void => {
     "binding-envelope arithmetic overflow",
     "ARITHMETIC_OVERFLOW",
     "HASH_PREIMAGE_BUILD",
-    "BINDING_METADATA"
+    "BINDING_METADATA",
+    [
+      'const buildBindingEnvelope = (',
+      'return failure("ARITHMETIC_OVERFLOW", "HASH_PREIMAGE_BUILD", inputKind)'
+    ]
   );
   addStatic(
     "outer-frame arithmetic overflow",
     "ARITHMETIC_OVERFLOW",
     "HASH_PREIMAGE_BUILD",
-    "HASH_DOMAIN"
+    "HASH_DOMAIN",
+    [
+      'const buildPreimage = (',
+      'return failure("ARITHMETIC_OVERFLOW", "HASH_PREIMAGE_BUILD", inputKind)'
+    ]
   );
   addStatic(
     "binding-envelope allocation failure",
     "BINDING_ALLOCATION_FAILED",
     "HASH_PREIMAGE_BUILD",
-    "BINDING_METADATA"
+    "BINDING_METADATA",
+    [
+      'const buildBindingEnvelope = (',
+      '"BINDING_ALLOCATION_FAILED"',
+      '"BINDING_METADATA"'
+    ]
   );
   addStatic(
     "outer-frame allocation failure",
     "FRAME_ALLOCATION_FAILED",
     "HASH_PREIMAGE_BUILD",
-    "HASH_DOMAIN"
+    "HASH_DOMAIN",
+    ['const buildPreimage = (', '"FRAME_ALLOCATION_FAILED"', '"HASH_DOMAIN"']
   );
   addStatic(
     "internal SHA-256 failure",
     "INTERNAL_HASH_FAILURE",
     "DIGEST_COMPUTATION",
-    "DIGEST_BYTES"
+    "DIGEST_BYTES",
+    [
+      'const digestPreimage = (',
+      '"INTERNAL_HASH_FAILURE"',
+      '"DIGEST_COMPUTATION"',
+      '"DIGEST_BYTES"'
+    ]
   );
   addRuntime(
     "validly encoded but mismatched digest",
@@ -597,12 +640,20 @@ const exerciseCompleteFailureMatrix = (): void => {
     new URL("./canonical-runtime-hash.ts", import.meta.url),
     "utf8"
   );
+  const normalizedSource = source.replace(/\s+/g, " ");
   for (const entry of entries) {
-    expect(entry.expectedFailClosedBehavior, entry.name).toBe(
-      "RETURN_EXACT_FAILURE_NO_THROW_NO_PARTIAL_RESULT"
+    expect(entry.branchLocation, entry.name).toMatch(
+      /^canonical-runtime-hash\.ts:/
+    );
+    expect(entry.primaryTestBinding, entry.name).toBe(
+      "B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads"
     );
     if (entry.invoke === undefined) {
-      expect(source, entry.name).toContain(`"${entry.code}"`);
+      for (const needle of entry.sourceNeedles ?? []) {
+        expect(normalizedSource, `${entry.name}: ${needle}`).toContain(
+          needle.replace(/\s+/g, " ")
+        );
+      }
     } else {
       expectFailure(entry.invoke(), {
         code: entry.code,
@@ -652,6 +703,71 @@ const exerciseCompleteFailureMatrix = (): void => {
     new Set(allFailureCodes)
   );
   expect(allFailureCodes).toHaveLength(34);
+  for (const code of [
+    "INVALID_BYTE_INPUT",
+    "PROXY_BYTE_INPUT",
+    "WRONG_BYTE_VIEW",
+    "SHARED_BYTE_BUFFER",
+    "DETACHED_BYTE_BUFFER",
+    "BYTE_INPUT_TOO_LARGE"
+  ] as const) {
+    expect(
+      entries.filter((entry) => entry.code === code),
+      `${code}: all four public byte positions`
+    ).toHaveLength(4);
+  }
+  expect(
+    new Set(entries.map((entry) => entry.expectedFailClosedBehavior))
+  ).toStrictEqual(
+    new Set([
+      "FC-A_BYTE_REJECT",
+      "FC-B_RECORD_REJECT",
+      "FC-C_PREIMAGE_REJECT",
+      "FC-D_DIGEST_REJECT",
+      "FC-E_VERIFY_REJECT"
+    ])
+  );
+  expect(entries.every((entry) => entry.sourceNeedles !== undefined ||
+    entry.invoke !== undefined)).toBe(true);
+  expect(source).not.toMatch(
+    /__test|testHook|forceFailure|injectFailure|mockHash/
+  );
+  const sourceScope = (start: string, end: string): string =>
+    source.slice(source.indexOf(start), source.indexOf(end));
+  const admitBytesSource = sourceScope(
+    "const admitBytes = (",
+    "const checkedSum = ("
+  );
+  expect(admitBytesSource).toContain('"BYTE_COPY_ALLOCATION_FAILED"');
+  expect(admitBytesSource).toContain('"BYTE_COPY_FAILED"');
+  expect(admitBytesSource).toContain('"TLV_INPUT_ACCEPTANCE"');
+  expect(admitBytesSource).toContain("inputKind");
+  const checkedSumSource = sourceScope(
+    "const checkedSum = (",
+    "const writeU32Be = ("
+  );
+  expect(checkedSumSource).toContain('"ARITHMETIC_OVERFLOW"');
+  expect(checkedSumSource).toContain('"HASH_PREIMAGE_BUILD"');
+  expect(checkedSumSource).toContain("inputKind");
+  const bindingSource = sourceScope(
+    "const buildBindingEnvelope = (",
+    "const buildPreimage = ("
+  );
+  expect(bindingSource).toContain('"BINDING_METADATA"');
+  expect(bindingSource).toContain('"BINDING_ALLOCATION_FAILED"');
+  const preimageSource = sourceScope(
+    "const buildPreimage = (",
+    'const hexAlphabet = "0123456789abcdef"'
+  );
+  expect(preimageSource).toContain('"HASH_DOMAIN"');
+  expect(preimageSource).toContain('"FRAME_ALLOCATION_FAILED"');
+  const digestSource = sourceScope(
+    "const digestPreimage = (",
+    "const decodeHex = ("
+  );
+  expect(digestSource).toContain('"INTERNAL_HASH_FAILURE"');
+  expect(digestSource).toContain('"DIGEST_COMPUTATION"');
+  expect(digestSource).toContain('"DIGEST_BYTES"');
   expect(recordProxyTrapCalls).toBe(0);
   expect(accessorCalls).toBe(0);
   expect(byteTrapCalls).toBe(0);
@@ -725,6 +841,22 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
       inputKind: "TLV_BYTES"
     });
     expect(conversionCalls).toBe(0);
+
+    expectFailure(createCanonicalValueIntegrity(null), {
+      code: "INVALID_BYTE_INPUT",
+      phase: "TLV_INPUT_ACCEPTANCE",
+      inputKind: "TLV_BYTES"
+    });
+    expectFailure(createFutureBindingIntegrity(null, source), {
+      code: "INVALID_BYTE_INPUT",
+      phase: "TLV_INPUT_ACCEPTANCE",
+      inputKind: "BINDING_METADATA"
+    });
+    expectFailure(createFutureBindingIntegrity(source, null), {
+      code: "INVALID_BYTE_INPUT",
+      phase: "TLV_INPUT_ACCEPTANCE",
+      inputKind: "TLV_BYTES"
+    });
 
     const traps = { getPrototypeOf: 0, get: 0, ownKeys: 0 };
     const proxy = new Proxy(new Uint8Array([1]), {
@@ -907,22 +1039,57 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
     expect(raw.framedPreimageByteLength).toBe(187);
     expect(canonical.framedPreimageByteLength).toBe(193);
 
-    expect(
-      directRecord(createCanonicalValueIntegrity(bytesOf({ a: null })))
-    ).toMatchObject({
-      payloadByteLength: 21,
-      framedPreimageByteLength: 203,
-      digestHex:
-        "0be0bd6f6ad7b00235d8cd4fba920e14b2826dc000d11f77d2f509e90e8957eb"
-    });
-    expect(
-      directRecord(createCanonicalValueIntegrity(bytesOf(["a", null])))
-    ).toMatchObject({
-      payloadByteLength: 22,
-      framedPreimageByteLength: 204,
-      digestHex:
-        "fd69af3bee7fffd9742863adf8b27521d69ac7c40f8b4d6ba9dba4e3471f2044"
-    });
+    const vectors = [
+      {
+        value: { a: null },
+        payloadHex: "424f54434352562b30310600000001000000016100",
+        preimageHex:
+          "424f54434352482b303100000031626f74632d63616e6f6e6963616c2d72756e74696d652d696e746567726974792d7368613235362d6672616d65642d76310000001943414e4f4e4943414c5f56414c55455f494e54454752495459000000075348412d3235360000001f626f74632d63616e6f6e6963616c2d72756e74696d652d76616c75652d763100000020626f74632d63616e6f6e6963616c2d72756e74696d652d746c762d62652d76310000000000000015424f54434352562b30310600000001000000016100",
+        frameLength: 203,
+        digestHex:
+          "0be0bd6f6ad7b00235d8cd4fba920e14b2826dc000d11f77d2f509e90e8957eb"
+      },
+      {
+        value: ["a", null],
+        payloadHex: "424f54434352562b3031050000000204000000016100",
+        preimageHex:
+          "424f54434352482b303100000031626f74632d63616e6f6e6963616c2d72756e74696d652d696e746567726974792d7368613235362d6672616d65642d76310000001943414e4f4e4943414c5f56414c55455f494e54454752495459000000075348412d3235360000001f626f74632d63616e6f6e6963616c2d72756e74696d652d76616c75652d763100000020626f74632d63616e6f6e6963616c2d72756e74696d652d746c762d62652d76310000000000000016424f54434352562b3031050000000204000000016100",
+        frameLength: 204,
+        digestHex:
+          "fd69af3bee7fffd9742863adf8b27521d69ac7c40f8b4d6ba9dba4e3471f2044"
+      }
+    ] as const;
+    for (const vector of vectors) {
+      const payload = bytesOf(vector.value);
+      expect(Buffer.from(payload).toString("hex")).toBe(vector.payloadHex);
+      expect(Buffer.from(vector.preimageHex, "hex")).toHaveLength(
+        vector.frameLength
+      );
+      expect(
+        createHash("sha256")
+          .update(Buffer.from(vector.preimageHex, "hex"))
+          .digest("hex")
+      ).toBe(vector.digestHex);
+      const vectorRecord = directRecord(
+        createCanonicalValueIntegrity(payload)
+      );
+      expect(vectorRecord).toMatchObject({
+        payloadByteLength: payload.length,
+        framedPreimageByteLength: vector.frameLength,
+        digestHex: vector.digestHex
+      });
+      const mutated = payload.slice();
+      mutated[mutated.length - 1] =
+        mutated[mutated.length - 1]! ^ 0x01;
+      expectFailure(
+        verifyCanonicalValueIntegrity(vectorRecord, mutated),
+        {
+          code: "DIGEST_MISMATCH",
+          phase: "DIGEST_VERIFICATION",
+          inputKind: "DIGEST_BYTES"
+        }
+      );
+    }
   });
 
   it("B-C06_RESULT_METADATA rejects hostile exact-shape and metadata mutations", () => {
@@ -1055,10 +1222,96 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
         inputKind: "DIGEST_BYTES"
       }
     );
+
+    const metadata = bytesOf("metadata");
+    const payload = bytesOf("payload");
+    const futureRecord = bindingRecord(
+      createFutureBindingIntegrity(metadata, payload)
+    );
+    expect(
+      verifyFutureBindingIntegrity(futureRecord, metadata, payload)
+    ).toStrictEqual({ ok: true, matchesExactBytes: true });
+    const mutatedMetadata = metadata.slice();
+    mutatedMetadata[mutatedMetadata.length - 1] =
+      mutatedMetadata[mutatedMetadata.length - 1]! ^ 0x01;
+    expectFailure(
+      verifyFutureBindingIntegrity(futureRecord, mutatedMetadata, payload),
+      {
+        code: "DIGEST_MISMATCH",
+        phase: "DIGEST_VERIFICATION",
+        inputKind: "DIGEST_BYTES"
+      }
+    );
+    const mutatedPayload = payload.slice();
+    mutatedPayload[mutatedPayload.length - 1] =
+      mutatedPayload[mutatedPayload.length - 1]! ^ 0x01;
+    expectFailure(
+      verifyFutureBindingIntegrity(futureRecord, metadata, mutatedPayload),
+      {
+        code: "DIGEST_MISMATCH",
+        phase: "DIGEST_VERIFICATION",
+        inputKind: "DIGEST_BYTES"
+      }
+    );
+    expectFailure(
+      verifyFutureBindingIntegrity(
+        withField(
+          futureRecord,
+          "bindingMetadataTlvByteLength",
+          futureRecord.bindingMetadataTlvByteLength + 1
+        ),
+        metadata,
+        payload
+      ),
+      {
+        code: "METADATA_LENGTH_MISMATCH",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "BINDING_METADATA"
+      }
+    );
+    expectFailure(
+      verifyFutureBindingIntegrity(
+        withField(futureRecord, "bindingVersion", "future"),
+        metadata,
+        payload
+      ),
+      {
+        code: "UNSUPPORTED_BINDING_VERSION",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "BINDING_METADATA"
+      }
+    );
   });
 
   it("B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads", () => {
     exerciseCompleteFailureMatrix();
+
+    const source = readFileSync(
+      new URL("./canonical-runtime-hash.ts", import.meta.url),
+      "utf8"
+    );
+    const directBody = source.slice(
+      source.indexOf("const verifyDirect = ("),
+      source.indexOf("export const verifyRawATlvIntegrity")
+    );
+    expect(directBody.indexOf("record.payloadByteLength")).toBeLessThan(
+      directBody.indexOf("buildPreimage(domain, admitted.bytes)")
+    );
+    const futureBody = source.slice(
+      source.indexOf("export const verifyFutureBindingIntegrity = (")
+    );
+    expect(
+      futureBody.indexOf("record.bindingMetadataTlvByteLength")
+    ).toBeLessThan(
+      futureBody.indexOf(
+        "buildBindingEnvelope(metadata.bytes, payload.bytes)"
+      )
+    );
+    expect(futureBody.indexOf("record.payloadByteLength")).toBeLessThan(
+      futureBody.indexOf(
+        'buildPreimage("FUTURE_BINDING_INTEGRITY", envelope.bytes)'
+      )
+    );
   });
 
   it("B-C09_HASH_NOT_AUTHORITY exposes integrity records rather than authority handles", () => {
