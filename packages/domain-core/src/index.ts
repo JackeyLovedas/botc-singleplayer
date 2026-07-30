@@ -3,6 +3,25 @@ export * from "./clockmaker.js";
 export * from "./mathematician.js";
 export * from "./canonical-data.js";
 export {
+  CANONICAL_RUNTIME_LIMITS,
+  CANONICAL_RUNTIME_SERIALIZATION_VERSION,
+  CANONICAL_RUNTIME_VALUE_VERSION,
+  captureCanonicalRuntimeValue,
+  serializeCanonicalRuntimeValue
+} from "./canonical-runtime-value.js";
+export type {
+  CanonicalRuntimeDiagnostic,
+  CanonicalRuntimeFailureCode,
+  CanonicalRuntimeFailurePhase,
+  CanonicalRuntimeLimitSummary,
+  CanonicalRuntimePathSegment,
+  CanonicalRuntimeResourceKind,
+  CanonicalRuntimeResourceMetrics,
+  CapturedCanonicalRuntimeValue,
+  CaptureCanonicalRuntimeValueResult,
+  SerializeCanonicalRuntimeValueResult
+} from "./canonical-runtime-value.js";
+export {
   FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION,
