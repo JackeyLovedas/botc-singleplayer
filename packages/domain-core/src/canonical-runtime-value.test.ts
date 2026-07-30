@@ -621,6 +621,9 @@ describe("canonical runtime capture and TLV foundation", () => {
     expect(hex(bytesOf("😀"))).toBe(
       "42 4F 54 43 43 52 56 2B 30 31 04 00 00 00 04 F0 9F 98 80"
     );
+  });
+
+  it("A-C03 rejects lone-surrogate strings and object keys with INVALID_UNICODE", () => {
     failure("\ud800", "INVALID_UNICODE");
     failure("\udc00", "INVALID_UNICODE");
     failure({ ["\ud800"]: null }, "INVALID_UNICODE");
@@ -688,20 +691,32 @@ describe("canonical runtime capture and TLV foundation", () => {
     expect(bytesOf([1, 2])).toStrictEqual(bytesOf([1, 2]));
   });
 
-  it("A-C12 sparse, keyed, out-of-range, and invalid-length arrays fail exactly", () => {
+  it("A-C12 sparse, keyed, boundary-keyed, and invalid arrays fail exactly", () => {
     failure(new Array(2), "SPARSE_ARRAY");
+
     const keyed = [1] as number[] & { extra?: boolean };
     keyed.extra = true;
     failure(keyed, "KEYED_ARRAY");
-    const outOfRange = [1] as number[] & Record<string, unknown>;
-    Object.defineProperty(outOfRange, "2", { enumerable: true, value: 2 });
-    failure(outOfRange, "SPARSE_ARRAY");
+
+    const boundaryKeyed = [1] as number[] & Record<string, unknown>;
+    Object.defineProperty(boundaryKeyed, "4294967295", {
+      configurable: true,
+      enumerable: true,
+      value: 2,
+      writable: true
+    });
+    expect(boundaryKeyed).toHaveLength(1);
+    expect(Object.hasOwn(boundaryKeyed, "4294967295")).toBe(true);
+    failure(boundaryKeyed, "KEYED_ARRAY");
+
     const invalidLength = [1];
     Object.defineProperty(invalidLength, "length", { writable: false });
     failure(invalidLength, "INVALID_ARRAY_LENGTH_DESCRIPTOR");
+
     const nonstandardPrototype = [1];
     Object.setPrototypeOf(nonstandardPrototype, null);
     failure(nonstandardPrototype, "NONPLAIN_OBJECT");
+
     const accessor = [1];
     Object.defineProperty(accessor, "0", { enumerable: true, get: () => 1 });
     failure(accessor, "ACCESSOR_PROPERTY");

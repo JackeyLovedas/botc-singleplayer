@@ -3,8 +3,8 @@
 ## Metadata
 
 - slice: `2B20B-P2F1R-A`
-- implementationStage: `INITIAL_LOCAL_IMPLEMENTATION`
-- implementationCorrectionCount: `0`
+- implementationStage: `IMPLEMENTATION_CORRECTION_1_LOCAL`
+- implementationCorrectionCount: `1`
 - designAuthority: `docs/architecture/2B20B-P2F1R-A-canonical-runtime-capture-tlv-design-round-1.md`
 - designAuthoritySha256: `b2b9098d5ace1ea53fbd5c6d40d8a8cbe012d449c42c2fc4d8fe5b180040108d`
 - sequencingAuthority: `docs/architecture/2B20B-P2F1R-A-design-release-sequencing-correction-v1.md`
@@ -12,11 +12,26 @@
 - designReleaseReview: `docs/architecture/2B20B-P2F1R-A-design-release-sequencing-correction-review-v1.md`
 - designReleaseVerdict: `RULE_DESIGN_PASS`
 - actualTestFile: `packages/domain-core/src/canonical-runtime-value.test.ts`
-- actualSemanticTestCount: `51`
+- actualSemanticTestCount: `52`
+- actualPrimaryTestReferenceCount: `52`
+- actualUniquePrimaryTestIdentityCount: `52`
+- primaryTestIdentityProof: `52_REFERENCES_EQUAL_52_UNIQUE_PRIMARY_IDENTITIES`
 - traceabilityCriterionCount: `15`
 - R1PrimarySet: `[]`
 - R2PrimarySet: `[]`
 - publicationEvidenceStatus: `PENDING_FUTURE_P2F1R_D`
+
+## Primary identity bijection
+
+- Physical `it(...)` declarations: `52`
+- Distinct physical test titles: `52`
+- `ActualTestTitle` primary references: `52`
+- Distinct primary referenced titles: `52`
+- Set difference between physical titles and primary referenced titles: `[]`
+- Duplicate primary bindings across criteria/layers: `[]`
+
+Each exact physical title is therefore referenced once by one criterion and
+inherits only that criterion's `ActualPrimaryLayer`.
 
 ## Actual bindings
 
@@ -76,13 +91,13 @@
 - ExpectedResult: `{ok:false}` with `UNSUPPORTED_TYPE`, `INVALID_NUMBER`, `UNSAFE_INTEGER`, `INVALID_UNICODE`, `SYMBOL_VALUE`, `NONPLAIN_OBJECT`, or `CYCLE`
 - SupportingAuthorityRequirement: closed value-version contract only
 - ActualTestFile: `packages/domain-core/src/canonical-runtime-value.test.ts`
-- ActualTestTitle: `A-C03 rejects undefined at root, record value, and array element`; `A-C03 classifies invalid and unsafe numbers exactly`; `A-C03 rejects bigint, symbol value, and function`; `A-C03 rejects class instances and boxed primitives`; `A-C03 rejects exotic built-ins, buffers, views, typed arrays, and Promise`; `A-C03 rejects direct and nested cycles`; `A-C09 emits exact UTF-8 for valid supplementary-plane pairs`
+- ActualTestTitle: `A-C03 rejects undefined at root, record value, and array element`; `A-C03 classifies invalid and unsafe numbers exactly`; `A-C03 rejects bigint, symbol value, and function`; `A-C03 rejects class instances and boxed primitives`; `A-C03 rejects exotic built-ins, buffers, views, typed arrays, and Promise`; `A-C03 rejects direct and nested cycles`; `A-C03 rejects lone-surrogate strings and object keys with INVALID_UNICODE`
 - ActualPrimaryLayer: `STRUCTURAL_VALIDATION`
 - ActualReachability: `R3`
 - ActualTrust: `T1`
 - SupportingAuthorityId: `NONE`
 - MechanismMatch: `PASS`
-- MainAssertion: every excluded runtime kind and both lone-surrogate forms return the frozen deterministic failure code without coercion or replacement
+- MainAssertion: every excluded runtime kind, lone-high string, lone-low string, and lone-surrogate object key returns the frozen deterministic failure code without coercion or replacement
 - ProductionEntry: `captureCanonicalRuntimeValue`
 - FaultMechanism: unsupported primitive, invalid number/string, nonplain object, or ancestor-cycle detection
 
@@ -214,9 +229,9 @@
 - ActualTrust: `T3`
 - SupportingAuthorityId: `NONE`
 - MechanismMatch: `PASS`
-- MainAssertion: exact UTF-8 output preserves supplementary scalar, newline, and normalization-form distinctions while T1 capture rejects lone surrogates
+- MainAssertion: exact UTF-8 output preserves the valid supplementary scalar, newline, and normalization-form distinctions
 - ProductionEntry: authenticated `serializeCanonicalRuntimeValue` setup exercising string encoding
-- FaultMechanism: none for pure output; lone-surrogate rejection is supporting T1 structural validation
+- FaultMechanism: none; exact deterministic pure backing-to-byte output
 
 ### A-C10_PURE_INTEGER
 
@@ -266,7 +281,7 @@
 
 - CriterionId: `A-C12_ARRAY_STRUCTURE`
 - RuleClaim: only dense standard arrays are captured and their order is preserved
-- CompletionCriterion: dense controls succeed in order; sparse, keyed, out-of-range, invalid-length, and accessor arrays fail exactly
+- CompletionCriterion: dense controls succeed in order; sparse, ordinary keyed, non-index boundary-keyed, invalid-length, nonstandard-prototype, and accessor arrays fail exactly
 - RequiredEvidenceMechanism: direct hostile array capture matrix with ordered controls
 - ExpectedReachability: `R3`
 - ExpectedTrust: `T1`
@@ -274,15 +289,15 @@
 - ExpectedResult: exact success or `SPARSE_ARRAY`, `KEYED_ARRAY`, `INVALID_ARRAY_LENGTH_DESCRIPTOR`, `ACCESSOR_PROPERTY`
 - SupportingAuthorityRequirement: no role or event tuple authority
 - ActualTestFile: `packages/domain-core/src/canonical-runtime-value.test.ts`
-- ActualTestTitle: `A-C12 dense array order is preserved and permutations differ`; `A-C12 sparse, keyed, out-of-range, and invalid-length arrays fail exactly`
+- ActualTestTitle: `A-C12 dense array order is preserved and permutations differ`; `A-C12 sparse, keyed, boundary-keyed, and invalid arrays fail exactly`
 - ActualPrimaryLayer: `STRUCTURAL_VALIDATION`
 - ActualReachability: `R3`
 - ActualTrust: `T1`
 - SupportingAuthorityId: `NONE`
 - MechanismMatch: `PASS`
-- MainAssertion: exact current-realm dense arrays preserve index order while every structural variant fails with its frozen code
+- MainAssertion: exact current-realm dense arrays preserve index order; a length-one array retains length one while owning non-index key `4294967295` and returns `KEYED_ARRAY`; sparse, ordinary keyed, invalid-length, nonstandard-prototype, and accessor variants retain separate exact-code coverage
 - ProductionEntry: `captureCanonicalRuntimeValue`
-- FaultMechanism: hole, extra/out-of-range key, nonstandard length descriptor, or accessor index
+- FaultMechanism: hole, ordinary extra key, non-index `4294967295` extra key, nonstandard length descriptor, nonstandard prototype, or accessor index
 
 ### A-C13_DIAGNOSTIC_STABILITY
 
