@@ -90,6 +90,573 @@ const withField = <T extends object>(
   replacement: unknown
 ): Record<string, unknown> => ({ ...value, [field]: replacement });
 
+type FailureMatrixEntry = {
+  readonly name: string;
+  readonly code: CanonicalRuntimeIntegrityFailure["code"];
+  readonly phase: CanonicalRuntimeIntegrityFailure["phase"];
+  readonly inputKind: CanonicalRuntimeIntegrityFailure["inputKind"];
+  readonly expectedFailClosedBehavior:
+    "RETURN_EXACT_FAILURE_NO_THROW_NO_PARTIAL_RESULT";
+  readonly invoke?: () => FailableResult;
+};
+
+const exerciseCompleteFailureMatrix = (): void => {
+  const bytes = bytesOf(null);
+  const record = directRecord(createRawATlvIntegrity(bytes));
+  const canonicalRecord = directRecord(createCanonicalValueIntegrity(bytes));
+  const bindingMetadata = bytesOf("metadata");
+  const boundPayload = bytesOf("payload");
+  const futureRecord = bindingRecord(
+    createFutureBindingIntegrity(bindingMetadata, boundPayload)
+  );
+  const entries: FailureMatrixEntry[] = [];
+  const addRuntime = (
+    name: string,
+    invoke: () => FailableResult,
+    code: CanonicalRuntimeIntegrityFailure["code"],
+    phase: CanonicalRuntimeIntegrityFailure["phase"],
+    inputKind: CanonicalRuntimeIntegrityFailure["inputKind"]
+  ): void => {
+    entries.push({
+      name,
+      code,
+      phase,
+      inputKind,
+      expectedFailClosedBehavior:
+        "RETURN_EXACT_FAILURE_NO_THROW_NO_PARTIAL_RESULT",
+      invoke
+    });
+  };
+  const addStatic = (
+    name: string,
+    code: CanonicalRuntimeIntegrityFailure["code"],
+    phase: CanonicalRuntimeIntegrityFailure["phase"],
+    inputKind: CanonicalRuntimeIntegrityFailure["inputKind"]
+  ): void => {
+    entries.push({
+      name,
+      code,
+      phase,
+      inputKind,
+      expectedFailClosedBehavior:
+        "RETURN_EXACT_FAILURE_NO_THROW_NO_PARTIAL_RESULT"
+    });
+  };
+  const withoutField = (source: object, field: string) => {
+    const result = { ...source } as Record<string, unknown>;
+    Reflect.deleteProperty(result, field);
+    return result;
+  };
+  const withDescriptor = (
+    source: object,
+    field: string,
+    descriptor: PropertyDescriptor
+  ) => {
+    const result = { ...source } as Record<string, unknown>;
+    Object.defineProperty(result, field, descriptor);
+    return result;
+  };
+
+  let byteTrapCalls = 0;
+  const laterBytes = new Proxy(new Uint8Array([1]), {
+    get: (target, property, receiver) => {
+      byteTrapCalls += 1;
+      return Reflect.get(target, property, receiver) as unknown;
+    }
+  });
+  let recordProxyTrapCalls = 0;
+  const proxyRecord = new Proxy(record, {
+    get: (target, property, receiver) => {
+      recordProxyTrapCalls += 1;
+      return Reflect.get(target, property, receiver) as unknown;
+    },
+    getPrototypeOf: (target) => {
+      recordProxyTrapCalls += 1;
+      return Reflect.getPrototypeOf(target);
+    },
+    ownKeys: (target) => {
+      recordProxyTrapCalls += 1;
+      return Reflect.ownKeys(target);
+    }
+  });
+  let accessorCalls = 0;
+  const accessorRecord = (
+    field: string,
+    value: unknown
+  ): Record<string, unknown> =>
+    withDescriptor(record, field, {
+      configurable: true,
+      enumerable: true,
+      get: () => {
+        accessorCalls += 1;
+        return value;
+      }
+    });
+
+  addRuntime(
+    "invalid raw TLV position",
+    () => createRawATlvIntegrity(null),
+    "INVALID_BYTE_INPUT",
+    "TLV_INPUT_ACCEPTANCE",
+    "TLV_BYTES"
+  );
+  addRuntime(
+    "invalid canonical-value TLV position",
+    () => createCanonicalValueIntegrity(null),
+    "INVALID_BYTE_INPUT",
+    "TLV_INPUT_ACCEPTANCE",
+    "TLV_BYTES"
+  );
+  addRuntime(
+    "invalid future metadata position",
+    () => createFutureBindingIntegrity(null, laterBytes),
+    "INVALID_BYTE_INPUT",
+    "TLV_INPUT_ACCEPTANCE",
+    "BINDING_METADATA"
+  );
+  addRuntime(
+    "invalid future bound-payload position",
+    () => createFutureBindingIntegrity(bindingMetadata, null),
+    "INVALID_BYTE_INPUT",
+    "TLV_INPUT_ACCEPTANCE",
+    "TLV_BYTES"
+  );
+  addRuntime(
+    "proxy TLV bytes",
+    () => createRawATlvIntegrity(laterBytes),
+    "PROXY_BYTE_INPUT",
+    "TLV_INPUT_ACCEPTANCE",
+    "TLV_BYTES"
+  );
+  addRuntime(
+    "proxy binding metadata",
+    () => createFutureBindingIntegrity(laterBytes, boundPayload),
+    "PROXY_BYTE_INPUT",
+    "TLV_INPUT_ACCEPTANCE",
+    "BINDING_METADATA"
+  );
+  addRuntime(
+    "wrong TLV view",
+    () => createCanonicalValueIntegrity(new Uint16Array(1)),
+    "WRONG_BYTE_VIEW",
+    "TLV_INPUT_ACCEPTANCE",
+    "TLV_BYTES"
+  );
+  addRuntime(
+    "wrong metadata view",
+    () => createFutureBindingIntegrity(new Uint16Array(1), boundPayload),
+    "WRONG_BYTE_VIEW",
+    "TLV_INPUT_ACCEPTANCE",
+    "BINDING_METADATA"
+  );
+  if (typeof SharedArrayBuffer !== "undefined") {
+    addRuntime(
+      "shared TLV backing",
+      () =>
+        createRawATlvIntegrity(new Uint8Array(new SharedArrayBuffer(1))),
+      "SHARED_BYTE_BUFFER",
+      "TLV_INPUT_ACCEPTANCE",
+      "TLV_BYTES"
+    );
+    addRuntime(
+      "shared metadata backing",
+      () =>
+        createFutureBindingIntegrity(
+          new Uint8Array(new SharedArrayBuffer(1)),
+          boundPayload
+        ),
+      "SHARED_BYTE_BUFFER",
+      "TLV_INPUT_ACCEPTANCE",
+      "BINDING_METADATA"
+    );
+  }
+  const detachedTlvBuffer = new ArrayBuffer(1);
+  const detachedTlv = new Uint8Array(detachedTlvBuffer);
+  structuredClone(detachedTlvBuffer, { transfer: [detachedTlvBuffer] });
+  const detachedMetadataBuffer = new ArrayBuffer(1);
+  const detachedMetadata = new Uint8Array(detachedMetadataBuffer);
+  structuredClone(detachedMetadataBuffer, {
+    transfer: [detachedMetadataBuffer]
+  });
+  addRuntime(
+    "detached TLV backing",
+    () => createRawATlvIntegrity(detachedTlv),
+    "DETACHED_BYTE_BUFFER",
+    "TLV_INPUT_ACCEPTANCE",
+    "TLV_BYTES"
+  );
+  addRuntime(
+    "detached metadata backing",
+    () => createFutureBindingIntegrity(detachedMetadata, boundPayload),
+    "DETACHED_BYTE_BUFFER",
+    "TLV_INPUT_ACCEPTANCE",
+    "BINDING_METADATA"
+  );
+  const oversized = new Uint8Array(
+    CANONICAL_RUNTIME_INTEGRITY_MAX_A_TLV_BYTES + 1
+  );
+  addRuntime(
+    "oversized TLV bytes",
+    () => createRawATlvIntegrity(oversized),
+    "BYTE_INPUT_TOO_LARGE",
+    "TLV_INPUT_ACCEPTANCE",
+    "TLV_BYTES"
+  );
+  addRuntime(
+    "oversized metadata bytes",
+    () => createFutureBindingIntegrity(oversized, boundPayload),
+    "BYTE_INPUT_TOO_LARGE",
+    "TLV_INPUT_ACCEPTANCE",
+    "BINDING_METADATA"
+  );
+  for (const inputKind of ["TLV_BYTES", "BINDING_METADATA"] as const) {
+    addStatic(
+      `${inputKind} copy allocation failure`,
+      "BYTE_COPY_ALLOCATION_FAILED",
+      "TLV_INPUT_ACCEPTANCE",
+      inputKind
+    );
+    addStatic(
+      `${inputKind} intrinsic copy failure`,
+      "BYTE_COPY_FAILED",
+      "TLV_INPUT_ACCEPTANCE",
+      inputKind
+    );
+  }
+
+  addRuntime(
+    "invalid stored record type",
+    () => verifyRawATlvIntegrity(null, bytes),
+    "INVALID_RECORD_TYPE",
+    "BINDING_METADATA_VALIDATION",
+    "BINDING_METADATA"
+  );
+  addRuntime(
+    "proxy stored record",
+    () => verifyRawATlvIntegrity(proxyRecord, bytes),
+    "PROXY_RECORD",
+    "BINDING_METADATA_VALIDATION",
+    "BINDING_METADATA"
+  );
+  addRuntime(
+    "nonplain stored record",
+    () =>
+      verifyRawATlvIntegrity(
+        Object.assign(Object.create({}), record),
+        bytes
+      ),
+    "NONPLAIN_RECORD",
+    "BINDING_METADATA_VALIDATION",
+    "BINDING_METADATA"
+  );
+  addRuntime(
+    "symbol stored-record key",
+    () =>
+      verifyRawATlvIntegrity(
+        { ...record, [Symbol("hostile")]: true },
+        bytes
+      ),
+    "SYMBOL_RECORD_KEY",
+    "BINDING_METADATA_VALIDATION",
+    "BINDING_METADATA"
+  );
+
+  const fieldContexts = [
+    {
+      field: "domain",
+      value: record.domain,
+      inputKind: "HASH_DOMAIN" as const
+    },
+    {
+      field: "digestHex",
+      value: record.digestHex,
+      inputKind: "DIGEST_TEXT" as const
+    },
+    {
+      field: "algorithm",
+      value: record.algorithm,
+      inputKind: "BINDING_METADATA" as const
+    }
+  ];
+  for (const context of fieldContexts) {
+    addRuntime(
+      `missing ${context.field}`,
+      () => verifyRawATlvIntegrity(withoutField(record, context.field), bytes),
+      "MISSING_RECORD_FIELD",
+      "BINDING_METADATA_VALIDATION",
+      context.inputKind
+    );
+    addRuntime(
+      `accessor ${context.field}`,
+      () =>
+        verifyRawATlvIntegrity(
+          accessorRecord(context.field, context.value),
+          bytes
+        ),
+      "ACCESSOR_RECORD_FIELD",
+      "BINDING_METADATA_VALIDATION",
+      context.inputKind
+    );
+    addRuntime(
+      `non-enumerable ${context.field}`,
+      () =>
+        verifyRawATlvIntegrity(
+          withDescriptor(record, context.field, {
+            configurable: true,
+            enumerable: false,
+            value: context.value
+          }),
+          bytes
+        ),
+      "NONENUMERABLE_RECORD_FIELD",
+      "BINDING_METADATA_VALIDATION",
+      context.inputKind
+    );
+    addRuntime(
+      `wrong field type ${context.field}`,
+      () => verifyRawATlvIntegrity(withField(record, context.field, 1), bytes),
+      "INVALID_RECORD_FIELD_TYPE",
+      "BINDING_METADATA_VALIDATION",
+      context.inputKind
+    );
+  }
+  addRuntime(
+    "extra stored-record field",
+    () => verifyRawATlvIntegrity({ ...record, extra: true }, bytes),
+    "EXTRA_RECORD_FIELD",
+    "BINDING_METADATA_VALIDATION",
+    "BINDING_METADATA"
+  );
+  addRuntime(
+    "unsupported domain",
+    () => verifyRawATlvIntegrity(withField(record, "domain", "UNKNOWN"), bytes),
+    "UNSUPPORTED_DOMAIN",
+    "BINDING_METADATA_VALIDATION",
+    "HASH_DOMAIN"
+  );
+  addRuntime(
+    "supported but mismatched domain",
+    () => verifyRawATlvIntegrity(canonicalRecord, bytes),
+    "DOMAIN_MISMATCH",
+    "BINDING_METADATA_VALIDATION",
+    "HASH_DOMAIN"
+  );
+  const versionCases = [
+    {
+      name: "algorithm",
+      field: "algorithm",
+      value: "SHA-1",
+      code: "UNSUPPORTED_ALGORITHM" as const
+    },
+    {
+      name: "hash protocol",
+      field: "hashProtocolVersion",
+      value: "v2",
+      code: "UNSUPPORTED_HASH_PROTOCOL_VERSION" as const
+    },
+    {
+      name: "A value",
+      field: "canonicalRuntimeValueVersion",
+      value: "v2",
+      code: "UNSUPPORTED_CANONICAL_RUNTIME_VALUE_VERSION" as const
+    },
+    {
+      name: "A serialization",
+      field: "canonicalRuntimeSerializationVersion",
+      value: "v2",
+      code: "UNSUPPORTED_CANONICAL_RUNTIME_SERIALIZATION_VERSION" as const
+    }
+  ];
+  for (const versionCase of versionCases) {
+    addRuntime(
+      `unsupported ${versionCase.name}`,
+      () =>
+        verifyRawATlvIntegrity(
+          withField(record, versionCase.field, versionCase.value),
+          bytes
+        ),
+      versionCase.code,
+      "BINDING_METADATA_VALIDATION",
+      "BINDING_METADATA"
+    );
+  }
+  addRuntime(
+    "unsupported future-binding version",
+    () =>
+      verifyFutureBindingIntegrity(
+        withField(futureRecord, "bindingVersion", "v2"),
+        bindingMetadata,
+        boundPayload
+      ),
+    "UNSUPPORTED_BINDING_VERSION",
+    "BINDING_METADATA_VALIDATION",
+    "BINDING_METADATA"
+  );
+  addRuntime(
+    "invalid metadata length",
+    () =>
+      verifyRawATlvIntegrity(
+        withField(record, "payloadByteLength", -1),
+        bytes
+      ),
+    "INVALID_METADATA_LENGTH",
+    "BINDING_METADATA_VALIDATION",
+    "BINDING_METADATA"
+  );
+  addRuntime(
+    "metadata length mismatch",
+    () =>
+      verifyRawATlvIntegrity(
+        withField(record, "payloadByteLength", record.payloadByteLength + 1),
+        bytes
+      ),
+    "METADATA_LENGTH_MISMATCH",
+    "BINDING_METADATA_VALIDATION",
+    "BINDING_METADATA"
+  );
+  addRuntime(
+    "invalid digest encoding before byte admission",
+    () =>
+      verifyRawATlvIntegrity(
+        withField(record, "digestEncoding", "bad"),
+        laterBytes
+      ),
+    "INVALID_DIGEST_ENCODING",
+    "BINDING_METADATA_VALIDATION",
+    "DIGEST_TEXT"
+  );
+  addRuntime(
+    "invalid digest length",
+    () =>
+      verifyRawATlvIntegrity(
+        withField(record, "digestHex", record.digestHex.slice(1)),
+        bytes
+      ),
+    "INVALID_DIGEST_LENGTH",
+    "BINDING_METADATA_VALIDATION",
+    "DIGEST_TEXT"
+  );
+  addRuntime(
+    "invalid digest character",
+    () =>
+      verifyRawATlvIntegrity(
+        withField(record, "digestHex", `g${record.digestHex.slice(1)}`),
+        bytes
+      ),
+    "INVALID_DIGEST_HEX",
+    "BINDING_METADATA_VALIDATION",
+    "DIGEST_TEXT"
+  );
+  addStatic(
+    "binding-envelope arithmetic overflow",
+    "ARITHMETIC_OVERFLOW",
+    "HASH_PREIMAGE_BUILD",
+    "BINDING_METADATA"
+  );
+  addStatic(
+    "outer-frame arithmetic overflow",
+    "ARITHMETIC_OVERFLOW",
+    "HASH_PREIMAGE_BUILD",
+    "HASH_DOMAIN"
+  );
+  addStatic(
+    "binding-envelope allocation failure",
+    "BINDING_ALLOCATION_FAILED",
+    "HASH_PREIMAGE_BUILD",
+    "BINDING_METADATA"
+  );
+  addStatic(
+    "outer-frame allocation failure",
+    "FRAME_ALLOCATION_FAILED",
+    "HASH_PREIMAGE_BUILD",
+    "HASH_DOMAIN"
+  );
+  addStatic(
+    "internal SHA-256 failure",
+    "INTERNAL_HASH_FAILURE",
+    "DIGEST_COMPUTATION",
+    "DIGEST_BYTES"
+  );
+  addRuntime(
+    "validly encoded but mismatched digest",
+    () =>
+      verifyRawATlvIntegrity(
+        withField(
+          record,
+          "digestHex",
+          `${record.digestHex[0] === "0" ? "1" : "0"}${record.digestHex.slice(1)}`
+        ),
+        bytes
+      ),
+    "DIGEST_MISMATCH",
+    "DIGEST_VERIFICATION",
+    "DIGEST_BYTES"
+  );
+
+  const source = readFileSync(
+    new URL("./canonical-runtime-hash.ts", import.meta.url),
+    "utf8"
+  );
+  for (const entry of entries) {
+    expect(entry.expectedFailClosedBehavior, entry.name).toBe(
+      "RETURN_EXACT_FAILURE_NO_THROW_NO_PARTIAL_RESULT"
+    );
+    if (entry.invoke === undefined) {
+      expect(source, entry.name).toContain(`"${entry.code}"`);
+    } else {
+      expectFailure(entry.invoke(), {
+        code: entry.code,
+        phase: entry.phase,
+        inputKind: entry.inputKind
+      });
+    }
+  }
+
+  const allFailureCodes: readonly CanonicalRuntimeIntegrityFailure["code"][] = [
+    "INVALID_BYTE_INPUT",
+    "PROXY_BYTE_INPUT",
+    "WRONG_BYTE_VIEW",
+    "SHARED_BYTE_BUFFER",
+    "DETACHED_BYTE_BUFFER",
+    "BYTE_INPUT_TOO_LARGE",
+    "BYTE_COPY_ALLOCATION_FAILED",
+    "BYTE_COPY_FAILED",
+    "INVALID_RECORD_TYPE",
+    "PROXY_RECORD",
+    "NONPLAIN_RECORD",
+    "SYMBOL_RECORD_KEY",
+    "MISSING_RECORD_FIELD",
+    "EXTRA_RECORD_FIELD",
+    "ACCESSOR_RECORD_FIELD",
+    "NONENUMERABLE_RECORD_FIELD",
+    "INVALID_RECORD_FIELD_TYPE",
+    "UNSUPPORTED_DOMAIN",
+    "DOMAIN_MISMATCH",
+    "UNSUPPORTED_ALGORITHM",
+    "UNSUPPORTED_HASH_PROTOCOL_VERSION",
+    "UNSUPPORTED_CANONICAL_RUNTIME_VALUE_VERSION",
+    "UNSUPPORTED_CANONICAL_RUNTIME_SERIALIZATION_VERSION",
+    "UNSUPPORTED_BINDING_VERSION",
+    "INVALID_METADATA_LENGTH",
+    "METADATA_LENGTH_MISMATCH",
+    "INVALID_DIGEST_ENCODING",
+    "INVALID_DIGEST_LENGTH",
+    "INVALID_DIGEST_HEX",
+    "ARITHMETIC_OVERFLOW",
+    "BINDING_ALLOCATION_FAILED",
+    "FRAME_ALLOCATION_FAILED",
+    "INTERNAL_HASH_FAILURE",
+    "DIGEST_MISMATCH"
+  ];
+  expect(new Set(entries.map((entry) => entry.code))).toStrictEqual(
+    new Set(allFailureCodes)
+  );
+  expect(allFailureCodes).toHaveLength(34);
+  expect(recordProxyTrapCalls).toBe(0);
+  expect(accessorCalls).toBe(0);
+  expect(byteTrapCalls).toBe(0);
+};
+
 describe("P2F1R-B deterministic integrity hash foundation", () => {
   it("B-C01_RAW_COPY_BOUNDARY admits exact Uint8Array bytes and rejects hostile views", () => {
     const source = bytesOf({ a: null });
@@ -119,6 +686,45 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
       phase: "TLV_INPUT_ACCEPTANCE",
       inputKind: "TLV_BYTES"
     });
+    for (const view of [
+      new Int8Array(1),
+      new Int16Array(1),
+      new Uint16Array(1),
+      new Float32Array(1)
+    ]) {
+      Object.setPrototypeOf(view, Uint8Array.prototype);
+      expectFailure(createRawATlvIntegrity(view), {
+        code: "WRONG_BYTE_VIEW",
+        phase: "TLV_INPUT_ACCEPTANCE",
+        inputKind: "TLV_BYTES"
+      });
+    }
+
+    let conversionCalls = 0;
+    const coercionHostile = {
+      get byteLength() {
+        conversionCalls += 1;
+        return 1;
+      },
+      [Symbol.iterator]() {
+        conversionCalls += 1;
+        return [1][Symbol.iterator]();
+      },
+      valueOf() {
+        conversionCalls += 1;
+        return 1;
+      },
+      toString() {
+        conversionCalls += 1;
+        return "1";
+      }
+    };
+    expectFailure(createRawATlvIntegrity(coercionHostile), {
+      code: "WRONG_BYTE_VIEW",
+      phase: "TLV_INPUT_ACCEPTANCE",
+      inputKind: "TLV_BYTES"
+    });
+    expect(conversionCalls).toBe(0);
 
     const traps = { getPrototypeOf: 0, get: 0, ownKeys: 0 };
     const proxy = new Proxy(new Uint8Array([1]), {
@@ -159,6 +765,14 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
           inputKind: "TLV_BYTES"
         }
       );
+      const spoofedSharedBuffer = new SharedArrayBuffer(1);
+      const spoofedSharedView = new Uint8Array(spoofedSharedBuffer);
+      Object.setPrototypeOf(spoofedSharedBuffer, ArrayBuffer.prototype);
+      expectFailure(createRawATlvIntegrity(spoofedSharedView), {
+        code: "SHARED_BYTE_BUFFER",
+        phase: "TLV_INPUT_ACCEPTANCE",
+        inputKind: "TLV_BYTES"
+      });
     }
 
     const detachedBuffer = new ArrayBuffer(1);
@@ -180,6 +794,39 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
         inputKind: "TLV_BYTES"
       }
     );
+
+    const uint8IteratorDescriptor = Object.getOwnPropertyDescriptor(
+      Uint8Array.prototype,
+      Symbol.iterator
+    );
+    let iteratorCalls = 0;
+    const hostileIterator = () => {
+      iteratorCalls += 1;
+      throw new Error("HOSTILE_ITERATOR_EXECUTED");
+    };
+    try {
+      Object.defineProperty(Uint8Array.prototype, Symbol.iterator, {
+        configurable: true,
+        value: hostileIterator
+      });
+      const iteratorSafeRecord = directRecord(
+        createRawATlvIntegrity(new Uint8Array([1, 2, 3]))
+      );
+      expect(
+        verifyRawATlvIntegrity(iteratorSafeRecord, new Uint8Array([1, 2, 3]))
+      ).toStrictEqual({ ok: true, matchesExactBytes: true });
+      expect(iteratorCalls).toBe(0);
+    } finally {
+      if (uint8IteratorDescriptor === undefined) {
+        Reflect.deleteProperty(Uint8Array.prototype, Symbol.iterator);
+      } else {
+        Object.defineProperty(
+          Uint8Array.prototype,
+          Symbol.iterator,
+          uint8IteratorDescriptor
+        );
+      }
+    }
   });
 
   it("B-C02_RAW_TLV_HASH matches exact raw known-answer vectors", () => {
@@ -411,32 +1058,7 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
   });
 
   it("B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads", () => {
-    const bytes = bytesOf(null);
-    const record = directRecord(createRawATlvIntegrity(bytes));
-    let byteTrapCalls = 0;
-    const laterBytes = new Proxy(new Uint8Array([1]), {
-      get: (target, property, receiver) => {
-        byteTrapCalls += 1;
-        return Reflect.get(target, property, receiver) as unknown;
-      }
-    });
-    expectFailure(
-      verifyRawATlvIntegrity(withField(record, "digestEncoding", "bad"), laterBytes),
-      {
-        code: "INVALID_DIGEST_ENCODING",
-        phase: "BINDING_METADATA_VALIDATION",
-        inputKind: "DIGEST_TEXT"
-      }
-    );
-    expect(byteTrapCalls).toBe(0);
-
-    const invalidBinding = createFutureBindingIntegrity(null, laterBytes);
-    expectFailure(invalidBinding, {
-      code: "INVALID_BYTE_INPUT",
-      phase: "TLV_INPUT_ACCEPTANCE",
-      inputKind: "BINDING_METADATA"
-    });
-    expect(byteTrapCalls).toBe(0);
+    exerciseCompleteFailureMatrix();
   });
 
   it("B-C09_HASH_NOT_AUTHORITY exposes integrity records rather than authority handles", () => {

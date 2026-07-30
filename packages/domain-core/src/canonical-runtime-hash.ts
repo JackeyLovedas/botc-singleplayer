@@ -224,12 +224,58 @@ const FUTURE_KEYS = Object.freeze([
   "digestHex"
 ] as const);
 
+const DIRECT_STRING_FIELDS = Object.freeze([
+  "domain",
+  "hashProtocolVersion",
+  "algorithm",
+  "canonicalRuntimeValueVersion",
+  "canonicalRuntimeSerializationVersion",
+  "digestEncoding",
+  "digestHex"
+] as const);
+
+const FUTURE_STRING_FIELDS = Object.freeze([
+  "domain",
+  "hashProtocolVersion",
+  "algorithm",
+  "canonicalRuntimeValueVersion",
+  "canonicalRuntimeSerializationVersion",
+  "bindingVersion",
+  "digestEncoding",
+  "digestHex"
+] as const);
+
+const DIRECT_LENGTH_FIELDS = Object.freeze([
+  "payloadByteLength",
+  "framedPreimageByteLength"
+] as const);
+
+const FUTURE_LENGTH_FIELDS = Object.freeze([
+  "bindingMetadataTlvByteLength",
+  "boundPayloadTlvByteLength",
+  "payloadByteLength",
+  "framedPreimageByteLength"
+] as const);
+
 const getPrototypeOf = Object.getPrototypeOf;
+const objectCreate = Object.create;
+const freeze = Object.freeze;
+const isArray = Array.isArray;
+const isSafeInteger = Number.isSafeInteger;
+const maxSafeInteger = Number.MAX_SAFE_INTEGER;
 const ownKeys = Reflect.ownKeys;
 const getOwnPropertyDescriptor = Reflect.getOwnPropertyDescriptor;
+const reflectApply = Reflect.apply;
 const isProxy = utilTypes.isProxy;
+const isUint8Array = utilTypes.isUint8Array;
+const isSharedArrayBuffer = utilTypes.isSharedArrayBuffer;
+const isArrayBuffer = utilTypes.isArrayBuffer;
 const isBuffer = Buffer.isBuffer.bind(Buffer);
-const typedArrayPrototype = getPrototypeOf(Uint8Array.prototype) as object;
+const Uint8ArrayConstructor = Uint8Array;
+const uint8ArrayPrototype = Uint8Array.prototype;
+const arrayBufferPrototype = ArrayBuffer.prototype;
+const plainObjectPrototype = Object.prototype;
+const typedArrayPrototype = getPrototypeOf(uint8ArrayPrototype) as object;
 const typedArrayBufferGetter = getOwnPropertyDescriptor(
   typedArrayPrototype,
   "buffer"
@@ -248,6 +294,19 @@ const typedArraySet = getOwnPropertyDescriptor(
 )?.value as
   | ((this: Uint8Array, source: ArrayLike<number>, offset?: number) => void)
   | undefined;
+const stringCharCodeAt = getOwnPropertyDescriptor(
+  String.prototype,
+  "charCodeAt"
+)?.value as (this: string, index: number) => number;
+const hashProbe = createHash("sha256");
+const hashPrototype = getPrototypeOf(hashProbe) as object;
+const hashUpdate = getOwnPropertyDescriptor(hashPrototype, "update")?.value as (
+  this: typeof hashProbe,
+  data: Uint8Array
+) => typeof hashProbe;
+const hashDigest = getOwnPropertyDescriptor(hashPrototype, "digest")?.value as (
+  this: typeof hashProbe
+) => Buffer;
 
 const failure = (
   code: CanonicalRuntimeIntegrityFailureCode,
@@ -255,7 +314,7 @@ const failure = (
   inputKind: CanonicalRuntimeIntegrityFailureInputKind
 ): FailureResult => ({
   ok: false,
-  failure: Object.freeze({ code, phase, inputKind })
+  failure: freeze({ code, phase, inputKind })
 });
 
 const safeIsProxy = (value: object): boolean | undefined => {
@@ -280,7 +339,11 @@ const admitBytes = (
   }
 
   try {
-    if (isBuffer(candidate) || getPrototypeOf(candidate) !== Uint8Array.prototype) {
+    if (
+      isBuffer(candidate) ||
+      !isUint8Array(candidate) ||
+      getPrototypeOf(candidate) !== uint8ArrayPrototype
+    ) {
       return failure("WRONG_BYTE_VIEW", "TLV_INPUT_ACCEPTANCE", inputKind);
     }
   } catch {
@@ -299,13 +362,17 @@ const admitBytes = (
   let byteOffset: number;
   let byteLength: number;
   try {
-    buffer = Reflect.apply(typedArrayBufferGetter, candidate, []) as ArrayBufferLike;
-    byteOffset = Reflect.apply(
+    buffer = reflectApply(
+      typedArrayBufferGetter,
+      candidate,
+      []
+    ) as ArrayBufferLike;
+    byteOffset = reflectApply(
       typedArrayByteOffsetGetter,
       candidate,
       []
     ) as number;
-    byteLength = Reflect.apply(
+    byteLength = reflectApply(
       typedArrayByteLengthGetter,
       candidate,
       []
@@ -314,12 +381,15 @@ const admitBytes = (
     return failure("WRONG_BYTE_VIEW", "TLV_INPUT_ACCEPTANCE", inputKind);
   }
 
-  if (typeof SharedArrayBuffer !== "undefined" && buffer instanceof SharedArrayBuffer) {
+  if (isSharedArrayBuffer(buffer)) {
     return failure("SHARED_BYTE_BUFFER", "TLV_INPUT_ACCEPTANCE", inputKind);
   }
 
   try {
-    if (getPrototypeOf(buffer) !== ArrayBuffer.prototype) {
+    if (
+      !isArrayBuffer(buffer) ||
+      getPrototypeOf(buffer) !== arrayBufferPrototype
+    ) {
       return failure("WRONG_BYTE_VIEW", "TLV_INPUT_ACCEPTANCE", inputKind);
     }
   } catch {
@@ -328,7 +398,11 @@ const admitBytes = (
 
   let source: Uint8Array;
   try {
-    source = new Uint8Array(buffer as ArrayBuffer, byteOffset, byteLength);
+    source = new Uint8ArrayConstructor(
+      buffer,
+      byteOffset,
+      byteLength
+    );
   } catch {
     return failure("DETACHED_BYTE_BUFFER", "TLV_INPUT_ACCEPTANCE", inputKind);
   }
@@ -339,7 +413,7 @@ const admitBytes = (
 
   let copy: Uint8Array;
   try {
-    copy = new Uint8Array(byteLength);
+    copy = new Uint8ArrayConstructor(byteLength);
   } catch {
     return failure(
       "BYTE_COPY_ALLOCATION_FAILED",
@@ -352,7 +426,7 @@ const admitBytes = (
     return failure("BYTE_COPY_FAILED", "TLV_INPUT_ACCEPTANCE", inputKind);
   }
   try {
-    Reflect.apply(typedArraySet, copy, [source]);
+    reflectApply(typedArraySet, copy, [source]);
   } catch {
     return failure("BYTE_COPY_FAILED", "TLV_INPUT_ACCEPTANCE", inputKind);
   }
@@ -365,8 +439,13 @@ const checkedSum = (
   inputKind: "BINDING_METADATA" | "HASH_DOMAIN"
 ): number | FailureResult => {
   let total = 0;
-  for (const value of values) {
-    if (!Number.isSafeInteger(value) || value < 0 || total > Number.MAX_SAFE_INTEGER - value) {
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index]!;
+    if (
+      !isSafeInteger(value) ||
+      value < 0 ||
+      total > maxSafeInteger - value
+    ) {
       return failure("ARITHMETIC_OVERFLOW", "HASH_PREIMAGE_BUILD", inputKind);
     }
     total += value;
@@ -399,7 +478,7 @@ const writeBytes = (
   if (typedArraySet === undefined) {
     throw new TypeError("typed array intrinsic unavailable");
   }
-  Reflect.apply(typedArraySet, target, [value, offset]);
+  reflectApply(typedArraySet, target, [value, offset]);
   return offset + value.length;
 };
 
@@ -431,7 +510,7 @@ const buildBindingEnvelope = (
 
   let bytes: Uint8Array;
   try {
-    bytes = new Uint8Array(total);
+    bytes = new Uint8ArrayConstructor(total);
   } catch {
     return failure(
       "BINDING_ALLOCATION_FAILED",
@@ -494,7 +573,7 @@ const buildPreimage = (
 
   let bytes: Uint8Array;
   try {
-    bytes = new Uint8Array(total);
+    bytes = new Uint8ArrayConstructor(total);
   } catch {
     return failure(
       "FRAME_ALLOCATION_FAILED",
@@ -535,12 +614,14 @@ const hexAlphabet = "0123456789abcdef";
 const digestPreimage = (preimage: Uint8Array): DigestResult => {
   let output: Uint8Array;
   try {
-    const digest = createHash("sha256").update(preimage).digest();
-    output = new Uint8Array(digest.length);
+    const hash = createHash("sha256");
+    reflectApply(hashUpdate, hash, [preimage]);
+    const digest = reflectApply(hashDigest, hash, []);
+    output = new Uint8ArrayConstructor(digest.length);
     if (typedArraySet === undefined) {
       throw new TypeError("typed array intrinsic unavailable");
     }
-    Reflect.apply(typedArraySet, output, [digest]);
+    reflectApply(typedArraySet, output, [digest]);
   } catch {
     return failure(
       "INTERNAL_HASH_FAILURE",
@@ -556,18 +637,21 @@ const digestPreimage = (preimage: Uint8Array): DigestResult => {
     );
   }
   let hex = "";
-  for (const byte of output) {
-    hex +=
-      hexAlphabet.charAt(byte >>> 4) +
-      hexAlphabet.charAt(byte & 0x0f);
+  for (let index = 0; index < output.length; index += 1) {
+    const byte = output[index]!;
+    hex += hexAlphabet[byte >>> 4]! + hexAlphabet[byte & 0x0f]!;
   }
   return { ok: true, bytes: output, hex };
 };
 
 const decodeHex = (value: string): Uint8Array => {
-  const bytes = new Uint8Array(32);
+  const bytes = new Uint8ArrayConstructor(32);
   for (let index = 0; index < bytes.length; index += 1) {
-    bytes[index] = Number.parseInt(value.slice(index * 2, index * 2 + 2), 16);
+    const high = reflectApply(stringCharCodeAt, value, [index * 2]);
+    const low = reflectApply(stringCharCodeAt, value, [index * 2 + 1]);
+    bytes[index] =
+      (high <= 0x39 ? high - 0x30 : high - 0x61 + 10) * 16 +
+      (low <= 0x39 ? low - 0x30 : low - 0x61 + 10);
   }
   return bytes;
 };
@@ -606,9 +690,11 @@ const recordFailure = (
   failure(code, "BINDING_METADATA_VALIDATION", fieldInputKind(field));
 
 const compareCodeUnits = (left: string, right: string): number => {
-  const limit = Math.min(left.length, right.length);
+  const limit = left.length < right.length ? left.length : right.length;
   for (let index = 0; index < limit; index += 1) {
-    const difference = left.charCodeAt(index) - right.charCodeAt(index);
+    const difference =
+      reflectApply(stringCharCodeAt, left, [index]) -
+      reflectApply(stringCharCodeAt, right, [index]);
     if (difference !== 0) {
       return difference < 0 ? -1 : 1;
     }
@@ -622,6 +708,31 @@ const isSupportedDomain = (
   value === "RAW_A_TLV_INTEGRITY" ||
   value === "CANONICAL_VALUE_INTEGRITY" ||
   value === "FUTURE_BINDING_INTEGRITY";
+
+const findDescriptor = (
+  keys: readonly PropertyKey[],
+  descriptors: readonly PropertyDescriptor[],
+  field: string
+): PropertyDescriptor | undefined => {
+  for (let index = 0; index < keys.length; index += 1) {
+    if (keys[index] === field) {
+      return descriptors[index];
+    }
+  }
+  return undefined;
+};
+
+const containsExpectedKey = (
+  expectedKeys: readonly string[],
+  field: string
+): boolean => {
+  for (let index = 0; index < expectedKeys.length; index += 1) {
+    if (expectedKeys[index] === field) {
+      return true;
+    }
+  }
+  return false;
+};
 
 const admitRecord = (
   candidate: unknown,
@@ -645,8 +756,8 @@ const admitRecord = (
 
   try {
     if (
-      Array.isArray(candidate) ||
-      (getPrototypeOf(candidate) !== Object.prototype &&
+      isArray(candidate) ||
+      (getPrototypeOf(candidate) !== plainObjectPrototype &&
         getPrototypeOf(candidate) !== null)
     ) {
       return failure(
@@ -664,17 +775,19 @@ const admitRecord = (
   }
 
   let keys: readonly PropertyKey[];
-  const descriptors = new Map<string, PropertyDescriptor>();
+  let descriptors: readonly PropertyDescriptor[];
   try {
     keys = ownKeys(candidate);
-    if (keys.some((key) => typeof key === "symbol")) {
-      return failure(
-        "SYMBOL_RECORD_KEY",
-        "BINDING_METADATA_VALIDATION",
-        "BINDING_METADATA"
-      );
-    }
-    for (const key of keys as readonly string[]) {
+    const capturedDescriptors: PropertyDescriptor[] = [];
+    for (let index = 0; index < keys.length; index += 1) {
+      const key = keys[index]!;
+      if (typeof key === "symbol") {
+        return failure(
+          "SYMBOL_RECORD_KEY",
+          "BINDING_METADATA_VALIDATION",
+          "BINDING_METADATA"
+        );
+      }
       const descriptor = getOwnPropertyDescriptor(candidate, key);
       if (descriptor === undefined) {
         return failure(
@@ -683,8 +796,9 @@ const admitRecord = (
           "BINDING_METADATA"
         );
       }
-      descriptors.set(key, descriptor);
+      capturedDescriptors[index] = descriptor;
     }
+    descriptors = capturedDescriptors;
   } catch {
     return failure(
       "INVALID_RECORD_TYPE",
@@ -693,7 +807,7 @@ const admitRecord = (
     );
   }
 
-  const domainDescriptor = descriptors.get("domain");
+  const domainDescriptor = findDescriptor(keys, descriptors, "domain");
   if (domainDescriptor === undefined) {
     return recordFailure("MISSING_RECORD_FIELD", "domain");
   }
@@ -723,59 +837,64 @@ const admitRecord = (
 
   const expectedKeys =
     expectedDomain === "FUTURE_BINDING_INTEGRITY" ? FUTURE_KEYS : DIRECT_KEYS;
-  for (const key of expectedKeys) {
-    if (!descriptors.has(key)) {
+  for (let index = 0; index < expectedKeys.length; index += 1) {
+    const key = expectedKeys[index]!;
+    if (findDescriptor(keys, descriptors, key) === undefined) {
       return recordFailure("MISSING_RECORD_FIELD", key);
     }
   }
-  const expectedSet = new Set<string>(expectedKeys);
-  const extra = (keys as readonly string[])
-    .filter((key) => !expectedSet.has(key))
-    .sort(compareCodeUnits);
-  if (extra.length > 0) {
+  let firstExtra: string | undefined;
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index]!;
+    if (
+      typeof key === "string" &&
+      !containsExpectedKey(expectedKeys, key) &&
+      (firstExtra === undefined || compareCodeUnits(key, firstExtra) < 0)
+    ) {
+      firstExtra = key;
+    }
+  }
+  if (firstExtra !== undefined) {
     return failure(
       "EXTRA_RECORD_FIELD",
       "BINDING_METADATA_VALIDATION",
       "BINDING_METADATA"
     );
   }
-  for (const key of expectedKeys) {
-    if (!("value" in descriptors.get(key)!)) {
+  for (let index = 0; index < expectedKeys.length; index += 1) {
+    const key = expectedKeys[index]!;
+    if (!("value" in findDescriptor(keys, descriptors, key)!)) {
       return recordFailure("ACCESSOR_RECORD_FIELD", key);
     }
   }
-  for (const key of expectedKeys) {
-    if (descriptors.get(key)!.enumerable !== true) {
+  for (let index = 0; index < expectedKeys.length; index += 1) {
+    const key = expectedKeys[index]!;
+    if (findDescriptor(keys, descriptors, key)!.enumerable !== true) {
       return recordFailure("NONENUMERABLE_RECORD_FIELD", key);
     }
   }
 
-  const values = Object.fromEntries(
-    expectedKeys.map((key) => [key, descriptors.get(key)!.value])
-  ) as Record<string, unknown>;
-  const stringFields = [
-    "domain",
-    "hashProtocolVersion",
-    "algorithm",
-    "canonicalRuntimeValueVersion",
-    "canonicalRuntimeSerializationVersion",
-    ...(expectedDomain === "FUTURE_BINDING_INTEGRITY" ? ["bindingVersion"] : []),
-    "digestEncoding",
-    "digestHex"
-  ];
-  for (const field of stringFields) {
+  const values = objectCreate(null) as Record<string, unknown>;
+  for (let index = 0; index < expectedKeys.length; index += 1) {
+    const key = expectedKeys[index]!;
+    values[key] = findDescriptor(keys, descriptors, key)!.value;
+  }
+  const stringFields =
+    expectedDomain === "FUTURE_BINDING_INTEGRITY"
+      ? FUTURE_STRING_FIELDS
+      : DIRECT_STRING_FIELDS;
+  for (let index = 0; index < stringFields.length; index += 1) {
+    const field = stringFields[index]!;
     if (typeof values[field] !== "string") {
       return recordFailure("INVALID_RECORD_FIELD_TYPE", field);
     }
   }
-  const lengthFields = [
-    ...(expectedDomain === "FUTURE_BINDING_INTEGRITY"
-      ? ["bindingMetadataTlvByteLength", "boundPayloadTlvByteLength"]
-      : []),
-    "payloadByteLength",
-    "framedPreimageByteLength"
-  ];
-  for (const field of lengthFields) {
+  const lengthFields =
+    expectedDomain === "FUTURE_BINDING_INTEGRITY"
+      ? FUTURE_LENGTH_FIELDS
+      : DIRECT_LENGTH_FIELDS;
+  for (let index = 0; index < lengthFields.length; index += 1) {
+    const field = lengthFields[index]!;
     if (typeof values[field] !== "number") {
       return recordFailure("INVALID_RECORD_FIELD_TYPE", field);
     }
@@ -822,9 +941,10 @@ const admitRecord = (
       "BINDING_METADATA"
     );
   }
-  for (const field of lengthFields) {
+  for (let index = 0; index < lengthFields.length; index += 1) {
+    const field = lengthFields[index]!;
     const value = values[field] as number;
-    if (!Number.isSafeInteger(value) || value < 0) {
+    if (!isSafeInteger(value) || value < 0) {
       return failure(
         "INVALID_METADATA_LENGTH",
         "BINDING_METADATA_VALIDATION",
@@ -848,7 +968,7 @@ const admitRecord = (
     );
   }
   for (let index = 0; index < digestHex.length; index += 1) {
-    const code = digestHex.charCodeAt(index);
+    const code = reflectApply(stringCharCodeAt, digestHex, [index]);
     if (
       !(
         (code >= 0x30 && code <= 0x39) ||
@@ -863,7 +983,7 @@ const admitRecord = (
     }
   }
 
-  return { ok: true, record: Object.freeze(values) as IntegrityRecord };
+  return { ok: true, record: freeze(values) as IntegrityRecord };
 };
 
 const createDirect = <
@@ -892,7 +1012,7 @@ const createDirect = <
   }
   return {
     ok: true,
-    record: Object.freeze({
+    record: freeze({
       domain,
       hashProtocolVersion: CANONICAL_RUNTIME_INTEGRITY_PROTOCOL_VERSION,
       algorithm: CANONICAL_RUNTIME_INTEGRITY_ALGORITHM,
@@ -949,7 +1069,7 @@ export const createFutureBindingIntegrity = (
   }
   return {
     ok: true,
-    record: Object.freeze({
+    record: freeze({
       domain: "FUTURE_BINDING_INTEGRITY",
       hashProtocolVersion: CANONICAL_RUNTIME_INTEGRITY_PROTOCOL_VERSION,
       algorithm: CANONICAL_RUNTIME_INTEGRITY_ALGORITHM,
