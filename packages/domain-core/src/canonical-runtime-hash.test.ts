@@ -104,7 +104,8 @@ type FailureMatrixEntry = {
     | "FC-D_DIGEST_REJECT"
     | "FC-E_VERIFY_REJECT";
   readonly primaryTestBinding:
-    "B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads";
+    | "B-C08a Byte Admission Contexts"
+    | "B-C08b Verification Failure Contexts";
   readonly sourceNeedles?: readonly string[];
   readonly invoke?: () => FailableResult;
 };
@@ -135,6 +136,12 @@ const exerciseCompleteFailureMatrix = (): void => {
         return "FC-E_VERIFY_REJECT";
     }
   };
+  const bindingFor = (
+    phase: CanonicalRuntimeIntegrityFailure["phase"]
+  ): FailureMatrixEntry["primaryTestBinding"] =>
+    phase === "TLV_INPUT_ACCEPTANCE"
+      ? "B-C08a Byte Admission Contexts"
+      : "B-C08b Verification Failure Contexts";
   const branchFor = (
     code: CanonicalRuntimeIntegrityFailure["code"],
     phase: CanonicalRuntimeIntegrityFailure["phase"],
@@ -172,8 +179,7 @@ const exerciseCompleteFailureMatrix = (): void => {
       inputKind,
       branchLocation: branchFor(code, phase, inputKind),
       expectedFailClosedBehavior: behaviorFor(phase),
-      primaryTestBinding:
-        "B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads",
+      primaryTestBinding: bindingFor(phase),
       invoke
     });
   };
@@ -191,8 +197,7 @@ const exerciseCompleteFailureMatrix = (): void => {
       inputKind,
       branchLocation: branchFor(code, phase, inputKind),
       expectedFailClosedBehavior: behaviorFor(phase),
-      primaryTestBinding:
-        "B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads",
+      primaryTestBinding: bindingFor(phase),
       sourceNeedles
     });
   };
@@ -646,7 +651,7 @@ const exerciseCompleteFailureMatrix = (): void => {
       /^canonical-runtime-hash\.ts:/
     );
     expect(entry.primaryTestBinding, entry.name).toBe(
-      "B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads"
+      bindingFor(entry.phase)
     );
     if (entry.invoke === undefined) {
       for (const needle of entry.sourceNeedles ?? []) {
@@ -1031,7 +1036,7 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
     });
   });
 
-  it("B-C05_ROLE_DOMAIN_SEPARATION freezes one preimage and complete structural vectors", () => {
+  it("B-C05a Binding Envelope and Preimage Vector Contract", () => {
     const bytes = bytesOf(null);
     const raw = directRecord(createRawATlvIntegrity(bytes));
     const canonical = directRecord(createCanonicalValueIntegrity(bytes));
@@ -1090,6 +1095,238 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
         }
       );
     }
+
+    const bindingMetadataTlvBytes = Buffer.from(
+      "424f54434352562b303100",
+      "hex"
+    );
+    const boundPayloadTlvBytes = Buffer.from(
+      "424f54434352562b303102",
+      "hex"
+    );
+    const u32be = (value: number): Buffer => {
+      const encoded = Buffer.alloc(4);
+      encoded.writeUInt32BE(value);
+      return encoded;
+    };
+    const u64be = (value: number): Buffer => {
+      const encoded = Buffer.alloc(8);
+      encoded.writeBigUInt64BE(BigInt(value));
+      return encoded;
+    };
+    const frameText = (value: string): Buffer => {
+      const encoded = Buffer.from(value, "ascii");
+      return Buffer.concat([u32be(encoded.length), encoded]);
+    };
+    const envelope = Buffer.concat([
+      Buffer.from("BOTCCRB+01", "ascii"),
+      frameText("botc-future-binding-envelope-v1"),
+      u64be(bindingMetadataTlvBytes.length),
+      bindingMetadataTlvBytes,
+      u64be(boundPayloadTlvBytes.length),
+      boundPayloadTlvBytes
+    ]);
+    const domainFrame = Buffer.concat([
+      Buffer.from("BOTCCRH+01", "ascii"),
+      frameText("botc-canonical-runtime-integrity-sha256-framed-v1"),
+      frameText("FUTURE_BINDING_INTEGRITY"),
+      frameText("SHA-256")
+    ]);
+    const fullPreimage = Buffer.concat([
+      domainFrame,
+      frameText("botc-canonical-runtime-value-v1"),
+      frameText("botc-canonical-runtime-tlv-be-v1"),
+      u64be(envelope.length),
+      envelope
+    ]);
+    expect(bindingMetadataTlvBytes.toString("hex")).toBe(
+      "424f54434352562b303100"
+    );
+    expect(boundPayloadTlvBytes.toString("hex")).toBe(
+      "424f54434352562b303102"
+    );
+    expect(envelope.toString("hex")).toBe(
+      "424f54434352422b30310000001f626f74632d6675747572652d62696e64696e672d656e76656c6f70652d7631000000000000000b424f54434352562b303100000000000000000b424f54434352562b303102"
+    );
+    expect(envelope).toHaveLength(83);
+    expect(domainFrame.toString("hex")).toBe(
+      "424f54434352482b303100000031626f74632d63616e6f6e6963616c2d72756e74696d652d696e746567726974792d7368613235362d6672616d65642d7631000000184655545552455f42494e44494e475f494e54454752495459000000075348412d323536"
+    );
+    expect(fullPreimage.toString("hex")).toBe(
+      "424f54434352482b303100000031626f74632d63616e6f6e6963616c2d72756e74696d652d696e746567726974792d7368613235362d6672616d65642d7631000000184655545552455f42494e44494e475f494e54454752495459000000075348412d3235360000001f626f74632d63616e6f6e6963616c2d72756e74696d652d76616c75652d763100000020626f74632d63616e6f6e6963616c2d72756e74696d652d746c762d62652d76310000000000000053424f54434352422b30310000001f626f74632d6675747572652d62696e64696e672d656e76656c6f70652d7631000000000000000b424f54434352562b303100000000000000000b424f54434352562b303102"
+    );
+    expect(fullPreimage).toHaveLength(264);
+    const digestHex = createHash("sha256").update(fullPreimage).digest("hex");
+    expect(digestHex).toBe(
+      "02e73017cc61bb6c2040bf845b2547d8b54090523b422d6ec6521087beacca3a"
+    );
+    expect(
+      bindingRecord(
+        createFutureBindingIntegrity(
+          new Uint8Array(bindingMetadataTlvBytes),
+          new Uint8Array(boundPayloadTlvBytes)
+        )
+      )
+    ).toStrictEqual({
+      domain: "FUTURE_BINDING_INTEGRITY",
+      hashProtocolVersion: CANONICAL_RUNTIME_INTEGRITY_PROTOCOL_VERSION,
+      algorithm: CANONICAL_RUNTIME_INTEGRITY_ALGORITHM,
+      canonicalRuntimeValueVersion: "botc-canonical-runtime-value-v1",
+      canonicalRuntimeSerializationVersion:
+        "botc-canonical-runtime-tlv-be-v1",
+      bindingVersion: FUTURE_BINDING_VERSION,
+      bindingMetadataTlvByteLength: 11,
+      boundPayloadTlvByteLength: 11,
+      payloadByteLength: 83,
+      framedPreimageByteLength: 264,
+      digestEncoding: CANONICAL_RUNTIME_INTEGRITY_DIGEST_ENCODING,
+      digestHex
+    });
+  });
+
+  it("B-C05b Future Binding Integrity Vector Contract", () => {
+    const metadata = new Uint8Array(
+      Buffer.from("424f54434352562b303100", "hex")
+    );
+    const payload = new Uint8Array(
+      Buffer.from("424f54434352562b303102", "hex")
+    );
+    const record = bindingRecord(
+      createFutureBindingIntegrity(metadata, payload)
+    );
+    expect(
+      bindingRecord(createFutureBindingIntegrity(metadata, payload))
+    ).toStrictEqual(record);
+    expect(
+      verifyFutureBindingIntegrity(record, metadata, payload)
+    ).toStrictEqual({ ok: true, matchesExactBytes: true });
+
+    const metadataMutation = metadata.slice();
+    metadataMutation[metadataMutation.length - 1] =
+      metadataMutation[metadataMutation.length - 1]! ^ 0x01;
+    const payloadMutation = payload.slice();
+    payloadMutation[payloadMutation.length - 1] =
+      payloadMutation[payloadMutation.length - 1]! ^ 0x01;
+    for (const [label, mutatedMetadata, mutatedPayload] of [
+      ["metadata", metadataMutation, payload],
+      ["payload", metadata, payloadMutation]
+    ] as const) {
+      expect(
+        bindingRecord(
+          createFutureBindingIntegrity(mutatedMetadata, mutatedPayload)
+        ).digestHex,
+        label
+      ).not.toBe(record.digestHex);
+      expectFailure(
+        verifyFutureBindingIntegrity(
+          record,
+          mutatedMetadata,
+          mutatedPayload
+        ),
+        {
+          code: "DIGEST_MISMATCH",
+          phase: "DIGEST_VERIFICATION",
+          inputKind: "DIGEST_BYTES"
+        }
+      );
+    }
+    expect(
+      bindingRecord(createFutureBindingIntegrity(payload, metadata)).digestHex
+    ).not.toBe(record.digestHex);
+
+    for (const field of [
+      "bindingMetadataTlvByteLength",
+      "boundPayloadTlvByteLength",
+      "payloadByteLength",
+      "framedPreimageByteLength"
+    ] as const) {
+      expectFailure(
+        verifyFutureBindingIntegrity(
+          withField(record, field, record[field] + 1),
+          metadata,
+          payload
+        ),
+        {
+          code: "METADATA_LENGTH_MISMATCH",
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind: "BINDING_METADATA"
+        }
+      );
+    }
+    for (const [field, value, code, inputKind] of [
+      [
+        "bindingVersion",
+        "botc-future-binding-envelope-v2",
+        "UNSUPPORTED_BINDING_VERSION",
+        "BINDING_METADATA"
+      ],
+      [
+        "hashProtocolVersion",
+        "botc-canonical-runtime-integrity-sha256-framed-v2",
+        "UNSUPPORTED_HASH_PROTOCOL_VERSION",
+        "BINDING_METADATA"
+      ],
+      [
+        "domain",
+        "CANONICAL_VALUE_INTEGRITY",
+        "DOMAIN_MISMATCH",
+        "HASH_DOMAIN"
+      ],
+      ["domain", "UNKNOWN", "UNSUPPORTED_DOMAIN", "HASH_DOMAIN"]
+    ] as const) {
+      expectFailure(
+        verifyFutureBindingIntegrity(
+          withField(record, field, value),
+          metadata,
+          payload
+        ),
+        {
+          code,
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind
+        }
+      );
+    }
+    expectFailure(
+      verifyFutureBindingIntegrity(
+        withField(
+          record,
+          "digestHex",
+          `${record.digestHex[0] === "0" ? "1" : "0"}${record.digestHex.slice(1)}`
+        ),
+        metadata,
+        payload
+      ),
+      {
+        code: "DIGEST_MISMATCH",
+        phase: "DIGEST_VERIFICATION",
+        inputKind: "DIGEST_BYTES"
+      }
+    );
+    expectFailure(
+      verifyFutureBindingIntegrity(
+        withField(record, "digestHex", record.digestHex.slice(1)),
+        metadata,
+        payload
+      ),
+      {
+        code: "INVALID_DIGEST_LENGTH",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "DIGEST_TEXT"
+      }
+    );
+    expectFailure(
+      verifyFutureBindingIntegrity(
+        withField(record, "digestHex", `g${record.digestHex.slice(1)}`),
+        metadata,
+        payload
+      ),
+      {
+        code: "INVALID_DIGEST_HEX",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "DIGEST_TEXT"
+      }
+    );
   });
 
   it("B-C06_RESULT_METADATA rejects hostile exact-shape and metadata mutations", () => {
@@ -1283,8 +1520,588 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
     );
   });
 
-  it("B-C08_FAILURE_PRECEDENCE returns the first closed triple without later reads", () => {
+  it("B-C08a Byte Admission Contexts", () => {
+    const directBytes = bytesOf(null);
+    const metadata = bytesOf("metadata");
+    const payload = bytesOf("payload");
+    const rawRecord = directRecord(createRawATlvIntegrity(directBytes));
+    const canonicalRecord = directRecord(
+      createCanonicalValueIntegrity(directBytes)
+    );
+    const futureRecord = bindingRecord(
+      createFutureBindingIntegrity(metadata, payload)
+    );
+    const detached = (): Uint8Array => {
+      const buffer = new ArrayBuffer(1);
+      const view = new Uint8Array(buffer);
+      structuredClone(buffer, { transfer: [buffer] });
+      return view;
+    };
+    class Uint8Subclass extends Uint8Array {}
+    const forbiddenPrototype = (): Uint8Array => {
+      const view = new Uint8Array([1]);
+      const prototype = Object.create(Uint8Array.prototype) as object;
+      Object.setPrototypeOf(view, prototype);
+      return view;
+    };
+    const proxyTrapCounts: number[] = [];
+    const trappedProxy = (): unknown => {
+      let calls = 0;
+      proxyTrapCounts.push(calls);
+      const index = proxyTrapCounts.length - 1;
+      return new Proxy(new Uint8Array([1]), {
+        get() {
+          proxyTrapCounts[index] = ++calls;
+          throw new Error("BYTE_PROXY_GET_EXECUTED");
+        },
+        getPrototypeOf() {
+          proxyTrapCounts[index] = ++calls;
+          throw new Error("BYTE_PROXY_PROTOTYPE_EXECUTED");
+        },
+        ownKeys() {
+          proxyTrapCounts[index] = ++calls;
+          throw new Error("BYTE_PROXY_KEYS_EXECUTED");
+        }
+      });
+    };
+    const revokedProxy = (): unknown => {
+      const pair = Proxy.revocable(new Uint8Array([1]), {});
+      pair.revoke();
+      return pair.proxy;
+    };
+    const families: {
+      readonly label: string;
+      readonly code: CanonicalRuntimeIntegrityFailure["code"];
+      readonly create: () => unknown;
+    }[] = [
+      { label: "null", code: "INVALID_BYTE_INPUT", create: () => null },
+      { label: "number", code: "INVALID_BYTE_INPUT", create: () => 1 },
+      { label: "Proxy", code: "PROXY_BYTE_INPUT", create: trappedProxy },
+      {
+        label: "revoked Proxy",
+        code: "PROXY_BYTE_INPUT",
+        create: revokedProxy
+      },
+      {
+        label: "Uint16Array",
+        code: "WRONG_BYTE_VIEW",
+        create: () => new Uint16Array(1)
+      },
+      {
+        label: "DataView",
+        code: "WRONG_BYTE_VIEW",
+        create: () => new DataView(new ArrayBuffer(1))
+      },
+      {
+        label: "ArrayBuffer",
+        code: "WRONG_BYTE_VIEW",
+        create: () => new ArrayBuffer(1)
+      },
+      {
+        label: "Buffer",
+        code: "WRONG_BYTE_VIEW",
+        create: () => Buffer.from([1])
+      },
+      {
+        label: "Uint8Array subclass",
+        code: "WRONG_BYTE_VIEW",
+        create: () => new Uint8Subclass([1])
+      },
+      {
+        label: "forbidden prototype",
+        code: "WRONG_BYTE_VIEW",
+        create: forbiddenPrototype
+      },
+      {
+        label: "detached",
+        code: "DETACHED_BYTE_BUFFER",
+        create: detached
+      },
+      {
+        label: "oversized",
+        code: "BYTE_INPUT_TOO_LARGE",
+        create: () =>
+          new Uint8Array(CANONICAL_RUNTIME_INTEGRITY_MAX_A_TLV_BYTES + 1)
+      }
+    ];
+    if (typeof SharedArrayBuffer !== "undefined") {
+      families.push({
+        label: "SharedArrayBuffer backing",
+        code: "SHARED_BYTE_BUFFER",
+        create: () => new Uint8Array(new SharedArrayBuffer(1))
+      });
+    }
+
+    const positions: readonly {
+      readonly label: string;
+      readonly inputKind: CanonicalRuntimeIntegrityFailure["inputKind"];
+      readonly invoke: (candidate: unknown) => FailableResult;
+    }[] = [
+      {
+        label: "raw create payload",
+        inputKind: "TLV_BYTES",
+        invoke: createRawATlvIntegrity
+      },
+      {
+        label: "raw verify payload",
+        inputKind: "TLV_BYTES",
+        invoke: (candidate) => verifyRawATlvIntegrity(rawRecord, candidate)
+      },
+      {
+        label: "canonical create payload",
+        inputKind: "TLV_BYTES",
+        invoke: createCanonicalValueIntegrity
+      },
+      {
+        label: "canonical verify payload",
+        inputKind: "TLV_BYTES",
+        invoke: (candidate) =>
+          verifyCanonicalValueIntegrity(canonicalRecord, candidate)
+      },
+      {
+        label: "future create metadata",
+        inputKind: "BINDING_METADATA",
+        invoke: (candidate) => createFutureBindingIntegrity(candidate, payload)
+      },
+      {
+        label: "future create payload",
+        inputKind: "TLV_BYTES",
+        invoke: (candidate) => createFutureBindingIntegrity(metadata, candidate)
+      },
+      {
+        label: "future verify metadata",
+        inputKind: "BINDING_METADATA",
+        invoke: (candidate) =>
+          verifyFutureBindingIntegrity(futureRecord, candidate, payload)
+      },
+      {
+        label: "future verify payload",
+        inputKind: "TLV_BYTES",
+        invoke: (candidate) =>
+          verifyFutureBindingIntegrity(futureRecord, metadata, candidate)
+      }
+    ];
+    for (const family of families) {
+      for (const position of positions) {
+        expectFailure(position.invoke(family.create()), {
+          code: family.code,
+          phase: "TLV_INPUT_ACCEPTANCE",
+          inputKind: position.inputKind
+        });
+      }
+    }
+    expect(proxyTrapCounts.every((count) => count === 0)).toBe(true);
+
+    let laterArgumentTrapCalls = 0;
+    const laterArgument = new Proxy(new Uint8Array([1]), {
+      get() {
+        laterArgumentTrapCalls += 1;
+        throw new Error("LATER_BYTE_ARGUMENT_ACCESSED");
+      }
+    });
+    expectFailure(createFutureBindingIntegrity(null, laterArgument), {
+      code: "INVALID_BYTE_INPUT",
+      phase: "TLV_INPUT_ACCEPTANCE",
+      inputKind: "BINDING_METADATA"
+    });
+    expectFailure(
+      verifyFutureBindingIntegrity(futureRecord, null, laterArgument),
+      {
+        code: "INVALID_BYTE_INPUT",
+        phase: "TLV_INPUT_ACCEPTANCE",
+        inputKind: "BINDING_METADATA"
+      }
+    );
+    expect(laterArgumentTrapCalls).toBe(0);
+
+    const callerMetadata = bytesOf("metadata");
+    const callerPayload = bytesOf("payload");
+    const retainedMetadata = callerMetadata.slice();
+    const retainedPayload = callerPayload.slice();
+    const isolatedRecord = bindingRecord(
+      createFutureBindingIntegrity(callerMetadata, callerPayload)
+    );
+    const isolatedRecordSnapshot = { ...isolatedRecord };
+    callerMetadata[callerMetadata.length - 1] =
+      callerMetadata[callerMetadata.length - 1]! ^ 0x01;
+    callerPayload[callerPayload.length - 1] =
+      callerPayload[callerPayload.length - 1]! ^ 0x01;
+    expect(isolatedRecord).toStrictEqual(isolatedRecordSnapshot);
+    expect(
+      verifyFutureBindingIntegrity(
+        isolatedRecord,
+        retainedMetadata,
+        retainedPayload
+      )
+    ).toStrictEqual({ ok: true, matchesExactBytes: true });
+
+    const source = readFileSync(
+      new URL("./canonical-runtime-hash.ts", import.meta.url),
+      "utf8"
+    );
+    const admitBytesSource = source.slice(
+      source.indexOf("const admitBytes = ("),
+      source.indexOf("const checkedSum = (")
+    );
+    for (const needle of [
+      '"BYTE_COPY_ALLOCATION_FAILED"',
+      '"BYTE_COPY_FAILED"',
+      '"TLV_INPUT_ACCEPTANCE"',
+      '"TLV_BYTES"',
+      '"BINDING_METADATA"'
+    ]) {
+      expect(admitBytesSource).toContain(needle);
+    }
+    expect(source).not.toMatch(
+      /__test|testHook|forceFailure|injectFailure|mockHash/
+    );
+  });
+
+  it("B-C08b Verification Failure Contexts", () => {
     exerciseCompleteFailureMatrix();
+
+    const bytes = bytesOf(null);
+    const record = directRecord(createRawATlvIntegrity(bytes));
+    const metadata = bytesOf("metadata");
+    const payload = bytesOf("payload");
+    const futureRecord = bindingRecord(
+      createFutureBindingIntegrity(metadata, payload)
+    );
+    for (const candidate of [
+      null,
+      undefined,
+      false,
+      0,
+      0n,
+      "",
+      Symbol("record"),
+      () => undefined
+    ]) {
+      expectFailure(verifyRawATlvIntegrity(candidate, bytes), {
+        code: "INVALID_RECORD_TYPE",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "BINDING_METADATA"
+      });
+    }
+
+    let recordTrapCalls = 0;
+    const recordProxy = new Proxy(record, {
+      get() {
+        recordTrapCalls += 1;
+        throw new Error("RECORD_PROXY_GET_EXECUTED");
+      },
+      getPrototypeOf() {
+        recordTrapCalls += 1;
+        throw new Error("RECORD_PROXY_PROTOTYPE_EXECUTED");
+      },
+      ownKeys() {
+        recordTrapCalls += 1;
+        throw new Error("RECORD_PROXY_KEYS_EXECUTED");
+      }
+    });
+    expectFailure(verifyRawATlvIntegrity(recordProxy, bytes), {
+      code: "PROXY_RECORD",
+      phase: "BINDING_METADATA_VALIDATION",
+      inputKind: "BINDING_METADATA"
+    });
+    const revokedRecord = Proxy.revocable(record, {});
+    revokedRecord.revoke();
+    expectFailure(verifyRawATlvIntegrity(revokedRecord.proxy, bytes), {
+      code: "PROXY_RECORD",
+      phase: "BINDING_METADATA_VALIDATION",
+      inputKind: "BINDING_METADATA"
+    });
+    expect(recordTrapCalls).toBe(0);
+
+    class RecordClass {
+      readonly marker = true;
+    }
+    for (const candidate of [
+      [],
+      new Date(0),
+      Object.assign(new RecordClass(), record),
+      Object.assign(Object.create({ forbidden: true }), record)
+    ]) {
+      expectFailure(verifyRawATlvIntegrity(candidate, bytes), {
+        code: "NONPLAIN_RECORD",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "BINDING_METADATA"
+      });
+    }
+
+    const omitField = (source: object, field: string): Record<string, unknown> => {
+      const clone = { ...source } as Record<string, unknown>;
+      Reflect.deleteProperty(clone, field);
+      return clone;
+    };
+    const descriptorField = (
+      source: object,
+      field: string,
+      descriptor: PropertyDescriptor
+    ): Record<string, unknown> => {
+      const clone = { ...source } as Record<string, unknown>;
+      Object.defineProperty(clone, field, descriptor);
+      return clone;
+    };
+    let getterCalls = 0;
+    for (const context of [
+      {
+        field: "domain",
+        value: record.domain,
+        inputKind: "HASH_DOMAIN" as const
+      },
+      {
+        field: "digestHex",
+        value: record.digestHex,
+        inputKind: "DIGEST_TEXT" as const
+      },
+      {
+        field: "algorithm",
+        value: record.algorithm,
+        inputKind: "BINDING_METADATA" as const
+      }
+    ]) {
+      expectFailure(
+        verifyRawATlvIntegrity(omitField(record, context.field), bytes),
+        {
+          code: "MISSING_RECORD_FIELD",
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind: context.inputKind
+        }
+      );
+      expectFailure(
+        verifyRawATlvIntegrity(
+          descriptorField(record, context.field, {
+            configurable: true,
+            enumerable: true,
+            get() {
+              getterCalls += 1;
+              return context.value;
+            }
+          }),
+          bytes
+        ),
+        {
+          code: "ACCESSOR_RECORD_FIELD",
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind: context.inputKind
+        }
+      );
+      expectFailure(
+        verifyRawATlvIntegrity(
+          descriptorField(record, context.field, {
+            configurable: true,
+            enumerable: false,
+            value: context.value
+          }),
+          bytes
+        ),
+        {
+          code: "NONENUMERABLE_RECORD_FIELD",
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind: context.inputKind
+        }
+      );
+      expectFailure(
+        verifyRawATlvIntegrity(withField(record, context.field, 1), bytes),
+        {
+          code: "INVALID_RECORD_FIELD_TYPE",
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind: context.inputKind
+        }
+      );
+    }
+    expect(getterCalls).toBe(0);
+    expectFailure(
+      verifyRawATlvIntegrity({ ...record, [Symbol("hostile")]: true }, bytes),
+      {
+        code: "SYMBOL_RECORD_KEY",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "BINDING_METADATA"
+      }
+    );
+    expectFailure(
+      verifyRawATlvIntegrity({ ...record, extra: true }, bytes),
+      {
+        code: "EXTRA_RECORD_FIELD",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "BINDING_METADATA"
+      }
+    );
+
+    const directLengthFields = [
+      "payloadByteLength",
+      "framedPreimageByteLength"
+    ] as const;
+    const futureLengthFields = [
+      "bindingMetadataTlvByteLength",
+      "boundPayloadTlvByteLength",
+      "payloadByteLength",
+      "framedPreimageByteLength"
+    ] as const;
+    const invalidNumericLengths = [
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+      -1,
+      1.5,
+      Number.MAX_SAFE_INTEGER + 1
+    ];
+    for (const field of directLengthFields) {
+      expectFailure(
+        verifyRawATlvIntegrity(withField(record, field, "1"), bytes),
+        {
+          code: "INVALID_RECORD_FIELD_TYPE",
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind: "BINDING_METADATA"
+        }
+      );
+      for (const invalidLength of invalidNumericLengths) {
+        expectFailure(
+          verifyRawATlvIntegrity(
+            withField(record, field, invalidLength),
+            bytes
+          ),
+          {
+            code: "INVALID_METADATA_LENGTH",
+            phase: "BINDING_METADATA_VALIDATION",
+            inputKind: "BINDING_METADATA"
+          }
+        );
+      }
+      expectFailure(
+        verifyRawATlvIntegrity(
+          withField(record, field, record[field] + 1),
+          bytes
+        ),
+        {
+          code: "METADATA_LENGTH_MISMATCH",
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind: "BINDING_METADATA"
+        }
+      );
+    }
+    for (const field of futureLengthFields) {
+      expectFailure(
+        verifyFutureBindingIntegrity(
+          withField(futureRecord, field, "1"),
+          metadata,
+          payload
+        ),
+        {
+          code: "INVALID_RECORD_FIELD_TYPE",
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind: "BINDING_METADATA"
+        }
+      );
+      for (const invalidLength of invalidNumericLengths) {
+        expectFailure(
+          verifyFutureBindingIntegrity(
+            withField(futureRecord, field, invalidLength),
+            metadata,
+            payload
+          ),
+          {
+            code: "INVALID_METADATA_LENGTH",
+            phase: "BINDING_METADATA_VALIDATION",
+            inputKind: "BINDING_METADATA"
+          }
+        );
+      }
+      expectFailure(
+        verifyFutureBindingIntegrity(
+          withField(futureRecord, field, futureRecord[field] + 1),
+          metadata,
+          payload
+        ),
+        {
+          code: "METADATA_LENGTH_MISMATCH",
+          phase: "BINDING_METADATA_VALIDATION",
+          inputKind: "BINDING_METADATA"
+        }
+      );
+    }
+
+    const directMutation = bytes.slice();
+    directMutation[directMutation.length - 1] =
+      directMutation[directMutation.length - 1]! ^ 0x01;
+    expectFailure(verifyRawATlvIntegrity(record, directMutation), {
+      code: "DIGEST_MISMATCH",
+      phase: "DIGEST_VERIFICATION",
+      inputKind: "DIGEST_BYTES"
+    });
+    const metadataMutation = metadata.slice();
+    metadataMutation[metadataMutation.length - 1] =
+      metadataMutation[metadataMutation.length - 1]! ^ 0x01;
+    const payloadMutation = payload.slice();
+    payloadMutation[payloadMutation.length - 1] =
+      payloadMutation[payloadMutation.length - 1]! ^ 0x01;
+    expectFailure(
+      verifyFutureBindingIntegrity(futureRecord, metadataMutation, payload),
+      {
+        code: "DIGEST_MISMATCH",
+        phase: "DIGEST_VERIFICATION",
+        inputKind: "DIGEST_BYTES"
+      }
+    );
+    expectFailure(
+      verifyFutureBindingIntegrity(futureRecord, metadata, payloadMutation),
+      {
+        code: "DIGEST_MISMATCH",
+        phase: "DIGEST_VERIFICATION",
+        inputKind: "DIGEST_BYTES"
+      }
+    );
+
+    let laterFieldGetterCalls = 0;
+    let laterBytesTrapCalls = 0;
+    const missingDomain = omitField(record, "domain");
+    Object.defineProperty(missingDomain, "digestHex", {
+      configurable: true,
+      enumerable: true,
+      get() {
+        laterFieldGetterCalls += 1;
+        return record.digestHex;
+      }
+    });
+    const hostileLaterBytes = new Proxy(new Uint8Array([1]), {
+      get() {
+        laterBytesTrapCalls += 1;
+        throw new Error("LATER_VERIFY_BYTES_ACCESSED");
+      }
+    });
+    expectFailure(
+      verifyRawATlvIntegrity(missingDomain, hostileLaterBytes),
+      {
+        code: "MISSING_RECORD_FIELD",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "HASH_DOMAIN"
+      }
+    );
+    expectFailure(
+      verifyRawATlvIntegrity(
+        withField(record, "payloadByteLength", Number.NaN),
+        hostileLaterBytes
+      ),
+      {
+        code: "INVALID_METADATA_LENGTH",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "BINDING_METADATA"
+      }
+    );
+    expectFailure(
+      verifyRawATlvIntegrity(
+        withField(record, "digestEncoding", "hex"),
+        hostileLaterBytes
+      ),
+      {
+        code: "INVALID_DIGEST_ENCODING",
+        phase: "BINDING_METADATA_VALIDATION",
+        inputKind: "DIGEST_TEXT"
+      }
+    );
+    expect(laterFieldGetterCalls).toBe(0);
+    expect(laterBytesTrapCalls).toBe(0);
 
     const source = readFileSync(
       new URL("./canonical-runtime-hash.ts", import.meta.url),
@@ -1311,6 +2128,29 @@ describe("P2F1R-B deterministic integrity hash foundation", () => {
       futureBody.indexOf(
         'buildPreimage("FUTURE_BINDING_INTEGRITY", envelope.bytes)'
       )
+    );
+    const recordBody = source.slice(
+      source.indexOf("const admitRecord = ("),
+      source.indexOf("const createDirect =")
+    );
+    expect(recordBody).toContain("getPrototypeOf(candidate)");
+    expect(recordBody).toContain("keys = ownKeys(candidate)");
+    expect(recordBody).toContain(
+      "const descriptor = getOwnPropertyDescriptor(candidate, key)"
+    );
+    expect(recordBody).toContain('"INVALID_RECORD_TYPE"');
+    const comparisonBody = source.slice(
+      source.indexOf("const compareDigest = ("),
+      source.indexOf("const fieldInputKind = (")
+    );
+    expect(comparisonBody).toContain(
+      "for (let index = 0; index < 32; index += 1)"
+    );
+    expect(comparisonBody).toContain(
+      "difference |= actual[index]! ^ expected[index]!"
+    );
+    expect(source).not.toMatch(
+      /__test|testHook|forceFailure|injectFailure|mockHash/
     );
   });
 
