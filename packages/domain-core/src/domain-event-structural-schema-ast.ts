@@ -30,47 +30,23 @@ export type StructuralSchemaNodeV1 =
   | (StructuralNodeBaseV1 & { readonly kind: "TAGGED_UNION"; readonly tagField: string; readonly branches: readonly StructuralTaggedBranchV1[] })
   | (StructuralNodeBaseV1 & { readonly kind: "CLOSED_UNION"; readonly selection: "EXACTLY_ONE"; readonly branchNodeIds: readonly string[] })
   | StructuralRefinementNodeV1;
-export type StructuralRecordFieldV1 = {
-  readonly fieldOrdinal: number; readonly fieldName: string;
-  readonly required: true; readonly optional: false;
-  readonly childNodeId: string;
-};
-export type StructuralTaggedBranchV1 = {
-  readonly branchOrdinal: number; readonly tagLiteral: StructuralLiteralV1;
-  readonly childNodeId: string;
-};
+export type StructuralRecordFieldV1 = { readonly fieldOrdinal: number; readonly fieldName: string; readonly required: true; readonly optional: false; readonly childNodeId: string };
+export type StructuralTaggedBranchV1 = { readonly branchOrdinal: number; readonly tagLiteral: StructuralLiteralV1; readonly childNodeId: string };
 export type StructuralRefinementNodeV1 =
   | (StructuralNodeBaseV1 & {
-      readonly kind: "REFINEMENT"; readonly refinementVersion: typeof DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION;
-      readonly refinementKind: "NON_EMPTY_TRIMMED_STRING";
-      readonly baseNodeId: string;
+      readonly kind: "REFINEMENT"; readonly refinementVersion: typeof DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION; readonly refinementKind: "NON_EMPTY_TRIMMED_STRING"; readonly baseNodeId: string;
     })
   | (StructuralNodeBaseV1 & {
-      readonly kind: "REFINEMENT"; readonly refinementVersion: typeof DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION;
-      readonly refinementKind: "ID_STRING"; readonly alias: StructuralIdAliasV1;
-      readonly baseNodeId: string;
+      readonly kind: "REFINEMENT"; readonly refinementVersion: typeof DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION; readonly refinementKind: "ID_STRING"; readonly alias: StructuralIdAliasV1; readonly baseNodeId: string;
     });
 export type StructuralSchemaNodeBindingV1 = { readonly nodeId: string; readonly node: StructuralSchemaNodeV1 };
 export type StructuralSchemaRootV1 = {
-  readonly branchOrdinal: number; readonly branchId: string;
-  readonly eventOrdinal: number; readonly eventType: string;
-  readonly versionPolicy:
-    | { readonly kind: "UNVERSIONED" }
-    | {
-        readonly kind: "EXPLICIT_LITERAL";
-        readonly fieldName: string;
-        readonly acceptedLiteral: StructuralLiteralV1;
-      };
+  readonly branchOrdinal: number; readonly branchId: string; readonly eventOrdinal: number; readonly eventType: string;
+  readonly versionPolicy: { readonly kind: "UNVERSIONED" } | { readonly kind: "EXPLICIT_LITERAL"; readonly fieldName: string; readonly acceptedLiteral: StructuralLiteralV1 };
   readonly rootNodeId: string; readonly resultTypeName: string;
 };
-export type ApprovedStructuralDeltaIdV1 =
-  | "B26_SEAMSTRESS_VARIADIC_DELTA"
-  | "B54_PLACEHOLDER_UNION_NORMALIZATION_DELTA";
-export type StructuralDeltaBindingV1 = {
-  readonly deltaId: ApprovedStructuralDeltaIdV1; readonly branchId: string;
-  readonly fieldPath: string;
-  readonly nodeIds: readonly string[];
-};
+export type ApprovedStructuralDeltaIdV1 = "B26_SEAMSTRESS_VARIADIC_DELTA" | "B54_PLACEHOLDER_UNION_NORMALIZATION_DELTA";
+export type StructuralDeltaBindingV1 = { readonly deltaId: ApprovedStructuralDeltaIdV1; readonly branchId: string; readonly fieldPath: string; readonly nodeIds: readonly string[] };
 export type StructuralSchemaCensusV1 = {
   readonly events: number; readonly roots: number; readonly rootReferences: number;
   readonly nodes: number; readonly childReferences: number;
@@ -83,15 +59,7 @@ export type StructuralSchemaCensusV1 = {
   readonly idRefinements: number; readonly unresolvedReferences: number; readonly cycles: number;
   readonly openRecords: number; readonly additionalPropertiesNodes: number; readonly requiredUndefinedFields: number;
 };
-export type StructuralSchemaCandidateV1 = {
-  readonly astVersion: typeof DOMAIN_EVENT_STRUCTURAL_SCHEMA_AST_VERSION; readonly traversalVersion: typeof DOMAIN_EVENT_STRUCTURAL_UNIQUE_NODE_TRAVERSAL_VERSION;
-  readonly normalizationVersion: typeof DOMAIN_EVENT_STRUCTURAL_NORMALIZATION_VERSION;
-  readonly expectedEventCount: number; readonly expectedBranchCount: number;
-  readonly expectedExplicitVersionBranchCount: number; readonly expectedUnversionedBranchCount: number;
-  readonly roots: readonly StructuralSchemaRootV1[];
-  readonly nodeBindings: readonly StructuralSchemaNodeBindingV1[];
-  readonly deltaBindings: readonly StructuralDeltaBindingV1[];
-};
+export type StructuralSchemaCandidateV1 = { readonly astVersion: typeof DOMAIN_EVENT_STRUCTURAL_SCHEMA_AST_VERSION; readonly traversalVersion: typeof DOMAIN_EVENT_STRUCTURAL_UNIQUE_NODE_TRAVERSAL_VERSION; readonly normalizationVersion: typeof DOMAIN_EVENT_STRUCTURAL_NORMALIZATION_VERSION; readonly expectedEventCount: number; readonly expectedBranchCount: number; readonly expectedExplicitVersionBranchCount: number; readonly expectedUnversionedBranchCount: number; readonly roots: readonly StructuralSchemaRootV1[]; readonly nodeBindings: readonly StructuralSchemaNodeBindingV1[]; readonly deltaBindings: readonly StructuralDeltaBindingV1[] };
 export type CanonicalUniqueNodeTraversalV1 = {
   readonly traversalVersion: typeof DOMAIN_EVENT_STRUCTURAL_UNIQUE_NODE_TRAVERSAL_VERSION;
   readonly rootBranchOrdinals: readonly number[]; readonly rootNodeIds: readonly string[];
@@ -101,10 +69,7 @@ export type CanonicalUniqueNodeTraversalV1 = {
   readonly uniqueNodeCount: number; readonly rootReferenceCount: number;
 };
 export type StructuralSchemaHealthCodeV1 = "INVALID_PROTOCOL_VERSION" | "INVALID_OBJECT_SHAPE" | "INVALID_BRANCH_INVENTORY" | "INVALID_NODE_ID" | "DUPLICATE_NODE_ID" | "DUPLICATE_NODE_OBJECT" | "NODE_BINDING_MISMATCH" | "UNKNOWN_NODE_KIND" | "INVALID_NODE_INVARIANT" | "UNRESOLVED_NODE_REFERENCE" | "CYCLE_DETECTED" | "ORPHAN_NODE" | "UNSUPPORTED_REFINEMENT_ALIAS" | "INVALID_REFINEMENT_BINDING" | "INVALID_CHILD_BINDING" | "INVALID_DELTA_BINDING" | "ORDINAL_LIMIT_EXCEEDED" | "POST_FREEZE_AUDIT_FAILED";
-export type StructuralSchemaHealthDiagnosticV1 = {
-  readonly code: StructuralSchemaHealthCodeV1; readonly phase: string;
-  readonly nodeId: string | null; readonly detail: string; readonly failClosed: true;
-};
+export type StructuralSchemaHealthDiagnosticV1 = { readonly code: StructuralSchemaHealthCodeV1; readonly phase: string; readonly nodeId: string | null; readonly detail: string; readonly failClosed: true };
 export type HealthyStructuralSchemaAuthorityV1 = {
   readonly status: "HEALTHY"; readonly candidate: StructuralSchemaCandidateV1;
   readonly traversal: CanonicalUniqueNodeTraversalV1; readonly uniqueGraphCensus: StructuralSchemaCensusV1;
@@ -117,20 +82,25 @@ export type HealthyStructuralSchemaAuthorityV1 = {
     readonly unresolvedReferenceCount: 0; readonly cycleCount: 0; readonly failClosed: true;
   };
 };
-export type StructuralSchemaAuthorityResultV1 =
-  | HealthyStructuralSchemaAuthorityV1
-  | { readonly status: "UNHEALTHY"; readonly diagnostic: StructuralSchemaHealthDiagnosticV1 };
+export type StructuralSchemaAuthorityResultV1 = HealthyStructuralSchemaAuthorityV1 | { readonly status: "UNHEALTHY"; readonly diagnostic: StructuralSchemaHealthDiagnosticV1 };
 const NODE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/u;
 const APPROVED_DELTA_BINDINGS = Object.freeze({
   B26_SEAMSTRESS_VARIADIC_DELTA: Object.freeze({
     branchId: "C-B26-SEAMSTRESS-DELIVERY-U",
+    rootNodeId: "C1.SHA256.08ee1eac9f441525045deee0ca738ad17358bd93bcd1ab2f66ba2e53c26d4bb3",
     fieldPath:
-      "P|$/f:sourceEffectiveness/t:kind=KNOWN_INEFFECTIVE/f:representedImpairments"
+      "P|$/f:sourceEffectiveness/t:kind=KNOWN_INEFFECTIVE/f:representedImpairments",
+    nodeIds: Object.freeze(["C1.SHA256.e8577a9b85f5c038dd1e8d42e1399cc5d0d3d15d1d937fcd93ddcf54589f51b8"]),
+    nodeKinds: Object.freeze(["NON_EMPTY_ARRAY"]), innerKinds: Object.freeze([])
   }),
   B54_PLACEHOLDER_UNION_NORMALIZATION_DELTA: Object.freeze({
     branchId: "C-B54-MATHEMATICIAN-DELIVERY-U",
+    rootNodeId: "C1.SHA256.ef12f5e14e220c864cef47c02f6b7fe89ba315cd75c9c1efdcf663c4a4c80a73",
     fieldPath:
-      "S|3|$/f:sourceContract/t:kind=BASE_MATHEMATICIAN/f:abilityInstance|$/f:sourceContract/t:kind=PHILOSOPHER_GAINED_MATHEMATICIAN_V1/f:abilityInstance|$/f:sourceContract/t:kind=PHILOSOPHER_GAINED_MATHEMATICIAN_V2/f:abilityInstance"
+      "S|3|$/f:sourceContract/t:kind=BASE_MATHEMATICIAN/f:abilityInstance|$/f:sourceContract/t:kind=PHILOSOPHER_GAINED_MATHEMATICIAN_V1/f:abilityInstance|$/f:sourceContract/t:kind=PHILOSOPHER_GAINED_MATHEMATICIAN_V2/f:abilityInstance",
+    nodeIds: Object.freeze(["C1.SHA256.76bedd7dce3048c092c3ef8c4e392397860a05f9def8712e1de845dbd5c65ce6", "C1.SHA256.62c4af7e70010615be004b77920924b3ab10e2c8ea6e80e018df79370c9d84f1", "C1.SHA256.22323493594ab80355161ac3122235a7a988609d47372722127f182d3818ec91"]),
+    nodeKinds: Object.freeze(["EXACT_RECORD", "EXACT_RECORD", "EXACT_RECORD"]),
+    innerKinds: Object.freeze(["BASE_ROLE_TASK", "PHILOSOPHER_GAINED_TASK_V1", "PHILOSOPHER_GAINED_TASK_V2"])
   })
 } as const);
 const unhealthy = (
@@ -183,48 +153,76 @@ const isPlainRecord = (value: object): boolean => {
   const prototype = Object.getPrototypeOf(value) as unknown;
   return prototype === Object.prototype || prototype === null;
 };
+const hasExactOwnDataKeys = (value: unknown, keys: readonly string[]): value is Record<string, unknown> => {
+  if (typeof value !== "object" || value === null || Array.isArray(value) || !isPlainRecord(value)) return false;
+  const ownKeys = Reflect.ownKeys(value);
+  return ownKeys.length === keys.length && ownKeys.every((key) => {
+    if (typeof key !== "string" || !keys.includes(key)) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    return descriptor !== undefined && "value" in descriptor && descriptor.enumerable;
+  });
+};
+const isExactDenseArray = (value: unknown): value is readonly unknown[] => {
+  if (!Array.isArray(value)) return false;
+  const keys = Reflect.ownKeys(value);
+  if (keys.length !== value.length + 1 || keys.at(-1) !== "length") return false;
+  for (let index = 0; index < value.length; index += 1) {
+    if (keys[index] !== String(index)) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (descriptor === undefined || !("value" in descriptor) || !descriptor.enumerable) return false;
+  }
+  const lengthDescriptor = Object.getOwnPropertyDescriptor(value, "length");
+  return lengthDescriptor !== undefined && "value" in lengthDescriptor && !lengthDescriptor.enumerable && !lengthDescriptor.configurable;
+};
 const validateDataOnlyGraph = (root: object): string | null => {
-  const pending: object[] = [root];
-  const seen = new WeakSet<object>();
+  const pending: object[] = [root]; const seen = new WeakSet<object>();
   while (pending.length > 0) {
     const current = pending.pop();
     if (current === undefined || seen.has(current)) continue;
     seen.add(current);
-    if (!Array.isArray(current) && !isPlainRecord(current)) {
-      return "candidate graph contains a non-plain object";
-    }
+    if (!Array.isArray(current) && !isPlainRecord(current)) return "candidate graph contains a non-plain object";
     if (Array.isArray(current)) {
-      for (let index = 0; index < current.length; index += 1) {
-        if (!Object.hasOwn(current, index)) return "candidate graph contains a sparse array";
-      }
+      for (let index = 0; index < current.length; index += 1) if (!Object.hasOwn(current, index)) return "candidate graph contains a sparse array";
     }
     for (const key of Reflect.ownKeys(current)) {
       if (typeof key === "symbol") return "candidate graph contains a symbol key";
       const descriptor = Object.getOwnPropertyDescriptor(current, key);
-      if (
-        descriptor === undefined ||
-        descriptor.get !== undefined ||
-        descriptor.set !== undefined
-      ) {
-        return "candidate graph contains an accessor";
-      }
-      if (typeof descriptor.value === "function") {
-        return "candidate graph contains a function";
-      }
+      if (descriptor === undefined || descriptor.get !== undefined || descriptor.set !== undefined) return "candidate graph contains an accessor";
+      if (typeof descriptor.value === "function") return "candidate graph contains a function";
       const descriptorValue: unknown = descriptor.value;
-      if (typeof descriptorValue === "object" && descriptorValue !== null) {
-        pending.push(descriptorValue);
-      }
+      if (typeof descriptorValue === "object" && descriptorValue !== null) pending.push(descriptorValue);
     }
   }
   return null;
 };
+const detachDataOnlyGraph = <T>(root: T): T => {
+  if ((typeof root !== "object" && typeof root !== "function") || root === null) return root;
+  const captures = new WeakMap<object, object>();
+  const capture = (source: object): object => {
+    const prior = captures.get(source);
+    if (prior !== undefined) return prior;
+    const target: object = Array.isArray(source) ? [] : {};
+    if (!Array.isArray(source) && Object.getPrototypeOf(source) === null) Object.setPrototypeOf(target, null);
+    captures.set(source, target);
+    for (const key of Reflect.ownKeys(source)) {
+      if (Array.isArray(source) && key === "length") continue;
+      const descriptor = Object.getOwnPropertyDescriptor(source, key);
+      if (descriptor === undefined || !("value" in descriptor)) throw new TypeError("data-only capture failed");
+      const value: unknown = descriptor.value;
+      Object.defineProperty(target, key, { ...descriptor, value: typeof value === "object" && value !== null ? capture(value) : value });
+    }
+    if (Array.isArray(source)) {
+      const lengthDescriptor = Object.getOwnPropertyDescriptor(source, "length");
+      if (lengthDescriptor === undefined) throw new TypeError("array length capture failed");
+      Object.defineProperty(target, "length", lengthDescriptor);
+    }
+    return target;
+  };
+  return capture(root) as T;
+};
 const deeplyFreeze = <T>(root: T): T => {
-  if ((typeof root !== "object" && typeof root !== "function") || root === null) {
-    return root;
-  }
-  const pending: object[] = [root];
-  const seen = new WeakSet<object>();
+  if ((typeof root !== "object" && typeof root !== "function") || root === null) return root;
+  const pending: object[] = [root]; const seen = new WeakSet<object>();
   while (pending.length > 0) {
     const current = pending.pop();
     if (current === undefined || seen.has(current)) continue;
@@ -233,9 +231,7 @@ const deeplyFreeze = <T>(root: T): T => {
       const descriptor = Object.getOwnPropertyDescriptor(current, key);
       if (descriptor !== undefined && "value" in descriptor) {
         const value: unknown = descriptor.value;
-        if ((typeof value === "object" || typeof value === "function") && value !== null) {
-          pending.push(value);
-        }
+        if ((typeof value === "object" || typeof value === "function") && value !== null) pending.push(value);
       }
     }
     Object.freeze(current);
@@ -243,8 +239,7 @@ const deeplyFreeze = <T>(root: T): T => {
   return root;
 };
 const isDeeplyFrozen = (root: object): boolean => {
-  const pending: object[] = [root];
-  const seen = new WeakSet<object>();
+  const pending: object[] = [root]; const seen = new WeakSet<object>();
   while (pending.length > 0) {
     const current = pending.pop();
     if (current === undefined || seen.has(current)) continue;
@@ -254,55 +249,86 @@ const isDeeplyFrozen = (root: object): boolean => {
       const descriptor = Object.getOwnPropertyDescriptor(current, key);
       if (descriptor !== undefined && "value" in descriptor) {
         const value: unknown = descriptor.value;
-        if ((typeof value === "object" || typeof value === "function") && value !== null) {
-          pending.push(value);
-        }
+        if ((typeof value === "object" || typeof value === "function") && value !== null) pending.push(value);
       }
     }
   }
   return true;
 };
-const isCanonicalOrderedUnique = <T>(
-  values: readonly T[],
-  compare: (left: T, right: T) => number
-): boolean => {
+const isCanonicalOrderedUnique = <T>(values: readonly T[], compare: (left: T, right: T) => number): boolean => {
   for (let index = 1; index < values.length; index += 1) {
     const prior = values[index - 1];
     const current = values[index];
-    if (prior === undefined || current === undefined || compare(prior, current) >= 0) {
-      return false;
-    }
+    if (prior === undefined || current === undefined || compare(prior, current) >= 0) return false;
   }
   return true;
 };
-export const getCanonicalChildNodeIds = (
-  node: StructuralSchemaNodeV1
-): readonly string[] => {
+export const getCanonicalChildNodeIds = (node: StructuralSchemaNodeV1): readonly string[] => {
   switch (node.kind) {
-    case "NULL":
-    case "BOOLEAN":
-    case "SAFE_INTEGER":
-    case "STRING":
-    case "LITERAL":
-    case "ENUM":
-      return [];
-    case "NULLABLE":
-      return [node.childNodeId];
-    case "EXACT_RECORD":
-      return node.fields.map((field) => field.childNodeId);
-    case "ARRAY":
-    case "NON_EMPTY_ARRAY":
-    case "BOUNDED_ARRAY":
-      return [node.elementNodeId];
-    case "TUPLE":
-      return node.elementNodeIds;
-    case "TAGGED_UNION":
-      return node.branches.map((branch) => branch.childNodeId);
-    case "CLOSED_UNION":
-      return node.branchNodeIds;
-    case "REFINEMENT":
-      return [];
+    case "NULL": case "BOOLEAN": case "SAFE_INTEGER": case "STRING": case "LITERAL": case "ENUM": return [];
+    case "NULLABLE": return [node.childNodeId];
+    case "EXACT_RECORD": return node.fields.map((field) => field.childNodeId);
+    case "ARRAY": case "NON_EMPTY_ARRAY": case "BOUNDED_ARRAY": return [node.elementNodeId];
+    case "TUPLE": return node.elementNodeIds;
+    case "TAGGED_UNION": return node.branches.map((branch) => branch.childNodeId);
+    case "CLOSED_UNION": return node.branchNodeIds;
+    case "REFINEMENT": return [node.baseNodeId];
   }
+};
+const getCensusChildNodeIds = (node: StructuralSchemaNodeV1): readonly string[] =>
+  node.kind === "REFINEMENT" ? [] : getCanonicalChildNodeIds(node);
+type CandidateShapeFailure = { readonly code: StructuralSchemaHealthCodeV1; readonly phase: string; readonly nodeId: string | null; readonly detail: string };
+const invalidShape = (detail: string, nodeId: string | null = null): CandidateShapeFailure =>
+  ({ code: "INVALID_OBJECT_SHAPE", phase: "RUNTIME_SHAPE", nodeId, detail });
+const validateCandidateRuntimeShape = (candidate: unknown): CandidateShapeFailure | null => {
+  const candidateKeys = ["astVersion", "traversalVersion", "normalizationVersion", "expectedEventCount", "expectedBranchCount", "expectedExplicitVersionBranchCount", "expectedUnversionedBranchCount", "roots", "nodeBindings", "deltaBindings"];
+  if (!hasExactOwnDataKeys(candidate, candidateKeys)) return invalidShape("candidate must be an exact data record");
+  if (!isExactDenseArray(candidate.roots) || !isExactDenseArray(candidate.nodeBindings) || !isExactDenseArray(candidate.deltaBindings)) return invalidShape("candidate collections must be exact dense arrays");
+  for (const root of candidate.roots) {
+    if (!hasExactOwnDataKeys(root, ["branchOrdinal", "branchId", "eventOrdinal", "eventType", "versionPolicy", "rootNodeId", "resultTypeName"])) return invalidShape("root must be an exact data record");
+    const versionKind = (root.versionPolicy as { kind?: unknown } | null)?.kind;
+    const versionKeys = versionKind === "UNVERSIONED" ? ["kind"] : versionKind === "EXPLICIT_LITERAL" ? ["kind", "fieldName", "acceptedLiteral"] : null;
+    if (versionKeys === null || !hasExactOwnDataKeys(root.versionPolicy, versionKeys)) return invalidShape("version policy must be an exact data record");
+  }
+  for (const binding of candidate.nodeBindings) {
+    if (!hasExactOwnDataKeys(binding, ["nodeId", "node"])) return invalidShape("node binding must be an exact data record");
+    const node = binding.node;
+    if (!hasExactOwnDataKeys(node, ["nodeId", "kind"]) && (typeof node !== "object" || node === null || Array.isArray(node) || !isPlainRecord(node))) return invalidShape("node must be a plain exact data record");
+    const kind = (node as { kind?: unknown }).kind;
+    const nodeId = typeof (node as { nodeId?: unknown }).nodeId === "string" ? (node as { nodeId: string }).nodeId : null;
+    const keysByKind: Partial<Record<StructuralSchemaNodeKind, readonly string[]>> = {
+      NULL: ["nodeId", "kind"], BOOLEAN: ["nodeId", "kind"], SAFE_INTEGER: ["nodeId", "kind"], STRING: ["nodeId", "kind"],
+      LITERAL: ["nodeId", "kind", "value"], ENUM: ["nodeId", "kind", "values"], NULLABLE: ["nodeId", "kind", "childNodeId"],
+      EXACT_RECORD: ["nodeId", "kind", "fields"], ARRAY: ["nodeId", "kind", "elementNodeId"],
+      NON_EMPTY_ARRAY: ["nodeId", "kind", "minItems", "maxItems", "elementNodeId"], BOUNDED_ARRAY: ["nodeId", "kind", "minItems", "maxItems", "elementNodeId"],
+      TUPLE: ["nodeId", "kind", "elementNodeIds"], TAGGED_UNION: ["nodeId", "kind", "tagField", "branches"],
+      CLOSED_UNION: ["nodeId", "kind", "selection", "branchNodeIds"]
+    };
+    if (kind === "REFINEMENT") {
+      const refinementKind = (node as { refinementKind?: unknown }).refinementKind;
+      const keys = refinementKind === "NON_EMPTY_TRIMMED_STRING" ? ["nodeId", "kind", "refinementVersion", "refinementKind", "baseNodeId"] : refinementKind === "ID_STRING" ? ["nodeId", "kind", "refinementVersion", "refinementKind", "alias", "baseNodeId"] : null;
+      if (keys === null || !hasExactOwnDataKeys(node, keys)) return { code: "INVALID_REFINEMENT_BINDING", phase: "REFINEMENT_REGISTRY_VALIDATION", nodeId, detail: "refinement variant shape is not exact" };
+    } else {
+      const keys = typeof kind === "string" ? keysByKind[kind as StructuralSchemaNodeKind] : undefined;
+      if (keys === undefined) return { code: "UNKNOWN_NODE_KIND", phase: "NODE_INVARIANT", nodeId, detail: "unknown node kind" };
+      if (!hasExactOwnDataKeys(node, keys)) return invalidShape("node variant shape is not exact", nodeId);
+    }
+    if (kind === "ENUM" && !isExactDenseArray((node as { values: unknown }).values)) return invalidShape("enum values must be dense", nodeId);
+    if (kind === "TUPLE" && !isExactDenseArray((node as { elementNodeIds: unknown }).elementNodeIds)) return invalidShape("tuple elements must be dense", nodeId);
+    if (kind === "CLOSED_UNION" && !isExactDenseArray((node as { branchNodeIds: unknown }).branchNodeIds)) return invalidShape("closed-union branches must be dense", nodeId);
+    if (kind === "EXACT_RECORD") {
+      const fields = (node as { fields: unknown }).fields;
+      if (!isExactDenseArray(fields) || fields.some((field) => !hasExactOwnDataKeys(field, ["fieldOrdinal", "fieldName", "required", "optional", "childNodeId"]))) return invalidShape("record fields must be exact and dense", nodeId);
+    }
+    if (kind === "TAGGED_UNION") {
+      const branches = (node as { branches: unknown }).branches;
+      if (!isExactDenseArray(branches) || branches.some((branch) => !hasExactOwnDataKeys(branch, ["branchOrdinal", "tagLiteral", "childNodeId"]))) return invalidShape("tagged branches must be exact and dense", nodeId);
+    }
+  }
+  for (const binding of candidate.deltaBindings) {
+    if (!hasExactOwnDataKeys(binding, ["deltaId", "branchId", "fieldPath", "nodeIds"]) || !isExactDenseArray(binding.nodeIds)) return invalidShape("delta binding must be exact and dense");
+  }
+  return null;
 };
 const validateNodeInvariant = (
   node: StructuralSchemaNodeV1,
@@ -319,124 +345,62 @@ const validateNodeInvariant = (
         ? null
         : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "invalid literal");
     case "ENUM":
-      return node.values.length > 0 &&
-        node.values.every(isCanonicalLiteral) &&
-        isCanonicalOrderedUnique(node.values, compareStructuralLiterals)
-        ? null
-        : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "enum values are not canonical");
+      return node.values.length > 0 && node.values.every(isCanonicalLiteral) && isCanonicalOrderedUnique(node.values, compareStructuralLiterals) ? null : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "enum values are not canonical");
     case "NULLABLE": {
       const child = nodesById.get(node.childNodeId);
       if (child === undefined) return null;
-      return child.kind === "NULLABLE"
-        ? unhealthy("INVALID_CHILD_BINDING", "NODE_INVARIANT", node.nodeId, "nested nullable is forbidden")
-        : null;
+      return child.kind === "NULLABLE" ? unhealthy("INVALID_CHILD_BINDING", "NODE_INVARIANT", node.nodeId, "nested nullable is forbidden") : null;
     }
     case "EXACT_RECORD": {
-      const fieldsValid = node.fields.every(
-        (field, index) =>
-          field.fieldOrdinal === index + 1 &&
-          field.required === true &&
-          field.optional === false &&
-          field.fieldName.length > 0
-      );
-      const fieldsCanonical = isCanonicalOrderedUnique(
-        node.fields,
-        (left, right) => compareRawUtf16CodeUnits(left.fieldName, right.fieldName)
-      );
-      return fieldsValid && (node.fields.length < 2 || fieldsCanonical)
-        ? null
-        : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "record fields are not canonical");
+      const fieldsValid = node.fields.every((field, index) => field.fieldOrdinal === index + 1 && field.required === true && field.optional === false && field.fieldName.length > 0);
+      const fieldsCanonical = isCanonicalOrderedUnique(node.fields, (left, right) => compareRawUtf16CodeUnits(left.fieldName, right.fieldName));
+      return fieldsValid && (node.fields.length < 2 || fieldsCanonical) ? null : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "record fields are not canonical");
     }
     case "ARRAY":
       return null;
     case "NON_EMPTY_ARRAY":
       return null;
     case "BOUNDED_ARRAY":
-      return Number.isSafeInteger(node.minItems) &&
-        Number.isSafeInteger(node.maxItems) &&
-        node.minItems >= 0 &&
-        node.minItems <= node.maxItems
-        ? null
-        : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "invalid bounded-array bounds");
+      return Number.isSafeInteger(node.minItems) && Number.isSafeInteger(node.maxItems) && node.minItems >= 0 && node.minItems <= node.maxItems ? null : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "invalid bounded-array bounds");
     case "TUPLE":
       return null;
     case "TAGGED_UNION": {
-      const ordinalsValid = node.branches.every(
-        (branch, index) => branch.branchOrdinal === index + 1 && isCanonicalLiteral(branch.tagLiteral)
-      );
-      const ordered = isCanonicalOrderedUnique(
-        node.branches,
-        (left, right) => compareStructuralLiterals(left.tagLiteral, right.tagLiteral)
-      );
+      const ordinalsValid = node.branches.every((branch, index) => branch.branchOrdinal === index + 1 && isCanonicalLiteral(branch.tagLiteral));
+      const ordered = isCanonicalOrderedUnique(node.branches, (left, right) => compareStructuralLiterals(left.tagLiteral, right.tagLiteral));
       const branchesMatch = node.branches.every((branch) => {
         const child = nodesById.get(branch.childNodeId);
         if (child?.kind !== "EXACT_RECORD") return false;
-        const tag = child.fields.find(
-          (field) => field.fieldName === node.tagField
-        );
+        const tag = child.fields.find((field) => field.fieldName === node.tagField);
         const tagNode = tag === undefined ? undefined : nodesById.get(tag.childNodeId);
         return tagNode?.kind === "LITERAL" && tagNode.value === branch.tagLiteral;
       });
-      return node.tagField.length > 0 &&
-        node.branches.length > 0 &&
-        ordinalsValid &&
-        branchesMatch &&
-        (node.branches.length < 2 || ordered)
-        ? null
-        : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "tagged union is not canonical");
+      return node.tagField.length > 0 && node.branches.length > 0 && ordinalsValid && branchesMatch && (node.branches.length < 2 || ordered) ? null : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "tagged union is not canonical");
     }
     case "CLOSED_UNION": {
       const branches = node.branchNodeIds.map((nodeId) => nodesById.get(nodeId));
       const pairDisjoint = (left: StructuralSchemaNodeV1, right: StructuralSchemaNodeV1): boolean => {
-        if (left.kind === "TUPLE" && right.kind === "TUPLE") {
-          return left.elementNodeIds.length !== right.elementNodeIds.length;
-        }
+        if (left.kind === "TUPLE" && right.kind === "TUPLE") return left.elementNodeIds.length !== right.elementNodeIds.length;
         if (left.kind === "EXACT_RECORD" && right.kind === "EXACT_RECORD") {
           const leftKeys = left.fields.map((field) => field.fieldName);
           const rightKeys = right.fields.map((field) => field.fieldName);
-          return leftKeys.length !== rightKeys.length ||
-            leftKeys.some((key, index) => key !== rightKeys[index]);
+          return leftKeys.length !== rightKeys.length || leftKeys.some((key, index) => key !== rightKeys[index]);
         }
-        if (left.kind === "LITERAL" && right.kind === "LITERAL") {
-          return compareStructuralLiterals(left.value, right.value) !== 0;
-        }
+        if (left.kind === "LITERAL" && right.kind === "LITERAL") return compareStructuralLiterals(left.value, right.value) !== 0;
         return left.kind !== right.kind;
       };
-      const disjoint = branches.every(
-        (left, leftIndex) =>
-          left !== undefined &&
-          branches.slice(leftIndex + 1).every(
-            (right) => right !== undefined && pairDisjoint(left, right)
-          )
-      );
-      return node.selection === "EXACTLY_ONE" &&
-        node.branchNodeIds.length >= 2 &&
-        disjoint &&
-        isCanonicalOrderedUnique(node.branchNodeIds, compareRawUtf16CodeUnits)
-        ? null
-        : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "closed union is not canonical");
+      const disjoint = branches.every((left, leftIndex) => left !== undefined && branches.slice(leftIndex + 1).every((right) => right !== undefined && pairDisjoint(left, right)));
+      return node.selection === "EXACTLY_ONE" && node.branchNodeIds.length >= 2 && disjoint && isCanonicalOrderedUnique(node.branchNodeIds, compareRawUtf16CodeUnits) ? null : unhealthy("INVALID_NODE_INVARIANT", "NODE_INVARIANT", node.nodeId, "closed union is not canonical");
     }
     case "REFINEMENT": {
-      if (node.refinementVersion !== DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION) {
-        return unhealthy("INVALID_REFINEMENT_BINDING", "REFINEMENT_REGISTRY_VALIDATION", node.nodeId, "unsupported refinement version");
-      }
+      if (node.refinementVersion !== DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION) return unhealthy("INVALID_REFINEMENT_BINDING", "REFINEMENT_REGISTRY_VALIDATION", node.nodeId, "unsupported refinement version");
       const base = nodesById.get(node.baseNodeId);
-      if (base === undefined || base.kind !== "STRING") {
-        return unhealthy("INVALID_REFINEMENT_BINDING", "REFINEMENT_REGISTRY_VALIDATION", node.nodeId, "refinement base is not STRING");
-      }
+      if (base === undefined || base.kind !== "STRING") return unhealthy("INVALID_REFINEMENT_BINDING", "REFINEMENT_REGISTRY_VALIDATION", node.nodeId, "refinement base is not STRING");
       if (node.refinementKind === "NON_EMPTY_TRIMMED_STRING") return null;
-      return (STRUCTURAL_ID_ALIASES_V1 as readonly string[]).includes(node.alias)
-        ? null
-        : unhealthy("UNSUPPORTED_REFINEMENT_ALIAS", "REFINEMENT_REGISTRY_VALIDATION", node.nodeId, "unsupported ID alias");
+      return (STRUCTURAL_ID_ALIASES_V1 as readonly string[]).includes(node.alias) ? null : unhealthy("UNSUPPORTED_REFINEMENT_ALIAS", "REFINEMENT_REGISTRY_VALIDATION", node.nodeId, "unsupported ID alias");
     }
     default: {
       const unknownNode = node as { readonly nodeId?: unknown };
-      return unhealthy(
-        "UNKNOWN_NODE_KIND",
-        "NODE_INVARIANT",
-        typeof unknownNode.nodeId === "string" ? unknownNode.nodeId : null,
-        "unknown node kind"
-      );
+      return unhealthy("UNKNOWN_NODE_KIND", "NODE_INVARIANT", typeof unknownNode.nodeId === "string" ? unknownNode.nodeId : null, "unknown node kind");
     }
   }
 };
@@ -519,32 +483,55 @@ const traverseUniqueNodes = (
     rootReferenceCount: canonicalRoots.length
   };
 };
+const recordChild = (nodes: ReadonlyMap<string, StructuralSchemaNodeV1>, nodeId: string, fieldName: string): string | null => {
+  const node = nodes.get(nodeId);
+  if (node?.kind !== "EXACT_RECORD") return null;
+  return node.fields.find((field) => field.fieldName === fieldName)?.childNodeId ?? null;
+};
+const taggedChild = (nodes: ReadonlyMap<string, StructuralSchemaNodeV1>, nodeId: string, tagLiteral: string): string | null => {
+  const node = nodes.get(nodeId);
+  if (node?.kind !== "TAGGED_UNION") return null;
+  return node.branches.find((branch) => branch.tagLiteral === tagLiteral)?.childNodeId ?? null;
+};
+const recordLiteral = (nodes: ReadonlyMap<string, StructuralSchemaNodeV1>, nodeId: string, fieldName: string): StructuralLiteralV1 | undefined => {
+  const childId = recordChild(nodes, nodeId, fieldName);
+  const child = childId === null ? undefined : nodes.get(childId);
+  return child?.kind === "LITERAL" ? child.value : undefined;
+};
+const resolvedDeltaNodeIds = (deltaId: ApprovedStructuralDeltaIdV1, rootNodeId: string, nodes: ReadonlyMap<string, StructuralSchemaNodeV1>): readonly string[] | null => {
+  const sourceField = recordChild(nodes, rootNodeId, deltaId === "B26_SEAMSTRESS_VARIADIC_DELTA" ? "sourceEffectiveness" : "sourceContract");
+  if (sourceField === null) return null;
+  if (deltaId === "B26_SEAMSTRESS_VARIADIC_DELTA") {
+    const branch = taggedChild(nodes, sourceField, "KNOWN_INEFFECTIVE");
+    const target = branch === null ? null : recordChild(nodes, branch, "representedImpairments");
+    return target === null ? null : [target];
+  }
+  const outerKinds = ["BASE_MATHEMATICIAN", "PHILOSOPHER_GAINED_MATHEMATICIAN_V1", "PHILOSOPHER_GAINED_MATHEMATICIAN_V2"];
+  const targets = outerKinds.map((kind) => {
+    const branch = taggedChild(nodes, sourceField, kind);
+    return branch === null ? null : recordChild(nodes, branch, "abilityInstance");
+  });
+  return targets.some((target) => target === null) ? null : targets as readonly string[];
+};
+type StructuralSchemaAuthorityPolicyV1 = "FULL_C1" | "GENERIC_TEST_FIXTURE";
 const validateDeltaBindings = (
   candidate: StructuralSchemaCandidateV1,
-  nodesById: ReadonlyMap<string, StructuralSchemaNodeV1>
+  nodesById: ReadonlyMap<string, StructuralSchemaNodeV1>,
+  policy: StructuralSchemaAuthorityPolicyV1
 ): StructuralSchemaAuthorityResultV1 | null => {
-  const seen = new Set<string>();
+  if (policy === "GENERIC_TEST_FIXTURE") return candidate.deltaBindings.length === 0 ? null : unhealthy("INVALID_DELTA_BINDING", "DELTA_BINDING", null, "generic fixture policy requires zero delta bindings");
+  const expectedIds = ["B26_SEAMSTRESS_VARIADIC_DELTA", "B54_PLACEHOLDER_UNION_NORMALIZATION_DELTA"] as const;
+  if (candidate.deltaBindings.length !== expectedIds.length) return unhealthy("INVALID_DELTA_BINDING", "DELTA_BINDING", null, "full C1 authority requires exactly B26 and B54 bindings");
   const rootsByBranch = new Map(candidate.roots.map((root) => [root.branchId, root]));
-  for (const binding of candidate.deltaBindings) {
-    const expected = APPROVED_DELTA_BINDINGS[binding.deltaId];
-    if (
-      expected === undefined ||
-      seen.has(binding.deltaId) ||
-      binding.branchId !== expected.branchId ||
-      binding.fieldPath !== expected.fieldPath ||
-      !rootsByBranch.has(binding.branchId) ||
-      binding.nodeIds.length !==
-        (binding.deltaId === "B26_SEAMSTRESS_VARIADIC_DELTA" ? 1 : 3) ||
-      binding.nodeIds.some((nodeId) => !nodesById.has(nodeId))
-    ) {
-      return unhealthy(
-        "INVALID_DELTA_BINDING",
-        "DELTA_BINDING",
-        binding.nodeIds[0] ?? null,
-        "delta binding is not exact or resolvable"
-      );
-    }
-    seen.add(binding.deltaId);
+  for (let index = 0; index < expectedIds.length; index += 1) {
+    const deltaId = expectedIds[index]; const binding = candidate.deltaBindings[index];
+    if (deltaId === undefined || binding === undefined || binding.deltaId !== deltaId) return unhealthy("INVALID_DELTA_BINDING", "DELTA_BINDING", null, "delta binding order or identity is invalid");
+    const expected = APPROVED_DELTA_BINDINGS[deltaId]; const root = rootsByBranch.get(expected.branchId);
+    const resolved = root === undefined ? null : resolvedDeltaNodeIds(deltaId, root.rootNodeId, nodesById);
+    const exactNodes = resolved !== null && binding.nodeIds.length === expected.nodeIds.length && binding.nodeIds.every((nodeId, nodeIndex) => nodeId === expected.nodeIds[nodeIndex] && nodeId === resolved[nodeIndex]);
+    const exactKinds = exactNodes && binding.nodeIds.every((nodeId, nodeIndex) => nodesById.get(nodeId)?.kind === expected.nodeKinds[nodeIndex]);
+    const exactInnerKinds = exactKinds && expected.innerKinds.every((kind, nodeIndex) => recordLiteral(nodesById, binding.nodeIds[nodeIndex] ?? "", "kind") === kind);
+    if (binding.branchId !== expected.branchId || binding.fieldPath !== expected.fieldPath || root?.rootNodeId !== expected.rootNodeId || !exactInnerKinds) return unhealthy("INVALID_DELTA_BINDING", "DELTA_BINDING", binding.nodeIds[0] ?? null, "delta binding root, path, nodes, or normalized identity is not exact");
   }
   return null;
 };
@@ -562,7 +549,7 @@ const countNode = (
   node: StructuralSchemaNodeV1
 ): StructuralSchemaCensusV1 => {
   const next = { ...census, nodes: census.nodes + 1 };
-  const childReferences = getCanonicalChildNodeIds(node).length;
+  const childReferences = getCensusChildNodeIds(node).length;
   next.childReferences += childReferences;
   switch (node.kind) {
     case "NULL":
@@ -632,7 +619,7 @@ const computeCensuses = (
     const node = nodeId === undefined ? undefined : nodesById.get(nodeId);
     if (node === undefined) continue;
     expanded = countNode(expanded, node);
-    const children = getCanonicalChildNodeIds(node);
+    const children = getCensusChildNodeIds(node);
     for (let index = children.length - 1; index >= 0; index -= 1) {
       const child = children[index];
       if (child !== undefined) pending.push(child);
@@ -643,12 +630,20 @@ const computeCensuses = (
     expandedOccurrenceCensus: deeplyFreeze(expanded)
   };
 };
-export const createStructuralSchemaAuthority = (
-  candidate: StructuralSchemaCandidateV1
+const createStructuralSchemaAuthorityWithPolicy = (
+  inputCandidate: StructuralSchemaCandidateV1,
+  policy: StructuralSchemaAuthorityPolicyV1
 ): StructuralSchemaAuthorityResultV1 => {
-  const objectFailure = validateDataOnlyGraph(candidate);
-  if (objectFailure !== null) {
-    return unhealthy("INVALID_OBJECT_SHAPE", "CANDIDATE_CAPTURE", null, objectFailure);
+  let candidate: StructuralSchemaCandidateV1;
+  try {
+    if (typeof inputCandidate !== "object" || inputCandidate === null) return unhealthy("INVALID_OBJECT_SHAPE", "CANDIDATE_CAPTURE", null, "candidate is not an object");
+    const objectFailure = validateDataOnlyGraph(inputCandidate);
+    if (objectFailure !== null) return unhealthy("INVALID_OBJECT_SHAPE", "CANDIDATE_CAPTURE", null, objectFailure);
+    candidate = detachDataOnlyGraph(inputCandidate);
+    const shapeFailure = validateCandidateRuntimeShape(candidate);
+    if (shapeFailure !== null) return unhealthy(shapeFailure.code, shapeFailure.phase, shapeFailure.nodeId, shapeFailure.detail);
+  } catch {
+    return unhealthy("INVALID_OBJECT_SHAPE", "CANDIDATE_CAPTURE", null, "candidate capture failed closed");
   }
   if (
     candidate.astVersion !== DOMAIN_EVENT_STRUCTURAL_SCHEMA_AST_VERSION ||
@@ -673,15 +668,15 @@ export const createStructuralSchemaAuthority = (
     if (!NODE_ID_PATTERN.test(binding.nodeId) || !NODE_ID_PATTERN.test(binding.node.nodeId)) {
       return unhealthy("INVALID_NODE_ID", "NODE_IDENTITY", binding.nodeId, "node ID is not stable ASCII");
     }
+    const priorId = idsByObject.get(binding.node);
+    if (priorId !== undefined && priorId !== binding.nodeId) {
+      return unhealthy("DUPLICATE_NODE_OBJECT", "NODE_IDENTITY", binding.nodeId, "one node object has multiple IDs");
+    }
     if (binding.nodeId !== binding.node.nodeId) {
       return unhealthy("NODE_BINDING_MISMATCH", "NODE_IDENTITY", binding.nodeId, "repository key differs from node ID");
     }
     if (nodesById.has(binding.nodeId)) {
       return unhealthy("DUPLICATE_NODE_ID", "NODE_IDENTITY", binding.nodeId, "duplicate node ID");
-    }
-    const priorId = idsByObject.get(binding.node);
-    if (priorId !== undefined && priorId !== binding.nodeId) {
-      return unhealthy("DUPLICATE_NODE_OBJECT", "NODE_IDENTITY", binding.nodeId, "one node object has multiple IDs");
     }
     idsByObject.set(binding.node, binding.nodeId);
     nodesById.set(binding.nodeId, binding.node);
@@ -753,8 +748,6 @@ export const createStructuralSchemaAuthority = (
     if (!(STRUCTURAL_SCHEMA_NODE_KINDS as readonly string[]).includes(node.kind)) {
       return unhealthy("UNKNOWN_NODE_KIND", "NODE_INVARIANT", node.nodeId, "unknown node kind");
     }
-    const invariantFailure = validateNodeInvariant(node, nodesById);
-    if (invariantFailure !== null) return invariantFailure;
     for (const childNodeId of getCanonicalChildNodeIds(node)) {
       if (typeof childNodeId !== "string" || !NODE_ID_PATTERN.test(childNodeId)) {
         return unhealthy("INVALID_CHILD_BINDING", "CHILD_REFERENCE", node.nodeId, "child reference is invalid");
@@ -764,12 +757,16 @@ export const createStructuralSchemaAuthority = (
       }
     }
   }
-  const deltaFailure = validateDeltaBindings(candidate, nodesById);
-  if (deltaFailure !== null) return deltaFailure;
   const traversal = traverseUniqueNodes(candidate.roots, nodesById);
   if ("code" in traversal) {
     return unhealthy(traversal.code, "CANONICAL_TRAVERSAL", traversal.nodeId, traversal.detail);
   }
+  for (const node of nodesById.values()) {
+    const invariantFailure = validateNodeInvariant(node, nodesById);
+    if (invariantFailure !== null) return invariantFailure;
+  }
+  const deltaFailure = validateDeltaBindings(candidate, nodesById, policy);
+  if (deltaFailure !== null) return deltaFailure;
   if (traversal.uniqueNodeCount !== nodesById.size) {
     return unhealthy("ORPHAN_NODE", "CANONICAL_TRAVERSAL", null, "declared node is unreachable");
   }
@@ -805,6 +802,14 @@ export const createStructuralSchemaAuthority = (
   }
   return authority;
 };
+export const createStructuralSchemaAuthority = (
+  candidate: StructuralSchemaCandidateV1
+): StructuralSchemaAuthorityResultV1 =>
+  createStructuralSchemaAuthorityWithPolicy(candidate, "FULL_C1");
+export const createStructuralSchemaAuthorityForTestCandidate = (
+  candidate: StructuralSchemaCandidateV1
+): StructuralSchemaAuthorityResultV1 =>
+  createStructuralSchemaAuthorityWithPolicy(candidate, "GENERIC_TEST_FIXTURE");
 export const formatStructuralOrdinal = (ordinal: number): string => {
   if (!Number.isSafeInteger(ordinal) || ordinal < 1 || ordinal > 999_999) {
     throw new RangeError("Structural ordinal must be in 1..999999");

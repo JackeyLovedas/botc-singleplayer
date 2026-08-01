@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { types as nodeUtilTypes } from "node:util";
 import {
   DOMAIN_EVENT_STRUCTURAL_AUDIT_CATALOG_VERSION, DOMAIN_EVENT_STRUCTURAL_AUDIT_PROJECTION_VERSION,
   DOMAIN_EVENT_STRUCTURAL_NORMALIZATION_VERSION, DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
@@ -11,31 +12,9 @@ export const APPROVED_C1_DELTA_REGISTRY_VERSION = "APPROVED_C1_DELTA_REGISTRY_V1
 export const DOMAIN_EVENT_STRUCTURAL_SCHEMA_ARTIFACT_VERSION = "botc-domain-event-structural-schema-artifact-v1" as const;
 export const C1_CATALOG_SCOPE = "COMPLETE_C1_40_EVENT_59_BRANCH_AST_AUDIT" as const;
 export const CATALOG_V1_SOURCE_SHA256 = "bb8be14de51c2c668b310869983db36d1200c6959830303e953bbc7af2023b26" as const;
-export type AtomicDeltaRecordV1 = {
-  readonly DeltaId: string; readonly EventType: string; readonly BranchId: string;
-  readonly FieldPath: string; readonly PriorRepresentation: string;
-  readonly AcceptedAuthority: string; readonly V2AstRepresentation: string;
-  readonly RuntimeInputSetChanged: boolean; readonly BehaviorChanged: boolean;
-  readonly JustificationAuthority: string;
-};
-export type ApprovedC1DeltaRegistryV1 = {
-  readonly RegistryVersion: typeof APPROVED_C1_DELTA_REGISTRY_VERSION; readonly AstVersion: typeof DOMAIN_EVENT_STRUCTURAL_SCHEMA_AST_VERSION;
-  readonly TraversalVersion: typeof DOMAIN_EVENT_STRUCTURAL_UNIQUE_NODE_TRAVERSAL_VERSION; readonly NormalizationVersion: typeof DOMAIN_EVENT_STRUCTURAL_NORMALIZATION_VERSION;
-  readonly ProjectionVersion: typeof DOMAIN_EVENT_STRUCTURAL_AUDIT_PROJECTION_VERSION; readonly CatalogVersion: typeof DOMAIN_EVENT_STRUCTURAL_AUDIT_CATALOG_VERSION;
-  readonly V1SourceSha256: typeof CATALOG_V1_SOURCE_SHA256;
-  readonly ApprovedDeltaCount: 2; readonly UnchangedBranchCount: 57; readonly OtherBranchDeltaCount: 0;
-  readonly Records: readonly [AtomicDeltaRecordV1, AtomicDeltaRecordV1];
-};
-export type C1SupportingAuthorityBinding = {
-  readonly SupportingAuthorityId:
-    | "SUP-2B20B-P2F1R-C1-001"
-    | "SUP-2B20B-P2F1R-C1-002"
-    | "SUP-2B20B-P2F1R-C1-003";
-  readonly AuthorityDescription: string; readonly Producer: string;
-  readonly SourceTestOrFixture: string;
-  readonly AuthorityStatus: "ACCEPTED" | "LEGACY";
-  readonly UsedByCriteria: readonly string[]; readonly MutationDisposition: "NONE";
-};
+export type AtomicDeltaRecordV1 = { readonly DeltaId: string; readonly EventType: string; readonly BranchId: string; readonly FieldPath: string; readonly PriorRepresentation: string; readonly AcceptedAuthority: string; readonly V2AstRepresentation: string; readonly RuntimeInputSetChanged: boolean; readonly BehaviorChanged: boolean; readonly JustificationAuthority: string };
+export type ApprovedC1DeltaRegistryV1 = { readonly RegistryVersion: typeof APPROVED_C1_DELTA_REGISTRY_VERSION; readonly AstVersion: typeof DOMAIN_EVENT_STRUCTURAL_SCHEMA_AST_VERSION; readonly TraversalVersion: typeof DOMAIN_EVENT_STRUCTURAL_UNIQUE_NODE_TRAVERSAL_VERSION; readonly NormalizationVersion: typeof DOMAIN_EVENT_STRUCTURAL_NORMALIZATION_VERSION; readonly ProjectionVersion: typeof DOMAIN_EVENT_STRUCTURAL_AUDIT_PROJECTION_VERSION; readonly CatalogVersion: typeof DOMAIN_EVENT_STRUCTURAL_AUDIT_CATALOG_VERSION; readonly V1SourceSha256: typeof CATALOG_V1_SOURCE_SHA256; readonly ApprovedDeltaCount: 2; readonly UnchangedBranchCount: 57; readonly OtherBranchDeltaCount: 0; readonly Records: readonly [AtomicDeltaRecordV1, AtomicDeltaRecordV1] };
+export type C1SupportingAuthorityBinding = { readonly SupportingAuthorityId: "SUP-2B20B-P2F1R-C1-001" | "SUP-2B20B-P2F1R-C1-002" | "SUP-2B20B-P2F1R-C1-003"; readonly AuthorityDescription: string; readonly Producer: string; readonly SourceTestOrFixture: string; readonly AuthorityStatus: "ACCEPTED" | "LEGACY"; readonly UsedByCriteria: readonly string[]; readonly MutationDisposition: "NONE" };
 const deepFreeze = <T>(root: T): T => {
   if (typeof root !== "object" || root === null) return root;
   const pending: object[] = [root];
@@ -133,38 +112,51 @@ export type ApprovedDeltaRegistryAuditResultV1 =
 const REGISTRY_KEYS = Object.freeze(["RegistryVersion", "AstVersion", "TraversalVersion", "NormalizationVersion", "ProjectionVersion", "CatalogVersion", "V1SourceSha256", "ApprovedDeltaCount", "UnchangedBranchCount", "OtherBranchDeltaCount", "Records"] as const);
 const DELTA_KEYS = Object.freeze(["DeltaId", "EventType", "BranchId", "FieldPath", "PriorRepresentation", "AcceptedAuthority", "V2AstRepresentation", "RuntimeInputSetChanged", "BehaviorChanged", "JustificationAuthority"] as const);
 const SUPPORT_KEYS = Object.freeze(["SupportingAuthorityId", "AuthorityDescription", "Producer", "SourceTestOrFixture", "AuthorityStatus", "UsedByCriteria", "MutationDisposition"] as const);
-const isExactOwnKeySet = (value: object, expectedKeys: readonly string[]): boolean => {
-  if (Object.getOwnPropertySymbols(value).length !== 0) return false;
-  const keys = Object.keys(value);
-  return (
-    keys.length === expectedKeys.length &&
-    expectedKeys.every((key) => Object.hasOwn(value, key))
-  );
+const inspectExactDataRecord = (value: unknown, expectedKeys: readonly string[]): Readonly<Record<string, unknown>> | null => {
+  if (typeof value !== "object" || value === null || Array.isArray(value) || nodeUtilTypes.isProxy(value)) return null;
+  const prototype = Object.getPrototypeOf(value) as unknown;
+  if (prototype !== Object.prototype && prototype !== null) return null;
+  const keys = Reflect.ownKeys(value);
+  if (keys.length !== expectedKeys.length || keys.some((key, index) => key !== expectedKeys[index])) return null;
+  const snapshot: Record<string, unknown> = {}; let writable: boolean | null = null;
+  for (const key of expectedKeys) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (descriptor === undefined || !("value" in descriptor) || !descriptor.enumerable || typeof descriptor.writable !== "boolean" || descriptor.writable !== descriptor.configurable || (writable !== null && descriptor.writable !== writable)) return null;
+    writable = descriptor.writable; snapshot[key] = descriptor.value;
+  }
+  return snapshot;
 };
-const isUnknownArray = (value: unknown): value is readonly unknown[] =>
-  Array.isArray(value);
+const inspectExactDenseArray = (value: unknown): readonly unknown[] | null => {
+  if (!Array.isArray(value) || nodeUtilTypes.isProxy(value) || Object.getPrototypeOf(value) !== Array.prototype) return null;
+  const lengthDescriptor = Object.getOwnPropertyDescriptor(value, "length");
+  if (lengthDescriptor === undefined || !("value" in lengthDescriptor) || typeof lengthDescriptor.value !== "number" || !Number.isSafeInteger(lengthDescriptor.value) || lengthDescriptor.value < 0 || lengthDescriptor.enumerable || lengthDescriptor.configurable) return null;
+  const length = lengthDescriptor.value; const keys = Reflect.ownKeys(value);
+  if (keys.length !== length + 1 || keys.at(-1) !== "length") return null;
+  const snapshot: unknown[] = []; let writable: boolean | null = null;
+  for (let index = 0; index < length; index += 1) {
+    if (keys[index] !== String(index)) return null;
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (descriptor === undefined || !("value" in descriptor) || !descriptor.enumerable || typeof descriptor.writable !== "boolean" || descriptor.writable !== descriptor.configurable || (writable !== null && descriptor.writable !== writable)) return null;
+    writable = descriptor.writable; snapshot.push(descriptor.value);
+  }
+  if (lengthDescriptor.writable !== (writable ?? true)) return null;
+  return snapshot;
+};
 const isExactDeltaRecord = (
   candidate: unknown,
   expected: AtomicDeltaRecordV1
 ): boolean => {
-  if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate)) {
-    return false;
-  }
-  if (!isExactOwnKeySet(candidate, DELTA_KEYS)) return false;
-  const record = candidate as Readonly<Record<string, unknown>>;
+  const record = inspectExactDataRecord(candidate, DELTA_KEYS);
+  if (record === null) return false;
   return DELTA_KEYS.every((key) => record[key] === expected[key]);
 };
 export const auditApprovedC1DeltaRegistry = (
   candidate: unknown,
   supportingAuthorities: unknown = C1_SUPPORTING_AUTHORITY_BINDINGS
 ): ApprovedDeltaRegistryAuditResultV1 => {
-  if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate)) {
-    return { valid: false, code: "INVALID_REGISTRY_SHAPE", failClosed: true };
-  }
-  if (!isExactOwnKeySet(candidate, REGISTRY_KEYS)) {
-    return { valid: false, code: "INVALID_REGISTRY_SHAPE", failClosed: true };
-  }
-  const record = candidate as Readonly<Record<string, unknown>>;
+  try {
+  const record = inspectExactDataRecord(candidate, REGISTRY_KEYS);
+  if (record === null) return { valid: false, code: "INVALID_REGISTRY_SHAPE", failClosed: true };
   if (
     record.RegistryVersion !== APPROVED_C1_DELTA_REGISTRY_VERSION ||
     record.AstVersion !== DOMAIN_EVENT_STRUCTURAL_SCHEMA_AST_VERSION ||
@@ -185,32 +177,23 @@ export const auditApprovedC1DeltaRegistry = (
     return { valid: false, code: "INVALID_REGISTRY_COUNTS", failClosed: true };
   }
   if (
-    !Array.isArray(record.Records) ||
-    record.Records.length !== 2 ||
-    !isExactDeltaRecord(record.Records[0], B26_DELTA) ||
-    !isExactDeltaRecord(record.Records[1], B54_DELTA)
+    inspectExactDenseArray(record.Records)?.length !== 2 ||
+    !isExactDeltaRecord(inspectExactDenseArray(record.Records)?.[0], B26_DELTA) ||
+    !isExactDeltaRecord(inspectExactDenseArray(record.Records)?.[1], B54_DELTA)
   ) {
     return { valid: false, code: "INVALID_DELTA_RECORD", failClosed: true };
   }
   if (
-    !isUnknownArray(supportingAuthorities) ||
-    supportingAuthorities.length !== C1_SUPPORTING_AUTHORITY_BINDINGS.length ||
-    supportingAuthorities.some((entry, index) => {
+    inspectExactDenseArray(supportingAuthorities)?.length !== C1_SUPPORTING_AUTHORITY_BINDINGS.length ||
+    inspectExactDenseArray(supportingAuthorities)?.some((entry, index) => {
       const expected = C1_SUPPORTING_AUTHORITY_BINDINGS[index];
-      if (
-        expected === undefined ||
-        typeof entry !== "object" ||
-        entry === null ||
-        isUnknownArray(entry) ||
-        !isExactOwnKeySet(entry, SUPPORT_KEYS)
-      ) return true;
-      const record = entry as Readonly<Record<string, unknown>>;
+      const support = inspectExactDataRecord(entry, SUPPORT_KEYS);
+      if (expected === undefined || support === null) return true;
       return SUPPORT_KEYS.some((key) =>
         key === "UsedByCriteria"
-          ? !Array.isArray(record[key]) ||
-            record[key].length !== expected[key].length ||
-            record[key].some((value, criterionIndex) => value !== expected[key][criterionIndex])
-          : record[key] !== expected[key]
+          ? inspectExactDenseArray(support[key])?.length !== expected[key].length ||
+            inspectExactDenseArray(support[key])?.some((value, criterionIndex) => value !== expected[key][criterionIndex])
+          : support[key] !== expected[key]
       );
     })
   ) {
@@ -223,6 +206,9 @@ export const auditApprovedC1DeltaRegistry = (
     unchangedBranchCount: 57,
     otherBranchDeltaCount: 0
   };
+  } catch {
+    return { valid: false, code: "INVALID_REGISTRY_SHAPE", failClosed: true };
+  }
 };
 const quote = (value: string): string => {
   let result = '"';
@@ -340,12 +326,12 @@ export type CanonicalSchemaArtifactV1 = {
 };
 const eventDescriptorLines = (
   authority: HealthyStructuralSchemaAuthorityV1
-): readonly string[] =>
-  Array.from(
-    authority.candidate.roots.reduce((events, root) => {
-      const existing = events.get(root.eventOrdinal);
+): readonly string[] => {
+  const canonicalRoots = authority.candidate.roots.slice().sort((left, right) => left.branchOrdinal - right.branchOrdinal);
+  const events = canonicalRoots.reduce((byOrdinal, root) => {
+      const existing = byOrdinal.get(root.eventOrdinal);
       if (existing === undefined) {
-        events.set(root.eventOrdinal, {
+        byOrdinal.set(root.eventOrdinal, {
           eventType: root.eventType,
           resultTypeNames: [root.resultTypeName],
           branchOrdinals: [root.branchOrdinal]
@@ -354,11 +340,13 @@ const eventDescriptorLines = (
         existing.resultTypeNames.push(root.resultTypeName);
         existing.branchOrdinals.push(root.branchOrdinal);
       }
-      return events;
-    }, new Map<number, { eventType: string; resultTypeNames: string[]; branchOrdinals: number[] }>()),
+      return byOrdinal;
+    }, new Map<number, { eventType: string; resultTypeNames: string[]; branchOrdinals: number[] }>());
+  return Array.from(events.entries()).sort(([left], [right]) => left - right).map(
     ([eventOrdinal, event]) =>
       `E|${formatStructuralOrdinal(eventOrdinal)}|eventType=${quote(event.eventType)}|resultTypes=${renderList(event.resultTypeNames.map(quote))}|branchOrdinals=${renderList(event.branchOrdinals.map(formatStructuralOrdinal))}`
   );
+};
 const buildArtifactLines = (
   authority: HealthyStructuralSchemaAuthorityV1,
   registry: ApprovedC1DeltaRegistryV1

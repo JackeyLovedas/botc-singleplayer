@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { createFullC1StructuralSchemaAuthority } from "./domain-event-structural-schema-ast.js";
+import { createFullC1StructuralSchemaAuthority, createStructuralSchemaAuthority } from "./domain-event-structural-schema-ast.js";
 import {
   APPROVED_C1_DELTA_REGISTRY_V1,
   C1_SUPPORTING_AUTHORITY_BINDINGS,
@@ -81,6 +81,47 @@ describe("Catalog V2 audit projection", () => {
     ).toMatchObject({ valid: false, code: "INVALID_SUPPORTING_AUTHORITY" });
   });
 
+  it("accepts dense detached exact registry and support data", () => {
+    expect(auditApprovedC1DeltaRegistry(structuredClone(APPROVED_C1_DELTA_REGISTRY_V1), structuredClone(C1_SUPPORTING_AUTHORITY_BINDINGS))).toMatchObject({ valid: true, code: "APPROVED_C1_DELTA_REGISTRY_V1_MATCH" });
+  });
+
+  it("rejects sparse support arrays and sparse criteria arrays", () => {
+    expect(auditApprovedC1DeltaRegistry(APPROVED_C1_DELTA_REGISTRY_V1, new Array(3))).toMatchObject({ valid: false, code: "INVALID_SUPPORTING_AUTHORITY" });
+    const originalSupports = structuredClone(C1_SUPPORTING_AUTHORITY_BINDINGS);
+    const supports = [{ ...originalSupports[0]!, UsedByCriteria: new Array(2) }, ...originalSupports.slice(1)];
+    expect(auditApprovedC1DeltaRegistry(APPROVED_C1_DELTA_REGISTRY_V1, supports)).toMatchObject({ valid: false, code: "INVALID_SUPPORTING_AUTHORITY" });
+  });
+
+  it("rejects accessors without invoking getters", () => {
+    const registry = mutableRegistry(); let getterCalls = 0;
+    Object.defineProperty(registry, "RegistryVersion", { enumerable: true, configurable: true, get: () => { getterCalls += 1; return "APPROVED_C1_DELTA_REGISTRY_V1"; } });
+    expect(auditApprovedC1DeltaRegistry(registry)).toMatchObject({ valid: false, code: "INVALID_REGISTRY_SHAPE" });
+    expect(getterCalls).toBe(0);
+    const deltaRegistry = mutableRegistry(); const first = (deltaRegistry.Records as Record<string, unknown>[])[0]!;
+    Object.defineProperty(first, "DeltaId", { enumerable: true, configurable: true, get: () => { getterCalls += 1; return "B26_SEAMSTRESS_VARIADIC_DELTA"; } });
+    expect(auditApprovedC1DeltaRegistry(deltaRegistry)).toMatchObject({ valid: false, code: "INVALID_DELTA_RECORD" });
+    expect(getterCalls).toBe(0);
+  });
+
+  it.each([
+    ["non-enumerable extra key", (registry: Record<string, unknown>) => { Object.defineProperty(registry, "hidden", { value: true }); }],
+    ["symbol key", (registry: Record<string, unknown>) => { Object.defineProperty(registry, Symbol("extra"), { value: true }); }],
+    ["prototype extension", (registry: Record<string, unknown>) => { Object.setPrototypeOf(registry, { extra: true }); }],
+    ["reordered keys", (registry: Record<string, unknown>) => { const value = registry.RegistryVersion; delete registry.RegistryVersion; registry.RegistryVersion = value; }],
+    ["noncanonical descriptor", (registry: Record<string, unknown>) => { Object.defineProperty(registry, "RegistryVersion", { value: registry.RegistryVersion, enumerable: true, writable: false, configurable: true }); }]
+  ] as const)("rejects %s", (_label, mutate) => {
+    const registry = mutableRegistry(); mutate(registry);
+    expect(auditApprovedC1DeltaRegistry(registry)).toMatchObject({ valid: false, code: "INVALID_REGISTRY_SHAPE" });
+  });
+
+  it("rejects ordinary and revoked proxies without open property access", () => {
+    let getterCalls = 0; const proxied = new Proxy(mutableRegistry(), { get: () => { getterCalls += 1; throw new Error("proxy get trap must not run"); } });
+    expect(auditApprovedC1DeltaRegistry(proxied)).toMatchObject({ valid: false, code: "INVALID_REGISTRY_SHAPE" });
+    expect(getterCalls).toBe(0);
+    const revocable = Proxy.revocable(mutableRegistry(), {}); revocable.revoke();
+    expect(auditApprovedC1DeltaRegistry(revocable.proxy)).toMatchObject({ valid: false, code: "INVALID_REGISTRY_SHAPE" });
+  });
+
   it("creates deterministic direct-SHA artifacts over the complete authority", () => {
     const authority = healthyAuthority();
     const first = createCanonicalSchemaArtifact(authority);
@@ -98,6 +139,23 @@ describe("Catalog V2 audit projection", () => {
     expect(Object.isFrozen(first)).toBe(true);
     expect(Object.isFrozen(first.bytes)).toBe(true);
     expect(Object.isFrozen(first.lines)).toBe(true);
+  });
+
+  it("derives descriptors and artifacts only from canonical numeric root order", () => {
+    const canonical = healthyAuthority(); const captured = structuredClone(canonical.candidate);
+    const permutedCandidate = { ...captured, roots: [...captured.roots].reverse(), nodeBindings: [...captured.nodeBindings].reverse() };
+    const permuted = createStructuralSchemaAuthority(permutedCandidate);
+    expect(permuted.status).toBe("HEALTHY"); if (permuted.status !== "HEALTHY") return;
+    expect(permuted.traversal).toEqual(canonical.traversal);
+    expect(createCanonicalSchemaArtifact(permuted)).toEqual(createCanonicalSchemaArtifact(canonical));
+    expect(renderGeneratedStructuralSchemaCatalogV2(permuted)).toBe(renderGeneratedStructuralSchemaCatalogV2(canonical));
+    const event11 = createCanonicalSchemaArtifact(permuted).lines.find((line) => line.startsWith("E|000011|"));
+    expect(event11).toContain("branchOrdinals=[000011,000012,000013,000014,000015,000016,000017,000018,000019,000020]");
+    const capturedChanged = structuredClone(canonical.candidate); const first = capturedChanged.roots[0]!; const second = capturedChanged.roots[1]!;
+    const changedCandidate = { ...capturedChanged, roots: [{ ...first, branchOrdinal: second.branchOrdinal }, { ...second, branchOrdinal: first.branchOrdinal }, ...capturedChanged.roots.slice(2)] };
+    const changed = createStructuralSchemaAuthority(changedCandidate);
+    expect(changed.status).toBe("HEALTHY"); if (changed.status !== "HEALTHY") return;
+    expect(createCanonicalSchemaArtifact(changed).sha256).not.toBe(createCanonicalSchemaArtifact(canonical).sha256);
   });
 
   it("renders the full audit-only Catalog V2 without validator completion claims", () => {
