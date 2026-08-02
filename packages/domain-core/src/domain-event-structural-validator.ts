@@ -1615,6 +1615,16 @@ const traverseNode = (
       ) {
         return failure(F20_EVENT_BRANCH);
       }
+      for (let index = 0; index < schema.branches.length; index += 1) {
+        const branch = schema.branches[index];
+        if (
+          branch === undefined ||
+          branch.branchOrdinal !== index + 1 ||
+          branch.branchOrdinal < 1
+        ) {
+          return failure(F20_TAGGED_VARIANT, path);
+        }
+      }
       const located = findEntryWithOrdinal(input, schema.tagField);
       if (located === null) {
         const coordinate = createTaggedCoordinate(
@@ -1655,14 +1665,7 @@ const traverseNode = (
         | undefined;
       let matchCount = 0;
       for (let index = 0; index < schema.branches.length; index += 1) {
-        const branch = schema.branches[index];
-        if (
-          branch === undefined ||
-          branch.branchOrdinal !== index + 1 ||
-          branch.branchOrdinal < 1
-        ) {
-          return failure(F20_TAGGED_VARIANT, path);
-        }
+        const branch = schema.branches[index]!;
         if (structuralLiteralMatches(located.entry.value, branch.tagLiteral)) {
           match = branch;
           matchCount += 1;
@@ -2099,17 +2102,24 @@ export const validateDomainEventStructuralNodeForTest = (
   nodeId: string,
   input: unknown
 ):
-  | { readonly ok: true; readonly value: unknown }
+  | {
+      readonly ok: true;
+      readonly value: unknown;
+      readonly observation: DomainEventStructuralValidationObservation;
+    }
   | {
       readonly ok: false;
       readonly diagnosticLeafId: DomainEventStructuralDiagnosticLeafIdV1;
       readonly diagnostic: DomainEventStructuralDiagnostic;
+      readonly observation: DomainEventStructuralValidationObservation;
     } => {
+  const observation = createObservation();
   if (authorityResult.status !== "HEALTHY") {
     return Object.freeze({
       ok: false as const,
       diagnosticLeafId: F20,
-      diagnostic: createDomainEventStructuralDiagnostic(F20)
+      diagnostic: createDomainEventStructuralDiagnostic(F20),
+      observation: freezeObservation(observation)
     });
   }
   const captured = captureCanonicalRuntimeValue(input);
@@ -2119,7 +2129,8 @@ export const validateDomainEventStructuralNodeForTest = (
       diagnosticLeafId: translateCaptureFailure(captured.diagnostic).leafId,
       diagnostic: createDomainEventStructuralDiagnostic(
         translateCaptureFailure(captured.diagnostic).leafId
-      )
+      ),
+      observation: freezeObservation(observation)
     });
   }
   const authenticated = readCanonicalRuntimeBackingForStructuralValidation(
@@ -2129,7 +2140,8 @@ export const validateDomainEventStructuralNodeForTest = (
     return Object.freeze({
       ok: false as const,
       diagnosticLeafId: F06,
-      diagnostic: createDomainEventStructuralDiagnostic(F06)
+      diagnostic: createDomainEventStructuralDiagnostic(F06),
+      observation: freezeObservation(observation)
     });
   }
   const nodesById = Object.create(null) as Record<
@@ -2151,7 +2163,8 @@ export const validateDomainEventStructuralNodeForTest = (
       return Object.freeze({
         ok: false as const,
         diagnosticLeafId: F20_NODE_ORDINAL,
-        diagnostic: createDomainEventStructuralDiagnostic(F20_NODE_ORDINAL)
+        diagnostic: createDomainEventStructuralDiagnostic(F20_NODE_ORDINAL),
+        observation: freezeObservation(observation)
       });
     }
     nodeOrdinalsByNodeId[entry.nodeId] = entry.nodeOrdinal;
@@ -2167,7 +2180,8 @@ export const validateDomainEventStructuralNodeForTest = (
     return Object.freeze({
       ok: false as const,
       diagnosticLeafId: F20_EVENT_BRANCH,
-      diagnostic: createDomainEventStructuralDiagnostic(F20_EVENT_BRANCH)
+      diagnostic: createDomainEventStructuralDiagnostic(F20_EVENT_BRANCH),
+      observation: freezeObservation(observation)
     });
   }
   const traversed = traverseNode(
@@ -2177,14 +2191,18 @@ export const validateDomainEventStructuralNodeForTest = (
     {
       authority: { nodesById, nodeOrdinalsByNodeId },
       eventBranchOrdinal,
-      observation: createObservation(),
+      observation,
       discriminatorCache: Object.freeze(
         Object.create(null) as Record<string, DiscriminatorCacheEntry>
       )
     }
   );
   return traversed.ok
-    ? Object.freeze({ ok: true as const, value: traversed.value })
+    ? Object.freeze({
+        ok: true as const,
+        value: traversed.value,
+        observation: freezeObservation(observation)
+      })
     : Object.freeze({
         ok: false as const,
         diagnosticLeafId: traversed.leafId,
@@ -2192,7 +2210,8 @@ export const validateDomainEventStructuralNodeForTest = (
           traversed.leafId,
           traversed.path,
           traversed.taggedUnionCoordinate
-        )
+        ),
+        observation: freezeObservation(observation)
       });
 };
 

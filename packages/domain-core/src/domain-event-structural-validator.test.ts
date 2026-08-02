@@ -121,6 +121,299 @@ const sampleForNode = (nodeId: string): unknown => {
   }
 };
 
+type PublicAstMutationMode =
+  | "RECORD_MISSING"
+  | "RECORD_EXTRA"
+  | "KIND_MISMATCH"
+  | "LITERAL_MISMATCH"
+  | "CARDINALITY_MISMATCH"
+  | "CLOSED_UNION_ZERO"
+  | "REFINEMENT_REJECTED";
+
+type PublicAstMutation = {
+  readonly value: unknown;
+  readonly matched: boolean;
+  readonly mutationPath: string;
+};
+
+const mutatePublicAstSample = (
+  nodeId: string,
+  mode: PublicAstMutationMode,
+  targetTaggedContext: boolean,
+  activeTaggedContext = false,
+  path = nodeId
+): PublicAstMutation => {
+  const schema = node(nodeId);
+  const contextMatches = activeTaggedContext === targetTaggedContext;
+  if (contextMatches && mode === "RECORD_MISSING" && schema.kind === "EXACT_RECORD") {
+    const required = schema.fields.find((field) => field.required);
+    if (required !== undefined) {
+      const value = cloneRecord(sampleForNode(nodeId));
+      delete value[required.fieldName];
+      return { value, matched: true, mutationPath: `${path}.${required.fieldName}` };
+    }
+  }
+  if (contextMatches && mode === "RECORD_EXTRA" && schema.kind === "EXACT_RECORD") {
+    return {
+      value: { ...cloneRecord(sampleForNode(nodeId)), __c_extra: true },
+      matched: true,
+      mutationPath: `${path}.__c_extra`
+    };
+  }
+  if (contextMatches && mode === "KIND_MISMATCH" && schema.kind === "STRING") {
+    return { value: {}, matched: true, mutationPath: path };
+  }
+  if (
+    contextMatches &&
+    mode === "LITERAL_MISMATCH" &&
+    schema.kind === "LITERAL" &&
+    typeof schema.value === "string"
+  ) {
+    return { value: "__C_UNKNOWN_LITERAL__", matched: true, mutationPath: path };
+  }
+  if (
+    contextMatches &&
+    mode === "CARDINALITY_MISMATCH" &&
+    (schema.kind === "NON_EMPTY_ARRAY" ||
+      schema.kind === "BOUNDED_ARRAY" ||
+      schema.kind === "TUPLE")
+  ) {
+    const value =
+      schema.kind === "NON_EMPTY_ARRAY"
+        ? []
+        : schema.kind === "TUPLE"
+          ? [...schema.elementNodeIds.map(sampleForNode), null]
+          : schema.minItems > 0
+            ? []
+            : Array.from(
+                { length: schema.maxItems + 1 },
+                () => sampleForNode(schema.elementNodeId)
+              );
+    return { value, matched: true, mutationPath: path };
+  }
+  if (
+    contextMatches &&
+    mode === "CLOSED_UNION_ZERO" &&
+    schema.kind === "CLOSED_UNION"
+  ) {
+    return {
+      value: { __c_closed_union_no_match: true },
+      matched: true,
+      mutationPath: path
+    };
+  }
+  if (contextMatches && mode === "REFINEMENT_REJECTED" && schema.kind === "REFINEMENT") {
+    return { value: "   ", matched: true, mutationPath: path };
+  }
+
+  switch (schema.kind) {
+    case "NULL":
+    case "BOOLEAN":
+    case "SAFE_INTEGER":
+    case "STRING":
+    case "LITERAL":
+    case "ENUM":
+      return { value: sampleForNode(nodeId), matched: false, mutationPath: path };
+    case "NULLABLE": {
+      const child = mutatePublicAstSample(
+        schema.childNodeId,
+        mode,
+        targetTaggedContext,
+        activeTaggedContext,
+        `${path}.nullable`
+      );
+      return child.matched
+        ? child
+        : { value: sampleForNode(nodeId), matched: false, mutationPath: path };
+    }
+    case "EXACT_RECORD": {
+      const value = cloneRecord(sampleForNode(nodeId));
+      for (const field of schema.fields) {
+        const child = mutatePublicAstSample(
+          field.childNodeId,
+          mode,
+          targetTaggedContext,
+          activeTaggedContext,
+          `${path}.${field.fieldName}`
+        );
+        if (child.matched) {
+          value[field.fieldName] = child.value;
+          return { value, matched: true, mutationPath: child.mutationPath };
+        }
+      }
+      return { value, matched: false, mutationPath: path };
+    }
+    case "ARRAY":
+    case "NON_EMPTY_ARRAY":
+    case "BOUNDED_ARRAY": {
+      const child = mutatePublicAstSample(
+        schema.elementNodeId,
+        mode,
+        targetTaggedContext,
+        activeTaggedContext,
+        `${path}[0]`
+      );
+      if (!child.matched) {
+        return { value: sampleForNode(nodeId), matched: false, mutationPath: path };
+      }
+      const length = schema.kind === "ARRAY" ? 1 : Math.max(1, schema.minItems);
+      const value = Array.from({ length }, () => sampleForNode(schema.elementNodeId));
+      value[0] = child.value;
+      return { value, matched: true, mutationPath: child.mutationPath };
+    }
+    case "TUPLE": {
+      const value = schema.elementNodeIds.map(sampleForNode);
+      for (let index = 0; index < schema.elementNodeIds.length; index += 1) {
+        const childNodeId = schema.elementNodeIds[index];
+        if (childNodeId === undefined) continue;
+        const child = mutatePublicAstSample(
+          childNodeId,
+          mode,
+          targetTaggedContext,
+          activeTaggedContext,
+          `${path}[${index}]`
+        );
+        if (child.matched) {
+          value[index] = child.value;
+          return { value, matched: true, mutationPath: child.mutationPath };
+        }
+      }
+      return { value, matched: false, mutationPath: path };
+    }
+    case "TAGGED_UNION": {
+      if (!targetTaggedContext) {
+        return { value: sampleForNode(nodeId), matched: false, mutationPath: path };
+      }
+      for (const branch of schema.branches) {
+        const child = mutatePublicAstSample(
+          branch.childNodeId,
+          mode,
+          true,
+          true,
+          `${path}<${branch.branchOrdinal}>`
+        );
+        if (child.matched) {
+          const value = cloneRecord(child.value);
+          value[schema.tagField] = branch.tagLiteral;
+          return { value, matched: true, mutationPath: child.mutationPath };
+        }
+      }
+      return { value: sampleForNode(nodeId), matched: false, mutationPath: path };
+    }
+    case "CLOSED_UNION": {
+      for (const branchNodeId of schema.branchNodeIds) {
+        const child = mutatePublicAstSample(
+          branchNodeId,
+          mode,
+          targetTaggedContext,
+          activeTaggedContext,
+          `${path}|${branchNodeId}`
+        );
+        if (child.matched) return child;
+      }
+      return { value: sampleForNode(nodeId), matched: false, mutationPath: path };
+    }
+    case "REFINEMENT": {
+      const child = mutatePublicAstSample(
+        schema.baseNodeId,
+        mode,
+        targetTaggedContext,
+        activeTaggedContext,
+        `${path}.base`
+      );
+      return child.matched
+        ? child
+        : { value: sampleForNode(nodeId), matched: false, mutationPath: path };
+    }
+  }
+};
+
+const mutateFirstTaggedDiscriminator = (
+  nodeId: string,
+  mode: "MISSING" | "WRONG_KIND" | "UNKNOWN",
+  path = nodeId
+): PublicAstMutation => {
+  const schema = node(nodeId);
+  if (schema.kind === "TAGGED_UNION") {
+    const value = cloneRecord(sampleForNode(nodeId));
+    if (mode === "MISSING") delete value[schema.tagField];
+    else if (mode === "WRONG_KIND") value[schema.tagField] = {};
+    else value[schema.tagField] = "__C_UNKNOWN_TAG__";
+    return {
+      value,
+      matched: true,
+      mutationPath: `${path}.${schema.tagField}`
+    };
+  }
+  switch (schema.kind) {
+    case "EXACT_RECORD": {
+      const value = cloneRecord(sampleForNode(nodeId));
+      for (const field of schema.fields) {
+        const child = mutateFirstTaggedDiscriminator(
+          field.childNodeId,
+          mode,
+          `${path}.${field.fieldName}`
+        );
+        if (child.matched) {
+          value[field.fieldName] = child.value;
+          return { value, matched: true, mutationPath: child.mutationPath };
+        }
+      }
+      break;
+    }
+    case "ARRAY":
+    case "NON_EMPTY_ARRAY":
+    case "BOUNDED_ARRAY": {
+      const child = mutateFirstTaggedDiscriminator(
+        schema.elementNodeId,
+        mode,
+        `${path}[0]`
+      );
+      if (child.matched) {
+        const length = schema.kind === "ARRAY" ? 1 : Math.max(1, schema.minItems);
+        const value = Array.from({ length }, () => sampleForNode(schema.elementNodeId));
+        value[0] = child.value;
+        return { value, matched: true, mutationPath: child.mutationPath };
+      }
+      break;
+    }
+    case "TUPLE": {
+      const value = schema.elementNodeIds.map(sampleForNode);
+      for (let index = 0; index < schema.elementNodeIds.length; index += 1) {
+        const childNodeId = schema.elementNodeIds[index];
+        if (childNodeId === undefined) continue;
+        const child = mutateFirstTaggedDiscriminator(
+          childNodeId,
+          mode,
+          `${path}[${index}]`
+        );
+        if (child.matched) {
+          value[index] = child.value;
+          return { value, matched: true, mutationPath: child.mutationPath };
+        }
+      }
+      break;
+    }
+    case "NULLABLE":
+      return mutateFirstTaggedDiscriminator(schema.childNodeId, mode, `${path}.nullable`);
+    case "CLOSED_UNION":
+      for (const branchNodeId of schema.branchNodeIds) {
+        const child = mutateFirstTaggedDiscriminator(
+          branchNodeId,
+          mode,
+          `${path}|${branchNodeId}`
+        );
+        if (child.matched) return child;
+      }
+      break;
+    case "REFINEMENT":
+      return mutateFirstTaggedDiscriminator(schema.baseNodeId, mode, `${path}.base`);
+    default:
+      break;
+  }
+  return { value: sampleForNode(nodeId), matched: false, mutationPath: path };
+};
+
 const rootByOrdinal = (ordinal: number): StructuralSchemaRootV1 => {
   const root = authority.candidate.roots.find(
     (candidate) => candidate.branchOrdinal === ordinal
@@ -299,9 +592,6 @@ describe("P2F1R-C domain event structural validation", () => {
   it("C-C02 preserves the exact 14-field accepted envelope runtime language", () => {
     const root = rootByOrdinal(1);
     const baseline = envelopeForRoot(root);
-    const accepted = validateDomainEventStructure(baseline);
-    expect(accepted.ok).toBe(true);
-
     const envelopeFields = [
       "category",
       "eventId",
@@ -319,68 +609,117 @@ describe("P2F1R-C domain event structural validation", () => {
       "payload"
     ] as const;
     expect(Object.keys(baseline)).toEqual(envelopeFields);
-    for (const [index, field] of envelopeFields.entries()) {
-      const missing = envelopeForRoot(root);
-      delete missing[field];
-      const failure = expectFailureCode(missing, "MISSING_REQUIRED_FIELD");
-      expect(failure.diagnostic.path, field).toEqual([
-        { kind: "ENVELOPE_FIELD_ORDINAL", ordinal: index + 1 }
-      ]);
-    }
+    expect(validateDomainEventStructure(baseline).ok).toBe(true);
 
-    const wrongTypeValues: Readonly<Record<(typeof envelopeFields)[number], unknown>> = {
-      category: 1,
-      eventId: 1,
-      gameId: 1,
-      eventSequence: "1",
-      batchId: 1,
-      gameVersion: "1",
-      eventType: 1,
-      eventVersion: "1",
-      rulesBaselineVersion: 1,
-      commandId: 1,
-      createdAt: 1,
-      correlationId: 1,
-      causationId: 1,
-      payload: "payload"
+    type EnvelopeCase = {
+      readonly name: string;
+      readonly value?: unknown;
+      readonly delete?: true;
+      readonly code?: string;
+      readonly accepted?: true;
     };
-    for (const [index, field] of envelopeFields.entries()) {
-      const wrongType = envelopeForRoot(root);
-      wrongType[field] = wrongTypeValues[field];
-      const failure = expectFailureCode(wrongType, "INVALID_FIELD_TYPE");
-      expect(failure.diagnostic.path, field).toEqual([
-        { kind: "ENVELOPE_FIELD_ORDINAL", ordinal: index + 1 }
-      ]);
-    }
+    const idCases: readonly EnvelopeCase[] = [
+      { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
+      { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
+      { name: "empty", value: "", code: "INVALID_FIELD_VALUE" },
+      { name: "whitespace", value: " \t\n ", code: "INVALID_FIELD_VALUE" },
+      { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" },
+      { name: "leading and trailing whitespace", value: " value ", accepted: true }
+    ];
+    const integerCases: readonly EnvelopeCase[] = [
+      { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
+      { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
+      { name: "empty", value: "", code: "INVALID_FIELD_TYPE" },
+      { name: "whitespace", value: " ", code: "INVALID_FIELD_TYPE" },
+      { name: "wrong type", value: "1", code: "INVALID_FIELD_TYPE" },
+      { name: "negative", value: -1, accepted: true },
+      { name: "zero", value: 0, accepted: true }
+    ];
+    const casesByField: Readonly<Record<(typeof envelopeFields)[number], readonly EnvelopeCase[]>> = {
+      category: [
+        { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
+        { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
+        { name: "empty", value: "", code: "INVALID_FIELD_VALUE" },
+        { name: "whitespace", value: " ", code: "INVALID_FIELD_VALUE" },
+        { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" },
+        { name: "literal", value: "domain", accepted: true }
+      ],
+      eventId: idCases,
+      gameId: idCases,
+      eventSequence: integerCases,
+      batchId: idCases,
+      gameVersion: integerCases,
+      eventType: [
+        { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
+        { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
+        { name: "empty", value: "", code: "UNKNOWN_EVENT_TYPE" },
+        { name: "whitespace", value: " ", code: "UNKNOWN_EVENT_TYPE" },
+        { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" },
+        { name: "known", value: root.eventType, accepted: true }
+      ],
+      eventVersion: [
+        { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
+        { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
+        { name: "empty", value: "", code: "INVALID_FIELD_TYPE" },
+        { name: "whitespace", value: " ", code: "INVALID_FIELD_TYPE" },
+        { name: "wrong type", value: "1", code: "INVALID_FIELD_TYPE" },
+        { name: "supported", value: 1, accepted: true },
+        { name: "unsupported", value: 2, code: "UNSUPPORTED_EVENT_VERSION" }
+      ],
+      rulesBaselineVersion: [
+        { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
+        { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
+        { name: "empty", value: "", accepted: true },
+        { name: "whitespace", value: " ", accepted: true },
+        { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" }
+      ],
+      commandId: idCases,
+      createdAt: [
+        { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
+        { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
+        { name: "empty", value: "", accepted: true },
+        { name: "whitespace", value: " ", accepted: true },
+        { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" }
+      ],
+      correlationId: idCases,
+      causationId: idCases,
+      payload: [
+        { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
+        { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
+        { name: "string", value: "payload", code: "INVALID_FIELD_TYPE" },
+        { name: "empty object reaches AST", value: {}, code: "MISSING_REQUIRED_FIELD" },
+        { name: "authentic object", value: sampleForNode(root.rootNodeId), accepted: true }
+      ]
+    };
 
-    const blankAllowed = envelopeForRoot(root);
-    blankAllowed.rulesBaselineVersion = "";
-    blankAllowed.createdAt = " ";
-    expect(validateDomainEventStructure(blankAllowed).ok).toBe(true);
-    const blankId = envelopeForRoot(root);
-    blankId.eventId = " ";
-    expectFailureCode(blankId, "INVALID_FIELD_VALUE");
-    const nullField = envelopeForRoot(root);
-    nullField.createdAt = null;
-    expectFailureCode(nullField, "INVALID_FIELD_TYPE");
-    const wrongCategory = envelopeForRoot(root);
-    wrongCategory.category = "audit";
-    expectFailureCode(wrongCategory, "INVALID_FIELD_VALUE");
-    const unsupportedVersion = envelopeForRoot(root);
-    unsupportedVersion.eventVersion = 2;
-    expectFailureCode(unsupportedVersion, "UNSUPPORTED_EVENT_VERSION");
-    for (const field of [
-      "eventId",
-      "gameId",
-      "batchId",
-      "commandId",
-      "correlationId",
-      "causationId"
-    ] as const) {
-      const blank = envelopeForRoot(root);
-      blank[field] = " \t\n ";
-      expectFailureCode(blank, "INVALID_FIELD_VALUE");
+    let executedCases = 0;
+    for (const [index, field] of envelopeFields.entries()) {
+      const fieldCases = casesByField[field];
+      expect(fieldCases.length, field).toBeGreaterThanOrEqual(5);
+      for (const fieldCase of fieldCases) {
+        executedCases += 1;
+        const candidate = envelopeForRoot(root);
+        if (fieldCase.delete === true) delete candidate[field];
+        else candidate[field] = fieldCase.value;
+        const result = validateDomainEventStructure(candidate);
+        if (fieldCase.accepted === true) {
+          expect(result.ok, `${field}:${fieldCase.name}`).toBe(true);
+          continue;
+        }
+        expect(result.ok, `${field}:${fieldCase.name}`).toBe(false);
+        if (result.ok) throw new Error("expected envelope matrix failure");
+        expect(result.diagnostic.code, `${field}:${fieldCase.name}`).toBe(fieldCase.code);
+        expect(result.diagnostic.path, `${field}:${fieldCase.name}`).toEqual(
+          field === "payload" && fieldCase.name === "empty object reaches AST"
+            ? [{ kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 1 }]
+            : [{ kind: "ENVELOPE_FIELD_ORDINAL", ordinal: index + 1 }]
+        );
+        expect(result.diagnostic).toMatchObject({
+          failClosed: true
+        });
+      }
     }
+    expect(executedCases).toBe(84);
   });
 
   it("C-C03c admits one complete authority and dispatches only after admission", () => {
@@ -395,6 +734,19 @@ describe("P2F1R-C domain event structural validation", () => {
       discriminatorPathCount: 7,
       refinementAliasCount: 16,
       astNodeKindCount: 15
+    });
+    const observed = validateDomainEventStructureWithObservationForTest(
+      envelopeForRoot(rootByOrdinal(1))
+    );
+    expect(observed.result.ok).toBe(true);
+    expect(observed.observation).toMatchObject({
+      authorityChecked: true,
+      captureEntered: true,
+      envelopeKeySetChecked: true,
+      payloadNodeAcquired: true,
+      astTraversalEntered: true,
+      validatedBackingConstructed: true,
+      tokenIssued: true
     });
   });
 
@@ -455,9 +807,16 @@ describe("P2F1R-C domain event structural validation", () => {
     const root = rootByOrdinal(1);
     const missingPayload = envelopeForRoot(root);
     delete missingPayload.payload;
+    const hostile = Object.create(null) as Record<string, unknown>;
+    Object.defineProperty(hostile, "category", {
+      enumerable: true,
+      get: () => "domain"
+    });
     const candidates = [
       {
-        candidate: null,
+        name: "F02 correctable capture rejection",
+        candidate: undefined,
+        expectedLeafId: "L02_F02_CAPTURE_CORRECTABLE",
         expected: {
           envelopeKeySetChecked: false,
           payloadKeyPresenceChecked: false,
@@ -468,7 +827,35 @@ describe("P2F1R-C domain event structural validation", () => {
         }
       },
       {
+        name: "F03 hostile capture rejection",
+        candidate: hostile,
+        expectedLeafId: "L03_F03_CAPTURE_HOSTILE",
+        expected: {
+          envelopeKeySetChecked: false,
+          payloadKeyPresenceChecked: false,
+          payloadKeyPresent: false,
+          envelopeFieldReads: 0,
+          eventTypeReads: 0,
+          eventVersionReads: 0
+        }
+      },
+      {
+        name: "F07 non-record envelope",
+        candidate: null,
+        expectedLeafId: "L07_F07_ENVELOPE_NOT_OBJECT",
+        expected: {
+          envelopeKeySetChecked: false,
+          payloadKeyPresenceChecked: false,
+          payloadKeyPresent: false,
+          envelopeFieldReads: 0,
+          eventTypeReads: 0,
+          eventVersionReads: 0
+        }
+      },
+      {
+        name: "F08 missing envelope field",
         candidate: missingPayload,
+        expectedLeafId: "L08_F08_ENVELOPE_FIELD_MISSING",
         expected: {
           envelopeKeySetChecked: true,
           payloadKeyPresenceChecked: true,
@@ -479,7 +866,9 @@ describe("P2F1R-C domain event structural validation", () => {
         }
       },
       {
+        name: "F09 extra envelope field",
         candidate: { ...envelopeForRoot(root), extra: true },
+        expectedLeafId: "L09_F09_ENVELOPE_FIELD_EXTRA",
         expected: {
           envelopeKeySetChecked: true,
           payloadKeyPresenceChecked: true,
@@ -490,7 +879,9 @@ describe("P2F1R-C domain event structural validation", () => {
         }
       },
       {
+        name: "F10 envelope field kind",
         candidate: { ...envelopeForRoot(root), eventSequence: "1" },
+        expectedLeafId: "L10_F10_ENVELOPE_FIELD_WRONG_KIND",
         expected: {
           envelopeKeySetChecked: true,
           payloadKeyPresenceChecked: true,
@@ -501,7 +892,22 @@ describe("P2F1R-C domain event structural validation", () => {
         }
       },
       {
+        name: "F11 envelope field value",
+        candidate: { ...envelopeForRoot(root), category: "audit" },
+        expectedLeafId: "L11_F11_ENVELOPE_FIELD_INVALID_VALUE",
+        expected: {
+          envelopeKeySetChecked: true,
+          payloadKeyPresenceChecked: true,
+          payloadKeyPresent: true,
+          envelopeFieldReads: 1,
+          eventTypeReads: 0,
+          eventVersionReads: 0
+        }
+      },
+      {
+        name: "F12 unknown event type",
         candidate: { ...envelopeForRoot(root), eventType: "FutureEvent" },
+        expectedLeafId: "L12_F12_EVENT_TYPE_UNKNOWN",
         expected: {
           envelopeKeySetChecked: true,
           payloadKeyPresenceChecked: true,
@@ -512,7 +918,9 @@ describe("P2F1R-C domain event structural validation", () => {
         }
       },
       {
+        name: "F13 unsupported event version",
         candidate: { ...envelopeForRoot(root), eventVersion: 2 },
+        expectedLeafId: "L13_F13_EVENT_VERSION_UNSUPPORTED",
         expected: {
           envelopeKeySetChecked: true,
           payloadKeyPresenceChecked: true,
@@ -523,13 +931,13 @@ describe("P2F1R-C domain event structural validation", () => {
         }
       }
     ];
-    for (const { candidate, expected } of candidates) {
+    for (const { name, candidate, expectedLeafId, expected } of candidates) {
       const observed =
         validateDomainEventStructureWithObservationForTest(candidate);
-      expect(observed.result.ok).toBe(false);
+      expect(observed.result.ok, name).toBe(false);
       const { diagnosticLeafId, ...observerWithoutLeaf } = observed.observation;
-      expect(diagnosticLeafId).not.toBeNull();
-      expect(observerWithoutLeaf).toEqual({
+      expect(diagnosticLeafId, name).toBe(expectedLeafId);
+      expect(observerWithoutLeaf, name).toEqual({
         authorityChecked: true,
         captureEntered: true,
         ...expected,
@@ -541,6 +949,26 @@ describe("P2F1R-C domain event structural validation", () => {
         tokenIssued: false
       });
     }
+    const fakeToken =
+      validateCapturedDomainEventStructureWithObservationForTest({});
+    expect(fakeToken.result.ok).toBe(false);
+    expect(fakeToken.observation).toEqual({
+      diagnosticLeafId: "L05_F05_CAPTURE_TOKEN_INVALID",
+      authorityChecked: true,
+      captureEntered: false,
+      envelopeKeySetChecked: false,
+      payloadKeyPresenceChecked: false,
+      payloadKeyPresent: false,
+      envelopeFieldReads: 0,
+      eventTypeReads: 0,
+      eventVersionReads: 0,
+      payloadNodeAcquired: false,
+      payloadDiscriminatorReads: 0,
+      payloadContentReads: 0,
+      astTraversalEntered: false,
+      validatedBackingConstructed: false,
+      tokenIssued: false
+    });
   });
 
   it("C-C06b selects each of the 59 C1 roots exactly once without fallback", () => {
@@ -578,6 +1006,30 @@ describe("P2F1R-C domain event structural validation", () => {
   });
 
   it("C-C06a bounds all seven payload discriminator paths before AST traversal", () => {
+    const rootCountByEvent = new Map<string, number>();
+    for (const candidate of authority.candidate.roots) {
+      rootCountByEvent.set(
+        candidate.eventType,
+        (rootCountByEvent.get(candidate.eventType) ?? 0) + 1
+      );
+    }
+    const singletonRoots = authority.candidate.roots.filter(
+      (candidate) => rootCountByEvent.get(candidate.eventType) === 1
+    );
+    expect(singletonRoots).toHaveLength(35);
+    for (const singleton of singletonRoots) {
+      const observed = validateDomainEventStructureWithObservationForTest(
+        envelopeForRoot(singleton)
+      );
+      expect(observed.result.ok, singleton.branchId).toBe(true);
+      expect(
+        observed.observation.payloadDiscriminatorReads,
+        singleton.branchId
+      ).toBe(0);
+      expect(observed.observation.astTraversalEntered, singleton.branchId).toBe(
+        true
+      );
+    }
     const expectedReadsByOrdinal = new Map<number, number>([
       ...[11, 12, 13, 14, 15].map((ordinal) => [ordinal, 2] as const),
       ...[16, 17, 18].map((ordinal) => [ordinal, 1] as const),
@@ -1342,6 +1794,32 @@ describe("P2F1R-C domain event structural validation", () => {
     for (const title of actualTitles) {
       expect(testSource).toContain(`it("${title}"`);
     }
+    const productionAuthoritySource = `${productionSource()}\n${canonicalDomainEventSource()}`;
+    const productionEntrySets = activeRows.map((row) =>
+      [...(row[15] ?? "").matchAll(/`([A-Za-z_$][A-Za-z0-9_$]*)`/gu)].map(
+        (match) => match[1] as string
+      )
+    );
+    expect(productionEntrySets).toHaveLength(28);
+    for (const [index, entries] of productionEntrySets.entries()) {
+      expect(entries.length, activeRows[index]?.[0]).toBeGreaterThan(0);
+      for (const entry of entries) {
+        expect(
+          new RegExp(`\\b${entry}\\b`, "u").test(productionAuthoritySource),
+          `${activeRows[index]?.[0]}:${entry}`
+        ).toBe(true);
+      }
+    }
+    expect(
+      activeRows.every(
+        (row) =>
+          row[9] ===
+          "`packages/domain-core/src/domain-event-structural-validator.test.ts`"
+      )
+    ).toBe(true);
+    expect(
+      traceabilitySource().match(/`mechanismMatch`: `28\/28 PASS`/u)
+    ).not.toBeNull();
     expect(DOMAIN_EVENT_STRUCTURAL_FAILURE_CONTEXT_IDS).toHaveLength(34);
     expect(new Set(DOMAIN_EVENT_STRUCTURAL_FAILURE_CONTEXT_IDS).size).toBe(
       34
@@ -1495,172 +1973,130 @@ describe("P2F1R-C domain event structural validation", () => {
       publicLeaf(envelopeForRoot(discriminatedRoot, payload));
     }
 
-    const nodeLeaf = (
-      nodes: readonly StructuralSchemaNodeV1[],
-      nodeId: string,
-      input: unknown
-    ): ReturnType<typeof validateDomainEventStructuralNodeForTest> => {
-      const result = validateDomainEventStructuralNodeForTest(
-        nodeFixtureAuthority(nodes, nodeId),
-        nodeId,
-        input
+    const publicAstCases = [
+      ["L26_F21_RECORD_MISSING_PLAIN", "RECORD_MISSING", false],
+      ["L28_F22_RECORD_EXTRA_PLAIN", "RECORD_EXTRA", false],
+      ["L30_F23_KIND_MISMATCH_PLAIN", "KIND_MISMATCH", false],
+      ["L32_F24_LITERAL_MISMATCH_PLAIN", "LITERAL_MISMATCH", false],
+      ["L34_F25_CARDINALITY_MISMATCH_PLAIN", "CARDINALITY_MISMATCH", false],
+      ["L39_F27_CLOSED_UNION_ZERO_MATCH", "CLOSED_UNION_ZERO", false],
+      ["L41_F29_REFINEMENT_REJECTED_PLAIN", "REFINEMENT_REJECTED", false],
+      ["L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT", "RECORD_MISSING", true],
+      ["L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT", "RECORD_EXTRA", true],
+      ["L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT", "KIND_MISMATCH", true],
+      ["L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT", "LITERAL_MISMATCH", true],
+      ["L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT", "CARDINALITY_MISMATCH", true],
+      ["L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT", "REFINEMENT_REJECTED", true]
+    ] as const;
+    const publicAstEvidence: string[] = [];
+    for (const [expectedLeafId, mode, tagged] of publicAstCases) {
+      let matched:
+        | {
+            readonly root: StructuralSchemaRootV1;
+            readonly mutation: PublicAstMutation;
+            readonly observed: ReturnType<typeof validateDomainEventStructureWithObservationForTest>;
+          }
+        | undefined;
+      for (const candidateRoot of authority.candidate.roots) {
+        const mutation = mutatePublicAstSample(
+          candidateRoot.rootNodeId,
+          mode,
+          tagged
+        );
+        if (!mutation.matched) continue;
+        const observed = validateDomainEventStructureWithObservationForTest(
+          envelopeForRoot(candidateRoot, mutation.value)
+        );
+        if (observed.observation.diagnosticLeafId === expectedLeafId) {
+          matched = { root: candidateRoot, mutation, observed };
+          break;
+        }
+      }
+      expect(matched, expectedLeafId).toBeDefined();
+      if (matched === undefined) throw new Error(`missing public fixture ${expectedLeafId}`);
+      expect(matched.observed.result.ok).toBe(false);
+      expect(matched.observed.observation).toMatchObject({
+        authorityChecked: true,
+        captureEntered: true,
+        envelopeKeySetChecked: true,
+        payloadKeyPresenceChecked: true,
+        payloadKeyPresent: true,
+        payloadNodeAcquired: true,
+        astTraversalEntered: true,
+        validatedBackingConstructed: false,
+        tokenIssued: false
+      });
+      if (matched.observed.result.ok) throw new Error("expected public AST failure");
+      const policy = DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY[expectedLeafId];
+      expect(matched.observed.result.diagnostic).toMatchObject({
+        code: policy.code,
+        phase: policy.phase,
+        safeSummary: policy.safeSummary,
+        quarantineRecommended: policy.quarantineRecommended,
+        retryability: policy.retryability,
+        failClosed: true
+      });
+      recordLeaf(expectedLeafId);
+      publicAstEvidence.push(
+        `${expectedLeafId}:${matched.root.branchOrdinal}:${matched.mutation.mutationPath}`
       );
-      expect(result.ok).toBe(false);
-      if (!result.ok) recordLeaf(result.diagnosticLeafId);
-      return result;
-    };
-    const textNode = { nodeId: "text", kind: "STRING" } as const;
-    nodeLeaf(
-      [
-        {
-          nodeId: "record",
-          kind: "EXACT_RECORD",
-          fields: [
-            {
-              fieldOrdinal: 1,
-              fieldName: "value",
-              required: true,
-              optional: false,
-              childNodeId: "text"
-            }
-          ]
-        },
-        textNode
-      ],
-      "record",
-      {}
-    );
-    nodeLeaf(
-      [
-        {
-          nodeId: "record",
-          kind: "EXACT_RECORD",
-          fields: [
-            {
-              fieldOrdinal: 1,
-              fieldName: "value",
-              required: true,
-              optional: false,
-              childNodeId: "text"
-            }
-          ]
-        },
-        textNode
-      ],
-      "record",
-      { value: "ok", extra: true }
-    );
-    nodeLeaf([textNode], "text", {});
-    nodeLeaf(
-      [{ nodeId: "literal", kind: "LITERAL", value: "A" }],
-      "literal",
-      "B"
-    );
-    nodeLeaf(
-      [
-        {
-          nodeId: "array",
-          kind: "NON_EMPTY_ARRAY",
-          elementNodeId: "text",
-          minItems: 1,
-          maxItems: null
-        },
-        textNode
-      ],
-      "array",
-      []
-    );
-    nodeLeaf(
-      [
-        {
-          nodeId: "union",
-          kind: "CLOSED_UNION",
-          selection: "EXACTLY_ONE",
-          branchNodeIds: ["boolean", "text"]
-        },
-        { nodeId: "boolean", kind: "BOOLEAN" },
-        textNode
-      ],
-      "union",
-      {}
-    );
-    nodeLeaf(
-      [
-        {
-          nodeId: "refinement",
-          kind: "REFINEMENT",
-          refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
-          refinementKind: "NON_EMPTY_TRIMMED_STRING",
-          baseNodeId: "text"
-        },
-        textNode
-      ],
-      "refinement",
-      "   "
-    );
+    }
 
-    const taggedNodes: readonly StructuralSchemaNodeV1[] = [
-      {
-        nodeId: "tagged",
-        kind: "TAGGED_UNION",
-        tagField: "kind",
-        branches: [
-          { branchOrdinal: 1, tagLiteral: "A", childNodeId: "variant" }
-        ]
-      },
-      {
-        nodeId: "variant",
-        kind: "EXACT_RECORD",
-        fields: [
-          { fieldOrdinal: 1, fieldName: "items", required: true, optional: false, childNodeId: "items" },
-          { fieldOrdinal: 2, fieldName: "kind", required: true, optional: false, childNodeId: "kind-a" },
-          { fieldOrdinal: 3, fieldName: "literal", required: true, optional: false, childNodeId: "literal-a" },
-          { fieldOrdinal: 4, fieldName: "refined", required: true, optional: false, childNodeId: "refined" },
-          { fieldOrdinal: 5, fieldName: "required", required: true, optional: false, childNodeId: "text" }
-        ]
-      },
-      { nodeId: "kind-a", kind: "LITERAL", value: "A" },
-      { nodeId: "literal-a", kind: "LITERAL", value: "A" },
-      {
-        nodeId: "items",
-        kind: "NON_EMPTY_ARRAY",
-        elementNodeId: "text",
-        minItems: 1,
-        maxItems: null
-      },
-      {
-        nodeId: "refined",
-        kind: "REFINEMENT",
-        refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
-        refinementKind: "NON_EMPTY_TRIMMED_STRING",
-        baseNodeId: "text"
-      },
-      textNode
-    ];
-    const taggedBase = {
-      kind: "A",
-      required: "ok",
-      literal: "A",
-      items: ["ok"],
-      refined: "ok"
-    };
-    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, required: undefined });
-    const missingRequired = { ...taggedBase } as Record<string, unknown>;
-    delete missingRequired.required;
-    nodeLeaf(taggedNodes, "tagged", missingRequired);
-    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, extra: true });
-    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, required: {} });
-    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, literal: "B" });
-    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, items: [] });
-    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, refined: " " });
-    nodeLeaf(taggedNodes, "tagged", {
-      required: "ok",
-      literal: "A",
-      items: ["ok"],
-      refined: "ok"
-    });
-    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, kind: {} });
-    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, kind: "FUTURE" });
+    const taggedDiscriminatorCases = [
+      ["L36_F26_TAGGED_DISCRIMINATOR_MISSING", "MISSING"],
+      ["L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND", "WRONG_KIND"],
+      ["L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN", "UNKNOWN"]
+    ] as const;
+    for (const [expectedLeafId, mode] of taggedDiscriminatorCases) {
+      let matched = false;
+      for (const candidateRoot of authority.candidate.roots) {
+        const mutation = mutateFirstTaggedDiscriminator(
+          candidateRoot.rootNodeId,
+          mode
+        );
+        if (!mutation.matched) continue;
+        const observed = validateDomainEventStructureWithObservationForTest(
+          envelopeForRoot(candidateRoot, mutation.value)
+        );
+        if (observed.observation.diagnosticLeafId !== expectedLeafId) continue;
+        expect(observed.result.ok).toBe(false);
+        expect(observed.observation).toMatchObject({
+          authorityChecked: true,
+          captureEntered: true,
+          payloadNodeAcquired: true,
+          astTraversalEntered: true,
+          validatedBackingConstructed: false,
+          tokenIssued: false
+        });
+        recordLeaf(expectedLeafId);
+        publicAstEvidence.push(
+          `${expectedLeafId}:${candidateRoot.branchOrdinal}:${mutation.mutationPath}`
+        );
+        matched = true;
+        break;
+      }
+      expect(matched, expectedLeafId).toBe(true);
+    }
+    expect(publicAstEvidence).toHaveLength(16);
+    expect(new Set(publicAstEvidence).size).toBe(16);
+    expect(publicAstEvidence).toEqual([
+      "L26_F21_RECORD_MISSING_PLAIN:1:C1.SHA256.539f5c9437a8ac695c2c15049a6e8f6fce7ff597d5ff252fd507691a42ccf41a.aiPlayerCount",
+      "L28_F22_RECORD_EXTRA_PLAIN:1:C1.SHA256.539f5c9437a8ac695c2c15049a6e8f6fce7ff597d5ff252fd507691a42ccf41a.__c_extra",
+      "L30_F23_KIND_MISMATCH_PLAIN:1:C1.SHA256.539f5c9437a8ac695c2c15049a6e8f6fce7ff597d5ff252fd507691a42ccf41a.gameId.base",
+      "L32_F24_LITERAL_MISMATCH_PLAIN:2:C1.SHA256.35e3e927c1c70627eadf6fb1cfb89510db31726ed4a1d2aa445ac9fa40d16267.edition",
+      "L34_F25_CARDINALITY_MISMATCH_PLAIN:11:C1.SHA256.3eabcb7470ff38720e1f0a1452eea95d31e49f38a9a2ea2c20d4370070ec1402.visibility.futureUnsupportedDecisionKinds",
+      "L39_F27_CLOSED_UNION_ZERO_MATCH:10:C1.SHA256.e2ce47e09973f8b553c044b63a5f7167a540d19fb1869e43f8c877f57b4aadca.taskCatalogSnapshot.definitions[0]",
+      "L41_F29_REFINEMENT_REJECTED_PLAIN:1:C1.SHA256.539f5c9437a8ac695c2c15049a6e8f6fce7ff597d5ff252fd507691a42ccf41a.gameId",
+      "L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.abilityRoleId",
+      "L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.__c_extra",
+      "L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.grantId.base",
+      "L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.abilityRoleId",
+      "L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT:53:C1.SHA256.231f6d881d10ce12d11add8ed12570f33eb127bda41a7bc8701d69674465950c.sourceEffectiveness<1>.representedImpairmentIds",
+      "L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.grantId",
+      "L36_F26_TAGGED_DISCRIMINATOR_MISSING:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource.kind",
+      "L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource.kind",
+      "L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource.kind"
+    ]);
 
     const invalidToken = readStructurallyValidatedDomainEvent({});
     expect(invalidToken.ok).toBe(false);
@@ -1808,15 +2244,126 @@ describe("P2F1R-C domain event structural validation", () => {
       );
     expect(staticPolicies).toHaveLength(16);
     expect(new Set(staticPolicies.map((entry) => entry.leafId)).size).toBe(16);
-    const source = `${productionSource()}\n${canonicalDomainEventSource()}`;
-    for (const policy of staticPolicies) {
-      expect(policy.taggedCoordinatePolicy).toBe("NULL");
-      expect(policy.exactSourceBinding.length).toBeGreaterThan(0);
-      expect(source).toContain(policy.leafId);
+    const validatorSource = productionSource();
+    const tokenSource = canonicalDomainEventSource();
+    const staticBindings = [
+      ["L01_F01_AUTHORITY_UNHEALTHY", "admitC1Authority", /result\.status !== "HEALTHY"[\s\S]*?return unhealthyAdmission\(\)/],
+      ["L04_F04_CAPTURE_INTERNAL", "translateCaptureFailure", /case "INTERNAL_SERIALIZATION_FAILURE":\s*return failure\(F04\)/],
+      ["L06_F06_CAPTURE_BACKING_MISSING", "validateCapturedInternal", /authenticated\.diagnostic\.code === "INVALID_CAPTURE_TOKEN"[\s\S]*?failure\(F05\)[\s\S]*?: failure\(F06\)/],
+      ["L20_F20_AST_NODE_LOOKUP_MISSING", "traverseNode", /if \(schema === undefined\) \{\s*return failure\(F20, path\)/],
+      ["L21_F20_AST_NODE_ORDINAL_LOOKUP_MISSING", "traverseNode", /if \(astNodeOrdinal === undefined\) \{\s*return failure\(F20_NODE_ORDINAL, path\)/],
+      ["L22_F20_EVENT_BRANCH_ORDINAL_INVALID", "validateCapturedInternal", /selectedRoot\.branchOrdinal > 59[\s\S]*?return toPublicFailure\(failure\(F20_EVENT_BRANCH\), observation\)/],
+      ["L23_F20_TAGGED_VARIANT_ORDINAL_INVALID", "traverseNode", /branch\.branchOrdinal !== index \+ 1[\s\S]*?return failure\(F20_TAGGED_VARIANT, path\)/],
+      ["L24_F20_TAGGED_FIELD_COORDINATE_INVARIANT", "traverseNode", /if \(coordinate === null\) return failure\(F20_TAGGED_FIELD, path\)/],
+      ["L25_F20_TAGGED_MULTIPLE_LITERAL_MATCH", "traverseNode", /if \(matchCount > 1\) \{\s*return failure\(F20_TAGGED_MULTIPLE, path\)/],
+      ["L40_F28_CLOSED_UNION_MULTIPLE_MATCH", "traverseNode", /if \(matches\.length > 1\) return failure\(F28, path\)/],
+      ["L43_F30_REFINEMENT_METADATA_INVALID", "executeRefinement", /metadata\.refinementVersion !==[\s\S]*?typeof value !== "string"[\s\S]*?return failure\(F30, path\)/],
+      ["L44_F31_BACKING_CONSTRUCTION_FAILED", "validateCapturedInternal", /catch \{\s*return toPublicFailure\(failure\(F31\), observation\)/],
+      ["L45_F32_TOKEN_ISSUE_FAILED", "issueStructurallyValidatedDomainEvent", /diagnostic: createDomainEventStructuralDiagnostic\("L45_F32_TOKEN_ISSUE_FAILED"\)/],
+      ["L47_F34_INTERNAL_CONTAINMENT", "validateDomainEventStructure", /export const validateDomainEventStructure[\s\S]*?catch \{\s*return toPublicFailure\(failure\(F34\), observation\)/],
+      ["L18_F18_ROOT_SELECTION_ZERO", "selectBranch", /if \(match === undefined\) \{\s*return failure\(F18, discriminatorPath\(current\.discriminatorOrdinal\)\)/],
+      ["L19_F19_ROOT_SELECTION_MULTIPLE", "selectBranch", /if \(matches\.length > 1\) \{\s*return failure\(F19, discriminatorPath\(current\.discriminatorOrdinal\)\)/]
+    ] as const;
+    expect(staticBindings).toHaveLength(16);
+    expect(new Set(staticBindings.map(([leafId]) => leafId)).size).toBe(16);
+    expect(staticBindings.map(([leafId]) => leafId).sort()).toEqual(
+      staticPolicies.map((entry) => entry.leafId).sort()
+    );
+    for (const [leafId, symbol, exactBranch] of staticBindings) {
+      const policy = staticPolicies.find((entry) => entry.leafId === leafId);
+      expect(policy, leafId).toBeDefined();
+      expect(policy?.taggedCoordinatePolicy, leafId).toBe("NULL");
+      const policySymbol =
+        leafId === "L47_F34_INTERNAL_CONTAINMENT"
+          ? "publicOuterCatch"
+          : symbol;
+      expect(policy?.exactSourceBinding.startsWith(policySymbol), leafId).toBe(
+        true
+      );
+      expect(
+        exactBranch.test(
+          leafId === "L45_F32_TOKEN_ISSUE_FAILED" ? tokenSource : validatorSource
+        ),
+        `${leafId}:${symbol}`
+      ).toBe(true);
     }
-    expect(source).toContain("value.leafId === F20_TAGGED_MULTIPLE");
-    expect(source).toContain("if (matches.length > 1) return failure(F28, path)");
-    expect(source).not.toContain("default:");
+    expect(validatorSource).not.toContain("default:");
+
+    const taggedNode = {
+      nodeId: "tagged",
+      kind: "TAGGED_UNION",
+      tagField: "kind",
+      branches: [
+        { branchOrdinal: 1, tagLiteral: "A", childNodeId: "variant" }
+      ]
+    } as const;
+    const fixture = nodeFixtureAuthority(
+      [
+        taggedNode,
+        {
+          nodeId: "variant",
+          kind: "EXACT_RECORD",
+          fields: [
+            { fieldOrdinal: 1, fieldName: "kind", required: true, optional: false, childNodeId: "literal-a" },
+            { fieldOrdinal: 2, fieldName: "value", required: true, optional: false, childNodeId: "text" }
+          ]
+        },
+        { nodeId: "literal-a", kind: "LITERAL", value: "A" },
+        { nodeId: "text", kind: "STRING" }
+      ],
+      "tagged"
+    );
+    expect(fixture.status).toBe("HEALTHY");
+    if (fixture.status !== "HEALTHY") throw new Error("expected healthy F20 fixture");
+    const invalidTaggedNode = Object.freeze({
+      ...taggedNode,
+      branches: Object.freeze([
+        Object.freeze({ branchOrdinal: 2, tagLiteral: "A", childNodeId: "variant" })
+      ])
+    }) satisfies StructuralSchemaNodeV1;
+    const invalidAuthority = Object.freeze({
+      ...fixture,
+      candidate: Object.freeze({
+        ...fixture.candidate,
+        nodeBindings: Object.freeze(
+          fixture.candidate.nodeBindings.map((binding) =>
+            binding.nodeId === "tagged"
+              ? Object.freeze({ nodeId: "tagged", node: invalidTaggedNode })
+              : binding
+          )
+        )
+      }),
+      traversal: Object.freeze({
+        ...fixture.traversal,
+        uniqueNodes: Object.freeze(
+          fixture.traversal.uniqueNodes.map((entry) =>
+            entry.nodeId === "tagged"
+              ? Object.freeze({ ...entry, node: invalidTaggedNode })
+              : entry
+          )
+        )
+      })
+    });
+    const multiInvalidInputs = [
+      { kind: "FUTURE", value: {} },
+      { value: {}, kind: "FUTURE" },
+      { value: {} }
+    ];
+    const f20Results = multiInvalidInputs.map((input) =>
+      validateDomainEventStructuralNodeForTest(invalidAuthority, "tagged", input)
+    );
+    for (const result of f20Results) {
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error("expected F20 frozen-order failure");
+      expect(result.diagnosticLeafId).toBe(
+        "L23_F20_TAGGED_VARIANT_ORDINAL_INVALID"
+      );
+      expect(result.diagnostic.path).toEqual([]);
+      expect(result.diagnostic.taggedUnionCoordinate).toBeNull();
+      expect(result.observation.payloadContentReads).toBe(0);
+    }
+    expect(f20Results[0]).toEqual(f20Results[1]);
+    expect(f20Results[1]).toEqual(f20Results[2]);
   });
 
   it("C-C16 returns structural success without semantic or history authority", () => {
