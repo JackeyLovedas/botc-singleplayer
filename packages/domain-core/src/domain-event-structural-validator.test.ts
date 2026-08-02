@@ -16,6 +16,7 @@ import {
   DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
   DOMAIN_EVENT_STRUCTURAL_SCHEMA_AST_VERSION,
   DOMAIN_EVENT_STRUCTURAL_UNIQUE_NODE_TRAVERSAL_VERSION,
+  STRUCTURAL_ID_ALIASES_V1,
   STRUCTURAL_SCHEMA_NODE_KINDS,
   createFullC1StructuralSchemaAuthority,
   createStructuralSchemaAuthorityForTestCandidate
@@ -209,6 +210,49 @@ const productionSource = (): string =>
     "utf8"
   );
 
+const canonicalDomainEventSource = (): string =>
+  readFileSync(
+    fileURLToPath(new URL("./canonical-domain-event.ts", import.meta.url)),
+    "utf8"
+  );
+
+const EXPECTED_DIAGNOSTIC_POLICY_MATRIX = [
+  ["F01", "C1_AUTHORITY_UNHEALTHY", "AUTHORITY_ADMISSION", "AUTHORITY_UNAVAILABLE", true, "AFTER_PROCESS_RESTART", "admit-authority"],
+  ["F02", "CAPTURE_REJECTED", "CAPTURE", "INPUT_CAPTURE_FAILED", false, "AFTER_INPUT_CORRECTION", "translate-correctable-capture"],
+  ["F03", "CAPTURE_REJECTED", "CAPTURE", "INPUT_CAPTURE_FAILED", true, "AFTER_INPUT_CORRECTION", "translate-hostile-capture"],
+  ["F04", "CAPTURE_REJECTED", "CAPTURE", "INTERNAL_FAILURE", true, "AFTER_PROCESS_RESTART", "translate-internal-capture"],
+  ["F05", "INVALID_CAPTURE_TOKEN", "BACKING_AUTHENTICATION", "CAPTURE_TOKEN_REJECTED", true, "NEVER", "authenticate-capture-token"],
+  ["F06", "INTERNAL_STRUCTURAL_VALIDATION_FAILURE", "BACKING_AUTHENTICATION", "INTERNAL_FAILURE", true, "AFTER_PROCESS_RESTART", "read-capture-backing"],
+  ["F07", "INVALID_ENVELOPE", "ENVELOPE", "ENVELOPE_REJECTED", false, "AFTER_INPUT_CORRECTION", "require-envelope-object"],
+  ["F08", "MISSING_REQUIRED_FIELD", "ENVELOPE", "ENVELOPE_REJECTED", false, "AFTER_INPUT_CORRECTION", "require-envelope-field"],
+  ["F09", "EXTRA_FIELD", "ENVELOPE", "ENVELOPE_REJECTED", false, "AFTER_INPUT_CORRECTION", "reject-envelope-extra"],
+  ["F10", "INVALID_FIELD_TYPE", "ENVELOPE", "ENVELOPE_REJECTED", false, "AFTER_INPUT_CORRECTION", "validate-envelope-kind"],
+  ["F11", "INVALID_FIELD_VALUE", "ENVELOPE", "ENVELOPE_REJECTED", false, "AFTER_INPUT_CORRECTION", "validate-envelope-value"],
+  ["F12", "UNKNOWN_EVENT_TYPE", "EVENT_DISPATCH", "EVENT_TYPE_REJECTED", false, "AFTER_INPUT_CORRECTION", "lookup-event-type"],
+  ["F13", "UNSUPPORTED_EVENT_VERSION", "VERSION_DISPATCH", "EVENT_VERSION_REJECTED", false, "NEVER", "validate-envelope-version"],
+  ["F14", "INVALID_FIELD_TYPE", "PAYLOAD_ACQUISITION", "PAYLOAD_REJECTED", false, "AFTER_INPUT_CORRECTION", "require-payload-object"],
+  ["F15", "INVALID_PAYLOAD_DISCRIMINANT", "PAYLOAD_DISCRIMINANT", "PAYLOAD_DISCRIMINANT_REJECTED", false, "AFTER_INPUT_CORRECTION", "require-discriminator"],
+  ["F16", "INVALID_PAYLOAD_DISCRIMINANT", "PAYLOAD_DISCRIMINANT", "PAYLOAD_DISCRIMINANT_REJECTED", false, "AFTER_INPUT_CORRECTION", "validate-discriminator-kind"],
+  ["F17", "INVALID_PAYLOAD_DISCRIMINANT", "PAYLOAD_DISCRIMINANT", "PAYLOAD_DISCRIMINANT_REJECTED", false, "AFTER_INPUT_CORRECTION", "validate-discriminator-literal"],
+  ["F18", "INVALID_PAYLOAD_BRANCH", "PAYLOAD_DISCRIMINANT", "PAYLOAD_BRANCH_REJECTED", false, "AFTER_INPUT_CORRECTION", "reject-zero-branch"],
+  ["F19", "INVALID_PAYLOAD_BRANCH", "PAYLOAD_DISCRIMINANT", "AMBIGUOUS_BRANCH", true, "NEVER", "reject-multiple-branches"],
+  ["F20", "INVALID_AST_NODE", "INTERNAL", "INTERNAL_FAILURE", true, "AFTER_PROCESS_RESTART", "resolve-ast-node"],
+  ["F21", "MISSING_REQUIRED_FIELD", "AST_TRAVERSAL", "PAYLOAD_REJECTED", false, "AFTER_INPUT_CORRECTION", "require-ast-field"],
+  ["F22", "EXTRA_FIELD", "AST_TRAVERSAL", "PAYLOAD_REJECTED", false, "AFTER_INPUT_CORRECTION", "reject-ast-extra"],
+  ["F23", "INVALID_FIELD_TYPE", "AST_TRAVERSAL", "PAYLOAD_REJECTED", false, "AFTER_INPUT_CORRECTION", "validate-ast-kind"],
+  ["F24", "INVALID_FIELD_VALUE", "AST_TRAVERSAL", "PAYLOAD_REJECTED", false, "AFTER_INPUT_CORRECTION", "validate-ast-literal"],
+  ["F25", "INVALID_PAYLOAD_STRUCTURE", "AST_TRAVERSAL", "PAYLOAD_REJECTED", false, "AFTER_INPUT_CORRECTION", "validate-cardinality"],
+  ["F26", "INVALID_PAYLOAD_STRUCTURE", "AST_TRAVERSAL", "PAYLOAD_REJECTED", false, "AFTER_INPUT_CORRECTION", "select-tagged-union"],
+  ["F27", "INVALID_PAYLOAD_STRUCTURE", "AST_TRAVERSAL", "PAYLOAD_REJECTED", false, "AFTER_INPUT_CORRECTION", "reject-zero-union-match"],
+  ["F28", "AMBIGUOUS_UNION", "AST_TRAVERSAL", "PAYLOAD_REJECTED", true, "NEVER", "reject-multiple-union-match"],
+  ["F29", "INVALID_REFINEMENT", "AST_TRAVERSAL", "PAYLOAD_REJECTED", false, "AFTER_INPUT_CORRECTION", "apply-refinement-predicate"],
+  ["F30", "INVALID_REFINEMENT", "INTERNAL", "INTERNAL_FAILURE", true, "AFTER_PROCESS_RESTART", "validate-refinement-metadata"],
+  ["F31", "VALIDATED_BACKING_CONSTRUCTION_FAILED", "BACKING_CONSTRUCTION", "BACKING_CONSTRUCTION_FAILED", true, "AFTER_PROCESS_RESTART", "construct-detached-backing"],
+  ["F32", "INTERNAL_STRUCTURAL_VALIDATION_FAILURE", "TOKEN_ISSUE", "INTERNAL_FAILURE", true, "AFTER_PROCESS_RESTART", "issue-structural-token"],
+  ["F33", "INVALID_STRUCTURAL_TOKEN", "TOKEN_CONSUMPTION", "STRUCTURAL_TOKEN_REJECTED", true, "NEVER", "consume-structural-token"],
+  ["F34", "INTERNAL_STRUCTURAL_VALIDATION_FAILURE", "INTERNAL", "INTERNAL_FAILURE", true, "AFTER_PROCESS_RESTART", "contain-internal-failure"]
+] as const;
+
 describe("P2F1R-C domain event structural validation", () => {
   it("C-C01 captures unknown input exactly once and maps hostile inputs without raw C access", () => {
     const target = Object.create(null) as Record<string, unknown>;
@@ -225,6 +269,8 @@ describe("P2F1R-C domain event structural validation", () => {
     expect(observed.observation).toMatchObject({
       authorityChecked: true,
       captureEntered: true,
+      payloadKeyPresenceChecked: false,
+      payloadKeyPresent: false,
       envelopeFieldReads: 0,
       payloadNodeAcquired: false,
       payloadContentReads: 0,
@@ -237,8 +283,61 @@ describe("P2F1R-C domain event structural validation", () => {
 
   it("C-C02 preserves the exact 14-field accepted envelope runtime language", () => {
     const root = rootByOrdinal(1);
-    const accepted = validateDomainEventStructure(envelopeForRoot(root));
+    const baseline = envelopeForRoot(root);
+    const accepted = validateDomainEventStructure(baseline);
     expect(accepted.ok).toBe(true);
+
+    const envelopeFields = [
+      "category",
+      "eventId",
+      "gameId",
+      "eventSequence",
+      "batchId",
+      "gameVersion",
+      "eventType",
+      "eventVersion",
+      "rulesBaselineVersion",
+      "commandId",
+      "createdAt",
+      "correlationId",
+      "causationId",
+      "payload"
+    ] as const;
+    expect(Object.keys(baseline)).toEqual(envelopeFields);
+    for (const [index, field] of envelopeFields.entries()) {
+      const missing = envelopeForRoot(root);
+      delete missing[field];
+      const failure = expectFailureCode(missing, "MISSING_REQUIRED_FIELD");
+      expect(failure.diagnostic.path, field).toEqual([
+        { kind: "ENVELOPE_FIELD_ORDINAL", ordinal: index + 1 }
+      ]);
+    }
+
+    const wrongTypeValues: Readonly<Record<(typeof envelopeFields)[number], unknown>> = {
+      category: 1,
+      eventId: 1,
+      gameId: 1,
+      eventSequence: "1",
+      batchId: 1,
+      gameVersion: "1",
+      eventType: 1,
+      eventVersion: "1",
+      rulesBaselineVersion: 1,
+      commandId: 1,
+      createdAt: 1,
+      correlationId: 1,
+      causationId: 1,
+      payload: "payload"
+    };
+    for (const [index, field] of envelopeFields.entries()) {
+      const wrongType = envelopeForRoot(root);
+      wrongType[field] = wrongTypeValues[field];
+      const failure = expectFailureCode(wrongType, "INVALID_FIELD_TYPE");
+      expect(failure.diagnostic.path, field).toEqual([
+        { kind: "ENVELOPE_FIELD_ORDINAL", ordinal: index + 1 }
+      ]);
+    }
+
     const blankAllowed = envelopeForRoot(root);
     blankAllowed.rulesBaselineVersion = "";
     blankAllowed.createdAt = " ";
@@ -249,6 +348,24 @@ describe("P2F1R-C domain event structural validation", () => {
     const nullField = envelopeForRoot(root);
     nullField.createdAt = null;
     expectFailureCode(nullField, "INVALID_FIELD_TYPE");
+    const wrongCategory = envelopeForRoot(root);
+    wrongCategory.category = "audit";
+    expectFailureCode(wrongCategory, "INVALID_FIELD_VALUE");
+    const unsupportedVersion = envelopeForRoot(root);
+    unsupportedVersion.eventVersion = 2;
+    expectFailureCode(unsupportedVersion, "UNSUPPORTED_EVENT_VERSION");
+    for (const field of [
+      "eventId",
+      "gameId",
+      "batchId",
+      "commandId",
+      "correlationId",
+      "causationId"
+    ] as const) {
+      const blank = envelopeForRoot(root);
+      blank[field] = " \t\n ";
+      expectFailureCode(blank, "INVALID_FIELD_VALUE");
+    }
   });
 
   it("C-C03 admits one complete authority and dispatches only after admission", () => {
@@ -321,26 +438,110 @@ describe("P2F1R-C domain event structural validation", () => {
 
   it("C-C05 performs zero C payload reads for every pre-payload rejection gate", () => {
     const root = rootByOrdinal(1);
-    const candidates: unknown[] = [
-      null,
-      { ...envelopeForRoot(root), extra: true },
-      { ...envelopeForRoot(root), eventSequence: "1" },
-      { ...envelopeForRoot(root), eventType: "FutureEvent" },
-      { ...envelopeForRoot(root), eventVersion: 2 }
+    const missingPayload = envelopeForRoot(root);
+    delete missingPayload.payload;
+    const candidates = [
+      {
+        candidate: null,
+        expected: {
+          envelopeKeySetChecked: false,
+          payloadKeyPresenceChecked: false,
+          payloadKeyPresent: false,
+          envelopeFieldReads: 0,
+          eventTypeReads: 0,
+          eventVersionReads: 0
+        }
+      },
+      {
+        candidate: missingPayload,
+        expected: {
+          envelopeKeySetChecked: true,
+          payloadKeyPresenceChecked: true,
+          payloadKeyPresent: false,
+          envelopeFieldReads: 0,
+          eventTypeReads: 0,
+          eventVersionReads: 0
+        }
+      },
+      {
+        candidate: { ...envelopeForRoot(root), extra: true },
+        expected: {
+          envelopeKeySetChecked: true,
+          payloadKeyPresenceChecked: true,
+          payloadKeyPresent: true,
+          envelopeFieldReads: 0,
+          eventTypeReads: 0,
+          eventVersionReads: 0
+        }
+      },
+      {
+        candidate: { ...envelopeForRoot(root), eventSequence: "1" },
+        expected: {
+          envelopeKeySetChecked: true,
+          payloadKeyPresenceChecked: true,
+          payloadKeyPresent: true,
+          envelopeFieldReads: 4,
+          eventTypeReads: 0,
+          eventVersionReads: 0
+        }
+      },
+      {
+        candidate: { ...envelopeForRoot(root), eventType: "FutureEvent" },
+        expected: {
+          envelopeKeySetChecked: true,
+          payloadKeyPresenceChecked: true,
+          payloadKeyPresent: true,
+          envelopeFieldReads: 13,
+          eventTypeReads: 1,
+          eventVersionReads: 0
+        }
+      },
+      {
+        candidate: { ...envelopeForRoot(root), eventVersion: 2 },
+        expected: {
+          envelopeKeySetChecked: true,
+          payloadKeyPresenceChecked: true,
+          payloadKeyPresent: true,
+          envelopeFieldReads: 13,
+          eventTypeReads: 1,
+          eventVersionReads: 1
+        }
+      }
     ];
-    for (const candidate of candidates) {
+    for (const { candidate, expected } of candidates) {
       const observed =
         validateDomainEventStructureWithObservationForTest(candidate);
       expect(observed.result.ok).toBe(false);
-      expect(observed.observation.payloadNodeAcquired).toBe(false);
-      expect(observed.observation.payloadDiscriminatorReads).toBe(0);
-      expect(observed.observation.payloadContentReads).toBe(0);
-      expect(observed.observation.astTraversalEntered).toBe(false);
-      expect(observed.observation.tokenIssued).toBe(false);
+      expect(observed.observation).toEqual({
+        authorityChecked: true,
+        captureEntered: true,
+        ...expected,
+        payloadNodeAcquired: false,
+        payloadDiscriminatorReads: 0,
+        payloadContentReads: 0,
+        astTraversalEntered: false,
+        validatedBackingConstructed: false,
+        tokenIssued: false
+      });
     }
   });
 
   it("C-C06 selects each of the 59 C1 roots exactly once without fallback", () => {
+    const rootsByEvent = new Map<string, StructuralSchemaRootV1[]>();
+    for (const root of authority.candidate.roots) {
+      const roots = rootsByEvent.get(root.eventType) ?? [];
+      roots.push(root);
+      rootsByEvent.set(root.eventType, roots);
+    }
+    const singletonRoots = authority.candidate.roots.filter(
+      (root) => rootsByEvent.get(root.eventType)?.length === 1
+    );
+    const discriminatorRoots = authority.candidate.roots.filter(
+      (root) => (rootsByEvent.get(root.eventType)?.length ?? 0) > 1
+    );
+    expect(singletonRoots).toHaveLength(35);
+    expect(discriminatorRoots).toHaveLength(24);
+
     const selected = new Set<string>();
     for (const root of authority.candidate.roots) {
       const result = validateDomainEventStructure(envelopeForRoot(root));
@@ -350,42 +551,67 @@ describe("P2F1R-C domain event structural validation", () => {
         payloadSchemaIdentity: root.rootNodeId
       });
       if (result.ok) selected.add(result.payloadBranchId);
+
+      const negative = validateDomainEventStructure(
+        envelopeForRoot(root, {})
+      );
+      expect(negative.ok, `negative ${root.branchId}`).toBe(false);
     }
     expect(selected.size).toBe(59);
   });
 
   it("C-C06a bounds all seven payload discriminator paths before AST traversal", () => {
-    const cases = [
-      [16, 1],
-      [11, 2],
-      [19, 3],
-      [22, 1],
-      [29, 1],
-      [43, 1],
-      [46, 1]
-    ] as const;
-    for (const [ordinal, reads] of cases) {
+    const expectedReadsByOrdinal = new Map<number, number>([
+      ...[11, 12, 13, 14, 15].map((ordinal) => [ordinal, 2] as const),
+      ...[16, 17, 18].map((ordinal) => [ordinal, 1] as const),
+      ...[19, 20].map((ordinal) => [ordinal, 3] as const),
+      ...[22, 23, 29, 30, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52].map(
+        (ordinal) => [ordinal, 1] as const
+      )
+    ]);
+    expect(expectedReadsByOrdinal.size).toBe(24);
+    for (const [ordinal, reads] of expectedReadsByOrdinal) {
       const observed = validateDomainEventStructureWithObservationForTest(
         envelopeForRoot(rootByOrdinal(ordinal))
       );
       expect(observed.result.ok).toBe(true);
       expect(observed.observation.payloadDiscriminatorReads).toBe(reads);
     }
-    const invalid = cloneRecord(sampleForNode(rootByOrdinal(29).rootNodeId));
-    delete invalid.kind;
-    const observed = validateDomainEventStructureWithObservationForTest(
-      envelopeForRoot(rootByOrdinal(29), invalid)
-    );
-    expect(observed.result).toMatchObject({
-      ok: false,
-      diagnostic: { code: "INVALID_PAYLOAD_DISCRIMINANT" }
-    });
-    expect(observed.observation).toMatchObject({
-      payloadDiscriminatorReads: 1,
-      payloadContentReads: 0,
-      astTraversalEntered: false,
-      tokenIssued: false
-    });
+
+    const assertDiscriminatorFailure = (
+      ordinal: number,
+      field: string,
+      value: unknown,
+      reads: number
+    ): void => {
+      const payload = cloneRecord(sampleForNode(rootByOrdinal(ordinal).rootNodeId));
+      if (value === undefined) delete payload[field];
+      else payload[field] = value;
+      const observed = validateDomainEventStructureWithObservationForTest(
+        envelopeForRoot(rootByOrdinal(ordinal), payload)
+      );
+      expect(observed.result).toMatchObject({
+        ok: false,
+        diagnostic: { code: "INVALID_PAYLOAD_DISCRIMINANT" }
+      });
+      expect(observed.observation).toMatchObject({
+        payloadDiscriminatorReads: reads,
+        payloadContentReads: 0,
+        astTraversalEntered: false,
+        validatedBackingConstructed: false,
+        tokenIssued: false
+      });
+    };
+
+    for (const value of [undefined, {}, "FUTURE"] as const) {
+      assertDiscriminatorFailure(11, "opportunityKind", value, 2);
+      assertDiscriminatorFailure(29, "kind", value, 1);
+    }
+    for (const value of [{}, "FUTURE"] as const) {
+      assertDiscriminatorFailure(22, "deferSchemaVersion", value, 1);
+      assertDiscriminatorFailure(43, "targetSchemaVersion", value, 1);
+      assertDiscriminatorFailure(46, "deliverySchemaVersion", value, 1);
+    }
   });
 
   it("C-C07 reports deterministic first missing envelope and AST fields", () => {
@@ -466,6 +692,79 @@ describe("P2F1R-C domain event structural validation", () => {
       ok: false,
       diagnostic: { code: "INVALID_REFINEMENT" }
     });
+    expect(
+      validateDomainEventStructuralRefinementForTest(
+        {
+          refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
+          refinementKind: "NON_EMPTY_TRIMMED_STRING",
+          baseNodeKind: "STRING"
+        },
+        " \t\n "
+      )
+    ).toMatchObject({
+      ok: false,
+      diagnostic: { code: "INVALID_REFINEMENT" }
+    });
+    for (const alias of STRUCTURAL_ID_ALIASES_V1) {
+      expect(
+        validateDomainEventStructuralRefinementForTest(
+          {
+            refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
+            refinementKind: "ID_STRING",
+            baseNodeKind: "STRING",
+            alias
+          },
+          "identifier"
+        ),
+        alias
+      ).toEqual({ ok: true, value: "identifier" });
+      expect(
+        validateDomainEventStructuralRefinementForTest(
+          {
+            refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
+            refinementKind: "ID_STRING",
+            baseNodeKind: "STRING",
+            alias
+          },
+          " identifier "
+        ),
+        alias
+      ).toMatchObject({
+        ok: false,
+        diagnostic: { code: "INVALID_REFINEMENT" }
+      });
+    }
+
+    const trimDescriptor = Object.getOwnPropertyDescriptor(
+      String.prototype,
+      "trim"
+    );
+    let dynamicTrimCalls = 0;
+    Object.defineProperty(String.prototype, "trim", {
+      configurable: true,
+      writable: true,
+      value: () => {
+        dynamicTrimCalls += 1;
+        throw new Error("dynamic trim must not be called");
+      }
+    });
+    try {
+      expect(
+        validateDomainEventStructuralRefinementForTest(
+          {
+            refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
+            refinementKind: "NON_EMPTY_TRIMMED_STRING",
+            baseNodeKind: "STRING"
+          },
+          " captured "
+        )
+      ).toEqual({ ok: true, value: " captured " });
+      expect(dynamicTrimCalls).toBe(0);
+    } finally {
+      if (trimDescriptor !== undefined) {
+        Object.defineProperty(String.prototype, "trim", trimDescriptor);
+      }
+    }
     expect(
       validateDomainEventStructuralRefinementForTest(
         {
@@ -624,35 +923,171 @@ describe("P2F1R-C domain event structural validation", () => {
         kind
       ).toMatchObject({ ok: true });
     }
+
+    const taggedNodes: readonly StructuralSchemaNodeV1[] = [
+      {
+        nodeId: "tagged",
+        kind: "TAGGED_UNION",
+        tagField: "zKind",
+        branches: [
+          { branchOrdinal: 1, tagLiteral: "A", childNodeId: "tagged-record" }
+        ]
+      },
+      {
+        nodeId: "tagged-record",
+        kind: "EXACT_RECORD",
+        fields: [
+          {
+            fieldOrdinal: 1,
+            fieldName: "aValue",
+            required: true,
+            optional: false,
+            childNodeId: "text"
+          },
+          {
+            fieldOrdinal: 2,
+            fieldName: "zKind",
+            required: true,
+            optional: false,
+            childNodeId: "kind-a"
+          }
+        ]
+      },
+      { nodeId: "text", kind: "STRING" },
+      { nodeId: "kind-a", kind: "LITERAL", value: "A" }
+    ];
+    const taggedAuthority = nodeFixtureAuthority(taggedNodes, "tagged");
+    expect(taggedAuthority.status).toBe("HEALTHY");
+    for (const input of [
+      { aValue: "x" },
+      { aValue: "x", zKind: {} },
+      { aValue: "x", zKind: "FUTURE" }
+    ]) {
+      expect(
+        validateDomainEventStructuralNodeForTest(
+          taggedAuthority,
+          "tagged",
+          input
+        )
+      ).toMatchObject({
+        ok: false,
+        diagnostic: {
+          code: "INVALID_PAYLOAD_STRUCTURE",
+          path: [{ kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 2 }]
+        }
+      });
+    }
+
+    const nestedNodes: readonly StructuralSchemaNodeV1[] = [
+      ...taggedNodes,
+      { nodeId: "literal-one", kind: "LITERAL", value: 1 },
+      { nodeId: "literal-two", kind: "LITERAL", value: 2 },
+      {
+        nodeId: "nested-root",
+        kind: "EXACT_RECORD",
+        fields: [
+          {
+            fieldOrdinal: 1,
+            fieldName: "first",
+            required: true,
+            optional: false,
+            childNodeId: "literal-one"
+          },
+          {
+            fieldOrdinal: 2,
+            fieldName: "second",
+            required: true,
+            optional: false,
+            childNodeId: "literal-two"
+          },
+          {
+            fieldOrdinal: 3,
+            fieldName: "wrapper",
+            required: true,
+            optional: false,
+            childNodeId: "tagged"
+          }
+        ]
+      }
+    ];
+    const nestedAuthority = nodeFixtureAuthority(nestedNodes, "nested-root");
+    expect(nestedAuthority.status).toBe("HEALTHY");
+    for (const wrapper of [
+      { aValue: "x" },
+      { aValue: "x", zKind: {} },
+      { aValue: "x", zKind: "FUTURE" }
+    ]) {
+      expect(
+        validateDomainEventStructuralNodeForTest(
+          nestedAuthority,
+          "nested-root",
+          { first: 1, second: 2, wrapper }
+        )
+      ).toMatchObject({
+        ok: false,
+        diagnostic: {
+          code: "INVALID_PAYLOAD_STRUCTURE",
+          path: [
+            { kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 3 },
+            { kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 2 }
+          ]
+        }
+      });
+    }
   });
 
   it("C-C11 keeps the authentic legacy B31 payload structurally representable", () => {
     const root = rootByOrdinal(31);
+    const authenticPayload = cloneRecord(sampleForNode(root.rootNodeId));
     expect(validateDomainEventStructure(envelopeForRoot(root))).toMatchObject({
       ok: true,
       payloadBranchId: "C-B31-TASK-INSERTED-LEGACY-U"
     });
+    const missing = cloneRecord(authenticPayload);
+    delete missing.chosenRole;
+    expectFailureCode(envelopeForRoot(root, missing), "MISSING_REQUIRED_FIELD");
+    const wrongType = cloneRecord(authenticPayload);
+    wrongType.chosenRole = {};
+    expect(validateDomainEventStructure(envelopeForRoot(root, wrongType)).ok).toBe(
+      false
+    );
+    const extra = cloneRecord(authenticPayload);
+    extra.unacceptedField = true;
+    expectFailureCode(envelopeForRoot(root, extra), "EXTRA_FIELD");
   });
 
   it("C-C12 preserves current version-aware families and rejects discriminator failures", () => {
-    for (const ordinal of [16, 17, 18, 23, 44, 45, 47, 48, 49, 50, 51, 52]) {
+    const explicitRoots = authority.candidate.roots.filter(
+      (root) => root.versionPolicy.kind === "EXPLICIT_LITERAL"
+    );
+    expect(explicitRoots.map((root) => root.branchOrdinal)).toEqual([
+      16, 17, 18, 23, 24, 44, 45, 47, 48, 49, 50, 51, 52
+    ]);
+    for (const root of explicitRoots) {
       expect(
-        validateDomainEventStructure(envelopeForRoot(rootByOrdinal(ordinal)))
-          .ok
+        validateDomainEventStructure(envelopeForRoot(root)).ok,
+        root.branchId
       ).toBe(true);
+      if (root.versionPolicy.kind !== "EXPLICIT_LITERAL") {
+        throw new Error("filtered explicit root lost its policy");
+      }
+      const wrongType = cloneRecord(sampleForNode(root.rootNodeId));
+      wrongType[root.versionPolicy.fieldName] = {};
+      expectFailureCode(
+        envelopeForRoot(root, wrongType),
+        root.branchOrdinal === 24
+          ? "INVALID_FIELD_TYPE"
+          : "INVALID_PAYLOAD_DISCRIMINANT"
+      );
+      const unknown = cloneRecord(sampleForNode(root.rootNodeId));
+      unknown[root.versionPolicy.fieldName] = "future-version";
+      expectFailureCode(
+        envelopeForRoot(root, unknown),
+        root.branchOrdinal === 24
+          ? "INVALID_FIELD_VALUE"
+          : "INVALID_PAYLOAD_DISCRIMINANT"
+      );
     }
-    const root = rootByOrdinal(29);
-    const wrong = cloneRecord(sampleForNode(root.rootNodeId));
-    wrong.kind = {};
-    expectFailureCode(
-      envelopeForRoot(root, wrong),
-      "INVALID_PAYLOAD_DISCRIMINANT"
-    );
-    wrong.kind = "FUTURE";
-    expectFailureCode(
-      envelopeForRoot(root, wrong),
-      "INVALID_PAYLOAD_DISCRIMINANT"
-    );
   });
 
   it("C-C12a preserves B26 non-empty variadic impairments through generic AST traversal", () => {
@@ -824,13 +1259,81 @@ describe("P2F1R-C domain event structural validation", () => {
     expect(
       Object.keys(DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_POLICY).sort()
     ).toEqual([...DOMAIN_EVENT_STRUCTURAL_FAILURE_CONTEXT_IDS].sort());
-    for (const contextId of DOMAIN_EVENT_STRUCTURAL_FAILURE_CONTEXT_IDS) {
+    expect(
+      DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_POLICY_TUPLE.map((entry) => [
+        entry.contextId,
+        entry.code,
+        entry.phase,
+        entry.safeSummary,
+        entry.quarantineRecommended,
+        entry.retryability,
+        entry.directBranchBinding
+      ])
+    ).toEqual(EXPECTED_DIAGNOSTIC_POLICY_MATRIX);
+
+    const combinedSource = `${productionSource()}\n${canonicalDomainEventSource()}`;
+    for (const [
+      contextId,
+      code,
+      phase,
+      safeSummary,
+      quarantineRecommended,
+      retryability,
+      directBranchBinding
+    ] of EXPECTED_DIAGNOSTIC_POLICY_MATRIX) {
+      const policy = DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_POLICY[contextId];
+      expect(Object.keys(policy).sort()).toEqual([
+        "code",
+        "contextId",
+        "directBranchBinding",
+        "phase",
+        "quarantineRecommended",
+        "retryability",
+        "safeSummary"
+      ]);
+      expect(policy).toEqual({
+        contextId,
+        code,
+        phase,
+        safeSummary,
+        quarantineRecommended,
+        retryability,
+        directBranchBinding
+      });
+      expect(
+        combinedSource.match(new RegExp(`"${contextId}"`, "g"))?.length ?? 0,
+        `${contextId} source binding`
+      ).toBeGreaterThanOrEqual(2);
+      expect(canonicalDomainEventSource()).toContain(`"${directBranchBinding}"`);
+
       const first = createDomainEventStructuralDiagnostic(contextId);
       const second = createDomainEventStructuralDiagnostic(contextId);
       expect(first).toEqual(second);
-      expect(first.failClosed).toBe(true);
+      expect(first).toEqual({
+        code,
+        phase,
+        path: [],
+        safeSummary,
+        quarantineRecommended,
+        retryability,
+        failClosed: true
+      });
+      expect(Object.keys(first).sort()).toEqual([
+        "code",
+        "failClosed",
+        "path",
+        "phase",
+        "quarantineRecommended",
+        "retryability",
+        "safeSummary"
+      ]);
+      expect(Object.isFrozen(first)).toBe(true);
       expect(first).not.toHaveProperty("message");
       expect(first).not.toHaveProperty("stack");
+      expect(first).not.toHaveProperty("input");
+      expect(first).not.toHaveProperty("value");
+      expect(first).not.toHaveProperty("detail");
+      expect(JSON.stringify(first)).not.toContain("SECRET_HOSTILE_VALUE");
     }
     const longPath = Array.from({ length: 40 }, (_, ordinal) => ({
       kind: "PAYLOAD_FIELD_ORDINAL" as const,

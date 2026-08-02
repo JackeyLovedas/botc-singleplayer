@@ -125,6 +125,7 @@ export type DomainEventStructuralValidationObservation = {
   readonly eventTypeReads: number;
   readonly eventVersionReads: number;
   readonly payloadKeyPresenceChecked: boolean;
+  readonly payloadKeyPresent: boolean;
   readonly payloadNodeAcquired: boolean;
   readonly payloadDiscriminatorReads: number;
   readonly payloadContentReads: number;
@@ -141,6 +142,7 @@ type MutableObservation = {
   eventTypeReads: number;
   eventVersionReads: number;
   payloadKeyPresenceChecked: boolean;
+  payloadKeyPresent: boolean;
   payloadNodeAcquired: boolean;
   payloadDiscriminatorReads: number;
   payloadContentReads: number;
@@ -157,6 +159,7 @@ const createObservation = (): MutableObservation => ({
   eventTypeReads: 0,
   eventVersionReads: 0,
   payloadKeyPresenceChecked: false,
+  payloadKeyPresent: false,
   payloadNodeAcquired: false,
   payloadDiscriminatorReads: 0,
   payloadContentReads: 0,
@@ -249,6 +252,7 @@ type HealthyC1ConsumerAuthority = {
   readonly status: "HEALTHY";
   readonly c1: HealthyStructuralSchemaAuthorityV1;
   readonly nodesById: Readonly<Record<string, StructuralSchemaNodeV1>>;
+  readonly taggedUnionTagFieldOrdinalsByNodeId: Readonly<Record<string, number>>;
   readonly eventsByType: Readonly<Record<string, AdmittedEventDescriptor>>;
   readonly eventTypes: readonly string[];
   readonly eventCount: 40;
@@ -307,6 +311,37 @@ const topLiteral = (
   }
   const node = getNode(nodesById, field.childNodeId);
   return node?.kind === "LITERAL" ? node.value : undefined;
+};
+
+const deriveTaggedUnionTagFieldOrdinal = (
+  schema: Extract<StructuralSchemaNodeV1, { readonly kind: "TAGGED_UNION" }>,
+  nodesById: Readonly<Record<string, StructuralSchemaNodeV1>>
+): number | null => {
+  let ordinal: number | undefined;
+  let selectedBranchOrdinal: number | undefined;
+  for (const branch of schema.branches) {
+    const branchNode = getNode(nodesById, branch.childNodeId);
+    if (branchNode?.kind !== "EXACT_RECORD") {
+      return null;
+    }
+    const tagField = branchNode.fields.find(
+      (field) => field.fieldName === schema.tagField
+    );
+    if (
+      tagField === undefined ||
+      tagField.fieldOrdinal < 1
+    ) {
+      return null;
+    }
+    if (
+      selectedBranchOrdinal === undefined ||
+      branch.branchOrdinal < selectedBranchOrdinal
+    ) {
+      selectedBranchOrdinal = branch.branchOrdinal;
+      ordinal = tagField.fieldOrdinal;
+    }
+  }
+  return ordinal ?? null;
 };
 
 const discriminatorOrdinal = (
@@ -583,6 +618,25 @@ export const admitC1Authority = (
     }
     Object.freeze(nodesById);
 
+    const taggedUnionTagFieldOrdinalsByNodeId = Object.create(null) as Record<
+      string,
+      number
+    >;
+    for (const binding of result.candidate.nodeBindings) {
+      if (binding.node.kind !== "TAGGED_UNION") {
+        continue;
+      }
+      const ordinal = deriveTaggedUnionTagFieldOrdinal(
+        binding.node,
+        nodesById
+      );
+      if (ordinal === null) {
+        return unhealthyAdmission();
+      }
+      taggedUnionTagFieldOrdinalsByNodeId[binding.nodeId] = ordinal;
+    }
+    Object.freeze(taggedUnionTagFieldOrdinalsByNodeId);
+
     const rootGroups = Object.create(null) as Record<
       string,
       StructuralSchemaRootV1[]
@@ -694,6 +748,7 @@ export const admitC1Authority = (
       status: "HEALTHY" as const,
       c1: result,
       nodesById,
+      taggedUnionTagFieldOrdinalsByNodeId,
       eventsByType,
       eventTypes: Object.freeze([...eventTypes]),
       eventCount: 40 as const,
@@ -883,7 +938,8 @@ const validateEnvelope = (
     return failure(F07);
   }
   observation.envelopeKeySetChecked = true;
-  observation.payloadKeyPresenceChecked = hasEntry(backing, "payload");
+  observation.payloadKeyPresenceChecked = true;
+  observation.payloadKeyPresent = hasEntry(backing, "payload");
 
   for (let index = 0; index < ENVELOPE_FIELDS.length; index += 1) {
     const field = ENVELOPE_FIELDS[index];
@@ -1131,6 +1187,9 @@ const selectBranch = (
 type TraversalContext = {
   readonly authority: {
     readonly nodesById: Readonly<Record<string, StructuralSchemaNodeV1>>;
+    readonly taggedUnionTagFieldOrdinalsByNodeId: Readonly<
+      Record<string, number>
+    >;
   };
   readonly observation: MutableObservation;
   readonly discriminatorCache: DiscriminatorCache;
@@ -1398,6 +1457,15 @@ const traverseNode = (
     }
     case "TAGGED_UNION": {
       if (input.kind !== "OBJECT") return failure(F23, path);
+      const tagFieldOrdinal =
+        context.authority.taggedUnionTagFieldOrdinalsByNodeId[schema.nodeId];
+      if (tagFieldOrdinal === undefined) {
+        return failure(F20, path);
+      }
+      const tagPath = pathWith(path, {
+        kind: "PAYLOAD_FIELD_ORDINAL",
+        ordinal: tagFieldOrdinal
+      });
       const tagEntry = acquireObjectChild(
         input,
         schema.tagField,
@@ -1405,15 +1473,15 @@ const traverseNode = (
         context
       );
       if (tagEntry === undefined) {
-        return failure(F26, path);
+        return failure(F26, tagPath);
       }
       const matches = schema.branches.filter((branch) =>
         structuralLiteralMatches(tagEntry.value, branch.tagLiteral)
       );
-      if (matches.length === 0) return failure(F26, path);
+      if (matches.length === 0) return failure(F26, tagPath);
       if (matches.length > 1) return failure(F28, path);
       const match = matches[0];
-      if (match === undefined) return failure(F26, path);
+      if (match === undefined) return failure(F26, tagPath);
       return traverseNode(
         match.childNodeId,
         input,
@@ -1814,12 +1882,30 @@ export const validateDomainEventStructuralNodeForTest = (
     nodesById[binding.nodeId] = binding.node;
   }
   Object.freeze(nodesById);
+  const taggedUnionTagFieldOrdinalsByNodeId = Object.create(null) as Record<
+    string,
+    number
+  >;
+  for (const binding of authorityResult.candidate.nodeBindings) {
+    if (binding.node.kind !== "TAGGED_UNION") {
+      continue;
+    }
+    const ordinal = deriveTaggedUnionTagFieldOrdinal(binding.node, nodesById);
+    if (ordinal === null) {
+      return Object.freeze({
+        ok: false as const,
+        diagnostic: createDomainEventStructuralDiagnostic(F20)
+      });
+    }
+    taggedUnionTagFieldOrdinalsByNodeId[binding.nodeId] = ordinal;
+  }
+  Object.freeze(taggedUnionTagFieldOrdinalsByNodeId);
   const traversed = traverseNode(
     nodeId,
     authenticated.value,
     [],
     {
-      authority: { nodesById },
+      authority: { nodesById, taggedUnionTagFieldOrdinalsByNodeId },
       observation: createObservation(),
       discriminatorCache: Object.freeze(
         Object.create(null) as Record<string, DiscriminatorCacheEntry>
