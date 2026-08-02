@@ -21,6 +21,19 @@ export type {
   CaptureCanonicalRuntimeValueResult,
   SerializeCanonicalRuntimeValueResult
 } from "./canonical-runtime-value.js";
+export { validateDomainEventStructure } from "./domain-event-structural-validator.js";
+export type {
+  DomainEventPayloadBranchId,
+  DomainEventPayloadSchemaIdentity,
+  DomainEventStructuralDiagnostic,
+  DomainEventStructuralDiagnosticCode,
+  DomainEventStructuralDiagnosticPhase,
+  DomainEventStructuralPathSegment,
+  DomainEventStructuralRetryability,
+  DomainEventStructuralSafeSummary,
+  DomainEventStructuralValidationResult,
+  StructurallyValidatedDomainEventToken
+} from "./canonical-domain-event.js";
 export {
   FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION,
