@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_IDS,
+  DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY,
+  DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE,
   DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_POLICY,
   DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_POLICY_TUPLE,
   DOMAIN_EVENT_STRUCTURAL_FAILURE_CONTEXT_IDS,
@@ -30,6 +33,7 @@ import type {
 import {
   admitC1Authority,
   inspectDefaultDomainEventStructuralAuthorityForTest,
+  validateCapturedDomainEventStructureWithObservationForTest,
   validateDomainEventStructuralNodeForTest,
   validateDomainEventStructuralRefinementForTest,
   validateDomainEventStructure,
@@ -216,6 +220,17 @@ const canonicalDomainEventSource = (): string =>
     "utf8"
   );
 
+const traceabilitySource = (): string =>
+  readFileSync(
+    fileURLToPath(
+      new URL(
+        "../../../docs/implementation/phase-3-slice-2b20b-p2f1r-c-test-traceability.md",
+        import.meta.url
+      )
+    ),
+    "utf8"
+  );
+
 const EXPECTED_DIAGNOSTIC_POLICY_MATRIX = [
   ["F01", "C1_AUTHORITY_UNHEALTHY", "AUTHORITY_ADMISSION", "AUTHORITY_UNAVAILABLE", true, "AFTER_PROCESS_RESTART", "admit-authority"],
   ["F02", "CAPTURE_REJECTED", "CAPTURE", "INPUT_CAPTURE_FAILED", false, "AFTER_INPUT_CORRECTION", "translate-correctable-capture"],
@@ -368,7 +383,7 @@ describe("P2F1R-C domain event structural validation", () => {
     }
   });
 
-  it("C-C03 admits one complete authority and dispatches only after admission", () => {
+  it("C-C03c admits one complete authority and dispatches only after admission", () => {
     expect(inspectDefaultDomainEventStructuralAuthorityForTest()).toEqual({
       status: "HEALTHY",
       eventCount: 40,
@@ -512,7 +527,9 @@ describe("P2F1R-C domain event structural validation", () => {
       const observed =
         validateDomainEventStructureWithObservationForTest(candidate);
       expect(observed.result.ok).toBe(false);
-      expect(observed.observation).toEqual({
+      const { diagnosticLeafId, ...observerWithoutLeaf } = observed.observation;
+      expect(diagnosticLeafId).not.toBeNull();
+      expect(observerWithoutLeaf).toEqual({
         authorityChecked: true,
         captureEntered: true,
         ...expected,
@@ -526,7 +543,7 @@ describe("P2F1R-C domain event structural validation", () => {
     }
   });
 
-  it("C-C06 selects each of the 59 C1 roots exactly once without fallback", () => {
+  it("C-C06b selects each of the 59 C1 roots exactly once without fallback", () => {
     const rootsByEvent = new Map<string, StructuralSchemaRootV1[]>();
     for (const root of authority.candidate.roots) {
       const roots = rootsByEvent.get(root.eventType) ?? [];
@@ -635,7 +652,7 @@ describe("P2F1R-C domain event structural validation", () => {
     expectFailureCode(envelopeForRoot(root, payload), "EXTRA_FIELD");
   });
 
-  it("C-C09 rejects primitive coercion, symbols, getters, proxies, cycles, and nonplain values", () => {
+  it("C-C09b rejects primitive coercion, symbols, getters, proxies, cycles, and nonplain values", () => {
     const root = rootByOrdinal(1);
     const payload = sampleForNode(root.rootNodeId);
     const coercing = envelopeForRoot(root, payload);
@@ -958,22 +975,43 @@ describe("P2F1R-C domain event structural validation", () => {
     ];
     const taggedAuthority = nodeFixtureAuthority(taggedNodes, "tagged");
     expect(taggedAuthority.status).toBe("HEALTHY");
-    for (const input of [
-      { aValue: "x" },
-      { aValue: "x", zKind: {} },
-      { aValue: "x", zKind: "FUTURE" }
-    ]) {
-      expect(
-        validateDomainEventStructuralNodeForTest(
-          taggedAuthority,
-          "tagged",
-          input
-        )
-      ).toMatchObject({
+    const taggedNodeOrdinal =
+      taggedAuthority.status === "HEALTHY"
+        ? taggedAuthority.traversal.uniqueNodes.find(
+            (entry) => entry.nodeId === "tagged"
+          )?.nodeOrdinal
+        : undefined;
+    expect(taggedNodeOrdinal).toBeDefined();
+    for (const [input, state, field] of [
+      [{ aValue: "x" }, "MISSING_DISCRIMINANT", null],
+      [
+        { aValue: "x", zKind: {} },
+        "INVALID_DISCRIMINANT_TYPE",
+        { containerPath: [], canonicalObjectEntryOrdinal: 2 }
+      ],
+      [
+        { aValue: "x", zKind: "FUTURE" },
+        "UNKNOWN_DISCRIMINANT_VALUE",
+        { containerPath: [], canonicalObjectEntryOrdinal: 2 }
+      ]
+    ] as const) {
+      const result = validateDomainEventStructuralNodeForTest(
+        taggedAuthority,
+        "tagged",
+        input
+      );
+      expect(result).toMatchObject({
         ok: false,
         diagnostic: {
           code: "INVALID_PAYLOAD_STRUCTURE",
-          path: [{ kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 2 }]
+          path: [],
+          taggedUnionCoordinate: {
+            eventBranchOrdinal: 1,
+            astNodeOrdinal: taggedNodeOrdinal,
+            taggedUnionPath: [],
+            field,
+            state
+          }
         }
       });
     }
@@ -1012,25 +1050,40 @@ describe("P2F1R-C domain event structural validation", () => {
     ];
     const nestedAuthority = nodeFixtureAuthority(nestedNodes, "nested-root");
     expect(nestedAuthority.status).toBe("HEALTHY");
-    for (const wrapper of [
-      { aValue: "x" },
-      { aValue: "x", zKind: {} },
-      { aValue: "x", zKind: "FUTURE" }
-    ]) {
-      expect(
-        validateDomainEventStructuralNodeForTest(
-          nestedAuthority,
-          "nested-root",
-          { first: 1, second: 2, wrapper }
-        )
-      ).toMatchObject({
+    for (const [wrapper, state, field] of [
+      [{ aValue: "x" }, "MISSING_DISCRIMINANT", null],
+      [
+        { aValue: "x", zKind: {} },
+        "INVALID_DISCRIMINANT_TYPE",
+        {
+          containerPath: [
+            { kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 3 }
+          ],
+          canonicalObjectEntryOrdinal: 2
+        }
+      ],
+      [
+        { aValue: "x", zKind: "FUTURE" },
+        "UNKNOWN_DISCRIMINANT_VALUE",
+        {
+          containerPath: [
+            { kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 3 }
+          ],
+          canonicalObjectEntryOrdinal: 2
+        }
+      ]
+    ] as const) {
+      const result = validateDomainEventStructuralNodeForTest(
+        nestedAuthority,
+        "nested-root",
+        { first: 1, second: 2, wrapper }
+      );
+      expect(result).toMatchObject({
         ok: false,
         diagnostic: {
           code: "INVALID_PAYLOAD_STRUCTURE",
-          path: [
-            { kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 3 },
-            { kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 2 }
-          ]
+          path: [{ kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 3 }],
+          taggedUnionCoordinate: { state, field }
         }
       });
     }
@@ -1056,7 +1109,7 @@ describe("P2F1R-C domain event structural validation", () => {
     expectFailureCode(envelopeForRoot(root, extra), "EXTRA_FIELD");
   });
 
-  it("C-C12 preserves current version-aware families and rejects discriminator failures", () => {
+  it("C-C12c preserves current version-aware families and rejects discriminator failures", () => {
     const explicitRoots = authority.candidate.roots.filter(
       (root) => root.versionPolicy.kind === "EXPLICIT_LITERAL"
     );
@@ -1243,7 +1296,52 @@ describe("P2F1R-C domain event structural validation", () => {
     }
   });
 
-  it("C-C15 proves the total closed F01-F34 diagnostic policy and bounded safe paths", () => {
+  it("C-C15a proves the 47-leaf policy census and compatible F01-F34 public matrix", () => {
+    expect(DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_IDS).toHaveLength(47);
+    expect(new Set(DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_IDS).size).toBe(47);
+    expect(DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE).toHaveLength(
+      47
+    );
+    expect(
+      Object.keys(DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY).sort()
+    ).toEqual([...DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_IDS].sort());
+    expect(
+      DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE.filter(
+        (entry) => entry.evidenceKind === "CALLABLE_PRIMARY_TEST"
+      )
+    ).toHaveLength(31);
+    expect(
+      DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE.filter(
+        (entry) => entry.evidenceKind === "STATIC_BRANCH_BINDING"
+      )
+    ).toHaveLength(16);
+    expect(
+      new Set(
+        DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE.map(
+          (entry) => entry.exactSourceBinding
+        )
+      ).size
+    ).toBe(47);
+    const traceRows = traceabilitySource()
+      .split(/\r?\n/u)
+      .filter((line) => /^\| C-C/u.test(line))
+      .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
+    expect(traceRows).toHaveLength(33);
+    expect(traceRows.every((row) => row.length === 19)).toBe(true);
+    const activeRows = traceRows.filter((row) => row[18] === "PASS");
+    const groupingRows = traceRows.filter(
+      (row) => row[18] === "GROUPING_ONLY"
+    );
+    expect(activeRows).toHaveLength(28);
+    expect(groupingRows).toHaveLength(5);
+    const actualTitles = activeRows.map((row) =>
+      (row[10] ?? "").replaceAll("`", "")
+    );
+    expect(new Set(actualTitles).size).toBe(28);
+    const testSource = readFileSync(fileURLToPath(import.meta.url), "utf8");
+    for (const title of actualTitles) {
+      expect(testSource).toContain(`it("${title}"`);
+    }
     expect(DOMAIN_EVENT_STRUCTURAL_FAILURE_CONTEXT_IDS).toHaveLength(34);
     expect(new Set(DOMAIN_EVENT_STRUCTURAL_FAILURE_CONTEXT_IDS).size).toBe(
       34
@@ -1306,8 +1404,12 @@ describe("P2F1R-C domain event structural validation", () => {
       ).toBeGreaterThanOrEqual(2);
       expect(canonicalDomainEventSource()).toContain(`"${directBranchBinding}"`);
 
-      const first = createDomainEventStructuralDiagnostic(contextId);
-      const second = createDomainEventStructuralDiagnostic(contextId);
+      const leaf = DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE.find(
+        (entry) => entry.publicContextId === contextId
+      );
+      if (leaf === undefined) throw new Error("missing diagnostic leaf");
+      const first = createDomainEventStructuralDiagnostic(leaf.leafId);
+      const second = createDomainEventStructuralDiagnostic(leaf.leafId);
       expect(first).toEqual(second);
       expect(first).toEqual({
         code,
@@ -1316,6 +1418,7 @@ describe("P2F1R-C domain event structural validation", () => {
         safeSummary,
         quarantineRecommended,
         retryability,
+        taggedUnionCoordinate: null,
         failClosed: true
       });
       expect(Object.keys(first).sort()).toEqual([
@@ -1325,7 +1428,8 @@ describe("P2F1R-C domain event structural validation", () => {
         "phase",
         "quarantineRecommended",
         "retryability",
-        "safeSummary"
+        "safeSummary",
+        "taggedUnionCoordinate"
       ]);
       expect(Object.isFrozen(first)).toBe(true);
       expect(first).not.toHaveProperty("message");
@@ -1342,6 +1446,377 @@ describe("P2F1R-C domain event structural validation", () => {
     const bounded = boundDomainEventStructuralPath(longPath);
     expect(bounded).toHaveLength(32);
     expect(bounded[31]).toEqual({ kind: "TRUNCATED" });
+  });
+
+  it("C-C15b binds all 31 callable diagnostic leaves to real failure entry points", () => {
+    const observedLeaves = new Set<string>();
+    const recordLeaf = (leafId: string | null): void => {
+      expect(leafId).not.toBeNull();
+      if (leafId !== null) observedLeaves.add(leafId);
+    };
+    const publicLeaf = (input: unknown): void => {
+      const observed = validateDomainEventStructureWithObservationForTest(input);
+      expect(observed.result.ok).toBe(false);
+      recordLeaf(observed.observation.diagnosticLeafId);
+    };
+
+    publicLeaf(undefined);
+    const hostile = Object.create(null) as Record<string, unknown>;
+    Object.defineProperty(hostile, "category", {
+      enumerable: true,
+      get: () => "domain"
+    });
+    publicLeaf(hostile);
+    recordLeaf(
+      validateCapturedDomainEventStructureWithObservationForTest(
+        {}
+      ).observation.diagnosticLeafId
+    );
+
+    const root = rootByOrdinal(1);
+    publicLeaf(null);
+    const missing = envelopeForRoot(root);
+    delete missing.payload;
+    publicLeaf(missing);
+    publicLeaf({ ...envelopeForRoot(root), extra: true });
+    publicLeaf({ ...envelopeForRoot(root), eventSequence: "1" });
+    publicLeaf({ ...envelopeForRoot(root), category: "audit" });
+    publicLeaf({ ...envelopeForRoot(root), eventType: "FutureEvent" });
+    publicLeaf({ ...envelopeForRoot(root), eventVersion: 2 });
+    publicLeaf(envelopeForRoot(root, "payload"));
+
+    const discriminatedRoot = rootByOrdinal(11);
+    for (const value of [undefined, {}, "FUTURE"] as const) {
+      const payload = cloneRecord(
+        sampleForNode(discriminatedRoot.rootNodeId)
+      );
+      if (value === undefined) delete payload.opportunityKind;
+      else payload.opportunityKind = value;
+      publicLeaf(envelopeForRoot(discriminatedRoot, payload));
+    }
+
+    const nodeLeaf = (
+      nodes: readonly StructuralSchemaNodeV1[],
+      nodeId: string,
+      input: unknown
+    ): ReturnType<typeof validateDomainEventStructuralNodeForTest> => {
+      const result = validateDomainEventStructuralNodeForTest(
+        nodeFixtureAuthority(nodes, nodeId),
+        nodeId,
+        input
+      );
+      expect(result.ok).toBe(false);
+      if (!result.ok) recordLeaf(result.diagnosticLeafId);
+      return result;
+    };
+    const textNode = { nodeId: "text", kind: "STRING" } as const;
+    nodeLeaf(
+      [
+        {
+          nodeId: "record",
+          kind: "EXACT_RECORD",
+          fields: [
+            {
+              fieldOrdinal: 1,
+              fieldName: "value",
+              required: true,
+              optional: false,
+              childNodeId: "text"
+            }
+          ]
+        },
+        textNode
+      ],
+      "record",
+      {}
+    );
+    nodeLeaf(
+      [
+        {
+          nodeId: "record",
+          kind: "EXACT_RECORD",
+          fields: [
+            {
+              fieldOrdinal: 1,
+              fieldName: "value",
+              required: true,
+              optional: false,
+              childNodeId: "text"
+            }
+          ]
+        },
+        textNode
+      ],
+      "record",
+      { value: "ok", extra: true }
+    );
+    nodeLeaf([textNode], "text", {});
+    nodeLeaf(
+      [{ nodeId: "literal", kind: "LITERAL", value: "A" }],
+      "literal",
+      "B"
+    );
+    nodeLeaf(
+      [
+        {
+          nodeId: "array",
+          kind: "NON_EMPTY_ARRAY",
+          elementNodeId: "text",
+          minItems: 1,
+          maxItems: null
+        },
+        textNode
+      ],
+      "array",
+      []
+    );
+    nodeLeaf(
+      [
+        {
+          nodeId: "union",
+          kind: "CLOSED_UNION",
+          selection: "EXACTLY_ONE",
+          branchNodeIds: ["boolean", "text"]
+        },
+        { nodeId: "boolean", kind: "BOOLEAN" },
+        textNode
+      ],
+      "union",
+      {}
+    );
+    nodeLeaf(
+      [
+        {
+          nodeId: "refinement",
+          kind: "REFINEMENT",
+          refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
+          refinementKind: "NON_EMPTY_TRIMMED_STRING",
+          baseNodeId: "text"
+        },
+        textNode
+      ],
+      "refinement",
+      "   "
+    );
+
+    const taggedNodes: readonly StructuralSchemaNodeV1[] = [
+      {
+        nodeId: "tagged",
+        kind: "TAGGED_UNION",
+        tagField: "kind",
+        branches: [
+          { branchOrdinal: 1, tagLiteral: "A", childNodeId: "variant" }
+        ]
+      },
+      {
+        nodeId: "variant",
+        kind: "EXACT_RECORD",
+        fields: [
+          { fieldOrdinal: 1, fieldName: "items", required: true, optional: false, childNodeId: "items" },
+          { fieldOrdinal: 2, fieldName: "kind", required: true, optional: false, childNodeId: "kind-a" },
+          { fieldOrdinal: 3, fieldName: "literal", required: true, optional: false, childNodeId: "literal-a" },
+          { fieldOrdinal: 4, fieldName: "refined", required: true, optional: false, childNodeId: "refined" },
+          { fieldOrdinal: 5, fieldName: "required", required: true, optional: false, childNodeId: "text" }
+        ]
+      },
+      { nodeId: "kind-a", kind: "LITERAL", value: "A" },
+      { nodeId: "literal-a", kind: "LITERAL", value: "A" },
+      {
+        nodeId: "items",
+        kind: "NON_EMPTY_ARRAY",
+        elementNodeId: "text",
+        minItems: 1,
+        maxItems: null
+      },
+      {
+        nodeId: "refined",
+        kind: "REFINEMENT",
+        refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
+        refinementKind: "NON_EMPTY_TRIMMED_STRING",
+        baseNodeId: "text"
+      },
+      textNode
+    ];
+    const taggedBase = {
+      kind: "A",
+      required: "ok",
+      literal: "A",
+      items: ["ok"],
+      refined: "ok"
+    };
+    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, required: undefined });
+    const missingRequired = { ...taggedBase } as Record<string, unknown>;
+    delete missingRequired.required;
+    nodeLeaf(taggedNodes, "tagged", missingRequired);
+    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, extra: true });
+    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, required: {} });
+    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, literal: "B" });
+    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, items: [] });
+    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, refined: " " });
+    nodeLeaf(taggedNodes, "tagged", {
+      required: "ok",
+      literal: "A",
+      items: ["ok"],
+      refined: "ok"
+    });
+    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, kind: {} });
+    nodeLeaf(taggedNodes, "tagged", { ...taggedBase, kind: "FUTURE" });
+
+    const invalidToken = readStructurallyValidatedDomainEvent({});
+    expect(invalidToken.ok).toBe(false);
+    if (!invalidToken.ok) {
+      expect(invalidToken.diagnostic.code).toBe("INVALID_STRUCTURAL_TOKEN");
+      recordLeaf("L46_F33_TOKEN_INVALID");
+    }
+
+    const callableLeaves = DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE
+      .filter((entry) => entry.evidenceKind === "CALLABLE_PRIMARY_TEST")
+      .map((entry) => entry.leafId)
+      .sort();
+    expect([...observedLeaves].sort()).toEqual(callableLeaves);
+  });
+
+  it("C-C15c proves all nine tagged-union coordinate states without identity leakage", () => {
+    const policies = DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE.filter(
+      (entry) => entry.taggedCoordinatePolicy !== "NULL"
+    );
+    expect(policies).toHaveLength(9);
+    expect(policies.map((entry) => entry.leafId)).toEqual([
+      "L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT",
+      "L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT",
+      "L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT",
+      "L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT",
+      "L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT",
+      "L36_F26_TAGGED_DISCRIMINATOR_MISSING",
+      "L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND",
+      "L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN",
+      "L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT"
+    ]);
+    for (const policy of policies) {
+      expect(policy.exactSourceBinding).toMatch(/^traverseNode\.|^executeRefinement\./);
+    }
+    const text = { nodeId: "text", kind: "STRING" } as const;
+    const taggedNodes: readonly StructuralSchemaNodeV1[] = [
+      {
+        nodeId: "tagged",
+        kind: "TAGGED_UNION",
+        tagField: "kind",
+        branches: [
+          { branchOrdinal: 1, tagLiteral: "A", childNodeId: "variant" }
+        ]
+      },
+      {
+        nodeId: "variant",
+        kind: "EXACT_RECORD",
+        fields: [
+          { fieldOrdinal: 1, fieldName: "items", required: true, optional: false, childNodeId: "items" },
+          { fieldOrdinal: 2, fieldName: "kind", required: true, optional: false, childNodeId: "kind-a" },
+          { fieldOrdinal: 3, fieldName: "literal", required: true, optional: false, childNodeId: "literal-a" },
+          { fieldOrdinal: 4, fieldName: "refined", required: true, optional: false, childNodeId: "refined" },
+          { fieldOrdinal: 5, fieldName: "required", required: true, optional: false, childNodeId: "text" }
+        ]
+      },
+      { nodeId: "kind-a", kind: "LITERAL", value: "A" },
+      { nodeId: "literal-a", kind: "LITERAL", value: "A" },
+      { nodeId: "items", kind: "NON_EMPTY_ARRAY", elementNodeId: "text", minItems: 1, maxItems: null },
+      {
+        nodeId: "refined",
+        kind: "REFINEMENT",
+        refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
+        refinementKind: "NON_EMPTY_TRIMMED_STRING",
+        baseNodeId: "text"
+      },
+      text
+    ];
+    const taggedAuthority = nodeFixtureAuthority(taggedNodes, "tagged");
+    expect(taggedAuthority.status).toBe("HEALTHY");
+    if (taggedAuthority.status !== "HEALTHY") {
+      throw new Error("tagged diagnostic fixture must be healthy");
+    }
+    const astNodeOrdinal = taggedAuthority.traversal.uniqueNodes.find(
+      (entry) => entry.nodeId === "tagged"
+    )?.nodeOrdinal;
+    expect(astNodeOrdinal).toBeDefined();
+    const base = {
+      items: ["ok"],
+      kind: "A",
+      literal: "A",
+      refined: "ok",
+      required: "ok"
+    };
+    const missingRequired = { ...base } as Record<string, unknown>;
+    delete missingRequired.required;
+    const missingKind = { ...base } as Record<string, unknown>;
+    delete missingKind.kind;
+    const cases = [
+      ["L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT", missingRequired, "KNOWN_VARIANT"],
+      ["L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT", { ...base, extra: true }, "KNOWN_VARIANT"],
+      ["L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT", { ...base, required: {} }, "KNOWN_VARIANT"],
+      ["L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT", { ...base, literal: "B" }, "KNOWN_VARIANT"],
+      ["L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT", { ...base, items: [] }, "KNOWN_VARIANT"],
+      ["L36_F26_TAGGED_DISCRIMINATOR_MISSING", missingKind, "MISSING_DISCRIMINANT"],
+      ["L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND", { ...base, kind: {} }, "INVALID_DISCRIMINANT_TYPE"],
+      ["L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN", { ...base, kind: "SECRET_HOSTILE_TAG" }, "UNKNOWN_DISCRIMINANT_VALUE"],
+      ["L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT", { ...base, refined: " " }, "KNOWN_VARIANT"]
+    ] as const;
+    for (const [leafId, input, state] of cases) {
+      const first = validateDomainEventStructuralNodeForTest(
+        taggedAuthority,
+        "tagged",
+        input
+      );
+      const second = validateDomainEventStructuralNodeForTest(
+        taggedAuthority,
+        "tagged",
+        input
+      );
+      expect(first).toEqual(second);
+      expect(first.ok).toBe(false);
+      if (first.ok) throw new Error("expected tagged diagnostic");
+      expect(first.diagnosticLeafId).toBe(leafId);
+      expect(first.diagnostic.taggedUnionCoordinate).toMatchObject({
+        eventBranchOrdinal: 1,
+        astNodeOrdinal,
+        taggedUnionPath: [],
+        state,
+        ...(state === "KNOWN_VARIANT" ? { taggedVariantOrdinal: 1 } : {})
+      });
+      if (state === "MISSING_DISCRIMINANT") {
+        expect(first.diagnostic.taggedUnionCoordinate?.field).toBeNull();
+      } else {
+        expect(
+          first.diagnostic.taggedUnionCoordinate?.field
+            ?.canonicalObjectEntryOrdinal
+        ).toBeGreaterThan(0);
+      }
+      const serialized = JSON.stringify(first.diagnostic);
+      expect(serialized).not.toContain("SECRET_HOSTILE_TAG");
+      expect(serialized).not.toContain("required");
+      expect(serialized).not.toContain("fixture-branch");
+      expect(serialized).not.toContain("C1.SHA256");
+    }
+    const source = productionSource();
+    expect(source).not.toContain("deriveTaggedUnionTagFieldOrdinal");
+    expect(source).not.toContain("taggedUnionTagFieldOrdinalsByNodeId");
+    expect(source).not.toContain("filter((branch) =>\n        structuralLiteralMatches");
+  });
+
+  it("C-C15d binds all 16 static leaves to exact fail-closed source guards", () => {
+    const staticPolicies =
+      DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE.filter(
+        (entry) => entry.evidenceKind === "STATIC_BRANCH_BINDING"
+      );
+    expect(staticPolicies).toHaveLength(16);
+    expect(new Set(staticPolicies.map((entry) => entry.leafId)).size).toBe(16);
+    const source = `${productionSource()}\n${canonicalDomainEventSource()}`;
+    for (const policy of staticPolicies) {
+      expect(policy.taggedCoordinatePolicy).toBe("NULL");
+      expect(policy.exactSourceBinding.length).toBeGreaterThan(0);
+      expect(source).toContain(policy.leafId);
+    }
+    expect(source).toContain("value.leafId === F20_TAGGED_MULTIPLE");
+    expect(source).toContain("if (matches.length > 1) return failure(F28, path)");
+    expect(source).not.toContain("default:");
   });
 
   it("C-C16 returns structural success without semantic or history authority", () => {

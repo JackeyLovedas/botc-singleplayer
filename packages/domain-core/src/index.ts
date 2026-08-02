@@ -32,7 +32,9 @@ export type {
   DomainEventStructuralRetryability,
   DomainEventStructuralSafeSummary,
   DomainEventStructuralValidationResult,
-  StructurallyValidatedDomainEventToken
+  StructurallyValidatedDomainEventToken,
+  TaggedUnionCoordinateV1,
+  TaggedUnionFieldCoordinateV1
 } from "./canonical-domain-event.js";
 export {
   FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,

@@ -27,49 +27,64 @@ import type {
   DomainEventType
 } from "./events.js";
 import {
+  boundDomainEventStructuralPath,
   createDomainEventStructuralDiagnostic,
   issueStructurallyValidatedDomainEvent
 } from "./canonical-domain-event.js";
 import type {
   DomainEventStructuralDiagnostic,
-  DomainEventStructuralFailureContextId,
+  DomainEventStructuralDiagnosticLeafIdV1,
   DomainEventStructuralPathSegment,
   DomainEventStructuralValidationResult,
-  InternalValidatedDomainEvent
+  InternalValidatedDomainEvent,
+  TaggedUnionCoordinateV1
 } from "./canonical-domain-event.js";
 
-const F01 = "F01" as const;
-const F02 = "F02" as const;
-const F03 = "F03" as const;
-const F04 = "F04" as const;
-const F05 = "F05" as const;
-const F06 = "F06" as const;
-const F07 = "F07" as const;
-const F08 = "F08" as const;
-const F09 = "F09" as const;
-const F10 = "F10" as const;
-const F11 = "F11" as const;
-const F12 = "F12" as const;
-const F13 = "F13" as const;
-const F14 = "F14" as const;
-const F15 = "F15" as const;
-const F16 = "F16" as const;
-const F17 = "F17" as const;
-const F18 = "F18" as const;
-const F19 = "F19" as const;
-const F20 = "F20" as const;
-const F21 = "F21" as const;
-const F22 = "F22" as const;
-const F23 = "F23" as const;
-const F24 = "F24" as const;
-const F25 = "F25" as const;
-const F26 = "F26" as const;
-const F27 = "F27" as const;
-const F28 = "F28" as const;
-const F29 = "F29" as const;
-const F30 = "F30" as const;
-const F31 = "F31" as const;
-const F34 = "F34" as const;
+const F01 = "L01_F01_AUTHORITY_UNHEALTHY" as const;
+const F02 = "L02_F02_CAPTURE_CORRECTABLE" as const;
+const F03 = "L03_F03_CAPTURE_HOSTILE" as const;
+const F04 = "L04_F04_CAPTURE_INTERNAL" as const;
+const F05 = "L05_F05_CAPTURE_TOKEN_INVALID" as const;
+const F06 = "L06_F06_CAPTURE_BACKING_MISSING" as const;
+const F07 = "L07_F07_ENVELOPE_NOT_OBJECT" as const;
+const F08 = "L08_F08_ENVELOPE_FIELD_MISSING" as const;
+const F09 = "L09_F09_ENVELOPE_FIELD_EXTRA" as const;
+const F10 = "L10_F10_ENVELOPE_FIELD_WRONG_KIND" as const;
+const F11 = "L11_F11_ENVELOPE_FIELD_INVALID_VALUE" as const;
+const F12 = "L12_F12_EVENT_TYPE_UNKNOWN" as const;
+const F13 = "L13_F13_EVENT_VERSION_UNSUPPORTED" as const;
+const F14 = "L14_F14_PAYLOAD_NOT_OBJECT" as const;
+const F15 = "L15_F15_ROOT_DISCRIMINATOR_MISSING" as const;
+const F16 = "L16_F16_ROOT_DISCRIMINATOR_WRONG_KIND" as const;
+const F17 = "L17_F17_ROOT_DISCRIMINATOR_UNKNOWN" as const;
+const F18 = "L18_F18_ROOT_SELECTION_ZERO" as const;
+const F19 = "L19_F19_ROOT_SELECTION_MULTIPLE" as const;
+const F20 = "L20_F20_AST_NODE_LOOKUP_MISSING" as const;
+const F20_NODE_ORDINAL = "L21_F20_AST_NODE_ORDINAL_LOOKUP_MISSING" as const;
+const F20_EVENT_BRANCH = "L22_F20_EVENT_BRANCH_ORDINAL_INVALID" as const;
+const F20_TAGGED_VARIANT = "L23_F20_TAGGED_VARIANT_ORDINAL_INVALID" as const;
+const F20_TAGGED_FIELD = "L24_F20_TAGGED_FIELD_COORDINATE_INVARIANT" as const;
+const F20_TAGGED_MULTIPLE = "L25_F20_TAGGED_MULTIPLE_LITERAL_MATCH" as const;
+const F21 = "L26_F21_RECORD_MISSING_PLAIN" as const;
+const F21_TAGGED = "L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT" as const;
+const F22 = "L28_F22_RECORD_EXTRA_PLAIN" as const;
+const F22_TAGGED = "L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT" as const;
+const F23 = "L30_F23_KIND_MISMATCH_PLAIN" as const;
+const F23_TAGGED = "L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT" as const;
+const F24 = "L32_F24_LITERAL_MISMATCH_PLAIN" as const;
+const F24_TAGGED = "L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT" as const;
+const F25 = "L34_F25_CARDINALITY_MISMATCH_PLAIN" as const;
+const F25_TAGGED = "L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT" as const;
+const F26_MISSING = "L36_F26_TAGGED_DISCRIMINATOR_MISSING" as const;
+const F26_WRONG_KIND = "L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND" as const;
+const F26_UNKNOWN = "L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN" as const;
+const F27 = "L39_F27_CLOSED_UNION_ZERO_MATCH" as const;
+const F28 = "L40_F28_CLOSED_UNION_MULTIPLE_MATCH" as const;
+const F29 = "L41_F29_REFINEMENT_REJECTED_PLAIN" as const;
+const F29_TAGGED = "L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT" as const;
+const F30 = "L43_F30_REFINEMENT_METADATA_INVALID" as const;
+const F31 = "L44_F31_BACKING_CONSTRUCTION_FAILED" as const;
+const F34 = "L47_F34_INTERNAL_CONTAINMENT" as const;
 
 const intrinsicApply = Reflect.apply;
 const intrinsicStringTrim = Object.getOwnPropertyDescriptor(
@@ -118,6 +133,7 @@ const literalKey = (value: StructuralLiteralV1): string => {
 };
 
 export type DomainEventStructuralValidationObservation = {
+  readonly diagnosticLeafId: DomainEventStructuralDiagnosticLeafIdV1 | null;
   readonly authorityChecked: boolean;
   readonly captureEntered: boolean;
   readonly envelopeKeySetChecked: boolean;
@@ -135,6 +151,7 @@ export type DomainEventStructuralValidationObservation = {
 };
 
 type MutableObservation = {
+  diagnosticLeafId: DomainEventStructuralDiagnosticLeafIdV1 | null;
   authorityChecked: boolean;
   captureEntered: boolean;
   envelopeKeySetChecked: boolean;
@@ -152,6 +169,7 @@ type MutableObservation = {
 };
 
 const createObservation = (): MutableObservation => ({
+  diagnosticLeafId: null,
   authorityChecked: false,
   captureEntered: false,
   envelopeKeySetChecked: false,
@@ -175,8 +193,9 @@ const freezeObservation = (
 
 type CFailure = {
   readonly ok: false;
-  readonly contextId: DomainEventStructuralFailureContextId;
+  readonly leafId: DomainEventStructuralDiagnosticLeafIdV1;
   readonly path: readonly DomainEventStructuralPathSegment[];
+  readonly taggedUnionCoordinate: TaggedUnionCoordinateV1 | null;
 };
 
 type CResult<T> =
@@ -189,18 +208,25 @@ type CResult<T> =
 const success = <T>(value: T): CResult<T> => ({ ok: true, value });
 
 const failure = (
-  contextId: DomainEventStructuralFailureContextId,
-  path: readonly DomainEventStructuralPathSegment[] = []
-): CFailure => ({ ok: false, contextId, path });
+  leafId: DomainEventStructuralDiagnosticLeafIdV1,
+  path: readonly DomainEventStructuralPathSegment[] = [],
+  taggedUnionCoordinate: TaggedUnionCoordinateV1 | null = null
+): CFailure => ({ ok: false, leafId, path, taggedUnionCoordinate });
 
-const toPublicFailure = (value: CFailure): DomainEventStructuralValidationResult =>
-  Object.freeze({
+const toPublicFailure = (
+  value: CFailure,
+  observation?: MutableObservation
+): DomainEventStructuralValidationResult => {
+  if (observation !== undefined) observation.diagnosticLeafId = value.leafId;
+  return Object.freeze({
     ok: false as const,
     diagnostic: createDomainEventStructuralDiagnostic(
-      value.contextId,
-      value.path
+      value.leafId,
+      value.path,
+      value.taggedUnionCoordinate
     )
   });
+};
 
 type LiteralDecisionCase = {
   readonly literal: StructuralLiteralV1;
@@ -252,7 +278,7 @@ type HealthyC1ConsumerAuthority = {
   readonly status: "HEALTHY";
   readonly c1: HealthyStructuralSchemaAuthorityV1;
   readonly nodesById: Readonly<Record<string, StructuralSchemaNodeV1>>;
-  readonly taggedUnionTagFieldOrdinalsByNodeId: Readonly<Record<string, number>>;
+  readonly nodeOrdinalsByNodeId: Readonly<Record<string, number>>;
   readonly eventsByType: Readonly<Record<string, AdmittedEventDescriptor>>;
   readonly eventTypes: readonly string[];
   readonly eventCount: 40;
@@ -311,37 +337,6 @@ const topLiteral = (
   }
   const node = getNode(nodesById, field.childNodeId);
   return node?.kind === "LITERAL" ? node.value : undefined;
-};
-
-const deriveTaggedUnionTagFieldOrdinal = (
-  schema: Extract<StructuralSchemaNodeV1, { readonly kind: "TAGGED_UNION" }>,
-  nodesById: Readonly<Record<string, StructuralSchemaNodeV1>>
-): number | null => {
-  let ordinal: number | undefined;
-  let selectedBranchOrdinal: number | undefined;
-  for (const branch of schema.branches) {
-    const branchNode = getNode(nodesById, branch.childNodeId);
-    if (branchNode?.kind !== "EXACT_RECORD") {
-      return null;
-    }
-    const tagField = branchNode.fields.find(
-      (field) => field.fieldName === schema.tagField
-    );
-    if (
-      tagField === undefined ||
-      tagField.fieldOrdinal < 1
-    ) {
-      return null;
-    }
-    if (
-      selectedBranchOrdinal === undefined ||
-      branch.branchOrdinal < selectedBranchOrdinal
-    ) {
-      selectedBranchOrdinal = branch.branchOrdinal;
-      ordinal = tagField.fieldOrdinal;
-    }
-  }
-  return ordinal ?? null;
 };
 
 const discriminatorOrdinal = (
@@ -618,24 +613,28 @@ export const admitC1Authority = (
     }
     Object.freeze(nodesById);
 
-    const taggedUnionTagFieldOrdinalsByNodeId = Object.create(null) as Record<
-      string,
-      number
-    >;
-    for (const binding of result.candidate.nodeBindings) {
-      if (binding.node.kind !== "TAGGED_UNION") {
-        continue;
-      }
-      const ordinal = deriveTaggedUnionTagFieldOrdinal(
-        binding.node,
-        nodesById
-      );
-      if (ordinal === null) {
+    const nodeOrdinalsByNodeId = Object.create(null) as Record<string, number>;
+    let expectedNodeOrdinal = 1;
+    for (const entry of result.traversal.uniqueNodes) {
+      if (
+        entry.nodeOrdinal !== expectedNodeOrdinal ||
+        entry.nodeId !== entry.node.nodeId ||
+        nodesById[entry.nodeId] !== entry.node ||
+        nodeOrdinalsByNodeId[entry.nodeId] !== undefined
+      ) {
         return unhealthyAdmission();
       }
-      taggedUnionTagFieldOrdinalsByNodeId[binding.nodeId] = ordinal;
+      nodeOrdinalsByNodeId[entry.nodeId] = entry.nodeOrdinal;
+      expectedNodeOrdinal += 1;
     }
-    Object.freeze(taggedUnionTagFieldOrdinalsByNodeId);
+    if (
+      expectedNodeOrdinal !== result.traversal.uniqueNodeCount + 1 ||
+      Object.keys(nodeOrdinalsByNodeId).length !==
+        Object.keys(nodesById).length
+    ) {
+      return unhealthyAdmission();
+    }
+    Object.freeze(nodeOrdinalsByNodeId);
 
     const rootGroups = Object.create(null) as Record<
       string,
@@ -748,7 +747,7 @@ export const admitC1Authority = (
       status: "HEALTHY" as const,
       c1: result,
       nodesById,
-      taggedUnionTagFieldOrdinalsByNodeId,
+      nodeOrdinalsByNodeId,
       eventsByType,
       eventTypes: Object.freeze([...eventTypes]),
       eventCount: 40 as const,
@@ -804,10 +803,23 @@ const translateCapturePath = (
     }
   });
 
-const isHostileCaptureCode = (
-  code: CanonicalRuntimeDiagnostic["code"]
-): boolean => {
-  switch (code) {
+const translateCaptureFailure = (
+  diagnostic: CanonicalRuntimeDiagnostic
+): CFailure => {
+  switch (diagnostic.code) {
+    case "UNSUPPORTED_TYPE":
+    case "INVALID_NUMBER":
+    case "UNSAFE_INTEGER":
+    case "INVALID_UNICODE":
+    case "NONPLAIN_OBJECT":
+    case "RESOURCE_DEPTH_EXCEEDED":
+    case "RESOURCE_NODE_LIMIT_EXCEEDED":
+    case "RESOURCE_ARRAY_LIMIT_EXCEEDED":
+    case "RESOURCE_OBJECT_KEY_LIMIT_EXCEEDED":
+    case "RESOURCE_STRING_LIMIT_EXCEEDED":
+    case "RESOURCE_KEY_LIMIT_EXCEEDED":
+    case "RESOURCE_SERIALIZED_BYTE_LIMIT_EXCEEDED":
+      return failure(F02, translateCapturePath(diagnostic));
     case "ACCESSOR_PROPERTY":
     case "NON_ENUMERABLE_PROPERTY":
     case "SYMBOL_KEY":
@@ -817,22 +829,14 @@ const isHostileCaptureCode = (
     case "KEYED_ARRAY":
     case "INVALID_ARRAY_LENGTH_DESCRIPTOR":
     case "PROXY_OR_DESCRIPTOR_FAILURE":
-      return true;
-    default:
-      return false;
+      return failure(F03, translateCapturePath(diagnostic));
+    case "INVALID_CAPTURE_TOKEN":
+      return failure(F05);
+    case "INTERNAL_BACKING_MISSING":
+      return failure(F06);
+    case "INTERNAL_SERIALIZATION_FAILURE":
+      return failure(F04);
   }
-};
-
-const translateCaptureFailure = (
-  diagnostic: CanonicalRuntimeDiagnostic
-): CFailure => {
-  if (diagnostic.code === "INTERNAL_SERIALIZATION_FAILURE") {
-    return failure(F04);
-  }
-  return failure(
-    isHostileCaptureCode(diagnostic.code) ? F03 : F02,
-    translateCapturePath(diagnostic)
-  );
 };
 
 const ENVELOPE_FIELDS = Object.freeze([
@@ -1187,10 +1191,9 @@ const selectBranch = (
 type TraversalContext = {
   readonly authority: {
     readonly nodesById: Readonly<Record<string, StructuralSchemaNodeV1>>;
-    readonly taggedUnionTagFieldOrdinalsByNodeId: Readonly<
-      Record<string, number>
-    >;
+    readonly nodeOrdinalsByNodeId: Readonly<Record<string, number>>;
   };
+  readonly eventBranchOrdinal: number;
   readonly observation: MutableObservation;
   readonly discriminatorCache: DiscriminatorCache;
 };
@@ -1233,10 +1236,110 @@ const structuralLiteralMatches = (
   }
 };
 
+const literalKindMatches = (
+  node: InternalCanonicalRuntimeValue,
+  literal: StructuralLiteralV1
+): boolean => {
+  if (literal === null) return node.kind === "NULL";
+  switch (typeof literal) {
+    case "boolean":
+      return node.kind === "BOOLEAN";
+    case "number":
+      return node.kind === "INTEGER";
+    case "string":
+      return node.kind === "STRING";
+  }
+};
+
 const isInternalTraversalFailure = (value: CFailure): boolean =>
-  value.contextId === F20 ||
-  value.contextId === F30 ||
-  value.contextId === F34;
+  value.leafId === F20 ||
+  value.leafId === F20_NODE_ORDINAL ||
+  value.leafId === F20_EVENT_BRANCH ||
+  value.leafId === F20_TAGGED_VARIANT ||
+  value.leafId === F20_TAGGED_FIELD ||
+  value.leafId === F20_TAGGED_MULTIPLE ||
+  value.leafId === F30 ||
+  value.leafId === F34;
+
+const leafForTaggedContext = (
+  plain: DomainEventStructuralDiagnosticLeafIdV1,
+  tagged: DomainEventStructuralDiagnosticLeafIdV1,
+  coordinate: TaggedUnionCoordinateV1 | null
+): DomainEventStructuralDiagnosticLeafIdV1 =>
+  coordinate === null ? plain : tagged;
+
+const findEntryWithOrdinal = (
+  object: Extract<InternalCanonicalRuntimeValue, { readonly kind: "OBJECT" }>,
+  key: string
+): { readonly entry: InternalCanonicalRuntimeObjectEntry; readonly ordinal: number } | null => {
+  for (let index = 0; index < object.entries.length; index += 1) {
+    const entry = object.entries[index];
+    if (entry !== undefined && entry.key === key) {
+      return Object.freeze({ entry, ordinal: index + 1 });
+    }
+  }
+  return null;
+};
+
+const createTaggedCoordinate = (
+  eventBranchOrdinal: number,
+  astNodeOrdinal: number,
+  path: readonly DomainEventStructuralPathSegment[],
+  fieldOrdinal: number | null,
+  state: TaggedUnionCoordinateV1["state"],
+  taggedVariantOrdinal?: number
+): TaggedUnionCoordinateV1 | null => {
+  if (
+    !Number.isSafeInteger(eventBranchOrdinal) ||
+    eventBranchOrdinal < 1 ||
+    eventBranchOrdinal > 59 ||
+    !Number.isSafeInteger(astNodeOrdinal) ||
+    astNodeOrdinal < 1 ||
+    (fieldOrdinal !== null &&
+      (!Number.isSafeInteger(fieldOrdinal) || fieldOrdinal < 1))
+  ) {
+    return null;
+  }
+  const taggedUnionPath = boundDomainEventStructuralPath(path);
+  if (state === "MISSING_DISCRIMINANT") {
+    return Object.freeze({
+      eventBranchOrdinal,
+      astNodeOrdinal,
+      taggedUnionPath,
+      field: null,
+      state
+    });
+  }
+  if (fieldOrdinal === null) return null;
+  const field = Object.freeze({
+    containerPath: taggedUnionPath,
+    canonicalObjectEntryOrdinal: fieldOrdinal
+  });
+  if (state === "KNOWN_VARIANT") {
+    if (
+      taggedVariantOrdinal === undefined ||
+      !Number.isSafeInteger(taggedVariantOrdinal) ||
+      taggedVariantOrdinal < 1
+    ) {
+      return null;
+    }
+    return Object.freeze({
+      eventBranchOrdinal,
+      astNodeOrdinal,
+      taggedUnionPath,
+      field,
+      state,
+      taggedVariantOrdinal
+    });
+  }
+  return Object.freeze({
+    eventBranchOrdinal,
+    astNodeOrdinal,
+    taggedUnionPath,
+    field,
+    state
+  });
+};
 
 type RefinementExecutionMetadata = {
   readonly refinementVersion: string;
@@ -1248,7 +1351,8 @@ type RefinementExecutionMetadata = {
 const executeRefinement = (
   metadata: RefinementExecutionMetadata,
   value: unknown,
-  path: readonly DomainEventStructuralPathSegment[]
+  path: readonly DomainEventStructuralPathSegment[],
+  activeTaggedUnionCoordinate: TaggedUnionCoordinateV1 | null = null
 ): CResult<string> => {
   if (
     metadata.refinementVersion !==
@@ -1264,7 +1368,11 @@ const executeRefinement = (
     }
     return trimPrimitiveString(value).length > 0
       ? success(value)
-      : failure(F29, path);
+      : failure(
+          leafForTaggedContext(F29, F29_TAGGED, activeTaggedUnionCoordinate),
+          path,
+          activeTaggedUnionCoordinate
+        );
   }
   if (
     metadata.refinementKind !== "ID_STRING" ||
@@ -1275,7 +1383,11 @@ const executeRefinement = (
   }
   return value.length > 0 && value === trimPrimitiveString(value)
     ? success(value)
-    : failure(F29, path);
+    : failure(
+        leafForTaggedContext(F29, F29_TAGGED, activeTaggedUnionCoordinate),
+        path,
+        activeTaggedUnionCoordinate
+      );
 };
 
 const traverseNode = (
@@ -1283,27 +1395,50 @@ const traverseNode = (
   input: InternalCanonicalRuntimeValue,
   path: readonly DomainEventStructuralPathSegment[],
   context: TraversalContext,
-  isPayloadRoot = false
+  isPayloadRoot = false,
+  activeTaggedUnionCoordinate: TaggedUnionCoordinateV1 | null = null
 ): CResult<unknown> => {
   const schema = getNode(context.authority.nodesById, nodeId);
   if (schema === undefined) {
     return failure(F20, path);
   }
+  const astNodeOrdinal = context.authority.nodeOrdinalsByNodeId[nodeId];
+  if (astNodeOrdinal === undefined) {
+    return failure(F20_NODE_ORDINAL, path);
+  }
+  const kindFailure = (): CFailure =>
+    failure(
+      leafForTaggedContext(F23, F23_TAGGED, activeTaggedUnionCoordinate),
+      path,
+      activeTaggedUnionCoordinate
+    );
+  const literalFailure = (): CFailure =>
+    failure(
+      leafForTaggedContext(F24, F24_TAGGED, activeTaggedUnionCoordinate),
+      path,
+      activeTaggedUnionCoordinate
+    );
+  const cardinalityFailure = (): CFailure =>
+    failure(
+      leafForTaggedContext(F25, F25_TAGGED, activeTaggedUnionCoordinate),
+      path,
+      activeTaggedUnionCoordinate
+    );
   switch (schema.kind) {
     case "NULL":
-      return input.kind === "NULL" ? success(null) : failure(F23, path);
+      return input.kind === "NULL" ? success(null) : kindFailure();
     case "BOOLEAN":
       return input.kind === "BOOLEAN"
         ? success(input.value)
-        : failure(F23, path);
+        : kindFailure();
     case "SAFE_INTEGER":
       return input.kind === "INTEGER"
         ? success(input.value)
-        : failure(F23, path);
+        : kindFailure();
     case "STRING":
       return input.kind === "STRING"
         ? success(input.value)
-        : failure(F23, path);
+        : kindFailure();
     case "LITERAL":
       return structuralLiteralMatches(input, schema.value)
         ? success(
@@ -1316,8 +1451,8 @@ const traverseNode = (
                 : null
           )
         : input.kind === "ARRAY" || input.kind === "OBJECT"
-          ? failure(F23, path)
-          : failure(F24, path);
+          ? kindFailure()
+          : literalFailure();
     case "ENUM": {
       if (
         input.kind !== "NULL" &&
@@ -1325,12 +1460,12 @@ const traverseNode = (
         input.kind !== "INTEGER" &&
         input.kind !== "STRING"
       ) {
-        return failure(F23, path);
+        return kindFailure();
       }
       const matched = schema.values.some((literal) =>
         structuralLiteralMatches(input, literal)
       );
-      if (!matched) return failure(F24, path);
+      if (!matched) return literalFailure();
       return success(
         input.kind === "NULL" ? null : input.value
       );
@@ -1338,17 +1473,25 @@ const traverseNode = (
     case "NULLABLE":
       return input.kind === "NULL"
         ? success(null)
-        : traverseNode(schema.childNodeId, input, path, context);
+        : traverseNode(
+            schema.childNodeId,
+            input,
+            path,
+            context,
+            isPayloadRoot,
+            activeTaggedUnionCoordinate
+          );
     case "EXACT_RECORD": {
-      if (input.kind !== "OBJECT") return failure(F23, path);
+      if (input.kind !== "OBJECT") return kindFailure();
       for (const field of schema.fields) {
         if (!hasEntry(input, field.fieldName)) {
           return failure(
-            F21,
+            leafForTaggedContext(F21, F21_TAGGED, activeTaggedUnionCoordinate),
             pathWith(path, {
               kind: "PAYLOAD_FIELD_ORDINAL",
               ordinal: field.fieldOrdinal
-            })
+            }),
+            activeTaggedUnionCoordinate
           );
         }
       }
@@ -1359,11 +1502,12 @@ const traverseNode = (
           !schema.fields.some((field) => field.fieldName === entry.key)
         ) {
           return failure(
-            F22,
+            leafForTaggedContext(F22, F22_TAGGED, activeTaggedUnionCoordinate),
             pathWith(path, {
               kind: "PAYLOAD_EXTRA_ENTRY_ORDINAL",
               ordinal: index + 1
-            })
+            }),
+            activeTaggedUnionCoordinate
           );
         }
       }
@@ -1377,11 +1521,12 @@ const traverseNode = (
         );
         if (entry === undefined) {
           return failure(
-            F21,
+            leafForTaggedContext(F21, F21_TAGGED, activeTaggedUnionCoordinate),
             pathWith(path, {
               kind: "PAYLOAD_FIELD_ORDINAL",
               ordinal: field.fieldOrdinal
-            })
+            }),
+            activeTaggedUnionCoordinate
           );
         }
         const childPath = pathWith(path, {
@@ -1392,7 +1537,9 @@ const traverseNode = (
           field.childNodeId,
           entry.value,
           childPath,
-          context
+          context,
+          false,
+          activeTaggedUnionCoordinate
         );
         if (!child.ok) return child;
         output[field.fieldName] = child.value;
@@ -1402,7 +1549,7 @@ const traverseNode = (
     case "ARRAY":
     case "NON_EMPTY_ARRAY":
     case "BOUNDED_ARRAY": {
-      if (input.kind !== "ARRAY") return failure(F23, path);
+      if (input.kind !== "ARRAY") return kindFailure();
       const minimum =
         schema.kind === "ARRAY" ? 0 : schema.minItems;
       const maximum =
@@ -1413,18 +1560,20 @@ const traverseNode = (
         input.values.length < minimum ||
         (maximum !== null && input.values.length > maximum)
       ) {
-        return failure(F25, path);
+        return cardinalityFailure();
       }
       const output: unknown[] = [];
       for (let index = 0; index < input.values.length; index += 1) {
         const childInput = input.values[index];
-        if (childInput === undefined) return failure(F25, path);
+        if (childInput === undefined) return cardinalityFailure();
         context.observation.payloadContentReads += 1;
         const child = traverseNode(
           schema.elementNodeId,
           childInput,
           pathWith(path, { kind: "ARRAY_INDEX", index }),
-          context
+          context,
+          false,
+          activeTaggedUnionCoordinate
         );
         if (!child.ok) return child;
         output.push(child.value);
@@ -1432,23 +1581,25 @@ const traverseNode = (
       return success(Object.freeze(output));
     }
     case "TUPLE": {
-      if (input.kind !== "ARRAY") return failure(F23, path);
+      if (input.kind !== "ARRAY") return kindFailure();
       if (input.values.length !== schema.elementNodeIds.length) {
-        return failure(F25, path);
+        return cardinalityFailure();
       }
       const output: unknown[] = [];
       for (let index = 0; index < schema.elementNodeIds.length; index += 1) {
         const childNodeId = schema.elementNodeIds[index];
         const childInput = input.values[index];
         if (childNodeId === undefined || childInput === undefined) {
-          return failure(F25, path);
+          return cardinalityFailure();
         }
         context.observation.payloadContentReads += 1;
         const child = traverseNode(
           childNodeId,
           childInput,
           pathWith(path, { kind: "TUPLE_INDEX", index }),
-          context
+          context,
+          false,
+          activeTaggedUnionCoordinate
         );
         if (!child.ok) return child;
         output.push(child.value);
@@ -1456,32 +1607,90 @@ const traverseNode = (
       return success(Object.freeze(output));
     }
     case "TAGGED_UNION": {
-      if (input.kind !== "OBJECT") return failure(F23, path);
-      const tagFieldOrdinal =
-        context.authority.taggedUnionTagFieldOrdinalsByNodeId[schema.nodeId];
-      if (tagFieldOrdinal === undefined) {
-        return failure(F20, path);
+      if (input.kind !== "OBJECT") return kindFailure();
+      if (
+        !Number.isSafeInteger(context.eventBranchOrdinal) ||
+        context.eventBranchOrdinal < 1 ||
+        context.eventBranchOrdinal > 59
+      ) {
+        return failure(F20_EVENT_BRANCH);
       }
-      const tagPath = pathWith(path, {
-        kind: "PAYLOAD_FIELD_ORDINAL",
-        ordinal: tagFieldOrdinal
-      });
-      const tagEntry = acquireObjectChild(
-        input,
-        schema.tagField,
-        isPayloadRoot,
-        context
-      );
-      if (tagEntry === undefined) {
-        return failure(F26, tagPath);
+      const located = findEntryWithOrdinal(input, schema.tagField);
+      if (located === null) {
+        const coordinate = createTaggedCoordinate(
+          context.eventBranchOrdinal,
+          astNodeOrdinal,
+          path,
+          null,
+          "MISSING_DISCRIMINANT"
+        );
+        if (coordinate === null) return failure(F20_TAGGED_FIELD, path);
+        return failure(F26_MISSING, path, coordinate);
       }
-      const matches = schema.branches.filter((branch) =>
-        structuralLiteralMatches(tagEntry.value, branch.tagLiteral)
+      if (
+        !Number.isSafeInteger(located.ordinal) ||
+        located.ordinal < 1 ||
+        located.ordinal > input.entries.length
+      ) {
+        return failure(F20_TAGGED_FIELD, path);
+      }
+      context.observation.payloadContentReads += 1;
+      if (
+        !schema.branches.some((branch) =>
+          literalKindMatches(located.entry.value, branch.tagLiteral)
+        )
+      ) {
+        const coordinate = createTaggedCoordinate(
+          context.eventBranchOrdinal,
+          astNodeOrdinal,
+          path,
+          located.ordinal,
+          "INVALID_DISCRIMINANT_TYPE"
+        );
+        if (coordinate === null) return failure(F20_TAGGED_FIELD, path);
+        return failure(F26_WRONG_KIND, path, coordinate);
+      }
+      let match:
+        | (typeof schema.branches)[number]
+        | undefined;
+      let matchCount = 0;
+      for (let index = 0; index < schema.branches.length; index += 1) {
+        const branch = schema.branches[index];
+        if (
+          branch === undefined ||
+          branch.branchOrdinal !== index + 1 ||
+          branch.branchOrdinal < 1
+        ) {
+          return failure(F20_TAGGED_VARIANT, path);
+        }
+        if (structuralLiteralMatches(located.entry.value, branch.tagLiteral)) {
+          match = branch;
+          matchCount += 1;
+        }
+      }
+      if (matchCount === 0 || match === undefined) {
+        const coordinate = createTaggedCoordinate(
+          context.eventBranchOrdinal,
+          astNodeOrdinal,
+          path,
+          located.ordinal,
+          "UNKNOWN_DISCRIMINANT_VALUE"
+        );
+        if (coordinate === null) return failure(F20_TAGGED_FIELD, path);
+        return failure(F26_UNKNOWN, path, coordinate);
+      }
+      if (matchCount > 1) {
+        return failure(F20_TAGGED_MULTIPLE, path);
+      }
+      const coordinate = createTaggedCoordinate(
+        context.eventBranchOrdinal,
+        astNodeOrdinal,
+        path,
+        located.ordinal,
+        "KNOWN_VARIANT",
+        match.branchOrdinal
       );
-      if (matches.length === 0) return failure(F26, tagPath);
-      if (matches.length > 1) return failure(F28, path);
-      const match = matches[0];
-      if (match === undefined) return failure(F26, tagPath);
+      if (coordinate === null) return failure(F20_TAGGED_FIELD, path);
       return traverseNode(
         match.childNodeId,
         input,
@@ -1490,7 +1699,8 @@ const traverseNode = (
           ordinal: match.branchOrdinal
         }),
         context,
-        isPayloadRoot
+        isPayloadRoot,
+        coordinate
       );
     }
     case "CLOSED_UNION": {
@@ -1506,7 +1716,8 @@ const traverseNode = (
             ordinal: index + 1
           }),
           context,
-          isPayloadRoot
+          isPayloadRoot,
+          activeTaggedUnionCoordinate
         );
         if (branch.ok) {
           matches.push({ ordinal: index + 1, value: branch.value });
@@ -1526,7 +1737,14 @@ const traverseNode = (
       if (baseSchema === undefined) {
         return failure(F30, path);
       }
-      const base = traverseNode(schema.baseNodeId, input, path, context);
+      const base = traverseNode(
+        schema.baseNodeId,
+        input,
+        path,
+        context,
+        isPayloadRoot,
+        activeTaggedUnionCoordinate
+      );
       if (!base.ok) return base;
       return executeRefinement(
         {
@@ -1538,7 +1756,8 @@ const traverseNode = (
             : {})
         },
         base.value,
-        path
+        path,
+        activeTaggedUnionCoordinate
       );
     }
   }
@@ -1596,7 +1815,7 @@ const validateCapturedInternal = (
 ): DomainEventStructuralValidationResult => {
   observation.authorityChecked = true;
   if (authority.status !== "HEALTHY") {
-    return toPublicFailure(failure(F01));
+    return toPublicFailure(failure(F01), observation);
   }
   const authenticated =
     readCanonicalRuntimeBackingForStructuralValidation(token);
@@ -1604,25 +1823,26 @@ const validateCapturedInternal = (
     return toPublicFailure(
       authenticated.diagnostic.code === "INVALID_CAPTURE_TOKEN"
         ? failure(F05)
-        : failure(F06)
+        : failure(F06),
+      observation
     );
   }
   const envelope = validateEnvelope(authenticated.value, observation);
-  if (!envelope.ok) return toPublicFailure(envelope);
+  if (!envelope.ok) return toPublicFailure(envelope, observation);
 
   observation.eventTypeReads += 1;
   if (!isKnownEventType(authority, envelope.value.fields.eventTypeText)) {
-    return toPublicFailure(failure(F12, envelopePath(7)));
+    return toPublicFailure(failure(F12, envelopePath(7)), observation);
   }
   const eventType = envelope.value.fields.eventTypeText;
   const descriptor = authority.eventsByType[eventType];
   if (descriptor === undefined) {
-    return toPublicFailure(failure(F12, envelopePath(7)));
+    return toPublicFailure(failure(F12, envelopePath(7)), observation);
   }
 
   observation.eventVersionReads += 1;
   if (envelope.value.fields.eventVersionValue !== 1) {
-    return toPublicFailure(failure(F13, envelopePath(8)));
+    return toPublicFailure(failure(F13, envelopePath(8)), observation);
   }
 
   const discriminatorCache = Object.create(null) as DiscriminatorCache;
@@ -1637,7 +1857,7 @@ const validateCapturedInternal = (
       envelope.value.object,
       observation
     );
-    if (!acquired.ok) return toPublicFailure(acquired);
+    if (!acquired.ok) return toPublicFailure(acquired, observation);
     payload = acquired.value;
     const selected = selectBranch(
       descriptor.decision.tree,
@@ -1645,7 +1865,7 @@ const validateCapturedInternal = (
       discriminatorCache,
       observation
     );
-    if (!selected.ok) return toPublicFailure(selected);
+    if (!selected.ok) return toPublicFailure(selected, observation);
     selectedRoot = selected.value;
   }
 
@@ -1654,8 +1874,16 @@ const validateCapturedInternal = (
       envelope.value.object,
       observation
     );
-    if (!acquired.ok) return toPublicFailure(acquired);
+    if (!acquired.ok) return toPublicFailure(acquired, observation);
     payload = acquired.value;
+  }
+
+  if (
+    !Number.isSafeInteger(selectedRoot.branchOrdinal) ||
+    selectedRoot.branchOrdinal < 1 ||
+    selectedRoot.branchOrdinal > 59
+  ) {
+    return toPublicFailure(failure(F20_EVENT_BRANCH), observation);
   }
 
   observation.astTraversalEntered = true;
@@ -1665,12 +1893,13 @@ const validateCapturedInternal = (
     [],
     {
       authority,
+      eventBranchOrdinal: selectedRoot.branchOrdinal,
       observation,
       discriminatorCache
     },
     true
   );
-  if (!traversed.ok) return toPublicFailure(traversed);
+  if (!traversed.ok) return toPublicFailure(traversed, observation);
 
   let event: AnyDomainEventEnvelope;
   let backing: InternalValidatedDomainEvent;
@@ -1689,7 +1918,7 @@ const validateCapturedInternal = (
     });
     observation.validatedBackingConstructed = true;
   } catch {
-    return toPublicFailure(failure(F31));
+    return toPublicFailure(failure(F31), observation);
   }
 
   const issued = issueStructurallyValidatedDomainEvent(backing);
@@ -1715,12 +1944,15 @@ const validateUnknownInternal = (
 ): DomainEventStructuralValidationResult => {
   observation.authorityChecked = true;
   if (defaultAuthority.status !== "HEALTHY") {
-    return toPublicFailure(failure(F01));
+    return toPublicFailure(failure(F01), observation);
   }
   observation.captureEntered = true;
   const captured = captureCanonicalRuntimeValue(input);
   if (!captured.ok) {
-    return toPublicFailure(translateCaptureFailure(captured.diagnostic));
+    return toPublicFailure(
+      translateCaptureFailure(captured.diagnostic),
+      observation
+    );
   }
   return validateCapturedInternal(
     captured.token,
@@ -1736,7 +1968,7 @@ export const validateDomainEventStructure = (
   try {
     return validateUnknownInternal(input, observation);
   } catch {
-    return toPublicFailure(failure(F34));
+    return toPublicFailure(failure(F34), observation);
   }
 };
 
@@ -1747,7 +1979,7 @@ export const validateCapturedDomainEventStructure = (
   try {
     return validateCapturedInternal(token, defaultAuthority, observation);
   } catch {
-    return toPublicFailure(failure(F34));
+    return toPublicFailure(failure(F34), observation);
   }
 };
 
@@ -1764,7 +1996,23 @@ export const validateDomainEventStructureWithObservationForTest = (
   try {
     result = validateUnknownInternal(input, observation);
   } catch {
-    result = toPublicFailure(failure(F34));
+    result = toPublicFailure(failure(F34), observation);
+  }
+  return Object.freeze({
+    result,
+    observation: freezeObservation(observation)
+  });
+};
+
+export const validateCapturedDomainEventStructureWithObservationForTest = (
+  token: CapturedCanonicalRuntimeValue
+): DomainEventStructuralValidationWithObservation => {
+  const observation = createObservation();
+  let result: DomainEventStructuralValidationResult;
+  try {
+    result = validateCapturedInternal(token, defaultAuthority, observation);
+  } catch {
+    result = toPublicFailure(failure(F34), observation);
   }
   return Object.freeze({
     result,
@@ -1829,6 +2077,7 @@ export const validateDomainEventStructuralRefinementForTest = (
     }
   | {
       readonly ok: false;
+      readonly diagnosticLeafId: DomainEventStructuralDiagnosticLeafIdV1;
       readonly diagnostic: DomainEventStructuralDiagnostic;
     } => {
   const result = executeRefinement(metadata, value, []);
@@ -1836,9 +2085,11 @@ export const validateDomainEventStructuralRefinementForTest = (
     ? Object.freeze({ ok: true as const, value: result.value })
     : Object.freeze({
         ok: false as const,
+        diagnosticLeafId: result.leafId,
         diagnostic: createDomainEventStructuralDiagnostic(
-          result.contextId,
-          result.path
+          result.leafId,
+          result.path,
+          result.taggedUnionCoordinate
         )
       });
 };
@@ -1849,10 +2100,15 @@ export const validateDomainEventStructuralNodeForTest = (
   input: unknown
 ):
   | { readonly ok: true; readonly value: unknown }
-  | { readonly ok: false; readonly diagnostic: DomainEventStructuralDiagnostic } => {
+  | {
+      readonly ok: false;
+      readonly diagnosticLeafId: DomainEventStructuralDiagnosticLeafIdV1;
+      readonly diagnostic: DomainEventStructuralDiagnostic;
+    } => {
   if (authorityResult.status !== "HEALTHY") {
     return Object.freeze({
       ok: false as const,
+      diagnosticLeafId: F20,
       diagnostic: createDomainEventStructuralDiagnostic(F20)
     });
   }
@@ -1860,8 +2116,9 @@ export const validateDomainEventStructuralNodeForTest = (
   if (!captured.ok) {
     return Object.freeze({
       ok: false as const,
+      diagnosticLeafId: translateCaptureFailure(captured.diagnostic).leafId,
       diagnostic: createDomainEventStructuralDiagnostic(
-        translateCaptureFailure(captured.diagnostic).contextId
+        translateCaptureFailure(captured.diagnostic).leafId
       )
     });
   }
@@ -1871,6 +2128,7 @@ export const validateDomainEventStructuralNodeForTest = (
   if (!authenticated.ok) {
     return Object.freeze({
       ok: false as const,
+      diagnosticLeafId: F06,
       diagnostic: createDomainEventStructuralDiagnostic(F06)
     });
   }
@@ -1882,30 +2140,43 @@ export const validateDomainEventStructuralNodeForTest = (
     nodesById[binding.nodeId] = binding.node;
   }
   Object.freeze(nodesById);
-  const taggedUnionTagFieldOrdinalsByNodeId = Object.create(null) as Record<
-    string,
-    number
-  >;
-  for (const binding of authorityResult.candidate.nodeBindings) {
-    if (binding.node.kind !== "TAGGED_UNION") {
-      continue;
-    }
-    const ordinal = deriveTaggedUnionTagFieldOrdinal(binding.node, nodesById);
-    if (ordinal === null) {
+  const nodeOrdinalsByNodeId = Object.create(null) as Record<string, number>;
+  for (const entry of authorityResult.traversal.uniqueNodes) {
+    if (
+      !Number.isSafeInteger(entry.nodeOrdinal) ||
+      entry.nodeOrdinal < 1 ||
+      entry.nodeId !== entry.node.nodeId ||
+      nodesById[entry.nodeId] !== entry.node
+    ) {
       return Object.freeze({
         ok: false as const,
-        diagnostic: createDomainEventStructuralDiagnostic(F20)
+        diagnosticLeafId: F20_NODE_ORDINAL,
+        diagnostic: createDomainEventStructuralDiagnostic(F20_NODE_ORDINAL)
       });
     }
-    taggedUnionTagFieldOrdinalsByNodeId[binding.nodeId] = ordinal;
+    nodeOrdinalsByNodeId[entry.nodeId] = entry.nodeOrdinal;
   }
-  Object.freeze(taggedUnionTagFieldOrdinalsByNodeId);
+  Object.freeze(nodeOrdinalsByNodeId);
+  const eventBranchOrdinal = authorityResult.candidate.roots[0]?.branchOrdinal;
+  if (
+    eventBranchOrdinal === undefined ||
+    !Number.isSafeInteger(eventBranchOrdinal) ||
+    eventBranchOrdinal < 1 ||
+    eventBranchOrdinal > 59
+  ) {
+    return Object.freeze({
+      ok: false as const,
+      diagnosticLeafId: F20_EVENT_BRANCH,
+      diagnostic: createDomainEventStructuralDiagnostic(F20_EVENT_BRANCH)
+    });
+  }
   const traversed = traverseNode(
     nodeId,
     authenticated.value,
     [],
     {
-      authority: { nodesById, taggedUnionTagFieldOrdinalsByNodeId },
+      authority: { nodesById, nodeOrdinalsByNodeId },
+      eventBranchOrdinal,
       observation: createObservation(),
       discriminatorCache: Object.freeze(
         Object.create(null) as Record<string, DiscriminatorCacheEntry>
@@ -1916,9 +2187,11 @@ export const validateDomainEventStructuralNodeForTest = (
     ? Object.freeze({ ok: true as const, value: traversed.value })
     : Object.freeze({
         ok: false as const,
+        diagnosticLeafId: traversed.leafId,
         diagnostic: createDomainEventStructuralDiagnostic(
-          traversed.contextId,
-          traversed.path
+          traversed.leafId,
+          traversed.path,
+          traversed.taggedUnionCoordinate
         )
       });
 };
