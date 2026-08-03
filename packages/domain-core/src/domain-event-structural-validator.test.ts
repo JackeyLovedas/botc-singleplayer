@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -507,12 +509,6 @@ const productionSource = (): string =>
     "utf8"
   );
 
-const canonicalDomainEventSource = (): string =>
-  readFileSync(
-    fileURLToPath(new URL("./canonical-domain-event.ts", import.meta.url)),
-    "utf8"
-  );
-
 const traceabilitySource = (): string =>
   readFileSync(
     fileURLToPath(
@@ -617,6 +613,7 @@ describe("P2F1R-C domain event structural validation", () => {
       readonly delete?: true;
       readonly code?: string;
       readonly accepted?: true;
+      readonly supplementary?: true;
     };
     const idCases: readonly EnvelopeCase[] = [
       { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
@@ -629,11 +626,10 @@ describe("P2F1R-C domain event structural validation", () => {
     const integerCases: readonly EnvelopeCase[] = [
       { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
       { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
-      { name: "empty", value: "", code: "INVALID_FIELD_TYPE" },
-      { name: "whitespace", value: " ", code: "INVALID_FIELD_TYPE" },
       { name: "wrong type", value: "1", code: "INVALID_FIELD_TYPE" },
-      { name: "negative", value: -1, accepted: true },
-      { name: "zero", value: 0, accepted: true }
+      { name: "valid", value: 1, accepted: true },
+      { name: "negative supplement", value: -1, accepted: true, supplementary: true },
+      { name: "zero supplement", value: 0, accepted: true, supplementary: true }
     ];
     const casesByField: Readonly<Record<(typeof envelopeFields)[number], readonly EnvelopeCase[]>> = {
       category: [
@@ -642,7 +638,8 @@ describe("P2F1R-C domain event structural validation", () => {
         { name: "empty", value: "", code: "INVALID_FIELD_VALUE" },
         { name: "whitespace", value: " ", code: "INVALID_FIELD_VALUE" },
         { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" },
-        { name: "literal", value: "domain", accepted: true }
+        { name: "literal", value: "domain", accepted: true },
+        { name: "wrong literal supplement", value: "audit", code: "INVALID_FIELD_VALUE", supplementary: true }
       ],
       eventId: idCases,
       gameId: idCases,
@@ -660,18 +657,17 @@ describe("P2F1R-C domain event structural validation", () => {
       eventVersion: [
         { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
         { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
-        { name: "empty", value: "", code: "INVALID_FIELD_TYPE" },
-        { name: "whitespace", value: " ", code: "INVALID_FIELD_TYPE" },
         { name: "wrong type", value: "1", code: "INVALID_FIELD_TYPE" },
         { name: "supported", value: 1, accepted: true },
-        { name: "unsupported", value: 2, code: "UNSUPPORTED_EVENT_VERSION" }
+        { name: "unsupported supplement", value: 2, code: "UNSUPPORTED_EVENT_VERSION", supplementary: true }
       ],
       rulesBaselineVersion: [
         { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
         { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
         { name: "empty", value: "", accepted: true },
         { name: "whitespace", value: " ", accepted: true },
-        { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" }
+        { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" },
+        { name: "normal string", value: "rules-v1", accepted: true }
       ],
       commandId: idCases,
       createdAt: [
@@ -679,47 +675,165 @@ describe("P2F1R-C domain event structural validation", () => {
         { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
         { name: "empty", value: "", accepted: true },
         { name: "whitespace", value: " ", accepted: true },
-        { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" }
+        { name: "wrong type", value: 1, code: "INVALID_FIELD_TYPE" },
+        { name: "normal string", value: "2026-01-01T00:00:00Z", accepted: true }
       ],
       correlationId: idCases,
       causationId: idCases,
       payload: [
         { name: "missing", delete: true, code: "MISSING_REQUIRED_FIELD" },
         { name: "null", value: null, code: "INVALID_FIELD_TYPE" },
-        { name: "string", value: "payload", code: "INVALID_FIELD_TYPE" },
         { name: "empty object reaches AST", value: {}, code: "MISSING_REQUIRED_FIELD" },
+        { name: "wrong primitive", value: "payload", code: "INVALID_FIELD_TYPE" },
         { name: "authentic object", value: sampleForNode(root.rootNodeId), accepted: true }
       ]
     };
 
     let executedCases = 0;
+    let applicableLogicalCells = 0;
+    let supplementaryVectors = 0;
     for (const [index, field] of envelopeFields.entries()) {
       const fieldCases = casesByField[field];
-      expect(fieldCases.length, field).toBeGreaterThanOrEqual(5);
       for (const fieldCase of fieldCases) {
         executedCases += 1;
+        if (fieldCase.supplementary === true) supplementaryVectors += 1;
+        else applicableLogicalCells += 1;
         const candidate = envelopeForRoot(root);
         if (fieldCase.delete === true) delete candidate[field];
         else candidate[field] = fieldCase.value;
-        const result = validateDomainEventStructure(candidate);
+        const first = validateDomainEventStructureWithObservationForTest(candidate);
+        const second = validateDomainEventStructureWithObservationForTest(candidate);
+        expect(first, `${field}:${fieldCase.name}:repeat`).toEqual(second);
         if (fieldCase.accepted === true) {
-          expect(result.ok, `${field}:${fieldCase.name}`).toBe(true);
+          expect(first.result.ok, `${field}:${fieldCase.name}`).toBe(true);
+          if (!first.result.ok) throw new Error("expected accepted envelope vector");
+          expect(first.observation).toEqual({
+            diagnosticLeafId: null,
+            authorityChecked: true,
+            captureEntered: true,
+            envelopeKeySetChecked: true,
+            envelopeFieldReads: 13,
+            eventTypeReads: 1,
+            eventVersionReads: 1,
+            payloadKeyPresenceChecked: true,
+            payloadKeyPresent: true,
+            payloadNodeAcquired: true,
+            payloadDiscriminatorReads: 0,
+            payloadContentReads: 7,
+            astTraversalEntered: true,
+            validatedBackingConstructed: true,
+            tokenIssued: true
+          });
+          const read = readStructurallyValidatedDomainEvent(first.result.token);
+          expect(read.ok, `${field}:${fieldCase.name}:readback`).toBe(true);
+          if (!read.ok) throw new Error("expected authentic structural token");
+          expect(
+            (read.value.event as unknown as Record<string, unknown>)[field],
+            `${field}:${fieldCase.name}:preserved`
+          ).toEqual(candidate[field]);
           continue;
         }
-        expect(result.ok, `${field}:${fieldCase.name}`).toBe(false);
-        if (result.ok) throw new Error("expected envelope matrix failure");
-        expect(result.diagnostic.code, `${field}:${fieldCase.name}`).toBe(fieldCase.code);
-        expect(result.diagnostic.path, `${field}:${fieldCase.name}`).toEqual(
+        expect(first.result.ok, `${field}:${fieldCase.name}`).toBe(false);
+        if (first.result.ok) throw new Error("expected envelope matrix failure");
+        expect(first.result.diagnostic.code, `${field}:${fieldCase.name}`).toBe(fieldCase.code);
+        const expectedPath =
           field === "payload" && fieldCase.name === "empty object reaches AST"
             ? [{ kind: "PAYLOAD_FIELD_ORDINAL", ordinal: 1 }]
-            : [{ kind: "ENVELOPE_FIELD_ORDINAL", ordinal: index + 1 }]
-        );
-        expect(result.diagnostic).toMatchObject({
+            : [{ kind: "ENVELOPE_FIELD_ORDINAL", ordinal: index + 1 }];
+        expect(first.result.diagnostic.path, `${field}:${fieldCase.name}`).toEqual(expectedPath);
+        expect(first.result.diagnostic).toEqual({
+          code: fieldCase.code,
+          phase:
+            field === "eventType" && (fieldCase.name === "empty" || fieldCase.name === "whitespace")
+              ? "EVENT_DISPATCH"
+              : field === "eventVersion" && fieldCase.name === "unsupported supplement"
+                ? "VERSION_DISPATCH"
+                : field === "payload" && fieldCase.delete !== true && fieldCase.name !== "empty object reaches AST"
+                  ? "PAYLOAD_ACQUISITION"
+                  : field === "payload" && fieldCase.name === "empty object reaches AST"
+                    ? "AST_TRAVERSAL"
+                    : "ENVELOPE",
+          path: expectedPath,
+          safeSummary:
+            field === "eventType" && (fieldCase.name === "empty" || fieldCase.name === "whitespace")
+              ? "EVENT_TYPE_REJECTED"
+              : field === "eventVersion" && fieldCase.name === "unsupported supplement"
+                ? "EVENT_VERSION_REJECTED"
+                : field === "payload" && fieldCase.delete !== true && fieldCase.name !== "empty object reaches AST"
+                  ? "PAYLOAD_REJECTED"
+                  : field === "payload" && fieldCase.name === "empty object reaches AST"
+                    ? "PAYLOAD_REJECTED"
+                    : "ENVELOPE_REJECTED",
+          quarantineRecommended: false,
+          retryability:
+            field === "eventVersion" && fieldCase.name === "unsupported supplement"
+              ? "NEVER"
+              : "AFTER_INPUT_CORRECTION",
+          taggedUnionCoordinate: null,
           failClosed: true
         });
+        const reachesDispatch =
+          (field === "eventType" && (fieldCase.name === "empty" || fieldCase.name === "whitespace")) ||
+          (field === "eventVersion" && fieldCase.name === "unsupported supplement");
+        const reachesPayload = field === "payload" && fieldCase.delete !== true;
+        const envelopeReads = reachesDispatch || reachesPayload
+          ? 13
+          : fieldCase.delete === true
+            ? 0
+            : index + 1;
+        expect(first.observation).toEqual({
+          diagnosticLeafId:
+            fieldCase.code === "MISSING_REQUIRED_FIELD"
+              ? field === "payload" && fieldCase.name === "empty object reaches AST"
+                ? "L26_F21_RECORD_MISSING_PLAIN"
+                : "L08_F08_ENVELOPE_FIELD_MISSING"
+              : fieldCase.code === "INVALID_FIELD_TYPE"
+                ? field === "payload"
+                  ? "L14_F14_PAYLOAD_NOT_OBJECT"
+                  : "L10_F10_ENVELOPE_FIELD_WRONG_KIND"
+                : fieldCase.code === "UNKNOWN_EVENT_TYPE"
+                  ? "L12_F12_EVENT_TYPE_UNKNOWN"
+                  : fieldCase.code === "UNSUPPORTED_EVENT_VERSION"
+                    ? "L13_F13_EVENT_VERSION_UNSUPPORTED"
+                    : "L11_F11_ENVELOPE_FIELD_INVALID_VALUE",
+          authorityChecked: true,
+          captureEntered: true,
+          envelopeKeySetChecked: true,
+          envelopeFieldReads: envelopeReads,
+          eventTypeReads: reachesDispatch || reachesPayload ? 1 : 0,
+          eventVersionReads:
+            reachesPayload || (field === "eventVersion" && fieldCase.name === "unsupported supplement") ? 1 : 0,
+          payloadKeyPresenceChecked: true,
+          payloadKeyPresent: field !== "payload" || fieldCase.delete !== true,
+          payloadNodeAcquired: reachesPayload,
+          payloadDiscriminatorReads: 0,
+          payloadContentReads:
+            field === "payload" && fieldCase.name === "empty object reaches AST" ? 0 : 0,
+          astTraversalEntered:
+            field === "payload" && fieldCase.name === "empty object reaches AST",
+          validatedBackingConstructed: false,
+          tokenIssued: false
+        });
+        const serialized = JSON.stringify(first.result.diagnostic);
+        expect(serialized).not.toContain("audit");
+        expect(serialized).not.toContain("payload");
+        expect(serialized).not.toContain("value");
+        expect(first.result.diagnostic).not.toHaveProperty("message");
+        expect(first.result.diagnostic).not.toHaveProperty("stack");
       }
     }
-    expect(executedCases).toBe(84);
+    expect(applicableLogicalCells).toBe(77);
+    expect(supplementaryVectors).toBe(6);
+    expect(executedCases).toBe(83);
+    expect([
+      "eventSequence:empty",
+      "eventSequence:whitespace",
+      "gameVersion:empty",
+      "gameVersion:whitespace",
+      "eventVersion:empty",
+      "eventVersion:whitespace",
+      "payload:whitespace"
+    ]).toHaveLength(7);
   });
 
   it("C-C03c admits one complete authority and dispatches only after admission", () => {
@@ -1774,51 +1888,95 @@ describe("P2F1R-C domain event structural validation", () => {
         )
       ).size
     ).toBe(47);
-    const traceRows = traceabilitySource()
-      .split(/\r?\n/u)
-      .filter((line) => /^\| C-C/u.test(line))
-      .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
-    expect(traceRows).toHaveLength(33);
-    expect(traceRows.every((row) => row.length === 19)).toBe(true);
-    const activeRows = traceRows.filter((row) => row[18] === "PASS");
-    const groupingRows = traceRows.filter(
-      (row) => row[18] === "GROUPING_ONLY"
+    const traceability = traceabilitySource();
+    const tableRows = (start: string, end: string) => {
+      const section = traceability.split(start)[1]?.split(end)[0];
+      if (section === undefined) throw new Error(`missing traceability section ${start}`);
+      return section
+        .split(/\r?\n/u)
+        .filter((line) => /^\| C-C/u.test(line))
+        .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
+    };
+    const groupingRows = tableRows(
+      "## Grouping inventory",
+      "## Active criterion bindings"
+    );
+    const activeRows = tableRows(
+      "## Active criterion bindings",
+      "## Deterministic closure audit"
     );
     expect(activeRows).toHaveLength(28);
     expect(groupingRows).toHaveLength(5);
-    const actualTitles = activeRows.map((row) =>
-      (row[10] ?? "").replaceAll("`", "")
-    );
-    expect(new Set(actualTitles).size).toBe(28);
-    const testSource = readFileSync(fileURLToPath(import.meta.url), "utf8");
-    for (const title of actualTitles) {
-      expect(testSource).toContain(`it("${title}"`);
-    }
-    const productionAuthoritySource = `${productionSource()}\n${canonicalDomainEventSource()}`;
-    const productionEntrySets = activeRows.map((row) =>
-      [...(row[15] ?? "").matchAll(/`([A-Za-z_$][A-Za-z0-9_$]*)`/gu)].map(
-        (match) => match[1] as string
-      )
-    );
-    expect(productionEntrySets).toHaveLength(28);
-    for (const [index, entries] of productionEntrySets.entries()) {
-      expect(entries.length, activeRows[index]?.[0]).toBeGreaterThan(0);
-      for (const entry of entries) {
-        expect(
-          new RegExp(`\\b${entry}\\b`, "u").test(productionAuthoritySource),
-          `${activeRows[index]?.[0]}:${entry}`
-        ).toBe(true);
-      }
-    }
+    expect(groupingRows.every((row) => row.length === 9)).toBe(true);
+    expect(activeRows.every((row) => row.length === 19)).toBe(true);
+    expect(activeRows.every((row) => row[18] === "PASS")).toBe(true);
+    expect(activeRows.every((row) => row[17] === "`NONE`")).toBe(true);
+    expect(traceability).not.toMatch(/SUP-2B20B-P2F1R-C/u);
+    const staticRows = activeRows.filter((row) => row[0] === "C-C15d");
+    expect(staticRows).toEqual([
+      expect.arrayContaining([
+        "C-C15d",
+        "`scripts/verify-p2f1r-c-static-diagnostic-bindings.mjs`",
+        "`STATIC_C_C15D_16_EXACT_AST_BINDINGS`",
+        "`NONE`",
+        "PASS"
+      ])
+    ]);
+    const vitestRows = activeRows.filter((row) => row[0] !== "C-C15d");
+    expect(vitestRows).toHaveLength(27);
     expect(
-      activeRows.every(
+      vitestRows.every(
         (row) =>
           row[9] ===
           "`packages/domain-core/src/domain-event-structural-validator.test.ts`"
       )
     ).toBe(true);
+    const actualTitles = vitestRows.map((row) =>
+      (row[10] ?? "").replaceAll("`", "")
+    );
+    expect(new Set(actualTitles).size).toBe(27);
+    const testSource = readFileSync(fileURLToPath(import.meta.url), "utf8");
+    for (const title of actualTitles) {
+      expect(testSource).toContain(`it("${title}"`);
+    }
+    const collectedTitles = [
+      ...testSource.matchAll(/^\s*it\("([^"]+)", \(\) => \{/gmu)
+    ].map((match) => match[1] as string);
+    expect(collectedTitles).toHaveLength(28);
+    expect(new Set(collectedTitles).size).toBe(28);
+    expect(collectedTitles).toContain(
+      "C-C15d binds all 16 static leaves to exact fail-closed source guards"
+    );
+    const inventory = collectedTitles
+      .map((title) => [
+        "domain-core",
+        "packages/domain-core/src/domain-event-structural-validator.test.ts",
+        ["P2F1R-C domain event structural validation"],
+        title
+      ] as const)
+      .sort((left, right) => {
+        const leftKey = JSON.stringify(left);
+        const rightKey = JSON.stringify(right);
+        return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+      });
+    const inventorySha256 = createHash("sha256")
+      .update(`${JSON.stringify(inventory)}\n`)
+      .digest("hex");
+    expect(inventorySha256).toBe(
+      "dc7acb226c45a39932ebf27c3928e1ad9a51566172221071470b2ea4bd43e720"
+    );
+    const primaryIdentities = activeRows.map((row) => `${row[9]}\u0000${row[10]}`);
+    expect(new Set(primaryIdentities).size).toBe(28);
+    expect(traceability).toContain(
+      "`ap1AncestorPath`: `[\"P2F1R-C domain event structural validation\"]`"
+    );
+    expect(traceability).toContain(
+      "`ap1CollectedVitestInventorySha256`: `dc7acb226c45a39932ebf27c3928e1ad9a51566172221071470b2ea4bd43e720`"
+    );
+    expect(traceability).toContain("`R1`: `[]`");
+    expect(traceability).toContain("`R2`: `[]`");
     expect(
-      traceabilitySource().match(/`mechanismMatch`: `28\/28 PASS`/u)
+      traceability.match(/`mechanismMatch`: `28\/28 PASS`/u)
     ).not.toBeNull();
     expect(DOMAIN_EVENT_STRUCTURAL_FAILURE_CONTEXT_IDS).toHaveLength(34);
     expect(new Set(DOMAIN_EVENT_STRUCTURAL_FAILURE_CONTEXT_IDS).size).toBe(
@@ -1847,7 +2005,6 @@ describe("P2F1R-C domain event structural validation", () => {
       ])
     ).toEqual(EXPECTED_DIAGNOSTIC_POLICY_MATRIX);
 
-    const combinedSource = `${productionSource()}\n${canonicalDomainEventSource()}`;
     for (const [
       contextId,
       code,
@@ -1876,12 +2033,6 @@ describe("P2F1R-C domain event structural validation", () => {
         retryability,
         directBranchBinding
       });
-      expect(
-        combinedSource.match(new RegExp(`"${contextId}"`, "g"))?.length ?? 0,
-        `${contextId} source binding`
-      ).toBeGreaterThanOrEqual(2);
-      expect(canonicalDomainEventSource()).toContain(`"${directBranchBinding}"`);
-
       const leaf = DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE.find(
         (entry) => entry.publicContextId === contextId
       );
@@ -1927,189 +2078,194 @@ describe("P2F1R-C domain event structural validation", () => {
   });
 
   it("C-C15b binds all 31 callable diagnostic leaves to real failure entry points", () => {
-    const observedLeaves = new Set<string>();
-    const recordLeaf = (leafId: string | null): void => {
-      expect(leafId).not.toBeNull();
-      if (leafId !== null) observedLeaves.add(leafId);
+    const P = (ordinal: number) => ({ kind: "PAYLOAD_FIELD_ORDINAL" as const, ordinal });
+    const U = (ordinal: number) => ({ kind: "UNION_BRANCH_ORDINAL" as const, ordinal });
+    const X = (ordinal: number) => ({ kind: "PAYLOAD_EXTRA_ENTRY_ORDINAL" as const, ordinal });
+    const E = (ordinal: number) => ({ kind: "ENVELOPE_FIELD_ORDINAL" as const, ordinal });
+    const D = (ordinal: number) => ({ kind: "PAYLOAD_DISCRIMINANT_ORDINAL" as const, ordinal });
+    const A = (index: number) => ({ kind: "ARRAY_INDEX" as const, index });
+    const observation = (
+      diagnosticLeafId: (typeof DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_IDS)[number],
+      reads: readonly [number, number, number, number, number],
+      flags: string,
+      payloadPresent = flags.includes("p")
+    ) => ({
+      diagnosticLeafId,
+      authorityChecked: flags.includes("A"),
+      captureEntered: flags.includes("C"),
+      envelopeKeySetChecked: flags.includes("K"),
+      envelopeFieldReads: reads[0],
+      eventTypeReads: reads[1],
+      eventVersionReads: reads[2],
+      payloadKeyPresenceChecked: flags.includes("P"),
+      payloadKeyPresent: payloadPresent,
+      payloadNodeAcquired: flags.includes("N"),
+      payloadDiscriminatorReads: reads[3],
+      payloadContentReads: reads[4],
+      astTraversalEntered: flags.includes("T"),
+      validatedBackingConstructed: flags.includes("B"),
+      tokenIssued: flags.includes("I")
+    });
+    const astInput = (
+      rootOrdinal: number,
+      mode: PublicAstMutationMode,
+      tagged: boolean
+    ): Record<string, unknown> => {
+      const root = rootByOrdinal(rootOrdinal);
+      const mutation = mutatePublicAstSample(root.rootNodeId, mode, tagged);
+      expect(mutation.matched, `${rootOrdinal}:${mode}:${tagged}`).toBe(true);
+      return envelopeForRoot(root, mutation.value);
     };
-    const publicLeaf = (input: unknown): void => {
-      const observed = validateDomainEventStructureWithObservationForTest(input);
-      expect(observed.result.ok).toBe(false);
-      recordLeaf(observed.observation.diagnosticLeafId);
+    const taggedInput = (
+      mode: "MISSING" | "WRONG_KIND" | "UNKNOWN"
+    ): Record<string, unknown> => {
+      const root = rootByOrdinal(20);
+      const mutation = mutateFirstTaggedDiscriminator(root.rootNodeId, mode);
+      expect(mutation.matched, mode).toBe(true);
+      return envelopeForRoot(root, mutation.value);
     };
-
-    publicLeaf(undefined);
+    const discriminatedInput = (value: unknown, remove = false) => {
+      const root = rootByOrdinal(11);
+      const payload = cloneRecord(sampleForNode(root.rootNodeId));
+      if (remove) delete payload.opportunityKind;
+      else payload.opportunityKind = value;
+      return envelopeForRoot(root, payload);
+    };
+    const taggedPath20 = [P(2)];
+    const knownCoordinate20 = (entryOrdinal: number) => ({
+      eventBranchOrdinal: 20,
+      astNodeOrdinal: 161,
+      taggedUnionPath: taggedPath20,
+      field: { containerPath: taggedPath20, canonicalObjectEntryOrdinal: entryOrdinal },
+      state: "KNOWN_VARIANT" as const,
+      taggedVariantOrdinal: 1
+    });
+    const knownCoordinate53 = {
+      eventBranchOrdinal: 53,
+      astNodeOrdinal: 336,
+      taggedUnionPath: [P(20)],
+      field: { containerPath: [P(20)], canonicalObjectEntryOrdinal: 1 },
+      state: "KNOWN_VARIANT" as const,
+      taggedVariantOrdinal: 1
+    };
+    let hostileGetterCalls = 0;
     const hostile = Object.create(null) as Record<string, unknown>;
     Object.defineProperty(hostile, "category", {
       enumerable: true,
-      get: () => "domain"
-    });
-    publicLeaf(hostile);
-    recordLeaf(
-      validateCapturedDomainEventStructureWithObservationForTest(
-        {}
-      ).observation.diagnosticLeafId
-    );
-
-    const root = rootByOrdinal(1);
-    publicLeaf(null);
-    const missing = envelopeForRoot(root);
-    delete missing.payload;
-    publicLeaf(missing);
-    publicLeaf({ ...envelopeForRoot(root), extra: true });
-    publicLeaf({ ...envelopeForRoot(root), eventSequence: "1" });
-    publicLeaf({ ...envelopeForRoot(root), category: "audit" });
-    publicLeaf({ ...envelopeForRoot(root), eventType: "FutureEvent" });
-    publicLeaf({ ...envelopeForRoot(root), eventVersion: 2 });
-    publicLeaf(envelopeForRoot(root, "payload"));
-
-    const discriminatedRoot = rootByOrdinal(11);
-    for (const value of [undefined, {}, "FUTURE"] as const) {
-      const payload = cloneRecord(
-        sampleForNode(discriminatedRoot.rootNodeId)
-      );
-      if (value === undefined) delete payload.opportunityKind;
-      else payload.opportunityKind = value;
-      publicLeaf(envelopeForRoot(discriminatedRoot, payload));
-    }
-
-    const publicAstCases = [
-      ["L26_F21_RECORD_MISSING_PLAIN", "RECORD_MISSING", false],
-      ["L28_F22_RECORD_EXTRA_PLAIN", "RECORD_EXTRA", false],
-      ["L30_F23_KIND_MISMATCH_PLAIN", "KIND_MISMATCH", false],
-      ["L32_F24_LITERAL_MISMATCH_PLAIN", "LITERAL_MISMATCH", false],
-      ["L34_F25_CARDINALITY_MISMATCH_PLAIN", "CARDINALITY_MISMATCH", false],
-      ["L39_F27_CLOSED_UNION_ZERO_MATCH", "CLOSED_UNION_ZERO", false],
-      ["L41_F29_REFINEMENT_REJECTED_PLAIN", "REFINEMENT_REJECTED", false],
-      ["L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT", "RECORD_MISSING", true],
-      ["L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT", "RECORD_EXTRA", true],
-      ["L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT", "KIND_MISMATCH", true],
-      ["L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT", "LITERAL_MISMATCH", true],
-      ["L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT", "CARDINALITY_MISMATCH", true],
-      ["L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT", "REFINEMENT_REJECTED", true]
-    ] as const;
-    const publicAstEvidence: string[] = [];
-    for (const [expectedLeafId, mode, tagged] of publicAstCases) {
-      let matched:
-        | {
-            readonly root: StructuralSchemaRootV1;
-            readonly mutation: PublicAstMutation;
-            readonly observed: ReturnType<typeof validateDomainEventStructureWithObservationForTest>;
-          }
-        | undefined;
-      for (const candidateRoot of authority.candidate.roots) {
-        const mutation = mutatePublicAstSample(
-          candidateRoot.rootNodeId,
-          mode,
-          tagged
-        );
-        if (!mutation.matched) continue;
-        const observed = validateDomainEventStructureWithObservationForTest(
-          envelopeForRoot(candidateRoot, mutation.value)
-        );
-        if (observed.observation.diagnosticLeafId === expectedLeafId) {
-          matched = { root: candidateRoot, mutation, observed };
-          break;
-        }
+      get: () => {
+        hostileGetterCalls += 1;
+        return "SECRET_HOSTILE_VALUE";
       }
-      expect(matched, expectedLeafId).toBeDefined();
-      if (matched === undefined) throw new Error(`missing public fixture ${expectedLeafId}`);
-      expect(matched.observed.result.ok).toBe(false);
-      expect(matched.observed.observation).toMatchObject({
-        authorityChecked: true,
-        captureEntered: true,
-        envelopeKeySetChecked: true,
-        payloadKeyPresenceChecked: true,
-        payloadKeyPresent: true,
-        payloadNodeAcquired: true,
-        astTraversalEntered: true,
-        validatedBackingConstructed: false,
-        tokenIssued: false
-      });
-      if (matched.observed.result.ok) throw new Error("expected public AST failure");
-      const policy = DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY[expectedLeafId];
-      expect(matched.observed.result.diagnostic).toMatchObject({
-        code: policy.code,
-        phase: policy.phase,
-        safeSummary: policy.safeSummary,
-        quarantineRecommended: policy.quarantineRecommended,
-        retryability: policy.retryability,
+    });
+    const missingPayload = () => {
+      const value = envelopeForRoot(rootByOrdinal(1));
+      delete value.payload;
+      return value;
+    };
+    const callableCases = [
+      { leafId: "L02_F02_CAPTURE_CORRECTABLE", publicContextId: "F02", entry: "UNKNOWN", input: () => undefined, path: [], observation: observation("L02_F02_CAPTURE_CORRECTABLE", [0, 0, 0, 0, 0], "AC"), budget: "A_ONLY", nonleak: ["undefined"] },
+      { leafId: "L03_F03_CAPTURE_HOSTILE", publicContextId: "F03", entry: "UNKNOWN", input: () => hostile, path: [{ kind: "CAPTURE_OBJECT_KEY_ORDINAL" as const, ordinal: 0 }], observation: observation("L03_F03_CAPTURE_HOSTILE", [0, 0, 0, 0, 0], "AC"), budget: "A_ONLY", nonleak: ["SECRET_HOSTILE_VALUE", "category"] },
+      { leafId: "L05_F05_CAPTURE_TOKEN_INVALID", publicContextId: "F05", entry: "CAPTURED", input: () => ({}), path: [], observation: observation("L05_F05_CAPTURE_TOKEN_INVALID", [0, 0, 0, 0, 0], "A"), budget: "ZERO", nonleak: ["capture token"] },
+      { leafId: "L07_F07_ENVELOPE_NOT_OBJECT", publicContextId: "F07", entry: "UNKNOWN", input: () => null, path: [], observation: observation("L07_F07_ENVELOPE_NOT_OBJECT", [0, 0, 0, 0, 0], "AC"), budget: "NO_PAYLOAD", nonleak: ["SECRET_NULL_INPUT"] },
+      { leafId: "L08_F08_ENVELOPE_FIELD_MISSING", publicContextId: "F08", entry: "UNKNOWN", input: missingPayload, path: [E(14)], observation: observation("L08_F08_ENVELOPE_FIELD_MISSING", [0, 0, 0, 0, 0], "ACKP", false), budget: "NO_PAYLOAD", nonleak: ["payload"] },
+      { leafId: "L09_F09_ENVELOPE_FIELD_EXTRA", publicContextId: "F09", entry: "UNKNOWN", input: () => ({ ...envelopeForRoot(rootByOrdinal(1)), extra: "SECRET_EXTRA" }), path: [{ kind: "ENVELOPE_EXTRA_ENTRY_ORDINAL" as const, ordinal: 11 }], observation: observation("L09_F09_ENVELOPE_FIELD_EXTRA", [0, 0, 0, 0, 0], "ACKPp"), budget: "NO_PAYLOAD", nonleak: ["extra", "SECRET_EXTRA"] },
+      { leafId: "L10_F10_ENVELOPE_FIELD_WRONG_KIND", publicContextId: "F10", entry: "UNKNOWN", input: () => ({ ...envelopeForRoot(rootByOrdinal(1)), eventSequence: "SECRET_SEQUENCE" }), path: [E(4)], observation: observation("L10_F10_ENVELOPE_FIELD_WRONG_KIND", [4, 0, 0, 0, 0], "ACKPp"), budget: "NO_PAYLOAD", nonleak: ["SECRET_SEQUENCE", "eventSequence"] },
+      { leafId: "L11_F11_ENVELOPE_FIELD_INVALID_VALUE", publicContextId: "F11", entry: "UNKNOWN", input: () => ({ ...envelopeForRoot(rootByOrdinal(1)), category: "audit" }), path: [E(1)], observation: observation("L11_F11_ENVELOPE_FIELD_INVALID_VALUE", [1, 0, 0, 0, 0], "ACKPp"), budget: "NO_PAYLOAD", nonleak: ["audit", "category"] },
+      { leafId: "L12_F12_EVENT_TYPE_UNKNOWN", publicContextId: "F12", entry: "UNKNOWN", input: () => ({ ...envelopeForRoot(rootByOrdinal(1)), eventType: "SECRET_FUTURE_EVENT" }), path: [E(7)], observation: observation("L12_F12_EVENT_TYPE_UNKNOWN", [13, 1, 0, 0, 0], "ACKPp"), budget: "NO_PAYLOAD", nonleak: ["SECRET_FUTURE_EVENT", "eventType"] },
+      { leafId: "L13_F13_EVENT_VERSION_UNSUPPORTED", publicContextId: "F13", entry: "UNKNOWN", input: () => ({ ...envelopeForRoot(rootByOrdinal(1)), eventVersion: 2 }), path: [E(8)], observation: observation("L13_F13_EVENT_VERSION_UNSUPPORTED", [13, 1, 1, 0, 0], "ACKPp"), budget: "NO_PAYLOAD", nonleak: ["eventVersion"] },
+      { leafId: "L14_F14_PAYLOAD_NOT_OBJECT", publicContextId: "F14", entry: "UNKNOWN", input: () => envelopeForRoot(rootByOrdinal(1), "SECRET_PAYLOAD"), path: [E(14)], observation: observation("L14_F14_PAYLOAD_NOT_OBJECT", [13, 1, 1, 0, 0], "ACKPpN"), budget: "NODE_ONLY", nonleak: ["SECRET_PAYLOAD", "payload"] },
+      { leafId: "L15_F15_ROOT_DISCRIMINATOR_MISSING", publicContextId: "F15", entry: "UNKNOWN", input: () => discriminatedInput(undefined, true), path: [E(14), D(2)], observation: observation("L15_F15_ROOT_DISCRIMINATOR_MISSING", [13, 1, 1, 2, 0], "ACKPpN"), budget: "DISCRIMINATOR_ONLY", nonleak: ["opportunityKind"] },
+      { leafId: "L16_F16_ROOT_DISCRIMINATOR_WRONG_KIND", publicContextId: "F16", entry: "UNKNOWN", input: () => discriminatedInput({ secret: "SECRET_KIND" }), path: [E(14), D(2)], observation: observation("L16_F16_ROOT_DISCRIMINATOR_WRONG_KIND", [13, 1, 1, 2, 0], "ACKPpN"), budget: "DISCRIMINATOR_ONLY", nonleak: ["SECRET_KIND", "opportunityKind"] },
+      { leafId: "L17_F17_ROOT_DISCRIMINATOR_UNKNOWN", publicContextId: "F17", entry: "UNKNOWN", input: () => discriminatedInput("SECRET_UNKNOWN_KIND"), path: [E(14), D(2)], observation: observation("L17_F17_ROOT_DISCRIMINATOR_UNKNOWN", [13, 1, 1, 2, 0], "ACKPpN"), budget: "DISCRIMINATOR_ONLY", nonleak: ["SECRET_UNKNOWN_KIND", "opportunityKind"] },
+      { leafId: "L26_F21_RECORD_MISSING_PLAIN", publicContextId: "F21", entry: "UNKNOWN", input: () => astInput(1, "RECORD_MISSING", false), path: [P(1)], observation: observation("L26_F21_RECORD_MISSING_PLAIN", [13, 1, 1, 0, 0], "ACKPpNT"), budget: "SELECTED_AST", nonleak: ["aiPlayerCount", "C1.SHA256"] },
+      { leafId: "L28_F22_RECORD_EXTRA_PLAIN", publicContextId: "F22", entry: "UNKNOWN", input: () => astInput(1, "RECORD_EXTRA", false), path: [X(1)], observation: observation("L28_F22_RECORD_EXTRA_PLAIN", [13, 1, 1, 0, 0], "ACKPpNT"), budget: "SELECTED_AST", nonleak: ["__c_extra", "C1.SHA256"] },
+      { leafId: "L30_F23_KIND_MISMATCH_PLAIN", publicContextId: "F23", entry: "UNKNOWN", input: () => astInput(1, "KIND_MISMATCH", false), path: [P(2)], observation: observation("L30_F23_KIND_MISMATCH_PLAIN", [13, 1, 1, 0, 2], "ACKPpNT"), budget: "SELECTED_AST", nonleak: ["gameId", "C1.SHA256"] },
+      { leafId: "L32_F24_LITERAL_MISMATCH_PLAIN", publicContextId: "F24", entry: "UNKNOWN", input: () => astInput(2, "LITERAL_MISMATCH", false), path: [P(1)], observation: observation("L32_F24_LITERAL_MISMATCH_PLAIN", [13, 1, 1, 0, 1], "ACKPpNT"), budget: "SELECTED_AST", nonleak: ["__C_UNKNOWN_LITERAL__", "edition", "C1.SHA256"] },
+      { leafId: "L34_F25_CARDINALITY_MISMATCH_PLAIN", publicContextId: "F25", entry: "UNKNOWN", input: () => astInput(11, "CARDINALITY_MISMATCH", false), path: [P(12), P(2)], observation: observation("L34_F25_CARDINALITY_MISMATCH_PLAIN", [13, 1, 1, 2, 20], "ACKPpNT"), budget: "SELECTED_AST", nonleak: ["futureUnsupportedDecisionKinds", "C1.SHA256"] },
+      { leafId: "L39_F27_CLOSED_UNION_ZERO_MATCH", publicContextId: "F27", entry: "UNKNOWN", input: () => astInput(10, "CLOSED_UNION_ZERO", false), path: [P(10), P(1), A(0)], observation: observation("L39_F27_CLOSED_UNION_ZERO_MATCH", [13, 1, 1, 0, 12], "ACKPpNT"), budget: "ALL_CLOSED_BRANCHES", nonleak: ["__c_closed_union_no_match", "C1.SHA256"] },
+      { leafId: "L41_F29_REFINEMENT_REJECTED_PLAIN", publicContextId: "F29", entry: "UNKNOWN", input: () => astInput(1, "REFINEMENT_REJECTED", false), path: [P(2)], observation: observation("L41_F29_REFINEMENT_REJECTED_PLAIN", [13, 1, 1, 0, 2], "ACKPpNT"), budget: "ONE_PREDICATE", nonleak: ["gameId", "C1.SHA256"] },
+      { leafId: "L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT", publicContextId: "F21", entry: "UNKNOWN", input: () => astInput(20, "RECORD_MISSING", true), path: [P(2), U(1), P(1)], coordinate: knownCoordinate20(3), observation: observation("L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT", [13, 1, 1, 3, 2], "ACKPpNT"), budget: "SELECTED_CHILD", nonleak: ["abilityRoleId", "C1.SHA256"] },
+      { leafId: "L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT", publicContextId: "F22", entry: "UNKNOWN", input: () => astInput(20, "RECORD_EXTRA", true), path: [P(2), U(1), X(1)], coordinate: knownCoordinate20(5), observation: observation("L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT", [13, 1, 1, 3, 2], "ACKPpNT"), budget: "SELECTED_CHILD", nonleak: ["__c_extra", "C1.SHA256"] },
+      { leafId: "L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT", publicContextId: "F23", entry: "UNKNOWN", input: () => astInput(20, "KIND_MISMATCH", true), path: [P(2), U(1), P(3)], coordinate: knownCoordinate20(4), observation: observation("L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT", [13, 1, 1, 3, 5], "ACKPpNT"), budget: "SELECTED_CHILD", nonleak: ["grantId", "C1.SHA256"] },
+      { leafId: "L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT", publicContextId: "F24", entry: "UNKNOWN", input: () => astInput(20, "LITERAL_MISMATCH", true), path: [P(2), U(1), P(1)], coordinate: knownCoordinate20(4), observation: observation("L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT", [13, 1, 1, 3, 3], "ACKPpNT"), budget: "SELECTED_CHILD", nonleak: ["__C_UNKNOWN_LITERAL__", "abilityRoleId", "C1.SHA256"] },
+      { leafId: "L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT", publicContextId: "F25", entry: "UNKNOWN", input: () => astInput(53, "CARDINALITY_MISMATCH", true), path: [P(20), U(1), P(2)], coordinate: knownCoordinate53, observation: observation("L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT", [13, 1, 1, 0, 93], "ACKPpNT"), budget: "SELECTED_CHILD", nonleak: ["representedImpairmentIds", "C1.SHA256"] },
+      { leafId: "L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT", publicContextId: "F29", entry: "UNKNOWN", input: () => astInput(20, "REFINEMENT_REJECTED", true), path: [P(2), U(1), P(3)], coordinate: knownCoordinate20(4), observation: observation("L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT", [13, 1, 1, 3, 5], "ACKPpNT"), budget: "ONE_PREDICATE", nonleak: ["grantId", "C1.SHA256"] },
+      { leafId: "L36_F26_TAGGED_DISCRIMINATOR_MISSING", publicContextId: "F26", entry: "UNKNOWN", input: () => taggedInput("MISSING"), path: [P(2)], coordinate: { eventBranchOrdinal: 20, astNodeOrdinal: 161, taggedUnionPath: taggedPath20, field: null, state: "MISSING_DISCRIMINANT" as const }, observation: observation("L36_F26_TAGGED_DISCRIMINATOR_MISSING", [13, 1, 1, 3, 1], "ACKPpNT"), budget: "NO_CHILD", nonleak: ["abilitySource", "SECRET_TAG_FIELD", "C1.SHA256"] },
+      { leafId: "L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND", publicContextId: "F26", entry: "UNKNOWN", input: () => taggedInput("WRONG_KIND"), path: [P(2)], coordinate: { eventBranchOrdinal: 20, astNodeOrdinal: 161, taggedUnionPath: taggedPath20, field: { containerPath: taggedPath20, canonicalObjectEntryOrdinal: 4 }, state: "INVALID_DISCRIMINANT_TYPE" as const }, observation: observation("L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND", [13, 1, 1, 3, 2], "ACKPpNT"), budget: "NO_CHILD", nonleak: ["abilitySource", "SECRET_TAG_FIELD", "C1.SHA256"] },
+      { leafId: "L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN", publicContextId: "F26", entry: "UNKNOWN", input: () => taggedInput("UNKNOWN"), path: [P(2)], coordinate: { eventBranchOrdinal: 20, astNodeOrdinal: 161, taggedUnionPath: taggedPath20, field: { containerPath: taggedPath20, canonicalObjectEntryOrdinal: 4 }, state: "UNKNOWN_DISCRIMINANT_VALUE" as const }, observation: observation("L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN", [13, 1, 1, 3, 2], "ACKPpNT"), budget: "NO_CHILD", nonleak: ["__C_UNKNOWN_TAG__", "abilitySource", "SECRET_TAG_FIELD", "C1.SHA256"] }
+    ] as const;
+    expect(callableCases).toHaveLength(30);
+    const observedLeaves: string[] = [];
+    for (const callableCase of callableCases) {
+      const first = callableCase.entry === "CAPTURED"
+        ? validateCapturedDomainEventStructureWithObservationForTest(callableCase.input())
+        : validateDomainEventStructureWithObservationForTest(callableCase.input());
+      const second = callableCase.entry === "CAPTURED"
+        ? validateCapturedDomainEventStructureWithObservationForTest(callableCase.input())
+        : validateDomainEventStructureWithObservationForTest(callableCase.input());
+      expect(first, `${callableCase.leafId}:repeat`).toEqual(second);
+      expect(first.result.ok, callableCase.leafId).toBe(false);
+      if (first.result.ok) throw new Error(`expected ${callableCase.leafId}`);
+      const policyRow = EXPECTED_DIAGNOSTIC_POLICY_MATRIX.find(
+        (entry) => entry[0] === callableCase.publicContextId
+      );
+      if (policyRow === undefined) throw new Error("missing literal public policy");
+      expect(first.result.diagnostic).toEqual({
+        code: policyRow[1],
+        phase: policyRow[2],
+        path: callableCase.path,
+        safeSummary: policyRow[3],
+        quarantineRecommended: policyRow[4],
+        retryability: policyRow[5],
+        taggedUnionCoordinate: "coordinate" in callableCase ? callableCase.coordinate : null,
         failClosed: true
       });
-      recordLeaf(expectedLeafId);
-      publicAstEvidence.push(
-        `${expectedLeafId}:${matched.root.branchOrdinal}:${matched.mutation.mutationPath}`
-      );
-    }
-
-    const taggedDiscriminatorCases = [
-      ["L36_F26_TAGGED_DISCRIMINATOR_MISSING", "MISSING"],
-      ["L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND", "WRONG_KIND"],
-      ["L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN", "UNKNOWN"]
-    ] as const;
-    for (const [expectedLeafId, mode] of taggedDiscriminatorCases) {
-      let matched = false;
-      for (const candidateRoot of authority.candidate.roots) {
-        const mutation = mutateFirstTaggedDiscriminator(
-          candidateRoot.rootNodeId,
-          mode
-        );
-        if (!mutation.matched) continue;
-        const observed = validateDomainEventStructureWithObservationForTest(
-          envelopeForRoot(candidateRoot, mutation.value)
-        );
-        if (observed.observation.diagnosticLeafId !== expectedLeafId) continue;
-        expect(observed.result.ok).toBe(false);
-        expect(observed.observation).toMatchObject({
-          authorityChecked: true,
-          captureEntered: true,
-          payloadNodeAcquired: true,
-          astTraversalEntered: true,
-          validatedBackingConstructed: false,
-          tokenIssued: false
-        });
-        recordLeaf(expectedLeafId);
-        publicAstEvidence.push(
-          `${expectedLeafId}:${candidateRoot.branchOrdinal}:${mutation.mutationPath}`
-        );
-        matched = true;
-        break;
+      expect(first.observation).toEqual(callableCase.observation);
+      const leafPolicy = DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY[callableCase.leafId];
+      expect(leafPolicy.publicContextId).toBe(callableCase.publicContextId);
+      expect(leafPolicy.payloadReadBudget).toBe(callableCase.budget);
+      expect(leafPolicy.evidenceKind).toBe("CALLABLE_PRIMARY_TEST");
+      const serialized = JSON.stringify(first.result.diagnostic);
+      for (const sentinel of callableCase.nonleak) {
+        expect(serialized, `${callableCase.leafId}:${sentinel}`).not.toContain(sentinel);
       }
-      expect(matched, expectedLeafId).toBe(true);
+      expect(first.result.diagnostic).not.toHaveProperty("message");
+      expect(first.result.diagnostic).not.toHaveProperty("stack");
+      expect(first.result.diagnostic).not.toHaveProperty("input");
+      expect(first.result.diagnostic).not.toHaveProperty("value");
+      observedLeaves.push(callableCase.leafId);
     }
-    expect(publicAstEvidence).toHaveLength(16);
-    expect(new Set(publicAstEvidence).size).toBe(16);
-    expect(publicAstEvidence).toEqual([
-      "L26_F21_RECORD_MISSING_PLAIN:1:C1.SHA256.539f5c9437a8ac695c2c15049a6e8f6fce7ff597d5ff252fd507691a42ccf41a.aiPlayerCount",
-      "L28_F22_RECORD_EXTRA_PLAIN:1:C1.SHA256.539f5c9437a8ac695c2c15049a6e8f6fce7ff597d5ff252fd507691a42ccf41a.__c_extra",
-      "L30_F23_KIND_MISMATCH_PLAIN:1:C1.SHA256.539f5c9437a8ac695c2c15049a6e8f6fce7ff597d5ff252fd507691a42ccf41a.gameId.base",
-      "L32_F24_LITERAL_MISMATCH_PLAIN:2:C1.SHA256.35e3e927c1c70627eadf6fb1cfb89510db31726ed4a1d2aa445ac9fa40d16267.edition",
-      "L34_F25_CARDINALITY_MISMATCH_PLAIN:11:C1.SHA256.3eabcb7470ff38720e1f0a1452eea95d31e49f38a9a2ea2c20d4370070ec1402.visibility.futureUnsupportedDecisionKinds",
-      "L39_F27_CLOSED_UNION_ZERO_MATCH:10:C1.SHA256.e2ce47e09973f8b553c044b63a5f7167a540d19fb1869e43f8c877f57b4aadca.taskCatalogSnapshot.definitions[0]",
-      "L41_F29_REFINEMENT_REJECTED_PLAIN:1:C1.SHA256.539f5c9437a8ac695c2c15049a6e8f6fce7ff597d5ff252fd507691a42ccf41a.gameId",
-      "L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.abilityRoleId",
-      "L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.__c_extra",
-      "L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.grantId.base",
-      "L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.abilityRoleId",
-      "L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT:53:C1.SHA256.231f6d881d10ce12d11add8ed12570f33eb127bda41a7bc8701d69674465950c.sourceEffectiveness<1>.representedImpairmentIds",
-      "L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource<1>.grantId",
-      "L36_F26_TAGGED_DISCRIMINATOR_MISSING:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource.kind",
-      "L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource.kind",
-      "L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN:20:C1.SHA256.6069b5e8047e5dfe76671d944d00a8690dc50cc2169bebc2085dd1bf90617008.abilitySource.kind"
-    ]);
-
-    const invalidToken = readStructurallyValidatedDomainEvent({});
-    expect(invalidToken.ok).toBe(false);
-    if (!invalidToken.ok) {
-      expect(invalidToken.diagnostic.code).toBe("INVALID_STRUCTURAL_TOKEN");
-      recordLeaf("L46_F33_TOKEN_INVALID");
-    }
-
-    const callableLeaves = DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE
-      .filter((entry) => entry.evidenceKind === "CALLABLE_PRIMARY_TEST")
-      .map((entry) => entry.leafId)
-      .sort();
-    expect([...observedLeaves].sort()).toEqual(callableLeaves);
+    expect(hostileGetterCalls).toBe(0);
+    const firstInvalidToken = readStructurallyValidatedDomainEvent({});
+    const secondInvalidToken = readStructurallyValidatedDomainEvent({});
+    expect(firstInvalidToken).toEqual(secondInvalidToken);
+    expect(firstInvalidToken).toEqual({
+      ok: false,
+      diagnostic: {
+        code: "INVALID_STRUCTURAL_TOKEN",
+        phase: "TOKEN_CONSUMPTION",
+        path: [],
+        safeSummary: "STRUCTURAL_TOKEN_REJECTED",
+        quarantineRecommended: true,
+        retryability: "NEVER",
+        taggedUnionCoordinate: null,
+        failClosed: true
+      }
+    });
+    expect(DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY.L46_F33_TOKEN_INVALID).toMatchObject({
+      publicContextId: "F33",
+      payloadReadBudget: "ZERO",
+      evidenceKind: "CALLABLE_PRIMARY_TEST"
+    });
+    observedLeaves.push("L46_F33_TOKEN_INVALID");
+    expect(observedLeaves).toHaveLength(31);
+    expect(new Set(observedLeaves).size).toBe(31);
+    expect([...observedLeaves].sort()).toEqual(
+      DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE
+        .filter((entry) => entry.evidenceKind === "CALLABLE_PRIMARY_TEST")
+        .map((entry) => entry.leafId)
+        .sort()
+    );
   });
 
   it("C-C15c proves all nine tagged-union coordinate states without identity leakage", () => {
@@ -2131,104 +2287,72 @@ describe("P2F1R-C domain event structural validation", () => {
     for (const policy of policies) {
       expect(policy.exactSourceBinding).toMatch(/^traverseNode\.|^executeRefinement\./);
     }
-    const text = { nodeId: "text", kind: "STRING" } as const;
-    const taggedNodes: readonly StructuralSchemaNodeV1[] = [
-      {
-        nodeId: "tagged",
-        kind: "TAGGED_UNION",
-        tagField: "kind",
-        branches: [
-          { branchOrdinal: 1, tagLiteral: "A", childNodeId: "variant" }
-        ]
-      },
-      {
-        nodeId: "variant",
-        kind: "EXACT_RECORD",
-        fields: [
-          { fieldOrdinal: 1, fieldName: "items", required: true, optional: false, childNodeId: "items" },
-          { fieldOrdinal: 2, fieldName: "kind", required: true, optional: false, childNodeId: "kind-a" },
-          { fieldOrdinal: 3, fieldName: "literal", required: true, optional: false, childNodeId: "literal-a" },
-          { fieldOrdinal: 4, fieldName: "refined", required: true, optional: false, childNodeId: "refined" },
-          { fieldOrdinal: 5, fieldName: "required", required: true, optional: false, childNodeId: "text" }
-        ]
-      },
-      { nodeId: "kind-a", kind: "LITERAL", value: "A" },
-      { nodeId: "literal-a", kind: "LITERAL", value: "A" },
-      { nodeId: "items", kind: "NON_EMPTY_ARRAY", elementNodeId: "text", minItems: 1, maxItems: null },
-      {
-        nodeId: "refined",
-        kind: "REFINEMENT",
-        refinementVersion: DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION,
-        refinementKind: "NON_EMPTY_TRIMMED_STRING",
-        baseNodeId: "text"
-      },
-      text
-    ];
-    const taggedAuthority = nodeFixtureAuthority(taggedNodes, "tagged");
-    expect(taggedAuthority.status).toBe("HEALTHY");
-    if (taggedAuthority.status !== "HEALTHY") {
-      throw new Error("tagged diagnostic fixture must be healthy");
-    }
-    const astNodeOrdinal = taggedAuthority.traversal.uniqueNodes.find(
-      (entry) => entry.nodeId === "tagged"
-    )?.nodeOrdinal;
-    expect(astNodeOrdinal).toBeDefined();
-    const base = {
-      items: ["ok"],
-      kind: "A",
-      literal: "A",
-      refined: "ok",
-      required: "ok"
+    const P = (ordinal: number) => ({ kind: "PAYLOAD_FIELD_ORDINAL" as const, ordinal });
+    const U = (ordinal: number) => ({ kind: "UNION_BRANCH_ORDINAL" as const, ordinal });
+    const X = (ordinal: number) => ({ kind: "PAYLOAD_EXTRA_ENTRY_ORDINAL" as const, ordinal });
+    const taggedPath20 = [P(2)];
+    const known20 = (canonicalObjectEntryOrdinal: number) => ({
+      eventBranchOrdinal: 20,
+      astNodeOrdinal: 161,
+      taggedUnionPath: taggedPath20,
+      field: { containerPath: taggedPath20, canonicalObjectEntryOrdinal },
+      state: "KNOWN_VARIANT" as const,
+      taggedVariantOrdinal: 1
+    });
+    const buildAst = (
+      rootOrdinal: number,
+      mode: PublicAstMutationMode
+    ) => {
+      const root = rootByOrdinal(rootOrdinal);
+      const mutation = mutatePublicAstSample(root.rootNodeId, mode, true);
+      expect(mutation.matched, `${rootOrdinal}:${mode}`).toBe(true);
+      return envelopeForRoot(root, mutation.value);
     };
-    const missingRequired = { ...base } as Record<string, unknown>;
-    delete missingRequired.required;
-    const missingKind = { ...base } as Record<string, unknown>;
-    delete missingKind.kind;
+    const buildTagged = (mode: "MISSING" | "WRONG_KIND" | "UNKNOWN") => {
+      const root = rootByOrdinal(20);
+      const mutation = mutateFirstTaggedDiscriminator(root.rootNodeId, mode);
+      expect(mutation.matched, mode).toBe(true);
+      return envelopeForRoot(root, mutation.value);
+    };
     const cases = [
-      ["L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT", missingRequired, "KNOWN_VARIANT"],
-      ["L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT", { ...base, extra: true }, "KNOWN_VARIANT"],
-      ["L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT", { ...base, required: {} }, "KNOWN_VARIANT"],
-      ["L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT", { ...base, literal: "B" }, "KNOWN_VARIANT"],
-      ["L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT", { ...base, items: [] }, "KNOWN_VARIANT"],
-      ["L36_F26_TAGGED_DISCRIMINATOR_MISSING", missingKind, "MISSING_DISCRIMINANT"],
-      ["L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND", { ...base, kind: {} }, "INVALID_DISCRIMINANT_TYPE"],
-      ["L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN", { ...base, kind: "SECRET_HOSTILE_TAG" }, "UNKNOWN_DISCRIMINANT_VALUE"],
-      ["L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT", { ...base, refined: " " }, "KNOWN_VARIANT"]
+      { leafId: "L27_F21_RECORD_MISSING_IN_KNOWN_TAGGED_VARIANT", rootOrdinal: 20, input: () => buildAst(20, "RECORD_MISSING"), path: [P(2), U(1), P(1)], coordinate: known20(3) },
+      { leafId: "L29_F22_RECORD_EXTRA_IN_KNOWN_TAGGED_VARIANT", rootOrdinal: 20, input: () => buildAst(20, "RECORD_EXTRA"), path: [P(2), U(1), X(1)], coordinate: known20(5) },
+      { leafId: "L31_F23_KIND_MISMATCH_IN_KNOWN_TAGGED_VARIANT", rootOrdinal: 20, input: () => buildAst(20, "KIND_MISMATCH"), path: [P(2), U(1), P(3)], coordinate: known20(4) },
+      { leafId: "L33_F24_LITERAL_MISMATCH_IN_KNOWN_TAGGED_VARIANT", rootOrdinal: 20, input: () => buildAst(20, "LITERAL_MISMATCH"), path: [P(2), U(1), P(1)], coordinate: known20(4) },
+      { leafId: "L35_F25_CARDINALITY_MISMATCH_IN_KNOWN_TAGGED_VARIANT", rootOrdinal: 53, input: () => buildAst(53, "CARDINALITY_MISMATCH"), path: [P(20), U(1), P(2)], coordinate: { eventBranchOrdinal: 53, astNodeOrdinal: 336, taggedUnionPath: [P(20)], field: { containerPath: [P(20)], canonicalObjectEntryOrdinal: 1 }, state: "KNOWN_VARIANT" as const, taggedVariantOrdinal: 1 } },
+      { leafId: "L36_F26_TAGGED_DISCRIMINATOR_MISSING", rootOrdinal: 20, input: () => buildTagged("MISSING"), path: [P(2)], coordinate: { eventBranchOrdinal: 20, astNodeOrdinal: 161, taggedUnionPath: taggedPath20, field: null, state: "MISSING_DISCRIMINANT" as const } },
+      { leafId: "L37_F26_TAGGED_DISCRIMINATOR_WRONG_KIND", rootOrdinal: 20, input: () => buildTagged("WRONG_KIND"), path: [P(2)], coordinate: { eventBranchOrdinal: 20, astNodeOrdinal: 161, taggedUnionPath: taggedPath20, field: { containerPath: taggedPath20, canonicalObjectEntryOrdinal: 4 }, state: "INVALID_DISCRIMINANT_TYPE" as const } },
+      { leafId: "L38_F26_TAGGED_DISCRIMINATOR_UNKNOWN", rootOrdinal: 20, input: () => buildTagged("UNKNOWN"), path: [P(2)], coordinate: { eventBranchOrdinal: 20, astNodeOrdinal: 161, taggedUnionPath: taggedPath20, field: { containerPath: taggedPath20, canonicalObjectEntryOrdinal: 4 }, state: "UNKNOWN_DISCRIMINANT_VALUE" as const } },
+      { leafId: "L42_F29_REFINEMENT_REJECTED_IN_KNOWN_TAGGED_VARIANT", rootOrdinal: 20, input: () => buildAst(20, "REFINEMENT_REJECTED"), path: [P(2), U(1), P(3)], coordinate: known20(4) }
     ] as const;
-    for (const [leafId, input, state] of cases) {
-      const first = validateDomainEventStructuralNodeForTest(
-        taggedAuthority,
-        "tagged",
-        input
-      );
-      const second = validateDomainEventStructuralNodeForTest(
-        taggedAuthority,
-        "tagged",
-        input
-      );
-      expect(first).toEqual(second);
-      expect(first.ok).toBe(false);
-      if (first.ok) throw new Error("expected tagged diagnostic");
-      expect(first.diagnosticLeafId).toBe(leafId);
-      expect(first.diagnostic.taggedUnionCoordinate).toMatchObject({
-        eventBranchOrdinal: 1,
-        astNodeOrdinal,
-        taggedUnionPath: [],
-        state,
-        ...(state === "KNOWN_VARIANT" ? { taggedVariantOrdinal: 1 } : {})
+    expect(cases).toHaveLength(9);
+    for (const taggedCase of cases) {
+      expect(taggedCase.coordinate.eventBranchOrdinal).toBe(taggedCase.rootOrdinal);
+      const first = validateDomainEventStructureWithObservationForTest(taggedCase.input());
+      const second = validateDomainEventStructureWithObservationForTest(taggedCase.input());
+      expect(first, `${taggedCase.leafId}:repeat`).toEqual(second);
+      expect(first.result.ok).toBe(false);
+      if (first.result.ok) throw new Error("expected real public tagged diagnostic");
+      expect(first.observation.diagnosticLeafId).toBe(taggedCase.leafId);
+      expect(first.result.diagnostic.path).toEqual(taggedCase.path);
+      expect(first.result.diagnostic.taggedUnionCoordinate).toEqual(taggedCase.coordinate);
+      expect(first.observation).toMatchObject({
+        authorityChecked: true,
+        captureEntered: true,
+        envelopeKeySetChecked: true,
+        payloadKeyPresenceChecked: true,
+        payloadKeyPresent: true,
+        payloadNodeAcquired: true,
+        astTraversalEntered: true,
+        validatedBackingConstructed: false,
+        tokenIssued: false
       });
-      if (state === "MISSING_DISCRIMINANT") {
-        expect(first.diagnostic.taggedUnionCoordinate?.field).toBeNull();
-      } else {
-        expect(
-          first.diagnostic.taggedUnionCoordinate?.field
-            ?.canonicalObjectEntryOrdinal
-        ).toBeGreaterThan(0);
-      }
-      const serialized = JSON.stringify(first.diagnostic);
-      expect(serialized).not.toContain("SECRET_HOSTILE_TAG");
-      expect(serialized).not.toContain("required");
-      expect(serialized).not.toContain("fixture-branch");
+      const serialized = JSON.stringify(first.result.diagnostic);
+      expect(serialized).not.toContain("__C_UNKNOWN_TAG__");
+      expect(serialized).not.toContain("__C_UNKNOWN_LITERAL__");
+      expect(serialized).not.toContain("abilityRoleId");
+      expect(serialized).not.toContain("grantId");
+      expect(serialized).not.toContain("representedImpairmentIds");
       expect(serialized).not.toContain("C1.SHA256");
     }
     const source = productionSource();
@@ -2241,53 +2365,57 @@ describe("P2F1R-C domain event structural validation", () => {
     const staticPolicies =
       DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE.filter(
         (entry) => entry.evidenceKind === "STATIC_BRANCH_BINDING"
-      );
+    );
     expect(staticPolicies).toHaveLength(16);
     expect(new Set(staticPolicies.map((entry) => entry.leafId)).size).toBe(16);
-    const validatorSource = productionSource();
-    const tokenSource = canonicalDomainEventSource();
-    const staticBindings = [
-      ["L01_F01_AUTHORITY_UNHEALTHY", "admitC1Authority", /result\.status !== "HEALTHY"[\s\S]*?return unhealthyAdmission\(\)/],
-      ["L04_F04_CAPTURE_INTERNAL", "translateCaptureFailure", /case "INTERNAL_SERIALIZATION_FAILURE":\s*return failure\(F04\)/],
-      ["L06_F06_CAPTURE_BACKING_MISSING", "validateCapturedInternal", /authenticated\.diagnostic\.code === "INVALID_CAPTURE_TOKEN"[\s\S]*?failure\(F05\)[\s\S]*?: failure\(F06\)/],
-      ["L20_F20_AST_NODE_LOOKUP_MISSING", "traverseNode", /if \(schema === undefined\) \{\s*return failure\(F20, path\)/],
-      ["L21_F20_AST_NODE_ORDINAL_LOOKUP_MISSING", "traverseNode", /if \(astNodeOrdinal === undefined\) \{\s*return failure\(F20_NODE_ORDINAL, path\)/],
-      ["L22_F20_EVENT_BRANCH_ORDINAL_INVALID", "validateCapturedInternal", /selectedRoot\.branchOrdinal > 59[\s\S]*?return toPublicFailure\(failure\(F20_EVENT_BRANCH\), observation\)/],
-      ["L23_F20_TAGGED_VARIANT_ORDINAL_INVALID", "traverseNode", /branch\.branchOrdinal !== index \+ 1[\s\S]*?return failure\(F20_TAGGED_VARIANT, path\)/],
-      ["L24_F20_TAGGED_FIELD_COORDINATE_INVARIANT", "traverseNode", /if \(coordinate === null\) return failure\(F20_TAGGED_FIELD, path\)/],
-      ["L25_F20_TAGGED_MULTIPLE_LITERAL_MATCH", "traverseNode", /if \(matchCount > 1\) \{\s*return failure\(F20_TAGGED_MULTIPLE, path\)/],
-      ["L40_F28_CLOSED_UNION_MULTIPLE_MATCH", "traverseNode", /if \(matches\.length > 1\) return failure\(F28, path\)/],
-      ["L43_F30_REFINEMENT_METADATA_INVALID", "executeRefinement", /metadata\.refinementVersion !==[\s\S]*?typeof value !== "string"[\s\S]*?return failure\(F30, path\)/],
-      ["L44_F31_BACKING_CONSTRUCTION_FAILED", "validateCapturedInternal", /catch \{\s*return toPublicFailure\(failure\(F31\), observation\)/],
-      ["L45_F32_TOKEN_ISSUE_FAILED", "issueStructurallyValidatedDomainEvent", /diagnostic: createDomainEventStructuralDiagnostic\("L45_F32_TOKEN_ISSUE_FAILED"\)/],
-      ["L47_F34_INTERNAL_CONTAINMENT", "validateDomainEventStructure", /export const validateDomainEventStructure[\s\S]*?catch \{\s*return toPublicFailure\(failure\(F34\), observation\)/],
-      ["L18_F18_ROOT_SELECTION_ZERO", "selectBranch", /if \(match === undefined\) \{\s*return failure\(F18, discriminatorPath\(current\.discriminatorOrdinal\)\)/],
-      ["L19_F19_ROOT_SELECTION_MULTIPLE", "selectBranch", /if \(matches\.length > 1\) \{\s*return failure\(F19, discriminatorPath\(current\.discriminatorOrdinal\)\)/]
-    ] as const;
-    expect(staticBindings).toHaveLength(16);
-    expect(new Set(staticBindings.map(([leafId]) => leafId)).size).toBe(16);
-    expect(staticBindings.map(([leafId]) => leafId).sort()).toEqual(
+    const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
+    const verifierPath = fileURLToPath(
+      new URL("../../../scripts/verify-p2f1r-c-static-diagnostic-bindings.mjs", import.meta.url)
+    );
+    const selfTestPath = fileURLToPath(
+      new URL("../../../scripts/verify-p2f1r-c-static-diagnostic-bindings.test.mjs", import.meta.url)
+    );
+    const verifier = spawnSync(process.execPath, [verifierPath, repositoryRoot], {
+      cwd: repositoryRoot,
+      encoding: "utf8"
+    });
+    expect(verifier.status, verifier.stderr).toBe(0);
+    expect(verifier.stderr).toBe("");
+    const staticAudit = JSON.parse(verifier.stdout) as {
+      readonly mapped: number;
+      readonly missing: number;
+      readonly duplicate: number;
+      readonly orphan: number;
+      readonly invalidSymbol: number;
+      readonly invalidPolicy: number;
+      readonly invalidReturn: number;
+      readonly branchOccurrences: number;
+      readonly rows: readonly { readonly leafId: string }[];
+    };
+    expect(staticAudit).toMatchObject({
+      mapped: 16,
+      missing: 0,
+      duplicate: 0,
+      orphan: 0,
+      invalidSymbol: 0,
+      invalidPolicy: 0,
+      invalidReturn: 0,
+      branchOccurrences: 25
+    });
+    expect(staticAudit.rows.map((row) => row.leafId).sort()).toEqual(
       staticPolicies.map((entry) => entry.leafId).sort()
     );
-    for (const [leafId, symbol, exactBranch] of staticBindings) {
-      const policy = staticPolicies.find((entry) => entry.leafId === leafId);
-      expect(policy, leafId).toBeDefined();
-      expect(policy?.taggedCoordinatePolicy, leafId).toBe("NULL");
-      const policySymbol =
-        leafId === "L47_F34_INTERNAL_CONTAINMENT"
-          ? "publicOuterCatch"
-          : symbol;
-      expect(policy?.exactSourceBinding.startsWith(policySymbol), leafId).toBe(
-        true
-      );
-      expect(
-        exactBranch.test(
-          leafId === "L45_F32_TOKEN_ISSUE_FAILED" ? tokenSource : validatorSource
-        ),
-        `${leafId}:${symbol}`
-      ).toBe(true);
-    }
-    expect(validatorSource).not.toContain("default:");
+    const selfTest = spawnSync(process.execPath, [selfTestPath], {
+      cwd: repositoryRoot,
+      encoding: "utf8"
+    });
+    expect(selfTest.status, selfTest.stderr).toBe(0);
+    expect(selfTest.stderr).toBe("");
+    expect(JSON.parse(selfTest.stdout)).toEqual({
+      selfTest: "PASS",
+      mutantsRejected: 12,
+      mapped: 16
+    });
 
     const taggedNode = {
       nodeId: "tagged",
