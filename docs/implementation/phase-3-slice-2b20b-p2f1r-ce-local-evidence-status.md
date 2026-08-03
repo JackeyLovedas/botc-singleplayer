@@ -6,15 +6,19 @@
 - Implementation base: `01ba8260e720921023dabcbb815fc3ee01aaea90`.
 - Prior invalid evidence source/gate HEAD:
   `34c60205cecad2c4c7885531f4f8805ef1355478`.
-- Repair source binding: `COMMIT_CONTAINING_THIS_STATUS`.
-- Current evidence disposition: `PENDING_NEW_DUAL_EVIDENCE`.
+- Repair/evidence source and gate HEAD:
+  `cdbca657adf27a9050877cca4bad5d718781cacc`.
+- Status binding: `DOCS_ONLY_CHILD_OF_EXECUTED_HEAD`.
+- Current evidence disposition:
+  `DUAL_WORKTREE_EVIDENCE_COMPLETE_PENDING_FRESH_REVIEWS`.
 - Rule evidence: `docs/rules/evidence/2B20B-P2F1R-CE.md`; verdict `RULE_READY`.
 - Bounded design: `docs/architecture/2B20B-P2F1R-CE-local-evidence-traceability-portability-design-v1.md`; SHA-256 `a8401610f23d3c1a30a0d1fd5ce3d45cfabe1dcdcd5babae08139dec5803ae14`.
 - Independent design review: `docs/architecture/2B20B-P2F1R-CE-local-evidence-traceability-portability-design-review-v1.md`; verdict `RULE_DESIGN_PASS`; no remaining blocker.
 - Relative to the implementation base, the source implementation at the evidence
-  source/gate HEAD changes tests, traceability, the standalone audit scripts and
-  this status record only. Production, Catalog/C1, workflows, ownership,
-  coverage, package scripts and role coverage are unchanged.
+  source/gate HEAD changes only non-production evidence surfaces: tests,
+  traceability, standalone audit scripts, and CE evidence/review documentation.
+  Production, Catalog/C1, workflows, ownership, coverage, package scripts and
+  role coverage are unchanged.
 
 ## Frozen production identity
 
@@ -61,18 +65,50 @@ identified `CE-FINAL-CODE-F01`, `CE-FINAL-CODE-F02`, and
 `CE-FINAL-CODE-F03`; therefore those logs cannot prove this repaired tree and
 must not be inherited as current evidence.
 
-Fresh default-Windows and LF worktrees, installs, complete focused/full gates,
-immutable log hashes and a new non-self-referential evidence child are still
-required. Coverage, ownership publication, hosted CI and P2F1R-D remain
-deliberately unexecuted in CE.
+## Final H2 dual-worktree evidence
+
+- Evidence directory:
+  `C:\Users\wjl\AppData\Local\Temp\botc-ce-h2-final-evidence-20260803-163718`.
+- Default-Windows worktree:
+  `C:\Users\wjl\AppData\Local\Temp\botc-ce-h2-final-default2-20260803-163718`.
+- LF worktree:
+  `C:\Users\wjl\AppData\Local\Temp\botc-ce-h2-final-lf-20260803-163718`.
+- Both worktrees were clean before and after the run and resolved exact HEAD
+  `cdbca657adf27a9050877cca4bad5d718781cacc` throughout.
+- Both used Node `v24.15.0`, pnpm `11.7.0`, and Git
+  `2.54.0.windows.1`.
+- Both passed the eight whitelisted gates with exit code `0`: static self-test
+  (`17/17` mutants), static source audit (`16` mapped, every failure counter
+  zero, `22` branch occurrences), validator `28/28`, Catalog `21/21`,
+  domain-core `503/503`, typecheck, lint, and full ordinary `1712/1712`.
+- Default-Windows recorded Catalog `i/lf w/crlf` and checkout SHA-256
+  `7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7`.
+- LF recorded Catalog `i/lf w/lf` and checkout SHA-256
+  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
+  Its checkout was created with command-scoped `core.autocrlf=false` and
+  `core.eol=lf`; the shared configuration is now restored to global
+  `core.autocrlf=true`, so no persistent repository-local false setting is
+  claimed.
+- Both Catalog representations bind blob OID
+  `4f9a376e56f19b241d76ce2a75be83b70859ae25`.
+- The complete 18-log inventory and hashes are recorded in
+  `docs/implementation/phase-3-slice-2b20b-p2f1r-ce-dual-worktree-evidence-manifest.md`.
 
 ## Evidence boundary
 
-The repair source does not yet have current dual-worktree evidence. Its
-disposition is `PENDING_NEW_DUAL_EVIDENCE`; it does not claim coverage,
-ownership, hosted CI, merge readiness, P2F1R-D, `CODE_REVIEW_PASS`,
-`RULE_REVIEW_PASS`, a technical-closure token or final acceptance.
-`CFinalAccepted=false`.
+The final H2 dual-worktree evidence is complete, but fresh independent Code and
+Rule Reviews have not run. The disposition is
+`PENDING_FRESH_CODE_AND_RULE_REVIEWS`; this record does not claim merge
+readiness, `CODE_REVIEW_PASS`, `RULE_REVIEW_PASS`, a technical-closure token or
+final acceptance. `CFinalAccepted=false`.
+
+The prior `CE_COVERAGE_BOUNDARY_VIOLATION` remains disclosed: a coverage process
+was `SPAWNED_BUT_INTERRUPTED` after approximately `4.1` seconds. It was
+`NOT_COMPLETE`, had `NO_EXIT_CODE`, is `NOT_PASS`, produced no tracked or
+untracked repository change, is not acceptance evidence, and was not rerun in
+the H2 closure. Current excluded-surface status is coverage
+`NOT_RUN_IN_H2_CLOSURE`, ownership `NOT_RUN`, Hosted CI `NOT_RUN`, and P2F1R-D
+`NOT_RUN`.
 
 The protected old worktree remains outside CE inputs at branch
 `phase-3/2b20b-p2f1r-a-canonical-runtime-capture-tlv`, HEAD

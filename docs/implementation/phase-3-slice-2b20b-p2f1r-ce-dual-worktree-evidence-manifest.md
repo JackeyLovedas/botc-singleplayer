@@ -1,201 +1,157 @@
 # Phase 3 Slice 2B20B-P2F1R-CE Final Dual-Worktree Evidence Manifest
 
-## Repair Round 2/2 invalidation
+## Non-self-referential binding and disposition
 
-- `currentEvidenceStatus`: `INVALIDATED_BY_REPAIR_PENDING_NEW_DUAL_EVIDENCE`
-- `repairSourceBinding`: `COMMIT_CONTAINING_THIS_INVALIDATION`
-- `supersededEvidenceSourceHead`:
-  `34c60205cecad2c4c7885531f4f8805ef1355478`
-- `supersededEvidenceChild`:
-  `030b935862a477a7ac3a66f59933a16c27e1cbf9`
-- `invalidatingFindings`: `CE-FINAL-CODE-F01`, `CE-FINAL-CODE-F02`,
-  `CE-FINAL-CODE-F03`
-- `requiredNextEvidence`: `FRESH_DEFAULT_AND_LF_DUAL_WORKTREE_EVIDENCE`
-
-Everything below this section is retained as an immutable description of the
-superseded evidence run. It is historical evidence only: none of its gates,
-worktree identities, logs or Evidence IDs applies to the repaired tree, and it
-must not be used to infer a current final-review or technical-closure result.
-
-## Non-self-referential binding
-
-- `manifestStatus`: `SUPERSEDED_HISTORICAL_EVIDENCE`
-- `bindingKind`: `COMMIT_CONTAINING_THIS_MANIFEST`
-- `expectedParent`: `34c60205cecad2c4c7885531f4f8805ef1355478`
-- `H`: `34c60205cecad2c4c7885531f4f8805ef1355478`
-- `gatesExecutedAt`: `34c60205cecad2c4c7885531f4f8805ef1355478`
-- `evidenceSourceHead`: `34c60205cecad2c4c7885531f4f8805ef1355478`
+- `CEvidenceClosureRound`: `2/2`
+- `manifestStatus`: `DUAL_WORKTREE_EVIDENCE_COMPLETE_PENDING_FRESH_REVIEWS`
+- `bindingKind`: `DOCS_ONLY_CHILD_OF_EXECUTED_HEAD`
+- `expectedParent`: `cdbca657adf27a9050877cca4bad5d718781cacc`
+- `evidenceSourceHead`: `cdbca657adf27a9050877cca4bad5d718781cacc`
+- `gatesExecutedAt`: `cdbca657adf27a9050877cca4bad5d718781cacc`
 - `manifestChildExecutedGates`: `false`
-- `manifestChildDoesNotImpersonateExecutedHead`: `true`
 - `CFinalAccepted`: `false`
-- `coverageExecuted`: `false`
-- `ownershipExecuted`: `false`
-- `hostedCIExecuted`: `false`
-- `P2F1RDExecuted`: `false`
+- `freshCodeReview`: `PENDING`
+- `freshRuleReview`: `PENDING`
 - `SupportingAuthorityId`: `NONE`
 
-`H` is the immutable source commit at which every gate below ran. The commit
-containing this manifest must be the direct docs-only child of `H`; it binds
-the external evidence without naming or hashing itself and does not claim that
-its own tree executed any gate.
+Every acceptance gate in this manifest ran against the immutable H2 source HEAD
+above. The commit containing this manifest is its docs-only child and does not
+impersonate the executed tree. This evidence closes the requested local dual-
+worktree run only; it does not supply or infer `CODE_REVIEW_PASS`,
+`RULE_REVIEW_PASS`, final acceptance, merge readiness, hosted CI, ownership
+publication, coverage, or P2F1R-D.
 
-## Evidence source and immutable identities
+## External evidence source
 
-- External evidence directory:
-  `C:\Users\wjl\AppData\Local\Temp\botc-ce-final-evidence-20260803-135916`.
-- `paths.json`, `default-results.json`, `lf-results.json`,
-  `final-summary.json`, and all 18 final logs were read and hash-checked.
-- `paths.json`: `371` bytes; SHA-256
-  `f367a1976a87f79b63454e21e10d34cfa56c3bf59d495eddf8b290a1da3b0eb6`.
-- `default-results.json`: `3000` bytes; SHA-256
-  `c92f06a8e0c8debd16ada6c66d709945ec1734b1012393594957383e0246423a`.
-- `lf-results.json`: `2960` bytes; SHA-256
-  `b29743f27acf221129ae9b3a424f0b059dd092e0477c31d25632cff914313654`.
-- `final-summary.json`: `5780` bytes; SHA-256
-  `e399d3e70eb765e98dc1bb0196c7c0575045155cadce6cde1c4d62a3bdeb74bd`.
-- Source tree at `H`: `402b7ec7fed53602b1be584cb2976c79c63f15a9`.
-- `packages` tree at `H`: `3d5efd704cc55955f302d7d71533303ccabf61a0`.
-- Validator test blob at `H`: `64f4ddc7f5c319dce5fed6497ed96e533c2aede9`.
-- Catalog test blob at `H`: `5047e1745799c7fbbb5b35c7d2642e17ae394fe9`.
-- Static verifier blob at `H`: `56fa17f50f95fc7320db8055f2d556a2d174fd8f`.
-- Static self-test blob at `H`: `b9630d57e36a8bc57bbd935481ae29c9a2f80872`.
-- Catalog artifact blob OID:
+- Evidence directory:
+  `C:\Users\wjl\AppData\Local\Temp\botc-ce-h2-final-evidence-20260803-163718`
+- Authoritative summary:
+  `C:\Users\wjl\AppData\Local\Temp\botc-ce-h2-final-evidence-20260803-163718\final-evidence-summary.json`
+- Default-Windows worktree:
+  `C:\Users\wjl\AppData\Local\Temp\botc-ce-h2-final-default2-20260803-163718`
+- LF worktree:
+  `C:\Users\wjl\AppData\Local\Temp\botc-ce-h2-final-lf-20260803-163718`
+- Node: `v24.15.0`
+- pnpm: `11.7.0`
+- Git: `git version 2.54.0.windows.1`
+
+Only the `default2-*` and `lf-*` logs listed below are formal evidence.
+
+## Worktree and line-ending identities
+
+| Evidence worktree | Before HEAD | After HEAD | Before dirty | After dirty | Catalog EOL | Catalog checkout SHA-256 |
+|---|---|---|---:|---:|---|---|
+| Default-Windows | `cdbca657adf27a9050877cca4bad5d718781cacc` | `cdbca657adf27a9050877cca4bad5d718781cacc` | 0 | 0 | `i/lf w/crlf` | `7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7` |
+| LF | `cdbca657adf27a9050877cca4bad5d718781cacc` | `cdbca657adf27a9050877cca4bad5d718781cacc` | 0 | 0 | `i/lf w/lf` | `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6` |
+
+- Catalog artifact blob OID in both worktrees:
   `4f9a376e56f19b241d76ce2a75be83b70859ae25`.
-- Catalog raw/generated length: `264855` bytes.
-- Catalog raw/generated SHA-256:
-  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
-- Catalog runtime authority: `false`.
-- Node: `v24.15.0`.
-- pnpm: `11.7.0`.
-- Git: `git version 2.54.0.windows.1`.
+- Default-Windows used the global `core.autocrlf=true` configuration and
+  therefore checked the indexed LF Catalog artifact out as CRLF.
+- The LF worktree was created with command-scoped `core.autocrlf=false` and
+  `core.eol=lf`; these were creation-time overrides, not persistent repository
+  configuration.
+- The currently shared configuration has been restored to the global
+  `core.autocrlf=true`. This manifest does not claim that the LF worktree now
+  has repository-local `core.autocrlf=false`.
+- The differing checkout hashes are exactly the expected CRLF-versus-LF byte
+  representation of the same indexed Catalog blob.
 
-The manifest child is allowed to change only the three CE documentation files.
-It must retain the exact `packages` tree, validator/Catalog test blobs and
-static-verifier blobs above. Production, tests, titles and all frozen censuses
-therefore remain source-identity facts of `H`, not claims derived from the
-docs-only child.
+## Whitelisted gate results
 
-## Commands represented by the evidence
+Both worktrees ran exactly the same eight whitelisted gates. Every gate exited
+`0`.
 
-1. `corepack pnpm install --frozen-lockfile`
-2. `node scripts/verify-p2f1r-c-static-diagnostic-bindings.test.mjs`
-3. `node scripts/verify-p2f1r-c-static-diagnostic-bindings.mjs`
-4. `corepack pnpm exec vitest run --workspace vitest.workspace.ts packages/domain-core/src/domain-event-structural-validator.test.ts`
-5. `corepack pnpm exec vitest run --workspace vitest.workspace.ts packages/domain-core/src/domain-event-structural-schema-catalog.test.ts`
-6. `corepack pnpm exec vitest run --workspace vitest.workspace.ts --project domain-core`
-7. `corepack pnpm typecheck`
-8. `corepack pnpm lint`
-9. `corepack pnpm test`
+| Gate | Exact accepted result |
+|---|---|
+| Static verifier self-test | `PASS`; `17/17` mutants rejected; `16` mapped |
+| Static real-source audit | `mapped=16`; `missing=0`; `duplicate=0`; `orphan=0`; `invalidSymbol=0`; `invalidPolicy=0`; `invalidReturn=0`; `branchOccurrences=22` |
+| Validator focused | `1 file / 28 tests PASS`; carries callable, envelope, diagnostic, and Traceability audits |
+| Catalog focused | `1 file / 21 tests PASS` |
+| Domain-core | `20 files / 503 tests PASS` |
+| Typecheck | `PASS` |
+| Lint | `PASS`; zero lint diagnostics |
+| Full ordinary | `40 files / 1712 tests PASS` |
 
-## Default-Windows evidence
+### Default-Windows execution record
 
-- `EvidenceId`: `CE-DEFAULT-34c60205-20260803T140004+0800`
-- `worktree`:
-  `C:\Users\wjl\AppData\Local\Temp\botc-ce-final-default-20260803-135916`
-- before/after HEAD: `34c60205cecad2c4c7885531f4f8805ef1355478`.
-- before/after porcelain count: `0 / 0`.
-- Catalog `git ls-files --eol`: `i/lf w/crlf`.
-- Catalog checkout length: `265481` bytes.
-- Catalog checkout SHA-256:
-  `7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7`.
-- Classification: `LF_TO_CRLF_CHECKOUT_CONVERSION_ONLY`.
-- Catalog blob/raw/generated identities: exact frozen match.
+| Gate | Start | End | Exit |
+|---|---|---|---:|
+| Static verifier self-test | `2026-08-03T16:39:19.5805809+08:00` | `2026-08-03T16:39:19.9680634+08:00` | 0 |
+| Static real-source audit | `2026-08-03T16:39:20.0460617+08:00` | `2026-08-03T16:39:20.2790988+08:00` | 0 |
+| Validator focused | `2026-08-03T16:39:20.2857406+08:00` | `2026-08-03T16:39:24.5555363+08:00` | 0 |
+| Catalog focused | `2026-08-03T16:39:24.5565376+08:00` | `2026-08-03T16:39:26.6704698+08:00` | 0 |
+| Domain-core | `2026-08-03T16:39:26.6714760+08:00` | `2026-08-03T16:39:31.6347810+08:00` | 0 |
+| Typecheck | `2026-08-03T16:39:31.6367789+08:00` | `2026-08-03T16:39:37.6698091+08:00` | 0 |
+| Lint | `2026-08-03T16:39:37.6713148+08:00` | `2026-08-03T16:39:51.8026942+08:00` | 0 |
+| Full ordinary | `2026-08-03T16:39:51.8036933+08:00` | `2026-08-03T16:40:49.1766736+08:00` | 0 |
 
-| Gate | Result | Start | End | Exit | Log SHA-256 |
-|---|---|---|---|---:|---|
-| Static verifier self-test | `PASS; 12/12 mutants rejected; 16 mapped` | `2026-08-03T14:00:04.7739292+08:00` | `2026-08-03T14:00:05.1812427+08:00` | 0 | `c9e17469286adea612193571831c7657682ae34de9203a5969decf1089b89f34` |
-| Static real-source audit | `PASS; 16 mapped; seven failure counters zero; 25 branch occurrences` | `2026-08-03T14:00:05.2013487+08:00` | `2026-08-03T14:00:05.4519713+08:00` | 0 | `eaef6e895798284fc9fbc0af9b87b858624a29f08d431b43d9f1322055457d07` |
-| Validator focused | `1 file / 28 tests PASS` | `2026-08-03T14:00:05.4529718+08:00` | `2026-08-03T14:00:07.6343342+08:00` | 0 | `87d41cc7f7432515c49a03716234f02729e4d1696385749f6a9cd97642ec1a49` |
-| Catalog focused | `1 file / 21 tests PASS` | `2026-08-03T14:00:07.6343342+08:00` | `2026-08-03T14:00:09.7380033+08:00` | 0 | `401b75c1c32d997813ba0197939f422abe0475aa55547c2f1e5115d19a13a1b7` |
-| Domain-core | `20 files / 503 tests PASS` | `2026-08-03T14:00:09.7390035+08:00` | `2026-08-03T14:00:14.2664037+08:00` | 0 | `bed1b020381343dde01f13f52c4fd6a88c6983258e2af69330f5bf5cc91c552c` |
-| Typecheck | `PASS` | `2026-08-03T14:00:14.2664037+08:00` | `2026-08-03T14:00:20.4130713+08:00` | 0 | `27c0b657698585b8fd0bd9c0bb7116aa1748caef1957cc92014434c3019d923e` |
-| Lint | `PASS; zero lint diagnostics` | `2026-08-03T14:00:20.4140705+08:00` | `2026-08-03T14:00:33.2353915+08:00` | 0 | `7cf19deae9d646769efdf0a0d25e57bbed67af30e1853e68559ee41ff561d5a8` |
-| Full ordinary | `40 files / 1712 tests PASS` | `2026-08-03T14:00:33.2353915+08:00` | `2026-08-03T14:01:28.6693398+08:00` | 0 | `c1d8e5dbca7e1965c5bf81545127aa8dca31b17e2fa78f7837d498afa5b736ba` |
+### LF execution record
 
-Dependency installation log: `default-install.log`, `2038` bytes,
-SHA-256 `60515ec03f58c94686e6529fbacff1635385aae1f001f1fcb52bee401357eac6`;
-it records frozen-lockfile reuse and pnpm `11.7.0` completion.
+| Gate | Start | End | Exit |
+|---|---|---|---:|
+| Static verifier self-test | `2026-08-03T16:41:01.4439233+08:00` | `2026-08-03T16:41:01.8559622+08:00` | 0 |
+| Static real-source audit | `2026-08-03T16:41:01.9376059+08:00` | `2026-08-03T16:41:02.1686149+08:00` | 0 |
+| Validator focused | `2026-08-03T16:41:02.1746371+08:00` | `2026-08-03T16:41:06.3342866+08:00` | 0 |
+| Catalog focused | `2026-08-03T16:41:06.3352889+08:00` | `2026-08-03T16:41:08.4916783+08:00` | 0 |
+| Domain-core | `2026-08-03T16:41:08.4926691+08:00` | `2026-08-03T16:41:13.3748494+08:00` | 0 |
+| Typecheck | `2026-08-03T16:41:13.3758465+08:00` | `2026-08-03T16:41:19.4329851+08:00` | 0 |
+| Lint | `2026-08-03T16:41:19.4340090+08:00` | `2026-08-03T16:41:33.2041778+08:00` | 0 |
+| Full ordinary | `2026-08-03T16:41:33.2051734+08:00` | `2026-08-03T16:42:31.1218660+08:00` | 0 |
 
-## LF evidence
-
-- `EvidenceId`: `CE-LF-34c60205-20260803T140153+0800`
-- `worktree`:
-  `C:\Users\wjl\AppData\Local\Temp\botc-ce-final-lf-20260803-135916`
-- checkout creation override: command-scoped, nonpersistent
-  `core.autocrlf=false`, `core.eol=lf`.
-- before/after HEAD: `34c60205cecad2c4c7885531f4f8805ef1355478`.
-- before/after porcelain count: `0 / 0`.
-- Catalog `git ls-files --eol`: `i/lf w/lf`.
-- Catalog checkout length: `264855` bytes.
-- Catalog checkout SHA-256:
-  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
-- Classification: `MATCHES_REPOSITORY_BLOB`.
-- Catalog blob/raw/generated identities: exact frozen match.
-
-| Gate | Result | Start | End | Exit | Log SHA-256 |
-|---|---|---|---|---:|---|
-| Static verifier self-test | `PASS; 12/12 mutants rejected; 16 mapped` | `2026-08-03T14:01:53.5083161+08:00` | `2026-08-03T14:01:53.8900681+08:00` | 0 | `c9e17469286adea612193571831c7657682ae34de9203a5969decf1089b89f34` |
-| Static real-source audit | `PASS; 16 mapped; seven failure counters zero; 25 branch occurrences` | `2026-08-03T14:01:53.9081937+08:00` | `2026-08-03T14:01:54.1422060+08:00` | 0 | `eaef6e895798284fc9fbc0af9b87b858624a29f08d431b43d9f1322055457d07` |
-| Validator focused | `1 file / 28 tests PASS` | `2026-08-03T14:01:54.1432067+08:00` | `2026-08-03T14:01:56.2633301+08:00` | 0 | `536b69dd642091e3fe9020e77e9846f231527175e85a9eaa1e2d6371b43ed9b9` |
-| Catalog focused | `1 file / 21 tests PASS` | `2026-08-03T14:01:56.2633301+08:00` | `2026-08-03T14:01:58.3640262+08:00` | 0 | `3d3870685e1f56c52de51304520b04b5845ee288e8b9a37b3ff35d54445a3084` |
-| Domain-core | `20 files / 503 tests PASS` | `2026-08-03T14:01:58.3640262+08:00` | `2026-08-03T14:02:02.9054249+08:00` | 0 | `80515048cbe7307786cc30b8d561ecd38cab0a2a04a7301486c70846216bfc03` |
-| Typecheck | `PASS` | `2026-08-03T14:02:02.9054249+08:00` | `2026-08-03T14:02:08.9571281+08:00` | 0 | `a36a5a95278ecce08975e33ccdc3e92f5223fe95383282eed9b2f6f560ccfbf1` |
-| Lint | `PASS; zero lint diagnostics` | `2026-08-03T14:02:08.9581276+08:00` | `2026-08-03T14:02:22.3651439+08:00` | 0 | `c9f4ee63d09ce42e96914f8a6ecdda0258bc38d5d41c1561829832637a3d21b9` |
-| Full ordinary | `40 files / 1712 tests PASS` | `2026-08-03T14:02:22.3651439+08:00` | `2026-08-03T14:03:18.2784552+08:00` | 0 | `ef775a13c4968c4866869e6c46b84b78dcb0a09b838987f3557a78c38302f9a6` |
-
-Dependency installation log: `lf-install.log`, `1152` bytes, SHA-256
-`82c003610b9240edb114fac9743db3f115cf238b93e76fb4a579c52725e70c87`;
-it records frozen-lockfile reuse and pnpm `11.7.0` completion.
-
-## Complete final-log inventory
+## Complete formal log inventory
 
 | Log | Bytes | SHA-256 |
 |---|---:|---|
-| `default-install.log` | 2038 | `60515ec03f58c94686e6529fbacff1635385aae1f001f1fcb52bee401357eac6` |
-| `default-static-selftest.log` | 110 | `c9e17469286adea612193571831c7657682ae34de9203a5969decf1089b89f34` |
-| `default-static-audit.log` | 6976 | `eaef6e895798284fc9fbc0af9b87b858624a29f08d431b43d9f1322055457d07` |
-| `default-validator-focused.log` | 2626 | `87d41cc7f7432515c49a03716234f02729e4d1696385749f6a9cd97642ec1a49` |
-| `default-catalog-focused.log` | 2612 | `401b75c1c32d997813ba0197939f422abe0475aa55547c2f1e5115d19a13a1b7` |
-| `default-domain-core.log` | 9504 | `bed1b020381343dde01f13f52c4fd6a88c6983258e2af69330f5bf5cc91c552c` |
-| `default-typecheck.log` | 750 | `27c0b657698585b8fd0bd9c0bb7116aa1748caef1957cc92014434c3019d923e` |
-| `default-lint.log` | 734 | `7cf19deae9d646769efdf0a0d25e57bbed67af30e1853e68559ee41ff561d5a8` |
-| `default-full-ordinary.log` | 55722 | `c1d8e5dbca7e1965c5bf81545127aa8dca31b17e2fa78f7837d498afa5b736ba` |
-| `lf-install.log` | 1152 | `82c003610b9240edb114fac9743db3f115cf238b93e76fb4a579c52725e70c87` |
-| `lf-static-selftest.log` | 110 | `c9e17469286adea612193571831c7657682ae34de9203a5969decf1089b89f34` |
-| `lf-static-audit.log` | 6976 | `eaef6e895798284fc9fbc0af9b87b858624a29f08d431b43d9f1322055457d07` |
-| `lf-validator-focused.log` | 2616 | `536b69dd642091e3fe9020e77e9846f231527175e85a9eaa1e2d6371b43ed9b9` |
-| `lf-catalog-focused.log` | 2604 | `3d3870685e1f56c52de51304520b04b5845ee288e8b9a37b3ff35d54445a3084` |
-| `lf-domain-core.log` | 9494 | `80515048cbe7307786cc30b8d561ecd38cab0a2a04a7301486c70846216bfc03` |
-| `lf-typecheck.log` | 750 | `a36a5a95278ecce08975e33ccdc3e92f5223fe95383282eed9b2f6f560ccfbf1` |
-| `lf-lint.log` | 734 | `c9f4ee63d09ce42e96914f8a6ecdda0258bc38d5d41c1561829832637a3d21b9` |
-| `lf-full-ordinary.log` | 58608 | `ef775a13c4968c4866869e6c46b84b78dcb0a09b838987f3557a78c38302f9a6` |
+| `default2-callable-validator-envelope-diagnostic-traceability.log` | 2872 | `e3796ad28fb660b73a36243b6e9dff79d811ccd9778881f1d8ae4e86b96f27f2` |
+| `default2-catalog-21-of-21.log` | 2490 | `28bf4117ce4ddb7a6a744a1f3f4d66ede34865cbbcf3ff8307416a42d9bac89f` |
+| `default2-domain-core.log` | 9748 | `cdbf7b913c28cdf1d03eedd383d3675f7ecdabf9b91d28c6573dfb49b983fb4e` |
+| `default2-full-ordinary.log` | 59846 | `6812c959bfbdd066f7382f7f7b78579ceeb6032896de026f4b8134e15490013a` |
+| `default2-install.log` | 1274 | `38185014d812bfaf4dec0c62947e82ce78df1500795f3eba8e83144b6de2516a` |
+| `default2-lint.log` | 618 | `e7e878b332376b6cada7fd09451aad5bede2416b4018f4493c7235f1c88e77ad` |
+| `default2-static-audit.log` | 6976 | `7e96503f70af1525f498c9237a3d735837997ed5e271159a2daace140ab77285` |
+| `default2-static-self.log` | 110 | `250b37c72b0d07fcc4aa128278685bcb5af3edd153ebca121295994072cc0ad8` |
+| `default2-typecheck.log` | 634 | `cd17ea7302c8eac825839c4b463dbd900b343b68ed936a5f1060566bf1885fc7` |
+| `lf-callable-validator-envelope-diagnostic-traceability.log` | 2860 | `756ba5d3a9cca78a8e20d690a3da4deef551a90b3790131d1e69f4697f30eab6` |
+| `lf-catalog-21-of-21.log` | 2480 | `39136080f99ceb7e7b567d0d6a819604b3f86145b10c0fe4562e3448e80c9533` |
+| `lf-domain-core.log` | 9736 | `88b59e0d316b2502a73ca429c5b6c0244971c45458d149a0024911f661573154` |
+| `lf-full-ordinary.log` | 59652 | `c92ba3f84350c744ad8864b11d5e4302b2b94d0e29a4eb894b145e50da032652` |
+| `lf-install.log` | 1274 | `38185014d812bfaf4dec0c62947e82ce78df1500795f3eba8e83144b6de2516a` |
+| `lf-lint.log` | 618 | `e7e878b332376b6cada7fd09451aad5bede2416b4018f4493c7235f1c88e77ad` |
+| `lf-static-audit.log` | 6976 | `7e96503f70af1525f498c9237a3d735837997ed5e271159a2daace140ab77285` |
+| `lf-static-self.log` | 110 | `250b37c72b0d07fcc4aa128278685bcb5af3edd153ebca121295994072cc0ad8` |
+| `lf-typecheck.log` | 634 | `cd17ea7302c8eac825839c4b463dbd900b343b68ed936a5f1060566bf1885fc7` |
 
-## Transcript disclosure
+## Coverage boundary violation and deferred surfaces
 
-The PowerShell capture wrapper renders stderr-written pnpm banners and the
-Vitest workspace deprecation notice as `NativeCommandError` transcript records.
-This is preserved in the hashed logs. It is not hidden or reclassified: every
-corresponding `default-results.json` and `lf-results.json` gate has exact exit
-code `0`; TypeScript and ESLint report no diagnostic; Vitest reports the exact
-passing file/test counts above.
+`CE_COVERAGE_BOUNDARY_VIOLATION` is preserved as a non-acceptance incident:
 
-## Frozen behavior and census result
+- A prior `pnpm test:coverage` process was `SPAWNED_BUT_INTERRUPTED` after
+  approximately `4.1` seconds.
+- It was `NOT_COMPLETE`, returned `NO_EXIT_CODE`, is `NOT_PASS`, and produced
+  no tracked or untracked repository change.
+- It is not acceptance evidence and was not rerun during this H2 closure.
 
-- Both evidence worktrees are clean and resolve exact `H`: `PASS`.
-- Production diff from the implementation base: `0`.
-- Production hashes remain the three `FROZEN_C_BEHAVIOR_SOURCE_V1` values.
-- Test/suite/title change: `0`; AP1 remains 28 unique identities, SHA-256
-  `dc7acb226c45a39932ebf27c3928e1ad9a51566172221071470b2ea4bd43e720`.
-- Event/payload/AST census remains `40 / 59 / 15`.
-- Diagnostic census remains `47 / 34 / 19 / 31 / 16`.
-- Traceability census remains `33 / 5 / 28`; primary bindings are unchanged.
-- Catalog raw/generated identity and audit-only status are unchanged.
-- Protected old worktree remains its distinct branch and HEAD with all `11/11`
-  dirty paths and all 11 recorded SHA-256 values intact.
+The other excluded surfaces remain exact:
 
-## Current disposition
+- `coverage`: `NOT_RUN_IN_H2_CLOSURE`
+- `ownership`: `NOT_RUN`
+- `Hosted CI`: `NOT_RUN`
+- `P2F1R-D`: `NOT_RUN`
 
-The dual-worktree evidence materialization was complete for historical `H`,
-but final Code Review invalidated it before acceptance. Current status is
-`PENDING_NEW_DUAL_EVIDENCE`; `CFinalAccepted=false`. Coverage, ownership,
-hosted CI and P2F1R-D remain explicitly deferred.
+## Frozen scope and current disposition
+
+- The executed source/gate tree is exact H2 HEAD
+  `cdbca657adf27a9050877cca4bad5d718781cacc`.
+- Both formal evidence worktrees were clean before and after all whitelisted
+  gates.
+- H2 changed only its previously approved six evidence/test/script paths; it
+  changed no production code.
+- The C traceability file is frozen at H2 and was not modified by this manifest
+  child.
+- The two earlier evidence IDs bound to `34c60205...` remain invalid historical
+  evidence and are not inherited here.
+
+The final H2 dual-worktree evidence is locally complete. The slice remains
+`PENDING_FRESH_CODE_AND_RULE_REVIEWS`, with `CFinalAccepted=false`; no reviewer
+verdict is authored, summarized, inferred, or promoted by this manifest.
