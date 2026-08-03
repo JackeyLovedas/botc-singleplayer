@@ -65,10 +65,10 @@ The five grouping criteria (`C-C03`, `C-C06`, `C-C09`, `C-C12`, and `C-C15`) own
 | C-C12c | Version families remain representable | 13 explicit roots pass and wrong versions reject | Version family matrix | R4_FUTURE_HYPOTHETICAL_STATE | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | Exact current families | Accepted producers | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C12c preserves current version-aware families and rejects discriminator failures` | R4_FUTURE_HYPOTHETICAL_STATE | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | No upgrade/downgrade | `selectBranch`; `traverseNode` | Wrong/unknown version | `NONE` | PASS |
 | C-C13 | Success issues authentic C token | Backing is detached/frozen and reader authenticates | Issuer-reader matrix | R3_HOSTILE_OR_CORRUPTED_HISTORY | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | Structural token only | Token design | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C13 issues only authentic process-local C tokens and reads detached frozen backing` | R3_HOSTILE_OR_CORRUPTED_HISTORY | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | WeakSet/WeakMap identity | `issueStructurallyValidatedDomainEvent`; `readStructurallyValidatedDomainEvent` | Authentic/forged token | `NONE` | PASS |
 | C-C14 | Token is noncopyable | Spread/JSON/clone/proxy lose identity | Token copy matrix | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | All copies invalid | Token design | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C14 invalidates token spread, JSON, structuredClone, and Proxy wrappers` | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | Process-local identity only | `readStructurallyValidatedDomainEvent` | Copied token | `NONE` | PASS |
-| C-C15a | Diagnostic leaf policy is total | 47 leaves map to 34 contexts/19 codes; 31 callable/16 static | Policy census | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | No orphan/default | V3 matrix | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C15a proves the 47-leaf policy census and compatible F01-F34 public matrix` | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | Semantic table parser proves 33/5/28, 27 Vitest primaries plus one static primary, AP1 collected inventory hash, no invalid/missing/duplicate/borrowed identity | `DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE` | Structured traceability and collected AP1 inventory audit | `NONE` | PASS |
+| C-C15a | Diagnostic leaf policy is total | 47 leaves map to 34 contexts/19 codes; 31 callable/16 static | Policy census | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | No orphan/default | V3 matrix | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C15a proves the 47-leaf policy census and compatible F01-F34 public matrix` | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | Public Vitest list collection plus ownership-contract canonicalizers and declaration-scoped semantic table audit prove 33/5/28, 27 Vitest primaries plus one static primary, exact Expected/Actual R/T/layer, mechanism contracts and no invalid/missing/duplicate/borrowed identity | `DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE` | Collected AP1 inventory, structured inventory bytes/SHA and semantic traceability regression audit | `NONE` | PASS |
 | C-C15b | Callable leaves bind real behavior | All 31 callable leaves are invoked distinctly | Callable leaf suite | R3_HOSTILE_OR_CORRUPTED_HISTORY | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | 31/31 exact identities | A/C1 fixtures | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C15b binds all 31 callable diagnostic leaves to real failure entry points` | R3_HOSTILE_OR_CORRUPTED_HISTORY | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | Literal 31-row public-entry matrix asserts every full diagnostic, 15-field observation or F33 ZERO, budget, repeat and nonleak contract | `validateDomainEventStructureWithObservationForTest`; `validateCapturedDomainEventStructureWithObservationForTest`; `readStructurallyValidatedDomainEvent` | Thirty observed formal-entry recipes plus authentic F33 token consumer | `NONE` | PASS |
 | C-C15c | Tagged coordinates are total | Nine cases preserve ordinal domains and leak no identity | Nine-case tagged suite | R3_HOSTILE_OR_CORRUPTED_HISTORY | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | 9/9 deterministic coordinates | C1 root/node/branch ordinals | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C15c proves all nine tagged-union coordinate states without identity leakage` | R3_HOSTILE_OR_CORRUPTED_HISTORY | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | Nine fixed real C1 roots/mutations assert exact branch/node/path/field/state/variant coordinates without trial search or synthetic authority | `validateDomainEventStructureWithObservationForTest` | Authentic roots 20 and 53 with frozen mutation paths | `NONE` | PASS |
-| C-C15d | Internal guards have exact static authority | All 16 static leaves bind fail-closed source branches | Source/policy audit | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | 16/16 exact, no fake fault | V3 matrix and C1 invariants | `scripts/verify-p2f1r-c-static-diagnostic-bindings.mjs` | `STATIC_C_C15D_16_EXACT_AST_BINDINGS` | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | Standalone TypeScript AST audit maps 16/16 exact declaration-scoped branches/policies/returns, F20 order and exactly four F34 catches; adversarial self-test rejects 12 mutants | `admitC1Authority`; `translateCaptureFailure`; `validateCapturedInternal`; `selectBranch`; `traverseNode`; `executeRefinement`; `issueStructurallyValidatedDomainEvent`; four public outer wrappers | TypeScript compiler AST declaration/branch binding with exact return and no-fallthrough audit | `NONE` | PASS |
+| C-C15d | Internal guards have exact static authority | All 16 static leaves bind fail-closed source branches | Source/policy audit | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | 16/16 exact, no fake fault | V3 matrix and C1 invariants | `scripts/verify-p2f1r-c-static-diagnostic-bindings.mjs` | `STATIC_C_C15D_16_EXACT_AST_BINDINGS` | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | Standalone TypeScript AST audit maps 16/16 exact declaration-scoped guards and direct returns/assignments, 22 real leaf branches, F20 order and exactly four F34 catches; adversarial self-test rejects 17 mutants including ghost, nested, call-not-returned, wrong-subbranch and fallthrough decoys | `admitC1Authority`; `translateCaptureFailure`; `validateCapturedInternal`; `selectBranch`; `traverseNode`; `executeRefinement`; `issueStructurallyValidatedDomainEvent`; four public outer wrappers | TypeScript compiler AST declaration/guard/direct-control-flow binding with exact callee/leaf/path arguments and no nested decoy, extra return or fallthrough | `NONE` | PASS |
 | C-C16 | Structural success is not semantic acceptance | Result exposes fixed structural/semantic statuses only | Result audit | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | NOT_SEMANTICALLY_ACCEPTED | Semantic owner map | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C16 returns structural success without semantic or history authority` | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | Negative versions still only structural | `validateDomainEventStructure` | Structurally valid semantic invalid | `NONE` | PASS |
 | C-C17 | Future vocabulary fails closed | Future type/version/branch/refinement cannot fall back | Future mutation matrix | R3_HOSTILE_OR_CORRUPTED_HISTORY | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | Closed diagnostic/no token | Closed C1 vocabulary | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C17 rejects future event, envelope version, branch, and refinement vocabulary closed` | R3_HOSTILE_OR_CORRUPTED_HISTORY | T1_EXTERNAL_OR_PERSISTED_BOUNDARY | STRUCTURAL_VALIDATION | No silent downgrade | `validateDomainEventStructure`; `validateDomainEventStructuralRefinementForTest` | Future literals | `NONE` | PASS |
 | C-C18 | C creates no broader authority | Imports/exports contain no hash/replay/state/history/snapshot/semantic issuer | Static dependency audit | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | No prohibited authority | Rescope/review protocol | `packages/domain-core/src/domain-event-structural-validator.test.ts` | `C-C18 creates no hash, replay, state, history, snapshot, or semantic authority` | R4_FUTURE_HYPOTHETICAL_STATE | T3_MODULE_PRIVATE_PURE_CORE | PURE_POLICY_SEAM | Source has no prohibited dependency | `validateDomainEventStructure`; `validateCapturedDomainEventStructure`; `issueStructurallyValidatedDomainEvent` | Forbidden symbol census | `NONE` | PASS |
@@ -87,8 +87,8 @@ The five grouping criteria (`C-C03`, `C-C06`, `C-C09`, `C-C12`, and `C-C15`) own
 - duplicate primary identities: `0`
 - borrowed A/C1 primary identities: `0`
 - invalid supporting authority IDs: `0`
-- static audit: `16 mapped / 0 missing / 0 duplicate / 0 orphan / 0 invalid symbol / 0 invalid policy / 0 invalid return`
-- static adversarial self-test: `12/12 mutants rejected`
+- static audit: `16 mapped / 22 real direct leaf branches / 0 missing / 0 duplicate / 0 orphan / 0 invalid symbol / 0 invalid policy / 0 invalid return`
+- static adversarial self-test: `17/17 mutants rejected`
 - envelope vectors: `77 applicable logical cells / 7 N/A / 6 supplements / 83 executions`
 - callable diagnostic matrix: `31/31`
 - real public tagged coordinate matrix: `9/9`
@@ -97,34 +97,24 @@ The five grouping criteria (`C-C03`, `C-C06`, `C-C09`, `C-C12`, and `C-C15`) own
 - production authority claim: `STRUCTURALLY_VALIDATED_DOMAIN_EVENT` only
 - semantic/replay/history/state/hash authority claim: none
 
-## Final evidence binding
+## Evidence status after Repair Round 2/2
 
-This section binds execution evidence only. It adds no criterion, grouping row,
-primary identity, supporting authority or mechanism claim; the frozen census
-remains exactly `33 / 5 / 28` and all 28 active primary bindings above remain
-unchanged.
+This section adds no criterion, grouping row, primary identity, supporting
+authority or role claim. The frozen census remains exactly `33 / 5 / 28`, all
+28 titles remain unchanged, and the active primary bindings above remain 27
+collected Vitest identities plus one executable static primary.
 
-- `gatesExecutedAt`: `34c60205cecad2c4c7885531f4f8805ef1355478`
-- `evidenceSourceHead`: `34c60205cecad2c4c7885531f4f8805ef1355478`
-- Default Evidence ID: `CE-DEFAULT-34c60205-20260803T140004+0800`
-- LF Evidence ID: `CE-LF-34c60205-20260803T140153+0800`
-- Evidence manifest:
-  `docs/implementation/phase-3-slice-2b20b-p2f1r-ce-dual-worktree-evidence-manifest.md`
-- Manifest binding: non-self-referential docs-only child of the source HEAD;
-  the child did not execute or impersonate the recorded gates.
-- Default worktree: exact source HEAD, clean, Catalog `i/lf w/crlf`, checkout
-  SHA-256 `7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7`.
-- LF worktree: exact source HEAD, clean, Catalog `i/lf w/lf`, checkout SHA-256
-  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
-- Catalog blob OID: `4f9a376e56f19b241d76ce2a75be83b70859ae25`;
-  raw/generated SHA-256:
-  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
-- Both worktrees pass static self-test `12/12`, static real audit `16/16`,
-  validator `28/28`, Catalog `21/21`, domain-core `503/503`, typecheck, lint,
-  and full ordinary `1712/1712`.
-- Production/test/title/census mutation: `0`; source and docs-only-child
-  `packages` trees and relevant test blobs are required to remain identical.
+- Repair binding: `COMMIT_CONTAINING_THIS_TRACEABILITY_UPDATE`.
+- The prior source/gate HEAD
+  `34c60205cecad2c4c7885531f4f8805ef1355478`, its docs-only evidence child
+  `030b935862a477a7ac3a66f59933a16c27e1cbf9`, and Evidence IDs
+  `CE-DEFAULT-34c60205-20260803T140004+0800` /
+  `CE-LF-34c60205-20260803T140153+0800` are invalid as final CE evidence after
+  findings `CE-FINAL-CODE-F01`, `CE-FINAL-CODE-F02`, and
+  `CE-FINAL-CODE-F03`.
+- The prior logs remain historical records only; they do not prove the repaired
+  tree and must not be inherited by the repair commit.
+- Current disposition: `PENDING_NEW_DUAL_EVIDENCE`;
+  `CFinalAccepted=false`.
 - `coverageExecuted=false`; `ownershipExecuted=false`;
   `hostedCIExecuted=false`; `P2F1RDExecuted=false`.
-- Current disposition: `PENDING_FRESH_INDEPENDENT_FINAL_REVIEW`;
-  `CFinalAccepted=false`.

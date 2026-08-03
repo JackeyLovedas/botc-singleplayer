@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import * as ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -519,6 +520,426 @@ const traceabilitySource = (): string =>
     ),
     "utf8"
   );
+
+type RawVitestIdentity = {
+  readonly name: string;
+  readonly file: string;
+  readonly projectName: string;
+};
+
+type StructuredVitestIdentity = {
+  readonly project: string;
+  readonly file: string;
+  readonly ancestorPath: readonly string[];
+  readonly title: string;
+};
+
+type OwnershipContractsModule = {
+  readonly canonicalizeRawVitestInventory: (
+    repoRoot: string,
+    input: unknown[]
+  ) => readonly StructuredVitestIdentity[];
+  readonly canonicalizeStructuredVitestIdentities: (
+    repoRoot: string,
+    input: unknown[]
+  ) => readonly StructuredVitestIdentity[];
+  readonly structuredInventoryBytes: (
+    identities: readonly StructuredVitestIdentity[]
+  ) => Uint8Array;
+  readonly structuredInventorySha256: (
+    identities: readonly StructuredVitestIdentity[]
+  ) => string;
+};
+
+const C_REPOSITORY_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
+const C_TEST_FILE =
+  "packages/domain-core/src/domain-event-structural-validator.test.ts";
+const C_TEST_ANCESTOR = "P2F1R-C domain event structural validation";
+const C_STATIC_TITLE = "STATIC_C_C15D_16_EXACT_AST_BINDINGS";
+const C_STATIC_INTEGRATION_TITLE =
+  "C-C15d binds all 16 static leaves to exact fail-closed source guards";
+
+const C_TRACE_MECHANISM_CONTRACTS = new Map<
+  string,
+  readonly [
+    completionCriterion: string,
+    requiredEvidenceMechanism: string,
+    productionEntry: string,
+    primaryKind: "VITEST" | "STATIC"
+  ]
+>([
+  ["C-C01", ["Hostile input maps without raw C reads", "Public hostile matrix", "`validateDomainEventStructure`", "VITEST"]],
+  ["C-C02", ["All 14 fields retain accepted structural policy", "14-field mutation matrix", "`validateDomainEventStructureWithObservationForTest`; `readStructurallyValidatedDomainEvent`", "VITEST"]],
+  ["C-C03a", ["Admission proves 40/59/13/46 and 35/24", "Pure admission census", "`admitC1Authority`", "VITEST"]],
+  ["C-C03b", ["Unhealthy seam yields F01 policy", "Pure rejection seam", "`admitC1Authority`", "VITEST"]],
+  ["C-C03c", ["Default authority is healthy before event dispatch", "Public inspection", "`validateDomainEventStructureWithObservationForTest`", "VITEST"]],
+  ["C-C04", ["All 40 types validate authentic roots", "Event inventory matrix", "`validateDomainEventStructure`", "VITEST"]],
+  ["C-C05", ["Early failures keep node/discriminant/content/AST at zero", "Exact observer tuples", "`validateCapturedInternal`", "VITEST"]],
+  ["C-C06a", ["24 roots and failures match bounded counts", "Observer decision matrix", "`selectBranch`", "VITEST"]],
+  ["C-C06b", ["All 59 roots select once", "Full branch matrix", "`selectBranch`", "VITEST"]],
+  ["C-C07", ["First missing envelope/AST field has frozen ordinal", "Omission vectors", "`validateEnvelope`; `traverseNode`", "VITEST"]],
+  ["C-C08", ["Envelope and records reject canonical extra ordinal", "Extra-entry vectors", "`validateEnvelope`; `traverseNode`", "VITEST"]],
+  ["C-C09a", ["Two kinds and 16 aliases preserve closed predicates", "Refinement matrix and trap", "`executeRefinement`", "VITEST"]],
+  ["C-C09b", ["Hostile JS objects reject in A or exact AST kind", "Hostile mutation matrix", "`captureCanonicalRuntimeValue`; `traverseNode`", "VITEST"]],
+  ["C-C10", ["Each kind succeeds and tagged failures use exact coordinates", "Captured node fixtures", "`traverseNode`", "VITEST"]],
+  ["C-C11", ["Authentic B31 passes; mutations fail", "Public legacy vector", "`traverseNode`", "VITEST"]],
+  ["C-C12a", ["One/many pass and empty fails", "Public B26 matrix", "`traverseNode`", "VITEST"]],
+  ["C-C12b", ["Three pass; wrong/missing/extra reject", "Public B54 matrix", "`traverseNode`", "VITEST"]],
+  ["C-C12c", ["13 explicit roots pass and wrong versions reject", "Version family matrix", "`selectBranch`; `traverseNode`", "VITEST"]],
+  ["C-C13", ["Backing is detached/frozen and reader authenticates", "Issuer-reader matrix", "`issueStructurallyValidatedDomainEvent`; `readStructurallyValidatedDomainEvent`", "VITEST"]],
+  ["C-C14", ["Spread/JSON/clone/proxy lose identity", "Token copy matrix", "`readStructurallyValidatedDomainEvent`", "VITEST"]],
+  ["C-C15a", ["47 leaves map to 34 contexts/19 codes; 31 callable/16 static", "Policy census", "`DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE`", "VITEST"]],
+  ["C-C15b", ["All 31 callable leaves are invoked distinctly", "Callable leaf suite", "`validateDomainEventStructureWithObservationForTest`; `validateCapturedDomainEventStructureWithObservationForTest`; `readStructurallyValidatedDomainEvent`", "VITEST"]],
+  ["C-C15c", ["Nine cases preserve ordinal domains and leak no identity", "Nine-case tagged suite", "`validateDomainEventStructureWithObservationForTest`", "VITEST"]],
+  ["C-C15d", ["All 16 static leaves bind fail-closed source branches", "Source/policy audit", "`admitC1Authority`; `translateCaptureFailure`; `validateCapturedInternal`; `selectBranch`; `traverseNode`; `executeRefinement`; `issueStructurallyValidatedDomainEvent`; four public outer wrappers", "STATIC"]],
+  ["C-C16", ["Result exposes fixed structural/semantic statuses only", "Result audit", "`validateDomainEventStructure`", "VITEST"]],
+  ["C-C17", ["Future type/version/branch/refinement cannot fall back", "Future mutation matrix", "`validateDomainEventStructure`; `validateDomainEventStructuralRefinementForTest`", "VITEST"]],
+  ["C-C18", ["Imports/exports contain no hash/replay/state/history/snapshot/semantic issuer", "Static dependency audit", "`validateDomainEventStructure`; `validateCapturedDomainEventStructure`; `issueStructurallyValidatedDomainEvent`", "VITEST"]],
+  ["C-C19", ["C uses AST roots/nodes only; no Catalog/digest/map/fallback/B", "Source and 59-root audit", "`createFullC1StructuralSchemaAuthority`; `traverseNode`", "VITEST"]]
+]);
+
+const C_SYMBOL_SOURCE = new Map<string, string>([
+  ["captureCanonicalRuntimeValue", "packages/domain-core/src/canonical-runtime-value.ts"],
+  ["issueStructurallyValidatedDomainEvent", "packages/domain-core/src/canonical-domain-event.ts"],
+  ["readStructurallyValidatedDomainEvent", "packages/domain-core/src/canonical-domain-event.ts"],
+  ["DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE", "packages/domain-core/src/canonical-domain-event.ts"],
+  ["createFullC1StructuralSchemaAuthority", "packages/domain-core/src/domain-event-structural-schema-ast.ts"],
+  ["admitC1Authority", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["translateCaptureFailure", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["validateCapturedInternal", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["selectBranch", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["traverseNode", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["executeRefinement", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["validateEnvelope", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["validateDomainEventStructure", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["validateCapturedDomainEventStructure", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["validateDomainEventStructureWithObservationForTest", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["validateCapturedDomainEventStructureWithObservationForTest", "packages/domain-core/src/domain-event-structural-validator.ts"],
+  ["validateDomainEventStructuralRefinementForTest", "packages/domain-core/src/domain-event-structural-validator.ts"]
+]);
+
+const collectCPrimaryVitestInventory = (): unknown[] => {
+  const vitestCli = fileURLToPath(
+    new URL("../../../node_modules/vitest/vitest.mjs", import.meta.url)
+  );
+  const result = spawnSync(
+    process.execPath,
+    [
+      vitestCli,
+      "list",
+      "--workspace",
+      "vitest.workspace.ts",
+      "--project=domain-core",
+      C_TEST_FILE,
+      "--json"
+    ],
+    {
+      cwd: C_REPOSITORY_ROOT,
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024
+    }
+  );
+  if (result.error !== undefined) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(`C_VITEST_LIST_FAILED:${result.status}:${result.stderr}`);
+  }
+  const parsed = JSON.parse(result.stdout) as unknown;
+  if (!Array.isArray(parsed)) throw new Error("C_VITEST_LIST_NOT_ARRAY");
+  return parsed;
+};
+
+const structuredIdentityKey = (identity: StructuredVitestIdentity): string =>
+  JSON.stringify([
+    identity.project,
+    identity.file,
+    identity.ancestorPath,
+    identity.title
+  ]);
+
+const auditCPrimaryVitestInventory = (
+  contracts: OwnershipContractsModule,
+  rawInventory: unknown[],
+  expectedTitles: readonly string[]
+): Readonly<{
+  identities: readonly StructuredVitestIdentity[];
+  inventoryBytes: Uint8Array;
+  inventorySha256: string;
+}> => {
+  const fromRaw = contracts.canonicalizeRawVitestInventory(
+    C_REPOSITORY_ROOT,
+    rawInventory
+  );
+  const fromStructured = contracts.canonicalizeStructuredVitestIdentities(
+    C_REPOSITORY_ROOT,
+    [...fromRaw]
+  );
+  if (
+    JSON.stringify(fromRaw.map(structuredIdentityKey)) !==
+    JSON.stringify(fromStructured.map(structuredIdentityKey))
+  ) {
+    throw new Error("C_VITEST_CANONICALIZATION_DIVERGED");
+  }
+  const titleCounts = new Map<string, number>();
+  for (const identity of fromStructured) {
+    titleCounts.set(identity.title, (titleCounts.get(identity.title) ?? 0) + 1);
+  }
+  if ([...titleCounts.values()].some((count) => count !== 1)) {
+    throw new Error("C_VITEST_AMBIGUOUS_TITLE");
+  }
+  for (const identity of fromStructured) {
+    if (identity.project !== "domain-core") {
+      throw new Error("C_VITEST_PROJECT_MISMATCH");
+    }
+    if (identity.file !== C_TEST_FILE) {
+      throw new Error("C_VITEST_FILE_MISMATCH");
+    }
+    if (
+      identity.ancestorPath.length !== 1 ||
+      identity.ancestorPath[0] !== C_TEST_ANCESTOR
+    ) {
+      throw new Error("C_VITEST_ANCESTOR_MISMATCH");
+    }
+  }
+  const expected = new Set(expectedTitles);
+  if (expected.size !== expectedTitles.length) {
+    throw new Error("C_VITEST_EXPECTED_TITLE_DUPLICATE");
+  }
+  const missing = expectedTitles.filter((title) => !titleCounts.has(title));
+  const unexpected = [...titleCounts.keys()].filter((title) => !expected.has(title));
+  if (missing.length > 0) throw new Error(`C_VITEST_MISSING:${missing.join(",")}`);
+  if (unexpected.length > 0) {
+    throw new Error(`C_VITEST_UNEXPECTED:${unexpected.join(",")}`);
+  }
+  const inventoryBytes = contracts.structuredInventoryBytes(fromStructured);
+  const inventorySha256 = contracts.structuredInventorySha256(fromStructured);
+  if (
+    createHash("sha256").update(inventoryBytes).digest("hex") !==
+    inventorySha256
+  ) {
+    throw new Error("C_VITEST_INVENTORY_HASH_DIVERGED");
+  }
+  return Object.freeze({
+    identities: fromStructured,
+    inventoryBytes,
+    inventorySha256
+  });
+};
+
+const traceabilityTableRows = (
+  traceability: string,
+  start: string,
+  end: string
+): string[][] => {
+  const section = traceability.split(start)[1]?.split(end)[0];
+  if (section === undefined) throw new Error(`C_TRACE_SECTION_MISSING:${start}`);
+  return section
+    .split(/\r?\n/u)
+    .filter((line) => /^\| C-C/u.test(line))
+    .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
+};
+
+const topLevelDeclarationNames = (source: string, fileName: string): string[] => {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS
+  );
+  const parseDiagnostics = (
+    sourceFile as unknown as { readonly parseDiagnostics: readonly unknown[] }
+  ).parseDiagnostics;
+  if (parseDiagnostics.length > 0) {
+    throw new Error(`C_PRODUCTION_PARSE_FAILED:${fileName}`);
+  }
+  const names: string[] = [];
+  for (const statement of sourceFile.statements) {
+    if (ts.isFunctionDeclaration(statement) && statement.name !== undefined) {
+      names.push(statement.name.text);
+    }
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name)) names.push(declaration.name.text);
+      }
+    }
+  }
+  return names;
+};
+
+const auditProductionEntrySymbols = (productionEntry: string): void => {
+  const symbols = [...productionEntry.matchAll(/`([^`]+)`/gu)].map(
+    (match) => match[1] as string
+  );
+  if (productionEntry.includes("four public outer wrappers")) {
+    symbols.push(
+      "validateDomainEventStructure",
+      "validateCapturedDomainEventStructure",
+      "validateDomainEventStructureWithObservationForTest",
+      "validateCapturedDomainEventStructureWithObservationForTest"
+    );
+  }
+  if (symbols.length === 0) throw new Error("C_PRODUCTION_ENTRY_EMPTY");
+  for (const symbol of new Set(symbols)) {
+    const relativeFile = C_SYMBOL_SOURCE.get(symbol);
+    if (relativeFile === undefined) {
+      throw new Error(`C_PRODUCTION_SYMBOL_UNKNOWN:${symbol}`);
+    }
+    const source = readFileSync(
+      fileURLToPath(new URL(`../../../${relativeFile}`, import.meta.url)),
+      "utf8"
+    );
+    const declarationCount = topLevelDeclarationNames(source, relativeFile).filter(
+      (name) => name === symbol
+    ).length;
+    if (declarationCount !== 1) {
+      throw new Error(
+        `C_PRODUCTION_DECLARATION_COUNT:${symbol}:${relativeFile}:${declarationCount}`
+      );
+    }
+  }
+};
+
+const auditCTraceability = (
+  traceability: string,
+  collected: readonly StructuredVitestIdentity[]
+): Readonly<{ active: number; grouping: number; vitest: number; static: number }> => {
+  const groupingRows = traceabilityTableRows(
+    traceability,
+    "## Grouping inventory",
+    "## Active criterion bindings"
+  );
+  const activeRows = traceabilityTableRows(
+    traceability,
+    "## Active criterion bindings",
+    "## Deterministic closure audit"
+  );
+  if (groupingRows.length !== 5 || groupingRows.some((row) => row.length !== 9)) {
+    throw new Error("C_TRACE_GROUPING_CENSUS_INVALID");
+  }
+  if (activeRows.length !== 28 || activeRows.some((row) => row.length !== 19)) {
+    throw new Error("C_TRACE_ACTIVE_CENSUS_INVALID");
+  }
+  const criterionIds = activeRows.map((row) => row[0] as string);
+  if (
+    new Set(criterionIds).size !== 28 ||
+    criterionIds.some((criterionId) => !C_TRACE_MECHANISM_CONTRACTS.has(criterionId)) ||
+    C_TRACE_MECHANISM_CONTRACTS.size !== 28
+  ) {
+    throw new Error("C_TRACE_CRITERION_SET_INVALID");
+  }
+  const collectedByTitle = new Map(
+    collected.map((identity) => [identity.title, identity] as const)
+  );
+  const primaryIdentities = new Set<string>();
+  let vitestCount = 0;
+  let staticCount = 0;
+  for (const row of activeRows) {
+    const criterionId = row[0] as string;
+    const contract = C_TRACE_MECHANISM_CONTRACTS.get(criterionId);
+    if (contract === undefined) throw new Error("C_TRACE_CONTRACT_MISSING");
+    if (row[2] !== contract[0] || row[3] !== contract[1]) {
+      throw new Error(`C_TRACE_MECHANISM_CONTRACT_MISMATCH:${criterionId}`);
+    }
+    auditProductionEntrySymbols(row[15] ?? "");
+    if (row[15] !== contract[2]) {
+      throw new Error(`C_TRACE_PRODUCTION_ENTRY_MISMATCH:${criterionId}`);
+    }
+    if (row[4] !== row[11]) {
+      throw new Error(`C_TRACE_REACHABILITY_MISMATCH:${criterionId}`);
+    }
+    if (row[5] !== row[12]) {
+      throw new Error(`C_TRACE_TRUST_MISMATCH:${criterionId}`);
+    }
+    if (row[6] !== row[13]) {
+      throw new Error(`C_TRACE_PRIMARY_LAYER_MISMATCH:${criterionId}`);
+    }
+    if (row[14] === "" || row[16] === "") {
+      throw new Error(`C_TRACE_REQUIRED_MECHANISM_MISSING:${criterionId}`);
+    }
+    if (row[17] !== "`NONE`") {
+      throw new Error(`C_TRACE_SUPPORTING_AUTHORITY_INVALID:${criterionId}`);
+    }
+    const actualTestFile = row[9] as string;
+    const actualTestTitle = row[10] as string;
+    const primaryKey = `${actualTestFile}\u0000${actualTestTitle}`;
+    if (primaryIdentities.has(primaryKey)) {
+      throw new Error(`C_TRACE_DUPLICATE_PRIMARY:${criterionId}`);
+    }
+    primaryIdentities.add(primaryKey);
+    if (contract[3] === "VITEST") {
+      vitestCount += 1;
+      const title = actualTestTitle.replaceAll("`", "");
+      if (
+        actualTestFile !== `\`${C_TEST_FILE}\`` ||
+        !title.startsWith(`${criterionId} `)
+      ) {
+        throw new Error(`C_TRACE_VITEST_PRIMARY_TYPE_INVALID:${criterionId}`);
+      }
+      const identity = collectedByTitle.get(title);
+      if (
+        identity === undefined ||
+        identity.project !== "domain-core" ||
+        identity.file !== C_TEST_FILE ||
+        identity.ancestorPath.length !== 1 ||
+        identity.ancestorPath[0] !== C_TEST_ANCESTOR
+      ) {
+        throw new Error(`C_TRACE_VITEST_PRIMARY_MISSING:${criterionId}`);
+      }
+    } else {
+      staticCount += 1;
+      if (
+        actualTestFile !==
+          "`scripts/verify-p2f1r-c-static-diagnostic-bindings.mjs`" ||
+        actualTestTitle !== `\`${C_STATIC_TITLE}\``
+      ) {
+        throw new Error(`C_TRACE_STATIC_PRIMARY_TYPE_INVALID:${criterionId}`);
+      }
+    }
+    if (row[18] !== "PASS") {
+      throw new Error(`C_TRACE_MECHANISM_NOT_PASS:${criterionId}`);
+    }
+  }
+  const usedVitestTitles = new Set(
+    activeRows
+      .filter((row) => row[0] !== "C-C15d")
+      .map((row) => (row[10] as string).replaceAll("`", ""))
+  );
+  const unboundCollected = collected.filter(
+    (identity) => !usedVitestTitles.has(identity.title)
+  );
+  if (
+    vitestCount !== 27 ||
+    staticCount !== 1 ||
+    primaryIdentities.size !== 28 ||
+    unboundCollected.length !== 1 ||
+    unboundCollected[0]?.title !== C_STATIC_INTEGRATION_TITLE
+  ) {
+    throw new Error("C_TRACE_PRIMARY_PARTITION_INVALID");
+  }
+  return Object.freeze({
+    active: activeRows.length,
+    grouping: groupingRows.length,
+    vitest: vitestCount,
+    static: staticCount
+  });
+};
+
+const mutateTraceabilityCell = (
+  traceability: string,
+  criterionId: string,
+  zeroBasedCell: number,
+  replacement: string
+): string =>
+  traceability
+    .split(/(?<=\n)/u)
+    .map((line) => {
+      if (!line.startsWith(`| ${criterionId} |`)) return line;
+      const newline = line.endsWith("\n") ? "\n" : "";
+      const cells = line.replace(/\r?\n$/u, "").split("|");
+      cells[zeroBasedCell + 1] = ` ${replacement} `;
+      return `${cells.join("|")}${newline}`;
+    })
+    .join("");
 
 const EXPECTED_DIAGNOSTIC_POLICY_MATRIX = [
   ["F01", "C1_AUTHORITY_UNHEALTHY", "AUTHORITY_ADMISSION", "AUTHORITY_UNAVAILABLE", true, "AFTER_PROCESS_RESTART", "admit-authority"],
@@ -1862,7 +2283,7 @@ describe("P2F1R-C domain event structural validation", () => {
     }
   });
 
-  it("C-C15a proves the 47-leaf policy census and compatible F01-F34 public matrix", () => {
+  it("C-C15a proves the 47-leaf policy census and compatible F01-F34 public matrix", async () => {
     expect(DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_IDS).toHaveLength(47);
     expect(new Set(DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_IDS).size).toBe(47);
     expect(DOMAIN_EVENT_STRUCTURAL_DIAGNOSTIC_LEAF_POLICY_TUPLE).toHaveLength(
@@ -1889,19 +2310,13 @@ describe("P2F1R-C domain event structural validation", () => {
       ).size
     ).toBe(47);
     const traceability = traceabilitySource();
-    const tableRows = (start: string, end: string) => {
-      const section = traceability.split(start)[1]?.split(end)[0];
-      if (section === undefined) throw new Error(`missing traceability section ${start}`);
-      return section
-        .split(/\r?\n/u)
-        .filter((line) => /^\| C-C/u.test(line))
-        .map((line) => line.split("|").slice(1, -1).map((cell) => cell.trim()));
-    };
-    const groupingRows = tableRows(
+    const groupingRows = traceabilityTableRows(
+      traceability,
       "## Grouping inventory",
       "## Active criterion bindings"
     );
-    const activeRows = tableRows(
+    const activeRows = traceabilityTableRows(
+      traceability,
       "## Active criterion bindings",
       "## Deterministic closure audit"
     );
@@ -1909,64 +2324,192 @@ describe("P2F1R-C domain event structural validation", () => {
     expect(groupingRows).toHaveLength(5);
     expect(groupingRows.every((row) => row.length === 9)).toBe(true);
     expect(activeRows.every((row) => row.length === 19)).toBe(true);
-    expect(activeRows.every((row) => row[18] === "PASS")).toBe(true);
-    expect(activeRows.every((row) => row[17] === "`NONE`")).toBe(true);
     expect(traceability).not.toMatch(/SUP-2B20B-P2F1R-C/u);
-    const staticRows = activeRows.filter((row) => row[0] === "C-C15d");
-    expect(staticRows).toEqual([
-      expect.arrayContaining([
-        "C-C15d",
-        "`scripts/verify-p2f1r-c-static-diagnostic-bindings.mjs`",
-        "`STATIC_C_C15D_16_EXACT_AST_BINDINGS`",
-        "`NONE`",
-        "PASS"
-      ])
-    ]);
     const vitestRows = activeRows.filter((row) => row[0] !== "C-C15d");
     expect(vitestRows).toHaveLength(27);
-    expect(
-      vitestRows.every(
-        (row) =>
-          row[9] ===
-          "`packages/domain-core/src/domain-event-structural-validator.test.ts`"
-      )
-    ).toBe(true);
-    const actualTitles = vitestRows.map((row) =>
-      (row[10] ?? "").replaceAll("`", "")
+    const expectedCollectedTitles = [
+      ...vitestRows.map((row) => (row[10] as string).replaceAll("`", "")),
+      C_STATIC_INTEGRATION_TITLE
+    ];
+    const ownershipModuleUrl = new URL(
+      "../../../scripts/vitest-ownership-contracts.mjs",
+      import.meta.url
+    ).href;
+    const ownershipContracts = (await import(
+      ownershipModuleUrl
+    )) as unknown as OwnershipContractsModule;
+    const rawInventory = collectCPrimaryVitestInventory();
+    const inventoryAudit = auditCPrimaryVitestInventory(
+      ownershipContracts,
+      rawInventory,
+      expectedCollectedTitles
     );
-    expect(new Set(actualTitles).size).toBe(27);
-    const testSource = readFileSync(fileURLToPath(import.meta.url), "utf8");
-    for (const title of actualTitles) {
-      expect(testSource).toContain(`it("${title}"`);
-    }
-    const collectedTitles = [
-      ...testSource.matchAll(/^\s*it\("([^"]+)", \(\) => \{/gmu)
-    ].map((match) => match[1] as string);
-    expect(collectedTitles).toHaveLength(28);
-    expect(new Set(collectedTitles).size).toBe(28);
-    expect(collectedTitles).toContain(
-      "C-C15d binds all 16 static leaves to exact fail-closed source guards"
-    );
-    const inventory = collectedTitles
-      .map((title) => [
-        "domain-core",
-        "packages/domain-core/src/domain-event-structural-validator.test.ts",
-        ["P2F1R-C domain event structural validation"],
-        title
-      ] as const)
-      .sort((left, right) => {
-        const leftKey = JSON.stringify(left);
-        const rightKey = JSON.stringify(right);
-        return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
-      });
-    const inventorySha256 = createHash("sha256")
-      .update(`${JSON.stringify(inventory)}\n`)
-      .digest("hex");
-    expect(inventorySha256).toBe(
+    expect(inventoryAudit.identities).toHaveLength(28);
+    expect(inventoryAudit.inventoryBytes.byteLength).toBeGreaterThan(0);
+    expect(inventoryAudit.inventorySha256).toBe(
       "dc7acb226c45a39932ebf27c3928e1ad9a51566172221071470b2ea4bd43e720"
     );
-    const primaryIdentities = activeRows.map((row) => `${row[9]}\u0000${row[10]}`);
-    expect(new Set(primaryIdentities).size).toBe(28);
+    expect(auditCTraceability(traceability, inventoryAudit.identities)).toEqual({
+      active: 28,
+      grouping: 5,
+      vitest: 27,
+      static: 1
+    });
+
+    const raw = rawInventory as RawVitestIdentity[];
+    const firstRaw = raw[0];
+    if (firstRaw === undefined) throw new Error("missing collected C identity");
+    const cloneRaw = (): RawVitestIdentity[] => structuredClone(raw);
+    expect(() =>
+      auditCPrimaryVitestInventory(
+        ownershipContracts,
+        cloneRaw().map((entry, index) =>
+          index === 0 ? { ...entry, projectName: "domain-core-rebuild" } : entry
+        ),
+        expectedCollectedTitles
+      )
+    ).toThrow(/C_VITEST_PROJECT_MISMATCH/u);
+    expect(() =>
+      auditCPrimaryVitestInventory(
+        ownershipContracts,
+        cloneRaw().map((entry, index) =>
+          index === 0
+            ? {
+                ...entry,
+                file: fileURLToPath(
+                  new URL(
+                    "./domain-event-structural-schema-catalog.test.ts",
+                    import.meta.url
+                  )
+                )
+              }
+            : entry
+        ),
+        expectedCollectedTitles
+      )
+    ).toThrow(/C_VITEST_FILE_MISMATCH/u);
+    expect(() =>
+      auditCPrimaryVitestInventory(
+        ownershipContracts,
+        cloneRaw().map((entry, index) =>
+          index === 0
+            ? {
+                ...entry,
+                name: entry.name.replace(C_TEST_ANCESTOR, "wrong ancestor")
+              }
+            : entry
+        ),
+        expectedCollectedTitles
+      )
+    ).toThrow(/C_VITEST_ANCESTOR_MISMATCH/u);
+    expect(() =>
+      auditCPrimaryVitestInventory(
+        ownershipContracts,
+        [...cloneRaw(), { ...firstRaw }],
+        expectedCollectedTitles
+      )
+    ).toThrow(/DUPLICATE_STRUCTURED_VITEST_IDENTITY/u);
+    expect(() =>
+      auditCPrimaryVitestInventory(
+        ownershipContracts,
+        cloneRaw().slice(1),
+        expectedCollectedTitles
+      )
+    ).toThrow(/C_VITEST_MISSING/u);
+    expect(() =>
+      auditCPrimaryVitestInventory(
+        ownershipContracts,
+        [
+          ...cloneRaw(),
+          {
+            ...firstRaw,
+            name: `${C_TEST_ANCESTOR} > C-C99 unexpected identity`
+          }
+        ],
+        expectedCollectedTitles
+      )
+    ).toThrow(/C_VITEST_UNEXPECTED/u);
+    expect(() =>
+      auditCPrimaryVitestInventory(
+        ownershipContracts,
+        [
+          ...cloneRaw(),
+          {
+            ...firstRaw,
+            name: `wrong ancestor > ${firstRaw.name.split(" > ").at(-1)}`
+          }
+        ],
+        expectedCollectedTitles
+      )
+    ).toThrow(/C_VITEST_AMBIGUOUS_TITLE/u);
+
+    const expectTraceRejected = (candidate: string): void => {
+      expect(() =>
+        auditCTraceability(candidate, inventoryAudit.identities)
+      ).toThrow();
+    };
+    expectTraceRejected(
+      mutateTraceabilityCell(traceability, "C-C01", 11, "R4_FUTURE_HYPOTHETICAL_STATE")
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(traceability, "C-C01", 12, "T3_MODULE_PRIVATE_PURE_CORE")
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(traceability, "C-C01", 13, "PURE_POLICY_SEAM")
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(traceability, "C-C01", 15, "`doesNotExist`")
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(
+        traceability,
+        "C-C01",
+        15,
+        "`validateDomainEventStructureWithObservationForTest`"
+      )
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(traceability, "C-C01", 14, "")
+    );
+    const firstTitle = activeRows.find((row) => row[0] === "C-C01")?.[10];
+    const secondTitle = activeRows.find((row) => row[0] === "C-C02")?.[10];
+    const thirdTitle = activeRows.find((row) => row[0] === "C-C03a")?.[10];
+    if (firstTitle === undefined || secondTitle === undefined || thirdTitle === undefined) {
+      throw new Error("missing traceability regression title");
+    }
+    expectTraceRejected(
+      mutateTraceabilityCell(traceability, "C-C02", 10, firstTitle)
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(
+        mutateTraceabilityCell(traceability, "C-C02", 10, thirdTitle),
+        "C-C03a",
+        10,
+        secondTitle
+      )
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(traceability, "C-C01", 10, "`C-C01 missing primary`")
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(
+        traceability,
+        "C-C15d",
+        9,
+        `\`${C_TEST_FILE}\``
+      )
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(
+        traceability,
+        "C-C01",
+        9,
+        "`scripts/verify-p2f1r-c-static-diagnostic-bindings.mjs`"
+      )
+    );
+    expectTraceRejected(
+      mutateTraceabilityCell(traceability, "C-C01", 3, "")
+    );
     expect(traceability).toContain(
       "`ap1AncestorPath`: `[\"P2F1R-C domain event structural validation\"]`"
     );
@@ -2400,7 +2943,7 @@ describe("P2F1R-C domain event structural validation", () => {
       invalidSymbol: 0,
       invalidPolicy: 0,
       invalidReturn: 0,
-      branchOccurrences: 25
+      branchOccurrences: 22
     });
     expect(staticAudit.rows.map((row) => row.leafId).sort()).toEqual(
       staticPolicies.map((entry) => entry.leafId).sort()
@@ -2413,7 +2956,7 @@ describe("P2F1R-C domain event structural validation", () => {
     expect(selfTest.stderr).toBe("");
     expect(JSON.parse(selfTest.stdout)).toEqual({
       selfTest: "PASS",
-      mutantsRejected: 12,
+      mutantsRejected: 17,
       mapped: 16
     });
 

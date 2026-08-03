@@ -12,7 +12,7 @@ const sources = Object.freeze({
   canonicalSource: rawSources.canonicalSource.replace(/\r\n/gu, "\n")
 });
 const baseline = verifyStaticDiagnosticBindings(sources);
-if (baseline.mapped !== 16 || baseline.branchOccurrences !== 25) {
+if (baseline.mapped !== 16 || baseline.branchOccurrences !== 22) {
   throw new Error("STATIC_SELF_TEST_BASELINE_INVALID");
 }
 
@@ -82,6 +82,46 @@ expectRejected("branch-fallthrough", ({ validatorSource, canonicalSource }) => (
   canonicalSource
 }));
 
+expectRejected("ghost-return", ({ validatorSource, canonicalSource }) => ({
+  validatorSource: validatorSource.replace(
+    "if (match === undefined) {\n      return failure(F18, discriminatorPath(current.discriminatorOrdinal));\n    }",
+    "if (match === undefined) {\n      if (false) {\n        return failure(F18, discriminatorPath(current.discriminatorOrdinal));\n      }\n      return failure(F19, discriminatorPath(current.discriminatorOrdinal));\n    }"
+  ),
+  canonicalSource
+}));
+
+expectRejected("nested-decoy-return", ({ validatorSource, canonicalSource }) => ({
+  validatorSource: validatorSource.replace(
+    "if (match === undefined) {\n      return failure(F18, discriminatorPath(current.discriminatorOrdinal));\n    }",
+    "if (match === undefined) {\n      if (current.discriminatorOrdinal > 0) {\n        return failure(F18, discriminatorPath(current.discriminatorOrdinal));\n      }\n      return failure(F19, discriminatorPath(current.discriminatorOrdinal));\n    }"
+  ),
+  canonicalSource
+}));
+
+expectRejected("correct-call-not-returned", ({ validatorSource, canonicalSource }) => ({
+  validatorSource: validatorSource.replace(
+    "if (match === undefined) {\n      return failure(F18, discriminatorPath(current.discriminatorOrdinal));\n    }",
+    "if (match === undefined) {\n      failure(F18, discriminatorPath(current.discriminatorOrdinal));\n      return failure(F19, discriminatorPath(current.discriminatorOrdinal));\n    }"
+  ),
+  canonicalSource
+}));
+
+expectRejected("correct-return-in-wrong-subbranch", ({ validatorSource, canonicalSource }) => ({
+  validatorSource: validatorSource.replace(
+    "if (match === undefined) {\n      return failure(F18, discriminatorPath(current.discriminatorOrdinal));\n    }",
+    "if (match === undefined) {\n      if (current.discriminatorOrdinal > 0) {\n        return failure(F19, discriminatorPath(current.discriminatorOrdinal));\n      } else {\n        return failure(F18, discriminatorPath(current.discriminatorOrdinal));\n      }\n    }"
+  ),
+  canonicalSource
+}));
+
+expectRejected("fallthrough-with-unreachable-correct-return", ({ validatorSource, canonicalSource }) => ({
+  validatorSource: validatorSource.replace(
+    "if (match === undefined) {\n      return failure(F18, discriminatorPath(current.discriminatorOrdinal));\n    }",
+    "if (match === undefined) {\n      if (false) {\n        return failure(F18, discriminatorPath(current.discriminatorOrdinal));\n      }\n      failure(F19, discriminatorPath(current.discriminatorOrdinal));\n    }"
+  ),
+  canonicalSource
+}));
+
 expectRejected("extra-f34-catch", ({ validatorSource, canonicalSource }) => ({
   validatorSource: validatorSource.replace(
     "try {\n    return validateUnknownInternal(input, observation);",
@@ -124,5 +164,5 @@ expectRejected("reordered-f20-guards", ({ validatorSource, canonicalSource }) =>
 });
 
 process.stdout.write(
-  `${JSON.stringify({ selfTest: "PASS", mutantsRejected: 12, mapped: 16 })}\n`
+  `${JSON.stringify({ selfTest: "PASS", mutantsRejected: 17, mapped: 16 })}\n`
 );

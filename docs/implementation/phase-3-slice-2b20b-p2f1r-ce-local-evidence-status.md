@@ -2,9 +2,12 @@
 
 ## Scope and gates
 
-- Slice: `2B20B-P2F1R-CE`, Evidence Closure Round `1/2`.
+- Slice: `2B20B-P2F1R-CE`, Evidence Closure Repair Round `2/2`.
 - Implementation base: `01ba8260e720921023dabcbb815fc3ee01aaea90`.
-- Evidence source/gate HEAD: `34c60205cecad2c4c7885531f4f8805ef1355478`.
+- Prior invalid evidence source/gate HEAD:
+  `34c60205cecad2c4c7885531f4f8805ef1355478`.
+- Repair source binding: `COMMIT_CONTAINING_THIS_STATUS`.
+- Current evidence disposition: `PENDING_NEW_DUAL_EVIDENCE`.
 - Rule evidence: `docs/rules/evidence/2B20B-P2F1R-CE.md`; verdict `RULE_READY`.
 - Bounded design: `docs/architecture/2B20B-P2F1R-CE-local-evidence-traceability-portability-design-v1.md`; SHA-256 `a8401610f23d3c1a30a0d1fd5ce3d45cfabe1dcdcd5babae08139dec5803ae14`.
 - Independent design review: `docs/architecture/2B20B-P2F1R-CE-local-evidence-traceability-portability-design-review-v1.md`; verdict `RULE_DESIGN_PASS`; no remaining blocker.
@@ -28,53 +31,47 @@ The implementation preserves `FROZEN_C_BEHAVIOR_SOURCE_V1`:
 - C-C02 now executes exactly `83` public vectors: `77` applicable logical cells, `7` explicit N/A cells and `6` supplementary boundary vectors. Every executed vector repeats identically; failures assert the complete diagnostic and 15-field observation; successes authenticate and read the issued token and preserve the original accepted primitive.
 - C-C15b now binds all `31/31` callable leaves to fixed formal public/package entries. Thirty rows assert the complete diagnostic, observation, read budget, repeatability and nonleak contract; F33 asserts the explicit `ZERO` consumer contract.
 - C-C15c now uses nine fixed authentic C1 root/mutation recipes (`20` and `53`) and exact event-branch, AST-node, tagged-path, field-entry, state and variant coordinates. No synthetic authority or trial search is primary evidence.
-- C-C15d now uses `scripts/verify-p2f1r-c-static-diagnostic-bindings.mjs` as its primary mechanism. The TypeScript compiler AST audit maps `16/16` declaration-scoped guards, exact policies and exact returns, including F20 precedence and exactly four F34 outer catches. Its adversarial self-test rejects `12/12` mutants.
-- C-C15a semantically parses the split grouping/active traceability tables, enforces `33/5/28`, `SupportingAuthorityId=NONE`, one distinct primary per active row, 27 Vitest primaries plus one executable static primary, and the collected AP1 inventory.
+- C-C15d now validates exact TypeScript AST control flow rather than normalized
+  descendant text. It binds the exact guard to one direct return or assignment,
+  validates the actual callee/leaf/path arguments, rejects nested decoys,
+  additional returns and fallthrough, derives `invalidReturn` from analysis, and
+  maps `16/16` bindings across `22` real direct leaf branches. The adversarial
+  self-test rejects `17/17` mutants, including the five final-review decoy forms.
+- C-C15a obtains the target identities from public `vitest list`, calls
+  `canonicalizeRawVitestInventory`,
+  `canonicalizeStructuredVitestIdentities`, `structuredInventoryBytes`, and
+  `structuredInventorySha256`, and rejects project/file/ancestor, missing,
+  duplicate, unexpected and ambiguous identity mutations.
+- C-C15a also performs the `33/5/28` semantic traceability audit: every active
+  Expected/Actual reachability, trust and primary layer must agree;
+  `ProductionEntry` symbols must resolve exactly once in their frozen source
+  declarations; completion/evidence mechanism contracts must match; and the
+  primary partition must be exactly 27 collected Vitest identities plus one
+  executable static primary.
 - The collected AP1 Vitest inventory remains `28` unique identities with common ancestor `P2F1R-C domain event structural validation`; SHA-256 `dc7acb226c45a39932ebf27c3928e1ad9a51566172221071470b2ea4bd43e720`. No suite or test title changed.
 - Traceability V1.2 retains all 33 criterion IDs, removes the five invalid SUP records, gives grouping rows only the nine design-time fields, and records `R1=[]`, `R2=[]`, and `mechanismMatch=28/28 PASS`.
 
-## Final local dual-worktree verification
+## Invalidated prior dual-worktree evidence
 
-The source HEAD was checked out into two new clean evidence worktrees. The
-docs-only child containing the evidence manifest did not execute these gates.
-Complete paths, timestamps and log hashes are recorded in
-`docs/implementation/phase-3-slice-2b20b-p2f1r-ce-dual-worktree-evidence-manifest.md`.
+The prior default/LF evidence IDs
+`CE-DEFAULT-34c60205-20260803T140004+0800` and
+`CE-LF-34c60205-20260803T140153+0800` remain historical records only. The
+failed final Code Review at `030b935862a477a7ac3a66f59933a16c27e1cbf9`
+identified `CE-FINAL-CODE-F01`, `CE-FINAL-CODE-F02`, and
+`CE-FINAL-CODE-F03`; therefore those logs cannot prove this repaired tree and
+must not be inherited as current evidence.
 
-- Default Evidence ID: `CE-DEFAULT-34c60205-20260803T140004+0800`.
-- LF Evidence ID: `CE-LF-34c60205-20260803T140153+0800`.
-- `gatesExecutedAt` and `evidenceSourceHead`:
-  `34c60205cecad2c4c7885531f4f8805ef1355478`.
-- Default worktree: exact HEAD, clean, Catalog `i/lf w/crlf`, checkout SHA-256
-  `7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7`.
-- LF worktree: exact HEAD, clean, Catalog `i/lf w/lf`, checkout SHA-256
-  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
-- Catalog blob OID remains `4f9a376e56f19b241d76ce2a75be83b70859ae25`;
-  raw/generated SHA-256 remains
-  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
-- Both used Node `v24.15.0`, pnpm `11.7.0`, and Git
-  `2.54.0.windows.1`.
-
-Coverage, ownership publication, hosted CI and P2F1R-D were deliberately not
-run in CE.
-
-| Gate | Default | LF |
-|---|---|---|
-| Standalone static verifier | `PASS`; `16` mapped, seven failure counters `0`, `25` branch occurrences | same |
-| Static verifier adversarial self-test | `PASS`; `12/12` mutants rejected | same |
-| C validator focused Vitest | `PASS`; `28/28` | `PASS`; `28/28` |
-| Catalog focused Vitest | `PASS`; `21/21` | `PASS`; `21/21` |
-| Domain-core project | `PASS`; `20` files, `503/503` | `PASS`; `20` files, `503/503` |
-| `pnpm typecheck` | `PASS` | `PASS` |
-| `pnpm lint` | `PASS`; zero diagnostics | `PASS`; zero diagnostics |
-| `pnpm test` | `PASS`; `40` files, `1712/1712` | `PASS`; `40` files, `1712/1712` |
+Fresh default-Windows and LF worktrees, installs, complete focused/full gates,
+immutable log hashes and a new non-self-referential evidence child are still
+required. Coverage, ownership publication, hosted CI and P2F1R-D remain
+deliberately unexecuted in CE.
 
 ## Evidence boundary
 
-Dual-worktree local portability evidence is now materialized for exact source
-HEAD `34c60205cecad2c4c7885531f4f8805ef1355478`. It does not claim coverage,
-ownership, hosted CI, merge readiness or P2F1R-D. The current disposition is
-`PENDING_FRESH_INDEPENDENT_FINAL_REVIEW`; no `CODE_REVIEW_PASS`,
-`RULE_REVIEW_PASS`, technical-closure token or final acceptance is inferred.
+The repair source does not yet have current dual-worktree evidence. Its
+disposition is `PENDING_NEW_DUAL_EVIDENCE`; it does not claim coverage,
+ownership, hosted CI, merge readiness, P2F1R-D, `CODE_REVIEW_PASS`,
+`RULE_REVIEW_PASS`, a technical-closure token or final acceptance.
 `CFinalAccepted=false`.
 
 The protected old worktree remains outside CE inputs at branch

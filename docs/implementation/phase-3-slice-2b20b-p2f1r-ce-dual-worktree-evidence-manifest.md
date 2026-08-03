@@ -1,8 +1,25 @@
 # Phase 3 Slice 2B20B-P2F1R-CE Final Dual-Worktree Evidence Manifest
 
+## Repair Round 2/2 invalidation
+
+- `currentEvidenceStatus`: `INVALIDATED_BY_REPAIR_PENDING_NEW_DUAL_EVIDENCE`
+- `repairSourceBinding`: `COMMIT_CONTAINING_THIS_INVALIDATION`
+- `supersededEvidenceSourceHead`:
+  `34c60205cecad2c4c7885531f4f8805ef1355478`
+- `supersededEvidenceChild`:
+  `030b935862a477a7ac3a66f59933a16c27e1cbf9`
+- `invalidatingFindings`: `CE-FINAL-CODE-F01`, `CE-FINAL-CODE-F02`,
+  `CE-FINAL-CODE-F03`
+- `requiredNextEvidence`: `FRESH_DEFAULT_AND_LF_DUAL_WORKTREE_EVIDENCE`
+
+Everything below this section is retained as an immutable description of the
+superseded evidence run. It is historical evidence only: none of its gates,
+worktree identities, logs or Evidence IDs applies to the repaired tree, and it
+must not be used to infer a current final-review or technical-closure result.
+
 ## Non-self-referential binding
 
-- `manifestStatus`: `FINAL_EVIDENCE_MATERIALIZED_PENDING_INDEPENDENT_FINAL_REVIEW`
+- `manifestStatus`: `SUPERSEDED_HISTORICAL_EVIDENCE`
 - `bindingKind`: `COMMIT_CONTAINING_THIS_MANIFEST`
 - `expectedParent`: `34c60205cecad2c4c7885531f4f8805ef1355478`
 - `H`: `34c60205cecad2c4c7885531f4f8805ef1355478`
@@ -178,7 +195,7 @@ passing file/test counts above.
 
 ## Current disposition
 
-The dual-worktree evidence materialization is complete for `H`, but no final
-review verdict is inferred here. Status is
-`PENDING_FRESH_INDEPENDENT_FINAL_REVIEW`; `CFinalAccepted=false`. Coverage,
-ownership, hosted CI and P2F1R-D remain explicitly deferred.
+The dual-worktree evidence materialization was complete for historical `H`,
+but final Code Review invalidated it before acceptance. Current status is
+`PENDING_NEW_DUAL_EVIDENCE`; `CFinalAccepted=false`. Coverage, ownership,
+hosted CI and P2F1R-D remain explicitly deferred.
