@@ -1,5 +1,7 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
@@ -22,6 +24,189 @@ const healthyAuthority = () => {
 
 const mutableRegistry = (): Record<string, unknown> =>
   structuredClone(APPROVED_C1_DELTA_REGISTRY_V1);
+
+const CATALOG_V2_REPOSITORY_PATH =
+  "docs/architecture/2B20B-P2F1R-C1-generated-structural-schema-catalog-v2.md";
+const CATALOG_V2_EXPECTED_BLOB_OID =
+  "4f9a376e56f19b241d76ce2a75be83b70859ae25";
+const CATALOG_V2_EXPECTED_RAW_SHA256 =
+  "e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6";
+const CATALOG_V2_EXPECTED_RAW_BYTE_LENGTH = 264855;
+const CATALOG_V2_EXPECTED_DEFAULT_CHECKOUT_SHA256 =
+  "7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7";
+const GIT_PLUMBING_MAX_BUFFER_BYTES = 1_048_576;
+const GIT_PLUMBING_TIMEOUT_MS = 30_000;
+const REPOSITORY_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
+const CATALOG_V2_WORKTREE_PATH = fileURLToPath(
+  new URL(CATALOG_V2_REPOSITORY_PATH, new URL("../../../", import.meta.url))
+);
+
+type GitPlumbingFailureCode =
+  | "D0_GIT_HEAD_BLOB_RESOLUTION_FAILED"
+  | "D0_GIT_HEAD_BLOB_PROTOCOL_INVALID"
+  | "D0_GIT_HEAD_BLOB_OID_MISMATCH"
+  | "D0_GIT_BLOB_READ_FAILED"
+  | "D0_GIT_BLOB_LENGTH_MISMATCH"
+  | "D0_GIT_BLOB_SHA256_MISMATCH";
+
+type CheckoutClassification =
+  | "MATCHES_REPOSITORY_BLOB"
+  | "LF_TO_CRLF_CHECKOUT_CONVERSION_ONLY"
+  | "OTHER_CHECKOUT_DIFFERENCE";
+
+const sha256 = (bytes: Uint8Array): string =>
+  createHash("sha256").update(bytes).digest("hex");
+
+const runGitPlumbing = (args: readonly string[]) =>
+  spawnSync("git", [...args], {
+    cwd: REPOSITORY_ROOT,
+    encoding: null,
+    maxBuffer: GIT_PLUMBING_MAX_BUFFER_BYTES,
+    shell: false,
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: GIT_PLUMBING_TIMEOUT_MS,
+    windowsHide: true
+  });
+
+type GitPlumbingResult = ReturnType<typeof runGitPlumbing>;
+
+const gitFailureSummary = (result: GitPlumbingResult): string => {
+  const stderrBytes = Buffer.isBuffer(result.stderr) ? result.stderr.length : 0;
+  const errorCode = (result.error as NodeJS.ErrnoException | undefined)?.code;
+  const errorClass =
+    errorCode === "ETIMEDOUT"
+      ? "timeout"
+      : errorCode === "ENOBUFS"
+        ? "max-buffer"
+        : result.error === undefined
+          ? "none"
+          : "spawn";
+  return [
+    `status=${result.status === null ? "null" : String(result.status)}`,
+    `signal=${result.signal === null ? "absent" : "present"}`,
+    `error=${errorClass}`,
+    `stderr=${stderrBytes === 0 ? "empty" : "present"}`,
+    `stderrBytes=${String(Math.min(stderrBytes, GIT_PLUMBING_MAX_BUFFER_BYTES))}`
+  ].join(";");
+};
+
+const requireGitSuccess = (
+  result: GitPlumbingResult,
+  failureCode: GitPlumbingFailureCode
+): Buffer => {
+  if (
+    result.error !== undefined ||
+    result.signal !== null ||
+    result.status !== 0 ||
+    !Buffer.isBuffer(result.stdout) ||
+    !Buffer.isBuffer(result.stderr) ||
+    result.stderr.length !== 0
+  ) {
+    throw new Error(`${failureCode}: ${gitFailureSummary(result)}`);
+  }
+  return result.stdout;
+};
+
+const isLowerHexByte = (value: number): boolean =>
+  (value >= 0x30 && value <= 0x39) || (value >= 0x61 && value <= 0x66);
+
+const readCatalogV2HeadBlob = (): {
+  readonly oid: string;
+  readonly bytes: Buffer;
+  readonly digest: string;
+} => {
+  const oidStdout = requireGitSuccess(
+    runGitPlumbing([
+      "--no-replace-objects",
+      "rev-parse",
+      "--verify",
+      "--end-of-options",
+      `HEAD:${CATALOG_V2_REPOSITORY_PATH}`
+    ]),
+    "D0_GIT_HEAD_BLOB_RESOLUTION_FAILED"
+  );
+  const hasLfFrame = oidStdout.length === 41 && oidStdout[40] === 0x0a;
+  const hasCrlfFrame =
+    oidStdout.length === 42 && oidStdout[40] === 0x0d && oidStdout[41] === 0x0a;
+  const hasExactOidBytes =
+    (hasLfFrame || hasCrlfFrame) &&
+    oidStdout.subarray(0, 40).every(isLowerHexByte);
+  if (!hasExactOidBytes) {
+    throw new Error("D0_GIT_HEAD_BLOB_PROTOCOL_INVALID");
+  }
+
+  const oid = oidStdout.subarray(0, 40).toString("ascii");
+  if (oid !== CATALOG_V2_EXPECTED_BLOB_OID) {
+    throw new Error("D0_GIT_HEAD_BLOB_OID_MISMATCH");
+  }
+
+  const bytes = requireGitSuccess(
+    runGitPlumbing([
+      "--no-replace-objects",
+      "cat-file",
+      "blob",
+      CATALOG_V2_EXPECTED_BLOB_OID
+    ]),
+    "D0_GIT_BLOB_READ_FAILED"
+  );
+  if (bytes.length !== CATALOG_V2_EXPECTED_RAW_BYTE_LENGTH) {
+    throw new Error("D0_GIT_BLOB_LENGTH_MISMATCH");
+  }
+  const digest = sha256(bytes);
+  if (digest !== CATALOG_V2_EXPECTED_RAW_SHA256) {
+    throw new Error("D0_GIT_BLOB_SHA256_MISMATCH");
+  }
+  return { oid, bytes, digest };
+};
+
+const classifyCheckoutBytes = (
+  repositoryBlob: Buffer,
+  checkoutBytes: Buffer
+): CheckoutClassification => {
+  if (checkoutBytes.equals(repositoryBlob)) {
+    return "MATCHES_REPOSITORY_BLOB";
+  }
+  let checkoutIndex = 0;
+  for (const repositoryByte of repositoryBlob) {
+    if (repositoryByte === 0x0a) {
+      if (
+        checkoutBytes[checkoutIndex] !== 0x0d ||
+        checkoutBytes[checkoutIndex + 1] !== 0x0a
+      ) {
+        return "OTHER_CHECKOUT_DIFFERENCE";
+      }
+      checkoutIndex += 2;
+      continue;
+    }
+    if (checkoutBytes[checkoutIndex] !== repositoryByte) {
+      return "OTHER_CHECKOUT_DIFFERENCE";
+    }
+    checkoutIndex += 1;
+  }
+  return checkoutIndex === checkoutBytes.length
+    ? "LF_TO_CRLF_CHECKOUT_CONVERSION_ONLY"
+    : "OTHER_CHECKOUT_DIFFERENCE";
+};
+
+const lineEndingCensus = (bytes: Buffer) => {
+  let lf = 0;
+  let crlf = 0;
+  for (let index = 0; index < bytes.length; index += 1) {
+    if (bytes[index] === 0x0a) {
+      lf += 1;
+      if (index > 0 && bytes[index - 1] === 0x0d) {
+        crlf += 1;
+      }
+    }
+  }
+  return { lf, crlf, loneLf: lf - crlf };
+};
+
+const hasUtf8Bom = (bytes: Buffer): boolean =>
+  bytes.length >= 3 &&
+  bytes[0] === 0xef &&
+  bytes[1] === 0xbb &&
+  bytes[2] === 0xbf;
 
 describe("Catalog V2 audit projection", () => {
   it("accepts exactly the frozen two-delta, 57-unchanged registry and three supports", () => {
@@ -175,12 +360,56 @@ describe("Catalog V2 audit projection", () => {
   });
 
   it("matches the checked-in frozen generated Catalog V2 path byte-for-byte", () => {
-    const generatedCatalogUrl = new URL(
-      "../../../docs/architecture/2B20B-P2F1R-C1-generated-structural-schema-catalog-v2.md",
-      import.meta.url
+    const repositoryArtifact = readCatalogV2HeadBlob();
+    const generatedBytes = Buffer.from(
+      renderGeneratedStructuralSchemaCatalogV2(healthyAuthority()),
+      "utf8"
     );
-    expect(readFileSync(generatedCatalogUrl, "utf8")).toBe(
-      renderGeneratedStructuralSchemaCatalogV2(healthyAuthority())
+    const checkoutBytes = readFileSync(CATALOG_V2_WORKTREE_PATH);
+
+    expect(repositoryArtifact.oid).toBe(CATALOG_V2_EXPECTED_BLOB_OID);
+    expect(repositoryArtifact.bytes).toHaveLength(CATALOG_V2_EXPECTED_RAW_BYTE_LENGTH);
+    expect(repositoryArtifact.digest).toBe(CATALOG_V2_EXPECTED_RAW_SHA256);
+    expect(lineEndingCensus(repositoryArtifact.bytes)).toEqual({
+      lf: 626,
+      crlf: 0,
+      loneLf: 626
+    });
+    expect(hasUtf8Bom(repositoryArtifact.bytes)).toBe(false);
+
+    expect(generatedBytes).toHaveLength(CATALOG_V2_EXPECTED_RAW_BYTE_LENGTH);
+    expect(sha256(generatedBytes)).toBe(CATALOG_V2_EXPECTED_RAW_SHA256);
+    expect(lineEndingCensus(generatedBytes)).toEqual({
+      lf: 626,
+      crlf: 0,
+      loneLf: 626
+    });
+    expect(hasUtf8Bom(generatedBytes)).toBe(false);
+    expect(generatedBytes.equals(repositoryArtifact.bytes)).toBe(true);
+
+    const checkoutClassification = classifyCheckoutBytes(
+      repositoryArtifact.bytes,
+      checkoutBytes
     );
+    expect(checkoutClassification).not.toBe("OTHER_CHECKOUT_DIFFERENCE");
+    if (checkoutClassification === "MATCHES_REPOSITORY_BLOB") {
+      expect(checkoutBytes).toHaveLength(CATALOG_V2_EXPECTED_RAW_BYTE_LENGTH);
+      expect(sha256(checkoutBytes)).toBe(CATALOG_V2_EXPECTED_RAW_SHA256);
+      expect(lineEndingCensus(checkoutBytes)).toEqual({
+        lf: 626,
+        crlf: 0,
+        loneLf: 626
+      });
+    } else {
+      expect(checkoutBytes).toHaveLength(265481);
+      expect(sha256(checkoutBytes)).toBe(
+        CATALOG_V2_EXPECTED_DEFAULT_CHECKOUT_SHA256
+      );
+      expect(lineEndingCensus(checkoutBytes)).toEqual({
+        lf: 626,
+        crlf: 626,
+        loneLf: 0
+      });
+    }
   });
 });
