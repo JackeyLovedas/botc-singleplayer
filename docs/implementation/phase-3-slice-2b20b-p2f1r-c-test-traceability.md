@@ -96,3 +96,35 @@ The five grouping criteria (`C-C03`, `C-C06`, `C-C09`, `C-C12`, and `C-C15`) own
 - R2 evidence: `[]`
 - production authority claim: `STRUCTURALLY_VALIDATED_DOMAIN_EVENT` only
 - semantic/replay/history/state/hash authority claim: none
+
+## Final evidence binding
+
+This section binds execution evidence only. It adds no criterion, grouping row,
+primary identity, supporting authority or mechanism claim; the frozen census
+remains exactly `33 / 5 / 28` and all 28 active primary bindings above remain
+unchanged.
+
+- `gatesExecutedAt`: `34c60205cecad2c4c7885531f4f8805ef1355478`
+- `evidenceSourceHead`: `34c60205cecad2c4c7885531f4f8805ef1355478`
+- Default Evidence ID: `CE-DEFAULT-34c60205-20260803T140004+0800`
+- LF Evidence ID: `CE-LF-34c60205-20260803T140153+0800`
+- Evidence manifest:
+  `docs/implementation/phase-3-slice-2b20b-p2f1r-ce-dual-worktree-evidence-manifest.md`
+- Manifest binding: non-self-referential docs-only child of the source HEAD;
+  the child did not execute or impersonate the recorded gates.
+- Default worktree: exact source HEAD, clean, Catalog `i/lf w/crlf`, checkout
+  SHA-256 `7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7`.
+- LF worktree: exact source HEAD, clean, Catalog `i/lf w/lf`, checkout SHA-256
+  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
+- Catalog blob OID: `4f9a376e56f19b241d76ce2a75be83b70859ae25`;
+  raw/generated SHA-256:
+  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
+- Both worktrees pass static self-test `12/12`, static real audit `16/16`,
+  validator `28/28`, Catalog `21/21`, domain-core `503/503`, typecheck, lint,
+  and full ordinary `1712/1712`.
+- Production/test/title/census mutation: `0`; source and docs-only-child
+  `packages` trees and relevant test blobs are required to remain identical.
+- `coverageExecuted=false`; `ownershipExecuted=false`;
+  `hostedCIExecuted=false`; `P2F1RDExecuted=false`.
+- Current disposition: `PENDING_FRESH_INDEPENDENT_FINAL_REVIEW`;
+  `CFinalAccepted=false`.
