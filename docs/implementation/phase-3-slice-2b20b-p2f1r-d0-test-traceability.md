@@ -14,7 +14,17 @@
 - `remainingDesignBlockers`: `[]`
 - `ruleEvidence`: `docs/rules/evidence/2B20B-P2F1R-D0.md`
 - `ruleEvidenceSHA256`: `928d645e4f20b5e51b33ecb096f0b052cf41249988e626c9e2af6ee616046edf`
+- `authorityRecoveryCommit`: `b5adf01e0bcdfb4c05eb8ee08460e00c34ccc595`
+- `fixedSourceManifest`: `docs/rules/evidence/2B20B-P2F1R-D0-fixed-source-snapshot-manifest.md`
+- `fixedSourceManifestSHA256`: `1f36f3f8b0261ec3fa71e15dd4dd4c1d2b8d79d3e1d2bec267b29e0e7c7d77e4`
+- `evidenceBindingCorrection`: `docs/architecture/2B20B-P2F1R-D0-final-source-and-dual-worktree-evidence-binding-correction-v1.md`
+- `evidenceBindingCorrectionSHA256`: `3fba716679f208bb5c7ad75e6b04dcf6de473befb28ac0d00243736ff11f250d`
+- `dualWorktreeEvidenceManifest`: `docs/implementation/phase-3-slice-2b20b-p2f1r-d0-dual-worktree-evidence-manifest.md`
+- `dualWorktreeEvidenceManifestSHA256`: `52f4bde2d3c20efe5e345179fa7e0ae6f1852fd8ec2a6ecd4a64a8c2fb85c060`
 - `D0EvidenceRepairRound`: `1/2`
+- `D0EvidenceBindingCorrection`: `1/1`
+- `FinalBindingStatus`: `PENDING_NEW_DUAL_WORKTREE_EVIDENCE`
+- `old4fdEvidenceUsed`: `false`
 - `productionFilesChanged`: `0`
 - `ruleSemanticsChanged`: `false`
 - `roleCoverageChanged`: `false`
@@ -61,12 +71,14 @@ representation is diagnostic only and never supplies canonical equality bytes.
 | `ProductionEntry` | `createFullC1StructuralSchemaAuthority`; `renderGeneratedStructuralSchemaCatalogV2` |
 | `MainAssertion` | Generated canonical UTF-8 bytes equal the frozen raw `HEAD:path` Git blob bytes exactly after fixed OID, length, SHA-256, LF census, and BOM checks. |
 | `FaultMechanism` | Working-tree LF/CRLF materialization cannot substitute for the checked-in repository object; any Git protocol, OID, object, length, digest, or non-checkout byte difference fails closed. |
-| `MechanismMatch` | `NOT_YET_ISSUED_PENDING_DUAL_WORKTREE_GATES` |
+| `MechanismMatch` | `FAIL` |
 
 The only final Governance V1.1 values for `MechanismMatch` are `PASS` or `FAIL`.
-This implementation commit does not issue either value before both required
-clean worktrees complete the same exact-head gates. It does not manufacture a
-`SUP-*` row or a second semantic criterion.
+The current value is `FAIL` because no new dual-worktree execution is bound to
+the commit containing the pending evidence manifest. It remains `FAIL` until a
+direct documentation-only child E of that source commit records both complete
+exact-S worktrees and every frozen gate. No `SUP-*` row or second semantic
+criterion is manufactured.
 
 ## Implemented evidence mechanism
 
@@ -86,8 +98,10 @@ clean worktrees complete the same exact-head gates. It does not manufacture a
   LF-to-CRLF conversion and rejects every other difference.
 - The suite, title, test file, project, and 21-test inventory remain unchanged.
 
-## Focused local evidence
+## Historical focused local evidence — not final binding
 
+- `historicalHead`: `4fd7d880cb5da8034e12da71b58b0ad519e9dec1`
+- `old4fdEvidenceUsed`: `false`
 - `node`: `v24.15.0`
 - `pnpm`: `11.7.0`
 - `core.autocrlf`: `true`, source `C:/Program Files/Git/etc/gitconfig`
@@ -100,11 +114,14 @@ clean worktrees complete the same exact-head gates. It does not manufacture a
 
 ## Pending evidence and authority boundary
 
-The controller has not yet executed the required clean detached default-Windows
-and LF worktrees at the same exact implementation HEAD. Domain-core, typecheck,
-lint, and full ordinary gates in both worktrees therefore remain pending. Hosted
-CI, coverage, ownership, publication, PR, merge, tag, and P2F1R-D closure are
-outside D0 and remain unclaimed.
+The pending dual-worktree manifest is bound by
+`bindingKind=COMMIT_CONTAINING_THIS_MANIFEST`. The controller has not executed
+the required clean detached default-Windows and LF worktrees at that new source
+commit. Focused `21/21`, domain-core `503/503`, typecheck, lint, and full
+ordinary `40 files / 1712 tests` therefore remain pending for final binding.
+Only a direct documentation-only child E may record those actual results.
+Hosted CI, coverage, ownership, publication, PR, merge, tag, and P2F1R-D
+closure remain outside D0 and unclaimed.
 
 No production file, Catalog artifact, C1 authority, event definition, semantic
 validator, replay, batch, snapshot, state, application, role, night order,
