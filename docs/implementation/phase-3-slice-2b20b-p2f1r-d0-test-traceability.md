@@ -20,10 +20,13 @@
 - `evidenceBindingCorrection`: `docs/architecture/2B20B-P2F1R-D0-final-source-and-dual-worktree-evidence-binding-correction-v1.md`
 - `evidenceBindingCorrectionSHA256`: `3fba716679f208bb5c7ad75e6b04dcf6de473befb28ac0d00243736ff11f250d`
 - `dualWorktreeEvidenceManifest`: `docs/implementation/phase-3-slice-2b20b-p2f1r-d0-dual-worktree-evidence-manifest.md`
-- `dualWorktreeEvidenceManifestSHA256`: `52f4bde2d3c20efe5e345179fa7e0ae6f1852fd8ec2a6ecd4a64a8c2fb85c060`
+- `dualWorktreeEvidenceManifestSHA256`: `14a80fa6d063835d41d5b0d65c1c422771d0e46b5b3f88a76e2dbce255f36695`
 - `D0EvidenceRepairRound`: `1/2`
 - `D0EvidenceBindingCorrection`: `1/1`
-- `FinalBindingStatus`: `PENDING_NEW_DUAL_WORKTREE_EVIDENCE`
+- `evidenceExecutionHead`: `f2ec59dbffdfb3235b87e151d892b4986e2ef23b`
+- `defaultEvidenceId`: `D0-DEFAULT-f2ec59db-20260803T123042+0800`
+- `lfEvidenceId`: `D0-LF-f2ec59db-20260803T123217+0800`
+- `FinalBindingStatus`: `FINAL_NEW_DUAL_WORKTREE_EVIDENCE_BOUND`
 - `old4fdEvidenceUsed`: `false`
 - `productionFilesChanged`: `0`
 - `ruleSemanticsChanged`: `false`
@@ -64,6 +67,7 @@ representation is diagnostic only and never supplies canonical equality bytes.
 | `ActualTestFile` | `packages/domain-core/src/domain-event-structural-schema-catalog.test.ts` |
 | `ActualAncestorPath` | `Catalog V2 audit projection` |
 | `ActualTestTitle` | `matches the checked-in frozen generated Catalog V2 path byte-for-byte` |
+| `CanonicalVitestIdentity` | `domain-core :: packages/domain-core/src/domain-event-structural-schema-catalog.test.ts :: Catalog V2 audit projection :: matches the checked-in frozen generated Catalog V2 path byte-for-byte` |
 | `ActualPrimaryLayer` | `PURE_POLICY_SEAM` |
 | `ActualReachability` | `R4_FUTURE_HYPOTHETICAL_STATE` |
 | `ActualTrust` | `T3_MODULE_PRIVATE_PURE_CORE` |
@@ -71,14 +75,18 @@ representation is diagnostic only and never supplies canonical equality bytes.
 | `ProductionEntry` | `createFullC1StructuralSchemaAuthority`; `renderGeneratedStructuralSchemaCatalogV2` |
 | `MainAssertion` | Generated canonical UTF-8 bytes equal the frozen raw `HEAD:path` Git blob bytes exactly after fixed OID, length, SHA-256, LF census, and BOM checks. |
 | `FaultMechanism` | Working-tree LF/CRLF materialization cannot substitute for the checked-in repository object; any Git protocol, OID, object, length, digest, or non-checkout byte difference fails closed. |
-| `MechanismMatch` | `FAIL` |
+| `MechanismMatch` | `PASS` |
+| `duplicateIdentityCount` | `0` |
+| `borrowedIdentityCount` | `0` |
+| `missingIdentityCount` | `0` |
+| `invalidIdentityCount` | `0` |
+| `invalidSupportingAuthorityCount` | `0` |
 
 The only final Governance V1.1 values for `MechanismMatch` are `PASS` or `FAIL`.
-The current value is `FAIL` because no new dual-worktree execution is bound to
-the commit containing the pending evidence manifest. It remains `FAIL` until a
-direct documentation-only child E of that source commit records both complete
-exact-S worktrees and every frozen gate. No `SUP-*` row or second semantic
-criterion is manufactured.
+The current value is `PASS` because the final manifest binds both clean
+worktrees and all frozen gates to exact source commit `f2ec59db...`. E is only
+the direct documentation child carrying that manifest and does not claim its
+own commit was executed. No `SUP-*` row or second criterion is manufactured.
 
 ## Implemented evidence mechanism
 
@@ -112,16 +120,17 @@ criterion is manufactured.
 - tests: `21/21 passed`
 - observed checkout classification: `LF_TO_CRLF_CHECKOUT_CONVERSION_ONLY`
 
-## Pending evidence and authority boundary
+## Final evidence binding and authority boundary
 
-The pending dual-worktree manifest is bound by
-`bindingKind=COMMIT_CONTAINING_THIS_MANIFEST`. The controller has not executed
-the required clean detached default-Windows and LF worktrees at that new source
-commit. Focused `21/21`, domain-core `503/503`, typecheck, lint, and full
-ordinary `40 files / 1712 tests` therefore remain pending for final binding.
-Only a direct documentation-only child E may record those actual results.
-Hosted CI, coverage, ownership, publication, PR, merge, tag, and P2F1R-D
-closure remain outside D0 and unclaimed.
+The final manifest records default-Windows Evidence ID
+`D0-DEFAULT-f2ec59db-20260803T123042+0800` and LF Evidence ID
+`D0-LF-f2ec59db-20260803T123217+0800`. At exact S, both remained clean and
+passed focused `1/21`, domain-core `20/503`, typecheck, lint, and full ordinary
+`40/1712` gates with exit `0`; Catalog raw/generated and source identities
+matched. The manifest discloses but excludes two earlier junction preflights
+that exited before dependency checking and ran no gate. Hosted CI, coverage,
+ownership, publication, PR, merge, tag, and P2F1R-D closure remain outside D0
+and unclaimed.
 
 No production file, Catalog artifact, C1 authority, event definition, semantic
 validator, replay, batch, snapshot, state, application, role, night order,

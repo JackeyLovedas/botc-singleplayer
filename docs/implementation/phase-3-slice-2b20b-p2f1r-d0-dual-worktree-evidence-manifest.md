@@ -1,141 +1,108 @@
-# Phase 3 Slice 2B20B-P2F1R-D0 dual-worktree evidence manifest
+# Phase 3 Slice 2B20B-P2F1R-D0 final dual-worktree evidence manifest
 
-## Binding metadata
+## Binding
 
-- `sliceId`: `2B20B-P2F1R-D0`
-- `manifestStatus`: `PENDING_NEW_DUAL_WORKTREE_EVIDENCE`
+- `manifestStatus`: `FINAL_DUAL_WORKTREE_EVIDENCE_BOUND`
 - `bindingKind`: `COMMIT_CONTAINING_THIS_MANIFEST`
-- `expectedParent`: `b5adf01e0bcdfb4c05eb8ee08460e00c34ccc595`
+- `expectedParent`: `f2ec59dbffdfb3235b87e151d892b4986e2ef23b`
+- `gatesExecutedAt`: `f2ec59dbffdfb3235b87e151d892b4986e2ef23b`
+- `evidenceChildExecutedGates`: `false`
+- `evidenceChildDoesNotImpersonateExecutedHead`: `true`
+- `old4fdEvidenceUsed`: `false`
 - `sourceManifest`: `docs/rules/evidence/2B20B-P2F1R-D0-fixed-source-snapshot-manifest.md`
 - `sourceManifestSHA256`: `1f36f3f8b0261ec3fa71e15dd4dd4c1d2b8d79d3e1d2bec267b29e0e7c7d77e4`
 - `bindingCorrection`: `docs/architecture/2B20B-P2F1R-D0-final-source-and-dual-worktree-evidence-binding-correction-v1.md`
 - `bindingCorrectionSHA256`: `3fba716679f208bb5c7ad75e6b04dcf6de473befb28ac0d00243736ff11f250d`
-- `traceability`: `docs/implementation/phase-3-slice-2b20b-p2f1r-d0-test-traceability.md`
-- `old4fdEvidenceUsed`: `false`
-- `executionPerformedForThisManifest`: `false`
 - `SupportingAuthorityId`: `NONE`
 
-This is a pending template in source commit `S`. It records no new execution
-result. The earlier dual-worktree records for `4fd7d880...` are historical and
-must not be copied into final binding fields.
+E is the commit containing this manifest and must be the direct docs-only child
+of S. All gates were executed at S; E only binds their evidence.
 
-## Commit topology contract
+## Frozen source identities
 
-- `S`: resolve the commit containing this manifest after creation.
-- `SParentRequired`: `b5adf01e0bcdfb4c05eb8ee08460e00c34ccc595`.
-- `ERequiredParent`: exact resolved `S`.
-- `ERequiredTopology`: `DIRECT_DOCS_ONLY_CHILD_OF_S`.
-- `EAllowedPurpose`: bind actual clean dual-worktree execution at exact `S` and
-  change traceability only if the recorded mechanism matches.
-- `EForbiddenChanges`: production, tests, Catalog artifact, rules, role matrix,
-  workflow, dependency, package scripts, coverage, ownership, Git settings, or
-  any behavior/design expansion.
-
-## Frozen Catalog and production identities
-
-| Item | Frozen value |
-|---|---|
-| Catalog repository path | `docs/architecture/2B20B-P2F1R-C1-generated-structural-schema-catalog-v2.md` |
-| Catalog Git blob OID | `4f9a376e56f19b241d76ce2a75be83b70859ae25` |
-| Catalog raw blob bytes | `264855` |
-| Catalog raw blob SHA-256 | `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6` |
-| Generated Catalog bytes | `264855` |
-| Generated Catalog SHA-256 | `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6` |
-| Catalog raw line endings | `626 LF`, `0 CR`, no BOM |
-| Catalog runtime authority | `false` |
-| Structural AST blob OID | `477d3d787c9c4ca671547914b7349f19dd21e85c` |
-| Catalog renderer blob OID | `fe610239ed0a06202925ceabbeb980c37ba6d9d3` |
-| Canonical event blob OID | `ea28ae4b665a69766d4aa011776fc3580977c63d` |
-| Structural validator blob OID | `363bd8db4e3ca296bbe26df9cf7d14737056de70` |
-| Domain-core index blob OID | `e6e6878254d9809fb402c22cbc94e72c5172f774` |
-| Canonical event Git-blob SHA-256 | `41020fbbc0cc23194c565c2b0ace5ce907942e86204e8373b29449a94b07a5b3` |
-| Structural validator Git-blob SHA-256 | `a7d7cd0294c877317ba35957f957859fda586c459aeec40a361fb8853d1531e6` |
-| Domain-core index Git-blob SHA-256 | `ac142d2c83a77c73aae244dc2bd3d6da9e7f01ca923fff4d22139ed10c024353` |
-
-## Frozen commands and expected counts
-
-Run each command independently in both clean detached worktrees at exact `S`:
-
-1. Focused Catalog:
-   `corepack pnpm exec vitest run --workspace vitest.workspace.ts packages/domain-core/src/domain-event-structural-schema-catalog.test.ts --reporter=dot`
-2. Domain-core project:
-   `corepack pnpm exec vitest run --workspace vitest.workspace.ts --project domain-core --reporter=dot`
-3. Typecheck: `corepack pnpm typecheck`
-4. Lint: `corepack pnpm lint`
-5. Full ordinary suite: `corepack pnpm test`
-
-| Gate | Frozen expected result | Actual at S |
+| Identity | S value | E-required value |
 |---|---|---|
-| Focused Catalog | `21/21 PASS` | `PENDING_NOT_EXECUTED` |
-| Domain-core project | `503/503 PASS` | `PENDING_NOT_EXECUTED` |
-| Typecheck | `PASS` | `PENDING_NOT_EXECUTED` |
-| Lint | `PASS` | `PENDING_NOT_EXECUTED` |
-| Full ordinary suite | `40 files / 1712 tests PASS` | `PENDING_NOT_EXECUTED` |
+| Source tree at execution | `d20ac1e07148d4d0160ee7b7771a3ef07ec25277` | Not reused as E tree |
+| `packages` tree | `104eec6b361650ded710ab9fc623889640bbceca` | `104eec6b361650ded710ab9fc623889640bbceca` |
+| Catalog test blob | `5047e1745799c7fbbb5b35c7d2642e17ae394fe9` | `5047e1745799c7fbbb5b35c7d2642e17ae394fe9` |
+| Catalog artifact blob | `4f9a376e56f19b241d76ce2a75be83b70859ae25` | `4f9a376e56f19b241d76ce2a75be83b70859ae25` |
 
-Coverage, ownership, hosted CI, workflow reruns, and P2F1R-D gates are outside
-this manifest and must not be run or claimed for S.
+- Catalog raw/generated bytes: `264855`.
+- Catalog raw/generated SHA-256:
+  `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`.
+- Catalog runtime authority: `false`.
+- Git: `git version 2.54.0.windows.1`.
+- Node: `v24.15.0`.
+- pnpm: `11.7.0`.
 
-## Default-Windows worktree record — pending
+## Required commands
 
-- `worktreeKind`: `DEFAULT_WINDOWS`
-- `creationPolicy`: ordinary clean detached worktree; no configuration mutation
-- `requiredExactHead`: `RESOLVED_S_COMMIT`
-- `beforeStatus`: `PENDING`
-- `afterStatus`: `PENDING`
-- `beforeHead`: `PENDING`
-- `afterHead`: `PENDING`
-- `nodeVersion`: `PENDING`
-- `pnpmVersion`: `PENDING`
-- `coreAutocrlfValueAndSource`: `PENDING`
-- `gitLsFilesEol`: expected `i/lf w/crlf`; actual `PENDING`
-- `checkoutBytes`: expected `265481`; actual `PENDING`
-- `checkoutSHA256`: expected `7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7`; actual `PENDING`
-- `checkoutClassification`: expected `LF_TO_CRLF_CHECKOUT_CONVERSION_ONLY`; actual `PENDING`
-- `catalogBlobOID`: expected `4f9a376e56f19b241d76ce2a75be83b70859ae25`; actual `PENDING`
-- `catalogRawSHA256`: expected `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`; actual `PENDING`
-- `generatedCatalogSHA256`: expected `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`; actual `PENDING`
-- `focusedResult`: `PENDING`
-- `domainCoreResult`: `PENDING`
-- `typecheckResult`: `PENDING`
-- `lintResult`: `PENDING`
-- `fullOrdinaryResult`: `PENDING`
-- `frozenProductionIdentityMatch`: `PENDING`
+1. `corepack pnpm exec vitest run --workspace vitest.workspace.ts packages/domain-core/src/domain-event-structural-schema-catalog.test.ts --reporter=dot`
+2. `corepack pnpm exec vitest run --workspace vitest.workspace.ts --project domain-core --reporter=dot`
+3. `corepack pnpm typecheck`
+4. `corepack pnpm lint`
+5. `corepack pnpm test`
 
-## LF worktree record — pending
+## Default-Windows final evidence
 
-- `worktreeKind`: `LF`
-- `creationPolicy`: `git -c core.autocrlf=false -c core.eol=lf worktree add --detach <path> <resolved-S>`; command-scoped only
-- `requiredExactHead`: `RESOLVED_S_COMMIT`
-- `beforeStatus`: `PENDING`
-- `afterStatus`: `PENDING`
-- `beforeHead`: `PENDING`
-- `afterHead`: `PENDING`
-- `nodeVersion`: `PENDING`
-- `pnpmVersion`: `PENDING`
-- `coreAutocrlfValueAndSource`: `PENDING`
-- `gitLsFilesEol`: expected `i/lf w/lf`; actual `PENDING`
-- `checkoutBytes`: expected `264855`; actual `PENDING`
-- `checkoutSHA256`: expected `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`; actual `PENDING`
-- `checkoutClassification`: expected `MATCHES_REPOSITORY_BLOB`; actual `PENDING`
-- `catalogBlobOID`: expected `4f9a376e56f19b241d76ce2a75be83b70859ae25`; actual `PENDING`
-- `catalogRawSHA256`: expected `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`; actual `PENDING`
-- `generatedCatalogSHA256`: expected `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`; actual `PENDING`
-- `focusedResult`: `PENDING`
-- `domainCoreResult`: `PENDING`
-- `typecheckResult`: `PENDING`
-- `lintResult`: `PENDING`
-- `fullOrdinaryResult`: `PENDING`
-- `frozenProductionIdentityMatch`: `PENDING`
+- `EvidenceId`: `D0-DEFAULT-f2ec59db-20260803T123042+0800`
+- `worktree`: `C:\Users\wjl\AppData\Local\Temp\botc-d0-final2-default-20260803-123011`
+- before/after HEAD: `f2ec59dbffdfb3235b87e151d892b4986e2ef23b`.
+- before/after porcelain count: `0 / 0`.
+- effective `core.autocrlf`: global `true` from
+  `C:/Program Files/Git/etc/gitconfig`.
+- `git ls-files --eol`: `i/lf w/crlf`.
+- checkout: `265481` bytes;
+  SHA-256 `7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7`;
+  `626` CRLF pairs; `LF_TO_CRLF_CHECKOUT_CONVERSION_ONLY`.
+- Catalog blob/raw/generated identities: exact frozen match.
 
-## Final binding state
+| Gate | Result | Start | End | Exit | Log SHA-256 |
+|---|---|---|---|---:|---|
+| Focused | `1 file / 21 tests PASS` | `2026-08-03T12:30:42.5180990+08:00` | `2026-08-03T12:30:45.6352227+08:00` | 0 | `1d2a9641e5d5dac138150a9a3f8c7e177e0c6b2a154a200de946b01f16d17332` |
+| Domain | `20 files / 503 tests PASS` | `2026-08-03T12:30:45.7157723+08:00` | `2026-08-03T12:30:50.3980957+08:00` | 0 | `9369fd8286c6295031e31bd122a9ffddfac030f0aaba166758965fe60e47a99a` |
+| Typecheck | `PASS` | `2026-08-03T12:30:50.3990957+08:00` | `2026-08-03T12:30:56.3009012+08:00` | 0 | `4acfc24aabe10669f6610778f993f7a9df8dc3de59e0dfc0583eba5900127bd9` |
+| Lint | `PASS` | `2026-08-03T12:30:56.3019019+08:00` | `2026-08-03T12:31:10.3269962+08:00` | 0 | `e9106d14847d8521206e417196fd81a2ed46261acb2f78fe3e5802363742075f` |
+| Ordinary | `40 files / 1712 tests PASS` | `2026-08-03T12:31:10.3279960+08:00` | `2026-08-03T12:32:05.2122763+08:00` | 0 | `438cc71bf82347b38173f56c501975a9b1b469fb42a1f123f06ec0bf930d976a` |
 
-- `allRequiredFieldsComplete`: `false`
-- `bothWorktreesExactSAndClean`: `PENDING`
-- `allCommandsPass`: `PENDING`
-- `catalogAndProductionIdentitiesMatch`: `PENDING`
-- `MechanismMatchCandidate`: `FAIL`
-- `FinalBindingStatus`: `PENDING_NEW_DUAL_WORKTREE_EVIDENCE`
+## LF final evidence
 
-No field in this template is evidence that execution occurred. Only E, as the
-direct documentation-only child of S, may replace pending actual fields with
-observed results and rebind traceability.
+- `EvidenceId`: `D0-LF-f2ec59db-20260803T123217+0800`
+- `worktree`: `C:\Users\wjl\AppData\Local\Temp\botc-d0-final2-lf-20260803-123011`
+- creation override: command-scoped `core.autocrlf=false`, `core.eol=lf`.
+- before/after HEAD: `f2ec59dbffdfb3235b87e151d892b4986e2ef23b`.
+- before/after porcelain count: `0 / 0`.
+- base global `core.autocrlf`: `true`; checkout override as above.
+- `git ls-files --eol`: `i/lf w/lf`.
+- checkout: `264855` bytes;
+  SHA-256 `e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6`;
+  `626` LF and `0` CRLF; `MATCHES_REPOSITORY_BLOB`.
+- Catalog blob/raw/generated identities: exact frozen match.
+
+| Gate | Result | Start | End | Exit | Log SHA-256 |
+|---|---|---|---|---:|---|
+| Focused | `1 file / 21 tests PASS` | `2026-08-03T12:32:17.8809062+08:00` | `2026-08-03T12:32:20.5712772+08:00` | 0 | `71e4506558893b8ad9d34ee6243c2dd4f98aaa702548412ca5041374616a24c7` |
+| Domain | `20 files / 503 tests PASS` | `2026-08-03T12:32:20.6525553+08:00` | `2026-08-03T12:32:25.0866403+08:00` | 0 | `f224f00e4688f1efab0f7ca75d6bb14ee6c47e1c985371e31d9ef88976be990a` |
+| Typecheck | `PASS` | `2026-08-03T12:32:25.0876408+08:00` | `2026-08-03T12:32:30.9205131+08:00` | 0 | `39b31d13c7f502e0370d9c883ab4692522453f07c30faf69b62efbe49f4edd49` |
+| Lint | `PASS` | `2026-08-03T12:32:30.9220193+08:00` | `2026-08-03T12:32:44.7069704+08:00` | 0 | `c5df540a4303d72559a45f5f918c25bc16881c49b3c5ed2366d7d4ff355fbe91` |
+| Ordinary | `40 files / 1712 tests PASS` | `2026-08-03T12:32:44.7089708+08:00` | `2026-08-03T12:33:40.5411957+08:00` | 0 | `4205588a396587ec8c1f8dc465e2afc837bdd0ceb9e11cba905dfd006f54c61d` |
+
+## Non-final preflight disclosure
+
+Before these final Evidence IDs, two separate junction-based worktree
+preflights each exited `1` before the pnpm dependency check. Neither entered
+tests, typecheck, or lint. They remain disclosed failures, are excluded from
+the PASS Evidence IDs, and supply no final authority.
+
+## Final result
+
+- `bothWorktreesExactSAndClean`: `PASS`
+- `allCommandsPass`: `PASS`
+- `catalogAndSourceIdentitiesMatch`: `PASS`
+- `duplicateIdentityCount`: `0`
+- `borrowedIdentityCount`: `0`
+- `missingIdentityCount`: `0`
+- `invalidIdentityCount`: `0`
+- `invalidSupportingAuthorityCount`: `0`
+- `MechanismMatchCandidate`: `PASS`
+- `FinalBindingStatus`: `FINAL_NEW_DUAL_WORKTREE_EVIDENCE_BOUND`
