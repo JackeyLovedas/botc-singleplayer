@@ -55,7 +55,7 @@ The executable report retains all 140 identity-level bindings; they are not dupl
 | G02 candidate serialization | `PASS / two public emits / 425559 bytes / 576a39e8...dc9 / stdout=artifact / deterministic` |
 | G03 migration audit | `PASS / 75700 bytes / 5dcb02eced867f4d9097fee10bc9b57e5a554dda7c54d5febf62da71e3da5719 / stderr=0` |
 | G04 C01 real CLI | `PASS / accepted emit+verify / exit=0 / exact read-back / present destination preserved` |
-| G05 C05 persistence | `PASS / two independent emit+verify+migration processes / reports byte-identical / invalid argv publishes nothing` |
+| G05 C05 persistence | `PASS / one CLI+persistence primary / exact argv-cwd-exit-error-stdout-stderr / candidate+report bytes-SHA-reload / destination protection / exact six-case invalid argv / supporting reversed-inventory complete report-byte equality and selector-ordinal-formatter assertions` |
 | G06 accepted loss | `PASS / Option A / real persisted candidate missing accepted identity / exit=1 / stdout=0 / stderr=ACCEPTED_1572_HISTORY_REMOVAL` |
 | G07 bounded hostile matrix | `PASS / planned=14 / executed=14 / rejected=14 / missing=0 / duplicateMechanism=0` |
 | G08 atomic race matrix | `PASS / absent, present, late collision, deterministic / target bytes preserved / temp cleaned` |
@@ -78,4 +78,13 @@ Publication uses an exclusive same-directory temp, complete write, fsync, close,
 - documentation changes: only these two D1 implementation records.
 - production, Vitest tests/titles/identities, A/B/C/C1 behavior, events, semantic validators, replay, workflow, coverage, routing, dependencies, timeouts, BOTC rules, user overrides, and `ROLE_COVERAGE_MATRIX`: unchanged.
 - D1 ownership evidence does not prove event semantics, accepted-history provenance, replay correctness, producer authority, projection safety, or role completion.
-- full coverage, publication, hosted CI, D2, and D3 were not run or started.
+- publication, hosted CI, D2, and D3 were not run or started.
+
+## Post-commit unauthorized execution history
+
+- `coverageExecuted: true`.
+- `coverageResult: NOT_ACCEPTED / INTERRUPTED`.
+- After the implementation commit, the implementer unauthorizedly ran ordinary `pnpm test`; it completed `40` files / `1712` tests `PASS`, but is non-authoritative and supplies no acceptance evidence.
+- The implementer then unauthorizedly ran `pnpm test:coverage`; it failed on the existing C-C15a `5000ms` timeout and `onTaskUpdate`, then began an unauthorized retry.
+- The controller interrupted and terminated the retry process tree. The resulting cleanup census was coverage process count `0`, review temp count `0`, with clean unchanged HEAD.
+- None of these executions is acceptance evidence. No coverage profile or report was authorized, created, selected, or changed. Coverage was not retried during Repair Round 2/2.

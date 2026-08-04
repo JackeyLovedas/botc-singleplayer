@@ -37,7 +37,7 @@ import {
   candidateBytes,
   canonicalizeStructuredVitestIdentities,
   authenticateAcceptedContractRegistryOrder,
-  selectOwnershipBaseline,
+  ordinalCompare, selectOwnershipBaseline,
   sha256CanonicalLines,
   validateAcceptedAuthoritySupersessionRegistry,
   validateAcceptedAuthoritySupersessions,
@@ -3487,12 +3487,13 @@ async function runCompleteSelfTest() {
     });
   const d1Path = (name) => path.join(tmpdir(), `botc-d1-${process.pid}-${name}.json`);
   const removeD1Paths = (paths) => paths.forEach((file) => { if (existsSync(file)) unlinkSync(file); });
-  const runD1Cli = (argv) => spawnSync(process.execPath, [path.resolve(process.argv[1]), ...argv], {
-    cwd: process.cwd(), encoding: null, maxBuffer: 2 * 1024 * 1024
-  });
-  const assertCli = (result, status, stderr = "") => {
+  const runD1Cli = (argv) => Object.assign(spawnSync(process.execPath, [path.resolve(process.argv[1]), ...argv],
+    { cwd: process.cwd(), encoding: null, maxBuffer: 2 * 1024 * 1024 }),
+  { d1Argv: [...argv], d1Cwd: process.cwd() });
+  const assertCli = (result, status, stderr = "", expectedArgv = result.d1Argv) => {
     if (result.status !== status || result.error !== undefined ||
-        result.stderr.toString("utf8") !== stderr) throw new Error("D1 public CLI result mismatch");
+        result.stderr.toString("utf8") !== stderr || result.d1Cwd !== process.cwd() ||
+        result.d1Argv.join("\0") !== expectedArgv.join("\0")) throw new Error("D1 public CLI result mismatch");
   };
   const emitArgs = (version, output) => ["--emit-candidate-baseline", "2B20A", "--workspace", "vitest.workspace.ts", "--baseline-version", version, "--output", output];
   const verifyArgs = (version, candidate) => ["--verify-candidate-baseline", "2B20A", "--workspace", "vitest.workspace.ts", "--baseline-version", version, "--candidate", candidate];
@@ -3632,26 +3633,26 @@ async function runCompleteSelfTest() {
     const first = d1Path("candidate-a"); const second = d1Path("candidate-b");
     const reportPath = d1Path("report"); const invalidPath = d1Path("invalid");
     const latePath = d1Path("late"); removeD1Paths([first, second, reportPath, invalidPath, latePath]);
-    const firstEmit = runD1Cli(emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, first));
-    const secondEmit = runD1Cli(emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, second));
-    assertCli(firstEmit, 0); assertCli(secondEmit, 0);
+    const firstArgv = emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, first); const secondArgv = emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, second);
+    const firstEmit = runD1Cli(firstArgv); const secondEmit = runD1Cli(secondArgv); assertCli(firstEmit, 0, "", firstArgv); assertCli(secondEmit, 0, "", secondArgv);
     const firstBytes = readFileSync(first); const secondBytes = readFileSync(second);
-    const verified = runD1Cli(verifyArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, first));
-    assertCli(verified, 0);
-    const forward = runD1Cli(migrationArgs(first)); const repeated = runD1Cli(migrationArgs(second));
-    assertCli(forward, 0); assertCli(repeated, 0); validateMigrationReportBytes(forward.stdout);
+    const verifyArgv = verifyArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, first); const verified = runD1Cli(verifyArgv); assertCli(verified, 0, "", verifyArgv);
+    const forwardArgv = migrationArgs(first); const repeatedArgv = migrationArgs(second); const forward = runD1Cli(forwardArgv); const repeated = runD1Cli(repeatedArgv); assertCli(forward, 0, "", forwardArgv);
+    assertCli(repeated, 0, "", repeatedArgv); validateMigrationReportBytes(forward.stdout);
     publishCandidateNoReplace(reportPath, forward.stdout);
     if (!firstBytes.equals(secondBytes) || !firstEmit.stdout.equals(firstBytes) ||
         !secondEmit.stdout.equals(secondBytes) || !forward.stdout.equals(repeated.stdout) ||
-        !readFileSync(reportPath).equals(forward.stdout) ||
+        !readFileSync(reportPath).equals(forward.stdout) || firstBytes.length !== 425559 || forward.stdout.length !== 75700 || createHash("sha256").update(firstBytes).digest("hex") !== "576a39e85d372b383aa5e24ebe70c3fdbfaa516a0927c07d161b620e7ec29dc9" || createHash("sha256").update(forward.stdout).digest("hex") !== "5dcb02eced867f4d9097fee10bc9b57e5a554dda7c54d5febf62da71e3da5719" ||
         verified.stdout.toString("utf8") !== "CANDIDATE_BASELINE_VERIFIED 2B20A CANDIDATE_1712_D1_V1\n") {
       throw new Error("D1 persisted CLI determinism mismatch");
     }
-    const invalids = [emitArgs("latest", invalidPath), emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, invalidPath).slice(0, -1),
-      [...emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, invalidPath), "trailing"],
-      emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, invalidPath).map((value, index) => index === 4 ? "--output" : value)];
-    for (const argv of invalids) { const result = runD1Cli(argv); if (result.status !== 1 || result.stdout.length !== 0 ||
-        existsSync(invalidPath)) throw new Error("invalid CLI published an artifact"); }
+    const reversedReport = candidateBytes(auditOwnershipBaselineMigration(process.cwd(), candidateInventory().reverse())); validateMigrationReportBytes(reversedReport); const acceptedSelection = selectOwnershipBaseline(ACCEPTED_OWNERSHIP_BASELINE_VERSION); const candidateSelection = selectOwnershipBaseline(CANDIDATE_OWNERSHIP_BASELINE_VERSION);
+    if (!reversedReport.equals(forward.stdout) || acceptedSelection.version !== ACCEPTED_OWNERSHIP_BASELINE_VERSION || candidateSelection.version !== CANDIDATE_OWNERSHIP_BASELINE_VERSION || acceptedSelection.acceptanceStatus !== "ACCEPTED" || candidateSelection.acceptanceStatus !== "UNACCEPTED_CANDIDATE" ||
+        ["b", "a", "a"].sort(ordinalCompare).join(",") !== "a,a,b") throw new Error("D1 C05 supporting policy mismatch");
+    const exactEmit = emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, invalidPath); const invalids = [[emitArgs("latest", invalidPath), "OWNERSHIP_BASELINE_VERSION_INVALID\n"], [[...exactEmit.slice(0, 4), ...exactEmit.slice(6)], "INVALID_CANDIDATE_ARGUMENTS\n"],
+      [[...exactEmit, "--baseline-version", CANDIDATE_OWNERSHIP_BASELINE_VERSION], "INVALID_CANDIDATE_ARGUMENTS\n"], [[...exactEmit.slice(0, 4), ...exactEmit.slice(6), ...exactEmit.slice(4, 6)], "INVALID_CANDIDATE_ARGUMENTS\n"],
+      [[...exactEmit, "trailing"], "INVALID_CANDIDATE_ARGUMENTS\n"], [exactEmit.map((value, index) => index === 4 ? "--output" : value), "INVALID_CANDIDATE_ARGUMENTS\n"]];
+    for (const [argv, stderr] of invalids) { const result = runD1Cli(argv); assertCli(result, 1, stderr, argv); if (result.stdout.length !== 0 || existsSync(invalidPath)) throw new Error("invalid CLI published an artifact"); }
     const collisionBytes = Buffer.from("other-process-target\n");
     try { publishCandidateNoReplace(latePath, firstBytes, (source, target) => {
       writeFileSync(target, collisionBytes); linkSync(source, target);

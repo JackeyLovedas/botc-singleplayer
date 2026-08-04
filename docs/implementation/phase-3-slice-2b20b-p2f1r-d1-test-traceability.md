@@ -118,14 +118,14 @@
 | `ActualTrust` | `T1 EXTERNAL_OR_PERSISTED_BOUNDARY` |
 | `SupportingAuthorityId` | `SUP-2B20BP2F1RD1-002` |
 | `MechanismMatch` | `PASS` |
-| Actual main assertion / entry / fault | Physical primary `scripts/verify-vitest-ownership-contracts.mjs :: 42 D1 C05 explicit version dispatch and deterministic closed report` runs two independent candidate emit child processes, public candidate verify, two migration child processes, and rejected argv processes. It persists/read-backs candidate/report bytes in OS temp, compares complete bytes, asserts exit/stdout/stderr, proves present and late destinations are preserved, and leaves no temp artifact. Pure parser/selector/reversed-input checks are supporting-only. |
+| Actual main assertion / entry / fault | The sole physical primary is `scripts/verify-vitest-ownership-contracts.mjs :: 42 D1 C05 explicit version dispatch and deterministic closed report`. Its primary assertions are only the real CLI and persistence boundary: two exact candidate-emit argv vectors, one exact verify vector, two exact migration vectors, exact cwd, exit, no process error, stdout/stderr, persisted candidate/report byte counts and SHA-256 values, reload equality, absent invalid destinations, and present/late destination preservation with temp cleanup. Missing, duplicate, reordered, trailing, malformed, and unknown selector argv each assert their exact stable stderr. Reversed inventory, selector, ordinal comparator, and formatter assertions are supporting-only under `SUP-2B20BP2F1RD1-002`; they are not a second primary. |
 
 ## Supporting authorities
 
 | SupportingAuthorityId | Producer | SourceTestOrFixture | AuthorityStatus | UsedByCriteria | MutationDisposition |
 |---|---|---|---|---|---|
 | `SUP-2B20BP2F1RD1-001` | D1 verifier self-test | Pure selector and accepted-builder assertions inside check 38 | `ACCEPTED` | `D1-C01` | `NONE` |
-| `SUP-2B20BP2F1RD1-002` | D1 verifier self-test | Pure selector, ordinal ordering, and deterministic formatter assertions inside check 42 | `ACCEPTED` | `D1-C05` | `NONE` |
+| `SUP-2B20BP2F1RD1-002` | D1 verifier self-test | Pure exact two-selector dispatch, ordinal-comparator ordering, deterministic `candidateBytes` report formatting, and complete report-byte equality after reversed inventory inside check 42 | `ACCEPTED` | `D1-C05` | `NONE` |
 
 ## Census
 
@@ -138,6 +138,6 @@
 ## Real primary symbols and process boundary
 
 - C01 symbol chain: `runCompleteSelfTest -> runD1Cli -> child process entry -> parseCandidateArguments -> runCandidateCommand -> executeCandidateLifecycle -> createVitest -> collectSemanticInventory -> validatePersistedCandidate -> publishCandidateNoReplace`.
-- C05 symbol chain: the same public entry plus `validateMigrationReportBytes`; no internal function-only path is reported as primary.
+- C05 primary symbol chain: `runCompleteSelfTest -> runD1Cli -> child process entry -> parseCandidateArguments -> runCandidateCommand -> executeCandidateLifecycle -> createVitest -> collectSemanticInventory -> validatePersistedCandidate/validateMigrationReportBytes`, plus persisted publication/reload. `SUP-2B20BP2F1RD1-002` separately exercises `selectOwnershipBaseline`, `ordinalCompare`, `auditOwnershipBaselineMigration`, and `candidateBytes`; none is reported as primary.
 - C01 and C05 each have one distinct physical identity: exact file plus exact check title above. C02/C03/C04 retain their distinct checks 39/40/41; no physical primary is shared.
 - Candidate/report identity serialization remains ordinal and deterministic. The separately authenticated raw registry order is historical report data, not an ordering input for canonical identities or inventory hashes.
