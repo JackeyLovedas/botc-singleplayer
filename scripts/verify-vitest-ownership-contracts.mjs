@@ -23,14 +23,18 @@ import { URL } from "node:url";
 import { TextDecoder, types as utilTypes } from "node:util";
 import { createVitest } from "vitest/node";
 import {
+  ACCEPTED_OWNERSHIP_BASELINE_VERSION,
   ACCEPTED_AUTHORITY_SUPERSESSIONS,
   ACCEPTED_CONTRACT_BASELINES,
+  CANDIDATE_OWNERSHIP_BASELINE_VERSION,
   IDENTITY_ENCODING_VERSION,
   OwnershipContractError,
+  auditOwnershipBaselineMigration,
   auditOwnershipContracts,
-  build2B20ACandidate,
+  buildOwnershipBaselineCandidate,
   candidateBytes,
   canonicalizeStructuredVitestIdentities,
+  selectOwnershipBaseline,
   sha256CanonicalLines,
   validateAcceptedAuthoritySupersessionRegistry,
   validateAcceptedAuthoritySupersessions,
@@ -1012,10 +1016,10 @@ async function collectSemanticInventory(vitest, repoRoot) {
       ]);
     }
   }
-  if (identities.length !== 1572 || rawProjection.length !== identities.length) {
+  if (identities.length !== 1712 || rawProjection.length !== identities.length) {
     candidateFail(
       "VITEST_STRUCTURED_IDENTITY_SOURCE_UNAVAILABLE",
-      `expected=1572, actual=${identities.length}`
+      `expected=1712, actual=${identities.length}`
     );
   }
   const canonical = canonicalizeStructuredVitestIdentities(repoRoot, identities);
@@ -1121,36 +1125,57 @@ function publishCandidateAtomically(
   }
 }
 
+function assertExactCandidateBytes(actual, expected) {
+  if (!Buffer.isBuffer(actual) || !Buffer.isBuffer(expected) || !actual.equals(expected)) {
+    candidateFail("CANDIDATE_BASELINE_REPEAT_MISMATCH");
+  }
+}
+
+function parseBaselineVersion(value) {
+  try {
+    return selectOwnershipBaseline(value).version;
+  } catch (error) {
+    if (error instanceof OwnershipContractError) {
+      candidateFail(error.code);
+    }
+    throw error;
+  }
+}
+
 function parseCandidateArguments(argv) {
   if (
-    argv.length === 7 &&
+    argv.length === 8 &&
     argv[0] === "--emit-candidate-baseline" &&
     argv[1] === "2B20A" &&
     argv[2] === "--workspace" &&
     argv[3] === "vitest.workspace.ts" &&
-    argv[4] === "--output"
+    argv[4] === "--baseline-version" &&
+    argv[6] === "--output"
   ) {
-    return { mode: "emit", candidatePath: argv[5], trailing: argv[6] };
+    return { mode: "emit", baselineVersion: parseBaselineVersion(argv[5]), candidatePath: argv[7] };
   }
   if (
-    argv.length === 6 &&
-    argv[0] === "--emit-candidate-baseline" &&
-    argv[1] === "2B20A" &&
-    argv[2] === "--workspace" &&
-    argv[3] === "vitest.workspace.ts" &&
-    argv[4] === "--output"
-  ) {
-    return { mode: "emit", candidatePath: argv[5] };
-  }
-  if (
-    argv.length === 6 &&
+    argv.length === 8 &&
     argv[0] === "--verify-candidate-baseline" &&
     argv[1] === "2B20A" &&
     argv[2] === "--workspace" &&
     argv[3] === "vitest.workspace.ts" &&
-    argv[4] === "--candidate"
+    argv[4] === "--baseline-version" &&
+    argv[6] === "--candidate"
   ) {
-    return { mode: "verify", candidatePath: argv[5] };
+    return { mode: "verify", baselineVersion: parseBaselineVersion(argv[5]), candidatePath: argv[7] };
+  }
+  if (
+    argv.length === 8 &&
+    argv[0] === "--verify-ownership-baseline-migration" &&
+    argv[1] === "2B20B-P2F1R-D1" &&
+    argv[2] === "--workspace" &&
+    argv[3] === "vitest.workspace.ts" &&
+    argv[4] === "--baseline-version" &&
+    argv[5] === CANDIDATE_OWNERSHIP_BASELINE_VERSION &&
+    argv[6] === "--candidate"
+  ) {
+    return { mode: "migration", baselineVersion: argv[5], candidatePath: argv[7] };
   }
   candidateFail("INVALID_CANDIDATE_ARGUMENTS");
 }
@@ -1162,7 +1187,7 @@ async function runCandidateCommand(options) {
   const repoRoot = path.resolve(process.cwd());
   const workspace = path.resolve(repoRoot, "vitest.workspace.ts");
   const candidatePath = assertCandidatePath(options.candidatePath, {
-    mustExist: options.mode === "verify"
+    mustExist: options.mode !== "emit"
   });
   const result = await executeCandidateLifecycle({
     create: ({ stdout, stderr }) =>
@@ -1182,21 +1207,34 @@ async function runCandidateCommand(options) {
     ),
     collect: (vitest) => collectSemanticInventory(vitest, repoRoot),
     validate: (inventory) => inventory,
-    encode: (inventory) => candidateBytes(build2B20ACandidate(repoRoot, inventory)),
+    encode: (inventory) => {
+      const artifact = buildOwnershipBaselineCandidate(
+        repoRoot,
+        inventory,
+        options.baselineVersion
+      );
+      const artifactBytes = candidateBytes(artifact);
+      if (options.mode !== "emit") {
+        const actual = readFileSync(candidatePath);
+        assertExactCandidateBytes(actual, artifactBytes);
+      }
+      if (options.mode === "migration") {
+        return candidateBytes(auditOwnershipBaselineMigration(repoRoot, inventory));
+      }
+      return artifactBytes;
+    },
     publish: async (bytes) => {
       if (options.mode === "emit") {
         publishCandidateAtomically(candidatePath, bytes);
-        return;
-      }
-      const actual = readFileSync(candidatePath);
-      if (!actual.equals(bytes)) {
-        candidateFail("CANDIDATE_BASELINE_REPEAT_MISMATCH");
       }
     }
   });
   writeLifecycleDiagnostics(result.diagnostics);
   if (options.mode === "emit") process.stdout.write(result.bytes);
-  else process.stdout.write("CANDIDATE_BASELINE_VERIFIED 2B20A\n");
+  else if (options.mode === "migration") process.stdout.write(result.bytes);
+  else process.stdout.write(
+    `CANDIDATE_BASELINE_VERIFIED 2B20A ${options.baselineVersion}\n`
+  );
 }
 
 function identity(project, title, ancestorPath = ["synthetic ownership"] ) {
@@ -2226,7 +2264,13 @@ async function runCompleteSelfTest() {
       },
       validate: (inventory) => inventory,
       encode: (inventory) =>
-        candidateBytes(build2B20ACandidate(process.cwd(), inventory)),
+        candidateBytes(
+          buildOwnershipBaselineCandidate(
+            process.cwd(),
+            inventory,
+            ACCEPTED_OWNERSHIP_BASELINE_VERSION
+          )
+        ),
       publish: async (bytes) => {
         realIntegrationPublishedBytes = Buffer.from(bytes);
       }
@@ -3326,6 +3370,9 @@ async function runCompleteSelfTest() {
         "d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129" ||
       candidate.inventorySha256 !==
         "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8" ||
+      candidate.frozenBaseline.physicalTestFileSetSha256 !==
+        "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab" ||
+      result.bytes.length !== 391257 ||
       !result.bytes.equals(realIntegrationPublishedBytes)
     ) {
       throw new Error("real structured inventory mismatch");
@@ -3343,12 +3390,181 @@ async function runCompleteSelfTest() {
       throw new Error("real public close integration mismatch");
     }
   });
+  let firstD1Candidate;
+  let secondD1Candidate;
+  const collectD1Candidate = () =>
+    executeCandidateLifecycle({
+      create: ({ stdout, stderr }) =>
+        createVitest(
+          "test",
+          {
+            root: process.cwd(),
+            workspace: path.resolve(process.cwd(), "vitest.workspace.ts"),
+            run: true,
+            watch: false,
+            passWithNoTests: false,
+            reporters: [],
+            color: false
+          },
+          {},
+          { stdout, stderr }
+        ),
+      collect: (vitest) => collectSemanticInventory(vitest, process.cwd()),
+      validate: (inventory) => inventory,
+      encode: (inventory) =>
+        candidateBytes(
+          buildOwnershipBaselineCandidate(
+            process.cwd(),
+            inventory,
+            CANDIDATE_OWNERSHIP_BASELINE_VERSION
+          )
+        ),
+      publish: async () => {}
+    });
+  await check("38 D1 C01 immutable accepted 1572 history", async () => {
+    const result = await getRealIntegration();
+    const accepted = JSON.parse(result.bytes.toString("utf8"));
+    const selected = selectOwnershipBaseline(ACCEPTED_OWNERSHIP_BASELINE_VERSION);
+    if (
+      selected.acceptanceStatus !== "ACCEPTED" ||
+      accepted.structuredIdentityCount !== 1572 ||
+      accepted.lfIdentityCount !== 12 ||
+      accepted.frozenBaseline.physicalTestFileSetSha256 !==
+        "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab" ||
+      ACCEPTED_CONTRACT_BASELINES.map(({ contractId }) => contractId).join(",") !==
+        "2B19A3A,2B19A3B1,2B19A3B2,2B19B"
+    ) {
+      throw new Error("D1 accepted authority changed");
+    }
+  });
+  await check("39 D1 C02 fresh 1712 materialization", async () => {
+    firstD1Candidate = await collectD1Candidate();
+    secondD1Candidate = await collectD1Candidate();
+    const candidate = JSON.parse(firstD1Candidate.bytes.toString("utf8"));
+    if (
+      !firstD1Candidate.bytes.equals(secondD1Candidate.bytes) ||
+      candidate.baselineVersion !== CANDIDATE_OWNERSHIP_BASELINE_VERSION ||
+      candidate.acceptanceStatus !== "UNACCEPTED_CANDIDATE" ||
+      candidate.structuredIdentityCount !== 1712 ||
+      candidate.lfIdentityCount !== 12 ||
+      candidate.inventorySha256 !==
+        "540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2" ||
+      candidate.physicalTestFileCount !== 36 ||
+      candidate.physicalTestFileSetSha256 !==
+        "c8c0a52de9f52037eda418323ac57b281ea30633162a22b963d0100cb8ca38f0"
+    ) {
+      throw new Error("D1 candidate authority mismatch");
+    }
+  });
+  const candidateInventory = () => {
+    const candidate = JSON.parse(firstD1Candidate.bytes.toString("utf8"));
+    return candidate.structuredIdentities.map(
+      ([project, file, ancestorPath, title]) => ({ project, file, ancestorPath, title })
+    );
+  };
+  await check("40 D1 C03 exact dual-baseline delta", async () => {
+    const report = auditOwnershipBaselineMigration(process.cwd(), candidateInventory());
+    if (
+      report.delta.intersection !== 1572 ||
+      report.delta.union !== 1712 ||
+      report.delta.added !== 140 ||
+      report.delta.removed !== 0 ||
+      report.increment.files.map(({ identityCount }) => identityCount).join(",") !==
+        "14,52,25,21,28" ||
+      report.increment.fileSetSha256 !==
+        "ddfa7a0070c6c4d08a6665a9b138f5aaae71cef02a82a5ce5190f9ccabc7a032" ||
+      Object.values(report.ownership).some((count) => count !== 0) ||
+      report.increment.identityBindings.length !== 140
+    ) {
+      throw new Error("D1 migration delta mismatch");
+    }
+  });
+  await check("41 D1 C04 hostile ownership migration rejection", async () => {
+    const inventory = candidateInventory();
+    expectCode("OWNERSHIP_BASELINE_AUTHORITY_MISMATCH", () =>
+      auditOwnershipBaselineMigration(process.cwd(), inventory.slice(1))
+    );
+    expectCode("DUPLICATE_STRUCTURED_VITEST_IDENTITY", () =>
+      auditOwnershipBaselineMigration(process.cwd(), [...inventory, inventory[0]])
+    );
+    expectCode("OWNERSHIP_BASELINE_AUTHORITY_MISMATCH", () =>
+      auditOwnershipBaselineMigration(
+        process.cwd(),
+        inventory.map((identity, index) =>
+          index === 0 ? { ...identity, project: "wrong-owner" } : identity
+        )
+      )
+    );
+    const acceptedHash =
+      "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab";
+    const hostileHashes = [
+      acceptedHash.slice(1),
+      acceptedHash.slice(0, -1),
+      `${acceptedHash.slice(0, 31)}${acceptedHash.slice(32)}`,
+      `0${acceptedHash.slice(1)}`,
+      `${acceptedHash}0`,
+      acceptedHash.toUpperCase(),
+      "0".repeat(64),
+      ` ${acceptedHash}`,
+      `${acceptedHash} `
+    ];
+    const acceptedBytes = (await getRealIntegration()).bytes;
+    for (const hostileHash of hostileHashes) {
+      const mutated = JSON.parse(acceptedBytes.toString("utf8"));
+      mutated.frozenBaseline.physicalTestFileSetSha256 = hostileHash;
+      await expectLifecycleCode("CANDIDATE_BASELINE_REPEAT_MISMATCH", async () =>
+        assertExactCandidateBytes(candidateBytes(mutated), acceptedBytes)
+      );
+    }
+  });
+  await check("42 D1 C05 explicit version dispatch and deterministic closed report", async () => {
+    const candidatePath = path.join(tmpdir(), "2b20b-p2f1r-d1-self-candidate.json");
+    const exact = [
+      "--verify-ownership-baseline-migration",
+      "2B20B-P2F1R-D1",
+      "--workspace",
+      "vitest.workspace.ts",
+      "--baseline-version",
+      CANDIDATE_OWNERSHIP_BASELINE_VERSION,
+      "--candidate",
+      candidatePath
+    ];
+    if (parseCandidateArguments(exact).mode !== "migration") {
+      throw new Error("exact D1 CLI did not dispatch");
+    }
+    for (const invalid of [
+      exact.slice(0, -1),
+      [...exact, "trailing"],
+      exact.map((value, index) => index === 5 ? "latest" : value),
+      exact.map((value, index) => index === 4 ? "--candidate" : value),
+      exact.map((value, index) => index === 6 ? "--baseline-version" : value)
+    ]) {
+      await expectLifecycleCode("INVALID_CANDIDATE_ARGUMENTS", async () =>
+        parseCandidateArguments(invalid)
+      );
+    }
+    const forward = candidateBytes(
+      auditOwnershipBaselineMigration(process.cwd(), candidateInventory())
+    );
+    const reversed = candidateBytes(
+      auditOwnershipBaselineMigration(process.cwd(), candidateInventory().reverse())
+    );
+    const report = JSON.parse(forward.toString("utf8"));
+    if (
+      !forward.equals(reversed) ||
+      Object.keys(report).join(",") !==
+        "schemaVersion,sliceId,identityEncodingVersion,acceptedVersion,candidateVersion,accepted,candidate,delta,increment,ownership,acceptedContracts,candidateArtifact,verdict" ||
+      report.verdict !== "OWNERSHIP_BASELINE_MIGRATION_PASS"
+    ) {
+      throw new Error("D1 report is not closed and deterministic");
+    }
+  });
   process.stdout.write(
     `${JSON.stringify(
       {
         verdict: "OWNERSHIP_CONTRACT_SELF_TEST_PASS",
         checksPassed: results.length,
-        checksExpected: 37,
+        checksExpected: 42,
         checks: results
       },
       null,
