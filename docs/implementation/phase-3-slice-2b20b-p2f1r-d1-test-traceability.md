@@ -30,7 +30,7 @@
 | `ActualTrust` | `T1 EXTERNAL_OR_PERSISTED_BOUNDARY` |
 | `SupportingAuthorityId` | `SUP-2B20BP2F1RD1-001` |
 | `MechanismMatch` | `PASS` |
-| Actual main assertion / entry / fault | Exact accepted bytes through the real CLI/lifecycle; invalid version, persisted-byte, exact-hash, lifecycle, or atomic-publication fault fails closed. |
+| Actual main assertion / entry / fault | Physical primary `scripts/verify-vitest-ownership-contracts.mjs :: 38 D1 C01 immutable accepted 1572 history` spawns the same script as a child process through `runD1Cli -> runCandidateCommand`; exact argv/cwd drive real `createVitest`, collection, no-replace OS-temp publication, persisted read-back, and public verify. Exit/stdout/stderr, `391257` bytes, `d8ae...`, collision preservation, and exact accepted values are asserted. The selector/builder calls are supporting-only. |
 
 ### D1-C02
 
@@ -82,8 +82,8 @@
 |---|---|
 | `CriterionId` | `D1-C04` |
 | `RuleClaim` | No BOTC rule claim; hostile ownership input never acquires accepted authority. |
-| `CompletionCriterion` | Duplicate, missing, wrong-owner, malformed inventory and persisted-byte/hash mutations reject without success or partial publication. |
-| `RequiredEvidenceMechanism` | Mutation matrix at inventory, candidate, accepted-hash, lifecycle, and atomic-publication boundaries. |
+| `CompletionCriterion` | The bounded ownership matrix rejects duplicate, borrowed, missing owner, wrong project/file/ancestorPath/title, malformed persisted registry, extra/missing field, non-array inventory, duplicate registry entry, and candidate/accepted SHA mismatch. |
+| `RequiredEvidenceMechanism` | Fourteen named, unique mutation mechanisms at the public candidate/report/registry/inventory boundaries; no proxy/getter/fuzz/general-security expansion. Accepted-history loss is a separate Option-A gate. |
 | `ExpectedReachability` | `R3 HOSTILE_OR_CORRUPTED_HISTORY` |
 | `ExpectedTrust` | `T1 EXTERNAL_OR_PERSISTED_BOUNDARY` |
 | `ExpectedPrimaryLayer` | `STRUCTURAL_VALIDATION` |
@@ -96,7 +96,7 @@
 | `ActualTrust` | `T1 EXTERNAL_OR_PERSISTED_BOUNDARY` |
 | `SupportingAuthorityId` | `NONE` |
 | `MechanismMatch` | `PASS` |
-| Actual main assertion / entry / fault | Direct hostile inventory mutations and nine accepted-hash nibble/shape mutations reject; existing lifecycle groups retain accessor/proxy and atomic-publication rejection. |
+| Actual main assertion / entry / fault | Physical primary `scripts/verify-vitest-ownership-contracts.mjs :: 41 D1 C04 hostile ownership migration rejection` executes `planned=14 / executed=14 / rejected=14 / missing=0 / duplicateMechanism=0`. It separately proves deletion, title/ancestor/file/project-reowner alteration, and delete-plus-compensating-add map to `ACCEPTED_1572_HISTORY_REMOVAL`; a real child verify process proves missing accepted identity emits that public code and no success bytes. |
 
 ### D1-C05
 
@@ -118,7 +118,7 @@
 | `ActualTrust` | `T1 EXTERNAL_OR_PERSISTED_BOUNDARY` |
 | `SupportingAuthorityId` | `SUP-2B20BP2F1RD1-002` |
 | `MechanismMatch` | `PASS` |
-| Actual main assertion / entry / fault | Exact CLI parser and persisted report boundary accept only frozen forms; reversed canonical input yields byte-identical closed output. |
+| Actual main assertion / entry / fault | Physical primary `scripts/verify-vitest-ownership-contracts.mjs :: 42 D1 C05 explicit version dispatch and deterministic closed report` runs two independent candidate emit child processes, public candidate verify, two migration child processes, and rejected argv processes. It persists/read-backs candidate/report bytes in OS temp, compares complete bytes, asserts exit/stdout/stderr, proves present and late destinations are preserved, and leaves no temp artifact. Pure parser/selector/reversed-input checks are supporting-only. |
 
 ## Supporting authorities
 
@@ -134,3 +134,10 @@
 - supporting authorities: `2`; duplicate/unresolved/unused supports: `0/0/0`.
 - all five primaries: `STRUCTURAL_VALIDATION`; `R1=[]`; `R2=[]`; `R3=[D1-C02,D1-C03,D1-C04]`; `R4=[D1-C01,D1-C05]`; all trust: `T1`.
 - C, C1, CE, D0, parent-D criteria or primaries changed/borrowed: `0`.
+
+## Real primary symbols and process boundary
+
+- C01 symbol chain: `runCompleteSelfTest -> runD1Cli -> child process entry -> parseCandidateArguments -> runCandidateCommand -> executeCandidateLifecycle -> createVitest -> collectSemanticInventory -> validatePersistedCandidate -> publishCandidateNoReplace`.
+- C05 symbol chain: the same public entry plus `validateMigrationReportBytes`; no internal function-only path is reported as primary.
+- C01 and C05 each have one distinct physical identity: exact file plus exact check title above. C02/C03/C04 retain their distinct checks 39/40/41; no physical primary is shared.
+- Candidate/report identity serialization remains ordinal and deterministic. The separately authenticated raw registry order is historical report data, not an ordering input for canonical identities or inventory hashes.

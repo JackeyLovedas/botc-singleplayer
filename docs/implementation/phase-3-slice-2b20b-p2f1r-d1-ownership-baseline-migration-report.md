@@ -35,6 +35,7 @@ Two separately created real Vitest instances produced byte-identical candidate a
 - increment identity bindings: `140`; every binding contains the canonical `(project,file,ancestorPath,title)` tuple plus exact `file`, `range`, logical `owner`, and provenance `reason`.
 - accepted contract registry order: `2B20A,2B19A3B2,2B19B,2B19A3B1,2B19A3A`.
 - accepted baseline export order: `2B19A3A,2B19A3B1,2B19A3B2,2B19B`.
+- The first sequence is authenticated from the frozen raw registry before the generic registry is ordinally sorted. Canonical tuple, file-set, candidate, and inventory serialization remains ordinal and retains exact hashes `58bd4b...e1b8` and `540e2f...f7d2`; no filesystem, object, `Set`, `Map`, or locale order is authority.
 
 | File | Count | Range | Logical owner | Reason |
 |---|---:|---|---|---|
@@ -50,15 +51,26 @@ The executable report retains all 140 identity-level bindings; they are not dupl
 
 | Gate | Result |
 |---|---|
-| ownership verifier | `PASS / OWNERSHIP_CONTRACT_SELF_TEST_PASS / 42 of 42` |
-| accepted emit and verify | `PASS / exact frozen accepted artifact` |
-| candidate emit A/B and verify | `PASS / byte-identical / 425559 bytes / 576a39e85d372b383aa5e24ebe70c3fdbfaa516a0927c07d161b620e7ec29dc9` |
-| migration audit | `PASS / OWNERSHIP_BASELINE_MIGRATION_PASS` |
-| inventory audit | `PASS / 1572 -> 1712 / +140 / -0 / five named files / 140 bindings` |
-| traceability audit | `PASS / 5 criteria / 5 unique primaries / 2 resolved supports / duplicate-borrowed-missing 0-0-0` |
-| `corepack pnpm typecheck` | `PASS / tsc --noEmit -p tsconfig.json` |
-| `corepack pnpm lint` | `PASS / eslint . --max-warnings 0` |
+| G01 accepted serialization | `PASS / two public emits / 391257 bytes / d8ae2d1f...9129 / stdout=artifact / deterministic` |
+| G02 candidate serialization | `PASS / two public emits / 425559 bytes / 576a39e8...dc9 / stdout=artifact / deterministic` |
+| G03 migration audit | `PASS / 75700 bytes / 5dcb02eced867f4d9097fee10bc9b57e5a554dda7c54d5febf62da71e3da5719 / stderr=0` |
+| G04 C01 real CLI | `PASS / accepted emit+verify / exit=0 / exact read-back / present destination preserved` |
+| G05 C05 persistence | `PASS / two independent emit+verify+migration processes / reports byte-identical / invalid argv publishes nothing` |
+| G06 accepted loss | `PASS / Option A / real persisted candidate missing accepted identity / exit=1 / stdout=0 / stderr=ACCEPTED_1572_HISTORY_REMOVAL` |
+| G07 bounded hostile matrix | `PASS / planned=14 / executed=14 / rejected=14 / missing=0 / duplicateMechanism=0` |
+| G08 atomic race matrix | `PASS / absent, present, late collision, deterministic / target bytes preserved / temp cleaned` |
+| G09 ownership self-test | `PASS / OWNERSHIP_CONTRACT_SELF_TEST_PASS / 42 of 42` |
+| G10 traceability parser | `PASS / 5 criteria / 5 unique primaries / 2 supports / duplicate-borrowed-missing 0-0-0` |
+| G11 traceability semantic audit | `PASS / 5/5 physical bindings / C01+C05 real process symbols / C04 14/14 / Option A` |
+| G12 `corepack pnpm typecheck` | `PASS / tsc --noEmit -p tsconfig.json` |
+| G13 `corepack pnpm lint` | `PASS / eslint . --max-warnings 0` |
 | `git diff --check` | `PASS` |
+
+All successful public processes used cwd `C:\Users\wjl\AppData\Local\Temp\botc-d1-ownership-baseline`, Node `24.15.0`, pnpm `11.7.0`, the exact frozen CLI token order, exit `0`, and empty stderr. G06 intentionally exited `1` with the frozen classification. OS-temp input/output paths were captured during execution and removed after byte count, SHA-256, no-overwrite, and read-back checks.
+
+Accepted-history disposition is **Option A**, required by the frozen design clause that any accepted identity removal is non-repairable. Authentication now derives the accepted projection before authenticating the full candidate: accepted count below `1572` or any equal-count accepted identity alteration returns `ACCEPTED_1572_HISTORY_REMOVAL`; an extra borrowed identity remains a generic closed ownership mismatch. The unreachable later `removed > 0` branch was removed.
+
+Publication uses an exclusive same-directory temp, complete write, fsync, close, then atomic hard-link creation as the no-replace publication point. It never deletes or retries a destination, never overwrites a late other-process target, cleans its temp on failure, and exposes only complete bytes.
 
 ## Scope and non-authority
 

@@ -5,6 +5,7 @@ import {
   closeSync,
   existsSync,
   fsyncSync,
+  linkSync,
   mkdtempSync,
   mkdirSync,
   openSync,
@@ -24,6 +25,7 @@ import { TextDecoder, types as utilTypes } from "node:util";
 import { createVitest } from "vitest/node";
 import {
   ACCEPTED_OWNERSHIP_BASELINE_VERSION,
+  ACCEPTED_CONTRACT_REGISTRY_ORDER,
   ACCEPTED_AUTHORITY_SUPERSESSIONS,
   ACCEPTED_CONTRACT_BASELINES,
   CANDIDATE_OWNERSHIP_BASELINE_VERSION,
@@ -34,6 +36,7 @@ import {
   buildOwnershipBaselineCandidate,
   candidateBytes,
   canonicalizeStructuredVitestIdentities,
+  authenticateAcceptedContractRegistryOrder,
   selectOwnershipBaseline,
   sha256CanonicalLines,
   validateAcceptedAuthoritySupersessionRegistry,
@@ -789,6 +792,9 @@ async function executeCandidateLifecycle({
     );
   }
   if (primaryDiagnostic !== null) {
+    if (primaryDiagnostic instanceof OwnershipContractError) {
+      candidateFail(primaryDiagnostic.code);
+    }
     encoded = undefined;
     const diagnostics = [
       lifecycleDiagnostic({
@@ -1125,10 +1131,64 @@ function publishCandidateAtomically(
   }
 }
 
-function assertExactCandidateBytes(actual, expected) {
-  if (!Buffer.isBuffer(actual) || !Buffer.isBuffer(expected) || !actual.equals(expected)) {
-    candidateFail("CANDIDATE_BASELINE_REPEAT_MISMATCH");
-  }
+function assertClosedRecord(value, keys, code) {
+  const descriptors = value !== null && typeof value === "object" && !Array.isArray(value) &&
+    Object.getPrototypeOf(value) === Object.prototype ? Object.getOwnPropertyDescriptors(value) : null;
+  if (descriptors === null || Reflect.ownKeys(value).some((key) => typeof key === "symbol") ||
+      Object.keys(descriptors).join(",") !== keys ||
+      Object.values(descriptors).some((descriptor) => !("value" in descriptor))) candidateFail(code);
+  return value;
+}
+function parseClosedJson(bytes, keys, code) {
+  let value;
+  try { value = JSON.parse(bytes.toString("utf8")); } catch { candidateFail(code); }
+  return assertClosedRecord(value, keys, code);
+}
+function persistedCandidateInventory(candidate) {
+  if (!Array.isArray(candidate.structuredIdentities)) candidateFail("PERSISTED_CANDIDATE_INVALID");
+  return candidate.structuredIdentities.map((tuple) => {
+    if (!Array.isArray(tuple) || tuple.length !== 4 || !Array.isArray(tuple[2]))
+      candidateFail("PERSISTED_CANDIDATE_INVALID");
+    return { project: tuple[0], file: tuple[1], ancestorPath: tuple[2], title: tuple[3] };
+  });
+}
+function validatePersistedCandidate(repoRoot, bytes, version, expectedBytes) {
+  const keys = version === ACCEPTED_OWNERSHIP_BASELINE_VERSION
+    ? "schemaVersion,contractId,identityEncodingVersion,structuredIdentityCount,lfIdentityCount,inventorySha256,traceabilitySha256,structuredIdentities,frozenBaseline,acceptedContractBaselines"
+    : "schemaVersion,baselineVersion,acceptanceStatus,contractId,identityEncodingVersion,structuredIdentityCount,lfIdentityCount,inventorySha256,physicalTestFileCount,physicalTestFileSetSha256,structuredIdentities,frozenBaseline,acceptedContractBaselines";
+  const candidate = parseClosedJson(bytes, keys, "PERSISTED_CANDIDATE_INVALID");
+  if (version === CANDIDATE_OWNERSHIP_BASELINE_VERSION)
+    auditOwnershipBaselineMigration(repoRoot, persistedCandidateInventory(candidate));
+  if (!bytes.equals(expectedBytes)) candidateFail("PERSISTED_CANDIDATE_INVALID");
+  return candidate;
+}
+function validateMigrationReportBytes(bytes) {
+  const report = parseClosedJson(bytes,
+    "schemaVersion,sliceId,identityEncodingVersion,acceptedVersion,candidateVersion,accepted,candidate,delta,increment,ownership,acceptedContracts,candidateArtifact,verdict",
+    "PERSISTED_MIGRATION_REPORT_INVALID");
+  for (const [value, keys] of [
+    [report.accepted, "structuredIdentityCount,lfIdentityCount,inventorySha256,candidateByteCount,candidateSha256,physicalTestFileCount,physicalTestFileSetSha256"],
+    [report.candidate, "acceptanceStatus,structuredIdentityCount,lfIdentityCount,inventorySha256,physicalTestFileCount,physicalTestFileSetSha256"],
+    [report.delta, "intersection,union,added,removed"], [report.increment, "fileSetSha256,files,identityBindings"],
+    [report.ownership, "duplicate,borrowed,missing,wrongOwner"], [report.candidateArtifact, "byteCount,sha256"]
+  ]) assertClosedRecord(value, keys, "PERSISTED_MIGRATION_REPORT_INVALID");
+  if (!Array.isArray(report.increment.files) || !Array.isArray(report.increment.identityBindings))
+    candidateFail("PERSISTED_MIGRATION_REPORT_INVALID");
+  for (const value of report.increment.files) assertClosedRecord(value, "file,range,owner,reason,identityCount", "PERSISTED_MIGRATION_REPORT_INVALID");
+  for (const value of report.increment.identityBindings) assertClosedRecord(value, "identity,file,range,owner,reason", "PERSISTED_MIGRATION_REPORT_INVALID");
+  assertClosedRecord(report.acceptedContracts, "registryOrder,baselineOrder", "PERSISTED_MIGRATION_REPORT_INVALID");
+  authenticateAcceptedContractRegistryOrder(report.acceptedContracts.registryOrder);
+  if (report.acceptedContracts.baselineOrder.join(",") !== "2B19A3A,2B19A3B1,2B19A3B2,2B19B" ||
+      report.accepted.inventorySha256 !== "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8" ||
+      report.candidate.inventorySha256 !== "540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2" ||
+      report.verdict !== "OWNERSHIP_BASELINE_MIGRATION_PASS") candidateFail("PERSISTED_MIGRATION_REPORT_INVALID");
+  return report;
+}
+function publishCandidateNoReplace(finalPath, bytes, link = linkSync) {
+  publishCandidateAtomically(finalPath, bytes, {
+    exists: existsSync, open: openSync, write: writeSync, fsync: fsyncSync, close: closeSync,
+    rename(source, target) { link(source, target); unlinkSync(source); }, unlink: unlinkSync
+  });
 }
 
 function parseBaselineVersion(value) {
@@ -1214,18 +1274,22 @@ async function runCandidateCommand(options) {
         options.baselineVersion
       );
       const artifactBytes = candidateBytes(artifact);
+      validatePersistedCandidate(repoRoot, artifactBytes, options.baselineVersion, artifactBytes);
       if (options.mode !== "emit") {
         const actual = readFileSync(candidatePath);
-        assertExactCandidateBytes(actual, artifactBytes);
+        validatePersistedCandidate(repoRoot, actual, options.baselineVersion, artifactBytes);
       }
       if (options.mode === "migration") {
-        return candidateBytes(auditOwnershipBaselineMigration(repoRoot, inventory));
+        const reportBytes = candidateBytes(auditOwnershipBaselineMigration(repoRoot, inventory));
+        validateMigrationReportBytes(reportBytes);
+        return reportBytes;
       }
       return artifactBytes;
     },
     publish: async (bytes) => {
       if (options.mode === "emit") {
-        publishCandidateAtomically(candidatePath, bytes);
+        publishCandidateNoReplace(candidatePath, bytes);
+        return;
       }
     }
   });
@@ -3421,14 +3485,38 @@ async function runCompleteSelfTest() {
         ),
       publish: async () => {}
     });
+  const d1Path = (name) => path.join(tmpdir(), `botc-d1-${process.pid}-${name}.json`);
+  const removeD1Paths = (paths) => paths.forEach((file) => { if (existsSync(file)) unlinkSync(file); });
+  const runD1Cli = (argv) => spawnSync(process.execPath, [path.resolve(process.argv[1]), ...argv], {
+    cwd: process.cwd(), encoding: null, maxBuffer: 2 * 1024 * 1024
+  });
+  const assertCli = (result, status, stderr = "") => {
+    if (result.status !== status || result.error !== undefined ||
+        result.stderr.toString("utf8") !== stderr) throw new Error("D1 public CLI result mismatch");
+  };
+  const emitArgs = (version, output) => ["--emit-candidate-baseline", "2B20A", "--workspace", "vitest.workspace.ts", "--baseline-version", version, "--output", output];
+  const verifyArgs = (version, candidate) => ["--verify-candidate-baseline", "2B20A", "--workspace", "vitest.workspace.ts", "--baseline-version", version, "--candidate", candidate];
+  const migrationArgs = (candidate) => ["--verify-ownership-baseline-migration", "2B20B-P2F1R-D1", "--workspace", "vitest.workspace.ts", "--baseline-version", CANDIDATE_OWNERSHIP_BASELINE_VERSION, "--candidate", candidate];
   await check("38 D1 C01 immutable accepted 1572 history", async () => {
-    const result = await getRealIntegration();
-    const accepted = JSON.parse(result.bytes.toString("utf8"));
+    const output = d1Path("accepted");
+    removeD1Paths([output]);
+    const emitted = runD1Cli(emitArgs(ACCEPTED_OWNERSHIP_BASELINE_VERSION, output));
+    assertCli(emitted, 0);
+    const acceptedBytes = readFileSync(output);
+    const accepted = validatePersistedCandidate(process.cwd(), acceptedBytes,
+      ACCEPTED_OWNERSHIP_BASELINE_VERSION, acceptedBytes);
+    const verified = runD1Cli(verifyArgs(ACCEPTED_OWNERSHIP_BASELINE_VERSION, output));
+    assertCli(verified, 0);
     const selected = selectOwnershipBaseline(ACCEPTED_OWNERSHIP_BASELINE_VERSION);
     if (
+      !emitted.stdout.equals(acceptedBytes) ||
+      verified.stdout.toString("utf8") !== "CANDIDATE_BASELINE_VERIFIED 2B20A ACCEPTED_1572_V1\n" ||
       selected.acceptanceStatus !== "ACCEPTED" ||
       accepted.structuredIdentityCount !== 1572 ||
       accepted.lfIdentityCount !== 12 ||
+      acceptedBytes.length !== 391257 ||
+      createHash("sha256").update(acceptedBytes).digest("hex") !==
+        "d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129" ||
       accepted.frozenBaseline.physicalTestFileSetSha256 !==
         "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab" ||
       ACCEPTED_CONTRACT_BASELINES.map(({ contractId }) => contractId).join(",") !==
@@ -3436,6 +3524,10 @@ async function runCompleteSelfTest() {
     ) {
       throw new Error("D1 accepted authority changed");
     }
+    const collision = runD1Cli(emitArgs(ACCEPTED_OWNERSHIP_BASELINE_VERSION, output));
+    assertCli(collision, 1, "CANDIDATE_OUTPUT_COLLISION\n");
+    if (!readFileSync(output).equals(acceptedBytes)) throw new Error("accepted destination overwritten");
+    removeD1Paths([output]);
   });
   await check("39 D1 C02 fresh 1712 materialization", async () => {
     firstD1Candidate = await collectD1Candidate();
@@ -3478,86 +3570,102 @@ async function runCompleteSelfTest() {
     ) {
       throw new Error("D1 migration delta mismatch");
     }
+    authenticateAcceptedContractRegistryOrder(report.acceptedContracts.registryOrder);
   });
   await check("41 D1 C04 hostile ownership migration rejection", async () => {
     const inventory = candidateInventory();
-    expectCode("OWNERSHIP_BASELINE_AUTHORITY_MISMATCH", () =>
-      auditOwnershipBaselineMigration(process.cwd(), inventory.slice(1))
-    );
-    expectCode("DUPLICATE_STRUCTURED_VITEST_IDENTITY", () =>
-      auditOwnershipBaselineMigration(process.cwd(), [...inventory, inventory[0]])
-    );
-    expectCode("OWNERSHIP_BASELINE_AUTHORITY_MISMATCH", () =>
-      auditOwnershipBaselineMigration(
-        process.cwd(),
-        inventory.map((identity, index) =>
-          index === 0 ? { ...identity, project: "wrong-owner" } : identity
-        )
-      )
-    );
-    const acceptedHash =
-      "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab";
-    const hostileHashes = [
-      acceptedHash.slice(1),
-      acceptedHash.slice(0, -1),
-      `${acceptedHash.slice(0, 31)}${acceptedHash.slice(32)}`,
-      `0${acceptedHash.slice(1)}`,
-      `${acceptedHash}0`,
-      acceptedHash.toUpperCase(),
-      "0".repeat(64),
-      ` ${acceptedHash}`,
-      `${acceptedHash} `
-    ];
-    const acceptedBytes = (await getRealIntegration()).bytes;
-    for (const hostileHash of hostileHashes) {
-      const mutated = JSON.parse(acceptedBytes.toString("utf8"));
-      mutated.frozenBaseline.physicalTestFileSetSha256 = hostileHash;
-      await expectLifecycleCode("CANDIDATE_BASELINE_REPEAT_MISMATCH", async () =>
-        assertExactCandidateBytes(candidateBytes(mutated), acceptedBytes)
-      );
+    const acceptedIndex = inventory.findIndex(({ file }) =>
+      !file.includes("canonical-runtime-") && !file.includes("domain-event-structural-"));
+    const expectRemoval = (mutate) => expectCode("ACCEPTED_1572_HISTORY_REMOVAL", () =>
+      auditOwnershipBaselineMigration(process.cwd(), mutate(inventory.map((entry) => ({ ...entry,
+        ancestorPath: [...entry.ancestorPath] })))));
+    expectRemoval((value) => value.filter((_, index) => index !== acceptedIndex));
+    for (const field of ["title", "project", "file"]) expectRemoval((value) => {
+      value[acceptedIndex][field] += "-changed"; return value;
+    });
+    expectRemoval((value) => { value[acceptedIndex].ancestorPath[0] += "-changed"; return value; });
+    expectRemoval((value) => { value.splice(acceptedIndex, 1); value.push({ ...value[0], title: `${value[0].title}-compensating` }); return value; });
+    const originalCandidateBytes = firstD1Candidate.bytes;
+    const originalReportBytes = candidateBytes(auditOwnershipBaselineMigration(process.cwd(), inventory));
+    const cases = [];
+    const addCase = (name, execute) => cases.push({ name, execute });
+    addCase("duplicate identity", () => auditOwnershipBaselineMigration(process.cwd(), [...inventory, inventory[0]]));
+    addCase("borrowed identity", () => auditOwnershipBaselineMigration(process.cwd(), [...inventory,
+      { ...inventory[0], file: "packages/domain-core/src/borrowed.test.ts", title: `${inventory[0].title}-borrowed` }]));
+    for (const field of ["project", "file", "title"]) addCase(`wrong ${field}`, () => {
+      const value = inventory.map((entry) => ({ ...entry })); value.at(-1)[field] += "-wrong";
+      return auditOwnershipBaselineMigration(process.cwd(), value);
+    });
+    addCase("wrong ancestorPath", () => { const value = inventory.map((entry) => ({ ...entry,
+      ancestorPath: [...entry.ancestorPath] })); value.at(-1).ancestorPath[0] += "-wrong";
+      return auditOwnershipBaselineMigration(process.cwd(), value); });
+    addCase("malformed persisted registry", () => authenticateAcceptedContractRegistryOrder({}));
+    addCase("duplicate registry entry", () => authenticateAcceptedContractRegistryOrder(
+      [...ACCEPTED_CONTRACT_REGISTRY_ORDER.slice(0, -1), "2B19A3B1"]));
+    addCase("non-array inventory", () => auditOwnershipBaselineMigration(process.cwd(), {}));
+    const candidateMutation = (mutate) => { const value = JSON.parse(originalCandidateBytes.toString("utf8"));
+      mutate(value); return validatePersistedCandidate(process.cwd(), candidateBytes(value),
+        CANDIDATE_OWNERSHIP_BASELINE_VERSION, originalCandidateBytes); };
+    addCase("extra candidate field", () => candidateMutation((value) => { value.extra = true; }));
+    addCase("candidate SHA mismatch", () => candidateMutation((value) => { value.inventorySha256 = "0".repeat(64); }));
+    const reportMutation = (mutate) => { const value = JSON.parse(originalReportBytes.toString("utf8"));
+      mutate(value); return validateMigrationReportBytes(candidateBytes(value)); };
+    addCase("missing report field", () => reportMutation((value) => { delete value.verdict; }));
+    addCase("missing owner", () => reportMutation((value) => { delete value.increment.identityBindings[0].owner; }));
+    addCase("accepted SHA mismatch", () => reportMutation((value) => { value.accepted.inventorySha256 = "0".repeat(64); }));
+    let rejected = 0;
+    for (const { execute } of cases) { try { execute(); } catch { rejected += 1; continue; }
+      throw new Error("hostile D1 case passed"); }
+    if (cases.length !== 14 || rejected !== 14 || new Set(cases.map(({ name }) => name)).size !== 14) {
+      throw new Error("hostile D1 matrix census mismatch");
     }
+    const removedPath = d1Path("removed-accepted");
+    const removedArtifact = JSON.parse(originalCandidateBytes.toString("utf8"));
+    removedArtifact.structuredIdentities.splice(acceptedIndex, 1);
+    writeFileSync(removedPath, candidateBytes(removedArtifact));
+    const publicRemoval = runD1Cli(verifyArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, removedPath));
+    assertCli(publicRemoval, 1, "ACCEPTED_1572_HISTORY_REMOVAL\n");
+    if (publicRemoval.stdout.length !== 0) throw new Error("accepted removal published success");
+    removeD1Paths([removedPath]);
   });
   await check("42 D1 C05 explicit version dispatch and deterministic closed report", async () => {
-    const candidatePath = path.join(tmpdir(), "2b20b-p2f1r-d1-self-candidate.json");
-    const exact = [
-      "--verify-ownership-baseline-migration",
-      "2B20B-P2F1R-D1",
-      "--workspace",
-      "vitest.workspace.ts",
-      "--baseline-version",
-      CANDIDATE_OWNERSHIP_BASELINE_VERSION,
-      "--candidate",
-      candidatePath
-    ];
-    if (parseCandidateArguments(exact).mode !== "migration") {
-      throw new Error("exact D1 CLI did not dispatch");
+    const first = d1Path("candidate-a"); const second = d1Path("candidate-b");
+    const reportPath = d1Path("report"); const invalidPath = d1Path("invalid");
+    const latePath = d1Path("late"); removeD1Paths([first, second, reportPath, invalidPath, latePath]);
+    const firstEmit = runD1Cli(emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, first));
+    const secondEmit = runD1Cli(emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, second));
+    assertCli(firstEmit, 0); assertCli(secondEmit, 0);
+    const firstBytes = readFileSync(first); const secondBytes = readFileSync(second);
+    const verified = runD1Cli(verifyArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, first));
+    assertCli(verified, 0);
+    const forward = runD1Cli(migrationArgs(first)); const repeated = runD1Cli(migrationArgs(second));
+    assertCli(forward, 0); assertCli(repeated, 0); validateMigrationReportBytes(forward.stdout);
+    publishCandidateNoReplace(reportPath, forward.stdout);
+    if (!firstBytes.equals(secondBytes) || !firstEmit.stdout.equals(firstBytes) ||
+        !secondEmit.stdout.equals(secondBytes) || !forward.stdout.equals(repeated.stdout) ||
+        !readFileSync(reportPath).equals(forward.stdout) ||
+        verified.stdout.toString("utf8") !== "CANDIDATE_BASELINE_VERIFIED 2B20A CANDIDATE_1712_D1_V1\n") {
+      throw new Error("D1 persisted CLI determinism mismatch");
     }
-    for (const invalid of [
-      exact.slice(0, -1),
-      [...exact, "trailing"],
-      exact.map((value, index) => index === 5 ? "latest" : value),
-      exact.map((value, index) => index === 4 ? "--candidate" : value),
-      exact.map((value, index) => index === 6 ? "--baseline-version" : value)
-    ]) {
-      await expectLifecycleCode("INVALID_CANDIDATE_ARGUMENTS", async () =>
-        parseCandidateArguments(invalid)
-      );
+    const invalids = [emitArgs("latest", invalidPath), emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, invalidPath).slice(0, -1),
+      [...emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, invalidPath), "trailing"],
+      emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, invalidPath).map((value, index) => index === 4 ? "--output" : value)];
+    for (const argv of invalids) { const result = runD1Cli(argv); if (result.status !== 1 || result.stdout.length !== 0 ||
+        existsSync(invalidPath)) throw new Error("invalid CLI published an artifact"); }
+    const collisionBytes = Buffer.from("other-process-target\n");
+    try { publishCandidateNoReplace(latePath, firstBytes, (source, target) => {
+      writeFileSync(target, collisionBytes); linkSync(source, target);
+    }); throw new Error("late destination collision passed"); } catch (error) {
+      if (!(error instanceof CandidateLifecycleError) || error.code !== "PUBLISH_FAILED") throw error;
     }
-    const forward = candidateBytes(
-      auditOwnershipBaselineMigration(process.cwd(), candidateInventory())
-    );
-    const reversed = candidateBytes(
-      auditOwnershipBaselineMigration(process.cwd(), candidateInventory().reverse())
-    );
-    const report = JSON.parse(forward.toString("utf8"));
-    if (
-      !forward.equals(reversed) ||
-      Object.keys(report).join(",") !==
-        "schemaVersion,sliceId,identityEncodingVersion,acceptedVersion,candidateVersion,accepted,candidate,delta,increment,ownership,acceptedContracts,candidateArtifact,verdict" ||
-      report.verdict !== "OWNERSHIP_BASELINE_MIGRATION_PASS"
-    ) {
-      throw new Error("D1 report is not closed and deterministic");
+    if (!readFileSync(latePath).equals(collisionBytes) ||
+        existsSync(path.join(tmpdir(), `.${path.basename(latePath)}.2b20ap1.tmp`))) {
+      throw new Error("late collision target or temp changed");
     }
+    const present = runD1Cli(emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, first));
+    assertCli(present, 1, "CANDIDATE_OUTPUT_COLLISION\n");
+    if (!readFileSync(first).equals(firstBytes)) throw new Error("present destination overwritten");
+    removeD1Paths([first, second, reportPath, latePath]);
   });
   process.stdout.write(
     `${JSON.stringify(

@@ -2279,6 +2279,24 @@ const RAW_OWNERSHIP_CONTRACTS = Object.freeze([
   })
 ]);
 
+const FROZEN_ACCEPTED_CONTRACT_REGISTRY_ORDER = Object.freeze([
+  "2B20A", "2B19A3B2", "2B19B", "2B19A3B1", "2B19A3A"
+]);
+
+export function authenticateAcceptedContractRegistryOrder(input) {
+  assertCanonicalArray(input, "INVALID_ACCEPTED_CONTRACT_REGISTRY", "accepted registry order");
+  if (input.some((value) => typeof value !== "string") ||
+      input.length !== FROZEN_ACCEPTED_CONTRACT_REGISTRY_ORDER.length ||
+      input.some((value, index) => value !== FROZEN_ACCEPTED_CONTRACT_REGISTRY_ORDER[index])) {
+    fail("ACCEPTED_CONTRACT_REGISTRY_ORDER_MISMATCH", "raw accepted registry order changed");
+  }
+  return Object.freeze([...input]);
+}
+
+export const ACCEPTED_CONTRACT_REGISTRY_ORDER = authenticateAcceptedContractRegistryOrder(
+  RAW_OWNERSHIP_CONTRACTS.map(({ contractId }) => contractId)
+);
+
 export const OWNERSHIP_CONTRACTS = validateOwnershipContracts(
   RAW_OWNERSHIP_CONTRACTS,
   { repoRoot: process.cwd() }
@@ -2464,7 +2482,7 @@ function lfIdentityCount(identities) {
   ).length;
 }
 
-function assertInventoryAuthority(identities, authority, label) {
+function assertInventoryAuthority(identities, authority, label, code = "OWNERSHIP_BASELINE_AUTHORITY_MISMATCH") {
   const files = inventoryFileAuthority(identities);
   const actual = {
     structuredIdentityCount: identities.length,
@@ -2476,7 +2494,7 @@ function assertInventoryAuthority(identities, authority, label) {
   for (const key of Object.keys(actual)) {
     if (actual[key] !== authority[key]) {
       fail(
-        "OWNERSHIP_BASELINE_AUTHORITY_MISMATCH",
+        code,
         `${label}.${key}: expected=${authority[key]}, actual=${actual[key]}`
       );
     }
@@ -2487,12 +2505,20 @@ function assertInventoryAuthority(identities, authority, label) {
 export function accepted1572Inventory(repoRoot, fullInventory) {
   const incrementFiles = new Set(D1_INCREMENT_FILES.map(({ file }) => file));
   const candidate = canonicalizeStructuredVitestIdentities(repoRoot, fullInventory);
-  assertInventoryAuthority(candidate, CANDIDATE_BASELINE_AUTHORITY, "candidate");
   const accepted = canonicalizeStructuredVitestIdentities(
     repoRoot,
     candidate.filter((identity) => !incrementFiles.has(identity.file))
   );
-  assertInventoryAuthority(accepted, ACCEPTED_BASELINE_AUTHORITY, "accepted");
+  if (accepted.length > ACCEPTED_BASELINE_AUTHORITY.structuredIdentityCount) {
+    fail("OWNERSHIP_INCREMENT_SET_MISMATCH", `borrowed=${accepted.length - 1572}`);
+  }
+  assertInventoryAuthority(
+    accepted,
+    ACCEPTED_BASELINE_AUTHORITY,
+    "accepted",
+    "ACCEPTED_1572_HISTORY_REMOVAL"
+  );
+  assertInventoryAuthority(candidate, CANDIDATE_BASELINE_AUTHORITY, "candidate");
   return accepted;
 }
 
@@ -2532,7 +2558,6 @@ export function buildOwnershipBaselineCandidate(repoRoot, fullInventory, version
 
 export function auditOwnershipBaselineMigration(repoRoot, fullInventory) {
   const candidate = canonicalizeStructuredVitestIdentities(repoRoot, fullInventory);
-  assertInventoryAuthority(candidate, CANDIDATE_BASELINE_AUTHORITY, "candidate");
   const accepted = accepted1572Inventory(repoRoot, candidate);
   const acceptedArtifact = buildOwnershipBaselineCandidate(
     repoRoot,
@@ -2547,18 +2572,9 @@ export function auditOwnershipBaselineMigration(repoRoot, fullInventory) {
   const acceptedKeys = new Set(
     accepted.map((identity) => compactStructuredIdentityTuple(structuredIdentityTuple(identity)))
   );
-  const candidateKeys = new Set(
-    candidate.map((identity) => compactStructuredIdentityTuple(structuredIdentityTuple(identity)))
-  );
   const added = candidate.filter(
     (identity) => !acceptedKeys.has(compactStructuredIdentityTuple(structuredIdentityTuple(identity)))
   );
-  const removed = accepted.filter(
-    (identity) => !candidateKeys.has(compactStructuredIdentityTuple(structuredIdentityTuple(identity)))
-  );
-  if (removed.length > 0) {
-    fail("ACCEPTED_1572_HISTORY_REMOVAL", `removed=${removed.length}`);
-  }
   const incrementFiles = D1_INCREMENT_FILES.map((specification) => {
     const identities = added.filter(({ file }) => file === specification.file);
     const wrongOwner = identities.filter(({ project }) => project !== specification.project);
@@ -2609,7 +2625,7 @@ export function auditOwnershipBaselineMigration(repoRoot, fullInventory) {
       intersection: accepted.length,
       union: candidate.length,
       added: added.length,
-      removed: removed.length
+      removed: 0
     },
     increment: {
       fileSetSha256: sha256CanonicalLines(knownIncrementFiles),
@@ -2627,7 +2643,7 @@ export function auditOwnershipBaselineMigration(repoRoot, fullInventory) {
     },
     ownership: { duplicate: 0, borrowed: 0, missing: 0, wrongOwner: 0 },
     acceptedContracts: {
-      registryOrder: OWNERSHIP_CONTRACTS.map(({ contractId }) => contractId),
+      registryOrder: ACCEPTED_CONTRACT_REGISTRY_ORDER,
       baselineOrder: ACCEPTED_CONTRACT_BASELINES.map(({ contractId }) => contractId)
     },
     candidateArtifact: {
