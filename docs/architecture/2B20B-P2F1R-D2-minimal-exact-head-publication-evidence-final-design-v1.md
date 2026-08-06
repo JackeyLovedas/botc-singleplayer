@@ -5,10 +5,11 @@
 - 目标路径：`docs/architecture/2B20B-P2F1R-D2-minimal-exact-head-publication-evidence-final-design-v1.md`
 - `AuthorityStatus=CURRENT_AND_COMPLETE_D2_DESIGN_AUTHORITY`
 - `SliceId=2B20B-P2F1R-D2`
-- `DesignCorrection=0/1`
+- `DesignCorrection=1/1`
 - 本文只定义一个 D2 纵向切片，不包含 D3。
 - 本文不是 `RULE_DESIGN_PASS`。该判定只能由后续独立只读 reviewer 给出。
-- 当前设计基线为规则证据提交 `418b2fdb1c68578fa279fe915307efb802402247`，其唯一父提交是 E。
+- 本设计权威已经物化；其 Git commit 和本文件 SHA-256 不在文件内部自引用，由 §29 的两个 external binding token 按固定 Git/byte 算法解析。
+- 规则证据基线仍为提交 `418b2fdb1c68578fa279fe915307efb802402247`，其唯一父提交是 E；该提交不是本设计的 current HEAD。
 
 ## 2. 唯一设计目标
 
@@ -185,7 +186,38 @@ D2 artifact 名称必须确定性生成：
 
 不得更改现有 job ID、display name、矩阵和 required-check 名称。
 
-## 11. 单一临时 verifier 契约
+```text
+Linux capture step:
+name=Capture D2 Linux domain-core-rest evidence
+id=d2-linux-domain-core-rest-capture
+job=jobs.test-shard
+condition=matrix.group == 'domain-core-rest'
+
+Linux upload step:
+name=Upload D2 Linux domain-core-rest evidence
+id=d2-linux-domain-core-rest-upload
+job=jobs.test-shard
+condition=matrix.group == 'domain-core-rest'
+
+Windows execution step:
+name=D2 Windows domain-core-rest evidence
+id=d2-windows-domain-core-rest-run
+job=jobs.deterministic-windows
+
+Windows capture step:
+name=Capture D2 Windows domain-core-rest evidence
+id=d2-windows-domain-core-rest-capture
+job=jobs.deterministic-windows
+
+Windows upload step:
+name=Upload D2 Windows domain-core-rest evidence
+id=d2-windows-domain-core-rest-upload
+job=jobs.deterministic-windows
+```
+
+这些 ID 是 §18 mechanism location 的封闭 locator；不得换名、复用或增加第二组 step。
+
+## 11. 单一临时 verifier、JSON 与失败发行合同
 
 唯一允许的新脚本：
 
@@ -195,43 +227,33 @@ D2 artifact 名称必须确定性生成：
 
 - 只能使用 Node 标准库。
 - 如需 Git，只能使用 `spawn`/`spawnSync` 且 `shell:false`。
-- 不得联网。
-- 不得 import 生产代码。
-- 不得修改 profile、测试、catalog 或 runner。
-- 除明确的输出路径外不得写仓库。
-- JSON 使用 UTF-8、LF、无 BOM、稳定键序和单个终止换行。
-- 文件遍历使用 POSIX 相对路径的 UTF-8 字节序，不使用 locale。
-- verifier 只有三种 mode：
+- 不得联网，不得 import 生产代码，不得修改 profile、测试、catalog 或 runner。
+- 除 mode 声明的临时文件或最终 `--output` 外不得写仓库。
+- verifier 只有 `self-test`、`capture-runner`、`audit-bundle` 三种 mode；未知 mode、重复 CLI option、缺 option、额外 positional argument 均失败。
 
-```text
-self-test
-capture-runner
-audit-bundle
-```
-
-`capture-runner` 输入：
+`capture-runner` 输入固定为：
 
 ```text
 --platform linux|windows
---source-head <40-lowercase-hex>
+--source-head <Sha40>
 --parent-artifact-head <P>
 --parent-evidence-head <E>
 --runner-output <path>
 --output <path>
 ```
 
-`audit-bundle` 输入：
+`audit-bundle` 输入固定为：
 
 ```text
 --source-head <H>
 --parent-artifact-head <P>
 --parent-evidence-head <E>
 --acquisition-root <absolute-temporary-path>
---design-contract <repo-relative-path>
+--design-contract docs/architecture/2B20B-P2F1R-D2-minimal-exact-head-publication-evidence-final-design-v1.md
 --output docs/implementation/phase-3-slice-2b20b-p2f1r-d2-publication-evidence-bundle.json
 ```
 
-成功只输出一行：
+成功 stdout 恰为一行：
 
 ```text
 D2_CAPTURE_OK <platform> <H> <capture-sha256>
@@ -243,7 +265,24 @@ D2_CAPTURE_OK <platform> <H> <capture-sha256>
 D2_PUBLICATION_BUNDLE_OK <H> <run-id> <bundle-sha256>
 ```
 
-验证失败退出 1，stdout 为空，stderr 以单一稳定错误 token 开头。内部错误退出 2。不得静默降级或写部分最终 bundle。
+失败合同：
+
+- schema/semantic failure exit 1；internal/tool failure exit 2；stdout 为空；stderr 第一 token 是稳定错误码。
+- `MechanismMatch` 的治理 enum 恰为 `PASS|FAIL`，大小写敏感；`MATCH`、未知值、错误大小写和缺失均失败。
+- 成功 final bundle 中 D-C16A/B 的 `MechanismMatch` 必须都为 `PASS`。
+- 任一机制为 `FAIL` 时，`audit-bundle` 必须失败且不得发行 final bundle、不得发行任何 Actual record、不得留下 success-looking 文件。
+- `audit-bundle` 的 `--output` 在调用前必须不存在；已存在即失败且不得修改。实现先在同目录创建唯一临时文件，完全验证并 close/fsync 后原子 rename；任一失败删除临时文件。禁止部分写入、失败 JSON、用旧成功文件遮蔽失败或覆盖既有文件。
+
+所有 D2 自有 JSON 使用唯一 canonical serialization：
+
+1. UTF-8、无 BOM、LF、文件末尾恰一个 `\n`。
+2. 对按本节 schema 顺序构造的对象执行 `JSON.stringify(value, null, 2) + "\n"`。
+3. 所有 object key 顺序必须与 schema 列表完全相同；禁止 integer-like key。
+4. array 必须 dense，并使用 schema 指定顺序；禁止 hole。
+5. 禁止 `null`、optional key、`undefined`、NaN、Infinity、负零、lone surrogate 和非 NFC string。
+6. JSON number 只能是本节允许范围内的 safe integer。
+7. 在 `JSON.parse` 前用同一脚本内的无依赖 scanner 拒绝任意深度 duplicate JSON key；parse 后递归拒绝额外 key。
+8. verifier 对 capture、acquisition manifest 和 final bundle 重新 canonical serialize；输入 bytes 不完全相等即失败。
 
 ## 12. Exact ancestry 证明
 
@@ -264,130 +303,502 @@ checkout history 不完整、对象缺失、Git 返回不确定结果或祖先�
 
 E2 的直接父关系不在 H 的 hosted run 中伪造；它由最终 E2 reviewer 单独验证。
 
-## 13. 两个平台的 runner 证据
+## 13. `d2-capture.json` 完整递归 exact schema
 
-每个平台的 D2 artifact 包含：
+下列 notation 是规范，不是示例：`object[k:T,...]` 表示 required、non-null、无额外 key 且 key order 正是列出顺序；`tuple[A,B]` 表示长度和顺序固定；`const(x)` 表示 byte-for-byte 字符串或精确 JSON literal；`enum(a|b)` 表示大小写敏感；所有未声明值均非法。
+
+基础类型：
 
 ```text
-d2-capture.json
-runner-output/**
+Sha40       = string /^[0-9a-f]{40}$/
+Sha256      = string /^[0-9a-f]{64}$/
+DecId       = string /^(?:[1-9][0-9]{0,19})$/ 且数值 <= 18446744073709551615
+SafeUInt    = JSON integer 0..9007199254740991
+PositiveInt = JSON integer 1..9007199254740991
+UInt32      = JSON integer 0..4294967295
+UnixMs      = JSON integer 0..9007199254740991
+UtcTime     = string `YYYY-MM-DDTHH:mm:ss.sssZ`，必须可解析且 round-trip 相同
+HttpsUrl    = 有效 absolute HTTPS URL string，1..2048 UTF-8 bytes，无 fragment/userinfo
+RelPath     = NFC POSIX relative path，1..512 UTF-8 bytes；非绝对、无空/`.`/`..` segment、无 `\`、NUL、控制字符
+Printable   = NFC string，1..512 UTF-8 bytes，只含 U+0020..U+007E
+Platform    = enum(linux|windows)
 ```
 
-`runner-output/**` 是该平台 `domain-core-rest` runner 输出目录的完整、未经规范化复制。`d2-capture.json` 是封闭对象，至少准确记录：
+`d2-capture.json` 的 schema 恰为：
 
-- schema version；
-- platform；
-- H、P、E、S；
-- GitHub run ID、run attempt、event 和 `GITHUB_SHA`；
-- workflow job ID；
-- runner OS、arch、`ImageOS`、`ImageVersion`；
-- Node、pnpm 和 Vitest 版本；
-- exact command argv；
-- logical group ID 和 mode；
-- process exit code；
-- start/end Unix 毫秒；
-- selected identity count；
-- selected identity SHA-256；
-- runner manifest SHA-256；
-- verification report SHA-256；
-- 完整 `runner-output` canonical-tree SHA-256；
-- capture verdict。
+```text
+Capture = object[
+  schemaVersion: const("2B20B-P2F1R-D2-capture-v1"),
+  criterionComponent: const("D-C16A"),
+  platform: Platform,
+  sourceHead: Sha40,
+  parentArtifactHead: const("0bf487afc49069f6191dd7409362d5c227aa50dc"),
+  parentEvidenceHead: const("15b7e61682d3b34e45401cf132fa1a77b6347c22"),
+  settledBaselineHead: const("8898f62ceb90433634cf02e83ad5d4ff95db4499"),
+  ruleEvidenceHead: const("418b2fdb1c68578fa279fe915307efb802402247"),
+  acceptedProfileSourceHead: const("4d576e205cb20c37ba913b923a1cd39e8d800d18"),
+  github: CaptureGithub,
+  runner: CaptureRunner,
+  toolchain: CaptureToolchain,
+  invocation: CaptureInvocation,
+  ancestry: CaptureAncestry,
+  result: CaptureResult,
+  runnerOutput: CaptureRunnerOutput,
+  captureVerdict: const("D2_CAPTURE_VALID")
+]
 
-成功条件：
+CaptureGithub = object[
+  workflowName: const("CI"),
+  eventName: const("push"),
+  runId: DecId,
+  runAttempt: PositiveInt,
+  githubSha: Sha40,
+  workflowJobId: enum(test-shard|deterministic-windows)
+]
 
-- 两个平台都为普通 `domain-core-rest`；
-- 两个平台 selected identity count 都是 503；
-- 两个平台 selected identity SHA-256 完全相同；
-- 两个平台 process exit code 为 0；
-- manifest 和 verification 均有效；
-- capture 中不得出现本机绝对路径。
+CaptureRunner = object[
+  os: enum(Linux|Windows),
+  arch: const("X64"),
+  imageOs: Printable,
+  imageVersion: Printable
+]
 
-## 14. 公共 run、artifact 与 job-log 采集
+CaptureToolchain = object[
+  nodeVersion: const("v24.15.0"),
+  pnpmVersion: const("11.7.0"),
+  vitestVersion: const("3.2.6")
+]
 
-只能接受一个冻结 H 的 `push` workflow run：
+CaptureInvocation = object[
+  commandArgv: tuple[
+    const("node"),
+    const("scripts/run-vitest-logical-group.mjs"),
+    const("run"),
+    const("--mode"),
+    const("ordinary"),
+    const("--logical-group-id"),
+    const("domain-core-rest")
+  ],
+  mode: const("ordinary"),
+  logicalGroupId: const("domain-core-rest")
+]
 
-- workflow name=`CI`
-- event=`push`
-- head SHA=`H`
-- workflow conclusion=`success`
-- Linux 和 Windows 都来自相同 `runId + runAttempt`
-- 两个 job conclusion 均为 `success`
-- 不得混用 rerun attempt、PR merge ref 或不同 run 的证据
+CaptureAncestry = object[
+  checkoutHead: Sha40,
+  repositoryIsShallow: const(false),
+  sourceObjectReadable: const(true),
+  parentArtifactObjectReadable: const(true),
+  parentEvidenceObjectReadable: const(true),
+  settledBaselineObjectReadable: const(true),
+  ruleEvidenceObjectReadable: const(true),
+  acceptedProfileSourceObjectReadable: const(true),
+  parentArtifactIsAncestorOfSource: const(true),
+  parentEvidenceIsAncestorOfSource: const(true),
+  settledBaselineIsAncestorOfSource: const(true),
+  ruleEvidenceIsAncestorOfSource: const(true),
+  acceptedProfileSourceIsReachable: const(true),
+  evidenceParentEqualsArtifact: const(true),
+  artifactParentEqualsSettled: const(true)
+]
 
-离线 acquisition root 固定布局：
+CaptureResult = object[
+  startedAtUnixMs: UnixMs,
+  endedAtUnixMs: UnixMs,
+  processExitCode: const(0),
+  selectedIdentityCount: const(503),
+  selectedIdentitySha256: Sha256,
+  failedCount: const(0),
+  skippedCount: const(0),
+  todoCount: const(0),
+  globalErrorCount: const(0),
+  manifestRelativePath: const("logical-manifest.json"),
+  manifestSha256: Sha256,
+  verificationRelativePath: const("verification.json"),
+  verificationReportSha256: Sha256
+]
+
+CaptureRunnerOutput = object[
+  relativeRoot: const("runner-output"),
+  fileCount: PositiveInt,
+  byteLength: SafeUInt,
+  canonicalTreeSha256: Sha256
+]
+```
+
+递归语义：
+
+- `platform=linux` iff `workflowJobId=test-shard` and `runner.os=Linux`。
+- `platform=windows` iff `workflowJobId=deterministic-windows` and `runner.os=Windows`。
+- `sourceHead=github.githubSha=ancestry.checkoutHead`。
+- `endedAtUnixMs >= startedAtUnixMs`。
+- 两个平台的 `selectedIdentitySha256` 必须相等。
+- manifest 和 verification 必须位于 runner-output root 的固定相对路径、为普通文件，且经现有 runner 自身 exact verifier 成功；D2 不重新定义 runner 内部 schema。
+- `runner-output/**` 是不经换行、mtime 或权限规范化的完整复制；tree hash 使用 §14 算法。
+- artifact root 只能包含顶层 `d2-capture.json` 和 `runner-output/`；其他顶层条目失败。
+- `selectedIdentitySha256 = SHA256(UTF8(JSON.stringify(logical-manifest.json.selectedIdentities) + "\n"))`；该 array 必须先通过现有 logical runner verifier，保持其已冻结 ordinal 顺序，不再排序或规范化。
+- `manifestSha256` 与 `verificationReportSha256` 分别是两个固定文件的原始 bytes SHA-256。
+- `startedAtUnixMs` 是所有 `segment-evidence/*.json.process.startedAtUnixMs` 的最小值；`endedAtUnixMs` 是最大值；`processExitCode=0` 表示所有 segment process exitCode=0 且 logical manifest `mergeEligibility=true`、verification `result=PASS`。
+- `failedCount/skippedCount/todoCount/globalErrorCount` 分别是所有已由 runner verifier 验证的 segment task/global records 的精确和；四者必须为 0。不得从 stdout 文本推断。
+
+## 14. 公共 run、artifact、log 与 acquisition manifest exact schema
+
+只能接受一个冻结 H 的 `push` workflow run：workflow name=`CI`、event=`push`、head SHA=`H`、status=`completed`、conclusion=`success`；Linux 和 Windows 必须来自相同 `runId + runAttempt`，两个 job 均成功。不得混用 attempt、PR merge ref、不同 run 或不同 H。
+
+acquisition root 恰为：
 
 ```text
 acquisition-manifest.json
 api/run.json
 api/jobs/linux.json
 api/jobs/windows.json
-artifacts/linux/**
-artifacts/windows/**
-logs/linux.bin
-logs/windows.bin
-captures/linux/d2-capture.json
-captures/windows/d2-capture.json
+api/artifacts.json
+downloads/artifacts/linux.zip
+downloads/artifacts/windows.zip
+downloads/logs/linux.bin
+downloads/logs/windows.bin
+artifacts/linux/d2-capture.json
+artifacts/linux/runner-output/**
+artifacts/windows/d2-capture.json
+artifacts/windows/runner-output/**
 ```
 
-`acquisition-manifest.json` 记录每个输入的来源 URL、获取时间、字节长度和 SHA-256。它是临时采集物，不提交。
+GitHub `api/*.json` 和下载 blob 是 T1 provider payload/opaque bytes，不是 D2-issued schema；verifier 只通过封闭 JSON Pointer allowlist 读取 required provider fields，拒绝 required field 缺失/类型错误，但不会将 provider 的扩展字段复制入 D2 output。D2 自有 `acquisition-manifest.json` 必须符合：
 
-Artifact canonical-tree SHA-256 算法：
+```text
+AcquisitionManifest = object[
+  schemaVersion: const("2B20B-P2F1R-D2-acquisition-v1"),
+  sourceHead: Sha40,
+  acquiredAtUtc: UtcTime,
+  workflowApi: ApiBlob,
+  jobApis: tuple[LinuxJobApi, WindowsJobApi],
+  artifactsApi: ArtifactsApi,
+  artifactArchives: tuple[LinuxArchive, WindowsArchive],
+  artifactTrees: tuple[LinuxTree, WindowsTree],
+  jobLogs: tuple[LinuxLogBlob, WindowsLogBlob]
+]
 
-1. 递归枚举普通文件，拒绝 symlink、junction 和设备文件。
-2. 相对路径转为 `/`，拒绝 `..`、绝对路径和大小写碰撞。
-3. 按路径 UTF-8 字节序排序。
-4. 对每个文件依次哈希：
-   `pathLength:uint32be || pathUtf8 || 0x00 || fileLength:uint64be || sha256(fileBytes)`。
-5. 最终 SHA-256 不使用 ZIP 时间戳、权限位或文件枚举顺序。
+ApiBlob = object[
+  recordId: const("api-workflow"),
+  relativePath: const("api/run.json"),
+  sourceUrl: HttpsUrl,
+  byteLength: PositiveInt,
+  sha256: Sha256
+]
 
-两个 `logs/*.bin` 是各自 GitHub job-log 下载响应的原始字节；记录字节长度和 SHA-256，不对换行或编码做规范化。
+LinuxJobApi = object[
+  recordId: const("api-job-linux"),
+  jobRef: const("job-linux"),
+  relativePath: const("api/jobs/linux.json"),
+  sourceUrl: HttpsUrl,
+  byteLength: PositiveInt,
+  sha256: Sha256
+]
 
-## 15. E2 最终证据包的封闭 schema
+WindowsJobApi = LinuxJobApi with exact substitutions:
+  recordId="api-job-windows"; jobRef="job-windows";
+  relativePath="api/jobs/windows.json"
 
-唯一持久化证据包：
+ArtifactsApi = object[
+  recordId: const("api-artifacts"),
+  relativePath: const("api/artifacts.json"),
+  sourceUrl: HttpsUrl,
+  byteLength: PositiveInt,
+  sha256: Sha256
+]
+
+LinuxArchive = object[
+  recordId: const("archive-linux"),
+  jobRef: const("job-linux"),
+  relativePath: const("downloads/artifacts/linux.zip"),
+  sourceUrl: HttpsUrl,
+  byteLength: PositiveInt,
+  sha256: Sha256
+]
+
+WindowsArchive = LinuxArchive with exact substitutions:
+  recordId="archive-windows"; jobRef="job-windows";
+  relativePath="downloads/artifacts/windows.zip"
+
+LinuxTree = object[
+  recordId: const("tree-linux"),
+  archiveRef: const("archive-linux"),
+  relativeRoot: const("artifacts/linux"),
+  fileCount: PositiveInt,
+  byteLength: SafeUInt,
+  canonicalTreeSha256: Sha256
+]
+
+WindowsTree = LinuxTree with exact substitutions:
+  recordId="tree-windows"; archiveRef="archive-windows";
+  relativeRoot="artifacts/windows"
+
+LinuxLogBlob = object[
+  recordId: const("log-download-linux"),
+  jobRef: const("job-linux"),
+  relativePath: const("downloads/logs/linux.bin"),
+  sourceUrl: HttpsUrl,
+  byteLength: PositiveInt,
+  sha256: Sha256
+]
+
+WindowsLogBlob = LinuxLogBlob with exact substitutions:
+  recordId="log-download-windows"; jobRef="job-windows";
+  relativePath="downloads/logs/windows.bin"
+```
+
+`with exact substitutions` 只允许列出的 constant value 替换；key、key order、type 和 cardinality 不变。
+
+Canonical artifact tree hash：递归枚举普通文件；拒绝 symlink、junction、设备文件、绝对/回退路径及 Unicode-normalized 或大小写碰撞；相对路径转 POSIX 并按 UTF-8 bytes 排序；每个文件依次输入 `pathLength:uint32be || pathUtf8 || 0x00 || fileLength:uint64be || sha256(fileBytes)`；最终 SHA-256 不使用 ZIP 元数据、mtime、权限或枚举顺序。原始 job-log bytes 不规范化换行或编码。
+
+所有 `recordId` 全局唯一；所有 `jobRef/archiveRef` 必须恰解析一次。manifest 自报 hash 必须与实际 bytes/tree 重算值一致。
+
+GitHub provider allowlist 必须从该 raw response 取得恰好两个目标 artifact 的 `id/name/size_in_bytes/expired/expires_at/archive_download_url`；要求 `expired=false`、名称与 H 精确匹配、无同名重复。final Bundle 的 artifact metadata 必须来自该 API 并与 archive download URL/bytes/tree 交叉验证。
+
+## 15. E2 final bundle 完整递归 exact schema
+
+唯一持久化证据包路径保持：
 
 `docs/implementation/phase-3-slice-2b20b-p2f1r-d2-publication-evidence-bundle.json`
 
-顶层键必须且只能是：
+采用 §13 notation 和 §11 canonical bytes。完整 schema：
 
 ```text
-schemaVersion
-sourceHead
-parentArtifactHead
-parentEvidenceHead
-workflow
-ancestry
-jobs
-artifacts
-logs
-retention
-catalogReconciliation
-designExpectedBindings
-actualBindings
-d3Handoff
-finalStructuralVerdict
+Bundle = object[
+  schemaVersion: const("2B20B-P2F1R-D2-publication-evidence-v1"),
+  sourceHead: Sha40,
+  parentArtifactHead: const("0bf487afc49069f6191dd7409362d5c227aa50dc"),
+  parentEvidenceHead: const("15b7e61682d3b34e45401cf132fa1a77b6347c22"),
+  workflow: Workflow,
+  ancestry: BundleAncestry,
+  jobs: tuple[LinuxJob, WindowsJob],
+  artifacts: tuple[LinuxArtifact, WindowsArtifact],
+  logs: tuple[LinuxLog, WindowsLog],
+  retention: Retention,
+  catalogReconciliation: CatalogReconciliation,
+  designExpectedBindings: tuple[D16Expected, D16AExpected, D16BExpected],
+  actualBindings: tuple[D16AActual, D16BActual],
+  d3Handoff: D3Handoff,
+  finalStructuralVerdict: const("D2_PUBLICATION_EVIDENCE_BUNDLE_VALID")
+]
+
+Workflow = object[
+  recordId: const("workflow-ci-push"),
+  workflowName: const("CI"),
+  event: const("push"),
+  runId: DecId,
+  runAttempt: PositiveInt,
+  headSha: Sha40,
+  status: const("completed"),
+  conclusion: const("success"),
+  htmlUrl: HttpsUrl,
+  createdAtUtc: UtcTime,
+  updatedAtUtc: UtcTime
+]
+
+BundleAncestry = object[
+  recordId: const("ancestry-proof"),
+  settledBaselineHead: const("8898f62ceb90433634cf02e83ad5d4ff95db4499"),
+  ruleEvidenceHead: const("418b2fdb1c68578fa279fe915307efb802402247"),
+  acceptedProfileSourceHead: const("4d576e205cb20c37ba913b923a1cd39e8d800d18"),
+  components: tuple[LinuxAncestry, WindowsAncestry]
+]
+
+AncestryComponent = object[
+  recordId: enum(ancestry-linux|ancestry-windows),
+  jobRef: enum(job-linux|job-windows),
+  platform: Platform,
+  checkoutHead: Sha40,
+  githubSha: Sha40,
+  repositoryIsShallow: const(false),
+  sourceObjectReadable: const(true),
+  parentArtifactObjectReadable: const(true),
+  parentEvidenceObjectReadable: const(true),
+  settledBaselineObjectReadable: const(true),
+  ruleEvidenceObjectReadable: const(true),
+  acceptedProfileSourceObjectReadable: const(true),
+  parentArtifactIsAncestorOfSource: const(true),
+  parentEvidenceIsAncestorOfSource: const(true),
+  settledBaselineIsAncestorOfSource: const(true),
+  ruleEvidenceIsAncestorOfSource: const(true),
+  acceptedProfileSourceIsReachable: const(true),
+  evidenceParentEqualsArtifact: const(true),
+  artifactParentEqualsSettled: const(true)
+]
+LinuxAncestry = AncestryComponent with recordId="ancestry-linux", jobRef="job-linux", platform="linux".
+WindowsAncestry = AncestryComponent with recordId="ancestry-windows", jobRef="job-windows", platform="windows".
+
+Job = object[
+  recordId: enum(job-linux|job-windows),
+  workflowRef: const("workflow-ci-push"),
+  workflowJobId: enum(test-shard|deterministic-windows),
+  jobDisplayName: Printable,
+  jobDatabaseId: DecId,
+  platform: Platform,
+  runnerOs: enum(Linux|Windows),
+  runnerArch: const("X64"),
+  imageOs: Printable,
+  imageVersion: Printable,
+  nodeVersion: const("v24.15.0"),
+  pnpmVersion: const("11.7.0"),
+  vitestVersion: const("3.2.6"),
+  commandArgv: tuple[const("node"),const("scripts/run-vitest-logical-group.mjs"),const("run"),const("--mode"),const("ordinary"),const("--logical-group-id"),const("domain-core-rest")],
+  startedAtUtc: UtcTime,
+  completedAtUtc: UtcTime,
+  processStartedAtUnixMs: UnixMs,
+  processEndedAtUnixMs: UnixMs,
+  conclusion: const("success"),
+  processExitCode: const(0),
+  logicalGroupId: const("domain-core-rest"),
+  mode: const("ordinary"),
+  selectedIdentityCount: const(503),
+  selectedIdentitySha256: Sha256,
+  failedCount: const(0),
+  skippedCount: const(0),
+  todoCount: const(0),
+  globalErrorCount: const(0),
+  manifestSha256: Sha256,
+  verificationReportSha256: Sha256,
+  captureSha256: Sha256,
+  artifactRef: enum(artifact-linux|artifact-windows),
+  logRef: enum(log-linux|log-windows)
+]
+
+LinuxJob = Job with exact constants:
+  recordId="job-linux"; workflowJobId="test-shard";
+  jobDisplayName="test shard (domain-core-rest)"; platform="linux";
+  runnerOs="Linux"; artifactRef="artifact-linux"; logRef="log-linux".
+
+WindowsJob = Job with exact constants:
+  recordId="job-windows"; workflowJobId="deterministic-windows";
+  jobDisplayName="deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch/dreamer/clockmaker";
+  platform="windows"; runnerOs="Windows";
+  artifactRef="artifact-windows"; logRef="log-windows".
+
+Artifact = object[
+  recordId: enum(artifact-linux|artifact-windows),
+  jobRef: enum(job-linux|job-windows),
+  artifactId: DecId,
+  name: Printable,
+  sourceHead: Sha40,
+  retentionDays: const(7),
+  expiresAtUtc: UtcTime,
+  sizeInBytes: PositiveInt,
+  downloadedFileCount: PositiveInt,
+  downloadedTreeSha256: Sha256,
+  captureFileSha256: Sha256
+]
+
+LinuxArtifact = Artifact with exact constants:
+  recordId="artifact-linux"; jobRef="job-linux";
+  name="d2-linux-domain-core-rest-" + Bundle.sourceHead.
+WindowsArtifact = Artifact with exact constants:
+  recordId="artifact-windows"; jobRef="job-windows";
+  name="d2-windows-domain-core-rest-" + Bundle.sourceHead.
+
+Log = object[
+  recordId: enum(log-linux|log-windows),
+  jobRef: enum(job-linux|job-windows),
+  jobDatabaseId: DecId,
+  downloadUrl: HttpsUrl,
+  byteLength: PositiveInt,
+  downloadedBlobSha256: Sha256
+]
+LinuxLog = Log with recordId="log-linux", jobRef="job-linux".
+WindowsLog = Log with recordId="log-windows", jobRef="job-windows".
+
+Retention = object[
+  policy: const("GITHUB_ACTIONS_ARTIFACT_RETENTION"),
+  retentionDays: const(7),
+  hostedAvailability: const("EXPIRES_AFTER_RETENTION"),
+  historicalBinding: const("HASH_REMAINS_AFTER_EXPIRY")
+]
+
+CatalogReconciliation = object[
+  recordId: const("catalog-support"),
+  path: const("docs/architecture/2B20B-P2F1R-C1-generated-structural-schema-catalog-v2.md"),
+  blobOid: const("4f9a376e56f19b241d76ce2a75be83b70859ae25"),
+  rawLength: const(264855),
+  rawSha256: const("e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6"),
+  lfCount: const(626),
+  windowsCheckoutLength: const(265481),
+  windowsCheckoutSha256: const("7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7"),
+  classification: const("LF_TO_CRLF_CHECKOUT_CONVERSION_ONLY"),
+  runtimeAuthority: const(false)
+]
+
+ExpectedBinding = object[
+  CriterionId: enum(D-C16|D-C16A|D-C16B),
+  RuleClaim: Printable,
+  CompletionCriterion: Printable,
+  RequiredEvidenceMechanism: Printable,
+  ExpectedReachability: const("R4_FUTURE_HYPOTHETICAL_STATE"),
+  ExpectedTrust: const("T1_EXTERNAL_OR_PERSISTED_BOUNDARY"),
+  ExpectedPrimaryLayer: enum(NONE|CROSS_PLATFORM_CI|STRUCTURAL_VALIDATION),
+  ExpectedResult: Printable,
+  SupportingAuthorityRequirement: const("NONE")
+]
+D16Expected/D16AExpected/D16BExpected 的九个值必须分别与 §18 三张 corrected normative row byte-for-byte 相同；不得自由文本变体。
+
+ActualBinding = object[
+  CriterionId: enum(D-C16A|D-C16B),
+  ActualTestFile: RelPath,
+  ActualTestTitle: Printable,
+  ActualPrimaryLayer: enum(CROSS_PLATFORM_CI|STRUCTURAL_VALIDATION),
+  ActualReachability: const("R4_FUTURE_HYPOTHETICAL_STATE"),
+  ActualTrust: const("T1_EXTERNAL_OR_PERSISTED_BOUNDARY"),
+  SupportingAuthorityId: const("NONE"),
+  MechanismMatch: enum(PASS|FAIL)
+]
+D16AActual/D16BActual 的 exact values 与 §18 相同；成功 Bundle 语义额外要求两者 `MechanismMatch=PASS`。D-C16 Actual 非法。
+
+D3Handoff = object[
+  recordId: const("d3-handoff"),
+  designAuthorityPath: const("docs/architecture/2B20B-P2F1R-D2-minimal-exact-head-publication-evidence-final-design-v1.md"),
+  designAuthorityCommit: Sha40,
+  designAuthorityBlobSha256: Sha256,
+  sourceHeadRef: const("source-head"),
+  parentArtifactHeadRef: const("parent-artifact-head"),
+  parentEvidenceHeadRef: const("parent-evidence-head"),
+  workflowRef: const("workflow-ci-push"),
+  jobRefs: tuple[const("job-linux"),const("job-windows")],
+  artifactRefs: tuple[const("artifact-linux"),const("artifact-windows")],
+  logRefs: tuple[const("log-linux"),const("log-windows")],
+  bundleRef: const("d2-final-bundle"),
+  archiveCategories: tuple[const("E2_FINAL_EVIDENCE_BUNDLE"),const("H_SOURCE_STATUS_RECORD"),const("FINAL_CODE_REVIEW_VERBATIM"),const("FINAL_RULE_REVIEW_VERBATIM")],
+  deleteAfterD3Categories: tuple[const("TEMPORARY_VERIFIER"),const("D2_WORKFLOW_STEPS_AND_CHECKOUT_DELTAS"),const("TEMPORARY_D2_BRANCH"),const("LOCAL_DOWNLOADED_ARTIFACTS"),const("RAW_JOB_LOGS"),const("TEMPORARY_WORKTREES"),const("ACQUISITION_ROOT_AND_MANIFEST"),const("SELF_TEST_NEGATIVE_FIXTURES")],
+  keepOperationalAssetCount: const(0),
+  cleanupRequired: const(true)
+]
 ```
 
-固定约束：
+```text
+source-head             -> JSON Pointer /sourceHead
+parent-artifact-head    -> JSON Pointer /parentArtifactHead
+parent-evidence-head    -> JSON Pointer /parentEvidenceHead
+workflow-ci-push        -> /workflow/recordId
+job-linux               -> /jobs/0/recordId
+job-windows             -> /jobs/1/recordId
+artifact-linux          -> /artifacts/0/recordId
+artifact-windows        -> /artifacts/1/recordId
+log-linux               -> /logs/0/recordId
+log-windows             -> /logs/1/recordId
+d2-final-bundle         -> document root /
+```
 
-- `schemaVersion="2B20B-P2F1R-D2-publication-evidence-v1"`
-- `sourceHead=H`
-- `parentArtifactHead=P`
-- `parentEvidenceHead=E`
-- `workflow` 记录 workflow name、十进制字符串 run ID、attempt、event、head SHA、status、conclusion、URL 和 API 时间戳。
-- `ancestry` 记录两个平台各自的 checkout/ancestor 结果以及固定 P/E/S/profile-source 可达性；所有 required boolean 必须为 `true`。
-- `jobs` 必须恰有两个有序记录：`linux-domain-core-rest`、`windows-domain-core-rest`。
-- 每个 job 记录 workflow job ID、完整 display name、GitHub numeric job ID、平台/runner/image、工具链、exact argv、起止时间、conclusion、exit code、identity count、identity SHA、manifest SHA、verification SHA、artifact ref 和 log ref。
-- `artifacts` 必须恰有两个记录，包含 artifact ID、名称、job ref、H、保留天数、到期时间、字节长度、文件数和 canonical-tree SHA-256。
-- `logs` 必须恰有两个记录，包含 job ref、下载 URL、字节长度和原始 SHA-256。
-- `retention` 固定为 7 天，并声明 hosted artifact 过期后 E2 哈希仍是历史证据，而不是可下载性保证。
-- `catalogReconciliation` 只能记录第 17 节的支持性 catalog 事实。
-- `designExpectedBindings` 恰有 D-C16、D-C16A、D-C16B 三条设计记录。
-- `actualBindings` 恰有 D-C16A、D-C16B 两条实际记录。
-- `d3Handoff` 只能通过稳定 record ID 引用 H、P、E、run、jobs、artifacts、logs、bundle 和清理类别；不得重复大块 payload。
-- `finalStructuralVerdict="D2_PUBLICATION_EVIDENCE_BUNDLE_VALID"`。
+每个 reference literal 只能按此表解析一次；top-level scalar/root tokens 是显式合法 target，不要求额外 `recordId`。任何其他 target、duplicate 或 dangling ref 失败。
 
-缺字段、额外字段、错误顺序、未知 enum、重复 record ID、悬空引用或类型不精确均失败。
+递归 cross-field/ref 合同：
+
+- `Bundle.sourceHead=workflow.headSha=jobs[*] capture sourceHead=artifacts[*].sourceHead`。
+- workflow `runId/runAttempt` 与两个 capture 及 provider API 相同。
+- 所有 record ID 全局唯一；每个 ref 恰解析一次；禁止 duplicate、dangling 或 cross-platform ref。
+- Linux ancestry/job/artifact/log/capture 只能互引 Linux；Windows 同理。
+- job `jobDatabaseId` 必须等于对应 log `jobDatabaseId` 和 provider job ID。
+- artifact `captureFileSha256` 必须等于提取的 `d2-capture.json` bytes SHA；tree SHA/size/count 必须等于重算值。
+- 两 job 的 selected identity SHA 相同；各字段与其 capture/runner manifest 完全一致。
+- 时间必须 `created <= job started <= job completed <= workflow updated`，process end >= process start，artifact expiry 晚于 workflow completion。
+- `designAuthorityCommit` 由 §29 external algorithm 解析；该 commit 上目标 path 的 blob bytes SHA 必须等于 `designAuthorityBlobSha256`，且 H 上同 path 内容相同。
+- object key、array order、cardinality、nullability、enum、range、canonical bytes 和 no-extra 递归适用于所有层级。
 
 ## 16. 每个证据字段的消费者
 
@@ -434,55 +845,92 @@ finalStructuralVerdict
 
 D2 不生成、不修改、不添加 catalog verifier。
 
-## 18. Governance V1.1 映射
+`audit-bundle` 内部必须有且只有 `runSelfTestMode`、`runCaptureRunnerMode`、`runAuditBundleMode` 三个 mode entry；D-C16 校验函数位置固定为 `validateD16A` 和 `validateD16B`；成功写入位置固定为 `issueFinalBundleAtomically`。函数可在同一脚本中分解纯 helper，但不得产生第二 verifier 或第二发行路径。
 
-D-C16 是分组 criterion，不是 active primary：
+`validateD16A` 和 `validateD16B` 任一失败，内部机制结果为 `FAIL`，立即停止且不构造 `actualBindings`。只有两者都成功时，`issueFinalBundleAtomically` 一次性构造两条 `PASS` Actual 并发行整个 Bundle。成功 Bundle 含 `FAIL`、`MATCH` 或缺 Actual 必须被 verifier 自身 reread 拒绝。
 
-| 字段 | D-C16 |
-|---|---|
-| `CriterionId` | `D-C16` |
-| `RuleClaim` | D2 公共发布证据分组 |
-| `CompletionCriterion` | D-C16A 和 D-C16B 均完成 |
-| `RequiredEvidenceMechanism` | grouping only |
-| `ExpectedReachability` | `R4 FUTURE_HYPOTHETICAL_STATE` |
-| `ExpectedTrust` | `T1 EXTERNAL_OR_PERSISTED_BOUNDARY` |
-| `ExpectedPrimaryLayer` | `NONE` |
-| `ExpectedResult` | 子 criterion 全部通过 |
-| `SupportingAuthorityRequirement` | `NONE` |
+## 18. Governance V1.1 与 exact Actual mechanism mapping
 
-两个 active criterion：
-
-| 字段 | D-C16A | D-C16B |
-|---|---|---|
-| `CriterionId` | `D-C16A` | `D-C16B` |
-| `RuleClaim` | 同一 exact-H push run 产生 Linux/Windows 普通组公共证据 | 离线 verifier 对完整发布证据执行封闭结构验证 |
-| `CompletionCriterion` | 两个 required job、artifact、log、ancestry 和 503 身份绑定均成功 | 封闭 schema、哈希、引用、期望/实际映射和 D3 handoff 均成功 |
-| `RequiredEvidenceMechanism` | `CROSS_PLATFORM_CI` | `STRUCTURAL_VALIDATION` |
-| `ExpectedReachability` | `R4 FUTURE_HYPOTHETICAL_STATE` | `R4 FUTURE_HYPOTHETICAL_STATE` |
-| `ExpectedTrust` | `T1 EXTERNAL_OR_PERSISTED_BOUNDARY` | `T1 EXTERNAL_OR_PERSISTED_BOUNDARY` |
-| `ExpectedPrimaryLayer` | `CROSS_PLATFORM_CI` | `STRUCTURAL_VALIDATION` |
-| `ExpectedResult` | 同 run 双平台成功证据 | 原子生成有效封闭 bundle |
-| `SupportingAuthorityRequirement` | `NONE` | `NONE` |
-
-`actualBindings` 每条必须且只能包含：
+D-C16 仍是 grouping-only，不得拥有 Actual、primary identity 或 SUP ledger。其九字段 row 恰为：
 
 ```text
-CriterionId
-ActualTestFile
-ActualTestTitle
-ActualPrimaryLayer
-ActualReachability
-ActualTrust
-SupportingAuthorityId
-MechanismMatch
+CriterionId=D-C16
+RuleClaim=D2 public publication evidence grouping
+CompletionCriterion=D-C16A and D-C16B both PASS for the same sourceHead
+RequiredEvidenceMechanism=GROUPING_ONLY
+ExpectedReachability=R4_FUTURE_HYPOTHETICAL_STATE
+ExpectedTrust=T1_EXTERNAL_OR_PERSISTED_BOUNDARY
+ExpectedPrimaryLayer=NONE
+ExpectedResult=Both child criteria PASS atomically; no third primary
+SupportingAuthorityRequirement=NONE
 ```
 
-- D-C16A 的 `ActualTestFile` 绑定 H 的 `.github/workflows/ci.yml`。
-- D-C16B 的 `ActualTestFile` 绑定 H 的 verifier。
-- 两条 `SupportingAuthorityId=NONE`。
-- 两条 `MechanismMatch` 只能在实际证据满足设计后写为 `MATCH`。
-- 分组 D-C16 不得伪造 actual binding。
-- Catalog 是支持性对账材料，但不建立新的 Governance supporting-authority ledger。
+D-C16A 九字段 row 恰为：
+
+```text
+CriterionId=D-C16A
+RuleClaim=One exact-H push run supplies Linux and Windows ordinary domain-core-rest publication evidence
+CompletionCriterion=One successful runId/runAttempt binds exact H, two required jobs, two captures, two artifacts, two raw job logs, complete ancestry, and identical 503-test identity SHA
+RequiredEvidenceMechanism=CROSS_PLATFORM_CI
+ExpectedReachability=R4_FUTURE_HYPOTHETICAL_STATE
+ExpectedTrust=T1_EXTERNAL_OR_PERSISTED_BOUNDARY
+ExpectedPrimaryLayer=CROSS_PLATFORM_CI
+ExpectedResult=The same successful push run proves both platform components without stale, partial, cross-swapped, or mixed-attempt evidence
+SupportingAuthorityRequirement=NONE
+```
+
+D-C16B 九字段 row 恰为：
+
+```text
+CriterionId=D-C16B
+RuleClaim=One offline T1 verifier validates and atomically issues the closed recursive D2 publication evidence bundle
+CompletionCriterion=The verifier accepts exact canonical capture, acquisition, Git/API/artifact/log bindings, recursive schema, reference graph, expected/actual mappings, catalog support facts, and D3 handoff, then atomically writes one bundle
+RequiredEvidenceMechanism=STRUCTURAL_VALIDATION
+ExpectedReachability=R4_FUTURE_HYPOTHETICAL_STATE
+ExpectedTrust=T1_EXTERNAL_OR_PERSISTED_BOUNDARY
+ExpectedPrimaryLayer=STRUCTURAL_VALIDATION
+ExpectedResult=One canonical bundle is issued only after all checks PASS; every malformed or failed input leaves no bundle and no Actual record
+SupportingAuthorityRequirement=NONE
+```
+
+成功 Bundle 的两条 Actual 必须按 D-C16A、D-C16B 排序并精确为：
+
+```text
+D-C16A
+CriterionId=D-C16A
+ActualTestFile=.github/workflows/ci.yml
+ActualTestTitle=D-C16A GitHub push run <workflow.runId>/<workflow.runAttempt> at <sourceHead>: linux+windows domain-core-rest 503/503
+ActualPrimaryLayer=CROSS_PLATFORM_CI
+ActualReachability=R4_FUTURE_HYPOTHETICAL_STATE
+ActualTrust=T1_EXTERNAL_OR_PERSISTED_BOUNDARY
+SupportingAuthorityId=NONE
+MechanismMatch=PASS
+```
+
+其中 angle expression 必须用当前 Bundle 对应值替换，不得保留 `<`/`>`。
+
+```text
+D-C16B
+CriterionId=D-C16B
+ActualTestFile=scripts/verify-p2f1r-d2-publication-evidence.mjs
+ActualTestTitle=D-C16B audit-bundle at <sourceHead>: 2B20B-P2F1R-D2-publication-evidence-v1
+ActualPrimaryLayer=STRUCTURAL_VALIDATION
+ActualReachability=R4_FUTURE_HYPOTHETICAL_STATE
+ActualTrust=T1_EXTERNAL_OR_PERSISTED_BOUNDARY
+SupportingAuthorityId=NONE
+MechanismMatch=PASS
+```
+
+同样必须替换 `<sourceHead>`。`MechanismMatch` base enum 是 `PASS|FAIL`；final success Bundle 只允许 PASS。`MATCH` 永远非法。D-C16 Actual、重复 A/B、A/B cross-swap、新 `SUP-*` 或第三 Actual 均非法。
+
+Exact mechanism locations：
+
+| Criterion | Main assertion | Formal entry | Fault mechanism |
+|---|---|---|---|
+| D-C16A | `scripts/verify-p2f1r-d2-publication-evidence.mjs::validateD16A` 对 Bundle `/workflow`、`/ancestry`、`/jobs/0..1`、`/artifacts/0..1`、`/logs/0..1` 与两 capture 的 same-H/same-run/503/identity/hash/ref conjunction | `.github/workflows/ci.yml::on.push -> jobs.test-shard(matrix.group=domain-core-rest).steps[id=d2-linux-domain-core-rest-capture] + jobs.deterministic-windows.steps[id=d2-windows-domain-core-rest-run,d2-windows-domain-core-rest-capture]` | `scripts/verify-p2f1r-d2-publication-evidence.mjs::runSelfTestMode::N1,N2,N3,N4,N5` 及 N6/N7 中适用于 D-C16A subtree 的 table rows |
+| D-C16B | `scripts/verify-p2f1r-d2-publication-evidence.mjs::validateD16B` 完成 recursive schema/canonical/ref/actual/catalog/D3 checks，并由 `issueFinalBundleAtomically` 一次发行 | `node scripts/verify-p2f1r-d2-publication-evidence.mjs audit-bundle` 的唯一 `runAuditBundleMode` entry | `scripts/verify-p2f1r-d2-publication-evidence.mjs::runSelfTestMode::N1..N7`，尤其 N6/N7 的全递归 mutation table |
+
+这些 locator 是 §15 八字段 Actual 的规范性解释，不新增 JSON key、不建立新 ledger。缺 locator、实现位置改名、主 assertion 不匹配、formal entry 不匹配或 fault table 不覆盖均使 `MechanismMatch=FAIL`，并触发 §11 无发行行为。
 
 ## 19. 文件 allowlist
 
@@ -515,7 +963,8 @@ H 冻结前必须满足：
 - Windows 使用现有普通逻辑组 runner，预期 503。
 - 只有两个 D2 artifact upload，均保留 7 天。
 - verifier 仅一个文件、三种 mode、无网络和生产 import。
-- verifier self-test 通过全部七个负例。
+- verifier self-test 通过 §21 恰好七个负面类别的全部 table-generated rows；逐层覆盖 capture、acquisition manifest、final Bundle、A/B Actual 和 ref graph。
+- verifier 对两个正例执行 canonical reread：唯一正确 A/B Actual 被接受；external design commit/path/blob 解析一致；不得接受 parent evidence head、stale materialization marker 或 content/path mismatch。
 - H status 文档只记录设计期望和实际本地 gate 结果，不记录未来 hosted 事实。
 - `pnpm typecheck`
 - `pnpm lint`
@@ -525,22 +974,26 @@ H 冻结前必须满足：
 - fresh local Rule Review 完整通过。
 - H 提交后 worktree clean。
 - H 一旦进入评审即冻结；任何提交都使评审失效。
+- static audit 确认 `MechanismMatch` 代码 enum 只有 PASS/FAIL，发行路径只写 PASS，任何 FAIL 不产生 output。
+- static audit 确认 `validateD16A`、`validateD16B`、`issueFinalBundleAtomically` 及 §18 step IDs/locations 唯一存在。
 
-## 21. 最小测试矩阵
+## 21. 七类 table-driven 负面合同
 
-不得新增 Vitest 测试文件。verifier self-test 必须恰好覆盖七类单点变异：
+负面治理计数仍恰为七个类别 N1–N7；每一类别由一个 table 定义多个单点 mutation row。row 数不产生新行为类别，也不得拆成第八类。每个 row 从同一 canonical positive fixture clone，仅应用一个 mutation，验证固定错误 token、无 output、无残留 temp file。
 
-| ID | 唯一变异 | 必须错误 token |
+| Category | Table-generated mutation domain | Required token |
 |---|---|---|
-| N1 | `sourceHead` 改为错误 SHA | `D2_SOURCE_HEAD_MISMATCH` |
-| N2 | 删除一个 required Linux 或 Windows job | `D2_REQUIRED_JOB_MISSING` |
-| N3 | 只修改一个 artifact SHA | `D2_ARTIFACT_SHA_MISMATCH` |
-| N4 | 只交换一个 platform/job mapping | `D2_PLATFORM_JOB_MAPPING_MISMATCH` |
-| N5 | 使 ancestry 不可证明 | `D2_ANCESTRY_UNPROVABLE` |
-| N6 | 删除一个 required bundle field | `D2_BUNDLE_REQUIRED_FIELD_MISSING` |
-| N7 | 添加一个未知 bundle field | `D2_BUNDLE_UNEXPECTED_FIELD` |
+| N1 | 对 capture、workflow、job、artifact 或 Actual title 中每个 source-head leaf 单独替换错误 Sha40；包括把 external design commit 错绑为 parent evidence head | `D2_SOURCE_HEAD_MISMATCH` |
+| N2 | 分别删除 Linux/Windows required job、capture、artifact 或 log；令 jobs/artifacts/logs/ancestry cardinality 为 0/1/3；重复 D-C16A 或 D-C16B Actual；加入 D-C16 Actual | `D2_REQUIRED_JOB_MISSING` 或 cardinality 子码 `D2_CARDINALITY_INVALID` |
+| N3 | 分别只改 archive SHA、tree SHA、capture SHA、manifest SHA、verification SHA、log SHA 或 acquisition blob SHA | `D2_ARTIFACT_SHA_MISMATCH` |
+| N4 | 单独交换任意 Linux/Windows platform、jobRef、artifactRef、logRef、workflowJobId、display name、capture、Actual A/B identity；包括 duplicate record ID 与 dangling/cross-platform ref | `D2_PLATFORM_JOB_MAPPING_MISMATCH` |
+| N5 | 单独令 shallow=true、required object readable=false、required ancestor=false、parent equality=false、checkout/GITHUB SHA 不同或 required commit object unavailable | `D2_ANCESTRY_UNPROVABLE` |
+| N6 | 对 §13–§15 每个 object 的每个 required key 做 deletion；对每个 scalar 做 wrong JSON type；对每个 enum/const/range做 invalid value/case；对每个 tuple 做 wrong cardinality/order；注入 duplicate JSON key、duplicate record ID、dangling ref；对每个 Actual 的 file/title/layer/R/T/SUP/mechanism 值及 §18 locator 做 missing/mismatch；测试 successful Bundle 含 FAIL、MATCH、unknown、wrong-case 或 missing MechanismMatch；测试 §29 external resolution 的 stale parent/pending-materialization/stale-action/content/path mismatch | `D2_BUNDLE_REQUIRED_FIELD_MISSING`，或更具体的 `D2_TYPE_INVALID` / `D2_ENUM_INVALID` / `D2_CARDINALITY_INVALID` / `D2_ORDER_INVALID` / `D2_DUPLICATE_ID` / `D2_DANGLING_REF` / `D2_ACTUAL_BINDING_INVALID` |
+| N7 | 对 Capture、其每个 nested object、AcquisitionManifest、其每个 nested object、Bundle 及其每个 nested object 分别添加一个 unknown key；对 fixed artifact root 添加未知顶层 entry | `D2_BUNDLE_UNEXPECTED_FIELD` |
 
-每个 fixture 只能包含一个目标变异。不得进行组合爆炸、模糊测试、性能框架或第二套 verifier。
+分类优先级固定为：duplicate-key scanner → unexpected/missing/key-order → type/null/range/enum → tuple cardinality/order → duplicate ID/ref graph/cross-swap → hash → ancestry → criterion semantics。一个 mutation 只期待该优先级下的一个 token。
+
+Positive table 必须恰有：一个 Linux Capture、一个 Windows Capture、一个 AcquisitionManifest、一个成功 Bundle；成功 Bundle 恰有 A/B 两 Actual 且值与 §18 唯一匹配。禁止 fuzz framework、第二 verifier、第二 schema 文件或新增 Vitest 文件。
 
 ## 22. Hosted CI 执行契约
 
@@ -559,6 +1012,15 @@ H 冻结后：
 若 H 不变且失败被明确分类为 hosted runner 的瞬时外部故障，可对同一 run 执行一次 rerun；新 attempt 必须完整替代旧 attempt，不得混合。相同失败再次发生即停止。实现或契约故障必须产生新 H，并重新执行全部 review 和 CI。
 
 当前设计阶段不运行 hosted CI。
+
+在 acquisition 后、发行前，`audit-bundle` 必须先解析 §29 external tokens：
+
+```text
+EXTERNAL_DESIGN_COMMIT = git log -1 --format=%H <H> -- <designPath>
+EXTERNAL_DESIGN_BLOB_SHA256 = SHA256(raw bytes from git show EXTERNAL_DESIGN_COMMIT:<designPath>)
+```
+
+要求 commit 是 H 的祖先、不是 `418b2f...`、其 path blob 与 H 上同 path blob byte-identical；结果只写入 future Bundle 的 `d3Handoff.designAuthorityCommit/designAuthorityBlobSha256`，不回写设计文件。解析失败不发行。
 
 ## 23. 强制评审顺序
 
@@ -580,6 +1042,8 @@ H 冻结后：
 14. 仅在两个最终 review 均通过且 blocker 为空后，交给 D3。
 
 最终 reviewer 必须输出完整且不截断的规定字段，包括 `reviewedPR`、`reviewedHead`、时间、scope、生产/测试/规则文件清单、findings、两个 verdict 和 blockers。当前无 PR 时 `reviewedPR=NONE_NOT_PUBLISHED`。控制器不得自行合成 PASS。
+
+将任何“fresh review”理解为 correction commit exact HEAD 的全新 review，旧 `87c5df6...` 的 `RULE_DESIGN_FIX_REQUIRED` 不可复用。不得在 fresh rereview 前实施、运行 workflow、CI、push 或 PR。
 
 ## 24. 文档要求
 
@@ -700,22 +1164,40 @@ D3 清理审计必须验证：
 - D2 artifacts：恰为 2
 - D2 raw job logs：恰为 2
 - negative cases：恰为 7
+- negative categories：恰为 7；table-generated mutation rows：按完整递归 schema 派生，不计为新类别
 - final JSON bundle：恰为 1
 
 修复预算：
 
-- `DesignCorrection=0/1`
+- `DesignCorrection=1/1`
 - `ImplementationRepair=0/2`
 - 禁止第三次设计修正或第三次实现修复。
 - 不采用旧 D2 的机械 LOC ceiling；边界由文件、行为类别和资产数量控制。
+- DesignCorrection 预算已耗尽；fresh rereview 再发现任何实质设计缺陷即 HUMAN_BLOCKED，不得创建 correction 2。
 
-## 29. 当前交接报告
+## 29. 当前交接报告与 external authority binding
+
+本文件已经物化，禁止在其正文写入承载本文件的 commit SHA 或本文件自身 digest。两个 token 是规范性 external binding 名称，不是 pending placeholder：
 
 ```text
-currentHead=418b2fdb1c68578fa279fe915307efb802402247
-authorization=READ_ONLY_ARCHITECT_DESIGN_ONLY
+EXTERNAL_DESIGN_COMMIT := git log -1 --format=%H <reviewed-or-source-head> -- docs/architecture/2B20B-P2F1R-D2-minimal-exact-head-publication-evidence-final-design-v1.md
+EXTERNAL_DESIGN_BLOB_SHA256 := SHA256(raw blob bytes at EXTERNAL_DESIGN_COMMIT:docs/architecture/2B20B-P2F1R-D2-minimal-exact-head-publication-evidence-final-design-v1.md)
+```
+
+独立 reviewer 必须在其外部报告中记录解析出的实际 40-hex commit 和 64-hex SHA-256，并验证 reviewed HEAD 上该 path 的 blob bytes 完全相同。不得把规则证据提交 `418b2f...`、父提交、工作树文件、不同 path 或内容不一致 blob 当作本设计 binding。
+
+```text
+authorization=READ_ONLY_ARCHITECT_DESIGN_CORRECTION_ONLY
+designMaterializationStatus=COMPLETE
+designAuthorityBinding=EXTERNAL_GIT_COMMIT_AND_RAW_BLOB_SHA256
+designCommitBindingToken=EXTERNAL_DESIGN_COMMIT
+designBlobSHA256BindingToken=EXTERNAL_DESIGN_BLOB_SHA256
+designPath=docs/architecture/2B20B-P2F1R-D2-minimal-exact-head-publication-evidence-final-design-v1.md
+authorityStatus=CURRENT_AND_COMPLETE_D2_DESIGN_AUTHORITY
+designCorrection=1/1
 ruleEvidence=docs/rules/evidence/2B20B-P2F1R-D2.md
 ruleEvidenceSHA256=671827090c071cc1062dd9c2199da09dd27f983b24f80855bc976d9d0eeb6505
+ruleEvidenceHead=418b2fdb1c68578fa279fe915307efb802402247
 ruleVerdict=RULE_READY
 involvedRoles=[]
 parentArtifactHeadP=0bf487afc49069f6191dd7409362d5c227aa50dc
@@ -726,25 +1208,30 @@ profileBodySHA256=4f047c39739b22ac0b4a04dda8eddc8125d902a8bcd281d448d8f616269864
 profileArtifactSHA256=2c84662b2fdf9ac368eae3e08a2eda51bcb5f45c78790bfd0bec7cbc236ae567
 inventory=1712_tests_36_physical_files
 historicalOldD2=HISTORICAL_UNACCEPTED_SUPERSEDED
-designPath=docs/architecture/2B20B-P2F1R-D2-minimal-exact-head-publication-evidence-final-design-v1.md
-designSHA256=PENDING_SOLE_WRITER_MATERIALIZATION
-authorityStatus=CURRENT_AND_COMPLETE_D2_DESIGN_AUTHORITY
 D2Scope=EXACT_ANCESTRY+WINDOWS_DOMAIN_CORE_REST+LINUX_WINDOWS_EVIDENCE_UPLOAD
 linuxJobId=test-shard
 windowsJobId=deterministic-windows
 windowsDomainCoreEvidence=DESIGNED_NOT_EXECUTED
+captureSchema=2B20B-P2F1R-D2-capture-v1
+acquisitionSchema=2B20B-P2F1R-D2-acquisition-v1
 bundleSchema=2B20B-P2F1R-D2-publication-evidence-v1
-T1Verifier=ONE_TEMPORARY_SCRIPT_THREE_MODES
-negativeCaseCount=7
+recursiveSchemaStatus=CLOSED_EXACT_NO_EXTRA
+t1Verifier=ONE_TEMPORARY_SCRIPT_THREE_MODES
+mechanismMatchEnum=PASS|FAIL
+successBundleMechanismMatch=PASS_FOR_BOTH_ACTUALS
+failedIssuanceBehavior=NO_BUNDLE_NO_ACTUAL_NO_SUCCESS_LOOKING_OUTPUT
+negativeCategoryCount=7
+negativeExecution=TABLE_DRIVEN_RECURSIVE_SINGLE_MUTATION
 workflowFilesModified=1
 newWorkflowCount=0
 newJobCount=0
 newMatrixCount=0
 D-C16Disposition=GROUPING_ONLY_NO_ACTUAL_BINDING
-D-C16APrimary=CROSS_PLATFORM_CI
-D-C16BPrimary=STRUCTURAL_VALIDATION
+d-C16APrimary=CROSS_PLATFORM_CI
+d-C16BPrimary=STRUCTURAL_VALIDATION
+supportingAuthorityLedger=NONE
 reviewSequence=LOCAL_CODE_LOCAL_RULE_FREEZE_H_PUSH_CI_ACQUIRE_AUDIT_E2_FINAL_CODE_FINAL_RULE_D3_HANDOFF
-D3CleanupRequired=true
+d3CleanupRequired=true
 keepOperationalAssets=0
 archiveCategories=4
 deleteAfterD3Categories=8
@@ -754,7 +1241,7 @@ permanentOperationalConceptsAfterD3=0
 temporaryVerifierMax=1
 implementationAllowlistCountH=3
 implementationAllowlistCountE2=1
-designCorrectionBudget=0/1
+designCorrectionBudget=1/1
 implementationRepairBudget=0/2
 productImpact=false
 eventSchemaImpact=false
@@ -764,10 +1251,11 @@ selectorImpact=false
 ownershipImpact=false
 routingImpact=false
 coverageImpact=false
-designReviewer=PENDING_FRESH_INDEPENDENT_READ_ONLY_REVIEW
-designVerdict=PENDING_NOT_ISSUED
+priorDesignReviewHead=87c5df6f732ec2c87c110e6f4fbe555e7ef7a617
+priorDesignVerdict=RULE_DESIGN_FIX_REQUIRED
+priorDesignFindingsClosedByThisCorrection=[D2-FRESH-DR-F01_GOVERNANCE_MECHANISM_MATCH_ENUM,D2-FRESH-DR-F02_RECURSIVE_BUNDLE_SCHEMA_NOT_CLOSED,D2-FRESH-DR-F03_STALE_CURRENT_AUTHORITY_HANDOFF,D2-FRESH-DR-F04_ACTUAL_MECHANISM_TRACEABILITY_UNFROZEN]
 remainingDesignBlockers=[]
-remainingDesignGates=[SOLE_WRITER_MATERIALIZE_DESIGN,FRESH_INDEPENDENT_RULE_DESIGN_REVIEW]
+remainingDesignGate=FRESH_INDEPENDENT_RULE_DESIGN_REREVIEW_REQUIRED
 implementationAuthorized=false
 architectFilesChanged=0
 architectCommitCreated=false
@@ -775,8 +1263,8 @@ coverageExecuted=false
 hostedCIExecuted=false
 pushPerformed=false
 pullRequestCreated=false
-D3DesignedOrStarted=false
-requiredNextAction=SOLE_WRITER_MATERIALIZE_THIS_EXACT_DESIGN_THEN_REQUEST_FRESH_INDEPENDENT_RULE_DESIGN_REVIEW
+d3DesignedOrStarted=false
+requiredNextAction=FRESH_INDEPENDENT_RULE_DESIGN_REREVIEW
 ```
 
-未发现实质规则冲突或不可实现的现有 CI seam。实现仍未获授权；必须先由 sole writer 原样物化本文，再取得独立 `RULE_DESIGN_PASS`。
+当前只授权 sole writer 将本 Correction 1/1 物化为同文件的 docs-only direct descendant；物化完成后唯一允许动作是 fresh independent rule-design rereview。不得实施 H、修改 workflow/verifier、运行 hosted CI、push 或创建 PR。
