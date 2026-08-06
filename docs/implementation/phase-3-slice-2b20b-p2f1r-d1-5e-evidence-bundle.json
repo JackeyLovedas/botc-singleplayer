@@ -1,0 +1,364 @@
+{
+  "schemaVersion": "botc-d1-5e-evidence-bundle-v3",
+  "sourceHeadS": "8898f62ceb90433634cf02e83ad5d4ff95db4499",
+  "profileHeadP": "0bf487afc49069f6191dd7409362d5c227aa50dc",
+  "profileParent": "8898f62ceb90433634cf02e83ad5d4ff95db4499",
+  "profileArtifactPath": "docs/implementation/coverage-profiles/phase-3-slice-2b20b-p2f1r-d1-5r-8898f62-routing-coverage-v1.json",
+  "profileArtifactByteLength": 3160,
+  "profileArtifactSha256": "2c84662b2fdf9ac368eae3e08a2eda51bcb5f45c78790bfd0bec7cbc236ae567",
+  "profileSha256": "4f047c39739b22ac0b4a04dda8eddc8125d902a8bcd281d448d8f61626986426",
+  "registryPath": "scripts/coverage-profile-registry.mjs",
+  "registryByteLength": 11704,
+  "registrySha256": "890ef0a49ecdf810f7026f4353d2242732da108221bc54b9cf19aab70608acfc",
+  "acceptedInventorySha256": "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8",
+  "candidateInventorySha256": "540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2",
+  "deltaPreimage": {
+    "schemaVersion": "botc-d1-5r-profile-delta-v1",
+    "authorityProfile": {
+      "profileId": "phase-3-slice-2b20a-4d576e2-final-restoration-v1",
+      "sourceHead": "4d576e205cb20c37ba913b923a1cd39e8d800d18",
+      "globalManifestSha256": "1696dd46a40fe776423bb8fe7594d90906cc0376e25fcb587cca149e7259ce57",
+      "coverageFinalSha256": "79d0577a13a81ead79c47e55cb6a5010b129fb030e60a11b403438b1dffae22a",
+      "inventorySha256": "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8"
+    },
+    "sourceHead": "8898f62ceb90433634cf02e83ad5d4ff95db4499",
+    "sourceInputs": {
+      "globalManifestSha256": "ca9eeb8d2e7a3b4d50b4856fcc32edcbe528d45d85d40c2678d43e9fae524319",
+      "coverageFinalSha256": "3369f4163add3194d9369a6ebd26fc8f05412478b1aeaf75bff2c4f2db368e95",
+      "normalizedTupleSetsSha256": "8c7bc3f7633053d80e97785147bcf1f70c42cad341b60b2ee51bc41fc0fc2a54"
+    },
+    "inventoryBinding": {
+      "oldCount": 1572,
+      "sourceCount": 1712,
+      "oldSha256": "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8",
+      "sourceSha256": "540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2"
+    },
+    "sourceDelta": {
+      "added": [
+        "packages/domain-core/src/canonical-domain-event.ts",
+        "packages/domain-core/src/canonical-runtime-hash.ts",
+        "packages/domain-core/src/canonical-runtime-value.ts",
+        "packages/domain-core/src/domain-event-structural-schema-ast.ts",
+        "packages/domain-core/src/domain-event-structural-schema-catalog.ts",
+        "packages/domain-core/src/domain-event-structural-validator.ts"
+      ],
+      "removed": []
+    },
+    "testDelta": {
+      "added": [
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C01_RAW_COPY_BOUNDARY admits exact Uint8Array bytes and rejects hostile views\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C02_RAW_TLV_HASH matches exact raw known-answer vectors\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C03_CANONICAL_VALUE_HASH consumes A bytes without calling A internally\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C04_FUTURE_BINDING_HASH binds two ordered opaque byte sequences\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C05a Binding Envelope and Preimage Vector Contract\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C05b Future Binding Integrity Vector Contract\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C06_RESULT_METADATA rejects hostile exact-shape and metadata mutations\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C07_DIGEST_VERIFICATION detects bytes, domains, encoding and digest mutation\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C08a Byte Admission Contexts\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C08b Verification Failure Contexts\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C09_HASH_NOT_AUTHORITY exposes integrity records rather than authority handles\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C10_CACHE_ONLY contains no snapshot, rebuild, replay or state capability\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C11_LEGACY_ISOLATION remains source-local and does not import application hashing\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-hash.test.ts\",[\"P2F1R-B deterministic integrity hash foundation\"],\"B-C12_PLATFORM_VECTOR_READINESS is deterministic for Unicode and newline A bytes\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C01 captures both booleans as detached tokens\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C01 captures dense arrays and plain records\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C01 captures null and reports exact version and metrics\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C01 captures safe integers excluding negative zero\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C01 captures well-formed empty and non-empty strings\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C01 erases Object-prototype versus null-prototype record identity\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C02 converts throwing Proxy descriptor operations to fixed failure\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C02 rejects a revoked Proxy with zero installed traps\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C02 rejects an ordinary transparent Proxy with zero installed traps\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C02 rejects getter and setter descriptors with zero invocations\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C02 rejects nested and array-wrapped Proxies with zero installed traps\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C02 rejects symbol keys without reading sibling values\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C03 classifies invalid and unsafe numbers exactly\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C03 rejects bigint, symbol value, and function\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C03 rejects class instances and boxed primitives\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C03 rejects direct and nested cycles\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C03 rejects exotic built-ins, buffers, views, typed arrays, and Promise\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C03 rejects lone-surrogate strings and object keys with INVALID_UNICODE\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C03 rejects undefined at root, record value, and array element\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C04 rejects Proxy and revoked-Proxy token candidates with zero traps\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C04 rejects a token identity from a distinct module instance\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C04 rejects primitive and null token candidates\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C04 rejects spread, JSON, structured clone, and shaped lookalikes\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C05 repeated acyclic aliases detach independently and count per occurrence\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C05 source mutation after capture does not change later bytes\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C05 token is null-prototype, zero-key, frozen and maps to deep-frozen backing\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C06 mutation of one returned byte array cannot affect later output\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C06 repeated serialization returns equal bytes in distinct Uint8Array objects\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C07 array-length exact limit succeeds and first one-over fails\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C07 depth exact limit succeeds and first one-over fails\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C07 node exact limit succeeds and first one-over fails\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C07 object-key UTF-8 byte exact limit succeeds and first one-over fails\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C07 object-key exact limit succeeds and first one-over fails\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C07 string UTF-8 byte exact limit succeeds and first one-over fails\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C07 total serialized-byte exact limit succeeds and first one-over fails\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C08 emits exact null and boolean tags\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C08 emits exact string, array, and object u32be lengths and counts\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C08 emits nested child nodes without repeated headers\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C08 emits the exact ten-byte ASCII BOTCCRV+01 header once\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C09 emits exact UTF-8 for valid supplementary-plane pairs\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C09 preserves distinct CR, LF, and CRLF byte vectors\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C09 preserves distinct composed and decomposed Unicode vectors\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C10 emits exact i64be bytes for boundary safe integers\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C11 numeric-looking keys use raw UTF-16 lexical order\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C11 record insertion permutations emit identical sorted bytes\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C11 supplementary and prefix keys use exact UTF-16 code-unit order\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C12 dense array order is preserved and permutations differ\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C12 sparse, keyed, boundary-keyed, and invalid arrays fail exactly\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C13 diagnostic truncation retains 31 segments and one TRUNCATED segment\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C13 representative failures expose stable bounded diagnostics\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C14 new API and versions remain distinct while legacy behavior is unchanged\"]",
+        "[\"domain-core\",\"packages/domain-core/src/canonical-runtime-value.test.ts\",[\"canonical runtime capture and TLV foundation\"],\"A-C15 frozen literal vectors are locale-independent and ready for later host evidence\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"accepts an exact healthy fixture for every one of the 15 node kinds\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"captures a fully detached authority without mutating or freezing caller descriptors\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"closes the algebra and refinement registries\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"closes the complete health, ownership, traversal, and freeze-fault matrix\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"fails closed for cycles\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"fails closed for duplicate IDs\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"fails closed for refinement-edge cycle\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"fails closed for refinement-edge orphan\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"fails closed for unresolved children\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"fails closed for unresolved refinement base\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"formats ORD6 and rejects out-of-range ordinals\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"orders strings by raw UTF-16 code units and literals by frozen kind order\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"proves the refinement registry is data-only and has no semantic callback dependency\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"publishes the complete healthy 40/59 authority and frozen expanded census\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"rejects a closed union without a structural disjointness proof\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"rejects a repository key that disagrees with its node ID\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"rejects a tagged branch whose literal metadata disagrees with its record\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"rejects alias on non-ID refinement with no cross-kind refinement fallback\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"rejects missing ID alias with no cross-kind refinement fallback\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"rejects missing kind with no cross-kind refinement fallback\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"rejects one node object bound under two different IDs\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"rejects unknown kind with no cross-kind refinement fallback\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"requires the exact complete B26/B54 delta binding set for full authority\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"treats refinement base as the sole traversal child while preserving the frozen occurrence census\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-ast.test.ts\",[\"typed structural schema authority\"],\"uses deterministic DFS preorder and first discovery for shared nodes\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"accepts dense detached exact registry and support data\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"accepts exactly the frozen two-delta, 57-unchanged registry and three supports\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"creates deterministic direct-SHA artifacts over the complete authority\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"derives descriptors and artifacts only from canonical numeric root order\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"matches the checked-in frozen generated Catalog V2 path byte-for-byte\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects accessors without invoking getters\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects changed 2/57/0 count\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects changed approved record\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects missing B26\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects missing B54\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects missing or mutated SUP003\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects non-enumerable extra key\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects noncanonical descriptor\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects ordinary and revoked proxies without open property access\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects partial record\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects prototype extension\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects reordered keys\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects sparse support arrays and sparse criteria arrays\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects symbol key\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"rejects third delta\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-schema-catalog.test.ts\",[\"Catalog V2 audit projection\"],\"renders the full audit-only Catalog V2 without validator completion claims\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C01 captures unknown input exactly once and maps hostile inputs without raw C access\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C02 preserves the exact 14-field accepted envelope runtime language\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C03a derives the exact 40/59/13/46 and 35/24 C1 admission census\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C03b fails an unhealthy C1 admission closed without manufacturing public reachability\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C03c admits one complete authority and dispatches only after admission\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C04 groups all 40 known event identities deterministically\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C05 performs zero C payload reads for every pre-payload rejection gate\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C06a bounds all seven payload discriminator paths before AST traversal\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C06b selects each of the 59 C1 roots exactly once without fallback\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C07 reports deterministic first missing envelope and AST fields\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C08 rejects deterministic envelope and payload extra entries\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C09a executes both refinements through captured intrinsic trim and the closed alias set\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C09b rejects primitive coercion, symbols, getters, proxies, cycles, and nonplain values\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C10 traverses the complete 15-kind C1 algebra with real captured values\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C11 keeps the authentic legacy B31 payload structurally representable\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C12a preserves B26 non-empty variadic impairments through generic AST traversal\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C12b preserves only the three normalized B54 source-contract survivors\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C12c preserves current version-aware families and rejects discriminator failures\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C13 issues only authentic process-local C tokens and reads detached frozen backing\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C14 invalidates token spread, JSON, structuredClone, and Proxy wrappers\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C15a proves the 47-leaf policy census and compatible F01-F34 public matrix\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C15b binds all 31 callable diagnostic leaves to real failure entry points\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C15c proves all nine tagged-union coordinate states without identity leakage\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C15d binds all 16 static leaves to exact fail-closed source guards\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C16 returns structural success without semantic or history authority\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C17 rejects future event, envelope version, branch, and refinement vocabulary closed\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C18 creates no hash, replay, state, history, snapshot, or semantic authority\"]",
+        "[\"domain-core\",\"packages/domain-core/src/domain-event-structural-validator.test.ts\",[\"P2F1R-C domain event structural validation\"],\"C-C19 consumes C1 AST roots directly without Catalog, digest, manual shape map, or B hash\"]"
+      ],
+      "removed": []
+    },
+    "tupleBinding": {
+      "tupleCensusSha256": "79db242f87a5f22ceca3365a75045d977cb9acee9f9616e82723258110979cfb",
+      "oldKinds": {
+        "statements": {
+          "count": 26814,
+          "sha256": "f0057d3ff84953fe787b7dfc9fce11dba42c600b5e02ae3e488e64f99769ac53"
+        },
+        "functions": {
+          "count": 1088,
+          "sha256": "1b205e9c1f0f8ad98e2ea67a07fb92d2655e0d895272e99a52babfd8ac0689a3"
+        },
+        "lines": {
+          "count": 26814,
+          "sha256": "b5b11ef2ba76642bb0f62dd714c685935d14570b77a987f11d634d5b44f959b2"
+        },
+        "branchArms": {
+          "count": 11060,
+          "sha256": "ab216f00e8a5dab3877a8c3238d8e622cbd5d441e59bfd06db296d5ef3a1b87c"
+        }
+      },
+      "sourceKinds": {
+        "statements": {
+          "count": 32328,
+          "sha256": "99ec705afc946c69cbda14bcef8301c5c47482178bb2297a0daa5f77ad78813c"
+        },
+        "functions": {
+          "count": 1258,
+          "sha256": "07f6bc7e7ee6520fa863ab91f88b7ca08bff182d5bca8de4697ce26b77ff260e"
+        },
+        "lines": {
+          "count": 32328,
+          "sha256": "da07d44be6b1a3050e96834dbf64e5d48a699c3d9c3e3208ef4797df4773c02f"
+        },
+        "branchArms": {
+          "count": 12541,
+          "sha256": "39f7b8b323855073bb17fcc5babcf561a1f7284e10da09dd5fe99ec68fd5e82c"
+        }
+      }
+    },
+    "classificationCounts": {
+      "unchanged": 62,
+      "changed": 1,
+      "added": 6,
+      "removed": 0
+    },
+    "lossCounts": {
+      "missingSources": 0,
+      "unexpectedSources": 0,
+      "removedSources": 0,
+      "removedTests": 0,
+      "unexplainedPriorPositive": 0
+    },
+    "result": "PASS"
+  },
+  "deltaPreimageSha256": "075458c4beebde6d0137261e52c64f811d6e11e703f02ff007a9ce10c4c12dc4",
+  "tupleSummary": {
+    "schemaVersion": "botc-d1-5e-tuple-summary-v1",
+    "tupleCensus": {
+      "byteLength": 23916419,
+      "sha256": "79db242f87a5f22ceca3365a75045d977cb9acee9f9616e82723258110979cfb"
+    },
+    "normalizedTupleSets": {
+      "byteLength": 783393,
+      "sha256": "8c7bc3f7633053d80e97785147bcf1f70c42cad341b60b2ee51bc41fc0fc2a54"
+    },
+    "obligations": {
+      "sourceFiles": {
+        "count": 69,
+        "sha256": "876a56e5bbb7f75f519df8371a62c662c0a02e65a1ba2942a07a5b61a6501394"
+      },
+      "zeroHitStatements": {
+        "count": 3682,
+        "sha256": "7da8b1eb2ecdc7ff68258a411ce95b063264b200c267f0dd40c6d6e50d78d6e8"
+      },
+      "zeroHitFunctions": {
+        "count": 27,
+        "sha256": "a355e9323763ee75e538b8724bb54bf16690bf158dde883de64c1a813bcd3ceb"
+      },
+      "zeroHitLines": {
+        "count": 3682,
+        "sha256": "e17f56a5b90f416cdd173d0d9ef1f1015a09d3dac8edab0b147783016748eeae"
+      },
+      "zeroHitBranchArms": {
+        "count": 2102,
+        "sha256": "67d26320b545dba113a535ff2fc9cd03f98f60ab0305cdfc67fc72152ee40bb5"
+      }
+    },
+    "completeTupleSets": {
+      "tupleCensusSha256": "79db242f87a5f22ceca3365a75045d977cb9acee9f9616e82723258110979cfb",
+      "oldKinds": {
+        "statements": {
+          "count": 26814,
+          "sha256": "f0057d3ff84953fe787b7dfc9fce11dba42c600b5e02ae3e488e64f99769ac53"
+        },
+        "functions": {
+          "count": 1088,
+          "sha256": "1b205e9c1f0f8ad98e2ea67a07fb92d2655e0d895272e99a52babfd8ac0689a3"
+        },
+        "lines": {
+          "count": 26814,
+          "sha256": "b5b11ef2ba76642bb0f62dd714c685935d14570b77a987f11d634d5b44f959b2"
+        },
+        "branchArms": {
+          "count": 11060,
+          "sha256": "ab216f00e8a5dab3877a8c3238d8e622cbd5d441e59bfd06db296d5ef3a1b87c"
+        }
+      },
+      "sourceKinds": {
+        "statements": {
+          "count": 32328,
+          "sha256": "99ec705afc946c69cbda14bcef8301c5c47482178bb2297a0daa5f77ad78813c"
+        },
+        "functions": {
+          "count": 1258,
+          "sha256": "07f6bc7e7ee6520fa863ab91f88b7ca08bff182d5bca8de4697ce26b77ff260e"
+        },
+        "lines": {
+          "count": 32328,
+          "sha256": "da07d44be6b1a3050e96834dbf64e5d48a699c3d9c3e3208ef4797df4773c02f"
+        },
+        "branchArms": {
+          "count": 12541,
+          "sha256": "39f7b8b323855073bb17fcc5babcf561a1f7284e10da09dd5fe99ec68fd5e82c"
+        }
+      }
+    },
+    "classificationCounts": {
+      "unchanged": 62,
+      "changed": 1,
+      "added": 6,
+      "removed": 0
+    },
+    "lossCounts": {
+      "missingSources": 0,
+      "unexpectedSources": 0,
+      "removedSources": 0,
+      "removedTests": 0,
+      "unexplainedPriorPositive": 0
+    }
+  },
+  "tupleSummarySha256": "db86ef5b01a3fec9e5284ccf630a77b94e28452d5468124d91a8322f9fbeaf89",
+  "profileTransition": {
+    "oldProfileId": "phase-3-slice-2b20a-4d576e2-final-restoration-v1",
+    "oldStatusAtS": "LEGACY_SELECTED",
+    "oldStatusAtP": "HISTORICAL",
+    "newProfileId": "phase-3-slice-2b20b-p2f1r-d1-5r-8898f62-routing-coverage-v1",
+    "newStatusAtP": "ACTIVE",
+    "selectorAtS": "phase-3-slice-2b20a-4d576e2-final-restoration-v1",
+    "selectorAtP": "phase-3-slice-2b20b-p2f1r-d1-5r-8898f62-routing-coverage-v1",
+    "workflowProfileAtS": "phase-3-slice-2b20a-4d576e2-final-restoration-v1",
+    "workflowProfileAtP": "phase-3-slice-2b20b-p2f1r-d1-5r-8898f62-routing-coverage-v1",
+    "recordCountAtS": 17,
+    "recordCountAtP": 18,
+    "profileArtifactPath": "docs/implementation/coverage-profiles/phase-3-slice-2b20b-p2f1r-d1-5r-8898f62-routing-coverage-v1.json",
+    "profileArtifactByteLength": 3160,
+    "profileArtifactSha256": "2c84662b2fdf9ac368eae3e08a2eda51bcb5f45c78790bfd0bec7cbc236ae567"
+  },
+  "profileTransitionSha256": "98435b4b98ea7e7858d15e180822ec98ac0016b0f4e488911b841f36398ff4b8",
+  "sourceLifecycle": "KEEP",
+  "profileLifecycle": "KEEP",
+  "evidenceLifecycle": "ARCHIVE",
+  "offlineReview": [
+    "Resolve profileHeadP and sourceHeadS as local Git commit objects and require profileHeadP to have exactly the one parent recorded in profileParent.",
+    "Compare sourceHeadS to profileHeadP and require exactly the six frozen P paths with no product, test, rule, role-matrix, verifier, runner, dependency, or workflow-topology drift.",
+    "Read profileArtifactPath and registryPath directly from profileHeadP Git blobs; recompute their byte lengths and SHA-256 values and compare every recorded binding.",
+    "Parse the standalone profile JSON, canonically serialize its ordered profile body with two-space indentation and one terminal LF, and require profileSha256 plus all source, inventory, tuple, topology, and obligation bindings.",
+    "Import the exact registry data at profileHeadP and require 18 recursively frozen records, 17 HISTORICAL plus one ACTIVE, the recorded predecessor and deltas, and one exact selector equal to the workflow profile token.",
+    "Canonically serialize deltaPreimage, tupleSummary, and profileTransition separately and require their three recorded SHA-256 values, exact 63-to-69 and 1572-to-1712 transitions, classifications 62/1/6/0, and every loss counter zero.",
+    "Compare profileHeadP to the commit containing this bundle and require exactly the three frozen E documentation paths with every P authority blob unchanged.",
+    "Require all three E documents to omit an E commit identity, publication fact, coverage execution, D2 state change, or executable payload.",
+    "Complete the audit using only local Git object reads, direct hashing, JSON parsing, canonical serialization, the imported registry data, and the P-resident verifier; do not require a temporary directory, capture tree, network access, repository mutation, or coverage execution."
+  ]
+}
