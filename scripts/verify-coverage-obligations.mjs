@@ -31,7 +31,14 @@ const PROFILE_TOPOLOGY_KEYS = Object.freeze([
   "coverageGroups", "coverageGlobalManifestSha256", "coverageFinalSha256", "normalizedTupleSetsSha256", "fullTupleDeltaSha256", "baselineVersion"
 ]);
 const PROFILE_OBLIGATION_KEYS = Object.freeze(["sourceFiles", "zeroHitStatements", "zeroHitFunctions", "zeroHitLines", "zeroHitBranchArms"]);
-
+const FROZEN_REGISTRY_PREFIX_SHA256 = "d246cd0fa855716f32757d21f69973b8cf90b847085c185f3d66d19948db8ab8";
+const FROZEN_COVERAGE_GROUPS = Object.freeze([
+  ["domain-core-rebuild", 207], ["domain-core-rest", 503], ["application", 465], ["application-service-core", 90],
+  ["application-service-role-actions", 52], ["application-service-information-and-later-actions-base", 73],
+  ["application-service-information-and-later-actions-a3b2", 9], ["application-service-compatibility-and-failure-boundaries", 26],
+  ["application-service-dreamer-vortox-core", 36, [["legacy", 14], ["2b20a", 22]]],
+  ["application-service-dreamer-vortox-gained", 10], ["engines-and-projections", 241]
+].map(([id, tests, segments]) => Object.freeze({ id, tests, ...(segments === undefined ? {} : { physicalSegments: Object.freeze(segments.map(([segmentId, segmentTests]) => Object.freeze({ id: segmentId, tests: segmentTests }))) }) })));
 const APPROVED_COVERAGE_PROFILES = Object.freeze([
   Object.freeze({
     id: "accepted-main-9c4d009-single-process-v1",
@@ -928,10 +935,10 @@ function assertCondition(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function assertExactPlain(value, keys, label) {
+function assertExactPlain(value, keys, label, errorClass = "COVERAGE_PROFILE_REGISTRY_INVALID") {
   assertCondition(value !== null && typeof value === "object" && !Array.isArray(value) &&
     Object.getPrototypeOf(value) === Object.prototype && Object.keys(value).length === keys.length &&
-    Object.keys(value).every((key, index) => key === keys[index]), `COVERAGE_PROFILE_REGISTRY_INVALID: ${label}`);
+    Object.keys(value).every((key, index) => key === keys[index]), `${errorClass}: ${label}`);
 }
 
 function assertFrozenData(value, label) {
@@ -952,7 +959,13 @@ function validateDelta(value, label) {
   assertExactPlain(value, ["added", "removed"], label);
   assertCondition(validCount(value.added) && validCount(value.removed) && Object.isFrozen(value), `COVERAGE_PROFILE_REGISTRY_INVALID: ${label}`);
 }
-
+function registryPrefixSha256(records) {
+  const prefix = records.slice(0, 17).map((record, index) => index === 16 ? { ...record, lifecycleStatus: "LEGACY_SELECTED" } : { ...record });
+  return createHash("sha256").update(`${JSON.stringify(prefix, null, 2)}\n`, "utf8").digest("hex");
+}
+function validateFrozenRegistryPrefix(records) {
+  assertCondition(registryPrefixSha256(records) === FROZEN_REGISTRY_PREFIX_SHA256, "COVERAGE_PROFILE_REGISTRY_INVALID: immutable 17-record prefix");
+}
 function validateRegistry() {
   assertCondition(COVERAGE_PROFILE_REGISTRY_SCHEMA_VERSION === "botc-coverage-profile-registry-v3" &&
     COVERAGE_PROFILE_LIFECYCLE_STATUSES.join(",") === "HISTORICAL,LEGACY_SELECTED,ACTIVE" &&
@@ -975,6 +988,7 @@ function validateRegistry() {
     validateDelta(record.testDelta, `record ${index} testDelta`);
     ids.add(record.profileId);
   }
+  validateFrozenRegistryPrefix(COVERAGE_PROFILE_RECORDS);
   const selected = COVERAGE_PROFILE_RECORDS.filter((record) => record.lifecycleStatus !== "HISTORICAL");
   const isS = COVERAGE_PROFILE_RECORDS.length === 17;
   assertCondition(selected.length === 1 && COVERAGE_PROFILE_SELECTORS.CI_COVERAGE_PROFILE === selected[0].profileId &&
@@ -1062,66 +1076,108 @@ function validateLegacyArtifacts(records) {
   }
 }
 
+function deepFreezeData(value) {
+  Object.values(value).filter((child) => child !== null && typeof child === "object").forEach(deepFreezeData);
+  return Object.freeze(value);
+}
+function validateFrozenCoverageTopology(topology, testIdentityCount) {
+  assertExactPlain(topology, PROFILE_TOPOLOGY_KEYS, "profile topology", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
+  assertCondition(topology.topologyId === "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS" && topology.ordinaryLogicalGroupCount === 9 &&
+    topology.ordinaryPhysicalGroupCount === 11 && topology.coverageLogicalGroupCount === 11 && topology.coveragePhysicalGroupCount === 12 && topology.baselineVersion === "CANDIDATE_1712_D1_V1" &&
+    testIdentityCount === 1712 && JSON.stringify(topology.coverageGroups) === JSON.stringify(FROZEN_COVERAGE_GROUPS) && topology.coverageGroups.reduce((total, group) => total + group.tests, 0) === 1712 &&
+    topology.coverageGroups[8].physicalSegments.reduce((total, segment) => total + segment.tests, 0) === topology.coverageGroups[8].tests && validSha(topology.coverageGlobalManifestSha256) &&
+    validSha(topology.coverageFinalSha256) && validSha(topology.normalizedTupleSetsSha256) && validSha(topology.fullTupleDeltaSha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: topology");
+}
+function profileBodySha256(artifact) {
+  const body = Object.fromEntries(PROFILE_BODY_KEYS.map((key) => [key, artifact[key]]));
+  return createHash("sha256").update(`${JSON.stringify(body, null, 2)}\n`, "utf8").digest("hex");
+}
+function validateProfileArtifactBytes(record, bytes) {
+  let artifact;
+  try { artifact = JSON.parse(bytes.toString("utf8")); } catch { throw new Error("COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: malformed JSON"); }
+  assertExactPlain(artifact, PROFILE_ARTIFACT_KEYS, "profile artifact", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
+  assertExactPlain(artifact.obligations, PROFILE_OBLIGATION_KEYS, "profile obligations", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
+  validateFrozenCoverageTopology(artifact.topology, artifact.testIdentityCount);
+  for (const key of PROFILE_OBLIGATION_KEYS) {
+    assertExactPlain(artifact.obligations[key], ["count", "sha256"], `profile obligation ${key}`, "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
+    assertCondition(validCount(artifact.obligations[key].count) && validSha(artifact.obligations[key].sha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: obligation");
+  }
+  assertCondition(artifact.schemaVersion === "botc-coverage-profile-artifact-v2" && validCount(artifact.sourceCount) && validCount(artifact.testIdentityCount) &&
+    validSha(artifact.inventorySha256) && validSha(artifact.tupleSha256) && artifact.logicalGroupCount === 11 && artifact.physicalGroupCount === 12 && validSha(artifact.profileSha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: profile fields");
+  assertCondition(artifact.profileId === record.profileId, "COVERAGE_PROFILE_ARTIFACT_ID_MISMATCH");
+  assertCondition(artifact.sourceHead === record.sourceHead, "COVERAGE_PROFILE_ARTIFACT_SOURCE_MISMATCH");
+  assertCondition(bytes.equals(Buffer.from(`${JSON.stringify(artifact, null, 2)}\n`, "utf8")) && artifact.sourceCount === record.sourceCount && artifact.testIdentityCount === record.testIdentityCount &&
+    artifact.inventorySha256 === record.inventorySha256 && artifact.tupleSha256 === record.tupleSha256 && artifact.logicalGroupCount === record.logicalGroupCount &&
+    artifact.physicalGroupCount === record.physicalGroupCount && artifact.profileSha256 === profileBodySha256(artifact) && artifact.obligations.sourceFiles.count === record.sourceCount &&
+    artifact.topology.normalizedTupleSetsSha256 === artifact.tupleSha256, "COVERAGE_PROFILE_ARTIFACT_HASH_MISMATCH");
+  return deepFreezeData({ id: artifact.profileId, sourceHead: artifact.sourceHead, sourceKind: "STANDALONE_PROFILE_ARTIFACT_V2", topology: artifact.topology, obligations: artifact.obligations });
+}
+function validateArtifactPathComponent(metadata, isFinal) {
+  assertCondition(!metadata.isSymbolicLink() && (isFinal ? metadata.isFile() : metadata.isDirectory()), "COVERAGE_PROFILE_ARTIFACT_MISSING: unsafe path component");
+}
 function validateProfileArtifact(record) {
   assertCondition(/^docs\/implementation\/coverage-profiles\/[a-z0-9][a-z0-9.-]*\.json$/u.test(record.profileArtifactPath),
     "COVERAGE_PROFILE_ARTIFACT_MISSING: invalid artifact path");
   const root = realpathSync(process.cwd());
-  const target = path.resolve(root, record.profileArtifactPath);
-  assertCondition(existsSync(target) && !lstatSync(target).isSymbolicLink() && statSync(target).isFile() &&
-    !path.relative(root, realpathSync(target)).startsWith(`..${path.sep}`), "COVERAGE_PROFILE_ARTIFACT_MISSING");
-  const bytes = readFileSync(target);
-  const artifact = JSON.parse(bytes.toString("utf8"));
-  assertExactPlain(artifact, PROFILE_ARTIFACT_KEYS, "profile artifact");
-  assertExactPlain(artifact.topology, PROFILE_TOPOLOGY_KEYS, "profile topology");
-  assertExactPlain(artifact.obligations, PROFILE_OBLIGATION_KEYS, "profile obligations");
-  assertCondition(artifact.topology.topologyId === "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS" &&
-    artifact.topology.ordinaryLogicalGroupCount === 9 && artifact.topology.ordinaryPhysicalGroupCount === 11 &&
-    artifact.topology.coverageLogicalGroupCount === 11 && artifact.topology.coveragePhysicalGroupCount === 12 &&
-    artifact.topology.baselineVersion === "CANDIDATE_1712_D1_V1" && Array.isArray(artifact.topology.coverageGroups) &&
-    artifact.topology.coverageGroups.length === 11 && validSha(artifact.topology.coverageGlobalManifestSha256) &&
-    validSha(artifact.topology.coverageFinalSha256) && validSha(artifact.topology.normalizedTupleSetsSha256) &&
-    validSha(artifact.topology.fullTupleDeltaSha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: topology");
-  for (const [index, group] of artifact.topology.coverageGroups.entries()) {
-    const keys = index === 8 ? ["id", "tests", "physicalSegments"] : ["id", "tests"];
-    assertExactPlain(group, keys, `profile coverage group ${index}`);
-    assertCondition(typeof group.id === "string" && group.id.length > 0 && validCount(group.tests), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: coverage group");
-    assertCondition(index !== 8 || (Array.isArray(group.physicalSegments) && group.physicalSegments.length === 2 &&
-        group.physicalSegments.some((segment) => {
-          assertExactPlain(segment, ["id", "tests"], "profile physical segment");
-          return typeof segment.id !== "string" || segment.id.length === 0 || !validCount(segment.tests);
-        }) === false), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: physical segments");
+  let target = root;
+  try {
+    for (const [index, part] of record.profileArtifactPath.split("/").entries()) {
+      target = path.join(target, part);
+      const metadata = lstatSync(target); validateArtifactPathComponent(metadata, index === record.profileArtifactPath.split("/").length - 1);
+      const relative = path.relative(root, realpathSync(target));
+      assertCondition(relative !== ".." && !relative.startsWith(`..${path.sep}`), "COVERAGE_PROFILE_ARTIFACT_MISSING: unsafe path component");
+    }
+    return validateProfileArtifactBytes(record, readFileSync(target));
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("COVERAGE_PROFILE_")) throw error;
+    throw new Error("COVERAGE_PROFILE_ARTIFACT_MISSING");
   }
-  for (const key of PROFILE_OBLIGATION_KEYS) {
-    assertExactPlain(artifact.obligations[key], ["count", "sha256"], `profile obligation ${key}`);
-    assertCondition(validCount(artifact.obligations[key].count) && validSha(artifact.obligations[key].sha256),
-      "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: obligation");
-  }
-  const profileBody = Object.fromEntries(PROFILE_BODY_KEYS.map((key) => [key, artifact[key]]));
-  const canonical = `${JSON.stringify(artifact, null, 2)}\n`;
-  const profileSha256 = createHash("sha256").update(`${JSON.stringify(profileBody, null, 2)}\n`, "utf8").digest("hex");
-  assertCondition(bytes.equals(Buffer.from(canonical, "utf8")) && artifact.schemaVersion === "botc-coverage-profile-artifact-v2" &&
-    artifact.profileId === record.profileId && artifact.sourceHead === record.sourceHead && artifact.sourceCount === record.sourceCount &&
-    artifact.testIdentityCount === record.testIdentityCount && artifact.inventorySha256 === record.inventorySha256 &&
-    artifact.tupleSha256 === record.tupleSha256 && artifact.logicalGroupCount === record.logicalGroupCount &&
-    artifact.physicalGroupCount === record.physicalGroupCount && artifact.profileSha256 === profileSha256 &&
-    artifact.obligations.sourceFiles.count === record.sourceCount && artifact.topology.normalizedTupleSetsSha256 === artifact.tupleSha256,
-  "COVERAGE_PROFILE_ARTIFACT_HASH_MISMATCH");
-  return Object.freeze({
-    id: artifact.profileId,
-    sourceHead: artifact.sourceHead,
-    sourceKind: "STANDALONE_PROFILE_ARTIFACT_V2",
-    topology: artifact.topology,
-    obligations: artifact.obligations
-  });
 }
-
+function expectClosedError(callback, expected) {
+  let actual = null; try { callback(); } catch (error) { actual = error instanceof Error ? error.message.split(":")[0] : null; }
+  assertCondition(actual === expected, `COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: contract audit expected ${expected}`);
+}
+function cloneData(value) { return JSON.parse(JSON.stringify(value)); }
+function auditFrozenResult(value) {
+  assertCondition(Object.isFrozen(value) && !Reflect.set(value, "contractAuditMutation", true), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: mutable validated result");
+  Object.values(value).filter((child) => child !== null && typeof child === "object").forEach(auditFrozenResult);
+}
+function auditClosedProfileContracts() {
+  const sha = "0".repeat(64), sourceHead = "0".repeat(40);
+  const record = { profileId: "phase-3-slice-2b20b-p2f1r-d1-5r-audit-routing-coverage-v1", sourceHead, sourceCount: 69, testIdentityCount: 1712, inventorySha256: sha, tupleSha256: sha, logicalGroupCount: 11, physicalGroupCount: 12 };
+  const topology = { topologyId: "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS", ordinaryLogicalGroupCount: 9, ordinaryPhysicalGroupCount: 11, coverageLogicalGroupCount: 11, coveragePhysicalGroupCount: 12, coverageGroups: cloneData(FROZEN_COVERAGE_GROUPS), coverageGlobalManifestSha256: sha, coverageFinalSha256: sha, normalizedTupleSetsSha256: sha, fullTupleDeltaSha256: sha, baselineVersion: "CANDIDATE_1712_D1_V1" };
+  const obligations = Object.fromEntries(PROFILE_OBLIGATION_KEYS.map((key) => [key, { count: key === "sourceFiles" ? 69 : 0, sha256: sha }]));
+  const artifact = { schemaVersion: "botc-coverage-profile-artifact-v2", profileId: record.profileId, sourceHead, sourceCount: 69, testIdentityCount: 1712, inventorySha256: sha, tupleSha256: sha, logicalGroupCount: 11, physicalGroupCount: 12, profileSha256: sha, topology, obligations };
+  const bytes = (value) => (value.profileSha256 = profileBodySha256(value), Buffer.from(`${JSON.stringify(value, null, 2)}\n`, "utf8"));
+  auditFrozenResult(validateProfileArtifactBytes(record, bytes(artifact)));
+  const topologyMutations = [
+    (value) => { value.topology.coverageGroups[0].id += "-hostile"; }, (value) => { [value.topology.coverageGroups[0], value.topology.coverageGroups[1]] = [value.topology.coverageGroups[1], value.topology.coverageGroups[0]]; },
+    (value) => { value.topology.coverageGroups[0].tests += 1; }, (value) => { value.testIdentityCount -= 1; }, (value) => { value.topology.coverageGroups[8].physicalSegments[0].id = "hostile"; },
+    (value) => { value.topology.coverageGroups[8].physicalSegments.reverse(); }, (value) => { value.topology.coverageGroups[8].physicalSegments[0].tests += 1; }, (value) => { value.topology.coverageGroups[8].tests -= 1; }
+  ];
+  for (const mutate of topologyMutations) { const hostile = cloneData(artifact); mutate(hostile); expectClosedError(() => validateProfileArtifactBytes(record, bytes(hostile)), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID"); }
+  expectClosedError(() => validateProfileArtifactBytes(record, Buffer.from("{")), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
+  for (const mutate of [(value) => { delete value.topology; }, (value) => { value.extra = true; }, (value) => { const first = value.schemaVersion; delete value.schemaVersion; value.schemaVersion = first; }]) { const hostile = cloneData(artifact); mutate(hostile); expectClosedError(() => validateProfileArtifactBytes(record, bytes(hostile)), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID"); }
+  const linked = { isSymbolicLink: () => true, isFile: () => true, isDirectory: () => true };
+  for (const isFinal of [true, false, false]) expectClosedError(() => validateArtifactPathComponent(linked, isFinal), "COVERAGE_PROFILE_ARTIFACT_MISSING");
+  const exactS = cloneData(COVERAGE_PROFILE_RECORDS.slice(0, 17)); validateFrozenRegistryPrefix(exactS);
+  const exactP = cloneData(exactS); exactP[16].lifecycleStatus = "HISTORICAL"; validateFrozenRegistryPrefix(exactP);
+  const registryMutations = [
+    (rows) => { rows[0].testIdentityCount = 0; }, (rows) => { rows[2].previousProfileId = null; }, (rows) => { rows[0].sourceDelta = { added: 0, removed: 0 }; }, (rows) => { rows[16].logicalGroupCount = 10; },
+    (rows) => { rows[16].inventorySha256 = sha; }, (rows) => { rows[0].unexplainedLoss = 0; }, (rows) => { rows[0].lifecycleStatus = "LEGACY_SELECTED"; }, (rows) => { rows[0].profileArtifactPath = "hostile.json"; }
+  ];
+  for (const mutate of registryMutations) { const hostile = cloneData(exactS); mutate(hostile); expectClosedError(() => validateFrozenRegistryPrefix(hostile), "COVERAGE_PROFILE_REGISTRY_INVALID"); }
+}
 function resolveProfiles(registry) {
   validateLegacyArtifacts(registry.records);
   let legacyIndex = 0;
+  const artifactPaths = new Set();
   return registry.records.map((record) => {
     if (record.profileArtifactPath === "scripts/verify-coverage-obligations.mjs") {
       return APPROVED_COVERAGE_PROFILES[legacyIndex++];
     }
+    assertCondition(!artifactPaths.has(record.profileArtifactPath), "COVERAGE_PROFILE_ARTIFACT_DUPLICATE");
+    artifactPaths.add(record.profileArtifactPath);
     return validateProfileArtifact(record);
   });
 }
@@ -1437,6 +1493,7 @@ function compareToApprovedProfile(candidateGroups, profile) {
 }
 
 function main() {
+  auditClosedProfileContracts();
   const registry = validateRegistry();
   const approvedProfiles = resolveProfiles(registry);
   const options = parseArguments(process.argv.slice(2));

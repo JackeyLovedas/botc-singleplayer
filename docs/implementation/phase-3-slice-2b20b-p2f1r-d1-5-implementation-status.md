@@ -6,6 +6,10 @@
 authorization=USER_AUTHORIZED_2B20B_P2F1R_D1_5R_HUMAN_COMPLEXITY_BUDGET_ADJUDICATION_AND_CONDITIONAL_SP_E_IMPLEMENTATION
 implementationBase=59164cac35592c88e85dadbd74d41f23aa3a7047
 implementationStage=SOURCE_HEAD_S
+implementationRepairRound=1_OF_2
+reviewedSourceHead=7f99c728f3d6ccf906b710c3d9edf600bc4564d0
+sourceReviewVerdict=CODE_REVIEW_FIX_REQUIRED
+repairReviewStatus=PENDING_FRESH_INDEPENDENT_REVIEW
 ruleVerdict=RULE_READY
 finalDesignVerdict=RULE_DESIGN_PASS
 remainingDesignBlockers=[]
@@ -22,6 +26,8 @@ D2Started=false
 
 - `scripts/coverage-profile-registry.mjs` is the sole registry module. It is pure frozen data with schema `botc-coverage-profile-registry-v3`, four exports, 17 records, 15 ordered fields per record, 16 `HISTORICAL` records, one `LEGACY_SELECTED` record, and one exact selector mapping.
 - `scripts/verify-coverage-obligations.mjs` imports the registry directly. The 17 legacy profile objects remain in-memory immutable artifact data and retain their order and values. The verifier has no verifier-source read, registry-source read, profile/registry marker search, sentinel, suffix/tail search, fixed source offset, source-span extraction, source-text hash authority, source-fragment renderer, compatibility parser, or inferred-profile success path.
+- The verifier commits to the exact adjudicated normalized 17-row registry prefix by canonical SHA-256. Exact S and P prefixes accept, P may append row 18, and one-point mutations of nulls, predecessor, delta, group count, hash, loss, status, or path reject.
+- The future artifact validator owns the exact ordered coverage groups and counts `[207,503,465,90,52,73,9,26,36,10,241]`, total `1712`, and exact Dreamer core segments `legacy=14` then `2b20a=22`. Every path component rejects symbolic-link/junction traversal; parsing and schema failures use the closed taxonomy; validated topology and obligations are recursively frozen.
 - `scripts/run-vitest-logical-group.mjs` retains its existing CLI and topology. Its ordinary and coverage totals are `1712`; ordinary is `9 logical / 11 physical`; coverage is `11 logical / 12 physical`; Windows remains `1 logical / 3 physical / 46`; `domain-core-rest=503`.
 - The routing-baseline manifest preserves immutable `ACCEPTED_1572_V1` history and records `CANDIDATE_1712_D1_V1` as `UNACCEPTED_CANDIDATE`, inventory `540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2`, exact delta `+140/-0`, `69` covered sources, and ordered routing counts.
 - The workflow selector remains `phase-3-slice-2b20a-4d576e2-final-restoration-v1`. No workflow file or topology changed.
@@ -63,6 +69,8 @@ newCLICommands=0
 newWorkflowJobsOrMatrices=0
 newTestFiles=0
 newTestIdentities=0
+verifierNetSourceLinesFromDesignBase=180
+verifierConditionalBranchDeltaFromDesignBase=0
 ```
 
 The added concepts are the final design's metadata module, 15-field schema, lifecycle enum, selector map, closed artifact resolver, P JSON schema, canonical profile-body hash, registry/artifact cross-binding, and E hash-evidence schema. The removed concepts are the source-fragment/parser/marker/sentinel/suffix/tail/span/offset/close/downstream-symbol/compatibility/fallback/source-text-custody families enumerated by the final design. No equivalent abstraction repackages them.
@@ -73,6 +81,7 @@ Gate results are recorded only after their local commands complete. Coverage and
 
 ```text
 focusedScriptAudits=PASS
+closedArtifactContractAudit=PASS_8_TOPOLOGY_4_SCHEMA_3_LINK_8_REGISTRY_HOSTILES_AND_RECURSIVE_FREEZE
 historical1572=PASS_1572_IDENTITIES_INVENTORY_58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8
 candidate1712=PASS_1712_IDENTITIES_INVENTORY_540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2
 ownership=PASS_42_OF_42_AND_MIGRATION_PLUS_140_MINUS_0
@@ -87,10 +96,12 @@ lint=PASS
 fullOrdinary=PASS_40_FILES_1712_TESTS
 complexityNetAudit=PASS_PLUS_9_MINUS_19_NET_MINUS_10
 protectedTreeDiffs=PASS
-worktreeClean=REQUIRED_AFTER_SOURCE_COMMIT
+worktreeClean=REQUIRED_AFTER_REPAIR_COMMIT
 ```
 
 The existing legacy coverage-routing verifier was also invoked diagnostically. It failed closed before writing output because it intentionally binds the accepted 31-file ownership baseline, while D1's unaccepted candidate contains 36 files. That accepted-history contract is outside this S slice and was not modified. The authorized static routing audit instead used the existing Vitest list contract and passed with `11 logical / 12 physical / 1712`, no missing file, no unexpected file, and no overlap. Coverage itself was not executed.
+
+During Repair Round 1, an aggregate-only ordinary-routing invocation was made before any logical group was run and failed closed with `expected 9, got 0`. It produced no acceptance evidence. The corrected complete sequence then ran all nine logical groups and passed `1712` in aggregate.
 
 ## Frozen scope
 
