@@ -1,7 +1,14 @@
+import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import {
+  COVERAGE_PROFILE_LIFECYCLE_STATUSES,
+  COVERAGE_PROFILE_RECORDS,
+  COVERAGE_PROFILE_REGISTRY_SCHEMA_VERSION,
+  COVERAGE_PROFILE_SELECTORS
+} from "./coverage-profile-registry.mjs";
 
 const UNIQUE_OWNERSHIP_PROFILE_ID = "frozen-pr36-035f037-ownership-v2-1";
 const UNIQUE_OWNERSHIP_SOURCE_KIND =
@@ -10,6 +17,20 @@ const UNIQUE_OWNERSHIP_SUPERSESSION_REASON =
   "UNIQUE_APPLICATION_TEST_OWNERSHIP_AND_GENUINE_BRANCH_COVERAGE_IMPROVEMENT";
 const UNIQUE_OWNERSHIP_REMOVED_TUPLE =
   'packages/domain-core/src/first-night-ability-outcome-ledger.ts|type:"branch"|branch:473:476-473:531|arm:0|location:473:476-473:531';
+const REGISTRY_RECORD_KEYS = Object.freeze([
+  "profileId", "schemaVersion", "lifecycleStatus", "sourceHead", "sourceCount", "testIdentityCount", "inventorySha256",
+  "tupleSha256", "profileArtifactPath", "logicalGroupCount", "physicalGroupCount", "previousProfileId", "sourceDelta", "testDelta", "unexplainedLoss"
+]);
+const PROFILE_ARTIFACT_KEYS = Object.freeze([
+  "schemaVersion", "profileId", "sourceHead", "sourceCount", "testIdentityCount", "inventorySha256", "tupleSha256",
+  "logicalGroupCount", "physicalGroupCount", "profileSha256", "topology", "obligations"
+]);
+const PROFILE_BODY_KEYS = Object.freeze(PROFILE_ARTIFACT_KEYS.slice(1).filter((key) => key !== "profileSha256"));
+const PROFILE_TOPOLOGY_KEYS = Object.freeze([
+  "topologyId", "ordinaryLogicalGroupCount", "ordinaryPhysicalGroupCount", "coverageLogicalGroupCount", "coveragePhysicalGroupCount",
+  "coverageGroups", "coverageGlobalManifestSha256", "coverageFinalSha256", "normalizedTupleSetsSha256", "fullTupleDeltaSha256", "baselineVersion"
+]);
+const PROFILE_OBLIGATION_KEYS = Object.freeze(["sourceFiles", "zeroHitStatements", "zeroHitFunctions", "zeroHitLines", "zeroHitBranchArms"]);
 
 const APPROVED_COVERAGE_PROFILES = Object.freeze([
   Object.freeze({
@@ -903,52 +924,97 @@ function parseArguments(argv) {
   );
 }
 
-function validateApprovedProfiles() {
+function assertCondition(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function assertExactPlain(value, keys, label) {
+  assertCondition(value !== null && typeof value === "object" && !Array.isArray(value) &&
+    Object.getPrototypeOf(value) === Object.prototype && Object.keys(value).length === keys.length &&
+    Object.keys(value).every((key, index) => key === keys[index]), `COVERAGE_PROFILE_REGISTRY_INVALID: ${label}`);
+}
+
+function assertFrozenData(value, label) {
+  if (value === null || typeof value !== "object") return;
+  assertCondition(Object.isFrozen(value) && [Array.prototype, Object.prototype].includes(Object.getPrototypeOf(value)) &&
+    Reflect.ownKeys(value).every((key) => typeof key !== "symbol"), `COVERAGE_PROFILE_REGISTRY_INVALID: ${label} is not frozen plain data`);
+  for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value)))
+    assertCondition(Object.hasOwn(descriptor, "value"), `COVERAGE_PROFILE_REGISTRY_INVALID: ${label}.${key} is not data`),
+    assertFrozenData(descriptor.value, `${label}.${key}`);
+}
+
+function validCount(value, nullable = false) { return (nullable && value === null) || (Number.isSafeInteger(value) && value >= 0); }
+
+function validSha(value, nullable = false) { return (nullable && value === null) || (typeof value === "string" && /^[0-9a-f]{64}$/u.test(value)); }
+
+function validateDelta(value, label) {
+  if (value === null) return;
+  assertExactPlain(value, ["added", "removed"], label);
+  assertCondition(validCount(value.added) && validCount(value.removed) && Object.isFrozen(value), `COVERAGE_PROFILE_REGISTRY_INVALID: ${label}`);
+}
+
+function validateRegistry() {
+  assertCondition(COVERAGE_PROFILE_REGISTRY_SCHEMA_VERSION === "botc-coverage-profile-registry-v3" &&
+    COVERAGE_PROFILE_LIFECYCLE_STATUSES.join(",") === "HISTORICAL,LEGACY_SELECTED,ACTIVE" &&
+    [17, 18].includes(COVERAGE_PROFILE_RECORDS.length), "COVERAGE_PROFILE_REGISTRY_INVALID: module header");
+  assertFrozenData(COVERAGE_PROFILE_LIFECYCLE_STATUSES, "lifecycle statuses");
+  assertFrozenData(COVERAGE_PROFILE_RECORDS, "records");
+  assertFrozenData(COVERAGE_PROFILE_SELECTORS, "selectors");
+  assertExactPlain(COVERAGE_PROFILE_SELECTORS, ["CI_COVERAGE_PROFILE"], "selectors");
   const ids = new Set();
-  for (const profile of APPROVED_COVERAGE_PROFILES) {
-    if (
-      profile === null ||
-      typeof profile !== "object" ||
-      typeof profile.id !== "string" ||
-      profile.id.length === 0 ||
-      typeof profile.sourceHead !== "string" ||
-      !/^[0-9a-f]{40}$/u.test(profile.sourceHead) ||
-      typeof profile.sourceKind !== "string" ||
-      profile.sourceKind.length === 0
-    ) {
-      throw new Error("Approved coverage profile has invalid identity metadata");
-    }
-    if (ids.has(profile.id)) {
-      throw new Error(`Approved coverage profile ID is duplicated: ${profile.id}`);
-    }
+  for (const [index, record] of COVERAGE_PROFILE_RECORDS.entries()) {
+    assertExactPlain(record, REGISTRY_RECORD_KEYS, `record ${index}`);
+    assertCondition(/^[a-z0-9][a-z0-9.-]*$/u.test(record.profileId) && !ids.has(record.profileId) &&
+      record.schemaVersion === COVERAGE_PROFILE_REGISTRY_SCHEMA_VERSION && COVERAGE_PROFILE_LIFECYCLE_STATUSES.includes(record.lifecycleStatus) &&
+      /^[0-9a-f]{40}$/u.test(record.sourceHead) && validCount(record.sourceCount) && validCount(record.testIdentityCount, true) &&
+      validSha(record.inventorySha256, true) && validSha(record.tupleSha256, true) && validCount(record.logicalGroupCount, true) &&
+      validCount(record.physicalGroupCount, true) && validCount(record.unexplainedLoss, true) && !path.isAbsolute(record.profileArtifactPath) &&
+      !record.profileArtifactPath.includes("\\") && record.profileArtifactPath.split("/").every((part) => !["", ".", ".."].includes(part)) &&
+      (record.previousProfileId === null || ids.has(record.previousProfileId)), `COVERAGE_PROFILE_REGISTRY_INVALID: record ${index}`);
+    validateDelta(record.sourceDelta, `record ${index} sourceDelta`);
+    validateDelta(record.testDelta, `record ${index} testDelta`);
+    ids.add(record.profileId);
+  }
+  const selected = COVERAGE_PROFILE_RECORDS.filter((record) => record.lifecycleStatus !== "HISTORICAL");
+  const isS = COVERAGE_PROFILE_RECORDS.length === 17;
+  assertCondition(selected.length === 1 && COVERAGE_PROFILE_SELECTORS.CI_COVERAGE_PROFILE === selected[0].profileId &&
+    (isS ? selected[0].profileId === "phase-3-slice-2b20a-4d576e2-final-restoration-v1" && selected[0].lifecycleStatus === "LEGACY_SELECTED" &&
+      COVERAGE_PROFILE_RECORDS.slice(0, 16).every((record) => record.lifecycleStatus === "HISTORICAL") &&
+      COVERAGE_PROFILE_RECORDS.every((record) => record.profileArtifactPath === "scripts/verify-coverage-obligations.mjs") :
+      selected[0].lifecycleStatus === "ACTIVE" && COVERAGE_PROFILE_RECORDS.slice(0, 17).every((record) =>
+        record.lifecycleStatus === "HISTORICAL" && record.profileArtifactPath === "scripts/verify-coverage-obligations.mjs") &&
+      selected[0].sourceCount === 69 && selected[0].testIdentityCount === 1712 &&
+      selected[0].inventorySha256 === "540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2" && selected[0].tupleSha256 !== null &&
+      selected[0].logicalGroupCount === 11 && selected[0].physicalGroupCount === 12 && selected[0].previousProfileId ===
+        "phase-3-slice-2b20a-4d576e2-final-restoration-v1" && selected[0].sourceDelta?.added === 6 && selected[0].sourceDelta?.removed === 0 &&
+      selected[0].testDelta?.added === 140 && selected[0].testDelta?.removed === 0 && selected[0].unexplainedLoss === 0),
+  "COVERAGE_PROFILE_SELECTOR_INVALID");
+  return { records: COVERAGE_PROFILE_RECORDS, selectedProfileId: selected[0].profileId };
+}
+
+function validateLegacyArtifacts(records) {
+  const legacyRecords = records.filter((record) =>
+    record.profileArtifactPath === "scripts/verify-coverage-obligations.mjs"
+  );
+  assertCondition(legacyRecords.length === 17 && APPROVED_COVERAGE_PROFILES.length === 17,
+    "COVERAGE_PROFILE_ARTIFACT_MISSING: legacy artifact count");
+  const ids = new Set();
+  for (const [index, profile] of APPROVED_COVERAGE_PROFILES.entries()) {
+    const record = legacyRecords[index];
+    assertCondition(profile !== null && typeof profile === "object" && !ids.has(profile.id) && profile.id === record.profileId &&
+      profile.sourceHead === record.sourceHead && profile.obligations?.sourceFiles?.count === record.sourceCount &&
+      (record.testIdentityCount === null || profile.topology?.semanticTests === undefined || profile.topology.semanticTests === record.testIdentityCount) &&
+      (record.tupleSha256 === null || profile.topology?.normalizedTupleSetsSha256 === record.tupleSha256) &&
+      (record.logicalGroupCount === null || profile.topology?.coverageLogicalGroups === undefined ||
+        profile.topology.coverageLogicalGroups === record.logicalGroupCount) &&
+      (record.physicalGroupCount === null || profile.topology?.coveragePhysicalBlobs === record.physicalGroupCount),
+    `COVERAGE_PROFILE_ARTIFACT_ID_MISMATCH: legacy artifact ${index}`);
     ids.add(profile.id);
-    if (profile.id === UNIQUE_OWNERSHIP_PROFILE_ID) {
-      if (
-        profile.sourceKind !== UNIQUE_OWNERSHIP_SOURCE_KIND ||
-        typeof profile.supersedesForTopology !== "string" ||
-        profile.supersedesForTopology.length === 0 ||
-        profile.supersessionReason !== UNIQUE_OWNERSHIP_SUPERSESSION_REASON ||
-        profile.removedObligationAudit === null ||
-        typeof profile.removedObligationAudit !== "object" ||
-        profile.removedObligationAudit.canonicalTuple !==
-          UNIQUE_OWNERSHIP_REMOVED_TUPLE ||
-        profile.removedObligationAudit.baselineHit !== 0 ||
-        !Number.isInteger(profile.removedObligationAudit.candidateHit) ||
-        profile.removedObligationAudit.candidateHit <= 0 ||
-        typeof profile.removedObligationAudit.auditArtifactSha256 !== "string" ||
-        !/^[0-9a-f]{64}$/u.test(profile.removedObligationAudit.auditArtifactSha256)
-      ) {
-        throw new Error(`Process-isolated coverage profile has invalid audit metadata: ${profile.id}`);
-      }
-    }
   }
   for (const profile of APPROVED_COVERAGE_PROFILES) {
-    if (
-      profile.supersedesForTopology !== undefined &&
-      (!ids.has(profile.supersedesForTopology) || profile.supersedesForTopology === profile.id)
-    ) {
-      throw new Error(`Coverage profile has invalid topology supersession metadata: ${profile.id}`);
-    }
+    assertCondition(profile.supersedesForTopology === undefined ||
+      (ids.has(profile.supersedesForTopology) && profile.supersedesForTopology !== profile.id),
+    `Coverage profile has invalid topology supersession metadata: ${profile.id}`);
   }
   const uniqueOwnershipProfile = APPROVED_COVERAGE_PROFILES.find(
     (profile) => profile.id === UNIQUE_OWNERSHIP_PROFILE_ID
@@ -956,6 +1022,14 @@ function validateApprovedProfiles() {
   if (uniqueOwnershipProfile === undefined) {
     throw new Error(`Required coverage profile is missing: ${UNIQUE_OWNERSHIP_PROFILE_ID}`);
   }
+  assertCondition(uniqueOwnershipProfile.sourceKind === UNIQUE_OWNERSHIP_SOURCE_KIND &&
+    uniqueOwnershipProfile.supersessionReason === UNIQUE_OWNERSHIP_SUPERSESSION_REASON &&
+    uniqueOwnershipProfile.removedObligationAudit?.canonicalTuple === UNIQUE_OWNERSHIP_REMOVED_TUPLE &&
+    uniqueOwnershipProfile.removedObligationAudit?.baselineHit === 0 &&
+    Number.isInteger(uniqueOwnershipProfile.removedObligationAudit?.candidateHit) &&
+    uniqueOwnershipProfile.removedObligationAudit.candidateHit > 0 &&
+    /^[0-9a-f]{64}$/u.test(uniqueOwnershipProfile.removedObligationAudit?.auditArtifactSha256 ?? ""),
+  `Process-isolated coverage profile has invalid audit metadata: ${uniqueOwnershipProfile.id}`);
   const supersededProfile = APPROVED_COVERAGE_PROFILES.find(
     (profile) => profile.id === uniqueOwnershipProfile.supersedesForTopology
   );
@@ -988,6 +1062,70 @@ function validateApprovedProfiles() {
   }
 }
 
+function validateProfileArtifact(record) {
+  assertCondition(/^docs\/implementation\/coverage-profiles\/[a-z0-9][a-z0-9.-]*\.json$/u.test(record.profileArtifactPath),
+    "COVERAGE_PROFILE_ARTIFACT_MISSING: invalid artifact path");
+  const root = realpathSync(process.cwd());
+  const target = path.resolve(root, record.profileArtifactPath);
+  assertCondition(existsSync(target) && !lstatSync(target).isSymbolicLink() && statSync(target).isFile() &&
+    !path.relative(root, realpathSync(target)).startsWith(`..${path.sep}`), "COVERAGE_PROFILE_ARTIFACT_MISSING");
+  const bytes = readFileSync(target);
+  const artifact = JSON.parse(bytes.toString("utf8"));
+  assertExactPlain(artifact, PROFILE_ARTIFACT_KEYS, "profile artifact");
+  assertExactPlain(artifact.topology, PROFILE_TOPOLOGY_KEYS, "profile topology");
+  assertExactPlain(artifact.obligations, PROFILE_OBLIGATION_KEYS, "profile obligations");
+  assertCondition(artifact.topology.topologyId === "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS" &&
+    artifact.topology.ordinaryLogicalGroupCount === 9 && artifact.topology.ordinaryPhysicalGroupCount === 11 &&
+    artifact.topology.coverageLogicalGroupCount === 11 && artifact.topology.coveragePhysicalGroupCount === 12 &&
+    artifact.topology.baselineVersion === "CANDIDATE_1712_D1_V1" && Array.isArray(artifact.topology.coverageGroups) &&
+    artifact.topology.coverageGroups.length === 11 && validSha(artifact.topology.coverageGlobalManifestSha256) &&
+    validSha(artifact.topology.coverageFinalSha256) && validSha(artifact.topology.normalizedTupleSetsSha256) &&
+    validSha(artifact.topology.fullTupleDeltaSha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: topology");
+  for (const [index, group] of artifact.topology.coverageGroups.entries()) {
+    const keys = index === 8 ? ["id", "tests", "physicalSegments"] : ["id", "tests"];
+    assertExactPlain(group, keys, `profile coverage group ${index}`);
+    assertCondition(typeof group.id === "string" && group.id.length > 0 && validCount(group.tests), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: coverage group");
+    assertCondition(index !== 8 || (Array.isArray(group.physicalSegments) && group.physicalSegments.length === 2 &&
+        group.physicalSegments.some((segment) => {
+          assertExactPlain(segment, ["id", "tests"], "profile physical segment");
+          return typeof segment.id !== "string" || segment.id.length === 0 || !validCount(segment.tests);
+        }) === false), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: physical segments");
+  }
+  for (const key of PROFILE_OBLIGATION_KEYS) {
+    assertExactPlain(artifact.obligations[key], ["count", "sha256"], `profile obligation ${key}`);
+    assertCondition(validCount(artifact.obligations[key].count) && validSha(artifact.obligations[key].sha256),
+      "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: obligation");
+  }
+  const profileBody = Object.fromEntries(PROFILE_BODY_KEYS.map((key) => [key, artifact[key]]));
+  const canonical = `${JSON.stringify(artifact, null, 2)}\n`;
+  const profileSha256 = createHash("sha256").update(`${JSON.stringify(profileBody, null, 2)}\n`, "utf8").digest("hex");
+  assertCondition(bytes.equals(Buffer.from(canonical, "utf8")) && artifact.schemaVersion === "botc-coverage-profile-artifact-v2" &&
+    artifact.profileId === record.profileId && artifact.sourceHead === record.sourceHead && artifact.sourceCount === record.sourceCount &&
+    artifact.testIdentityCount === record.testIdentityCount && artifact.inventorySha256 === record.inventorySha256 &&
+    artifact.tupleSha256 === record.tupleSha256 && artifact.logicalGroupCount === record.logicalGroupCount &&
+    artifact.physicalGroupCount === record.physicalGroupCount && artifact.profileSha256 === profileSha256 &&
+    artifact.obligations.sourceFiles.count === record.sourceCount && artifact.topology.normalizedTupleSetsSha256 === artifact.tupleSha256,
+  "COVERAGE_PROFILE_ARTIFACT_HASH_MISMATCH");
+  return Object.freeze({
+    id: artifact.profileId,
+    sourceHead: artifact.sourceHead,
+    sourceKind: "STANDALONE_PROFILE_ARTIFACT_V2",
+    topology: artifact.topology,
+    obligations: artifact.obligations
+  });
+}
+
+function resolveProfiles(registry) {
+  validateLegacyArtifacts(registry.records);
+  let legacyIndex = 0;
+  return registry.records.map((record) => {
+    if (record.profileArtifactPath === "scripts/verify-coverage-obligations.mjs") {
+      return APPROVED_COVERAGE_PROFILES[legacyIndex++];
+    }
+    return validateProfileArtifact(record);
+  });
+}
+
 function readCoverageMap(file) {
   const absolute = path.resolve(file);
   if (!existsSync(absolute)) {
@@ -1005,10 +1143,10 @@ function readCoverageMap(file) {
 
 function canonicalSourceFile(file) {
   const normalized = file.replaceAll("\\", "/");
-  const packageMarker = "/packages/";
-  const markerIndex = normalized.lastIndexOf(packageMarker);
-  if (markerIndex >= 0) {
-    return normalized.slice(markerIndex + 1);
+  const packagesSegment = "/packages/";
+  const packagesIndex = normalized.lastIndexOf(packagesSegment);
+  if (packagesIndex >= 0) {
+    return normalized.slice(packagesIndex + 1);
   }
   const relative = path.relative(process.cwd(), path.resolve(file)).split(path.sep).join("/");
   if (relative === ".." || relative.startsWith("../")) {
@@ -1299,45 +1437,30 @@ function compareToApprovedProfile(candidateGroups, profile) {
 }
 
 function main() {
-  validateApprovedProfiles();
+  const registry = validateRegistry();
+  const approvedProfiles = resolveProfiles(registry);
   const options = parseArguments(process.argv.slice(2));
   const candidate = summarizeCoverageMap(readCoverageMap(options.candidate));
   const requiredPackages = validateWorkspaceSourcePackages(candidate);
 
   if (options.baseline === null) {
+    assertCondition(options.profileId === registry.selectedProfileId,
+      "COVERAGE_PROFILE_SELECTOR_INVALID: exact selected profile is required");
     const candidateGroups = obligationGroups(candidate);
-    const profiles = APPROVED_COVERAGE_PROFILES.map((profile) =>
+    const profiles = approvedProfiles.map((profile) =>
       compareToApprovedProfile(candidateGroups, profile)
     );
-    const matches = profiles.filter((profile) => profile.matches);
-    const requestedProfile =
-      options.profileId === null
-        ? null
-        : profiles.find((profile) => profile.profileId === options.profileId);
-    if (options.profileId !== null && requestedProfile === undefined) {
-      throw new Error(`Unknown approved coverage profile: ${options.profileId}`);
-    }
-    const verdict =
-      requestedProfile !== null
-        ? requestedProfile.matches
-          ? "COVERAGE_APPROVED_PROFILE_MATCH"
-          : "COVERAGE_REQUESTED_PROFILE_MISMATCH"
-        : matches.length === 1
-          ? "COVERAGE_APPROVED_PROFILE_MATCH"
-          : matches.length === 0
-            ? "COVERAGE_APPROVED_PROFILE_MISMATCH"
-            : "COVERAGE_APPROVED_PROFILE_AMBIGUOUS";
+    const requestedProfile = profiles.find((profile) => profile.profileId === options.profileId);
+    assertCondition(requestedProfile !== undefined, `Unknown approved coverage profile: ${options.profileId}`);
+    const verdict = requestedProfile.matches
+      ? "COVERAGE_APPROVED_PROFILE_MATCH"
+      : "COVERAGE_REQUESTED_PROFILE_MISMATCH";
     process.stdout.write(
       `${JSON.stringify(
         {
           verdict,
           requestedProfileId: options.profileId,
-          matchedProfileId:
-            requestedProfile !== null && requestedProfile.matches
-              ? requestedProfile.profileId
-              : matches.length === 1
-                ? matches[0].profileId
-                : null,
+          matchedProfileId: requestedProfile.matches ? requestedProfile.profileId : null,
           candidate: summarizeForOutput(candidate, requiredPackages),
           profiles
         },

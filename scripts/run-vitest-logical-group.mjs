@@ -7,7 +7,11 @@ import path from "node:path";
 import process from "node:process";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { canonicalizeRawVitestInventory } from "./vitest-ownership-contracts.mjs";
+import {
+  CANDIDATE_OWNERSHIP_BASELINE_VERSION,
+  canonicalizeRawVitestInventory,
+  selectOwnershipBaseline
+} from "./vitest-ownership-contracts.mjs";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const SCRIPT_DIR = path.dirname(SCRIPT_PATH);
@@ -51,7 +55,7 @@ const FAILURE_CODES = new Set([
   "COVERAGE_OBLIGATION_LOSS", "MERGED_TEST_REPORT_AUTHORITY_FORBIDDEN", "VERIFICATION_FAILED",
   "PROFILE_SOURCE_HEAD_INVALID", "PROFILE_CHILD_AS_SOURCE_HEAD", "PROFILE_NOT_APPEND_ONLY",
   "PROFILE_DELTA_EVIDENCE_INSUFFICIENT", "ATOMIC_WRITE_FAILED", "PARTIAL_ARTIFACT_PRESENT",
-  "INTERNAL_ERROR"
+  "BASELINE_MANIFEST_INVALID", "INTERNAL_ERROR"
 ]);
 
 const ORDINARY = Object.freeze({
@@ -114,9 +118,13 @@ const GLOBAL_ROOTS = Object.freeze({
   ordinary: ".vitest-test/segmented-global",
   coverage: ".vitest-coverage/segmented-global"
 });
-const EXPECTED_TOTAL = Object.freeze({ ordinary: 1572, coverage: 1572, windows: 46 });
+const EXPECTED_TOTAL = Object.freeze({ ordinary: 1712, coverage: 1712, windows: 46 });
 const EXPECTED_PHYSICAL = Object.freeze({ ordinary: 11, coverage: 12, windows: 3 });
 const EXPECTED_LOGICAL = Object.freeze({ ordinary: 9, coverage: 11, windows: 1 });
+const D15_BASELINE_PATH =
+  "docs/implementation/phase-3-slice-2b20b-p2f1r-d1-5-routing-baseline-manifest.json";
+const D15_ORDINARY_COUNTS = Object.freeze([207, 503, 465, 90, 52, 82, 26, 46, 241]);
+const D15_COVERAGE_COUNTS = Object.freeze([207, 503, 465, 90, 52, 73, 9, 26, 36, 10, 241]);
 
 export class VitestEvidenceError extends Error {
   constructor(code, detail) {
@@ -295,6 +303,90 @@ function parseCli(argv) {
     return { action: argv[0], mode, logicalGroupId };
   }
   fail("LOGICAL_GROUP_INVALID_ARGUMENTS", JSON.stringify(argv));
+}
+
+function d15BaselineManifest() {
+  const candidate = selectOwnershipBaseline(CANDIDATE_OWNERSHIP_BASELINE_VERSION);
+  return {
+    schemaVersion: "botc-d1-5r-routing-baseline-manifest-v1",
+    sliceId: "2B20B-P2F1R-D1.5R",
+    contractKind: "SOURCE_ROUTING_BASELINE",
+    lifecycle: "SOURCE_HEAD_S",
+    historicalBaseline: {
+      version: "ACCEPTED_1572_V1",
+      lifecycleStatus: "ACCEPTED_HISTORY_IMMUTABLE",
+      semanticIdentities: 1572,
+      inventorySha256: "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8",
+      physicalTestFiles: 31,
+      physicalTestFileSetSha256: "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab"
+    },
+    candidateBaseline: {
+      version: candidate.version,
+      lifecycleStatus: candidate.acceptanceStatus,
+      semanticIdentities: candidate.authority.structuredIdentityCount,
+      inventorySha256: candidate.authority.inventorySha256,
+      physicalTestFiles: candidate.authority.physicalTestFileCount,
+      physicalTestFileSetSha256: candidate.authority.physicalTestFileSetSha256
+    },
+    delta: {
+      intersection: 1572,
+      added: 140,
+      removed: 0,
+      duplicate: 0,
+      borrowed: 0,
+      missing: 0,
+      wrongOwner: 0,
+      addedIdentitySetSha256: "ddfa7a0070c6c4d08a6665a9b138f5aaae71cef02a82a5ce5190f9ccabc7a032"
+    },
+    sourceInventory: { coveredSources: 69, added: 6, removed: 0 },
+    ordinaryRouting: {
+      logicalGroups: 9,
+      physicalExecutions: 11,
+      semanticIdentities: 1712,
+      groupOrder: Object.keys(ORDINARY),
+      groupCounts: D15_ORDINARY_COUNTS,
+      missing: 0,
+      unexpected: 0,
+      wrongOwner: 0,
+      overlap: 0,
+      duplicate: 0
+    },
+    coverageRouting: {
+      logicalGroups: 11,
+      physicalCoverageBlobs: 12,
+      semanticIdentities: 1712,
+      groupOrder: Object.keys(COVERAGE),
+      groupCounts: D15_COVERAGE_COUNTS,
+      missing: 0,
+      unexpected: 0,
+      wrongOwner: 0,
+      overlap: 0,
+      duplicate: 0
+    },
+    ownership: {
+      domainCoreRest: 503,
+      acceptedIdentityRemoval: 0,
+      candidateIdentityAddition: 140
+    },
+    primaryCensus: {
+      activeCriteria: 9,
+      uniquePrimaryIdentities: 9,
+      duplicatePrimaryAssignments: 0,
+      borrowedPrimaryAssignments: 0,
+      missingPrimaryAssignments: 0
+    },
+    result: "SOURCE_BASELINE_READY_PENDING_INDEPENDENT_REVIEW"
+  };
+}
+
+function verifyD15Baseline(repoRoot) {
+  const target = path.join(repoRoot, D15_BASELINE_PATH);
+  if (!existsSync(target) || !statSync(target).isFile() || lstatSync(target).isSymbolicLink()) {
+    fail("BASELINE_MANIFEST_INVALID", "missing or non-regular manifest");
+  }
+  if (!readFileSync(target).equals(jsonBytes(d15BaselineManifest(), true))) {
+    fail("BASELINE_MANIFEST_INVALID", "canonical bytes mismatch");
+  }
 }
 
 function rawInventory(repoRoot, cli, projects, pattern, destination) {
@@ -1526,10 +1618,15 @@ function selfTest() {
     if (!condition) throw new Error(`self-test failed: ${name}`);
     passed += 1;
   };
-  check(FAILURE_CODES.has("SIDECAR_LOGICAL_GROUP_MISMATCH") && FAILURE_CODES.size === 82, "failure code registry");
+  check(FAILURE_CODES.has("BASELINE_MANIFEST_INVALID") && FAILURE_CODES.size === 83, "failure code registry");
   check(Object.keys(ORDINARY).length === 9 && Object.values(ORDINARY).flat().length === 11, "ordinary topology");
   check(Object.keys(COVERAGE).length === 11 && Object.values(COVERAGE).flat().length === 12, "coverage topology");
   check(Object.values(WINDOWS).flat().length === 3, "windows topology");
+  check(EXPECTED_TOTAL.ordinary === 1712 && EXPECTED_TOTAL.coverage === 1712, "D1.5R totals");
+  check(D15_ORDINARY_COUNTS.reduce((sum, count) => sum + count, 0) === 1712, "D1.5R ordinary counts");
+  check(D15_COVERAGE_COUNTS.reduce((sum, count) => sum + count, 0) === 1712, "D1.5R coverage counts");
+  verifyD15Baseline(repositoryRoot());
+  check(true, "D1.5R baseline manifest");
   for (const invalid of [[], ["--self-test", "x"], ["run", "--mode", "ordinary"], ["aggregate", "--mode", "windows"]]) {
     try {
       parseCli(invalid);

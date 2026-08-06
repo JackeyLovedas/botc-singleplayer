@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "botc-d1-5r-routing-baseline-manifest-v1",
+  "sliceId": "2B20B-P2F1R-D1.5R",
+  "contractKind": "SOURCE_ROUTING_BASELINE",
+  "lifecycle": "SOURCE_HEAD_S",
+  "historicalBaseline": {
+    "version": "ACCEPTED_1572_V1",
+    "lifecycleStatus": "ACCEPTED_HISTORY_IMMUTABLE",
+    "semanticIdentities": 1572,
+    "inventorySha256": "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8",
+    "physicalTestFiles": 31,
+    "physicalTestFileSetSha256": "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab"
+  },
+  "candidateBaseline": {
+    "version": "CANDIDATE_1712_D1_V1",
+    "lifecycleStatus": "UNACCEPTED_CANDIDATE",
+    "semanticIdentities": 1712,
+    "inventorySha256": "540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2",
+    "physicalTestFiles": 36,
+    "physicalTestFileSetSha256": "c8c0a52de9f52037eda418323ac57b281ea30633162a22b963d0100cb8ca38f0"
+  },
+  "delta": {
+    "intersection": 1572,
+    "added": 140,
+    "removed": 0,
+    "duplicate": 0,
+    "borrowed": 0,
+    "missing": 0,
+    "wrongOwner": 0,
+    "addedIdentitySetSha256": "ddfa7a0070c6c4d08a6665a9b138f5aaae71cef02a82a5ce5190f9ccabc7a032"
+  },
+  "sourceInventory": {
+    "coveredSources": 69,
+    "added": 6,
+    "removed": 0
+  },
+  "ordinaryRouting": {
+    "logicalGroups": 9,
+    "physicalExecutions": 11,
+    "semanticIdentities": 1712,
+    "groupOrder": [
+      "domain-core-rebuild",
+      "domain-core-rest",
+      "application",
+      "application-service-core",
+      "application-service-role-actions",
+      "application-service-information-and-later-actions",
+      "application-service-compatibility-and-failure-boundaries",
+      "application-service-dreamer-vortox",
+      "engines-and-projections"
+    ],
+    "groupCounts": [
+      207,
+      503,
+      465,
+      90,
+      52,
+      82,
+      26,
+      46,
+      241
+    ],
+    "missing": 0,
+    "unexpected": 0,
+    "wrongOwner": 0,
+    "overlap": 0,
+    "duplicate": 0
+  },
+  "coverageRouting": {
+    "logicalGroups": 11,
+    "physicalCoverageBlobs": 12,
+    "semanticIdentities": 1712,
+    "groupOrder": [
+      "domain-core-rebuild",
+      "domain-core-rest",
+      "application",
+      "application-service-core",
+      "application-service-role-actions",
+      "application-service-information-and-later-actions-base",
+      "application-service-information-and-later-actions-a3b2",
+      "application-service-compatibility-and-failure-boundaries",
+      "application-service-dreamer-vortox-core",
+      "application-service-dreamer-vortox-gained",
+      "engines-and-projections"
+    ],
+    "groupCounts": [
+      207,
+      503,
+      465,
+      90,
+      52,
+      73,
+      9,
+      26,
+      36,
+      10,
+      241
+    ],
+    "missing": 0,
+    "unexpected": 0,
+    "wrongOwner": 0,
+    "overlap": 0,
+    "duplicate": 0
+  },
+  "ownership": {
+    "domainCoreRest": 503,
+    "acceptedIdentityRemoval": 0,
+    "candidateIdentityAddition": 140
+  },
+  "primaryCensus": {
+    "activeCriteria": 9,
+    "uniquePrimaryIdentities": 9,
+    "duplicatePrimaryAssignments": 0,
+    "borrowedPrimaryAssignments": 0,
+    "missingPrimaryAssignments": 0
+  },
+  "result": "SOURCE_BASELINE_READY_PENDING_INDEPENDENT_REVIEW"
+}
