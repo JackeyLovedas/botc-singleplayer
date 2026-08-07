@@ -702,6 +702,32 @@ The subsequent Rule Review may inspect and cite the external Code Review report 
 | `D2W-C04` | D0 Catalog authority and historical checkout classification remain unchanged | Catalog unmatched; blob frozen; true checkout CRLF-only; false checkout equals blob; D0 test succeeds | Attribute audit, raw classifier, existing D0 test | `R4_FUTURE_HYPOTHETICAL_STATE` | `T3_MODULE_PRIVATE_PURE_CORE` | `PURE_POLICY_SEAM` | D0 contract preserved | `NONE` |
 | `D2W-C05` | No protected authority or identity changes | Exact allowlist, frozen hashes/inventories, zero renormalization and ordinary gates | Diff, blob, ownership, routing, profile and ordinary audits | `R4_FUTURE_HYPOTHETICAL_STATE` | `T1_EXTERNAL_OR_PERSISTED_BOUNDARY` | `STRUCTURAL_VALIDATION` | Only two allowlisted files differ | `NONE` |
 
+### 24.1 Mandatory reachability class enumeration
+
+```text
+R1=[]
+R2=[]
+R3=[]
+R4=[
+  D2W-C01,
+  D2W-C02,
+  D2W-C03,
+  D2W-C04,
+  D2W-C05
+]
+criterionCount=5
+reachabilityClassesMutuallyExclusive=true
+R1∩R2∩R3∩R4=[]
+reachabilityUnion=[D2W-C01,D2W-C02,D2W-C03,D2W-C04,D2W-C05]
+duplicateReachabilityAssignments=0
+missingReachabilityAssignments=0
+exceptionalDocsCorrectionUsed=true
+exceptionalDocsCorrectionKind=REACHABILITY_EMPTY_CLASS_ENUMERATION_ONLY
+newDesignCorrectionRoundCreated=false
+designCorrectionRound2Created=false
+governanceResliceCreated=false
+```
+
 The status document may reproduce this Expected table verbatim. It must not append Actual columns.
 
 ## 25. V1.1 Actual bindings
