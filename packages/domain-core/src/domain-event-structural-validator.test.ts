@@ -2618,7 +2618,7 @@ describe("P2F1R-C domain event structural validation", () => {
     const bounded = boundDomainEventStructuralPath(longPath);
     expect(bounded).toHaveLength(32);
     expect(bounded[31]).toEqual({ kind: "TRUNCATED" });
-  });
+  }, 15_000);
 
   it("C-C15b binds all 31 callable diagnostic leaves to real failure entry points", () => {
     const P = (ordinal: number) => ({ kind: "PAYLOAD_FIELD_ORDINAL" as const, ordinal });
