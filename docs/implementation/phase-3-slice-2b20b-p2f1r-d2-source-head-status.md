@@ -20,9 +20,12 @@ implementationBase=d4e211cd1f9221d2ebdeb93743447c09e7721dd2
 implementationBranch=phase-3/2b20b-p2f1r-d2-provider-identity-final-h
 expectedDirectParent=d4e211cd1f9221d2ebdeb93743447c09e7721dd2
 expectedSourceHeadBinding=EXTERNAL_GIT_COMMIT_AFTER_LOCAL_GATES
-hostedEvidenceStatus=PENDING_NOT_YET_EXECUTED
+hostedEvidenceStatus=HISTORICAL_EXACT_HEAD_RUN_FAILED_C1_HEAVY_TIMEOUT_NEW_RUN_PENDING
 D2THead=d4e211cd1f9221d2ebdeb93743447c09e7721dd2
 D2TStatus=LOCAL_C15A_EXTERNAL_PROCESS_TIMEOUT_BOUNDARY_CLOSED
+continuationMode=LINEAR_CONTINUATION
+parentBeforeHeavyTestCorrection=9e24956d50b6d4cdcf44cb7ce3f456534639e073
+HParentContractClassification=PROCESS_ONLY_NO_DIRECT_PARENT_REQUIREMENT
 ```
 
 This document does not self-reference its future source commit. Git resolves the
@@ -210,6 +213,41 @@ and workflow blobs at that exact HEAD. No second commit is authorized.
 
 Coverage was forbidden and was not executed.
 
+## Historical exact-head Hosted failure and bounded correction
+
+```text
+historicalRunId=32010841817
+historicalRunAttempt=1
+historicalRunHead=9e24956d50b6d4cdcf44cb7ce3f456534639e073
+historicalRunTrigger=push
+historicalRunConclusion=FAILURE
+historicalRunJobTotal=24
+historicalRunSuccessfulJobs=22
+historicalRunFailedJobs=1
+historicalRunSkippedJobs=1
+rootCauseClassification=C1_HEAVY_STRUCTURAL_AUTHORITY_MATRIX_EXCEEDS_GENERIC_VITEST_DEFAULT_TIMEOUT_UNDER_COVERAGE
+failedJobId=95329857983
+failedJob=coverage shard (domain-core-rest)
+failedTestFile=packages/domain-core/src/domain-event-structural-schema-ast.test.ts
+failedTestAncestor=typed structural schema authority
+failedTestTitle=closes the complete health, ownership, traversal, and freeze-fault matrix
+failedCoverageDurationMs=5290.829189
+sameRunOrdinaryDurationMs=3830.809726
+genericTimeoutMs=5000
+sidecarClassification=DOWNSTREAM_SYMPTOM
+sidecarFailure=SIDECAR_MISSING_EXPECTED_domain-core-rest--full.json_ACTUAL_EMPTY
+heavyTestTimeBudgetCorrection=EXPLICIT_PER_TEST_TIMEOUT_15000MS
+providerIdentityCorrectionUnchanged=true
+workflowTopologyChanged=false
+coverageRunnerChanged=false
+```
+
+The failed Hosted coverage test passed in the same run's ordinary job. The
+sidecar error was downstream of that test timeout: no sidecar or coverage
+runner was changed. The current correction adds only the bounded per-test
+15,000 ms budget to the named C1 authority matrix test. No future source HEAD,
+new Hosted run, artifact, log, review, E2, merge, tag, or D3 fact is recorded.
+
 ## Complexity and lifecycle
 
 ```text
@@ -238,8 +276,9 @@ workflowD2StepsLifecycle=DELETE_AFTER_D3
 
 No future source commit SHA, hosted run or attempt, job/artifact/log identifier
 or digest, E2 SHA, reviewer verdict, merge/tag state, acceptance state, or D3
-fact is recorded here. Push, Hosted CI, E2, PR, merge, tag, and D3 have not
-occurred.
+fact is recorded here. The historical push and Hosted run are recorded above;
+the corrected source HEAD's future Hosted run, evidence acquisition, E2, PR,
+merge, tag, and D3 have not occurred.
 
 ## Source-head closure status
 

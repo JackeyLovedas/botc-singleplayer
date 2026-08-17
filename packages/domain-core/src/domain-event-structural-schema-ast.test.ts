@@ -229,7 +229,7 @@ describe("typed structural schema authority", () => {
     expect(failures.map((failure) => failure.status === "UNHEALTHY" ? failure.diagnostic.code : "HEALTHY")).toEqual(["DUPLICATE_NODE_OBJECT", "UNRESOLVED_NODE_REFERENCE", "CYCLE_DETECTED", "ORPHAN_NODE"]);
     const revoked = Proxy.revocable(fullCandidate(), {}); revoked.revoke();
     expect(createStructuralSchemaAuthority(revoked.proxy)).toMatchObject({ status: "UNHEALTHY", diagnostic: { code: "INVALID_OBJECT_SHAPE" } });
-  });
+  }, 15_000);
 
   it("proves the refinement registry is data-only and has no semantic callback dependency", () => {
     const source = readFileSync(new URL("./domain-event-structural-schema-ast.ts", import.meta.url), "utf8");
