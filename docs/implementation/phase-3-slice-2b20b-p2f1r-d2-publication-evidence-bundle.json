@@ -1,0 +1,320 @@
+{
+  "schemaVersion": "2B20B-P2F1R-D2-publication-evidence-v1",
+  "sourceHead": "56f34120f7da33335a60dc15fcddef605ba8cbb3",
+  "parentArtifactHead": "0bf487afc49069f6191dd7409362d5c227aa50dc",
+  "parentEvidenceHead": "15b7e61682d3b34e45401cf132fa1a77b6347c22",
+  "workflow": {
+    "recordId": "workflow-ci-push",
+    "workflowName": "CI",
+    "event": "push",
+    "runId": "32013797072",
+    "runAttempt": 1,
+    "headSha": "56f34120f7da33335a60dc15fcddef605ba8cbb3",
+    "status": "completed",
+    "conclusion": "success",
+    "htmlUrl": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/32013797072",
+    "createdAtUtc": "2026-08-17T09:09:31.000Z",
+    "updatedAtUtc": "2026-08-17T09:14:45.000Z"
+  },
+  "ancestry": {
+    "recordId": "ancestry-proof",
+    "settledBaselineHead": "8898f62ceb90433634cf02e83ad5d4ff95db4499",
+    "ruleEvidenceHead": "418b2fdb1c68578fa279fe915307efb802402247",
+    "acceptedProfileSourceHead": "4d576e205cb20c37ba913b923a1cd39e8d800d18",
+    "components": [
+      {
+        "recordId": "ancestry-linux",
+        "jobRef": "job-linux",
+        "platform": "linux",
+        "checkoutHead": "56f34120f7da33335a60dc15fcddef605ba8cbb3",
+        "githubSha": "56f34120f7da33335a60dc15fcddef605ba8cbb3",
+        "repositoryIsShallow": false,
+        "sourceObjectReadable": true,
+        "parentArtifactObjectReadable": true,
+        "parentEvidenceObjectReadable": true,
+        "settledBaselineObjectReadable": true,
+        "ruleEvidenceObjectReadable": true,
+        "acceptedProfileSourceObjectReadable": true,
+        "parentArtifactIsAncestorOfSource": true,
+        "parentEvidenceIsAncestorOfSource": true,
+        "settledBaselineIsAncestorOfSource": true,
+        "ruleEvidenceIsAncestorOfSource": true,
+        "acceptedProfileSourceIsReachable": true,
+        "evidenceParentEqualsArtifact": true,
+        "artifactParentEqualsSettled": true
+      },
+      {
+        "recordId": "ancestry-windows",
+        "jobRef": "job-windows",
+        "platform": "windows",
+        "checkoutHead": "56f34120f7da33335a60dc15fcddef605ba8cbb3",
+        "githubSha": "56f34120f7da33335a60dc15fcddef605ba8cbb3",
+        "repositoryIsShallow": false,
+        "sourceObjectReadable": true,
+        "parentArtifactObjectReadable": true,
+        "parentEvidenceObjectReadable": true,
+        "settledBaselineObjectReadable": true,
+        "ruleEvidenceObjectReadable": true,
+        "acceptedProfileSourceObjectReadable": true,
+        "parentArtifactIsAncestorOfSource": true,
+        "parentEvidenceIsAncestorOfSource": true,
+        "settledBaselineIsAncestorOfSource": true,
+        "ruleEvidenceIsAncestorOfSource": true,
+        "acceptedProfileSourceIsReachable": true,
+        "evidenceParentEqualsArtifact": true,
+        "artifactParentEqualsSettled": true
+      }
+    ]
+  },
+  "jobs": [
+    {
+      "recordId": "job-linux",
+      "workflowRef": "workflow-ci-push",
+      "workflowJobId": "test-shard",
+      "providerDisplayName": "test shard (domain-core-rest)",
+      "jobDatabaseId": "95338822551",
+      "platform": "linux",
+      "runnerOs": "Linux",
+      "runnerArch": "X64",
+      "imageOs": "ubuntu24",
+      "imageVersion": "20260810.271.1",
+      "nodeVersion": "v24.15.0",
+      "pnpmVersion": "11.7.0",
+      "vitestVersion": "3.2.6",
+      "commandArgv": [
+        "node",
+        "scripts/run-vitest-logical-group.mjs",
+        "run",
+        "--mode",
+        "ordinary",
+        "--logical-group-id",
+        "domain-core-rest"
+      ],
+      "startedAtUtc": "2026-08-17T09:09:33.000Z",
+      "completedAtUtc": "2026-08-17T09:10:17.000Z",
+      "processStartedAtUnixMs": 1786957793016,
+      "processEndedAtUnixMs": 1786957811581,
+      "conclusion": "success",
+      "processExitCode": 0,
+      "logicalGroupId": "domain-core-rest",
+      "mode": "ordinary",
+      "selectedIdentityCount": 503,
+      "selectedIdentitySha256": "49125cee3026335a2c78cb519908c0f9c20de2766a0813b99cd3557add19d06b",
+      "failedCount": 0,
+      "skippedCount": 0,
+      "todoCount": 0,
+      "globalErrorCount": 0,
+      "manifestSha256": "da1239aac9c2c9a4df2efcaa2c74860807a138e50f50bfb0724826e169adc7ab",
+      "verificationReportSha256": "d2b148f8e9ff8e58bdbbb1d91a2bf42dcf0ff5a0318b7bb1bb231db1b9b4d864",
+      "captureSha256": "0d44621a41e5872cdc14c322ade5952dea0d9d9a9d45813a29aecf73bd582974",
+      "artifactRef": "artifact-linux",
+      "logRef": "log-linux"
+    },
+    {
+      "recordId": "job-windows",
+      "workflowRef": "workflow-ci-push",
+      "workflowJobId": "deterministic-windows",
+      "providerDisplayName": "deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-c...",
+      "jobDatabaseId": "95338822389",
+      "platform": "windows",
+      "runnerOs": "Windows",
+      "runnerArch": "X64",
+      "imageOs": "win25-vs2026",
+      "imageVersion": "20260810.198.2",
+      "nodeVersion": "v24.15.0",
+      "pnpmVersion": "11.7.0",
+      "vitestVersion": "3.2.6",
+      "commandArgv": [
+        "node",
+        "scripts/run-vitest-logical-group.mjs",
+        "run",
+        "--mode",
+        "ordinary",
+        "--logical-group-id",
+        "domain-core-rest"
+      ],
+      "startedAtUtc": "2026-08-17T09:09:57.000Z",
+      "completedAtUtc": "2026-08-17T09:14:45.000Z",
+      "processStartedAtUnixMs": 1786958055313,
+      "processEndedAtUnixMs": 1786958076605,
+      "conclusion": "success",
+      "processExitCode": 0,
+      "logicalGroupId": "domain-core-rest",
+      "mode": "ordinary",
+      "selectedIdentityCount": 503,
+      "selectedIdentitySha256": "49125cee3026335a2c78cb519908c0f9c20de2766a0813b99cd3557add19d06b",
+      "failedCount": 0,
+      "skippedCount": 0,
+      "todoCount": 0,
+      "globalErrorCount": 0,
+      "manifestSha256": "da1239aac9c2c9a4df2efcaa2c74860807a138e50f50bfb0724826e169adc7ab",
+      "verificationReportSha256": "d2b148f8e9ff8e58bdbbb1d91a2bf42dcf0ff5a0318b7bb1bb231db1b9b4d864",
+      "captureSha256": "5375f41ec8f458692c6cdc0f20b7958a3bf2a1926a9cc95f2664553cc0fc0c38",
+      "artifactRef": "artifact-windows",
+      "logRef": "log-windows"
+    }
+  ],
+  "artifacts": [
+    {
+      "recordId": "artifact-linux",
+      "jobRef": "job-linux",
+      "artifactId": "9282739926",
+      "name": "d2-linux-domain-core-rest-56f34120f7da33335a60dc15fcddef605ba8cbb3",
+      "sourceHead": "56f34120f7da33335a60dc15fcddef605ba8cbb3",
+      "retentionDays": 7,
+      "expiresAtUtc": "2026-08-24T09:10:13.000Z",
+      "sizeInBytes": 206171,
+      "downloadedFileCount": 12,
+      "downloadedTreeSha256": "67401dcc5ae3db23082425d8be933fc07f88563d0dbafb57c67ac063e5aea01e",
+      "captureFileSha256": "0d44621a41e5872cdc14c322ade5952dea0d9d9a9d45813a29aecf73bd582974"
+    },
+    {
+      "recordId": "artifact-windows",
+      "jobRef": "job-windows",
+      "artifactId": "9282871222",
+      "name": "d2-windows-domain-core-rest-56f34120f7da33335a60dc15fcddef605ba8cbb3",
+      "sourceHead": "56f34120f7da33335a60dc15fcddef605ba8cbb3",
+      "retentionDays": 7,
+      "expiresAtUtc": "2026-08-24T09:14:40.000Z",
+      "sizeInBytes": 200901,
+      "downloadedFileCount": 12,
+      "downloadedTreeSha256": "f6097e8bfdba4e672754e481d2d605e8113ae533edd774b20c6bc8a0118520b2",
+      "captureFileSha256": "5375f41ec8f458692c6cdc0f20b7958a3bf2a1926a9cc95f2664553cc0fc0c38"
+    }
+  ],
+  "logs": [
+    {
+      "recordId": "log-linux",
+      "jobRef": "job-linux",
+      "jobDatabaseId": "95338822551",
+      "downloadUrl": "https://api.github.com/repos/JackeyLovedas/botc-singleplayer/actions/jobs/95338822551/logs",
+      "byteLength": 32575,
+      "downloadedBlobSha256": "b19c96964a35c41cee766b4ca097a4fa4b74266a86f5fa39d0b889fd643f63cf"
+    },
+    {
+      "recordId": "log-windows",
+      "jobRef": "job-windows",
+      "jobDatabaseId": "95338822389",
+      "downloadUrl": "https://api.github.com/repos/JackeyLovedas/botc-singleplayer/actions/jobs/95338822389/logs",
+      "byteLength": 44298,
+      "downloadedBlobSha256": "3d7e4b31fb6bf03815fa3118a76e94e664cd7e2e1fd3bf7a11f89d7c8672f647"
+    }
+  ],
+  "retention": {
+    "policy": "GITHUB_ACTIONS_ARTIFACT_RETENTION",
+    "retentionDays": 7,
+    "hostedAvailability": "EXPIRES_AFTER_RETENTION",
+    "historicalBinding": "HASH_REMAINS_AFTER_EXPIRY"
+  },
+  "catalogReconciliation": {
+    "recordId": "catalog-support",
+    "path": "docs/architecture/2B20B-P2F1R-C1-generated-structural-schema-catalog-v2.md",
+    "blobOid": "4f9a376e56f19b241d76ce2a75be83b70859ae25",
+    "rawLength": 264855,
+    "rawSha256": "e0f788db370eca7ad1d1097f2a271bd9257fb5966d28081c930458d3dea85ef6",
+    "lfCount": 626,
+    "windowsCheckoutLength": 265481,
+    "windowsCheckoutSha256": "7d912c085c61ab34d06c46d0cbfd5f3def8e10465339d608566a73eaf93763b7",
+    "classification": "LF_TO_CRLF_CHECKOUT_CONVERSION_ONLY",
+    "runtimeAuthority": false
+  },
+  "designExpectedBindings": [
+    {
+      "CriterionId": "D-C16",
+      "RuleClaim": "D2 public publication evidence grouping",
+      "CompletionCriterion": "D-C16A and D-C16B both PASS for the same sourceHead",
+      "RequiredEvidenceMechanism": "GROUPING_ONLY",
+      "ExpectedReachability": "R4_FUTURE_HYPOTHETICAL_STATE",
+      "ExpectedTrust": "T1_EXTERNAL_OR_PERSISTED_BOUNDARY",
+      "ExpectedPrimaryLayer": "NONE",
+      "ExpectedResult": "Both child criteria PASS atomically; no third primary",
+      "SupportingAuthorityRequirement": "NONE"
+    },
+    {
+      "CriterionId": "D-C16A",
+      "RuleClaim": "One exact-H push run supplies Linux and Windows ordinary domain-core-rest publication evidence",
+      "CompletionCriterion": "One successful runId/runAttempt binds exact H, two required jobs, two captures, two artifacts, two raw job logs, complete ancestry, and identical 503-test identity SHA",
+      "RequiredEvidenceMechanism": "CROSS_PLATFORM_CI",
+      "ExpectedReachability": "R4_FUTURE_HYPOTHETICAL_STATE",
+      "ExpectedTrust": "T1_EXTERNAL_OR_PERSISTED_BOUNDARY",
+      "ExpectedPrimaryLayer": "CROSS_PLATFORM_CI",
+      "ExpectedResult": "The same successful push run proves both platform components without stale, partial, cross-swapped, or mixed-attempt evidence",
+      "SupportingAuthorityRequirement": "NONE"
+    },
+    {
+      "CriterionId": "D-C16B",
+      "RuleClaim": "One offline T1 verifier validates and atomically issues the closed recursive D2 publication evidence bundle",
+      "CompletionCriterion": "The verifier accepts exact canonical capture, acquisition, Git/API/artifact/log bindings, recursive schema, reference graph, expected/actual mappings, catalog support facts, and D3 handoff, then atomically writes one bundle",
+      "RequiredEvidenceMechanism": "STRUCTURAL_VALIDATION",
+      "ExpectedReachability": "R4_FUTURE_HYPOTHETICAL_STATE",
+      "ExpectedTrust": "T1_EXTERNAL_OR_PERSISTED_BOUNDARY",
+      "ExpectedPrimaryLayer": "STRUCTURAL_VALIDATION",
+      "ExpectedResult": "One canonical bundle is issued only after all checks PASS; every malformed or failed input leaves no bundle and no Actual record",
+      "SupportingAuthorityRequirement": "NONE"
+    }
+  ],
+  "actualBindings": [
+    {
+      "CriterionId": "D-C16A",
+      "ActualTestFile": ".github/workflows/ci.yml",
+      "ActualTestTitle": "D-C16A GitHub push run 32013797072/1 at 56f34120f7da33335a60dc15fcddef605ba8cbb3: linux+windows domain-core-rest 503/503",
+      "ActualPrimaryLayer": "CROSS_PLATFORM_CI",
+      "ActualReachability": "R4_FUTURE_HYPOTHETICAL_STATE",
+      "ActualTrust": "T1_EXTERNAL_OR_PERSISTED_BOUNDARY",
+      "SupportingAuthorityId": "NONE",
+      "MechanismMatch": "PASS"
+    },
+    {
+      "CriterionId": "D-C16B",
+      "ActualTestFile": "scripts/verify-p2f1r-d2-publication-evidence.mjs",
+      "ActualTestTitle": "D-C16B audit-bundle at 56f34120f7da33335a60dc15fcddef605ba8cbb3: 2B20B-P2F1R-D2-publication-evidence-v1",
+      "ActualPrimaryLayer": "STRUCTURAL_VALIDATION",
+      "ActualReachability": "R4_FUTURE_HYPOTHETICAL_STATE",
+      "ActualTrust": "T1_EXTERNAL_OR_PERSISTED_BOUNDARY",
+      "SupportingAuthorityId": "NONE",
+      "MechanismMatch": "PASS"
+    }
+  ],
+  "d3Handoff": {
+    "recordId": "d3-handoff",
+    "designAuthorityPath": "docs/architecture/2B20B-P2F1R-D2-minimal-exact-head-publication-evidence-final-design-v1.md",
+    "designAuthorityCommit": "075000fc181ee50a110157f4ce62f89972323c77",
+    "designAuthorityBlobSha256": "df3f12468460819d3b73585be8846f432a245f5c62f472e1f2ff57bab7f702d7",
+    "sourceHeadRef": "source-head",
+    "parentArtifactHeadRef": "parent-artifact-head",
+    "parentEvidenceHeadRef": "parent-evidence-head",
+    "workflowRef": "workflow-ci-push",
+    "jobRefs": [
+      "job-linux",
+      "job-windows"
+    ],
+    "artifactRefs": [
+      "artifact-linux",
+      "artifact-windows"
+    ],
+    "logRefs": [
+      "log-linux",
+      "log-windows"
+    ],
+    "bundleRef": "d2-final-bundle",
+    "archiveCategories": [
+      "E2_FINAL_EVIDENCE_BUNDLE",
+      "H_SOURCE_STATUS_RECORD",
+      "FINAL_CODE_REVIEW_VERBATIM",
+      "FINAL_RULE_REVIEW_VERBATIM"
+    ],
+    "deleteAfterD3Categories": [
+      "TEMPORARY_VERIFIER",
+      "D2_WORKFLOW_STEPS_AND_CHECKOUT_DELTAS",
+      "TEMPORARY_D2_BRANCH",
+      "LOCAL_DOWNLOADED_ARTIFACTS",
+      "RAW_JOB_LOGS",
+      "TEMPORARY_WORKTREES",
+      "ACQUISITION_ROOT_AND_MANIFEST",
+      "SELF_TEST_NEGATIVE_FIXTURES"
+    ],
+    "keepOperationalAssetCount": 0,
+    "cleanupRequired": true
+  },
+  "finalStructuralVerdict": "D2_PUBLICATION_EVIDENCE_BUNDLE_VALID"
+}
