@@ -1,40 +1,24 @@
 # Current Task
 
-## 2B20A — accepted and closed out
+## Phase 3 D3 — final closeout accepted; authority reconciled
 
-- Status: `COMPLETED / 2B20A_ACCEPTED_AND_CLOSED_OUT`.
-- Disposition: `ACCEPTED`.
-- PR `#46` merged frozen feature HEAD
-  `37891002e6144b984f58ac4f5b819398500f97b0` as merge SHA
-  `ff5c824b890f7a4d5d33b4b35184d3cdc6b1e16c`.
-- The two original GitHub audit comments were re-read after merge. Both markers
-  bind the frozen feature HEAD; the complete report returns
-  `CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]`.
-- Exact comment archives:
-  `docs/reviews/pr-46-code-review-final.md` preserves comment `5102226458`
-  (`8546` UTF-8 bytes, SHA-256
-  `39a05d24bc5222c10a325714c85f25e382553f344bc7e58bfa2bd6d510047c8d`);
-  `docs/reviews/pr-46-rule-review-final.md` preserves comment `5102226749`
-  (`8546` UTF-8 bytes, SHA-256
-  `ce88860638fc6922fc753ba4870faa3a39be81df3d05d8ed9fffccd52c1b6266`).
-- Product-head CI is exact and separate: push run `30344384777` and
-  pull-request run `30344390996`, each attempt `1`, exact
-  `37891002e6144b984f58ac4f5b819398500f97b0`, completed/success, `24/24`.
-- Merge-commit CI is exact and separate: run `30345863036`, attempt `1`,
-  exact `ff5c824b890f7a4d5d33b4b35184d3cdc6b1e16c`,
-  completed/success, `24/24`.
-- Accepted tag
-  `phase-3-slice-2b20a-reachable-base-dreamer-settleability-closure`
-  resolves exactly to the merge SHA.
-- The docs-only closeout commit requires its own external CI after publication.
-  Its CI is pending and inherits neither product-head nor merge-commit CI.
-- Dreamer remains `PARTIAL`; Product Repair remains `2/2`;
-  `newProductRepairRoundCreated=false`;
-  `acceptedBehaviorRestorationOverrideUsed=true`.
+- Status: `COMPLETED / FINAL_D3_CLOSEOUT_ACCEPTED`.
+- D2 and D3 are accepted. D3 implementation HEAD is
+  `40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`; final status is bound to
+  `df9ee017de2f3b8f33f7608a49e91f46c51acc08` on `origin/main`.
+- D2 source H is `56f34120f7da33335a60dc15fcddef605ba8cbb3`; D2 evidence E2 is
+  `8745e1375c30236d477d599f9d657ac7b3ac7b5d`. D3 temporary evidence and
+  publication residue are closed; no active PR or temporary D2 branch remains.
+- D3 product-head, PR, merge-commit, closeout, and closeout-merge CI are
+  separately recorded in the D3 final status; no CI status is inherited across
+  commits.
 - `currentSlice=null`, `currentBranch=main`, `currentPR=null`,
-  `remainingBlockers=[]`, and `phase2CStarted=false`.
-- Required next action: `STOP_NO_NEXT_SLICE_AUTHORIZED`.
-- No next slice is authorized or started.
+  `remainingBlockers=[]`, and no next slice is authorized or started.
+- The roadmap candidate is Slice `2C` (Integrated Basic Phase Flow), but its
+  authority is `AMBIGUOUS`. It is a handoff candidate only, not an active slice
+  or implementation authorization. The existing 2B18 rule blockers remain
+  unresolved and do not authorize resumption.
+- Required next action: `AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`.
 
 All sections below are chronological history and do not override this state.
 
