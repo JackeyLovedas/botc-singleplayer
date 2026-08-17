@@ -1,12 +1,12 @@
 {
   "status": "COMPLETED",
-  "detailedStatus": "2B20A_ACCEPTED_AND_CLOSED_OUT",
+  "detailedStatus": "FINAL_D3_CLOSEOUT_ACCEPTED",
   "disposition": "ACCEPTED",
   "canonicalActiveControlInvariant": {
-    "schemaVersion": "2B20A-POST-MERGE-CLOSEOUT-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
+    "schemaVersion": "POST-D3-CLOSEOUT-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
     "role": "VALIDATION_CONTRACT_ONLY / NOT_A_SECOND_STATUS_AUTHORITY",
     "authority": "ROOT_ACTIVE_CONTROL_TUPLE",
-    "findingCode": "CANONICAL_TOP_LEVEL_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_CONTROL_STATE_CONTRADICTION",
+    "findingCode": "CANONICAL_TOP_LEVEL_POST_D3_CLOSEOUT_CONTROL_STATE_CONTRADICTION",
     "statusEqualityPaths": [
       "$.detailedStatus",
       "$.slice2B20AGate.detailedStatus",
@@ -33,21 +33,21 @@
       "$.slice2B20AGate.nextAction"
     ],
     "activeTextMarkers": {
-      "docs/agent-loop/CURRENT_TASK.md": "## 2B20A — accepted and closed out",
-      "docs/agent-loop/PROJECT_STATE.md": "## Current state — 2B20A accepted and closed out",
+      "docs/agent-loop/CURRENT_TASK.md": "## Phase 3 D3 — final closeout accepted; authority reconciliation pending",
+      "docs/agent-loop/PROJECT_STATE.md": "## Current state — Phase 3 D3 final closeout accepted",
       "docs/reviews/pr-46-code-review-final.md": "<!-- ORIGINAL_COMMENT_BODY_BEGIN -->",
       "docs/agent-loop/AUTOPILOT_LOG.md": "2b20a-post-merge-closeout"
     },
     "negativeFixture": {
       "mutationPath": "$.detailedStatus",
-      "mutatedValue": "2B20A_FINAL_RESTORATION_LOCAL_PASS_PENDING_EXACT_HEAD_CI",
-      "expectedFindingCode": "CANONICAL_TOP_LEVEL_2B20A_ACCEPTED_BEHAVIOR_RESTORATION_CONTROL_STATE_CONTRADICTION",
+      "mutatedValue": "2B20A_ACCEPTED_AND_CLOSED_OUT",
+      "expectedFindingCode": "CANONICAL_TOP_LEVEL_POST_D3_CLOSEOUT_CONTROL_STATE_CONTRADICTION",
       "expectedExitCode": 17
     }
   },
-  "taskType": "ACCEPTED_BEHAVIOR_RESTORATION / PRODUCT",
+  "taskType": "AUTHORITY_RECONCILIATION / DOCS_CONTROL_ONLY",
   "correctionId": "2B20A-ACCEPTED-NORMAL-DREAMER-RESTORATION-V1-CORRECTION-1",
-  "authorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
+  "authorization": "USER_AUTHORIZED_POST_D3_AUTHORITY_RECONCILIATION_AND_NEXT_SLICE_HANDOFF_ONLY",
   "designReleasePass": true,
   "designReleaseVerdict": "DESIGN_RELEASE_PASS",
   "ruleReady": false,
@@ -89,9 +89,9 @@
   "stopLossOverrideAuthorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
   "controlRecoveryAuthorization": "USER_AUTHORIZED_2B20AP1_CONTROL_RECOVERY_REVIEW_PUBLICATION_AND_CONDITIONAL_CLOSEOUT",
   "overrideKind": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
-  "productionBehaviorChangeAuthorized": true,
+  "productionBehaviorChangeAuthorized": false,
   "implementationAuthorized": false,
-  "implementationStarted": true,
+  "implementationStarted": false,
   "implementationContinuationAuthorized": false,
   "acceptedBehaviorRestorationOverrideUsed": true,
   "newProductRepairRoundCreated": false,
@@ -101,7 +101,7 @@
   "infrastructurePR": 47,
   "infrastructurePRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/47",
   "infrastructurePublished": true,
-  "infrastructurePublicationStatus": "OPEN_UNMERGED",
+  "infrastructurePublicationStatus": "MERGED_AND_CLOSED_OUT",
   "productPR": 46,
   "productBranch": "phase-3/reachable-base-dreamer-settleability-closure",
   "productHead": "70ee998a631a347ced5975dc71923a71072fa5cb",
@@ -1282,7 +1282,7 @@
   },
   "slice2B20AGate": {
     "status": "COMPLETED",
-    "detailedStatus": "2B20A_ACCEPTED_AND_CLOSED_OUT",
+    "detailedStatus": "FINAL_D3_CLOSEOUT_ACCEPTED",
     "disposition": "ACCEPTED",
     "authorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
     "scopeMode": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
@@ -1311,7 +1311,7 @@
     "ruleDesignPass": true,
     "implementationAuthorized": false,
     "implementationAuthorization": "AUTHORIZED_BY_INDEPENDENT_DESIGN_RELEASE_PASS_CORRECTION_1",
-    "implementationStarted": true,
+    "implementationStarted": false,
     "sourceImplementationPaused": true,
     "designRound": 2,
     "maxDesignRounds": 2,
@@ -1324,7 +1324,7 @@
     "productRepairRoundConsumed": true,
     "productRepairStopLossOverrideUsed": true,
     "overrideKind": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
-    "productionBehaviorChangeAuthorized": true,
+    "productionBehaviorChangeAuthorized": false,
     "newProductRepairRoundCreated": false,
     "acceptedBehaviorRestorationOverrideUsed": true,
     "acceptedBehaviorRestoration": {
@@ -1951,8 +1951,8 @@
       "provenance": "Must be resolved against the exact docs-only closeout commit after ordinary push to main; productHeadCI and mergeCommitCI do not transfer."
     },
     "remainingBlockers": [],
-    "requiredNextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED",
-    "nextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED"
+    "requiredNextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE",
+    "nextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE"
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
@@ -3325,8 +3325,8 @@
   "designStarted": true,
   "currentDesignPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-v1-correction-1.md",
   "currentDesignHash": "755c5175f304b9dd34783876286d12262f686c95a919561df5a9bb7dc9a84d77",
-  "currentDesignStatus": "2B20A_ACCEPTED_AND_CLOSED_OUT",
-  "currentDesignTerminal": "2B20A_ACCEPTED_AND_CLOSED_OUT",
+  "currentDesignStatus": "FINAL_D3_CLOSEOUT_ACCEPTED",
+  "currentDesignTerminal": "FINAL_D3_CLOSEOUT_ACCEPTED",
   "currentDesignSource": "AUTHORIZED_DOCS_ONLY_DESIGN_CORRECTION_1",
   "currentDesignReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-design-release-review-correction-1.md",
   "currentDesignReviewHash": "2d69ee926a9abf27fbbcaedd60e49090de2c6330158612248e8dc87664f1e042",
@@ -3846,7 +3846,7 @@
   "historicalSlice2B18ARuleReady": true,
   "historicalSlice2B18ARuleDesignPass": false,
   "historicalSlice2B18AImplementationAuthorized": true,
-  "implementationStatus": "2B20A_ACCEPTED_AND_CLOSED_OUT",
+  "implementationStatus": "FINAL_D3_CLOSEOUT_ACCEPTED",
   "localImplementationReviewVerdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
   "localImplementationReviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
   "localImplementationReviewFindings": [],
@@ -5066,8 +5066,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Accepted and closed out Phase 3 Slice 2B20A after PR #46 merged as ff5c824b890f7a4d5d33b4b35184d3cdc6b1e16c. Re-read the two original GitHub audit comments, verified markers and reviewed HEAD 37891002e6144b984f58ac4f5b819398500f97b0, CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[], and archived both exact UTF-8 bodies. Recorded product-head CI runs 30344384777 and 30344390996 at exact frozen feature HEAD, merge CI run 30345863036 at the exact merge SHA, and accepted tag phase-3-slice-2b20a-reachable-base-dreamer-settleability-closure at the merge SHA. The docs-only closeout commit remains pending its own external CI after publication and inherits no earlier CI. Dreamer remains PARTIAL; Product Repair remains 2/2; no new round or next slice was created.",
+  "lastAction": "Reconciled active controls after accepted Phase 3 D3 closeout at origin/main df9ee017de2f3b8f33f7608a49e91f46c51acc08. Verified D2/D3 acceptance, no active PR or temporary D2 branch, preserved historical records, and recorded Slice 2C only as an ambiguous roadmap candidate; no next slice was authorized or started.",
   "lastError": null,
-  "requiredNextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED",
-  "nextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED"
+  "requiredNextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE",
+  "nextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE"
 }

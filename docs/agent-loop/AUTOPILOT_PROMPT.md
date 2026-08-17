@@ -10,15 +10,16 @@ JackeyLovedas/botc-singleplayer
 本地目录：
 C:\Users\wjl\Documents\血染钟楼
 
-当前起点：
-- 当前开放PR：#15
-- 当前分支：phase-3/dreamer-action-information-skeleton
-- 当前任务仍属于Phase 3 Slice 2B13
-- 当前已知BLOCKER：
-  私有知识投影展示DreamerInformationDelivered之前，
-  必须严格验证已存储Dreamer delivery。
-- 不得在该BLOCKER修复前合并PR #15。
-- 不得提前开始Slice 2B14。
+当前起点（已接受的最新控制状态）：
+- Phase 3 D3 final closeout 已接受；D2/D3 均为 `ACCEPTED`。
+- D3 implementation HEAD：`40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`。
+- 当前主线：`origin/main@df9ee017de2f3b8f33f7608a49e91f46c51acc08`。
+- 当前开放PR：无；当前分支：`main`；当前Slice：无；remainingBlockers：`[]`。
+- Slice `2C`（Integrated Basic Phase Flow）仅为路线图候选，authority=`AMBIGUOUS`，
+  不构成当前Slice、实现授权或自动启动条件；既有2B18规则阻塞不得被隐式恢复。
+- 必须等待：`AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`。
+
+以下后续段落保留为通用协议与历史上下文，不构成当前Slice指令；任何新Slice均须获得新的明确授权和独立规则/设计审查。
 
 ==================================================
 一、建立内部多代理
