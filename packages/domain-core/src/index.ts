@@ -3,6 +3,40 @@ export * from "./clockmaker.js";
 export * from "./mathematician.js";
 export * from "./canonical-data.js";
 export {
+  CANONICAL_RUNTIME_LIMITS,
+  CANONICAL_RUNTIME_SERIALIZATION_VERSION,
+  CANONICAL_RUNTIME_VALUE_VERSION,
+  captureCanonicalRuntimeValue,
+  serializeCanonicalRuntimeValue
+} from "./canonical-runtime-value.js";
+export type {
+  CanonicalRuntimeDiagnostic,
+  CanonicalRuntimeFailureCode,
+  CanonicalRuntimeFailurePhase,
+  CanonicalRuntimeLimitSummary,
+  CanonicalRuntimePathSegment,
+  CanonicalRuntimeResourceKind,
+  CanonicalRuntimeResourceMetrics,
+  CapturedCanonicalRuntimeValue,
+  CaptureCanonicalRuntimeValueResult,
+  SerializeCanonicalRuntimeValueResult
+} from "./canonical-runtime-value.js";
+export { validateDomainEventStructure } from "./domain-event-structural-validator.js";
+export type {
+  DomainEventPayloadBranchId,
+  DomainEventPayloadSchemaIdentity,
+  DomainEventStructuralDiagnostic,
+  DomainEventStructuralDiagnosticCode,
+  DomainEventStructuralDiagnosticPhase,
+  DomainEventStructuralPathSegment,
+  DomainEventStructuralRetryability,
+  DomainEventStructuralSafeSummary,
+  DomainEventStructuralValidationResult,
+  StructurallyValidatedDomainEventToken,
+  TaggedUnionCoordinateV1,
+  TaggedUnionFieldCoordinateV1
+} from "./canonical-domain-event.js";
+export {
   FIRST_NIGHT_ABILITY_OUTCOME_LEDGER_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_AUDIT_MODEL_VERSION,
   FIRST_NIGHT_ABILITY_OUTCOME_WINDOW_VERSION,

@@ -66,6 +66,46 @@ export function sha256CanonicalLines(lines) {
 export const IDENTITY_ENCODING_VERSION =
   "vitest-semantic-identity-json-tuple-v1";
 
+export const ACCEPTED_OWNERSHIP_BASELINE_VERSION = "ACCEPTED_1572_V1";
+export const CANDIDATE_OWNERSHIP_BASELINE_VERSION =
+  "CANDIDATE_1712_D1_V1";
+
+const ACCEPTED_BASELINE_AUTHORITY = Object.freeze({
+  structuredIdentityCount: 1572,
+  lfIdentityCount: 12,
+  inventorySha256: "58bd4b6959c1f234ac74b90b1188cccf08ebeb5bdfaecdebd900e49d69a0e1b8",
+  candidateByteCount: 391257,
+  candidateSha256: "d8ae2d1f76958460173daaf84663b0c680c8dead7c052b446c2fcd037eab9129",
+  physicalTestFileCount: 31,
+  physicalTestFileSetSha256: "55783dc1c8ff4078b2fd5b1b6d49ec6ae40d1a1ae38ed3b6cbb97bb8a5c4a2ab"
+});
+
+const CANDIDATE_BASELINE_AUTHORITY = Object.freeze({
+  structuredIdentityCount: 1712,
+  lfIdentityCount: 12,
+  inventorySha256: "540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2",
+  physicalTestFileCount: 36,
+  physicalTestFileSetSha256: "c8c0a52de9f52037eda418323ac57b281ea30633162a22b963d0100cb8ca38f0"
+});
+
+export const D1_INCREMENT_FILES = Object.freeze([
+  Object.freeze({ file: "packages/domain-core/src/canonical-runtime-hash.test.ts", count: 14, owner: "domain-core-rest", project: "domain-core", reason: "2B20B-P2F1R-B deterministic integrity hash authority" }),
+  Object.freeze({ file: "packages/domain-core/src/canonical-runtime-value.test.ts", count: 52, owner: "domain-core-rest", project: "domain-core", reason: "2B20B-P2F1R-A canonical runtime capture authority" }),
+  Object.freeze({ file: "packages/domain-core/src/domain-event-structural-schema-ast.test.ts", count: 25, owner: "domain-core-rest", project: "domain-core", reason: "2B20B-P2F1R-C1 structural schema AST authority" }),
+  Object.freeze({ file: "packages/domain-core/src/domain-event-structural-schema-catalog.test.ts", count: 21, owner: "domain-core-rest", project: "domain-core", reason: "2B20B-P2F1R-C1 structural schema catalog authority" }),
+  Object.freeze({ file: "packages/domain-core/src/domain-event-structural-validator.test.ts", count: 28, owner: "domain-core-rest", project: "domain-core", reason: "2B20B-P2F1R-C structural validation authority" })
+]);
+
+export function selectOwnershipBaseline(version) {
+  if (version === ACCEPTED_OWNERSHIP_BASELINE_VERSION) {
+    return Object.freeze({ version, acceptanceStatus: "ACCEPTED", authority: ACCEPTED_BASELINE_AUTHORITY });
+  }
+  if (version === CANDIDATE_OWNERSHIP_BASELINE_VERSION) {
+    return Object.freeze({ version, acceptanceStatus: "UNACCEPTED_CANDIDATE", authority: CANDIDATE_BASELINE_AUTHORITY });
+  }
+  fail("OWNERSHIP_BASELINE_VERSION_INVALID", "an exact explicit baseline version is required");
+}
+
 function assertCanonicalArray(value, code, context) {
   if (
     !Array.isArray(value) ||
@@ -2239,6 +2279,24 @@ const RAW_OWNERSHIP_CONTRACTS = Object.freeze([
   })
 ]);
 
+const FROZEN_ACCEPTED_CONTRACT_REGISTRY_ORDER = Object.freeze([
+  "2B20A", "2B19A3B2", "2B19B", "2B19A3B1", "2B19A3A"
+]);
+
+export function authenticateAcceptedContractRegistryOrder(input) {
+  assertCanonicalArray(input, "INVALID_ACCEPTED_CONTRACT_REGISTRY", "accepted registry order");
+  if (input.some((value) => typeof value !== "string") ||
+      input.length !== FROZEN_ACCEPTED_CONTRACT_REGISTRY_ORDER.length ||
+      input.some((value, index) => value !== FROZEN_ACCEPTED_CONTRACT_REGISTRY_ORDER[index])) {
+    fail("ACCEPTED_CONTRACT_REGISTRY_ORDER_MISMATCH", "raw accepted registry order changed");
+  }
+  return Object.freeze([...input]);
+}
+
+export const ACCEPTED_CONTRACT_REGISTRY_ORDER = authenticateAcceptedContractRegistryOrder(
+  RAW_OWNERSHIP_CONTRACTS.map(({ contractId }) => contractId)
+);
+
 export const OWNERSHIP_CONTRACTS = validateOwnershipContracts(
   RAW_OWNERSHIP_CONTRACTS,
   { repoRoot: process.cwd() }
@@ -2407,4 +2465,191 @@ export function build2B20ACandidate(repoRoot, fullInventory) {
 
 export function candidateBytes(candidate) {
   return Buffer.from(`${JSON.stringify(candidate, null, 2)}\n`, "utf8");
+}
+
+function inventoryFileAuthority(identities) {
+  const files = new Set(identities.map((identity) => identity.file));
+  return Object.freeze({
+    count: files.size,
+    sha256: sha256CanonicalLines(files)
+  });
+}
+
+function lfIdentityCount(identities) {
+  return identities.filter((identity) =>
+    [identity.project, identity.file, ...identity.ancestorPath, identity.title]
+      .some((field) => field.includes("\n"))
+  ).length;
+}
+
+function assertInventoryAuthority(identities, authority, label, code = "OWNERSHIP_BASELINE_AUTHORITY_MISMATCH") {
+  const files = inventoryFileAuthority(identities);
+  const actual = {
+    structuredIdentityCount: identities.length,
+    lfIdentityCount: lfIdentityCount(identities),
+    inventorySha256: structuredInventorySha256(identities),
+    physicalTestFileCount: files.count,
+    physicalTestFileSetSha256: files.sha256
+  };
+  for (const key of Object.keys(actual)) {
+    if (actual[key] !== authority[key]) {
+      fail(
+        code,
+        `${label}.${key}: expected=${authority[key]}, actual=${actual[key]}`
+      );
+    }
+  }
+  return actual;
+}
+
+export function accepted1572Inventory(repoRoot, fullInventory) {
+  const incrementFiles = new Set(D1_INCREMENT_FILES.map(({ file }) => file));
+  const candidate = canonicalizeStructuredVitestIdentities(repoRoot, fullInventory);
+  const accepted = canonicalizeStructuredVitestIdentities(
+    repoRoot,
+    candidate.filter((identity) => !incrementFiles.has(identity.file))
+  );
+  if (accepted.length > ACCEPTED_BASELINE_AUTHORITY.structuredIdentityCount) {
+    fail("OWNERSHIP_INCREMENT_SET_MISMATCH", `borrowed=${accepted.length - 1572}`);
+  }
+  assertInventoryAuthority(
+    accepted,
+    ACCEPTED_BASELINE_AUTHORITY,
+    "accepted",
+    "ACCEPTED_1572_HISTORY_REMOVAL"
+  );
+  assertInventoryAuthority(candidate, CANDIDATE_BASELINE_AUTHORITY, "candidate");
+  return accepted;
+}
+
+export function buildOwnershipBaselineCandidate(repoRoot, fullInventory, version) {
+  const selection = selectOwnershipBaseline(version);
+  const candidate = canonicalizeStructuredVitestIdentities(repoRoot, fullInventory);
+  assertInventoryAuthority(candidate, CANDIDATE_BASELINE_AUTHORITY, "candidate");
+  const accepted = accepted1572Inventory(repoRoot, candidate);
+  if (selection.version === ACCEPTED_OWNERSHIP_BASELINE_VERSION) {
+    const artifact = build2B20ACandidate(repoRoot, accepted);
+    const bytes = candidateBytes(artifact);
+    if (
+      bytes.length !== ACCEPTED_BASELINE_AUTHORITY.candidateByteCount ||
+      createHash("sha256").update(bytes).digest("hex") !==
+        ACCEPTED_BASELINE_AUTHORITY.candidateSha256
+    ) {
+      fail("ACCEPTED_1572_ARTIFACT_MISMATCH", "accepted artifact bytes changed");
+    }
+    return artifact;
+  }
+  return {
+    schemaVersion: "vitest-ownership-candidate-baseline-d1-v1",
+    baselineVersion: CANDIDATE_OWNERSHIP_BASELINE_VERSION,
+    acceptanceStatus: "UNACCEPTED_CANDIDATE",
+    contractId: "2B20A",
+    identityEncodingVersion: IDENTITY_ENCODING_VERSION,
+    structuredIdentityCount: candidate.length,
+    lfIdentityCount: lfIdentityCount(candidate),
+    inventorySha256: structuredInventorySha256(candidate),
+    physicalTestFileCount: inventoryFileAuthority(candidate).count,
+    physicalTestFileSetSha256: inventoryFileAuthority(candidate).sha256,
+    structuredIdentities: candidate.map(structuredIdentityTuple),
+    frozenBaseline: calculate2B20AFrozenBaseline(repoRoot, accepted),
+    acceptedContractBaselines: ACCEPTED_CONTRACT_BASELINES
+  };
+}
+
+export function auditOwnershipBaselineMigration(repoRoot, fullInventory) {
+  const candidate = canonicalizeStructuredVitestIdentities(repoRoot, fullInventory);
+  const accepted = accepted1572Inventory(repoRoot, candidate);
+  const acceptedArtifact = buildOwnershipBaselineCandidate(
+    repoRoot,
+    candidate,
+    ACCEPTED_OWNERSHIP_BASELINE_VERSION
+  );
+  const candidateArtifact = buildOwnershipBaselineCandidate(
+    repoRoot,
+    candidate,
+    CANDIDATE_OWNERSHIP_BASELINE_VERSION
+  );
+  const acceptedKeys = new Set(
+    accepted.map((identity) => compactStructuredIdentityTuple(structuredIdentityTuple(identity)))
+  );
+  const added = candidate.filter(
+    (identity) => !acceptedKeys.has(compactStructuredIdentityTuple(structuredIdentityTuple(identity)))
+  );
+  const incrementFiles = D1_INCREMENT_FILES.map((specification) => {
+    const identities = added.filter(({ file }) => file === specification.file);
+    const wrongOwner = identities.filter(({ project }) => project !== specification.project);
+    if (identities.length !== specification.count || wrongOwner.length !== 0) {
+      fail(
+        "OWNERSHIP_INCREMENT_PARTITION_MISMATCH",
+        `${specification.file}: expected=${specification.count}, actual=${identities.length}, wrongOwner=${wrongOwner.length}`
+      );
+    }
+    return {
+      file: specification.file,
+      range: `1-${specification.count}`,
+      owner: specification.owner,
+      reason: specification.reason,
+      identityCount: identities.length
+    };
+  });
+  const knownIncrementFiles = new Set(D1_INCREMENT_FILES.map(({ file }) => file));
+  const borrowed = added.filter(({ file }) => !knownIncrementFiles.has(file));
+  if (borrowed.length !== 0 || added.length !== 140) {
+    fail("OWNERSHIP_INCREMENT_SET_MISMATCH", `added=${added.length}, borrowed=${borrowed.length}`);
+  }
+  const candidateArtifactBytes = candidateBytes(candidateArtifact);
+  return {
+    schemaVersion: "vitest-ownership-baseline-migration-report-v1",
+    sliceId: "2B20B-P2F1R-D1",
+    identityEncodingVersion: IDENTITY_ENCODING_VERSION,
+    acceptedVersion: ACCEPTED_OWNERSHIP_BASELINE_VERSION,
+    candidateVersion: CANDIDATE_OWNERSHIP_BASELINE_VERSION,
+    accepted: {
+      structuredIdentityCount: accepted.length,
+      lfIdentityCount: lfIdentityCount(accepted),
+      inventorySha256: structuredInventorySha256(accepted),
+      candidateByteCount: candidateBytes(acceptedArtifact).length,
+      candidateSha256: createHash("sha256").update(candidateBytes(acceptedArtifact)).digest("hex"),
+      physicalTestFileCount: inventoryFileAuthority(accepted).count,
+      physicalTestFileSetSha256: inventoryFileAuthority(accepted).sha256
+    },
+    candidate: {
+      acceptanceStatus: "UNACCEPTED_CANDIDATE",
+      structuredIdentityCount: candidate.length,
+      lfIdentityCount: lfIdentityCount(candidate),
+      inventorySha256: structuredInventorySha256(candidate),
+      physicalTestFileCount: inventoryFileAuthority(candidate).count,
+      physicalTestFileSetSha256: inventoryFileAuthority(candidate).sha256
+    },
+    delta: {
+      intersection: accepted.length,
+      union: candidate.length,
+      added: added.length,
+      removed: 0
+    },
+    increment: {
+      fileSetSha256: sha256CanonicalLines(knownIncrementFiles),
+      files: incrementFiles,
+      identityBindings: added.map((identity) => {
+        const specification = D1_INCREMENT_FILES.find(({ file }) => file === identity.file);
+        return {
+          identity: structuredIdentityTuple(identity),
+          file: identity.file,
+          range: `1-${specification.count}`,
+          owner: specification.owner,
+          reason: specification.reason
+        };
+      })
+    },
+    ownership: { duplicate: 0, borrowed: 0, missing: 0, wrongOwner: 0 },
+    acceptedContracts: {
+      registryOrder: ACCEPTED_CONTRACT_REGISTRY_ORDER,
+      baselineOrder: ACCEPTED_CONTRACT_BASELINES.map(({ contractId }) => contractId)
+    },
+    candidateArtifact: {
+      byteCount: candidateArtifactBytes.length,
+      sha256: createHash("sha256").update(candidateArtifactBytes).digest("hex")
+    },
+    verdict: "OWNERSHIP_BASELINE_MIGRATION_PASS"
+  };
 }
