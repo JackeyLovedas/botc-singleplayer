@@ -1,6 +1,6 @@
 # Current Task
 
-## Phase 3 D3 — final closeout accepted; authority reconciliation pending
+## Phase 3 D3 — final closeout accepted; authority reconciled
 
 - Status: `COMPLETED / FINAL_D3_CLOSEOUT_ACCEPTED`.
 - D2 and D3 are accepted. D3 implementation HEAD is

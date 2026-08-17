@@ -9,31 +9,25 @@
     "findingCode": "CANONICAL_TOP_LEVEL_POST_D3_CLOSEOUT_CONTROL_STATE_CONTRADICTION",
     "statusEqualityPaths": [
       "$.detailedStatus",
-      "$.slice2B20AGate.detailedStatus",
       "$.currentDesignStatus",
       "$.currentDesignTerminal",
       "$.implementationStatus"
     ],
     "statusEnumEqualityPaths": [
-      "$.status",
-      "$.slice2B20AGate.status"
+      "$.status"
     ],
     "dispositionEqualityPaths": [
-      "$.disposition",
-      "$.slice2B20AGate.disposition"
+      "$.disposition"
     ],
     "remainingBlockerEqualityPaths": [
-      "$.remainingBlockers",
-      "$.slice2B20AGate.remainingBlockers"
+      "$.remainingBlockers"
     ],
     "requiredNextActionEqualityPaths": [
       "$.requiredNextAction",
-      "$.nextAction",
-      "$.slice2B20AGate.requiredNextAction",
-      "$.slice2B20AGate.nextAction"
+      "$.nextAction"
     ],
     "activeTextMarkers": {
-      "docs/agent-loop/CURRENT_TASK.md": "## Phase 3 D3 — final closeout accepted; authority reconciliation pending",
+      "docs/agent-loop/CURRENT_TASK.md": "## Phase 3 D3 — final closeout accepted; authority reconciled",
       "docs/agent-loop/PROJECT_STATE.md": "## Current state — Phase 3 D3 final closeout accepted",
       "docs/reviews/pr-46-code-review-final.md": "<!-- ORIGINAL_COMMENT_BODY_BEGIN -->",
       "docs/agent-loop/AUTOPILOT_LOG.md": "2b20a-post-merge-closeout"
@@ -1282,7 +1276,7 @@
   },
   "slice2B20AGate": {
     "status": "COMPLETED",
-    "detailedStatus": "FINAL_D3_CLOSEOUT_ACCEPTED",
+    "detailedStatus": "2B20A_ACCEPTED_AND_CLOSED_OUT",
     "disposition": "ACCEPTED",
     "authorization": "USER_AUTHORIZED_2B20A_ACCEPTED_NORMAL_DREAMER_RESTORATION_STOP_LOSS_OVERRIDE_AND_CONDITIONAL_CLOSEOUT",
     "scopeMode": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
@@ -1311,7 +1305,7 @@
     "ruleDesignPass": true,
     "implementationAuthorized": false,
     "implementationAuthorization": "AUTHORIZED_BY_INDEPENDENT_DESIGN_RELEASE_PASS_CORRECTION_1",
-    "implementationStarted": false,
+    "implementationStarted": true,
     "sourceImplementationPaused": true,
     "designRound": 2,
     "maxDesignRounds": 2,
@@ -1324,7 +1318,7 @@
     "productRepairRoundConsumed": true,
     "productRepairStopLossOverrideUsed": true,
     "overrideKind": "ACCEPTED_BEHAVIOR_RESTORATION_ONLY",
-    "productionBehaviorChangeAuthorized": false,
+    "productionBehaviorChangeAuthorized": true,
     "newProductRepairRoundCreated": false,
     "acceptedBehaviorRestorationOverrideUsed": true,
     "acceptedBehaviorRestoration": {
@@ -1951,8 +1945,8 @@
       "provenance": "Must be resolved against the exact docs-only closeout commit after ordinary push to main; productHeadCI and mergeCommitCI do not transfer."
     },
     "remainingBlockers": [],
-    "requiredNextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE",
-    "nextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE"
+    "requiredNextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED",
+    "nextAction": "STOP_NO_NEXT_SLICE_AUTHORIZED"
   },
   "slice2B20AP1Gate": {
     "status": "HUMAN_BLOCKED",
