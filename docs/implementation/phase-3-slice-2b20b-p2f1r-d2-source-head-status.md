@@ -332,6 +332,7 @@ currentStatusAuthority=docs/implementation/phase-3-slice-2b20b-p2f1r-d3-publicat
 supersededByD3Base=8745e1375c30236d477d599f9d657ac7b3ac7b5d
 ```
 
-This file remains the immutable H source-status record and is no longer the
+The H/E2 version of this file remains the immutable historical source-status
+record. This D3 copy records its superseded disposition and is no longer the
 active D3 status authority. The D3 status file records only post-E2 cleanup
-facts as they occur and does not rewrite this historical D2 evidence.
+facts as they occur and does not rewrite the frozen D2 evidence.

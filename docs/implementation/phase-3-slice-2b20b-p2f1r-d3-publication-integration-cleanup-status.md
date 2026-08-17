@@ -51,6 +51,9 @@ normalWorkflowJobCountBefore=6
 normalWorkflowJobCountAfter=6
 permanentWorkflowJobsAdded=0
 permanentWorkflowBehaviorAdded=0
+d2TemporaryWorktreesRemoved=12
+knownD2TemporaryDirectoriesRemoved=7
+finalD2ReviewArchives=2
 newPermanentConceptCount=0
 ```
 
@@ -70,7 +73,8 @@ changed by D3 cleanup.
 | Asset | D3 classification | Reason |
 | --- | --- | --- |
 | `docs/implementation/phase-3-slice-2b20b-p2f1r-d2-publication-evidence-bundle.json` | `KEEP_AUTHORITY` | Frozen E2 canonical evidence bundle |
-| D2 source-head status and provider-boundary decision | `KEEP_AUTHORITY` | Recovers H/E2 identity and decision facts |
+| D3 status document | `KEEP_AUTHORITY` | Sole active current-state authority |
+| D2 source-head status and provider-boundary decision | `ARCHIVE_HISTORY / SUPERSEDED_REFERENCE` | Historical H/E2 identity and provider decision facts |
 | D2 design, D2W/D2T decisions, and final review records | `ARCHIVE_HISTORY` | Historical authority and traceability |
 | `scripts/verify-p2f1r-d2-publication-evidence.mjs` | `DELETE_TEMPORARY` | D2-only executable verifier; no runtime/package dependency |
 | D2 workflow capture/upload steps | `DELETE_TEMPORARY` | D2-only Hosted instrumentation |
@@ -80,6 +84,28 @@ No registry, sentinel, parser, verifier replacement, or permanent CI concept
 was added. The D2 provider display-name adjudication remains a historical
 decision fact; its executable verifier logic is removed with the temporary
 verifier.
+
+## Archived D2 final reviews
+
+The complete D2 final Code Review and Rule Review bodies were recovered from
+the recorded independent reviewer outputs and verified byte-for-byte against
+the preserved source messages before archiving. Both reports bind the exact H
+and the exact E2 bundle; they are historical D2 review assets, not active D3
+review results.
+
+| Review | Path | Reviewed head | Verdict | Body SHA-256 | UTF-8 bytes | LF | CR |
+| --- | --- | --- | --- | --- | ---: | ---: | ---: |
+| Code | `docs/implementation/reviews/phase-3-slice-2b20b-p2f1r-d2-final-code-review.md` | `56f34120f7da33335a60dc15fcddef605ba8cbb3` | `CODE_REVIEW_PASS` | `6fdcb861a58d05bfbb99bcdce978aaadb24fa084d6f6cd8aa9238f09131af094` | 4503 | 139 | 0 |
+| Rule | `docs/implementation/reviews/phase-3-slice-2b20b-p2f1r-d2-final-rule-review.md` | `56f34120f7da33335a60dc15fcddef605ba8cbb3` | `RULE_REVIEW_PASS` | `0ffd40c593b35cf05b1cc79f659f427e810d2c3cdb763c2b67b512526df6e391` | 4466 | 110 | 0 |
+
+```text
+archiveDocuments=2
+codeReviewArchivePath=docs/implementation/reviews/phase-3-slice-2b20b-p2f1r-d2-final-code-review.md
+codeReviewArchiveBodySHA256=6fdcb861a58d05bfbb99bcdce978aaadb24fa084d6f6cd8aa9238f09131af094
+ruleReviewArchivePath=docs/implementation/reviews/phase-3-slice-2b20b-p2f1r-d2-final-rule-review.md
+ruleReviewArchiveBodySHA256=0ffd40c593b35cf05b1cc79f659f427e810d2c3cdb763c2b67b512526df6e391
+activeCurrentStatusAuthority=docs/implementation/phase-3-slice-2b20b-p2f1r-d3-publication-integration-cleanup-status.md
+```
 
 ## Required post-implementation gates
 
@@ -96,7 +122,7 @@ domainCoreRestOrdinary=PASS_503
 ownershipAudit=PASS_42_OF_42
 routingAudit=PASS_40_OF_40
 inventoryAudit=PASS_1712_IDENTITIES_36_FILES_SHA256_540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2
-temporaryResidue=PASS_KNOWN_D2_GENERATED_ASSETS_ABSENT
+temporaryResidue=PASS_KNOWN_D2_WORKTREES_AND_GENERATED_ASSETS_ABSENT
 coverageExecuted=false
 requiredNextAction=FRESH_D3_CODE_AND_RULE_REVIEWS
 ```
