@@ -2,7 +2,7 @@
 
 documentKind=D3_IMPLEMENTATION_STATUS
 authorization=USER_AUTHORIZED_2B20B_P2F1R_D3_PUBLICATION_INTEGRATION_CLEANUP_AND_FINAL_CLOSEOUT_USING_FROZEN_D2_HEADS
-statusScope=LOCAL_D3_CLEANUP_IMPLEMENTATION_PENDING_FRESH_REVIEW_AND_HOSTED_CI
+statusScope=FINAL_D3_CLOSEOUT_ACCEPTED
 
 ## Frozen D2 inputs
 
@@ -15,7 +15,7 @@ D2HostedRunConclusion=SUCCESS
 D2HostedRunJobs=24/24
 D2BundleSHA256=aae7a43e1fea403d42fa4b83dfe60bf472149c402fbdcfe643f2fd782350e9af
 D2BundleAudit=PASS
-D2FinalAccepted=false
+D2FinalAccepted=true
 ```
 
 The E2 bundle remains the canonical repository evidence artifact. This D3
@@ -31,8 +31,8 @@ integrationTarget=main
 PRRequired=PROJECT_GOVERNANCE_REQUIRES_PR
 mergeRequired=PROJECT_GOVERNANCE_REQUIRES_MERGE
 tagRequired=NOT_FOUND_IN_AUTHORITY_DO_NOT_CREATE
-D3LocalStatus=TEMPORARY_D2_PUBLICATION_MACHINERY_REMOVED_PENDING_REVIEW
-D3FinalAccepted=false
+D3LocalStatus=FINAL_CLOSEOUT_ACCEPTED
+D3FinalAccepted=true
 ```
 
 No future D3 commit SHA, review verdict, Hosted CI run, PR, merge, tag, or
@@ -124,5 +124,43 @@ routingAudit=PASS_40_OF_40
 inventoryAudit=PASS_1712_IDENTITIES_36_FILES_SHA256_540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2
 temporaryResidue=PASS_KNOWN_D2_WORKTREES_AND_GENERATED_ASSETS_ABSENT
 coverageExecuted=false
-requiredNextAction=FRESH_D3_CODE_AND_RULE_REVIEWS
+requiredNextAction=AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE
 ```
+
+## Final closeout facts
+
+The following facts supersede the pre-merge pending placeholders above while
+preserving the historical implementation, review, and cleanup narrative.
+
+```text
+D2FinalAccepted=true
+D3FinalAccepted=true
+sourceH=56f34120f7da33335a60dc15fcddef605ba8cbb3
+E2=8745e1375c30236d477d599f9d657ac7b3ac7b5d
+D3ImplementationCommit=40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38
+PR48=48
+PR48Merge=f4fae15b4252171e04d60d7a5a875e998e2bf247
+productHeadCI=32021799395:SUCCESS
+PRCI=32022793247:SUCCESS
+mergeCommitCI=32023318110:SUCCESS
+closeoutArchiveCommit=5594455bfb8f915c6b140dd00ac17bf4de3f098a
+closeoutPR49=49
+closeoutPR49Merge=c098d77d83b2e24132a35c9fe099d9131cf8c31a
+closeoutPRCI=32024187916:SUCCESS
+closeoutMergeCI=32024629642:SUCCESS
+codeVerdict=CODE_REVIEW_PASS
+ruleVerdict=RULE_REVIEW_PASS
+authorityConflictDetected=true
+authorityConflictResolution=EXPLICIT_USER_AUTHORIZATION_CONTROLS_D3_CLOSEOUT; STALE_PROJECT_STATE_AND_CURRENT_TASK_DO_NOT_REOPEN_OR_EXTEND_D3
+temporaryResidue=0
+d2TemporaryRemoteBranchesDeleted=true
+d2TemporaryRemoteBranches=phase-3/2b20b-p2f1r-d2-exact-head-publication-evidence-json-depth-boundary,phase-3/2b20b-p2f1r-d2-exact-head-publication-evidence-on-d2t,phase-3/2b20b-p2f1r-d2-provider-identity-final-h
+tag=false
+requiredNextAction=AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE
+```
+
+The closeout archive commit is docs-only and preserves the exact original
+GitHub review comment bodies. The D2 temporary remote branches were deleted
+only after confirming they were unprotected and had no open pull requests.
+No tag was created. No automatic next slice is authorized by this status
+document; any future work requires explicit governing authority.
