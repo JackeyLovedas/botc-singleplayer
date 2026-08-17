@@ -60,6 +60,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: ${{ matrix.group == 'domain-core-rest' && '0' || '1' }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -80,6 +82,29 @@ jobs:
         id: test-shard
         continue-on-error: true
         run: node scripts/run-vitest-logical-group.mjs run --mode ordinary --logical-group-id "${{ matrix.group }}"
+
+      - name: Capture D2 Linux domain-core-rest evidence
+        id: d2-linux-domain-core-rest-capture
+        if: matrix.group == 'domain-core-rest'
+        run: >-
+          node scripts/verify-p2f1r-d2-publication-evidence.mjs capture-runner
+          --platform linux
+          --source-head "${{ github.sha }}"
+          --parent-artifact-head 0bf487afc49069f6191dd7409362d5c227aa50dc
+          --parent-evidence-head 15b7e61682d3b34e45401cf132fa1a77b6347c22
+          --runner-output .vitest-test/segmented/domain-core-rest
+          --output .d2-publication-evidence/linux/d2-capture.json
+
+      - name: Upload D2 Linux domain-core-rest evidence
+        id: d2-linux-domain-core-rest-upload
+        if: matrix.group == 'domain-core-rest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: d2-linux-domain-core-rest-${{ github.sha }}
+          path: .d2-publication-evidence/linux
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
 
       - name: Upload test evidence
         if: always()
@@ -249,6 +274,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -285,6 +312,31 @@ jobs:
 
       - name: First-night application evidence groups (W1-W6 plus isolated W7)
         run: node scripts/verify-vitest-windows-application-groups.mjs run --output-dir "${{ github.workspace }}\.vitest-windows-application"
+
+      - name: D2 Windows domain-core-rest evidence
+        id: d2-windows-domain-core-rest-run
+        run: node scripts/run-vitest-logical-group.mjs run --mode ordinary --logical-group-id domain-core-rest
+
+      - name: Capture D2 Windows domain-core-rest evidence
+        id: d2-windows-domain-core-rest-capture
+        run: >-
+          node scripts/verify-p2f1r-d2-publication-evidence.mjs capture-runner
+          --platform windows
+          --source-head "${{ github.sha }}"
+          --parent-artifact-head 0bf487afc49069f6191dd7409362d5c227aa50dc
+          --parent-evidence-head 15b7e61682d3b34e45401cf132fa1a77b6347c22
+          --runner-output .vitest-test/segmented/domain-core-rest
+          --output .d2-publication-evidence/windows/d2-capture.json
+
+      - name: Upload D2 Windows domain-core-rest evidence
+        id: d2-windows-domain-core-rest-upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: d2-windows-domain-core-rest-${{ github.sha }}
+          path: .d2-publication-evidence/windows
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
 
       - name: Upload Windows application evidence
         if: always()
