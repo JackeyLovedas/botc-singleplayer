@@ -323,3 +323,15 @@ closed, including the case where the numeric job ID is otherwise correct.
 The old run remains supporting provider-behavior evidence only and is not
 promoted to D-C16A primary evidence. No future source SHA, hosted run, artifact,
 log, review, E2, merge, tag, or D3 fact is recorded here.
+
+## D3 lifecycle disposition
+
+```text
+lifecycle=ARCHIVE_HISTORY
+currentStatusAuthority=docs/implementation/phase-3-slice-2b20b-p2f1r-d3-publication-integration-cleanup-status.md
+supersededByD3Base=8745e1375c30236d477d599f9d657ac7b3ac7b5d
+```
+
+This file remains the immutable H source-status record and is no longer the
+active D3 status authority. The D3 status file records only post-E2 cleanup
+facts as they occur and does not rewrite this historical D2 evidence.
