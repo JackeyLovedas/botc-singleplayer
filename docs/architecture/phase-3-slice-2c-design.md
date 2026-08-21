@@ -1335,3 +1335,127 @@ the complete prior evidence history, the ordinary-night research appendix,
 and the immutable C1 boundary. Until that review is complete, implementation
 remains unauthorized. This section contains no implementation verdict, no
 future implementation SHA, no push, and no PR.
+
+## Final Design Correction Round 3 — Foundation Rescope
+
+This final correction appends the fresh Fang Gu/Witch evidence disposition and
+supersedes only the role-specific ordinary-night portions of the preceding
+active design. All prior designs and matrices remain preserved as historical
+records. The current design is intentionally blocked pending a new independent
+review of this correction.
+
+```text
+designCorrectionCount = 3
+designVerdict = HUMAN_BLOCKED
+implementationAuthorized = false
+ordinaryNightFoundationDisposition = GENERIC_TASK_INVENTORY_PLUMBING_ONLY
+ordinaryNightUnsupportedTasks = [FANG_GU_DEMON_KILL, WITCH_ACTION]
+unsupportedTaskHandling = FAIL_CLOSED
+witchFoundationSemantics = CURSE_ONLY_NO_NIGHT_DEATH
+fangGuFoundationSemantics = UNSUPPORTED_NO_TRANSFER
+rolePromotion = NONE
+C1DescriptorExtensionPrerequisite = HUMAN_BLOCKED
+B18Status = HUMAN_BLOCKED_UNCHANGED
+B18ConflictsTouched = none
+Slice3 = false
+```
+
+### Evidence binding
+
+The correction consumes the appended evidence record in
+`docs/rules/evidence/2C.md`, including the fresh official Imp/Witch references,
+and preserves the existing evidence hashes and override history. The external
+role pages establish role semantics but do not authorize a generic foundation
+to execute those semantics.
+
+### Foundation boundary
+
+The foundation is reduced to generic, accepted task/inventory plumbing only:
+
+- represent an opaque ordinary-night task inventory seam;
+- bind a plan version, window, night number, source identity, task identity,
+  pending/settled status, and exact completion predicate;
+- validate that every task in an accepted inventory settles before completion;
+- reject missing, extra, duplicate, reordered, unsupported, or hidden tasks;
+- preserve deterministic identity and replay/prospective validation;
+- provide no role-specific target derivation or role-specific settlement.
+
+The foundation must not create a new accepted inventory for the current
+Sects & Violets role collection. In particular, the role set containing Fang
+Gu and Witch cannot be used to claim that the two role-specific tasks are
+settleable through generic plumbing.
+
+### Unsupported task handling
+
+`FANG_GU_DEMON_KILL` and `WITCH_ACTION` are explicit unsupported tasks for the
+foundation. If either appears in the current generated ordinary-night task
+inventory, the system fails closed at inventory validation and emits no task
+settlement, target, death, transfer, or completion event. It may not silently
+skip either task, turn it into a no-op, or declare the night complete.
+
+The exact role-specific task IDs and target-derived event schemas in the prior
+active design are historical design proposals only. They are not current
+implementation bindings and are not authorized by this correction.
+
+### Witch boundary
+
+Any future Witch-specific extension is limited here to the curse/event-
+subscription concept. This foundation does not implement a Witch night death,
+does not emit a Witch death event, and does not resolve a target death from a
+Witch task. A Witch curse may be a later bounded role-policy slice only after
+fresh rule evidence and design review.
+
+### Fang Gu boundary
+
+Fang Gu Demon kill, Outsider replacement, character transfer, alignment
+transfer, and source-death effects are outside the foundation. No Fang Gu
+target is derived, no Fang Gu death is emitted, and no transfer is accepted.
+Any appearance of this task is a deterministic fail-closed condition.
+
+### Execution/death separation remains frozen
+
+The execution/death contract remains unchanged from the approved override:
+
+- execution is a daytime decision/fact;
+- a night-role death is not an execution;
+- `ExecutionResolved` and `PlayerDied` remain separate concepts;
+- no unsupported ordinary-night task may emit either event;
+- a no-death execution path remains explicit and does not mutate life state.
+
+### C1 descriptor prerequisite
+
+The prior active design proposed additive C1 descriptors for ordinary-night
+events. This correction removes that as an implementation permission. No C1
+descriptor is added or modified in this foundation. Any future descriptor
+extension is a separate prerequisite requiring:
+
+```text
+C1DescriptorExtensionPrerequisite = HUMAN_BLOCKED
+descriptorAuthority = C1_OWNER_ONLY
+oldDescriptors = IMMUTABLE
+newDescriptors = NOT_AUTHORIZED
+```
+
+Until that prerequisite is separately authorized and reviewed, the generic
+foundation cannot claim a new event schema authority. Existing C1 descriptors
+remain unchanged and no role-specific event can be materialized.
+
+### Current status and next gate
+
+The design is bounded only as a generic inventory/task plumbing foundation.
+It is not a complete Sects & Violets ordinary-night implementation and does
+not promote Fang Gu or Witch coverage. The independent reviewer must inspect
+this final correction, the appended evidence, the preserved history, and the
+C1 prerequisite boundary before any further decision.
+
+```text
+designVerdict = HUMAN_BLOCKED
+implementationAuthorized = false
+implementationActualSHA = NOT_BOUND
+reviewSHA = NOT_BOUND
+productionChanges = 0
+testChanges = 0
+workflowChanges = 0
+CIExecuted = false
+PRCreated = false
+```
