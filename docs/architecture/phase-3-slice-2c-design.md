@@ -448,3 +448,280 @@ pass verdict:
 
 This document intentionally contains no future implementation SHA, no actual
 review SHA, and no design-review verdict claim.
+
+## Design Correction Round 1
+
+This correction preserves the preceding design as historical design input and
+adds the bounded contract corrections below. It does not authorize
+implementation.
+
+- `designCorrectionCount=1`
+- `designVerdict=HUMAN_BLOCKED`
+- `implementationAuthorized=false`
+- `ruleEvidenceSHA=d932a21660548268c1ff8fcae59d3bb87e284bd3`
+- `ruleEvidenceFileSHA256=0b0839d7e3b4229ddf5f3e0368ba743f275050fe77b1dc8e7516e31704f2d583`
+- `overrideId=BOTC-SIM-EXECUTION-DEATH-SEPARATION-V1`
+- `overrideCommit=0f89064e4310ed5454df2684eec5b44cd363f04a`
+- `B18Status=HUMAN_BLOCKED_UNCHANGED`
+- `B18ConflictsTouched=none`
+
+The blocker is not a rule interpretation choice. The current repository does
+not provide an accepted authoritative ordinary-night required-task inventory.
+Therefore a no-op ordinary-night completion is prohibited, and the complete
+day/night objective cannot be declared bounded or executable.
+
+### Governance V1.1 eight-criterion matrix
+
+The matrix uses the exact nine design-time fields required by Governance V1.1:
+`CriterionId`, `RuleClaim`, `CompletionCriterion`,
+`RequiredEvidenceMechanism`, `ExpectedReachability`, `ExpectedTrust`,
+`ExpectedPrimaryLayer`, `ExpectedResult`, and
+`SupportingAuthorityRequirement`.
+
+Each criterion has one primary mechanism. There are no mixed or multi-layer
+primary bindings and no borrowed supporting authority in this correction:
+
+- `criterionCount=8`
+- `activeCriterionCount=8`
+- `uniquePrimary=8`
+- `duplicatePrimary=0`
+- `borrowed=0`
+- `mixed=0`
+
+| CriterionId | RuleClaim | CompletionCriterion | RequiredEvidenceMechanism | ExpectedReachability | ExpectedTrust | ExpectedPrimaryLayer | ExpectedResult | SupportingAuthorityRequirement |
+|---|---|---|---|---|---|---|---|---|
+| `2C-C01` | A validated first-night plan reaches dawn only after every planned task is settled. | Valid plan/progress and no next unsettled task produce the exact first-night completion transition. | `M-2C-C01-FIRST-NIGHT-COMPLETION` | `LOCAL_COMMAND_PATH` | `ACCEPTED_DOMAIN_EVENT` | `APPLICATION_COMMAND_INTEGRATION` | `PASS` | `NONE` |
+| `2C-C02` | Dawn ends the night and opens the first day with canonical counters. | `DAWN_RESOLUTION` transitions to `DAY_DISCUSSION` only through the dawn command and exact counter update. | `M-2C-C02-DAWN-DAY-BOUNDARY` | `LOCAL_COMMAND_PATH` | `ACCEPTED_DOMAIN_EVENT` | `APPLICATION_COMMAND_INTEGRATION` | `PASS` | `NONE` |
+| `2C-C03` | Only an alive player may nominate; nominees may be alive or dead and each relevant daily limit is enforced. | Legal nomination is recorded once; illegal actor, duplicate, or target-limit input is rejected without a domain event. | `M-2C-C03-NOMINATION-ELIGIBILITY` | `LOCAL_COMMAND_PATH` | `ACCEPTED_DOMAIN_EVENT` | `APPLICATION_COMMAND_INTEGRATION` | `PASS` | `NONE` |
+| `2C-C04` | Living players may vote repeatedly and a dead player has one remaining vote token. | Vote ownership and ghost-token consumption are exact and replayable. | `M-2C-C04-VOTE-TOKEN-BOUNDARY` | `LOCAL_COMMAND_PATH` | `ACCEPTED_DOMAIN_EVENT` | `APPLICATION_COMMAND_INTEGRATION` | `PASS` | `NONE` |
+| `2C-C05` | Execution requires the sourced threshold, strict greatest tally, and non-tie result. | Vote completion computes one deterministic block result under the sourced comparison rules. | `M-2C-C05-VOTE-RESOLUTION-POLICY` | `LOCAL_POLICY_PATH` | `ACCEPTED_POLICY_RESULT` | `PURE_POLICY_SEAM` | `PASS` | `NONE` |
+| `2C-C06` | Execution and death are distinct; execution may resolve without death. | Exact execution/death schemas preserve `DIED` and `DID_NOT_DIE` without inference. | `M-2C-C06-EXECUTION-DEATH-SEPARATION` | `LOCAL_COMMAND_PATH` | `ACCEPTED_DOMAIN_EVENT` | `APPLICATION_COMMAND_INTEGRATION` | `PASS` | `NONE` |
+| `2C-C07` | Ordinary-night completion cannot skip required tasks. | Completion is accepted only against an authoritative required-task inventory and settled task set. | `M-2C-C07-ORDINARY-NIGHT-INVENTORY` | `UNAVAILABLE_CURRENT_REPO` | `UNACCEPTED` | `STRUCTURAL_VALIDATION` | `HUMAN_BLOCKED` | `NONE` |
+| `2C-C08` | Candidate batches replay to the same canonical state and do not leak hidden facts. | Structural, prospective, replay, and projection checks reject malformed or leaking streams. | `M-2C-C08-REPLAY-PROJECTION-INVARIANTS` | `LOCAL_REPLAY_PATH` | `ACCEPTED_REPLAY` | `STRUCTURAL_VALIDATION` | `PASS` | `NONE` |
+
+`2C-C07` is the explicit blocking criterion. The matrix does not convert the
+missing inventory into a fabricated accepted authority.
+
+### Exact bounded execution and death schemas
+
+The correction freezes the smallest bounded payload contracts for this design.
+Common event-envelope metadata remains governed by the existing event model:
+`eventId`, `gameId`, `gameVersion`, `eventSequence`, `eventVersion`,
+`rulesBaselineVersion`, `commandId` or `systemTriggerId`, `actorId` when
+applicable, `phase`, counters, causation/correlation IDs, and visibility tags.
+The payload records below are exact: no extra fields, hidden role fields, or
+optional alternate shapes are accepted.
+
+`ExecutionResolved` payload:
+
+```text
+{
+  executionId: string,
+  targetPlayerId: string,
+  dayNumber: non-negative integer,
+  resolution: "EXECUTED",
+  deathOutcome: "DIED" | "DID_NOT_DIE"
+}
+```
+
+`PlayerDied` payload:
+
+```text
+{
+  deathId: string,
+  executionId: string,
+  playerId: string,
+  dayNumber: non-negative integer,
+  cause: "EXECUTION"
+}
+```
+
+`PlayerDied` is emitted only when `ExecutionResolved.deathOutcome` is `DIED`.
+It is emitted before the matching `ExecutionResolved` event and its
+`executionId`, `playerId`, and `dayNumber` must match exactly. No role,
+alignment, protection reason, or hidden Storyteller rationale is present in
+either payload.
+
+The no-death path is exact:
+
+```text
+ExecutionDeclared
+ExecutionResolved(deathOutcome = DID_NOT_DIE)
+PhaseTransitioned(EXECUTION_RESOLVED -> NIGHT_TASKS)
+```
+
+The no-death path emits no `PlayerDied`, does not mutate `LifeState` to dead,
+and does not infer a death from the execution. A richer prevention,
+replacement, or character-specific death path is outside this bounded
+contract and is `HUMAN_BLOCKED` until separately authorized.
+
+The death path is exact:
+
+```text
+ExecutionDeclared
+PlayerDied(cause = EXECUTION)
+ExecutionResolved(deathOutcome = DIED)
+PhaseTransitioned(EXECUTION_RESOLVED -> NIGHT_TASKS)
+```
+
+`DayClosedWithoutExecution` remains a distinct no-execution fact and cannot
+produce either `ExecutionResolved` or `PlayerDied`.
+
+### Nomination boundary correction
+
+The command validator must enforce the sourced distinction explicitly:
+
+- `nominator`: alive only;
+- `nominee`: alive or dead;
+- each player nominates at most once per day;
+- each player may be nominated at most once per day;
+- only one nomination is active at a time;
+- dead players cannot nominate, but can be nominated;
+- a rejected nomination creates no accepted domain event.
+
+This correction does not add a hidden “about-to-die” status and does not infer
+death from nomination or voting.
+
+### Deterministic fixture preconditions
+
+Any later implementation test fixture must be a deterministic, nonterminal
+Sects & Violets fixture with these exact preconditions:
+
+```text
+script = Sects & Violets
+seed = 1
+playerCount = 12
+roster = 12 unique modeled players with stable seat order
+setup = validated and complete
+assignment = validated and complete
+firstNightPlan = validated accepted plan
+firstNightProgress = every planned first-night task settled
+phaseBefore2C = FIRST_NIGHT
+dayNumberBefore2C = 0
+nightNumberBefore2C = 1
+terminalState = false
+gameEndedEvent = absent
+victoryResolvedEvent = absent
+activeVictoryCandidate = absent
+```
+
+The fixture must not rely on a role-specific ability, a terminal win, a
+random/clock/locale ordering, or an unrecorded Storyteller decision. The
+ordinary-night portion cannot be instantiated until its required-task
+inventory has an accepted authority. Seed `1` is a deterministic fixture
+precondition, not a rule claim and not permission to add a setup exception.
+
+### Exact command schemas and validator ownership
+
+The command envelope remains exact and unchanged:
+
+```text
+{
+  commandId: string,
+  gameId: string,
+  expectedGameVersion: non-negative integer,
+  actor: existing actor envelope,
+  issuedAt: existing canonical timestamp,
+  correlationId: string,
+  payload: exact command payload
+}
+```
+
+Bounded payload schemas:
+
+| Command | Exact payload |
+|---|---|
+| `CompleteNight` (first night) | `{ phase: "FIRST_NIGHT" }` |
+| `PublishDawn` | `{ phase: "DAWN_RESOLUTION" }` |
+| `OpenNominations` | `{}` |
+| `DeclareNomination` | `{ targetPlayerId: string }` |
+| `OpenVote` | `{ nominationId: string }` |
+| `CastVote` | `{ nominationId: string, choice: "YES" | "NO" }` |
+| `CompleteVote` | `{ nominationId: string }` |
+| `CloseNominations` | `{}` |
+| `ResolveExecution` | `{ blockId: string }` |
+| `BeginNight` | `{ dayNumber: non-negative integer, nightNumber: positive integer }` |
+| `CompleteNight` (ordinary-night boundary) | `{ phase: "NIGHT_TASKS", nightNumber: positive integer }` |
+
+The same command name has two explicitly discriminated phase payloads; a
+missing or mismatched `phase` is rejected. No command accepts hidden target
+role, alignment, death prediction, impairment, or correctness fields.
+
+Validator ownership is fixed as follows:
+
+- command envelope and exact payload shape: existing application command
+  boundary and domain command-shape validator;
+- phase/transition legality and counter math:
+  `packages/domain-core/src/phase-transition-policy.ts`;
+- candidate batch ordering, event count, metadata, and cross-links:
+  `packages/domain-core/src/domain-batch-semantics.ts`;
+- payload and current-state application checks:
+  `packages/domain-core/src/event-applier.ts`;
+- first-night progress and ordinary-night inventory checks:
+  the task-plan authority used by `first-night-task-plan.ts` plus the new
+  bounded inventory seam; no no-op fallback;
+- atomic prospective validation, commit, receipt, and retryability:
+  `packages/application/src/game-application-service.ts` and existing store
+  boundary;
+- replay equivalence: existing full event-stream rebuild authority;
+- projection forbidden-field checks: existing projection boundary;
+- structural schema authority: C1 remains owner and is not modified by this
+  design correction.
+
+No validator may silently repair malformed input, infer an ordinary-night
+  task inventory, or convert a rejected command into a domain fact.
+
+### Ordinary-night inventory blocker
+
+The current repository has no accepted authoritative inventory describing the
+required ordinary-night tasks for the deterministic fixture. Existing
+first-night task plans and the official nightsheet do not, by themselves,
+constitute an accepted repository ordinary-night task inventory or a complete
+ordinary-night settlement contract.
+
+Therefore:
+
+- `ordinaryNightRequiredTaskInventory=UNAVAILABLE_CURRENT_REPO`;
+- `noOpOrdinaryNightCompletion=PROHIBITED`;
+- `ordinaryNightCompletion=HUMAN_BLOCKED`;
+- blocker:
+  `2C-DC1-F01_ORDINARY_NIGHT_REQUIRED_TASK_AUTHORITY_UNAVAILABLE`;
+- `designVerdict=HUMAN_BLOCKED`;
+- `implementationAuthorized=false`.
+
+Available bounded dispositions are:
+
+- **Option A — foundation reslice:** create a separately authorized foundation
+  slice that establishes and accepts the ordinary-night required-task
+  inventory, its source binding, and its minimal settlement contract. It must
+  not quietly become 2C implementation.
+- **Option B — stop at `NIGHT_TASKS`:** rescope 2C to first-night/day and the
+  day-to-night entry only, stopping before ordinary-night completion and dawn.
+  This does not satisfy the original complete-loop objective.
+- **Option C — accepted inventory:** proceed only if a previously accepted,
+  exact ordinary-night inventory becomes available and is independently bound
+  to the deterministic fixture. No current repository artifact qualifies, so
+  this option is unavailable now.
+
+No option is selected by this correction. Human governance must choose or
+authorize a new bounded reslice.
+
+### Correction disposition
+
+The design correction closes the execution/death and nomination ambiguities at
+the schema level, freezes the V1.1 matrix, and establishes deterministic
+fixture preconditions. It cannot close the ordinary-night authority blocker.
+
+```text
+designCorrectionCount = 1
+designVerdict = HUMAN_BLOCKED
+implementationAuthorized = false
+ordinaryNightBlocker = 2C-DC1-F01_ORDINARY_NIGHT_REQUIRED_TASK_AUTHORITY_UNAVAILABLE
+B18Status = HUMAN_BLOCKED_UNCHANGED
+B18ConflictsTouched = none
+Slice3 = false
+```
+
+No production code, tests, workflow, C/C1/A/B, event-definition authority,
+semantic validator, coverage, routing, publication, CI, implementation branch,
+future implementation SHA, or PR is created by this correction.
