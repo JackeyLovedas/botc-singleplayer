@@ -273,3 +273,73 @@ coverage, routing, or Hosted CI. The independent reviewer must check the exact
 snapshot hash, the typed seam and historical zero-delta comparison, all 25
 inventory rows and ordinals, and the empty `SUPPORTED` set. Until that fresh
 review returns `RULE_DESIGN_PASS`, `implementationAuthorized=false`.
+
+## Design correction 2/2 — frozen authority binding and digest preimage
+
+This final correction supersedes the earlier caller-supplied `historical`
+field. The historical prefix is not an implementation-selected input. It is
+bound internally to the exact candidate returned by
+`createFullC1StructuralSchemaAuthority()` from
+`packages/domain-core/src/domain-event-structural-schema-ast.ts`; if that
+authority is unhealthy, the additive constructor returns the same
+`StructuralSchemaAuthorityResultV1` failure and appends nothing.
+
+The closed runtime contract is:
+
+```ts
+type C1AdditiveDescriptorInputV1 = {
+  readonly additions: {
+    readonly roots: readonly StructuralSchemaRootV1[];
+    readonly nodeBindings: readonly StructuralSchemaNodeBindingV1[];
+    readonly deltaBindings: readonly StructuralDeltaBindingV1[];
+  };
+};
+
+declare function createC1AdditiveStructuralSchemaAuthority(
+  input: C1AdditiveDescriptorInputV1
+): StructuralSchemaAuthorityResultV1;
+```
+
+The function constructs a fresh candidate as
+`frozenFullC1Candidate + input.additions`, then compares the complete frozen
+prefix—not a self-comparison—before calling the existing
+`createStructuralSchemaAuthority`. Prefix equality covers the three protocol
+version literals, expected-count fields, every historical root in branch
+ordinal order `1..59`, every reachable historical node binding in traversal
+ordinal order, and both approved delta bindings. Any changed node field,
+field order, branch, root, node ID, delta record, or count is a hard
+`NODE_BINDING_MISMATCH`/`INVALID_BRANCH_INVENTORY` failure. Success returns the
+existing `HEALTHY` result with its `StructuralSchemaCandidateV1`, traversal,
+censuses, and health record; failure returns the existing `UNHEALTHY`
+diagnostic with `failClosed=true`. There is no partial result or fallback
+authority.
+
+### Canonical identity and digest binding
+
+The seam reuses the inherited C1 canonical representation; it does not add a
+serializer. Node identity preimages are the exact `renderNode` representation
+from `domain-event-structural-schema-catalog.ts`: ASCII structural tags,
+`formatStructuralOrdinal` six-digit ordinals, deterministic DFS first
+discovery, raw UTF-16 code-unit ordering where the existing comparator is
+specified, and the existing `quote` escaping (including rejection of lone
+surrogates). Canonical artifact bytes are the `TextEncoder` UTF-8 encoding of
+the ordered lines joined by `LF` with one terminal `LF`; `CR` is never emitted.
+The digest field is excluded from its own preimage. Artifact SHA-256 remains
+the existing direct SHA-256 over those canonical bytes.
+
+Where a runtime integrity record is required, the only accepted binding path
+is the existing `createCanonicalValueIntegrity` /
+`verifyCanonicalValueIntegrity` pair in
+`packages/domain-core/src/canonical-runtime-hash.ts`, using the existing
+`CANONICAL_VALUE_INTEGRITY` framed preimage, UTF-8 TLV bytes, byte-length
+metadata, lowercase hexadecimal digest, and protocol/version fields. The
+constructor may not call a new hash helper, alter escaping, normalize line
+endings, include a digest inside its own input, or substitute a different
+domain. Known-answer vectors must cover a historical node, field reordering,
+one altered canonical byte, and identical bytes produced on Windows and
+Linux.
+
+This consumes the second and final foundation design correction slot (`2/2`);
+any further contract change requires a new bounded reslice. Implementation
+remains unauthorized until a fresh independent review of this exact commit
+returns `RULE_DESIGN_PASS`.
