@@ -30,6 +30,7 @@ export type C1AdditiveDescriptorFailureV1 = {
   readonly ok: false;
   readonly diagnostic: {
     readonly code:
+      | "INVALID_OBJECT_SHAPE"
       | "INVALID_BRANCH_INVENTORY"
       | "NODE_BINDING_MISMATCH"
       | "DUPLICATE_NODE_ID"
@@ -51,6 +52,93 @@ const failure = (
   ok: false,
   diagnostic: Object.freeze({ code, detail, failClosed: true })
 });
+
+const exactDataKeys = (value: unknown, keys: readonly string[]): boolean => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const object = value;
+  const ownKeys = Object.getOwnPropertyNames(object);
+  if (Object.getOwnPropertySymbols(object).length !== 0 || ownKeys.length !== keys.length) return false;
+  const expected = new Set(keys);
+  if (!ownKeys.every((key) => expected.has(key))) return false;
+  return ownKeys.every((key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(object, key);
+    return descriptor !== undefined && "value" in descriptor && !descriptor.get && !descriptor.set;
+  });
+};
+
+const isDenseDataArray = (value: unknown): value is readonly unknown[] => {
+  if (!Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.prototype.hasOwnProperty.call(value, index)) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set) return false;
+  }
+  return true;
+};
+
+const isDataOnlyGraph = (value: unknown, ancestors = new WeakSet<object>()): boolean => {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value !== "object") return false;
+  const object = value;
+  if (ancestors.has(object)) return false;
+  ancestors.add(object);
+  if (Array.isArray(object)) {
+    if (!isDenseDataArray(object)) return false;
+    for (const item of object) if (!isDataOnlyGraph(item, ancestors)) return false;
+  } else {
+    const prototype = Reflect.getPrototypeOf(object);
+    if (prototype !== Object.prototype && prototype !== null) return false;
+    if (Object.getOwnPropertySymbols(object).length !== 0) return false;
+    for (const key of Object.getOwnPropertyNames(object)) {
+      const descriptor = Object.getOwnPropertyDescriptor(object, key);
+      if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set) return false;
+      if (!isDataOnlyGraph(descriptor.value, ancestors)) return false;
+    }
+  }
+  ancestors.delete(object);
+  return true;
+};
+
+const validateAdditiveInputRuntimeShape = (input: unknown): string | null => {
+  if (!isDataOnlyGraph(input) || !exactDataKeys(input, ["baseline", "additions"])) {
+    return "additive input must be an exact acyclic data record";
+  }
+  const candidateInput = input as { readonly baseline: unknown; readonly additions: unknown };
+  if (!exactDataKeys(candidateInput.baseline, ["status", "candidate", "traversal", "uniqueGraphCensus", "expandedOccurrenceCensus", "health"])) {
+    return "baseline must be an exact healthy authority record";
+  }
+  if ((candidateInput.baseline as { status: unknown }).status !== "HEALTHY") return "baseline must be healthy";
+  if (!isDenseDataArray(candidateInput.additions)) return "additions must be an exact dense array";
+  for (const addition of candidateInput.additions) {
+    if (!exactDataKeys(addition, ["eventOrdinal", "eventType", "branchOrdinal", "branchId", "versionPolicy", "rootNodeId", "resultTypeName", "nodeBindings", "deltaBindings"])) {
+      return "addition must be an exact data record";
+    }
+    const descriptor = addition as Record<string, unknown>;
+    if (typeof descriptor.eventOrdinal !== "number" || !Number.isSafeInteger(descriptor.eventOrdinal) || descriptor.eventOrdinal < 1 || typeof descriptor.eventType !== "string" ||
+      typeof descriptor.branchOrdinal !== "number" || !Number.isSafeInteger(descriptor.branchOrdinal) || descriptor.branchOrdinal < 1 || typeof descriptor.branchId !== "string" ||
+      typeof descriptor.rootNodeId !== "string" || typeof descriptor.resultTypeName !== "string") {
+      return "addition scalar fields are invalid";
+    }
+    const versionPolicy = descriptor.versionPolicy;
+    if (exactDataKeys(versionPolicy, ["kind"])) {
+      if ((versionPolicy as { kind: unknown }).kind !== "UNVERSIONED") return "version policy is invalid";
+    } else if (exactDataKeys(versionPolicy, ["kind", "fieldName", "acceptedLiteral"])) {
+      if ((versionPolicy as { kind: unknown }).kind !== "EXPLICIT_LITERAL" || typeof (versionPolicy as { fieldName: unknown }).fieldName !== "string") return "version policy is invalid";
+    } else return "version policy is invalid";
+    const nodeBindings = descriptor.nodeBindings;
+    const deltaBindings = descriptor.deltaBindings;
+    if (!isDenseDataArray(nodeBindings) || !isDenseDataArray(deltaBindings)) {
+      return "node bindings and delta bindings must be dense";
+    }
+    for (const binding of nodeBindings) {
+      if (!exactDataKeys(binding, ["nodeId", "node"]) || typeof (binding as { nodeId: unknown }).nodeId !== "string" || typeof (binding as { node: unknown }).node !== "object" || (binding as { node: object }).node === null) {
+        return "node binding is invalid";
+      }
+    }
+  }
+  return null;
+};
 
 const candidateProjectionEqual = (
   left: HealthyStructuralSchemaAuthorityV1,
@@ -100,6 +188,16 @@ const countNewEvents = (additions: readonly C1AdditiveDescriptorV1[]): number =>
 export const createC1AdditiveStructuralSchemaCandidate = (
   input: C1AdditiveDescriptorInputV1
 ): C1AdditiveDescriptorResultV1 => {
+  let inputFailure: string | null;
+  try {
+    inputFailure = validateAdditiveInputRuntimeShape(input);
+  } catch {
+    return failure("INVALID_OBJECT_SHAPE", "additive input capture failed closed");
+  }
+  if (inputFailure !== null) return failure("INVALID_OBJECT_SHAPE", inputFailure);
+  if (input.additions.some((addition) => addition.deltaBindings.length !== 0)) {
+    return failure("INVALID_DELTA_BINDING", "additions.deltaBindings must be exactly empty");
+  }
   const full = createFullC1StructuralSchemaAuthority();
   if (full.status === "UNHEALTHY") {
     return failure("INVALID_BRANCH_INVENTORY", "FULL_C1 authority is not healthy");

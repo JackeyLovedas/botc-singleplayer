@@ -262,22 +262,59 @@ export const SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY: readonly OrdinaryNightI
   ordinaryNightRow("vortox", "PRESENT", 47, "CONTINUOUS_RULE", null, "UNSUPPORTED")
 ]);
 
+const isDenseOrdinaryNightArray = (value: unknown): value is readonly OrdinaryNightInventoryRow[] => {
+  if (!Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.prototype.hasOwnProperty.call(value, index)) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set) return false;
+  }
+  return true;
+};
+
+const isExactOrdinaryNightRow = (value: unknown): value is OrdinaryNightInventoryRow => {
+  if (typeof value !== "object" || value === null || Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
+  const object = value;
+  const keys = Object.getOwnPropertyNames(object);
+  const expected = ["roleId", "nightsheetOtherNightPresence", "nightsheetOtherNightOrder", "executionModel", "taskKind", "baselineSupportStatus", "sourceBinding"];
+  if (keys.length !== expected.length || !keys.every((key) => expected.includes(key))) return false;
+  for (const key of keys) {
+    const descriptor = Object.getOwnPropertyDescriptor(object, key);
+    if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set) return false;
+  }
+  return typeof (value as { roleId: unknown }).roleId === "string" &&
+    (typeof (value as { nightsheetOtherNightPresence: unknown }).nightsheetOtherNightPresence === "string") &&
+    (typeof (value as { executionModel: unknown }).executionModel === "string") &&
+    (typeof (value as { baselineSupportStatus: unknown }).baselineSupportStatus === "string") &&
+    (typeof (value as { sourceBinding: unknown }).sourceBinding === "string") &&
+    ((value as { nightsheetOtherNightOrder: unknown }).nightsheetOtherNightOrder === null || typeof (value as { nightsheetOtherNightOrder: unknown }).nightsheetOtherNightOrder === "number") &&
+    ((value as { taskKind: unknown }).taskKind === null || (typeof (value as { taskKind: unknown }).taskKind === "string" && (value as { taskKind: string }).taskKind.length > 0));
+};
+
 export const assertValidSectsAndVioletsOrdinaryNightInventory = (
   inventory: readonly OrdinaryNightInventoryRow[] = SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY
 ): void => {
-  if (inventory.length !== 25) throw new Error("ordinary-night inventory must contain exactly 25 roles");
+  if (!Array.isArray(inventory) || !isDenseOrdinaryNightArray(inventory) || inventory.length !== 25) throw new Error("ordinary-night inventory must contain exactly 25 roles");
   const catalogIds = new Set(SECTS_AND_VIOLETS_ROLES.map((candidate) => candidate.roleId));
-  const inventoryIds = new Set(inventory.map((candidate) => candidate.roleId));
-  if (inventoryIds.size !== 25 || [...catalogIds].some((id) => !inventoryIds.has(id))) {
-    throw new Error("ordinary-night inventory must match the Sects & Violets catalog");
-  }
+  const inventoryIds = new Set<string>();
+  const executionModels = new Set<string>(ORDINARY_NIGHT_EXECUTION_MODELS);
+  const supportStatuses = new Set<OrdinaryNightBaselineSupportStatus>(["SUPPORTED", "UNSUPPORTED", "NOT_APPLICABLE"]);
+  const snapshotBoundRoles = new Set(["witch", "fang_gu"]);
   const orders = new Set<number>();
   for (const row of inventory) {
+    if (!isExactOrdinaryNightRow(row)) throw new Error("ordinary-night inventory row shape is invalid");
+    const rowId = String(row.roleId);
+    if (!catalogIds.has(row.roleId) || inventoryIds.has(rowId)) throw new Error("ordinary-night inventory role ids must be unique and canonical");
+    inventoryIds.add(rowId);
+    if (row.nightsheetOtherNightPresence !== "PRESENT" && row.nightsheetOtherNightPresence !== "ABSENT") throw new Error("ordinary-night presence is invalid");
+    if (!executionModels.has(row.executionModel) || !supportStatuses.has(row.baselineSupportStatus)) throw new Error("ordinary-night model or support status is invalid");
+    const expectedSourceBinding = snapshotBoundRoles.has(rowId) ? ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING : ORDINARY_NIGHT_NIGHTSHEET_BINDING;
+    if (row.sourceBinding !== expectedSourceBinding) throw new Error("ordinary-night source binding is not authoritative");
     if (row.nightsheetOtherNightPresence === "ABSENT" && row.nightsheetOtherNightOrder !== null) {
       throw new Error("absent ordinary-night role cannot have a nightsheet order");
     }
     if (row.nightsheetOtherNightPresence === "PRESENT") {
-      if (row.nightsheetOtherNightOrder === null || orders.has(row.nightsheetOtherNightOrder)) {
+      if (row.nightsheetOtherNightOrder === null || !Number.isSafeInteger(row.nightsheetOtherNightOrder) || row.nightsheetOtherNightOrder < 1 || orders.has(row.nightsheetOtherNightOrder)) {
         throw new Error("present ordinary-night roles must have unique positive orders");
       }
       orders.add(row.nightsheetOtherNightOrder);
@@ -286,6 +323,8 @@ export const assertValidSectsAndVioletsOrdinaryNightInventory = (
       }
     } else if (row.baselineSupportStatus !== "NOT_APPLICABLE") {
       throw new Error("absent ordinary-night role must be not applicable");
+    } else if (row.executionModel !== "NONE" || row.taskKind !== null) {
+      throw new Error("absent ordinary-night role must use NONE with no task kind");
     }
     if (row.executionModel === "SCHEDULED_TASK" && row.taskKind === null) {
       throw new Error("scheduled ordinary-night task must have a task kind");
@@ -297,6 +336,7 @@ export const assertValidSectsAndVioletsOrdinaryNightInventory = (
       throw new Error("ordinary-night foundation cannot claim unsupported executable paths");
     }
   }
+  if (inventoryIds.size !== 25 || [...catalogIds].some((id) => !inventoryIds.has(id))) throw new Error("ordinary-night inventory must match the Sects & Violets catalog");
 };
 
 assertValidSectsAndVioletsOrdinaryNightInventory();
