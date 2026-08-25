@@ -152,3 +152,124 @@ policy is deterministic, the existing validator is reused, the inventory is
 nightsheet-derived for all 25 roles, Fang Gu/Witch remain unsupported, direct
 URLs are present, and no product behavior is added. Until a complete fresh
 review returns `RULE_DESIGN_PASS`, implementation remains unauthorized.
+
+## Design correction 1/2 — exact seam, snapshot, and inventory contract
+
+This correction closes the prior design review findings without changing the
+foundation scope. The approved role-source fallback is bound by
+`docs/rules/evidence/2C-official-role-source-snapshot.md` (UTF-8 LF bytes
+`1690`, LF count `49`, CR count `0`, SHA-256
+`751dcb35aed610ab729c663544edb979e6745f276e167370ace7cc9e761d4724`). The
+snapshot is evidence only, is not a user override, and is used because the
+official pages were available but not reliably fetchable from the current
+Codex runtime. The Fang Gu and Witch URLs, revision bindings, and captured
+claims are reproduced in the evidence file; the prior Fang Gu oldid is
+historical context only and is not claimed to have been reread.
+
+### C1 additive candidate contract
+
+The implementation seam is an ordinary typed function, not a new schema or
+validator:
+
+```ts
+type C1AdditiveDescriptorInputV1 = {
+  readonly historical: StructuralSchemaCandidateV1;
+  readonly additions: {
+    readonly roots: readonly StructuralSchemaRootV1[];
+    readonly nodeBindings: readonly StructuralSchemaNodeBindingV1[];
+    readonly deltaBindings: readonly StructuralDeltaBindingV1[];
+  };
+};
+
+type StructuralSchemaCandidateV1 = {
+  readonly astVersion: "botc-domain-event-structural-schema-ast-v1";
+  readonly traversalVersion: "botc-domain-event-structural-unique-node-traversal-v1";
+  readonly normalizationVersion: "botc-domain-event-structural-normalization-v1";
+  readonly expectedEventCount: number;
+  readonly expectedBranchCount: number;
+  readonly expectedExplicitVersionBranchCount: number;
+  readonly expectedUnversionedBranchCount: number;
+  readonly roots: readonly StructuralSchemaRootV1[];
+  readonly nodeBindings: readonly StructuralSchemaNodeBindingV1[];
+  readonly deltaBindings: readonly StructuralDeltaBindingV1[];
+};
+```
+
+The constructor copies, never mutates, `historical`, appends additions, and
+then calls the existing `createStructuralSchemaAuthority` exactly once on the
+result. Additions must use event ordinals `41..N` and branch ordinals `60..M`,
+with no gaps; branches for one event remain contiguous. The historical
+projection is compared byte-for-byte by the existing canonical projection:
+all protocol-version fields, roots through branch ordinal 59, node bindings
+reachable from those roots, and the two approved delta bindings must have
+zero additions, removals, replacements, or reordered canonical fields. The
+candidate’s expected counts are the historical counts plus the appended
+counts. No new hash algorithm is introduced: node IDs continue to use the
+existing canonical structural representation and SHA-256 implementation that
+produces `C1.SHA256.<64 lowercase hex>`; audit artifact hashes continue to use
+the existing direct SHA-256 over canonical artifact bytes.
+
+Failure is fail-closed with existing `StructuralSchemaHealthCodeV1` values:
+`INVALID_OBJECT_SHAPE` (input shape), `INVALID_BRANCH_INVENTORY` (duplicate,
+gap, or non-contiguous ordinals), `ORDINAL_LIMIT_EXCEEDED` (non-additive
+ordinal), `NODE_BINDING_MISMATCH` (historical prefix drift),
+`DUPLICATE_NODE_ID`/`DUPLICATE_NODE_OBJECT` (identity collision),
+`UNRESOLVED_NODE_REFERENCE` (missing child), `INVALID_NODE_INVARIANT`
+(non-canonical descriptor), `INVALID_DELTA_BINDING` (anything other than the
+two frozen bindings), or `POST_FREEZE_AUDIT_FAILED` (final census/delta not
+healthy). No generic security harness or second validator is introduced.
+
+### Complete ordinary-night S&V inventory (25 rows)
+
+The inventory is a fixed data table, sourced from the pinned nightsheet
+(`3d6d930a9e600321f93b2567a2e88948a675bc1e`, SHA-256
+`99a2815bb31bcec3e107bf7f1c2fb305e301d317981d855704d3d954ec4c3f75`) and the
+`SECTS_AND_VIOLETS_ROLES@25` catalog. `PRESENT` means the role has an
+`otherNight` slot; `ABSENT` means `order=null`, `taskKind=null`, and
+`supportStatus=NOT_APPLICABLE`. Every present row is
+`executionModel=SCHEDULED_TASK` and `supportStatus=UNSUPPORTED` in this
+foundation: `SUPPORTED` is intentionally empty because no ordinary-night
+settlement path is accepted here.
+
+| roleId | presence | otherNight ordinal | taskKind | executionModel | supportStatus |
+|---|---|---:|---|---|---|
+| clockmaker | ABSENT | null | null | null | NOT_APPLICABLE |
+| dreamer | PRESENT | 79 | DREAMER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| snake_charmer | PRESENT | 23 | SNAKE_CHARMER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| mathematician | PRESENT | 96 | MATHEMATICIAN_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| flowergirl | PRESENT | 80 | FLOWERGIRL_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| town_crier | PRESENT | 81 | TOWN_CRIER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| oracle | PRESENT | 82 | ORACLE_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| savant | ABSENT | null | null | null | NOT_APPLICABLE |
+| seamstress | PRESENT | 83 | SEAMSTRESS_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| philosopher | PRESENT | 11 | PHILOSOPHER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| artist | ABSENT | null | null | null | NOT_APPLICABLE |
+| juggler | PRESENT | 84 | JUGGLER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| sage | PRESENT | 63 | SAGE_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| mutant | ABSENT | null | null | null | NOT_APPLICABLE |
+| sweetheart | PRESENT | 61 | SWEETHEART_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| barber | PRESENT | 60 | BARBER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| klutz | ABSENT | null | null | null | NOT_APPLICABLE |
+| evil_twin | ABSENT | null | null | null | NOT_APPLICABLE |
+| witch | PRESENT | 27 | WITCH_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| cerenovus | PRESENT | 28 | CERENOVUS_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| pit_hag | PRESENT | 29 | PIT_HAG_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| fang_gu | PRESENT | 45 | FANG_GU_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| vigormortis | PRESENT | 49 | VIGORMORTIS_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| no_dashii | PRESENT | 46 | NO_DASHII_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| vortox | PRESENT | 47 | VORTOX_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+
+The table has `roleCount=25`, `presentCount=19`, `absentCount=6`, and
+`supportedCount=0`. `dawn` is the nightsheet boundary at ordinal 98 and is not
+a role row. Fang Gu and Witch remain explicitly unsupported; no transfer,
+curse, death, promotion, or nomination-trigger behavior is inferred. A later
+fixture census must stop rather than silently skip an unsupported present task.
+
+### Review and authorization boundary
+
+The correction is design-only. It changes documentation/evidence only, leaves
+C/C1/A/B and all product behavior untouched, and does not alter workflow,
+coverage, routing, or Hosted CI. The independent reviewer must check the exact
+snapshot hash, the typed seam and historical zero-delta comparison, all 25
+inventory rows and ordinals, and the empty `SUPPORTED` set. Until that fresh
+review returns `RULE_DESIGN_PASS`, `implementationAuthorized=false`.
