@@ -364,6 +364,63 @@ describe("Catalog V2 audit projection", () => {
       }]
     } as never);
     expect(unauthorizedDelta).toMatchObject({ ok: false, diagnostic: { code: "INVALID_DELTA_BINDING", failClosed: true } });
+    // V01: the real Foundation additive seam accepts one test-only synthetic event.
+    const baseline = healthyAuthority();
+    const productionBefore = healthyAuthority();
+    const syntheticNodeId = "C1.SHA256.foundation-verification-synthetic-string";
+    const additions = [{
+      eventOrdinal: 41,
+      eventType: "FoundationVerificationSyntheticEvent",
+      branchOrdinal: 60,
+      branchId: "C1-FOUNDATION-VERIFICATION-SYNTHETIC",
+      versionPolicy: { kind: "UNVERSIONED" },
+      rootNodeId: syntheticNodeId,
+      resultTypeName: "FoundationVerificationSyntheticPayload",
+      nodeBindings: [{ nodeId: syntheticNodeId, node: { nodeId: syntheticNodeId, kind: "STRING" } }],
+      deltaBindings: []
+    }] as const;
+
+    const result = createC1AdditiveStructuralSchemaAuthority({ baseline, additions });
+    expect(result.status).toBe("HEALTHY");
+    if (result.status !== "HEALTHY") return;
+
+    expect(baseline.candidate.expectedEventCount).toBe(40);
+    expect(baseline.candidate.expectedBranchCount).toBe(59);
+    expect(additions[0]?.eventOrdinal).toBe(41);
+    expect(additions[0]?.branchOrdinal).toBe(60);
+    expect(result.candidate.expectedEventCount).toBe(41);
+    expect(result.candidate.expectedBranchCount).toBe(60);
+    expect(result.candidate.roots.filter((root) => root.eventOrdinal <= 40)).toEqual(
+      baseline.candidate.roots.filter((root) => root.eventOrdinal <= 40)
+    );
+    expect(result.candidate.roots.filter((root) => root.branchOrdinal <= 59)).toEqual(
+      baseline.candidate.roots.filter((root) => root.branchOrdinal <= 59)
+    );
+    expect(result.candidate.nodeBindings.slice(0, baseline.candidate.nodeBindings.length)).toEqual(
+      baseline.candidate.nodeBindings
+    );
+    expect(result.candidate.deltaBindings).toEqual(baseline.candidate.deltaBindings);
+    expect(additions[0]?.deltaBindings).toEqual([]);
+    expect(result.candidate.roots.some((root) => root.eventType === "FoundationVerificationSyntheticEvent")).toBe(true);
+    expect(productionBefore.candidate.roots.some((root) => root.eventType === "FoundationVerificationSyntheticEvent")).toBe(false);
+    expect(createCanonicalSchemaArtifact(productionBefore)).toEqual(createCanonicalSchemaArtifact(healthyAuthority()));
+    // V02: the existing C1 authority path rejects mutation of the accepted historical prefix.
+    const baselineV02 = healthyAuthority();
+    const mutatedCandidate = structuredClone(baselineV02.candidate) as unknown as {
+      readonly nodeBindings: Array<{ nodeId: string; readonly node: { readonly nodeId: string } }>;
+    };
+    const target = mutatedCandidate.nodeBindings[0];
+    if (target === undefined) throw new Error("FULL_C1 historical node binding is missing");
+    const originalNodeId = target.node.nodeId;
+    target.nodeId = `${originalNodeId}-mutated`;
+
+    const resultV02 = createStructuralSchemaAuthority(mutatedCandidate as never);
+    expect(resultV02).toMatchObject({
+      status: "UNHEALTHY",
+      diagnostic: { code: "NODE_BINDING_MISMATCH", failClosed: true }
+    });
+    expect(target.nodeId).not.toBe(target.node.nodeId);
+    expect(baselineV02.candidate.nodeBindings[0]?.nodeId).toBe(originalNodeId);
   });
 
   it("renders the full audit-only Catalog V2 without validator completion claims", () => {
