@@ -1,6 +1,6 @@
 # Phase 3 Slice 2C Prerequisite Foundation Design
 
-Status: `FOUNDATION_DESIGN_REVIEW_REQUIRED`
+Status: `CONTRACT_CLOSURE_RESLICE_DESIGN_REVIEW_REQUIRED`
 
 This is a new bounded prerequisite foundation. It is not 2C Design Correction
 Round 4 and does not modify the historical blocked design at
@@ -12,7 +12,13 @@ Round 4 and does not modify the historical blocked design at
 - Prior 2C design: `a42df3c150faed4e6463e809dd1e26d9d3ab6fbe`.
 - Prior 2C design disposition: `HISTORICAL_BLOCKED_DESIGN_INPUT`.
 - Prior 2C correction count: `3/3`.
-- Foundation design correction count: `0/2`.
+- `priorFoundationDesignHead=7c76fa9b6898658c20ac218799590088917b718c`.
+- `priorFoundationDesignCorrectionCount=2/2`.
+- `priorFoundationDesignCorrectionExhausted=true`.
+- `priorFoundationDesignDisposition=HISTORICAL_FOUNDATION_DESIGN_EXHAUSTED_PENDING_CONTRACT_CLOSURE_RESLICE`.
+- `contractClosureResliceDesignCorrectionCount=0/2`.
+- `contractClosureResliceDesignCorrectionBudgetRemaining=2`.
+- `currentDesignDisposition=CONTRACT_CLOSURE_RESLICE`.
 - Foundation implementation authorization: `false` until an independent
   `RULE_DESIGN_PASS`.
 
@@ -140,10 +146,11 @@ the existing 2C evidence file. It may not modify accepted C1 descriptors,
 production role behavior, tests' identity generation, workflow, dependencies,
 coverage/routing systems, B18, C, or Slice 3.
 
-Foundation correction budget is `0/2` at design creation and `0/2` for
-implementation repair. A requirement to mutate historical C1 semantics, add a
-second validator/framework, implement role effects, or create a new playable
-behavior is `HUMAN_BLOCKED` and requires a new bounded reslice.
+Historical foundation correction budget was `0/2` at design creation and is
+now exhausted at `2/2`; that historical budget is not reused by this reslice.
+The contract-closure reslice has its own `0/2` design budget and does not permit
+mutation of historical C1 semantics, a second validator/framework, role
+effects, or new playable behavior.
 
 ## Required independent review
 
@@ -153,7 +160,7 @@ nightsheet-derived for all 25 roles, Fang Gu/Witch remain unsupported, direct
 URLs are present, and no product behavior is added. Until a complete fresh
 review returns `RULE_DESIGN_PASS`, implementation remains unauthorized.
 
-## Design correction 1/2 — exact seam, snapshot, and inventory contract
+## Historical prior design correction 1/2 — exact seam, snapshot, and inventory contract
 
 This correction closes the prior design review findings without changing the
 foundation scope. The approved role-source fallback is bound by
@@ -219,51 +226,53 @@ ordinal), `NODE_BINDING_MISMATCH` (historical prefix drift),
 two frozen bindings), or `POST_FREEZE_AUDIT_FAILED` (final census/delta not
 healthy). No generic security harness or second validator is introduced.
 
-### Complete ordinary-night S&V inventory (25 rows)
+### Contract-closure ordinary-night S&V inventory (25 rows)
 
-The inventory is a fixed data table, sourced from the pinned nightsheet
+This active table has two independent authority dimensions. The nightsheet
+columns are facts from the pinned official `otherNight` list
 (`3d6d930a9e600321f93b2567a2e88948a675bc1e`, SHA-256
-`99a2815bb31bcec3e107bf7f1c2fb305e301d317981d855704d3d954ec4c3f75`) and the
-`SECTS_AND_VIOLETS_ROLES@25` catalog. `PRESENT` means the role has an
-`otherNight` slot; `ABSENT` means `order=null`, `taskKind=null`, and
-`supportStatus=NOT_APPLICABLE`. Every present row is
-`executionModel=SCHEDULED_TASK` and `supportStatus=UNSUPPORTED` in this
-foundation: `SUPPORTED` is intentionally empty because no ordinary-night
-settlement path is accepted here.
+`99a2815bb31bcec3e107bf7f1c2fb305e301d317981d855704d3d954ec4c3f75`). The
+runtime execution model is assigned from accepted architecture and ability
+semantics, never mechanically from wake-slot presence. Because no ordinary-
+night settlement path is accepted by this foundation, `baselineSupportStatus`
+is `UNSUPPORTED` for every present row and `NOT_APPLICABLE` for absent rows.
+`SUPPORTED` is empty.
 
-| roleId | presence | otherNight ordinal | taskKind | executionModel | supportStatus |
-|---|---|---:|---|---|---|
-| clockmaker | ABSENT | null | null | null | NOT_APPLICABLE |
-| dreamer | PRESENT | 79 | DREAMER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| snake_charmer | PRESENT | 23 | SNAKE_CHARMER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| mathematician | PRESENT | 96 | MATHEMATICIAN_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| flowergirl | PRESENT | 80 | FLOWERGIRL_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| town_crier | PRESENT | 81 | TOWN_CRIER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| oracle | PRESENT | 82 | ORACLE_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| savant | ABSENT | null | null | null | NOT_APPLICABLE |
-| seamstress | PRESENT | 83 | SEAMSTRESS_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| philosopher | PRESENT | 11 | PHILOSOPHER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| artist | ABSENT | null | null | null | NOT_APPLICABLE |
-| juggler | PRESENT | 84 | JUGGLER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| sage | PRESENT | 63 | SAGE_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| mutant | ABSENT | null | null | null | NOT_APPLICABLE |
-| sweetheart | PRESENT | 61 | SWEETHEART_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| barber | PRESENT | 60 | BARBER_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| klutz | ABSENT | null | null | null | NOT_APPLICABLE |
-| evil_twin | ABSENT | null | null | null | NOT_APPLICABLE |
-| witch | PRESENT | 27 | WITCH_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| cerenovus | PRESENT | 28 | CERENOVUS_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| pit_hag | PRESENT | 29 | PIT_HAG_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| fang_gu | PRESENT | 45 | FANG_GU_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| vigormortis | PRESENT | 49 | VIGORMORTIS_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| no_dashii | PRESENT | 46 | NO_DASHII_ACTION | SCHEDULED_TASK | UNSUPPORTED |
-| vortox | PRESENT | 47 | VORTOX_ACTION | SCHEDULED_TASK | UNSUPPORTED |
+| roleId | nightsheetOtherNightPresence | nightsheetOtherNightOrder | executionModel | taskKind | baselineSupportStatus | sourceBinding |
+|---|---|---:|---|---|---|---|
+| clockmaker | ABSENT | null | NONE | null | NOT_APPLICABLE | CATALOG+NIGHTSHEET |
+| dreamer | PRESENT | 79 | SCHEDULED_TASK | DREAMER_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| snake_charmer | PRESENT | 23 | SCHEDULED_TASK | SNAKE_CHARMER_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| mathematician | PRESENT | 96 | SCHEDULED_TASK | MATHEMATICIAN_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| flowergirl | PRESENT | 80 | SCHEDULED_TASK | FLOWERGIRL_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| town_crier | PRESENT | 81 | SCHEDULED_TASK | TOWN_CRIER_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| oracle | PRESENT | 82 | SCHEDULED_TASK | ORACLE_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| savant | ABSENT | null | NONE | null | NOT_APPLICABLE | CATALOG+NIGHTSHEET |
+| seamstress | PRESENT | 83 | SCHEDULED_TASK | SEAMSTRESS_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| philosopher | PRESENT | 11 | SCHEDULED_TASK | PHILOSOPHER_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| artist | ABSENT | null | NONE | null | NOT_APPLICABLE | CATALOG+NIGHTSHEET |
+| juggler | PRESENT | 84 | SCHEDULED_TASK | JUGGLER_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| sage | PRESENT | 63 | EVENT_SUBSCRIPTION | null | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| mutant | ABSENT | null | NONE | null | NOT_APPLICABLE | CATALOG+NIGHTSHEET |
+| sweetheart | PRESENT | 61 | EVENT_SUBSCRIPTION | null | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| barber | PRESENT | 60 | EVENT_SUBSCRIPTION | null | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| klutz | ABSENT | null | NONE | null | NOT_APPLICABLE | CATALOG+NIGHTSHEET |
+| evil_twin | ABSENT | null | NONE | null | NOT_APPLICABLE | CATALOG+NIGHTSHEET |
+| witch | PRESENT | 27 | EVENT_SUBSCRIPTION | null | UNSUPPORTED | CATALOG+NIGHTSHEET+APPROVED_SNAPSHOT |
+| cerenovus | PRESENT | 28 | SCHEDULED_TASK | CERENOVUS_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| pit_hag | PRESENT | 29 | SCHEDULED_TASK | PIT_HAG_ACTION | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| fang_gu | PRESENT | 45 | EVENT_SUBSCRIPTION | null | UNSUPPORTED | CATALOG+NIGHTSHEET+APPROVED_SNAPSHOT |
+| vigormortis | PRESENT | 49 | CONTINUOUS_RULE | null | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| no_dashii | PRESENT | 46 | CONTINUOUS_RULE | null | UNSUPPORTED | CATALOG+NIGHTSHEET |
+| vortox | PRESENT | 47 | CONTINUOUS_RULE | null | UNSUPPORTED | CATALOG+NIGHTSHEET |
 
-The table has `roleCount=25`, `presentCount=19`, `absentCount=6`, and
-`supportedCount=0`. `dawn` is the nightsheet boundary at ordinal 98 and is not
-a role row. Fang Gu and Witch remain explicitly unsupported; no transfer,
-curse, death, promotion, or nomination-trigger behavior is inferred. A later
-fixture census must stop rather than silently skip an unsupported present task.
+Invariants: ABSENT implies order `null`; `SCHEDULED_TASK` implies a non-null
+task kind; non-scheduled models have a null task kind; and `SUPPORTED` requires
+an existing executable path. The table has `roleCount=25`, `presentCount=19`,
+`absentCount=6`, `baselineSupportedRoleCount=0`. `dawn` at ordinal 98 is a
+nightsheet boundary, not a role row. Fang Gu and Witch remain unsupported; no
+transfer, curse lifecycle, death, promotion, alignment, or next-day trigger is
+implemented or inferred.
 
 ### Review and authorization boundary
 
@@ -274,7 +283,7 @@ snapshot hash, the typed seam and historical zero-delta comparison, all 25
 inventory rows and ordinals, and the empty `SUPPORTED` set. Until that fresh
 review returns `RULE_DESIGN_PASS`, `implementationAuthorized=false`.
 
-## Design correction 2/2 — frozen authority binding and digest preimage
+## Historical prior design correction 2/2 — frozen authority binding and digest preimage
 
 This final correction supersedes the earlier caller-supplied `historical`
 field. The historical prefix is not an implementation-selected input. It is
@@ -343,3 +352,134 @@ This consumes the second and final foundation design correction slot (`2/2`);
 any further contract change requires a new bounded reslice. Implementation
 remains unauthorized until a fresh independent review of this exact commit
 returns `RULE_DESIGN_PASS`.
+
+## Contract-closure reslice (active, correction 0/2)
+
+This section is the active `CONTRACT_CLOSURE_RESLICE`; the two sections above
+are historical exhausted input and are not additional active corrections. The
+reslice closes only F01–F05. It does not amend the prior reviewed commits, add
+a second foundation, create C2, or change C/C1 descriptors.
+
+### F01 state and F02 evidence truth
+
+```text
+priorFoundationDesignHead=7c76fa9b6898658c20ac218799590088917b718c
+priorFoundationDesignCorrectionCount=2/2
+priorFoundationDesignCorrectionBudgetRemaining=0
+priorFoundationDesignDisposition=HISTORICAL_FOUNDATION_DESIGN_EXHAUSTED_PENDING_CONTRACT_CLOSURE_RESLICE
+contractClosureResliceDesignCorrectionCount=0/2
+contractClosureResliceDesignCorrectionBudgetRemaining=2
+rootUserWorktreeTouched=false
+```
+
+The active evidence state is:
+
+```text
+sourceAvailabilityFailureHistorical=CODEX_RUNTIME_HTTP_418
+resolution=USER_APPROVED_MINIMAL_OFFICIAL_ROLE_SOURCE_SNAPSHOT
+activeSnapshotPath=docs/rules/evidence/2C-official-role-source-snapshot.md
+activeSnapshotSHA256=751dcb35aed610ab729c663544edb979e6745f276e167370ace7cc9e761d4724
+snapshotBytes=1690
+snapshotLfCount=49
+snapshotCrCount=0
+snapshotStatus=APPROVED_ACTIVE_RULE_SOURCE_SNAPSHOT
+```
+
+The snapshot is not a USER_OVERRIDE and does not replace the preserved HTTP
+418 history. No active statement claims that no snapshot exists or that it was
+unused.
+
+### F04 concrete C1 projection binding
+
+The existing callable projection authority is:
+
+```text
+existingProjectionImplementationFile=packages/domain-core/src/domain-event-structural-schema-catalog.ts
+existingProjectionExport=createCanonicalSchemaArtifact
+existingProjectionVersion=botc-domain-event-structural-audit-projection-v1
+```
+
+`createCanonicalSchemaArtifact(healthyAuthority)` is the only projection path.
+It uses the existing `buildArtifactLines`/`eventDescriptorLines`/`renderNode`
+builders in that file and returns canonical `lines`, UTF-8 bytes, byte length,
+and SHA-256. The seam must consume that output; it may not duplicate those
+private builders or introduce a second format. If implementation needs a
+prefix helper, it is a pure exposure/factorization of this same builder with
+identical bytes, projection version, catalog version, and known-answer vectors.
+
+Historical prefix equality is computed from the same projection output for
+BEFORE and AFTER and checks, for events `1..40` and branches `1..59`: event
+ordinal/type; branch ordinal/ID; version policy; root node ID; result type;
+and reachable canonical node identity lines. Required deltas are:
+
+```text
+historicalEventPrefixDelta=0
+historicalBranchPrefixDelta=0
+historicalNodeIdentityDelta=0
+historicalDescriptorSemanticDelta=0
+```
+
+The implementation tests repeated projection byte identity, one synthetic
+append with exact historical prefix, deliberate historical mutation rejection,
+and the existing accepted C1 projection vectors.
+
+### F05 exact-empty delta policy and final additive seam
+
+The active seam input is:
+
+```ts
+type ContractClosureAdditiveInputV1 = {
+  readonly baseline: HealthyStructuralSchemaAuthorityV1;
+  readonly additions: readonly {
+    readonly eventOrdinal: number;
+    readonly eventType: string;
+    readonly branchOrdinal: number;
+    readonly branchId: string;
+    readonly versionPolicy: StructuralSchemaRootV1["versionPolicy"];
+    readonly rootNodeId: string;
+    readonly resultTypeName: string;
+    readonly nodeBindings: readonly StructuralSchemaNodeBindingV1[];
+    readonly deltaBindings: readonly [];
+  }[];
+};
+```
+
+`baseline` must be the exact healthy FULL_C1 authority/candidate from
+`createFullC1StructuralSchemaAuthority()`. The output is exactly one
+`StructuralSchemaCandidateV1`, formed by appending ordered additions; the
+caller then invokes only `createStructuralSchemaAuthority(output)`. The seam
+does not return a trusted authority directly. Baseline B26/B54 bindings remain
+byte-identical, and `additions.deltaBindings` is always an empty tuple. A
+non-empty additive delta fails closed with existing `INVALID_DELTA_BINDING`;
+there is no delta-extension mechanism and no new error code.
+
+The seam preflight is deliberately minimal: exact healthy FULL_C1 baseline;
+first event ordinal `41`; dense event append; first branch ordinal `60`; dense
+branch append; no historical event/branch/ID mutation; no duplicate IDs; and
+empty additive deltas. Node graph invariants, unresolved references, exact
+schema shape, freeze, census, and health remain delegated to the existing C1
+validator.
+
+### Downstream fresh 2C boundary
+
+The foundation records `baselineSupportedTaskKinds=[]` and does not select a
+role. A fresh 2C design may later add at most one bounded ordinary-night
+capability, but only after fresh rule research and `RULE_DESIGN_PASS`; it may
+not be Fang Gu or Witch and may not require broad effect-engine semantics.
+The fixture condition becomes:
+
+```text
+requiredTaskKinds ⊆ baselineSupportedTaskKinds ∪ {oneNewBounded2CCapability}
+```
+
+Two or more new capabilities, a Fang Gu/Witch-only fixture, or any B18/Slice 3
+dependency is `HUMAN_BLOCKED`.
+
+### Active review gate
+
+This contract-closure reslice currently has
+`contractClosureResliceDesignCorrectionCount=0/2` and
+`implementationAuthorized=false`. A fresh independent reviewer must return
+F01–F05 all `CLOSED`, no new blocker, and `RULE_DESIGN_PASS` before any
+Foundation implementation. No workflow, Hosted CI, product behavior, test
+identity, coverage, routing, or dependency change is authorized by this design.
