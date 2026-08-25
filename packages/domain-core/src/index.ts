@@ -76,6 +76,7 @@ export * from "./cerenovus.js";
 export * from "./current-character-state.js";
 export * from "./deterministic-random.js";
 export * from "./domain-batch-semantics.js";
+export * from "./domain-event-structural-schema-additive.js";
 export * from "./dreamer.js";
 export * from "./errors.js";
 export * from "./event-applier.js";

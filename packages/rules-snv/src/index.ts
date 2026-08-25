@@ -192,6 +192,115 @@ export const assertValidSectsAndVioletsCatalog = (script: ScriptDefinition = SEC
 
 assertValidSectsAndVioletsCatalog();
 
+export const ORDINARY_NIGHT_EXECUTION_MODELS = [
+  "SCHEDULED_TASK",
+  "ACTION_OPPORTUNITY",
+  "EVENT_SUBSCRIPTION",
+  "CONTINUOUS_RULE",
+  "NONE"
+] as const;
+export type OrdinaryNightExecutionModel = (typeof ORDINARY_NIGHT_EXECUTION_MODELS)[number];
+export type OrdinaryNightBaselineSupportStatus = "SUPPORTED" | "UNSUPPORTED" | "NOT_APPLICABLE";
+export type OrdinaryNightInventoryRow = {
+  readonly roleId: RoleDefinition["roleId"];
+  readonly nightsheetOtherNightPresence: "PRESENT" | "ABSENT";
+  readonly nightsheetOtherNightOrder: number | null;
+  readonly executionModel: OrdinaryNightExecutionModel;
+  readonly taskKind: string | null;
+  readonly baselineSupportStatus: OrdinaryNightBaselineSupportStatus;
+  readonly sourceBinding: string;
+};
+
+const ORDINARY_NIGHT_NIGHTSHEET_BINDING =
+  "SECTS_AND_VIOLETS_ROLES@25;NIGHTSHEET_COMMIT=3d6d930a9e600321f93b2567a2e88948a675bc1e;NIGHTSHEET_SHA256=99a2815bb31bcec3e107bf7f1c2fb305e301d317981d855704d3d954ec4c3f75";
+const ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING =
+  `${ORDINARY_NIGHT_NIGHTSHEET_BINDING};SNAPSHOT_SHA256=751dcb35aed610ab729c663544edb979e6745f276e167370ace7cc9e761d4724`;
+
+const ordinaryNightRow = (
+  roleIdValue: string,
+  presence: OrdinaryNightInventoryRow["nightsheetOtherNightPresence"],
+  order: number | null,
+  executionModel: OrdinaryNightExecutionModel,
+  taskKind: string | null,
+  baselineSupportStatus: OrdinaryNightBaselineSupportStatus,
+  sourceBinding = ORDINARY_NIGHT_NIGHTSHEET_BINDING
+): OrdinaryNightInventoryRow => ({
+  roleId: roleId(roleIdValue),
+  nightsheetOtherNightPresence: presence,
+  nightsheetOtherNightOrder: order,
+  executionModel,
+  taskKind,
+  baselineSupportStatus,
+  sourceBinding
+});
+
+export const SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY: readonly OrdinaryNightInventoryRow[] = Object.freeze([
+  ordinaryNightRow("clockmaker", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("dreamer", "PRESENT", 79, "SCHEDULED_TASK", "DREAMER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("snake_charmer", "PRESENT", 23, "SCHEDULED_TASK", "SNAKE_CHARMER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("mathematician", "PRESENT", 96, "SCHEDULED_TASK", "MATHEMATICIAN_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("flowergirl", "PRESENT", 80, "SCHEDULED_TASK", "FLOWERGIRL_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("town_crier", "PRESENT", 81, "SCHEDULED_TASK", "TOWN_CRIER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("oracle", "PRESENT", 82, "SCHEDULED_TASK", "ORACLE_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("savant", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("seamstress", "PRESENT", 83, "SCHEDULED_TASK", "SEAMSTRESS_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("philosopher", "PRESENT", 11, "SCHEDULED_TASK", "PHILOSOPHER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("artist", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("juggler", "PRESENT", 84, "SCHEDULED_TASK", "JUGGLER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("sage", "PRESENT", 63, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED"),
+  ordinaryNightRow("mutant", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("sweetheart", "PRESENT", 61, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED"),
+  ordinaryNightRow("barber", "PRESENT", 60, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED"),
+  ordinaryNightRow("klutz", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("evil_twin", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("witch", "PRESENT", 27, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED", ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING),
+  ordinaryNightRow("cerenovus", "PRESENT", 28, "SCHEDULED_TASK", "CERENOVUS_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("pit_hag", "PRESENT", 29, "SCHEDULED_TASK", "PIT_HAG_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("fang_gu", "PRESENT", 45, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED", ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING),
+  ordinaryNightRow("vigormortis", "PRESENT", 49, "CONTINUOUS_RULE", null, "UNSUPPORTED"),
+  ordinaryNightRow("no_dashii", "PRESENT", 46, "CONTINUOUS_RULE", null, "UNSUPPORTED"),
+  ordinaryNightRow("vortox", "PRESENT", 47, "CONTINUOUS_RULE", null, "UNSUPPORTED")
+]);
+
+export const assertValidSectsAndVioletsOrdinaryNightInventory = (
+  inventory: readonly OrdinaryNightInventoryRow[] = SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY
+): void => {
+  if (inventory.length !== 25) throw new Error("ordinary-night inventory must contain exactly 25 roles");
+  const catalogIds = new Set(SECTS_AND_VIOLETS_ROLES.map((candidate) => candidate.roleId));
+  const inventoryIds = new Set(inventory.map((candidate) => candidate.roleId));
+  if (inventoryIds.size !== 25 || [...catalogIds].some((id) => !inventoryIds.has(id))) {
+    throw new Error("ordinary-night inventory must match the Sects & Violets catalog");
+  }
+  const orders = new Set<number>();
+  for (const row of inventory) {
+    if (row.nightsheetOtherNightPresence === "ABSENT" && row.nightsheetOtherNightOrder !== null) {
+      throw new Error("absent ordinary-night role cannot have a nightsheet order");
+    }
+    if (row.nightsheetOtherNightPresence === "PRESENT") {
+      if (row.nightsheetOtherNightOrder === null || orders.has(row.nightsheetOtherNightOrder)) {
+        throw new Error("present ordinary-night roles must have unique positive orders");
+      }
+      orders.add(row.nightsheetOtherNightOrder);
+      if (row.baselineSupportStatus === "NOT_APPLICABLE") {
+        throw new Error("present ordinary-night role cannot be not applicable");
+      }
+    } else if (row.baselineSupportStatus !== "NOT_APPLICABLE") {
+      throw new Error("absent ordinary-night role must be not applicable");
+    }
+    if (row.executionModel === "SCHEDULED_TASK" && row.taskKind === null) {
+      throw new Error("scheduled ordinary-night task must have a task kind");
+    }
+    if (row.executionModel !== "SCHEDULED_TASK" && row.taskKind !== null) {
+      throw new Error("non-scheduled ordinary-night model cannot have a task kind");
+    }
+    if (row.baselineSupportStatus === "SUPPORTED") {
+      throw new Error("ordinary-night foundation cannot claim unsupported executable paths");
+    }
+  }
+};
+
+assertValidSectsAndVioletsOrdinaryNightInventory();
+
 const firstNightRoleTask = (
   taskType: FirstNightTaskDefinition["taskType"],
   taskClass: Extract<FirstNightTaskDefinition, { readonly sourceKind: "ROLE" }>["taskClass"],
