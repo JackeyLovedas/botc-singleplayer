@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { createFullC1StructuralSchemaAuthority, createStructuralSchemaAuthority } from "./domain-event-structural-schema-ast.js";
+import { createC1AdditiveStructuralSchemaAuthority, createC1AdditiveStructuralSchemaCandidate } from "./domain-event-structural-schema-additive.js";
 import {
   APPROVED_C1_DELTA_REGISTRY_V1,
   C1_SUPPORTING_AUTHORITY_BINDINGS,
@@ -341,6 +342,28 @@ describe("Catalog V2 audit projection", () => {
     const changed = createStructuralSchemaAuthority(changedCandidate);
     expect(changed.status).toBe("HEALTHY"); if (changed.status !== "HEALTHY") return;
     expect(createCanonicalSchemaArtifact(changed).sha256).not.toBe(createCanonicalSchemaArtifact(canonical).sha256);
+    const additive = createC1AdditiveStructuralSchemaAuthority({ baseline: canonical, additions: [] });
+    expect(additive.status).toBe("HEALTHY");
+    const malformed = createC1AdditiveStructuralSchemaCandidate(null as never);
+    expect(malformed).toMatchObject({ ok: false, diagnostic: { code: "INVALID_OBJECT_SHAPE", failClosed: true } });
+    const revoked = Proxy.revocable({ baseline: canonical, additions: [] }, {});
+    revoked.revoke();
+    expect(createC1AdditiveStructuralSchemaCandidate(revoked.proxy as never)).toMatchObject({ ok: false, diagnostic: { code: "INVALID_OBJECT_SHAPE", failClosed: true } });
+    const unauthorizedDelta = createC1AdditiveStructuralSchemaCandidate({
+      baseline: canonical,
+      additions: [{
+        eventOrdinal: 41,
+        eventType: "SYNTHETIC",
+        branchOrdinal: 60,
+        branchId: "SYNTHETIC",
+        versionPolicy: { kind: "UNVERSIONED" },
+        rootNodeId: "SYNTHETIC",
+        resultTypeName: "SYNTHETIC",
+        nodeBindings: [],
+        deltaBindings: [{ deltaId: "SYNTHETIC", branchId: "SYNTHETIC", fieldPath: "P", nodeIds: [] }]
+      }]
+    } as never);
+    expect(unauthorizedDelta).toMatchObject({ ok: false, diagnostic: { code: "INVALID_DELTA_BINDING", failClosed: true } });
   });
 
   it("renders the full audit-only Catalog V2 without validator completion claims", () => {

@@ -253,42 +253,53 @@ export const SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY: readonly OrdinaryNightI
   ordinaryNightRow("barber", "PRESENT", 60, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED"),
   ordinaryNightRow("klutz", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
   ordinaryNightRow("evil_twin", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
-  ordinaryNightRow("witch", "PRESENT", 27, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED", ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING),
+  ordinaryNightRow("witch", "PRESENT", 27, "ACTION_OPPORTUNITY", null, "UNSUPPORTED", ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING),
   ordinaryNightRow("cerenovus", "PRESENT", 28, "SCHEDULED_TASK", "CERENOVUS_ACTION", "UNSUPPORTED"),
   ordinaryNightRow("pit_hag", "PRESENT", 29, "SCHEDULED_TASK", "PIT_HAG_ACTION", "UNSUPPORTED"),
-  ordinaryNightRow("fang_gu", "PRESENT", 45, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED", ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING),
+  ordinaryNightRow("fang_gu", "PRESENT", 45, "ACTION_OPPORTUNITY", null, "UNSUPPORTED", ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING),
   ordinaryNightRow("vigormortis", "PRESENT", 49, "CONTINUOUS_RULE", null, "UNSUPPORTED"),
   ordinaryNightRow("no_dashii", "PRESENT", 46, "CONTINUOUS_RULE", null, "UNSUPPORTED"),
   ordinaryNightRow("vortox", "PRESENT", 47, "CONTINUOUS_RULE", null, "UNSUPPORTED")
 ]);
 
 const isDenseOrdinaryNightArray = (value: unknown): value is readonly OrdinaryNightInventoryRow[] => {
-  if (!Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
-  for (let index = 0; index < value.length; index += 1) {
-    if (!Object.prototype.hasOwnProperty.call(value, index)) return false;
-    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
-    if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set) return false;
+  try {
+    if (!Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
+    const ownKeys = Object.getOwnPropertyNames(value);
+    if (ownKeys.length !== value.length + 1 || !ownKeys.includes("length")) return false;
+    for (let index = 0; index < value.length; index += 1) {
+      if (!Object.prototype.hasOwnProperty.call(value, index)) return false;
+      const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+      if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set || !descriptor.enumerable) return false;
+    }
+    return true;
+  } catch {
+    return false;
   }
-  return true;
 };
 
 const isExactOrdinaryNightRow = (value: unknown): value is OrdinaryNightInventoryRow => {
-  if (typeof value !== "object" || value === null || Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
-  const object = value;
-  const keys = Object.getOwnPropertyNames(object);
-  const expected = ["roleId", "nightsheetOtherNightPresence", "nightsheetOtherNightOrder", "executionModel", "taskKind", "baselineSupportStatus", "sourceBinding"];
-  if (keys.length !== expected.length || !keys.every((key) => expected.includes(key))) return false;
-  for (const key of keys) {
-    const descriptor = Object.getOwnPropertyDescriptor(object, key);
-    if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set) return false;
+  try {
+    if (typeof value !== "object" || value === null || Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
+    const object = value;
+    if (Reflect.getPrototypeOf(object) !== Object.prototype && Reflect.getPrototypeOf(object) !== null) return false;
+    const keys = Object.getOwnPropertyNames(object);
+    const expected = ["roleId", "nightsheetOtherNightPresence", "nightsheetOtherNightOrder", "executionModel", "taskKind", "baselineSupportStatus", "sourceBinding"];
+    if (keys.length !== expected.length || !keys.every((key) => expected.includes(key))) return false;
+    for (const key of keys) {
+      const descriptor = Object.getOwnPropertyDescriptor(object, key);
+      if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set || !descriptor.enumerable) return false;
+    }
+    return typeof (value as { roleId: unknown }).roleId === "string" &&
+      (typeof (value as { nightsheetOtherNightPresence: unknown }).nightsheetOtherNightPresence === "string") &&
+      (typeof (value as { executionModel: unknown }).executionModel === "string") &&
+      (typeof (value as { baselineSupportStatus: unknown }).baselineSupportStatus === "string") &&
+      (typeof (value as { sourceBinding: unknown }).sourceBinding === "string") &&
+      ((value as { nightsheetOtherNightOrder: unknown }).nightsheetOtherNightOrder === null || typeof (value as { nightsheetOtherNightOrder: unknown }).nightsheetOtherNightOrder === "number") &&
+      ((value as { taskKind: unknown }).taskKind === null || (typeof (value as { taskKind: unknown }).taskKind === "string" && (value as { taskKind: string }).taskKind.length > 0));
+  } catch {
+    return false;
   }
-  return typeof (value as { roleId: unknown }).roleId === "string" &&
-    (typeof (value as { nightsheetOtherNightPresence: unknown }).nightsheetOtherNightPresence === "string") &&
-    (typeof (value as { executionModel: unknown }).executionModel === "string") &&
-    (typeof (value as { baselineSupportStatus: unknown }).baselineSupportStatus === "string") &&
-    (typeof (value as { sourceBinding: unknown }).sourceBinding === "string") &&
-    ((value as { nightsheetOtherNightOrder: unknown }).nightsheetOtherNightOrder === null || typeof (value as { nightsheetOtherNightOrder: unknown }).nightsheetOtherNightOrder === "number") &&
-    ((value as { taskKind: unknown }).taskKind === null || (typeof (value as { taskKind: unknown }).taskKind === "string" && (value as { taskKind: string }).taskKind.length > 0));
 };
 
 export const assertValidSectsAndVioletsOrdinaryNightInventory = (

@@ -202,7 +202,13 @@ export const createC1AdditiveStructuralSchemaCandidate = (
   if (full.status === "UNHEALTHY") {
     return failure("INVALID_BRANCH_INVENTORY", "FULL_C1 authority is not healthy");
   }
-  if (input.baseline.status !== "HEALTHY" || !candidateProjectionEqual(input.baseline, full)) {
+  let baselineMatches = false;
+  try {
+    baselineMatches = input.baseline.status === "HEALTHY" && candidateProjectionEqual(input.baseline, full);
+  } catch {
+    return failure("INVALID_OBJECT_SHAPE", "baseline canonical projection failed closed");
+  }
+  if (!baselineMatches) {
     return failure("NODE_BINDING_MISMATCH", "baseline is not the exact accepted FULL_C1 projection");
   }
   if (!isDenseAppend(input.additions, input.baseline)) {
