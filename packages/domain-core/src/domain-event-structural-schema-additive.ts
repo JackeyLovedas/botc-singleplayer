@@ -56,22 +56,26 @@ const failure = (
 const exactDataKeys = (value: unknown, keys: readonly string[]): boolean => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const object = value;
+  const prototype = Reflect.getPrototypeOf(object);
+  if (prototype !== Object.prototype && prototype !== null) return false;
   const ownKeys = Object.getOwnPropertyNames(object);
   if (Object.getOwnPropertySymbols(object).length !== 0 || ownKeys.length !== keys.length) return false;
   const expected = new Set(keys);
   if (!ownKeys.every((key) => expected.has(key))) return false;
   return ownKeys.every((key) => {
     const descriptor = Object.getOwnPropertyDescriptor(object, key);
-    return descriptor !== undefined && "value" in descriptor && !descriptor.get && !descriptor.set;
+    return descriptor !== undefined && "value" in descriptor && !descriptor.get && !descriptor.set && descriptor.enumerable;
   });
 };
 
 const isDenseDataArray = (value: unknown): value is readonly unknown[] => {
-  if (!Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
+  if (!Array.isArray(value) || Reflect.getPrototypeOf(value) !== Array.prototype || Object.getOwnPropertySymbols(value).length !== 0) return false;
+  const ownKeys = Object.getOwnPropertyNames(value);
+  if (ownKeys.length !== value.length + 1 || !ownKeys.includes("length")) return false;
   for (let index = 0; index < value.length; index += 1) {
     if (!Object.prototype.hasOwnProperty.call(value, index)) return false;
     const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
-    if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set) return false;
+    if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set || !descriptor.enumerable) return false;
   }
   return true;
 };
@@ -92,7 +96,7 @@ const isDataOnlyGraph = (value: unknown, ancestors = new WeakSet<object>()): boo
     if (Object.getOwnPropertySymbols(object).length !== 0) return false;
     for (const key of Object.getOwnPropertyNames(object)) {
       const descriptor = Object.getOwnPropertyDescriptor(object, key);
-      if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set) return false;
+      if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set || !descriptor.enumerable) return false;
       if (!isDataOnlyGraph(descriptor.value, ancestors)) return false;
     }
   }

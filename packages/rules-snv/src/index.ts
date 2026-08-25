@@ -234,7 +234,10 @@ const ordinaryNightRow = (
   sourceBinding
 });
 
-export const SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY: readonly OrdinaryNightInventoryRow[] = Object.freeze([
+const freezeOrdinaryNightInventory = (rows: readonly OrdinaryNightInventoryRow[]): readonly OrdinaryNightInventoryRow[] =>
+  Object.freeze(rows.map((row) => Object.freeze({ ...row })));
+
+export const SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY: readonly OrdinaryNightInventoryRow[] = freezeOrdinaryNightInventory([
   ordinaryNightRow("clockmaker", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
   ordinaryNightRow("dreamer", "PRESENT", 79, "SCHEDULED_TASK", "DREAMER_ACTION", "UNSUPPORTED"),
   ordinaryNightRow("snake_charmer", "PRESENT", 23, "SCHEDULED_TASK", "SNAKE_CHARMER_ACTION", "UNSUPPORTED"),
@@ -261,6 +264,10 @@ export const SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY: readonly OrdinaryNightI
   ordinaryNightRow("no_dashii", "PRESENT", 46, "CONTINUOUS_RULE", null, "UNSUPPORTED"),
   ordinaryNightRow("vortox", "PRESENT", 47, "CONTINUOUS_RULE", null, "UNSUPPORTED")
 ]);
+
+const EXPECTED_ORDINARY_NIGHT_FACTS = Object.freeze(
+  SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY.map((row) => Object.freeze({ ...row }))
+);
 
 const isDenseOrdinaryNightArray = (value: unknown): value is readonly OrdinaryNightInventoryRow[] => {
   try {
@@ -315,7 +322,16 @@ export const assertValidSectsAndVioletsOrdinaryNightInventory = (
   for (const row of inventory) {
     if (!isExactOrdinaryNightRow(row)) throw new Error("ordinary-night inventory row shape is invalid");
     const rowId = String(row.roleId);
-    if (!catalogIds.has(row.roleId) || inventoryIds.has(rowId)) throw new Error("ordinary-night inventory role ids must be unique and canonical");
+    const expected = EXPECTED_ORDINARY_NIGHT_FACTS.find((candidate) => candidate.roleId === row.roleId);
+    if (expected === undefined || !catalogIds.has(row.roleId) || inventoryIds.has(rowId)) throw new Error("ordinary-night inventory role ids must be unique and canonical");
+    if (
+      row.nightsheetOtherNightPresence !== expected.nightsheetOtherNightPresence ||
+      row.nightsheetOtherNightOrder !== expected.nightsheetOtherNightOrder ||
+      row.executionModel !== expected.executionModel ||
+      row.taskKind !== expected.taskKind ||
+      row.baselineSupportStatus !== expected.baselineSupportStatus ||
+      row.sourceBinding !== expected.sourceBinding
+    ) throw new Error("ordinary-night inventory row does not match frozen nightsheet facts");
     inventoryIds.add(rowId);
     if (row.nightsheetOtherNightPresence !== "PRESENT" && row.nightsheetOtherNightPresence !== "ABSENT") throw new Error("ordinary-night presence is invalid");
     if (!executionModels.has(row.executionModel) || !supportStatuses.has(row.baselineSupportStatus)) throw new Error("ordinary-night model or support status is invalid");
