@@ -187,6 +187,17 @@ export type FirstNightTaskPlanCreatedPayload = FirstNightTaskPlan & {
   readonly rulesBaselineVersion: string;
 };
 
+export type NominationDeclaredPayload = { readonly rulesBaselineVersion: string; readonly nominationId: string; readonly nominatorPlayerId: string; readonly nomineePlayerId: string; readonly dayNumber: number; readonly nominationOrdinal: number };
+export type VoteCastPayload = { readonly rulesBaselineVersion: string; readonly voteId: string; readonly nominationId: string; readonly voterPlayerId: string; readonly voterSeatNumber: number; readonly choice: "YES" | "NO"; readonly ghostVoteConsumed: boolean };
+export type BlockStateUpdatedPayload = { readonly rulesBaselineVersion: string; readonly nominationId: string; readonly dayNumber: number; readonly livingPlayerCount: number; readonly threshold: number; readonly leaderNominationId: string | null; readonly leaderVoteCount: number; readonly tied: boolean };
+export type ExecutionDeclaredPayload = { readonly rulesBaselineVersion: string; readonly executionId: string; readonly blockId: string; readonly targetPlayerId: string; readonly dayNumber: number };
+export type PlayerDiedPayload = { readonly rulesBaselineVersion: string; readonly deathId: string; readonly executionId: string | null; readonly playerId: string; readonly dayNumber: number; readonly cause: "EXECUTION" | "GENERIC_DEMON_KILL" };
+export type ExecutionResolvedPayload = { readonly rulesBaselineVersion: string; readonly executionId: string; readonly targetPlayerId: string; readonly dayNumber: number; readonly resolution: "EXECUTED"; readonly deathOutcome: "DIED" | "DID_NOT_DIE" };
+export type DayClosedWithoutExecutionPayload = { readonly rulesBaselineVersion: string; readonly dayNumber: number; readonly blockId: string | null; readonly reason: "NO_EXECUTABLE_CANDIDATE" };
+export type OrdinaryNightTaskPlanCreatedPayload = import("./ordinary-night.js").OrdinaryNightTaskPlan & { readonly rulesBaselineVersion: string };
+export type OrdinaryNightTargetDerivedPayload = import("./ordinary-night.js").OrdinaryNightTarget & { readonly rulesBaselineVersion: string };
+export type OrdinaryNightTaskSettledPayload = import("./ordinary-night.js").OrdinaryNightTaskSettlement & { readonly rulesBaselineVersion: string };
+
 export type DomainEventPayloadByType = {
   readonly GameCreated: GameCreatedPayload;
   readonly ScriptSelected: ScriptSelectedPayload;
@@ -228,6 +239,16 @@ export type DomainEventPayloadByType = {
   readonly MinionInformationDelivered: MinionInformationDeliveredPayload;
   readonly DemonInformationDelivered: DemonInformationDeliveredPayload;
   readonly ScheduledTaskSettled: ScheduledTaskSettledPayload;
+  readonly NominationDeclared: NominationDeclaredPayload;
+  readonly VoteCast: VoteCastPayload;
+  readonly BlockStateUpdated: BlockStateUpdatedPayload;
+  readonly ExecutionDeclared: ExecutionDeclaredPayload;
+  readonly PlayerDied: PlayerDiedPayload;
+  readonly ExecutionResolved: ExecutionResolvedPayload;
+  readonly DayClosedWithoutExecution: DayClosedWithoutExecutionPayload;
+  readonly OrdinaryNightTaskPlanCreated: OrdinaryNightTaskPlanCreatedPayload;
+  readonly OrdinaryNightTargetDerived: OrdinaryNightTargetDerivedPayload;
+  readonly OrdinaryNightTaskSettled: OrdinaryNightTaskSettledPayload;
 };
 
 export type DomainEventType = keyof DomainEventPayloadByType;

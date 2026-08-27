@@ -1911,6 +1911,17 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidScheduledTaskSettledPayload";
     case "PhaseTransitioned":
       return "InvalidPhaseTransition";
+    case "NominationDeclared":
+    case "VoteCast":
+    case "BlockStateUpdated":
+    case "ExecutionDeclared":
+    case "PlayerDied":
+    case "ExecutionResolved":
+    case "DayClosedWithoutExecution":
+    case "OrdinaryNightTaskPlanCreated":
+    case "OrdinaryNightTargetDerived":
+    case "OrdinaryNightTaskSettled":
+      return "InvalidDomainBatchSemantics";
     default:
       return assertNever(eventType);
   }
@@ -2962,6 +2973,47 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
         nightNumber: event.payload.nightNumberAfter
       };
     }
+
+    case "NominationDeclared":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "NominationDeclared requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Nomination rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, nominations: [...(state.nominations ?? []), event.payload] };
+    case "VoteCast":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "VoteCast requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Vote rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, votes: [...(state.votes ?? []), event.payload] };
+    case "BlockStateUpdated":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "BlockStateUpdated requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Block rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, blocks: [...(state.blocks ?? []), event.payload] };
+    case "ExecutionDeclared":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "ExecutionDeclared requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Execution rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, executions: [...(state.executions ?? []), event.payload] };
+    case "PlayerDied":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "PlayerDied requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Death rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, deaths: [...(state.deaths ?? []), event.payload], deadPlayerIds: [...(state.deadPlayerIds ?? []), event.payload.playerId] };
+    case "ExecutionResolved":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "ExecutionResolved requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Execution resolution rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence };
+    case "DayClosedWithoutExecution":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "DayClosedWithoutExecution requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Day close rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence };
+    case "OrdinaryNightTaskPlanCreated":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "OrdinaryNightTaskPlanCreated requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Ordinary-night plan rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, ordinaryNightTaskPlan: event.payload, ordinaryNightTaskProgress: { settlements: [] } };
+    case "OrdinaryNightTargetDerived":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "OrdinaryNightTargetDerived requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Ordinary-night target rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, ordinaryNightTargets: [...(state.ordinaryNightTargets ?? []), event.payload] };
+    case "OrdinaryNightTaskSettled":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "OrdinaryNightTaskSettled requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Ordinary-night settlement rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, ordinaryNightTaskProgress: { settlements: [...(state.ordinaryNightTaskProgress?.settlements ?? []), event.payload.taskId] } };
 
     default:
       return assertNever(event);

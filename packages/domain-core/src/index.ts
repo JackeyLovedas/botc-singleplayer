@@ -100,3 +100,5 @@ export * from "./setup-types.js";
 export * from "./seamstress.js";
 export * from "./snake-charmer.js";
 export * from "./witch.js";
+export * from "./ordinary-night.js";
+export * from "./phase-3-slice-2c-structural-descriptors.js";

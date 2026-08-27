@@ -17,7 +17,7 @@ import {
   evilTwinInformationEntriesEqual,
   expectedEvilTwinInformationEntries
 } from "./evil-twin.js";
-import { isIntegratedTransitionReason } from "./phase-transition-policy.js";
+import { evaluatePhaseTransition, isIntegratedTransitionReason } from "./phase-transition-policy.js";
 import { firstNightTaskTypeForPhilosopherChoice } from "./philosopher-ability.js";
 import { evaluateSnakeCharmerEffectiveness } from "./snake-charmer.js";
 import type { SnakeCharmerEffectivenessResult } from "./snake-charmer.js";
@@ -63,9 +63,81 @@ import {
 import { validateClockmakerInformationAgainstCanonicalState } from "./clockmaker.js";
 import { validateMathematicianInformationDeliveredPayloadShape } from "./mathematician.js";
 import { sameRoleSetupSnapshot, SUPPORTED_SCRIPT_ID } from "./setup-types.js";
+import { validateOrdinaryNightTaskPlan } from "./ordinary-night.js";
 
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
 type IneffectiveWitchEffectiveness = Extract<WitchEffectivenessResult, { readonly effective: false }>;
+
+const validateBasicPhaseFlowBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) reject("Basic phase-flow events require an existing game");
+  const state = currentState as GameState;
+  assertSharedBatchMetadataForAll(events);
+  for (const event of events) {
+    if (event.rulesBaselineVersion !== state.rulesBaselineVersion) reject("Basic phase-flow rules baseline must match current state");
+  }
+  const first = events[0]!;
+  if (first.eventType === "PhaseTransitioned") {
+    if (events.length !== 1) reject("Standalone basic phase transition must contain exactly one event");
+    const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: first.payload.toPhase, dayNumber: state.dayNumber, nightNumber: state.nightNumber });
+    if (!transition.allowed || first.payload.transitionReason !== transition.reasonCode || first.payload.dayNumberAfter !== transition.dayNumber || first.payload.nightNumberAfter !== transition.nightNumber) {
+      reject("Basic phase transition does not match the phase policy");
+    }
+    return;
+  }
+  if (first.eventType === "NominationDeclared") {
+    if (events.length !== 1 || state.phase !== "NOMINATION_WINDOW" || first.payload.dayNumber !== state.dayNumber) reject("Nomination must be a single fact during the nomination window");
+    if (state.roster === undefined || !state.roster.entries.some((entry) => entry.playerId === first.payload.nominatorPlayerId) || !state.roster.entries.some((entry) => entry.playerId === first.payload.nomineePlayerId)) reject("Nomination participants must be roster members");
+    return;
+  }
+  if (first.eventType === "VoteCast") {
+    if (events.length !== 1 || state.phase !== "VOTING") reject("Vote must be a single fact during voting");
+    if (state.roster === undefined || !state.roster.entries.some((entry) => entry.playerId === first.payload.voterPlayerId)) reject("Vote actor must be a roster member");
+    if (!(state.nominations ?? []).some((nomination) => nomination.nominationId === first.payload.nominationId)) reject("Vote must reference an existing nomination");
+    return;
+  }
+  if (first.eventType === "ExecutionDeclared") {
+    if ((events.length !== 3 && events.length !== 4) || events[1]?.eventType !== "ExecutionResolved" || events.at(-1)?.eventType !== "PhaseTransitioned" || state.phase !== "EXECUTION_RESOLUTION") reject("Execution must contain declaration, resolution, and night transition");
+    const resolvedCandidate = events[1];
+    const diedCandidate = events.length === 4 ? events[2] : undefined;
+    const transitionCandidate = events.at(-1);
+    if (resolvedCandidate === undefined || resolvedCandidate.eventType !== "ExecutionResolved" || transitionCandidate === undefined || transitionCandidate.eventType !== "PhaseTransitioned") reject("Execution chain is incomplete");
+    const resolved = resolvedCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "ExecutionResolved" }>;
+    if (resolved.payload.deathOutcome === "DIED" && (diedCandidate === undefined || diedCandidate.eventType !== "PlayerDied")) reject("DIED execution must include PlayerDied");
+    if (resolved.payload.deathOutcome === "DID_NOT_DIE" && diedCandidate !== undefined) reject("DID_NOT_DIE execution must not include PlayerDied");
+    const died = diedCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "PlayerDied" }> | undefined;
+    const transition = transitionCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
+    if (resolved.payload.executionId !== first.payload.executionId || resolved.payload.targetPlayerId !== first.payload.targetPlayerId || (died !== undefined && (died.payload.executionId !== first.payload.executionId || died.payload.playerId !== first.payload.targetPlayerId))) reject("Execution chain payloads do not agree");
+    const expected = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "NIGHT_TASKS", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
+    if (!expected.allowed || transition.payload.toPhase !== expected.nextPhase || transition.payload.transitionReason !== expected.reasonCode) reject("Execution must transition to ordinary night tasks");
+    return;
+  }
+  if (first.eventType === "BlockStateUpdated") {
+    if (events.length !== 2 || events[1]?.eventType !== "PhaseTransitioned" || state.phase !== "VOTING" || first.payload.dayNumber !== state.dayNumber) reject("Block state must pair with vote completion");
+    const transition = events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
+    if (transition.payload.toPhase !== "NOMINATION_WINDOW" || transition.payload.transitionReason !== "VOTE_COMPLETED") reject("Block state must transition back to nomination window");
+    return;
+  }
+  if (first.eventType === "DayClosedWithoutExecution") {
+    if (events.length !== 2 || events[1]?.eventType !== "PhaseTransitioned" || state.phase !== "EXECUTION_RESOLUTION") reject("Day close must pair with night transition");
+    const transition = events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
+    if (transition.payload.toPhase !== "NIGHT_TASKS" || transition.payload.transitionReason !== "EXECUTION_RESOLVED") reject("Day close must transition to night tasks");
+    return;
+  }
+  if (first.eventType === "OrdinaryNightTaskPlanCreated") {
+    if (events.length !== 1 || state.phase !== "NIGHT_TASKS" || !validateOrdinaryNightTaskPlan({ planVersion: first.payload.planVersion, window: first.payload.window, nightNumber: first.payload.nightNumber, taskCount: first.payload.taskCount, tasks: first.payload.tasks })) reject("Ordinary-night plan must be a valid single plan fact during night tasks");
+    return;
+  }
+  if (first.eventType === "OrdinaryNightTargetDerived") {
+    if (events.length !== 2 || events[1]?.eventType !== "OrdinaryNightTaskSettled" || state.phase !== "NIGHT_TASKS") reject("Ordinary-night target must be paired with settlement");
+    const settlement = events[1];
+    if (settlement?.eventType !== "OrdinaryNightTaskSettled" || settlement.payload.taskId !== first.payload.taskId || settlement.payload.targetPlayerId !== first.payload.targetPlayerId || settlement.payload.taskType !== first.payload.taskType) reject("Ordinary-night target and settlement must agree");
+    return;
+  }
+  reject("Unsupported basic phase-flow event batch");
+};
 
 const reject = (message: string): never => {
   throw new DomainError("InvalidDomainBatchSemantics", message);
@@ -1537,6 +1609,12 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "FirstNightTaskPlanCreated") {
     validateFirstNightTaskPlanCreatedBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (first.eventType === "PhaseTransitioned" && ["FIRST_NIGHT_COMPLETED", "DAWN_COMPLETED", "NOMINATION_OPENED", "VOTE_OPENED", "VOTE_COMPLETED", "NOMINATIONS_CLOSED", "EXECUTION_RESOLVED", "NIGHT_TASKS_COMPLETED"].includes(first.payload.transitionReason) ||
+      first.eventType === "NominationDeclared" || first.eventType === "VoteCast" || first.eventType === "BlockStateUpdated" || first.eventType === "ExecutionDeclared" || first.eventType === "DayClosedWithoutExecution" || first.eventType === "OrdinaryNightTaskPlanCreated" || first.eventType === "OrdinaryNightTargetDerived") {
+    validateBasicPhaseFlowBatch(currentState, batchEvents);
     return;
   }
 

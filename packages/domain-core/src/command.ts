@@ -159,6 +159,56 @@ export type SettleMathematicianInformationCommandPayload = {
   readonly taskId: ScheduledTaskId;
 };
 
+export type CompleteNightCommandPayload = { readonly commandType: "CompleteNight"; readonly phase: "FIRST_NIGHT" | "NIGHT_TASKS"; readonly planVersion: string; readonly nightNumber: number; readonly window?: "OTHER_NIGHT" };
+export type PublishDawnCommandPayload = { readonly commandType: "PublishDawn"; readonly phase: "DAWN_RESOLUTION"; readonly nightNumber: number };
+export type OpenNominationsCommandPayload = { readonly commandType: "OpenNominations"; readonly dayNumber: number };
+export type DeclareNominationCommandPayload = { readonly commandType: "DeclareNomination"; readonly targetPlayerId: PlayerId };
+export type OpenVoteCommandPayload = { readonly commandType: "OpenVote"; readonly nominationId: string };
+export type CastVoteCommandPayload = { readonly commandType: "CastVote"; readonly nominationId: string; readonly choice: "YES" | "NO" };
+export type CompleteVoteCommandPayload = { readonly commandType: "CompleteVote"; readonly nominationId: string };
+export type CloseNominationsCommandPayload = { readonly commandType: "CloseNominations"; readonly dayNumber: number };
+export type ResolveExecutionCommandPayload = { readonly commandType: "ResolveExecution"; readonly blockId: string };
+export type BeginNightCommandPayload = { readonly commandType: "BeginNight"; readonly dayNumber: 1; readonly nightNumber: 2; readonly planVersion: "ordinary-night-v1"; readonly window: "OTHER_NIGHT" };
+export type SettleOrdinaryNightTaskCommandPayload = { readonly commandType: "SettleOrdinaryNightTask"; readonly taskId: string };
+
+type BasicCommandValidation<T> =
+  | { readonly valid: true; readonly payload: T }
+  | { readonly valid: false; readonly reason: string };
+
+const validateExactBasicCommand = <T>(value: unknown, keys: readonly string[], commandType: string, extra: (record: Record<string, unknown>) => boolean): BasicCommandValidation<T> => {
+  if (!isPlainRecord(value) || !hasExactEnumerableKeys(value, keys) || value.commandType !== commandType || !extra(value)) {
+    return { valid: false, reason: `${commandType} payload shape is invalid` };
+  }
+  return { valid: true, payload: value as unknown as T };
+};
+
+const nonEmptyBasicString = (value: unknown): value is string => typeof value === "string" && value.length > 0;
+const safeBasicInteger = (value: unknown): value is number => typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+
+export const validateCompleteNightCommandPayload = (value: unknown): BasicCommandValidation<CompleteNightCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "phase", "planVersion", "nightNumber"], "CompleteNight", (record) =>
+    (record.phase === "FIRST_NIGHT" || record.phase === "NIGHT_TASKS") && nonEmptyBasicString(record.planVersion) && safeBasicInteger(record.nightNumber));
+export const validatePublishDawnCommandPayload = (value: unknown): BasicCommandValidation<PublishDawnCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "phase", "nightNumber"], "PublishDawn", (record) => record.phase === "DAWN_RESOLUTION" && safeBasicInteger(record.nightNumber));
+export const validateOpenNominationsCommandPayload = (value: unknown): BasicCommandValidation<OpenNominationsCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "dayNumber"], "OpenNominations", (record) => safeBasicInteger(record.dayNumber));
+export const validateDeclareNominationCommandPayload = (value: unknown): BasicCommandValidation<DeclareNominationCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "targetPlayerId"], "DeclareNomination", (record) => nonEmptyBasicString(record.targetPlayerId));
+export const validateOpenVoteCommandPayload = (value: unknown): BasicCommandValidation<OpenVoteCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "nominationId"], "OpenVote", (record) => nonEmptyBasicString(record.nominationId));
+export const validateCastVoteCommandPayload = (value: unknown): BasicCommandValidation<CastVoteCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "nominationId", "choice"], "CastVote", (record) => nonEmptyBasicString(record.nominationId) && (record.choice === "YES" || record.choice === "NO"));
+export const validateCompleteVoteCommandPayload = (value: unknown): BasicCommandValidation<CompleteVoteCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "nominationId"], "CompleteVote", (record) => nonEmptyBasicString(record.nominationId));
+export const validateCloseNominationsCommandPayload = (value: unknown): BasicCommandValidation<CloseNominationsCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "dayNumber"], "CloseNominations", (record) => safeBasicInteger(record.dayNumber));
+export const validateResolveExecutionCommandPayload = (value: unknown): BasicCommandValidation<ResolveExecutionCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "blockId"], "ResolveExecution", (record) => nonEmptyBasicString(record.blockId));
+export const validateBeginNightCommandPayload = (value: unknown): BasicCommandValidation<BeginNightCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "dayNumber", "nightNumber", "planVersion", "window"], "BeginNight", (record) => record.dayNumber === 1 && record.nightNumber === 2 && record.planVersion === "ordinary-night-v1" && record.window === "OTHER_NIGHT");
+export const validateSettleOrdinaryNightTaskCommandPayload = (value: unknown): BasicCommandValidation<SettleOrdinaryNightTaskCommandPayload> =>
+  validateExactBasicCommand(value, ["commandType", "taskId"], "SettleOrdinaryNightTask", (record) => nonEmptyBasicString(record.taskId));
+
 export const validateSettleMathematicianInformationCommandPayload = (value: unknown):
   | { readonly valid: true; readonly payload: SettleMathematicianInformationCommandPayload }
   | { readonly valid: false; readonly reason: string } => {
@@ -191,7 +241,11 @@ export type SupportedCommandPayload =
   | SubmitDreamerActionCommandPayload
   | SubmitSeamstressActionCommandPayload
   | SettleClockmakerInformationCommandPayload
-  | SettleMathematicianInformationCommandPayload;
+  | SettleMathematicianInformationCommandPayload
+  | CompleteNightCommandPayload | PublishDawnCommandPayload | OpenNominationsCommandPayload
+  | DeclareNominationCommandPayload | OpenVoteCommandPayload | CastVoteCommandPayload
+  | CompleteVoteCommandPayload | CloseNominationsCommandPayload | ResolveExecutionCommandPayload
+  | BeginNightCommandPayload | SettleOrdinaryNightTaskCommandPayload;
 export type CreateGameCommand = CommandEnvelope<CreateGameCommandPayload>;
 export type SelectScriptCommand = CommandEnvelope<SelectScriptCommandPayload>;
 export type GenerateSetupCommand = CommandEnvelope<GenerateSetupCommandPayload>;
@@ -210,6 +264,17 @@ export type SubmitDreamerActionCommand = CommandEnvelope<SubmitDreamerActionComm
 export type SubmitSeamstressActionCommand = CommandEnvelope<SubmitSeamstressActionCommandPayload>;
 export type SettleClockmakerInformationCommand = CommandEnvelope<SettleClockmakerInformationCommandPayload>;
 export type SettleMathematicianInformationCommand = CommandEnvelope<SettleMathematicianInformationCommandPayload>;
+export type CompleteNightCommand = CommandEnvelope<CompleteNightCommandPayload>;
+export type PublishDawnCommand = CommandEnvelope<PublishDawnCommandPayload>;
+export type OpenNominationsCommand = CommandEnvelope<OpenNominationsCommandPayload>;
+export type DeclareNominationCommand = CommandEnvelope<DeclareNominationCommandPayload>;
+export type OpenVoteCommand = CommandEnvelope<OpenVoteCommandPayload>;
+export type CastVoteCommand = CommandEnvelope<CastVoteCommandPayload>;
+export type CompleteVoteCommand = CommandEnvelope<CompleteVoteCommandPayload>;
+export type CloseNominationsCommand = CommandEnvelope<CloseNominationsCommandPayload>;
+export type ResolveExecutionCommand = CommandEnvelope<ResolveExecutionCommandPayload>;
+export type BeginNightCommand = CommandEnvelope<BeginNightCommandPayload>;
+export type SettleOrdinaryNightTaskCommand = CommandEnvelope<SettleOrdinaryNightTaskCommandPayload>;
 export type SupportedCommandEnvelope =
   | CreateGameCommand
   | SelectScriptCommand
@@ -228,4 +293,7 @@ export type SupportedCommandEnvelope =
   | SubmitDreamerActionCommand
   | SubmitSeamstressActionCommand
   | SettleClockmakerInformationCommand
-  | SettleMathematicianInformationCommand;
+  | SettleMathematicianInformationCommand
+  | CompleteNightCommand | PublishDawnCommand | OpenNominationsCommand | DeclareNominationCommand
+  | OpenVoteCommand | CastVoteCommand | CompleteVoteCommand | CloseNominationsCommand
+  | ResolveExecutionCommand | BeginNightCommand | SettleOrdinaryNightTaskCommand;

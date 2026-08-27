@@ -108,4 +108,13 @@ export type GameState = {
   readonly minionInformation?: MinionInformationDeliveredPayload;
   readonly demonInformation?: DemonInformationDeliveredPayload;
   readonly firstNightTaskProgress?: FirstNightTaskProgress;
+  readonly ordinaryNightTaskPlan?: import("./ordinary-night.js").OrdinaryNightTaskPlan;
+  readonly ordinaryNightTaskProgress?: import("./ordinary-night.js").OrdinaryNightTaskProgress;
+  readonly ordinaryNightTargets?: readonly import("./ordinary-night.js").OrdinaryNightTarget[];
+  readonly nominations?: readonly import("./events.js").NominationDeclaredPayload[];
+  readonly votes?: readonly import("./events.js").VoteCastPayload[];
+  readonly blocks?: readonly import("./events.js").BlockStateUpdatedPayload[];
+  readonly executions?: readonly import("./events.js").ExecutionDeclaredPayload[];
+  readonly deaths?: readonly import("./events.js").PlayerDiedPayload[];
+  readonly deadPlayerIds?: readonly string[];
 };

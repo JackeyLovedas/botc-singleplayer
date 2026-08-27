@@ -69,6 +69,7 @@ import {
   findFirstNightActionOpportunityById,
   findFirstNightActionOpportunityForTask,
   getNextUnsettledFirstNightTask,
+  getNextUnsettledOrdinaryNightTask,
   firstNightTaskTypeForPhilosopherChoice,
   CURRENT_FIRST_NIGHT_TASK_PLAN_VERSION,
   LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
@@ -106,7 +107,8 @@ import {
   createClockmakerInformationDeliveredPayload,
   createClockmakerInformationDeliveredScheduledTaskSettlement,
   tryCreateEvilTwinPair,
-  validateDomainBatchSemantics
+  validateDomainBatchSemantics,
+  createOrdinaryNightTaskPlan, deriveOrdinaryNightTarget, ORDINARY_NIGHT_PLAN_VERSION, ORDINARY_NIGHT_WINDOW
 } from "@botc/domain-core";
 import type {
   AssignmentGenerationFailure,
@@ -2370,6 +2372,54 @@ export class GameApplicationService {
 
         return undefined;
       }
+
+      case "CompleteNight":
+      case "PublishDawn":
+      case "OpenNominations":
+      case "DeclareNomination":
+      case "OpenVote":
+      case "CastVote":
+      case "CompleteVote":
+      case "CloseNominations":
+      case "ResolveExecution":
+      case "BeginNight":
+      case "SettleOrdinaryNightTask":
+        {
+        if (state === undefined) return { code: "GameNotCreated", message: `${command.payload.commandType} requires an existing game` };
+        if (command.actor.kind !== "system" && command.actor.kind !== "storyteller" &&
+            command.payload.commandType !== "DeclareNomination" && command.payload.commandType !== "CastVote") {
+          return { code: "ActorNotAllowed", message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}` };
+        }
+        if ((command.payload.commandType === "DeclareNomination" || command.payload.commandType === "CastVote") &&
+            command.actor.kind !== "human" && command.actor.kind !== "ai") {
+          return { code: "ActorNotAllowed", message: `${command.actor.kind} actors cannot execute ${command.payload.commandType}` };
+        }
+        const actorPlayerId = command.actor.kind === "human" || command.actor.kind === "ai" ? command.actor.playerId : undefined;
+        switch (command.payload.commandType) {
+          case "CompleteNight":
+            return state.phase === command.payload.phase ? undefined : { code: "CommandNotAllowedInPhase", message: "CompleteNight phase does not match state" };
+          case "PublishDawn":
+            return state.phase === "DAWN_RESOLUTION" ? undefined : { code: "CommandNotAllowedInPhase", message: "PublishDawn requires dawn resolution" };
+          case "OpenNominations":
+            return state.phase === "DAY_DISCUSSION" && command.payload.dayNumber === state.dayNumber ? undefined : { code: "CommandNotAllowedInPhase", message: "OpenNominations requires the current day discussion" };
+          case "DeclareNomination":
+            return state.phase === "NOMINATION_WINDOW" && actorPlayerId !== undefined && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "DeclareNomination requires a roster player during nomination" };
+          case "OpenVote":
+            return state.phase === "NOMINATION_WINDOW" && (state.nominations ?? []).some((entry) => entry.nominationId === (command.payload as { readonly nominationId: string }).nominationId) ? undefined : { code: "CommandNotAllowedInPhase", message: "OpenVote requires an existing nomination" };
+          case "CastVote":
+            return state.phase === "VOTING" && actorPlayerId !== undefined && (state.nominations ?? []).some((entry) => entry.nominationId === (command.payload as { readonly nominationId: string }).nominationId) && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "CastVote requires a roster player during voting" };
+          case "CompleteVote":
+            return state.phase === "VOTING" && (state.nominations ?? []).some((entry) => entry.nominationId === (command.payload as { readonly nominationId: string }).nominationId) ? undefined : { code: "CommandNotAllowedInPhase", message: "CompleteVote requires an existing nomination during voting" };
+          case "CloseNominations":
+            return state.phase === "NOMINATION_WINDOW" && command.payload.dayNumber === state.dayNumber ? undefined : { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current nomination window" };
+          case "ResolveExecution":
+            return state.phase === "EXECUTION_RESOLUTION" ? undefined : { code: "CommandNotAllowedInPhase", message: "ResolveExecution requires execution resolution" };
+          case "BeginNight":
+            return state.phase === "NIGHT_TASKS" ? undefined : { code: "CommandNotAllowedInPhase", message: "BeginNight requires ordinary night tasks" };
+          case "SettleOrdinaryNightTask":
+            return state.phase === "NIGHT_TASKS" && state.ordinaryNightTaskPlan?.tasks.some((task) => task.taskId === (command.payload as { readonly taskId: string }).taskId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "SettleOrdinaryNightTask requires a planned ordinary-night task" };
+        }
+        }
     }
 
     return assertNever(command.payload);
@@ -4160,6 +4210,111 @@ export class GameApplicationService {
         };
 
         return [demonInformationDeliveredEvent, scheduledTaskSettledEvent];
+      }
+
+      case "CompleteNight": {
+        if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "CompleteNight requires state");
+        if (state.phase === "FIRST_NIGHT" && (state.firstNightTaskPlan === undefined || state.firstNightTaskProgress === undefined || getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress) !== undefined)) {
+          throw new DomainError("InvalidDomainBatchSemantics", "CompleteNight requires all first-night tasks to be settled");
+        }
+        if (state.phase === "NIGHT_TASKS" && (state.ordinaryNightTaskPlan === undefined || state.ordinaryNightTaskProgress === undefined || getNextUnsettledOrdinaryNightTask(state.ordinaryNightTaskPlan, state.ordinaryNightTaskProgress) !== undefined)) {
+          throw new DomainError("InvalidDomainBatchSemantics", "CompleteNight requires all ordinary-night tasks to be settled");
+        }
+        const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "DAWN_RESOLUTION", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
+        if (!transition.allowed || transition.reasonCode === undefined) throw new DomainError("InvalidPhaseTransition", transition.reason);
+        return [{ ...common(firstEventSequence), eventType: "PhaseTransitioned", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: state.phase, toPhase: transition.nextPhase, transitionReason: transition.reasonCode, dayNumberBefore: state.dayNumber, dayNumberAfter: transition.dayNumber, nightNumberBefore: state.nightNumber, nightNumberAfter: transition.nightNumber } satisfies PhaseTransitionedPayload }];
+      }
+      case "PublishDawn":
+      case "OpenNominations": {
+        if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "phase command requires state");
+        const toPhase = command.payload.commandType === "PublishDawn" ? "DAY_DISCUSSION" : "NOMINATION_WINDOW";
+        const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase, dayNumber: state.dayNumber, nightNumber: state.nightNumber });
+        if (!transition.allowed || transition.reasonCode === undefined) throw new DomainError("InvalidPhaseTransition", transition.reason);
+        return [{ ...common(firstEventSequence), eventType: "PhaseTransitioned", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: state.phase, toPhase: transition.nextPhase, transitionReason: transition.reasonCode, dayNumberBefore: state.dayNumber, dayNumberAfter: transition.dayNumber, nightNumberBefore: state.nightNumber, nightNumberAfter: transition.nightNumber } satisfies PhaseTransitionedPayload }];
+      }
+      case "OpenVote":
+      case "CloseNominations": {
+        if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "vote command requires state");
+        const toPhase = command.payload.commandType === "OpenVote" ? "VOTING" : "EXECUTION_RESOLUTION";
+        const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase, dayNumber: state.dayNumber, nightNumber: state.nightNumber });
+        if (!transition.allowed || transition.reasonCode === undefined) throw new DomainError("InvalidPhaseTransition", transition.reason);
+        return [{ ...common(firstEventSequence), eventType: "PhaseTransitioned", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: state.phase, toPhase: transition.nextPhase, transitionReason: transition.reasonCode, dayNumberBefore: state.dayNumber, dayNumberAfter: transition.dayNumber, nightNumberBefore: state.nightNumber, nightNumberAfter: transition.nightNumber } satisfies PhaseTransitionedPayload }];
+      }
+      case "CompleteVote": {
+        if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "CompleteVote requires state");
+        const nominationId = command.payload.nominationId;
+        const votes = (state.votes ?? []).filter((vote) => vote.nominationId === nominationId && vote.choice === "YES");
+        const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set((state.deaths ?? []).map((death) => death.playerId)).size);
+        const threshold = Math.ceil(livingPlayerCount / 2);
+        const tied = false;
+        const leaderVoteCount = votes.length;
+        const blockEvent: DomainEventEnvelope<"BlockStateUpdated"> = {
+          ...common(firstEventSequence), eventType: "BlockStateUpdated", payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION, nominationId, dayNumber: state.dayNumber,
+            livingPlayerCount, threshold, leaderNominationId: leaderVoteCount >= threshold && leaderVoteCount > 0 ? nominationId : null,
+            leaderVoteCount, tied
+          }
+        };
+        const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "NOMINATION_WINDOW", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
+        if (!transition.allowed || transition.reasonCode === undefined) throw new DomainError("InvalidPhaseTransition", transition.reason);
+        return [blockEvent, { ...common(firstEventSequence + 1), eventType: "PhaseTransitioned", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: state.phase, toPhase: transition.nextPhase, transitionReason: transition.reasonCode, dayNumberBefore: state.dayNumber, dayNumberAfter: transition.dayNumber, nightNumberBefore: state.nightNumber, nightNumberAfter: transition.nightNumber } satisfies PhaseTransitionedPayload }];
+      }
+      case "DeclareNomination": {
+        if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "DeclareNomination requires state");
+        const actorPlayerId = command.actor.kind === "human" || command.actor.kind === "ai" ? command.actor.playerId : undefined;
+        const nominator = state.roster?.entries.find((entry) => entry.playerId === actorPlayerId);
+        const nominee = state.roster?.entries.find((entry) => entry.playerId === (command.payload as { readonly targetPlayerId: string }).targetPlayerId);
+        if (nominator === undefined || nominee === undefined) throw new DomainError("InvalidDomainBatchSemantics", "nomination participants unavailable");
+        const ordinal = (state.nominations?.length ?? 0) + 1;
+        return [{ ...common(firstEventSequence), eventType: "NominationDeclared", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, nominationId: `nomination-v1:${state.dayNumber}:${ordinal}`, nominatorPlayerId: nominator.playerId, nomineePlayerId: nominee.playerId, dayNumber: state.dayNumber, nominationOrdinal: ordinal } }];
+      }
+      case "CastVote": {
+        if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "CastVote requires state");
+        const actorPlayerId = command.actor.kind === "human" || command.actor.kind === "ai" ? command.actor.playerId : undefined;
+        const voter = state.roster?.entries.find((entry) => entry.playerId === actorPlayerId);
+        if (voter === undefined) throw new DomainError("InvalidDomainBatchSemantics", "voter unavailable");
+        return [{ ...common(firstEventSequence), eventType: "VoteCast", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, voteId: `vote-v1:${command.payload.nominationId}:${(state.votes?.length ?? 0) + 1}`, nominationId: command.payload.nominationId, voterPlayerId: voter.playerId, voterSeatNumber: voter.seatNumber, choice: command.payload.choice, ghostVoteConsumed: false } }];
+      }
+      case "ResolveExecution": {
+        if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ResolveExecution requires state");
+        const nomination = state.nominations?.at(-1);
+        if (nomination === undefined) throw new DomainError("InvalidDomainBatchSemantics", "execution nomination unavailable");
+        const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "NIGHT_TASKS", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
+        if (!transition.allowed || transition.reasonCode === undefined) throw new DomainError("InvalidPhaseTransition", transition.reason);
+        const executionId = `execution-v1:${state.dayNumber}:01`;
+        const block = state.blocks?.at(-1);
+        if (block?.leaderNominationId !== nomination.nominationId || block.tied || block.leaderVoteCount <= 0) {
+          return [
+            { ...common(firstEventSequence), eventType: "DayClosedWithoutExecution", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, dayNumber: state.dayNumber, blockId: command.payload.blockId, reason: "NO_EXECUTABLE_CANDIDATE" } },
+            { ...common(firstEventSequence + 1), eventType: "PhaseTransitioned", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: state.phase, toPhase: transition.nextPhase, transitionReason: transition.reasonCode, dayNumberBefore: state.dayNumber, dayNumberAfter: transition.dayNumber, nightNumberBefore: state.nightNumber, nightNumberAfter: transition.nightNumber } satisfies PhaseTransitionedPayload }
+          ];
+        }
+        const alreadyDead = (state.deaths ?? []).some((death) => death.playerId === nomination.nomineePlayerId);
+        return [
+          { ...common(firstEventSequence), eventType: "ExecutionDeclared", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, executionId, blockId: command.payload.blockId, targetPlayerId: nomination.nomineePlayerId, dayNumber: state.dayNumber } },
+          { ...common(firstEventSequence + 1), eventType: "ExecutionResolved", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, executionId, targetPlayerId: nomination.nomineePlayerId, dayNumber: state.dayNumber, resolution: "EXECUTED", deathOutcome: alreadyDead ? "DID_NOT_DIE" : "DIED" } },
+          ...(!alreadyDead ? [{ ...common(firstEventSequence + 2), eventType: "PlayerDied" as const, payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, deathId: `death-v1:${executionId}`, executionId, playerId: nomination.nomineePlayerId, dayNumber: state.dayNumber, cause: "EXECUTION" as const } }] : []),
+          { ...common(firstEventSequence + (alreadyDead ? 2 : 3)), eventType: "PhaseTransitioned", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: state.phase, toPhase: transition.nextPhase, transitionReason: transition.reasonCode, dayNumberBefore: state.dayNumber, dayNumberAfter: transition.dayNumber, nightNumberBefore: state.nightNumber, nightNumberAfter: transition.nightNumber } satisfies PhaseTransitionedPayload }
+        ];
+      }
+      case "BeginNight": {
+        if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "BeginNight requires state");
+        if (state.firstNightTaskPlan === undefined || state.firstNightTaskProgress === undefined || getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress) !== undefined) {
+          throw new DomainError("InvalidDomainBatchSemantics", "BeginNight requires settled Philosopher and Seamstress first-night tasks");
+        }
+        const plan = createOrdinaryNightTaskPlan(state);
+        return [{ ...common(firstEventSequence), eventType: "OrdinaryNightTaskPlanCreated", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, ...plan } }];
+      }
+      case "SettleOrdinaryNightTask": {
+        if (state === undefined || state.ordinaryNightTaskPlan === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ordinary-night plan unavailable");
+        const task = state.ordinaryNightTaskPlan.tasks.find((candidate) => candidate.taskId === (command.payload as { readonly taskId: string }).taskId);
+        if (task === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ordinary-night task unavailable");
+        if (state.ordinaryNightTaskProgress?.settlements.includes(task.taskId)) throw new DomainError("InvalidDomainBatchSemantics", "ordinary-night task already settled");
+        const target = deriveOrdinaryNightTarget(task, state);
+        return [
+          { ...common(firstEventSequence), eventType: "OrdinaryNightTargetDerived", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, ...target } },
+          { ...common(firstEventSequence + 1), eventType: "OrdinaryNightTaskSettled", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, planVersion: ORDINARY_NIGHT_PLAN_VERSION, window: ORDINARY_NIGHT_WINDOW, nightNumber: 2, taskId: task.taskId, taskType: task.taskType, sourcePlayerId: task.sourcePlayerId, targetPlayerId: target.targetPlayerId, settlement: "RESOLVED", transferOutcome: "NONE" } }
+        ];
       }
     }
 
