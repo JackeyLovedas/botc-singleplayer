@@ -2,12 +2,12 @@
 
 ## Current state — Phase 3 Foundation accepted; 2C rule gate blocked
 
-- Active state: `FOUNDATION_ACCEPTED / 2C_RULE_SOURCE_UNAVAILABLE_HUMAN_BLOCKED`.
+- Active state: `FOUNDATION_ACCEPTED / 2C_NO_VIABLE_FIXTURE_HUMAN_BLOCKED`.
 - D2, D3, and the 2C prerequisite Foundation are accepted. D3 implementation HEAD is `40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`; final status is bound to `df9ee017de2f3b8f33f7608a49e91f46c51acc08`.
 - Foundation profile-binding PR #53 merged at `5b064afa8f90b9d75812784fc48cbc1e22277f9b`; closeout archive commit is `4faaa859d7a0fb3bc5ffb78fbb3d4b16a5b13366`, with exact closeout CI success.
-- Fresh 2C rule research returned `RULE_SOURCE_UNAVAILABLE`: external sources do not define the repository-level ordinary-night task inventory/completion predicate. No 2C design or implementation started.
-- `currentSlice=2C-rule-gate`, `currentBranch=main`, `currentPR=null`, `remainingBlockers=[RULE_SOURCE_UNAVAILABLE_ORDINARY_NIGHT_SETTLEMENT_CONTRACT]`.
-- `nextAction=HUMAN_RESOLVE_2C_REPOSITORY_SETTLEMENT_CONTRACT_OR_REAUTHORIZE_SCOPED_RULE_SOURCE`.
+- Fresh 2C rule research is ready after the repository settlement adjudication. Deterministic census found no legal non-empty fixture satisfying the one-new-capability bound: the 12-player generator necessarily includes at least two explicit unsupported scheduled task kinds. No 2C design or implementation started.
+- `currentSlice=2C-rule-gate`, `currentBranch=main`, `currentPR=null`, `remainingBlockers=[NO_VIABLE_NONEMPTY_2C_FIXTURE_WITHIN_ONE_CAPABILITY]`.
+- `nextAction=HUMAN_RESOLVE_2C_FIXTURE_SCOPE_OR_AUTHORIZE_RESCOPE_BEYOND_ONE_CAPABILITY`.
 All sections below are chronological history and do not override this state.
 
 ## Current state — 2B20A local restoration review passed; exact-head CI pending

@@ -1,6 +1,6 @@
 {
   "status": "HUMAN_BLOCKED",
-  "detailedStatus": "2C_RULE_SOURCE_UNAVAILABLE_HUMAN_BLOCKED",
+  "detailedStatus": "2C_NO_VIABLE_FIXTURE_HUMAN_BLOCKED",
   "disposition": "HUMAN_BLOCKED",
   "canonicalActiveControlInvariant": {
     "schemaVersion": "POST-D3-CLOSEOUT-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
@@ -39,7 +39,7 @@
       "expectedExitCode": 17
     }
   },
-  "taskType": "PHASE_3_SLICE_2C_RULE_GATE",
+  "taskType": "PHASE_3_SLICE_2C_FIXTURE_CENSUS",
   "correctionId": "2B20A-ACCEPTED-NORMAL-DREAMER-RESTORATION-V1-CORRECTION-1",
   "authorization": "USER_AUTHORIZED_POST_D3_AUTHORITY_RECONCILIATION_AND_NEXT_SLICE_HANDOFF_ONLY",
   "designReleasePass": true,
@@ -4282,7 +4282,7 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": ["RULE_SOURCE_UNAVAILABLE_ORDINARY_NIGHT_SETTLEMENT_CONTRACT"],
+  "remainingBlockers": ["NO_VIABLE_NONEMPTY_2C_FIXTURE_WITHIN_ONE_CAPABILITY"],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
     "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE": "CLOSED_BY_IMPLEMENTATION",
@@ -5062,6 +5062,6 @@
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
   "lastAction": "Reconciled active controls after accepted Phase 3 D3 closeout at origin/main df9ee017de2f3b8f33f7608a49e91f46c51acc08. Verified D2/D3 acceptance, no active PR or temporary D2 branch, preserved historical records, and recorded Slice 2C only as an ambiguous roadmap candidate; no next slice was authorized or started.",
   "lastError": null,
-  "requiredNextAction": "HUMAN_RESOLVE_2C_REPOSITORY_SETTLEMENT_CONTRACT_OR_REAUTHORIZE_SCOPED_RULE_SOURCE",
-  "nextAction": "HUMAN_RESOLVE_2C_REPOSITORY_SETTLEMENT_CONTRACT_OR_REAUTHORIZE_SCOPED_RULE_SOURCE"
+  "requiredNextAction": "HUMAN_RESOLVE_2C_FIXTURE_SCOPE_OR_AUTHORIZE_RESCOPE_BEYOND_ONE_CAPABILITY",
+  "nextAction": "HUMAN_RESOLVE_2C_FIXTURE_SCOPE_OR_AUTHORIZE_RESCOPE_BEYOND_ONE_CAPABILITY"
 }
