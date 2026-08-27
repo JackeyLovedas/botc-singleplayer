@@ -6,110 +6,138 @@
 sliceId=2C
 designKind=POST_FOUNDATION_EXACT_FIXTURE_2C_DESIGN
 parentFoundationCloseout=4faaa859d7a0fb3bc5ffb78fbb3d4b16a5b13366
-freshDesignCorrectionCount=0/2
+fresh2CDesignCorrectionCount=2/2
 implementationCorrectionBudget=0/3
 implementationAuthorized=false
+designReviewer=NOT_YET_REVIEWED
 designVerdict=HUMAN_BLOCKED
-stopCondition=NEW_C1_STRUCTURAL_DELTA_REQUIRED
 ```
 
-This fresh design supersedes the historical one-capability and Fang-Gu/Witch
-candidate text. It does not reopen Foundation, modify C/C1, or authorize
-implementation.
+This is the current design after the second bounded correction. Earlier
+Fang Gu/Mathematician/Barber candidates are historical only and are not the
+current fixture, scope, or authorization. This round is design-only: no
+production, test, C/C1, workflow, coverage, or routing files are changed.
 
-## Exact production fixture
+## Exact production fixture census
 
-The existing twelve-player `SeededSectsAndVioletsSetupGenerator` accepts this
-exact-role constraint through its production path:
+The existing production `SeededSectsAndVioletsSetupGenerator` accepts the exact
+role constraint below. A targeted test invocation passed; the generator and
+role catalog were not modified.
 
 ```text
-rootSeed=2c-exact-role-constraint-vortox
+scriptId=sects-and-violets
+rootSeed=2c-exact-dreamer-cerenovus-vortox
 playerCount=12
 exactRoleIds=[clockmaker,dreamer,savant,seamstress,philosopher,artist,sage,mutant,klutz,evil_twin,cerenovus,vortox]
 generatorStatus=success
+actualRoleCount=12
 preModifierCounts=7/2/2/1
 postModifierCounts=7/2/2/1
 demon=vortox
+roleIdsUnique=true
+forbiddenRoleIdsPresent=[]
 ```
 
-No Mathematician, Fang Gu, Witch, or Pit-Hag is present. Assignment seed `0`
-was checked within the bounded range `[0,99]` through the production assignment
-path with `rosterVersion=fixed-12-player-roster-v1`,
-`assignmentAlgorithmVersion=snv-12-assignment-v1`,
-`randomAlgorithmVersion=xmur3-sfc32-rejection-v1`,
-`randomStream=assignment/sects-and-violets/12/v1`, and
-`roleCatalogSignature=canonical-role-catalog-v1:60ac4718`. Its deterministic
-seat map is `1=mutant, 2=seamstress, 3=evil_twin, 4=artist, 5=savant,
-6=dreamer, 7=cerenovus, 8=klutz, 9=philosopher, 10=vortox, 11=sage,
-12=clockmaker`. No manual state injection is permitted.
-
-## Capability and role boundaries
-
-The first-night path must genuinely settle Philosopher and Seamstress and
-persist their spent state. Philosopher's deterministic legal choice is
-`artist` (seat 4); this gained ability is not an ordinary-night blocker.
-Seamstress chooses the real pair `mutant` (seat 1) and `savant` (seat 5),
-records its canonical spent state, and creates no later blocker. The ordinary-
-night plan may therefore contain only
-these actual blocking kinds:
+The fixture contains no Fang Gu, Witch, Pit Hag, or Mathematician. The
+first-night path must settle and persist `PHILOSOPHER_ACTION` and
+`SEAMSTRESS_ACTION` as spent; Philosopher's legal deterministic choice is
+`artist`, and Seamstress' pair is `mutant` plus `savant`. These are fixture
+facts, not a claim that this round implements the behavior. The ordinary-night
+blocking capability budget is exactly three:
 
 ```text
-[DREAMER_ACTION,CERENOVUS_ACTION,GENERIC_DEMON_KILL]
-ordinaryNightBlockingKindCount=3
+firstNightSpent=[PHILOSOPHER_ACTION,SEAMSTRESS_ACTION]
+ordinaryNightBlockingCapabilityKinds=[DREAMER_ACTION,CERENOVUS_ACTION,GENERIC_DEMON_KILL]
+ordinaryNightBlockingCapabilityCount=3
+vortoxTreatment=CONTINUOUS_RULE_NOT_SCHEDULED_TASK
 ```
 
-Vortox is a continuous information constraint, not a scheduled task. The
-generic Demon kill target is frozen to living Mutant seat 1, never Klutz, and
-excludes Demon-specific
-transfer, poisoning, or new information frameworks. Dreamer and Cerenovus
-reuse their accepted targeting, information/madness, settlement, and replay
-seams; no broad role framework is introduced.
+The generic Demon kill is only a bounded living-target phase-flow capability;
+it does not add a role row, transfer, promotion, alignment change, or general
+effect framework. If the implementation cannot prove the two spent facts, it
+must fail closed rather than infer them.
 
-## A–R flow contract
+## A–R bounded flow
 
-The intended bounded path is real production setup and assignment, complete
-first-night plan/progress, first dawn, day discussion, one legal nomination,
-deterministic voting, execution resolution, an independent death fact, day end,
-`NIGHT_TASKS`, ordinary-night plan/progress and the three terminal settlements,
-`NIGHT_TASKS_COMPLETED`, then the next dawn/day. The repository settlement
-contract remains the authority for plan/progress/completion. Execution and
-death are separate facts. Ghost-vote, tie-matrix, Slice 3, B18, and broad
-Storyteller automation remain out of scope.
+The intended path uses existing setup/assignment and phase policy, then
+settles first-night tasks, crosses dawn, records one legal nomination and vote,
+records execution separately from any death, closes the day, and settles the
+three ordinary-night capabilities before the next dawn/day. The repository
+ordinary-night settlement contract owns plan/progress/terminal-settlement
+completion. No direct phase bypass, fake settlement, ghost-vote framework,
+Slice 3 behavior, or win-condition behavior is included.
 
-## C1 authority and stop
+## C1 classification correction
 
-The accepted C1 authority is internally consistent at:
+The accepted C1 authority and code agree:
 
 ```text
 actualAcceptedC1EventCountBefore2C=40
 acceptedC1BranchCount=59
 codeDomainEventPayloadCount=40
 historicalC1DescriptorDelta=0
+historicalPrefixMutation=false
 ```
 
-The accepted event map has no canonical nomination, vote, execution, death,
-ordinary-plan, ordinary-target, or ordinary-settlement event families. The
-A–R loop consequently needs a non-zero additive descriptor delta (at minimum
-the seven day/death subjects and three ordinary-night subjects). Reusing
-`PhaseTransitioned` would erase canonical replay facts and is forbidden.
+The accepted `createC1AdditiveStructuralSchemaCandidate` seam permits dense,
+append-only descriptor candidates while preserving the frozen 40/59 prefix.
+The prior `NEW_C1_STRUCTURAL_DELTA_REQUIRED` stop was a classification error:
+the additions below are descriptor/branch/node candidates under that accepted
+seam, not new approved structural-delta bindings.
 
 ```text
-newStructuralDeltaRequired=true
-newStructuralDeltaCount>=1
-historicalC1DescriptorDelta=0
-C1HistoricalPrefixMutation=false
+additions.deltaBindings=[]
+newApprovedStructuralDeltaCount=0
+C1DescriptorExtensionStatus=AUTHORIZED_BY_ACCEPTED_ADDITIVE_SEAM
+C1StructuralDeltaStatus=NOT_REQUIRED
 ```
 
-Because this authorization explicitly says a required new C1 structural delta
-is a true STOP, no implementation, tests, workflow, coverage, Hosted CI, push,
-PR, or Slice 3 work starts. A new governance decision must authorize the
-minimal additive C1 descriptor extension before implementation can proceed.
+## Per-event A–R descriptor audit
 
-## Evidence and next action
+Each subject is currently absent from the 40-event payload map, so its
+descriptor, branch, and payload nodes are new candidates. Existing structural
+node kinds and refinements are sufficient; no new node kind or approved delta
+is proposed.
 
-Scoped evidence is recorded in
-`docs/rules/evidence/2C-post-foundation-exact-fixture.md`, reusing accepted
-Dreamer/Cerenovus/Vortox, nightsheet, and execution/death sources. This design
-requires a fresh independent review; with the structural prerequisite still
-forbidden, the operative verdict is `HUMAN_BLOCKED` and
-`implementationAuthorized=false`.
+| eventSubject | eventType | payloadShape | requiredNodeKinds | requiresNewDescriptor/Branch/Node | requiresNewApprovedStructuralDelta | requiredDeltaId |
+| --- | --- | --- | --- | --- | --- | --- |
+| nomination declaration | `NominationDeclared` | exact record: nomination, nominator, nominee, day | `EXACT_RECORD`, existing ID refinements, `SAFE_INTEGER` | `true/true/true` | `false` | `NONE` |
+| vote | `VoteCast` | exact record: nomination, voter, choice, day | `EXACT_RECORD`, existing ID refinements, `ENUM`, `SAFE_INTEGER` | `true/true/true` | `false` | `NONE` |
+| block transition | `BlockStateUpdated` | exact record: entity, state, reason | `EXACT_RECORD`, `STRING`, `ENUM` | `true/true/true` | `false` | `NONE` |
+| execution declaration | `ExecutionDeclared` | exact record: nomination, target, day, occurred | `EXACT_RECORD`, existing ID refinements, `SAFE_INTEGER`, `BOOLEAN` | `true/true/true` | `false` | `NONE` |
+| death fact | `PlayerDied` | exact record: player, day, cause | `EXACT_RECORD`, existing ID refinements, `SAFE_INTEGER`, `ENUM` | `true/true/true` | `false` | `NONE` |
+| execution resolution | `ExecutionResolved` | exact record: nomination, nullable target, day, occurred | `EXACT_RECORD`, `NULLABLE`, existing ID refinements, `SAFE_INTEGER`, `BOOLEAN` | `true/true/true` | `false` | `NONE` |
+| no-execution day close | `DayClosedWithoutExecution` | exact record: day, reason literal | `EXACT_RECORD`, `SAFE_INTEGER`, `LITERAL` | `true/true/true` | `false` | `NONE` |
+| ordinary-night plan | `OrdinaryNightTaskPlanCreated` | exact record: plan, night, task array | `EXACT_RECORD`, existing ID refinements, `SAFE_INTEGER`, `ARRAY`, `EXACT_RECORD` | `true/true/true` | `false` | `NONE` |
+| ordinary-night target | `OrdinaryNightTargetDerived` | exact record: task, night, nullable target, target kind | `EXACT_RECORD`, existing ID refinements, `SAFE_INTEGER`, `NULLABLE`, `ENUM` | `true/true/true` | `false` | `NONE` |
+| ordinary-night settlement | `OrdinaryNightTaskSettled` | exact record: task, capability, night, outcome | `EXACT_RECORD`, existing ID refinements, `ENUM`, `SAFE_INTEGER` | `true/true/true` | `false` | `NONE` |
+
+The table distinguishes new domain-event/descriptor candidates from approved
+structural deltas. `EXACT_RECORD`, `STRING`, `SAFE_INTEGER`, `BOOLEAN`,
+`LITERAL`, `ENUM`, `ARRAY`, `NULLABLE`, existing unions, and existing ID
+refinements are the complete proposed vocabulary.
+
+## Rule and lifecycle boundary
+
+The companion evidence record binds accepted Dreamer/Cerenovus/Vortox,
+nightsheet, and execution/death sources. Official nightsheet order remains
+canonical; the optional Chinese order is not selected. Historical source
+evidence is not rewritten. B18 remains `HUMAN_BLOCKED_UNCHANGED`.
+
+No permanent registry, scheduler, publication framework, or effect system is
+introduced. Any future fixture artifact is temporary and must be archived or
+deleted according to the current lifecycle policy.
+
+## Verdict and required next action
+
+```text
+designVerdict=HUMAN_BLOCKED
+implementationAuthorized=false
+requiredNextAction=FRESH_INDEPENDENT_RULE_DESIGN_REVIEW
+```
+
+The former C1 stop is closed as a classification error: the accepted additive
+seam can express the ten descriptor candidates with zero approved delta
+bindings. This correction still does not authorize implementation. A fresh
+independent reviewer must return `RULE_DESIGN_PASS` before any implementation
+branch or production/test change is permitted.
