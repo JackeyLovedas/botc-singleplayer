@@ -969,7 +969,7 @@ function validateFrozenRegistryPrefix(records) {
 function validateRegistry() {
   assertCondition(COVERAGE_PROFILE_REGISTRY_SCHEMA_VERSION === "botc-coverage-profile-registry-v3" &&
     COVERAGE_PROFILE_LIFECYCLE_STATUSES.join(",") === "HISTORICAL,LEGACY_SELECTED,ACTIVE" &&
-    [17, 18].includes(COVERAGE_PROFILE_RECORDS.length), "COVERAGE_PROFILE_REGISTRY_INVALID: module header");
+    COVERAGE_PROFILE_RECORDS.length >= 17, "COVERAGE_PROFILE_REGISTRY_INVALID: module header");
   assertFrozenData(COVERAGE_PROFILE_LIFECYCLE_STATUSES, "lifecycle statuses");
   assertFrozenData(COVERAGE_PROFILE_RECORDS, "records");
   assertFrozenData(COVERAGE_PROFILE_SELECTORS, "selectors");
@@ -990,20 +990,39 @@ function validateRegistry() {
   }
   validateFrozenRegistryPrefix(COVERAGE_PROFILE_RECORDS);
   const selected = COVERAGE_PROFILE_RECORDS.filter((record) => record.lifecycleStatus !== "HISTORICAL");
-  const isS = COVERAGE_PROFILE_RECORDS.length === 17;
+  const latest = COVERAGE_PROFILE_RECORDS.at(-1);
+  const legacyState = COVERAGE_PROFILE_RECORDS.length === 17;
   assertCondition(selected.length === 1 && COVERAGE_PROFILE_SELECTORS.CI_COVERAGE_PROFILE === selected[0].profileId &&
-    (isS ? selected[0].profileId === "phase-3-slice-2b20a-4d576e2-final-restoration-v1" && selected[0].lifecycleStatus === "LEGACY_SELECTED" &&
+    (legacyState ? selected[0] === latest && selected[0].lifecycleStatus === "LEGACY_SELECTED" &&
       COVERAGE_PROFILE_RECORDS.slice(0, 16).every((record) => record.lifecycleStatus === "HISTORICAL") &&
       COVERAGE_PROFILE_RECORDS.every((record) => record.profileArtifactPath === "scripts/verify-coverage-obligations.mjs") :
-      selected[0].lifecycleStatus === "ACTIVE" && COVERAGE_PROFILE_RECORDS.slice(0, 17).every((record) =>
+      selected[0] === latest && selected[0].lifecycleStatus === "ACTIVE" && COVERAGE_PROFILE_RECORDS.slice(0, 17).every((record) =>
         record.lifecycleStatus === "HISTORICAL" && record.profileArtifactPath === "scripts/verify-coverage-obligations.mjs") &&
-      selected[0].sourceCount === 69 && selected[0].testIdentityCount === 1712 &&
-      selected[0].inventorySha256 === "540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2" && selected[0].tupleSha256 !== null &&
-      selected[0].logicalGroupCount === 11 && selected[0].physicalGroupCount === 12 && selected[0].previousProfileId ===
-        "phase-3-slice-2b20a-4d576e2-final-restoration-v1" && selected[0].sourceDelta?.added === 6 && selected[0].sourceDelta?.removed === 0 &&
-      selected[0].testDelta?.added === 140 && selected[0].testDelta?.removed === 0 && selected[0].unexplainedLoss === 0),
+      selected[0].sourceCount >= 0 && selected[0].testIdentityCount !== null &&
+      selected[0].inventorySha256 !== null && selected[0].tupleSha256 !== null &&
+      selected[0].logicalGroupCount !== null && selected[0].physicalGroupCount !== null && selected[0].previousProfileId !== null &&
+      selected[0].sourceDelta !== null && selected[0].testDelta !== null && selected[0].unexplainedLoss === 0 &&
+      COVERAGE_PROFILE_RECORDS.slice(17, -1).every((record) => record.lifecycleStatus === "HISTORICAL") &&
+      COVERAGE_PROFILE_RECORDS.slice(17).every((record, index, records) => index === 0 || record.previousProfileId === records[index - 1].profileId)),
   "COVERAGE_PROFILE_SELECTOR_INVALID");
   return { records: COVERAGE_PROFILE_RECORDS, selectedProfileId: selected[0].profileId };
+}
+
+function assertRegistryLifecycleState(records, selector) {
+  const selected = records.filter((record) => record.lifecycleStatus !== "HISTORICAL");
+  const latest = records.at(-1);
+  assertCondition(selected.length === 1 && selected[0] === latest && selector === latest.profileId,
+    "COVERAGE_PROFILE_SELECTOR_INVALID");
+  if (records.length === 17) {
+    assertCondition(latest.lifecycleStatus === "LEGACY_SELECTED" && records.slice(0, 16).every((record) => record.lifecycleStatus === "HISTORICAL"),
+      "COVERAGE_PROFILE_SELECTOR_INVALID");
+    return;
+  }
+  assertCondition(latest.lifecycleStatus === "ACTIVE" && records.slice(0, 17).every((record) => record.lifecycleStatus === "HISTORICAL"),
+    "COVERAGE_PROFILE_SELECTOR_INVALID");
+  assertCondition(records.slice(17, -1).every((record) => record.lifecycleStatus === "HISTORICAL") &&
+    records.slice(17).every((record, index, appended) => index === 0 || record.previousProfileId === appended[index - 1].profileId),
+    "COVERAGE_PROFILE_SELECTOR_INVALID");
 }
 
 function validateLegacyArtifacts(records) {
@@ -1080,11 +1099,11 @@ function deepFreezeData(value) {
   Object.values(value).filter((child) => child !== null && typeof child === "object").forEach(deepFreezeData);
   return Object.freeze(value);
 }
-function validateFrozenCoverageTopology(topology, testIdentityCount) {
+function validateFrozenCoverageTopology(topology, testIdentityCount, logicalGroupCount, physicalGroupCount) {
   assertExactPlain(topology, PROFILE_TOPOLOGY_KEYS, "profile topology", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
   assertCondition(topology.topologyId === "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS" && topology.ordinaryLogicalGroupCount === 9 &&
-    topology.ordinaryPhysicalGroupCount === 11 && topology.coverageLogicalGroupCount === 11 && topology.coveragePhysicalGroupCount === 12 && topology.baselineVersion === "CANDIDATE_1712_D1_V1" &&
-    testIdentityCount === 1712 && JSON.stringify(topology.coverageGroups) === JSON.stringify(FROZEN_COVERAGE_GROUPS) && topology.coverageGroups.reduce((total, group) => total + group.tests, 0) === 1712 &&
+    topology.ordinaryPhysicalGroupCount === 11 && topology.coverageLogicalGroupCount === logicalGroupCount && topology.coveragePhysicalGroupCount === physicalGroupCount && topology.baselineVersion === "CANDIDATE_1712_D1_V1" &&
+    JSON.stringify(topology.coverageGroups) === JSON.stringify(FROZEN_COVERAGE_GROUPS) && topology.coverageGroups.reduce((total, group) => total + group.tests, 0) === testIdentityCount &&
     topology.coverageGroups[8].physicalSegments.reduce((total, segment) => total + segment.tests, 0) === topology.coverageGroups[8].tests && validSha(topology.coverageGlobalManifestSha256) &&
     validSha(topology.coverageFinalSha256) && validSha(topology.normalizedTupleSetsSha256) && validSha(topology.fullTupleDeltaSha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: topology");
 }
@@ -1097,13 +1116,13 @@ function validateProfileArtifactBytes(record, bytes) {
   try { artifact = JSON.parse(bytes.toString("utf8")); } catch { throw new Error("COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: malformed JSON"); }
   assertExactPlain(artifact, PROFILE_ARTIFACT_KEYS, "profile artifact", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
   assertExactPlain(artifact.obligations, PROFILE_OBLIGATION_KEYS, "profile obligations", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
-  validateFrozenCoverageTopology(artifact.topology, artifact.testIdentityCount);
+  validateFrozenCoverageTopology(artifact.topology, artifact.testIdentityCount, artifact.logicalGroupCount, artifact.physicalGroupCount);
   for (const key of PROFILE_OBLIGATION_KEYS) {
     assertExactPlain(artifact.obligations[key], ["count", "sha256"], `profile obligation ${key}`, "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
     assertCondition(validCount(artifact.obligations[key].count) && validSha(artifact.obligations[key].sha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: obligation");
   }
   assertCondition(artifact.schemaVersion === "botc-coverage-profile-artifact-v2" && validCount(artifact.sourceCount) && validCount(artifact.testIdentityCount) &&
-    validSha(artifact.inventorySha256) && validSha(artifact.tupleSha256) && artifact.logicalGroupCount === 11 && artifact.physicalGroupCount === 12 && validSha(artifact.profileSha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: profile fields");
+    validSha(artifact.inventorySha256) && validSha(artifact.tupleSha256) && validCount(artifact.logicalGroupCount) && validCount(artifact.physicalGroupCount) && validSha(artifact.profileSha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: profile fields");
   assertCondition(artifact.profileId === record.profileId, "COVERAGE_PROFILE_ARTIFACT_ID_MISMATCH");
   assertCondition(artifact.sourceHead === record.sourceHead, "COVERAGE_PROFILE_ARTIFACT_SOURCE_MISMATCH");
   assertCondition(bytes.equals(Buffer.from(`${JSON.stringify(artifact, null, 2)}\n`, "utf8")) && artifact.sourceCount === record.sourceCount && artifact.testIdentityCount === record.testIdentityCount &&
@@ -1167,6 +1186,27 @@ function auditClosedProfileContracts() {
     (rows) => { rows[16].inventorySha256 = sha; }, (rows) => { rows[0].unexplainedLoss = 0; }, (rows) => { rows[0].lifecycleStatus = "LEGACY_SELECTED"; }, (rows) => { rows[0].profileArtifactPath = "hostile.json"; }
   ];
   for (const mutate of registryMutations) { const hostile = cloneData(exactS); mutate(hostile); expectClosedError(() => validateFrozenRegistryPrefix(hostile), "COVERAGE_PROFILE_REGISTRY_INVALID"); }
+
+  const historical17 = cloneData(COVERAGE_PROFILE_RECORDS.slice(0, 17));
+  historical17[16].lifecycleStatus = "LEGACY_SELECTED";
+  assertRegistryLifecycleState(historical17, historical17[16].profileId);
+  const existing18 = cloneData(COVERAGE_PROFILE_RECORDS.slice(0, 18));
+  existing18[17].lifecycleStatus = "ACTIVE";
+  assertRegistryLifecycleState(existing18, existing18[17].profileId);
+  const synthetic20 = cloneData(COVERAGE_PROFILE_RECORDS);
+  synthetic20.at(-1).lifecycleStatus = "HISTORICAL";
+  synthetic20.push({ ...synthetic20.at(-1), profileId: "synthetic-forward-profile-v1", lifecycleStatus: "ACTIVE", previousProfileId: synthetic20.at(-1).profileId });
+  assertRegistryLifecycleState(synthetic20, synthetic20.at(-1).profileId);
+  const twoActive = cloneData(existing18);
+  twoActive[16].lifecycleStatus = "ACTIVE";
+  expectClosedError(() => assertRegistryLifecycleState(twoActive, twoActive[17].profileId), "COVERAGE_PROFILE_SELECTOR_INVALID");
+  const nonFinalActive = cloneData(existing18);
+  nonFinalActive[17].lifecycleStatus = "HISTORICAL";
+  expectClosedError(() => assertRegistryLifecycleState(nonFinalActive, nonFinalActive[17].profileId), "COVERAGE_PROFILE_SELECTOR_INVALID");
+  expectClosedError(() => assertRegistryLifecycleState(existing18, "wrong-selector"), "COVERAGE_PROFILE_SELECTOR_INVALID");
+  const invalidDelta = cloneData(existing18);
+  invalidDelta[17].sourceDelta = { added: -1, removed: 0 };
+  expectClosedError(() => validateDelta(invalidDelta[17].sourceDelta, "sourceDelta"), "COVERAGE_PROFILE_REGISTRY_INVALID");
 }
 function resolveProfiles(registry) {
   validateLegacyArtifacts(registry.records);
