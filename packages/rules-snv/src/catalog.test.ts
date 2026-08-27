@@ -12,7 +12,9 @@ import type { FirstNightTaskDefinition, RoleDefinition, ScriptDefinition } from 
 import {
   SECTS_AND_VIOLETS_FIRST_NIGHT_TASK_CATALOG,
   SECTS_AND_VIOLETS_ROLES,
-  assertValidSectsAndVioletsCatalog
+  SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY,
+  assertValidSectsAndVioletsCatalog,
+  assertValidSectsAndVioletsOrdinaryNightInventory
 } from "@botc/rules-snv";
 
 const cloneRole = (role: RoleDefinition): RoleDefinition => ({
@@ -42,6 +44,33 @@ const scriptWithRole = (roleIdValue: string, patch: Partial<RoleDefinition>): Sc
 describe("Sects & Violets role catalog", () => {
   it("contains exactly 25 roles", () => {
     expect(SECTS_AND_VIOLETS_ROLES).toHaveLength(25);
+    expect(SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY).toHaveLength(25);
+    expect(() => assertValidSectsAndVioletsOrdinaryNightInventory()).not.toThrow();
+    const invalidOrder = [...SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY];
+    invalidOrder[1] = { ...invalidOrder[1]!, nightsheetOtherNightOrder: 0 };
+    expect(() => assertValidSectsAndVioletsOrdinaryNightInventory(invalidOrder)).toThrow();
+    const invalidPresence = [...SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY];
+    invalidPresence[1] = { ...invalidPresence[1]!, nightsheetOtherNightPresence: "ABSENT", nightsheetOtherNightOrder: null, executionModel: "NONE", taskKind: null, baselineSupportStatus: "NOT_APPLICABLE" };
+    expect(() => assertValidSectsAndVioletsOrdinaryNightInventory(invalidPresence)).toThrow();
+    const forgedBinding = [...SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY];
+    forgedBinding[1] = { ...forgedBinding[1]!, sourceBinding: "forged" };
+    expect(() => assertValidSectsAndVioletsOrdinaryNightInventory(forgedBinding)).toThrow();
+    const absentModel = [...SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY];
+    absentModel[0] = { ...absentModel[0]!, executionModel: "ACTION_OPPORTUNITY" };
+    expect(() => assertValidSectsAndVioletsOrdinaryNightInventory(absentModel)).toThrow();
+    const classRow = { ...SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY[0]! };
+    Object.setPrototypeOf(classRow, { inherited: true });
+    const classRows = [...SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY];
+    classRows[0] = classRow;
+    expect(() => assertValidSectsAndVioletsOrdinaryNightInventory(classRows)).toThrow();
+    const hiddenField = { ...SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY[0]! };
+    Object.defineProperty(hiddenField, "sourceBinding", { value: hiddenField.sourceBinding, enumerable: false });
+    const hiddenRows = [...SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY];
+    hiddenRows[0] = hiddenField;
+    expect(() => assertValidSectsAndVioletsOrdinaryNightInventory(hiddenRows)).toThrow();
+    const extraArray = [...SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY];
+    Object.defineProperty(extraArray, "unexpected", { value: true, enumerable: true });
+    expect(() => assertValidSectsAndVioletsOrdinaryNightInventory(extraArray)).toThrow();
   });
 
   it("contains 13 townsfolk", () => {

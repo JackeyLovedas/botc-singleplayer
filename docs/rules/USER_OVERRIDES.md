@@ -110,6 +110,22 @@ approvalEvidence: Explicit user authorization USER_AUTHORIZED_BOTC_SIM_DREAMER_V
 supersededBy:
 ```
 
+### BOTC-SIM-EXECUTION-DEATH-SEPARATION-V1
+
+```text
+overrideId: BOTC-SIM-EXECUTION-DEATH-SEPARATION-V1
+status: APPROVED
+approvedAt: 2026-08-21 Asia/Shanghai
+approvedBy: user
+affectedRoles: []
+ruleStatement: For the bounded phase-flow and canonical event-modeling scope, execution and death are distinct facts. An execution may occur without a death, and a death must not be inferred solely from an execution. The canonical model must preserve the daily execution decision separately from any resulting death transition.
+scope: Phase-flow and canonical event modeling only. This override does not define character-specific exceptions, win conditions, general death resolution, or any later slice behavior beyond preserving the execution/death distinction at the event boundary.
+sourceClaimsOverridden: Chinese voting revision oldid 5936 only, specifically its coupled wording that the current about-to-die player is “executed and dies” at nomination-phase end; no other external rule claims are overridden.
+rationale: The official BOTC Glossary oldid 2874 and States oldid 1039 distinguish execution from death and allow execution without death. Chinese execution revision oldid 6420 also distinguishes them and records exceptions. This bounded simulator correction resolves only the contradictory coupling in Chinese voting revision 5936 so canonical phase events do not encode an execution as an unconditional death.
+approvalEvidence: Explicit user authorization USER_AUTHORIZED_2C_EXECUTION_DEATH_SEPARATION_V1, approved 2026-08-21 Asia/Shanghai; no private conversation transcript copied
+supersededBy:
+```
+
 ## Controlled Record Format
 
 Each future override must be one discrete record with all fields completed:

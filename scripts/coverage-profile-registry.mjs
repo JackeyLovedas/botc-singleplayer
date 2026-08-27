@@ -300,7 +300,7 @@ export const COVERAGE_PROFILE_RECORDS = Object.freeze([
   Object.freeze({
     profileId: "phase-3-slice-2b20b-p2f1r-d1-5r-8898f62-routing-coverage-v1",
     schemaVersion: "botc-coverage-profile-registry-v3",
-    lifecycleStatus: "ACTIVE",
+    lifecycleStatus: "HISTORICAL",
     sourceHead: "8898f62ceb90433634cf02e83ad5d4ff95db4499",
     sourceCount: 69,
     testIdentityCount: 1712,
@@ -313,10 +313,27 @@ export const COVERAGE_PROFILE_RECORDS = Object.freeze([
     sourceDelta: Object.freeze({ added: 6, removed: 0 }),
     testDelta: Object.freeze({ added: 140, removed: 0 }),
     unexplainedLoss: 0
+  }),
+  Object.freeze({
+    profileId: "phase-3-slice-2c-foundation-2bdb607-coverage-v1",
+    schemaVersion: "botc-coverage-profile-registry-v3",
+    lifecycleStatus: "ACTIVE",
+    sourceHead: "2bdb60789a67f1ae846851fec88cc5f6240e3531",
+    sourceCount: 70,
+    testIdentityCount: 1712,
+    inventorySha256: "540e2f2a92132ad43b299e95c6515d2349c514f66db4e1054b6eb0f9474cf7d2",
+    tupleSha256: "7b8979d7753666cfb3f23c4e0fb752017096b8adddf8ca95672f6ae5c4e29780",
+    profileArtifactPath: "docs/implementation/coverage-profiles/phase-3-slice-2c-foundation-2bdb607-coverage-v1.json",
+    logicalGroupCount: 11,
+    physicalGroupCount: 12,
+    previousProfileId: "phase-3-slice-2b20b-p2f1r-d1-5r-8898f62-routing-coverage-v1",
+    sourceDelta: Object.freeze({ added: 1, removed: 0 }),
+    testDelta: Object.freeze({ added: 0, removed: 0 }),
+    unexplainedLoss: 0
   })
 ]);
 
 export const COVERAGE_PROFILE_SELECTORS = Object.freeze({
   CI_COVERAGE_PROFILE:
-    "phase-3-slice-2b20b-p2f1r-d1-5r-8898f62-routing-coverage-v1"
+    "phase-3-slice-2c-foundation-2bdb607-coverage-v1"
 });

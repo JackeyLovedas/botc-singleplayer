@@ -192,6 +192,182 @@ export const assertValidSectsAndVioletsCatalog = (script: ScriptDefinition = SEC
 
 assertValidSectsAndVioletsCatalog();
 
+export const ORDINARY_NIGHT_EXECUTION_MODELS = [
+  "SCHEDULED_TASK",
+  "ACTION_OPPORTUNITY",
+  "EVENT_SUBSCRIPTION",
+  "CONTINUOUS_RULE",
+  "NONE"
+] as const;
+export type OrdinaryNightExecutionModel = (typeof ORDINARY_NIGHT_EXECUTION_MODELS)[number];
+export type OrdinaryNightBaselineSupportStatus = "SUPPORTED" | "UNSUPPORTED" | "NOT_APPLICABLE";
+export type OrdinaryNightInventoryRow = {
+  readonly roleId: RoleDefinition["roleId"];
+  readonly nightsheetOtherNightPresence: "PRESENT" | "ABSENT";
+  readonly nightsheetOtherNightOrder: number | null;
+  readonly executionModel: OrdinaryNightExecutionModel;
+  readonly taskKind: string | null;
+  readonly baselineSupportStatus: OrdinaryNightBaselineSupportStatus;
+  readonly sourceBinding: string;
+};
+
+const ORDINARY_NIGHT_NIGHTSHEET_BINDING =
+  "SECTS_AND_VIOLETS_ROLES@25;NIGHTSHEET_COMMIT=3d6d930a9e600321f93b2567a2e88948a675bc1e;NIGHTSHEET_SHA256=99a2815bb31bcec3e107bf7f1c2fb305e301d317981d855704d3d954ec4c3f75";
+const ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING =
+  `${ORDINARY_NIGHT_NIGHTSHEET_BINDING};SNAPSHOT_SHA256=751dcb35aed610ab729c663544edb979e6745f276e167370ace7cc9e761d4724`;
+
+const ordinaryNightRow = (
+  roleIdValue: string,
+  presence: OrdinaryNightInventoryRow["nightsheetOtherNightPresence"],
+  order: number | null,
+  executionModel: OrdinaryNightExecutionModel,
+  taskKind: string | null,
+  baselineSupportStatus: OrdinaryNightBaselineSupportStatus,
+  sourceBinding = ORDINARY_NIGHT_NIGHTSHEET_BINDING
+): OrdinaryNightInventoryRow => ({
+  roleId: roleId(roleIdValue),
+  nightsheetOtherNightPresence: presence,
+  nightsheetOtherNightOrder: order,
+  executionModel,
+  taskKind,
+  baselineSupportStatus,
+  sourceBinding
+});
+
+const freezeOrdinaryNightInventory = (rows: readonly OrdinaryNightInventoryRow[]): readonly OrdinaryNightInventoryRow[] =>
+  Object.freeze(rows.map((row) => Object.freeze({ ...row })));
+
+export const SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY: readonly OrdinaryNightInventoryRow[] = freezeOrdinaryNightInventory([
+  ordinaryNightRow("clockmaker", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("dreamer", "PRESENT", 79, "SCHEDULED_TASK", "DREAMER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("snake_charmer", "PRESENT", 23, "SCHEDULED_TASK", "SNAKE_CHARMER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("mathematician", "PRESENT", 96, "SCHEDULED_TASK", "MATHEMATICIAN_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("flowergirl", "PRESENT", 80, "SCHEDULED_TASK", "FLOWERGIRL_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("town_crier", "PRESENT", 81, "SCHEDULED_TASK", "TOWN_CRIER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("oracle", "PRESENT", 82, "SCHEDULED_TASK", "ORACLE_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("savant", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("seamstress", "PRESENT", 83, "SCHEDULED_TASK", "SEAMSTRESS_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("philosopher", "PRESENT", 11, "SCHEDULED_TASK", "PHILOSOPHER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("artist", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("juggler", "PRESENT", 84, "SCHEDULED_TASK", "JUGGLER_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("sage", "PRESENT", 63, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED"),
+  ordinaryNightRow("mutant", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("sweetheart", "PRESENT", 61, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED"),
+  ordinaryNightRow("barber", "PRESENT", 60, "EVENT_SUBSCRIPTION", null, "UNSUPPORTED"),
+  ordinaryNightRow("klutz", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("evil_twin", "ABSENT", null, "NONE", null, "NOT_APPLICABLE"),
+  ordinaryNightRow("witch", "PRESENT", 27, "ACTION_OPPORTUNITY", null, "UNSUPPORTED", ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING),
+  ordinaryNightRow("cerenovus", "PRESENT", 28, "SCHEDULED_TASK", "CERENOVUS_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("pit_hag", "PRESENT", 29, "SCHEDULED_TASK", "PIT_HAG_ACTION", "UNSUPPORTED"),
+  ordinaryNightRow("fang_gu", "PRESENT", 45, "ACTION_OPPORTUNITY", null, "UNSUPPORTED", ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING),
+  ordinaryNightRow("vigormortis", "PRESENT", 49, "CONTINUOUS_RULE", null, "UNSUPPORTED"),
+  ordinaryNightRow("no_dashii", "PRESENT", 46, "CONTINUOUS_RULE", null, "UNSUPPORTED"),
+  ordinaryNightRow("vortox", "PRESENT", 47, "CONTINUOUS_RULE", null, "UNSUPPORTED")
+]);
+
+const EXPECTED_ORDINARY_NIGHT_FACTS = Object.freeze(
+  SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY.map((row) => Object.freeze({ ...row }))
+);
+
+const isDenseOrdinaryNightArray = (value: unknown): value is readonly OrdinaryNightInventoryRow[] => {
+  try {
+    if (!Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
+    const ownKeys = Object.getOwnPropertyNames(value);
+    if (ownKeys.length !== value.length + 1 || !ownKeys.includes("length")) return false;
+    for (let index = 0; index < value.length; index += 1) {
+      if (!Object.prototype.hasOwnProperty.call(value, index)) return false;
+      const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+      if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set || !descriptor.enumerable) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const isExactOrdinaryNightRow = (value: unknown): value is OrdinaryNightInventoryRow => {
+  try {
+    if (typeof value !== "object" || value === null || Array.isArray(value) || Object.getOwnPropertySymbols(value).length !== 0) return false;
+    const object = value;
+    if (Reflect.getPrototypeOf(object) !== Object.prototype && Reflect.getPrototypeOf(object) !== null) return false;
+    const keys = Object.getOwnPropertyNames(object);
+    const expected = ["roleId", "nightsheetOtherNightPresence", "nightsheetOtherNightOrder", "executionModel", "taskKind", "baselineSupportStatus", "sourceBinding"];
+    if (keys.length !== expected.length || !keys.every((key) => expected.includes(key))) return false;
+    for (const key of keys) {
+      const descriptor = Object.getOwnPropertyDescriptor(object, key);
+      if (descriptor === undefined || !("value" in descriptor) || descriptor.get || descriptor.set || !descriptor.enumerable) return false;
+    }
+    return typeof (value as { roleId: unknown }).roleId === "string" &&
+      (typeof (value as { nightsheetOtherNightPresence: unknown }).nightsheetOtherNightPresence === "string") &&
+      (typeof (value as { executionModel: unknown }).executionModel === "string") &&
+      (typeof (value as { baselineSupportStatus: unknown }).baselineSupportStatus === "string") &&
+      (typeof (value as { sourceBinding: unknown }).sourceBinding === "string") &&
+      ((value as { nightsheetOtherNightOrder: unknown }).nightsheetOtherNightOrder === null || typeof (value as { nightsheetOtherNightOrder: unknown }).nightsheetOtherNightOrder === "number") &&
+      ((value as { taskKind: unknown }).taskKind === null || (typeof (value as { taskKind: unknown }).taskKind === "string" && (value as { taskKind: string }).taskKind.length > 0));
+  } catch {
+    return false;
+  }
+};
+
+export const assertValidSectsAndVioletsOrdinaryNightInventory = (
+  inventory: readonly OrdinaryNightInventoryRow[] = SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY
+): void => {
+  if (!Array.isArray(inventory) || !isDenseOrdinaryNightArray(inventory) || inventory.length !== 25) throw new Error("ordinary-night inventory must contain exactly 25 roles");
+  const catalogIds = new Set(SECTS_AND_VIOLETS_ROLES.map((candidate) => candidate.roleId));
+  const inventoryIds = new Set<string>();
+  const executionModels = new Set<string>(ORDINARY_NIGHT_EXECUTION_MODELS);
+  const supportStatuses = new Set<OrdinaryNightBaselineSupportStatus>(["SUPPORTED", "UNSUPPORTED", "NOT_APPLICABLE"]);
+  const snapshotBoundRoles = new Set(["witch", "fang_gu"]);
+  const orders = new Set<number>();
+  for (const row of inventory) {
+    if (!isExactOrdinaryNightRow(row)) throw new Error("ordinary-night inventory row shape is invalid");
+    const rowId = String(row.roleId);
+    const expected = EXPECTED_ORDINARY_NIGHT_FACTS.find((candidate) => candidate.roleId === row.roleId);
+    if (expected === undefined || !catalogIds.has(row.roleId) || inventoryIds.has(rowId)) throw new Error("ordinary-night inventory role ids must be unique and canonical");
+    if (
+      row.nightsheetOtherNightPresence !== expected.nightsheetOtherNightPresence ||
+      row.nightsheetOtherNightOrder !== expected.nightsheetOtherNightOrder ||
+      row.executionModel !== expected.executionModel ||
+      row.taskKind !== expected.taskKind ||
+      row.baselineSupportStatus !== expected.baselineSupportStatus ||
+      row.sourceBinding !== expected.sourceBinding
+    ) throw new Error("ordinary-night inventory row does not match frozen nightsheet facts");
+    inventoryIds.add(rowId);
+    if (row.nightsheetOtherNightPresence !== "PRESENT" && row.nightsheetOtherNightPresence !== "ABSENT") throw new Error("ordinary-night presence is invalid");
+    if (!executionModels.has(row.executionModel) || !supportStatuses.has(row.baselineSupportStatus)) throw new Error("ordinary-night model or support status is invalid");
+    const expectedSourceBinding = snapshotBoundRoles.has(rowId) ? ORDINARY_NIGHT_ROLE_SNAPSHOT_BINDING : ORDINARY_NIGHT_NIGHTSHEET_BINDING;
+    if (row.sourceBinding !== expectedSourceBinding) throw new Error("ordinary-night source binding is not authoritative");
+    if (row.nightsheetOtherNightPresence === "ABSENT" && row.nightsheetOtherNightOrder !== null) {
+      throw new Error("absent ordinary-night role cannot have a nightsheet order");
+    }
+    if (row.nightsheetOtherNightPresence === "PRESENT") {
+      if (row.nightsheetOtherNightOrder === null || !Number.isSafeInteger(row.nightsheetOtherNightOrder) || row.nightsheetOtherNightOrder < 1 || orders.has(row.nightsheetOtherNightOrder)) {
+        throw new Error("present ordinary-night roles must have unique positive orders");
+      }
+      orders.add(row.nightsheetOtherNightOrder);
+      if (row.baselineSupportStatus === "NOT_APPLICABLE") {
+        throw new Error("present ordinary-night role cannot be not applicable");
+      }
+    } else if (row.baselineSupportStatus !== "NOT_APPLICABLE") {
+      throw new Error("absent ordinary-night role must be not applicable");
+    } else if (row.executionModel !== "NONE" || row.taskKind !== null) {
+      throw new Error("absent ordinary-night role must use NONE with no task kind");
+    }
+    if (row.executionModel === "SCHEDULED_TASK" && row.taskKind === null) {
+      throw new Error("scheduled ordinary-night task must have a task kind");
+    }
+    if (row.executionModel !== "SCHEDULED_TASK" && row.taskKind !== null) {
+      throw new Error("non-scheduled ordinary-night model cannot have a task kind");
+    }
+    if (row.baselineSupportStatus === "SUPPORTED") {
+      throw new Error("ordinary-night foundation cannot claim unsupported executable paths");
+    }
+  }
+  if (inventoryIds.size !== 25 || [...catalogIds].some((id) => !inventoryIds.has(id))) throw new Error("ordinary-night inventory must match the Sects & Violets catalog");
+};
+
+assertValidSectsAndVioletsOrdinaryNightInventory();
+
 const firstNightRoleTask = (
   taskType: FirstNightTaskDefinition["taskType"],
   taskClass: Extract<FirstNightTaskDefinition, { readonly sourceKind: "ROLE" }>["taskClass"],
