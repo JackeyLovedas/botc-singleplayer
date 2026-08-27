@@ -27,7 +27,7 @@ type DescriptorSpec = {
   readonly eventType: string;
   readonly branchOrdinal: number;
   readonly branchId: string;
-  readonly fieldKinds: readonly ("STRING" | "INTEGER" | "BOOLEAN" | "NOMINATION" | "NULLABLE_STRING" | "ENUM" | "LITERAL" | "ARRAY_STRING")[];
+  readonly fieldKinds: readonly ("STRING" | "INTEGER" | "BOOLEAN" | "NOMINATION" | "NULLABLE_STRING" | "ENUM" | "LITERAL" | "ARRAY_STRING" | "ARRAY_TASK")[];
   readonly fields: readonly string[];
   readonly literals?: Readonly<Record<number, string>>;
   readonly enums?: Readonly<Record<number, readonly string[]>>;
@@ -41,8 +41,8 @@ const SPECS: readonly DescriptorSpec[] = [
   { eventOrdinal: 45, eventType: "PlayerDied", branchOrdinal: 64, branchId: "C-2C-PLAYER-DIED", fields: ["rulesBaselineVersion", "deathId", "executionId", "playerId", "dayNumber", "cause"], fieldKinds: ["STRING", "STRING", "NULLABLE_STRING", "STRING", "INTEGER", "ENUM"], enums: { 5: ["EXECUTION", "GENERIC_DEMON_KILL"] } },
   { eventOrdinal: 46, eventType: "ExecutionResolved", branchOrdinal: 65, branchId: "C-2C-EXECUTION-RESOLVED", fields: ["rulesBaselineVersion", "executionId", "targetPlayerId", "dayNumber", "resolution", "deathOutcome"], fieldKinds: ["STRING", "STRING", "STRING", "INTEGER", "LITERAL", "ENUM"], literals: { 4: "EXECUTED" }, enums: { 5: ["DIED", "DID_NOT_DIE"] } },
   { eventOrdinal: 47, eventType: "DayClosedWithoutExecution", branchOrdinal: 66, branchId: "C-2C-DAY-CLOSED", fields: ["rulesBaselineVersion", "dayNumber", "blockId", "reason"], fieldKinds: ["STRING", "INTEGER", "NULLABLE_STRING", "LITERAL"], literals: { 3: "NO_EXECUTABLE_CANDIDATE" } },
-  { eventOrdinal: 48, eventType: "OrdinaryNightTaskPlanCreated", branchOrdinal: 67, branchId: "C-2C-NIGHT-PLAN", fields: ["rulesBaselineVersion", "planVersion", "window", "nightNumber", "taskCount", "tasks"], fieldKinds: ["STRING", "LITERAL", "LITERAL", "INTEGER", "INTEGER", "ARRAY_STRING"], literals: { 1: "ordinary-night-v1", 2: "OTHER_NIGHT" } },
-  { eventOrdinal: 49, eventType: "OrdinaryNightTargetDerived", branchOrdinal: 68, branchId: "C-2C-NIGHT-TARGET", fields: ["rulesBaselineVersion", "taskId", "taskType", "sourcePlayerId", "targetPlayerId", "candidateSet", "selectionIndex", "seed", "transferOutcome"], fieldKinds: ["STRING", "STRING", "STRING", "STRING", "STRING", "ARRAY_STRING", "INTEGER", "LITERAL", "LITERAL"], literals: { 7: "seed-1", 8: "NONE" } },
+  { eventOrdinal: 48, eventType: "OrdinaryNightTaskPlanCreated", branchOrdinal: 67, branchId: "C-2C-NIGHT-PLAN", fields: ["rulesBaselineVersion", "planVersion", "window", "nightNumber", "taskCount", "tasks"], fieldKinds: ["STRING", "LITERAL", "LITERAL", "INTEGER", "INTEGER", "ARRAY_TASK"], literals: { 1: "ordinary-night-v1", 2: "OTHER_NIGHT" } },
+  { eventOrdinal: 49, eventType: "OrdinaryNightTargetDerived", branchOrdinal: 68, branchId: "C-2C-NIGHT-TARGET", fields: ["rulesBaselineVersion", "taskId", "taskType", "sourcePlayerId", "targetPlayerId", "candidateSet", "selectionIndex", "seed", "transferOutcome"], fieldKinds: ["STRING", "STRING", "STRING", "STRING", "STRING", "ARRAY_STRING", "INTEGER", "STRING", "LITERAL"], literals: { 8: "NONE" } },
   { eventOrdinal: 50, eventType: "OrdinaryNightTaskSettled", branchOrdinal: 69, branchId: "C-2C-NIGHT-SETTLED", fields: ["rulesBaselineVersion", "planVersion", "window", "nightNumber", "taskId", "taskType", "sourcePlayerId", "targetPlayerId", "settlement", "transferOutcome"], fieldKinds: ["STRING", "LITERAL", "LITERAL", "INTEGER", "STRING", "STRING", "STRING", "STRING", "LITERAL", "LITERAL"], literals: { 1: "ordinary-night-v1", 2: "OTHER_NIGHT", 8: "RESOLVED", 9: "NONE" } }
 ] as const;
 
@@ -57,6 +57,15 @@ export const TWO_C_ADDITIVE_DESCRIPTORS: readonly C1AdditiveDescriptorV1[] = SPE
     else if (kind === "ENUM") nodes.push(enumNode(nodeId, spec.enums?.[index] ?? []));
     else if (kind === "NULLABLE_STRING") nodes.push(nullableStringNode(nodeId, `${nodeId}-inner`), stringNode(`${nodeId}-inner`));
     else if (kind === "ARRAY_STRING") nodes.push(arrayNode(nodeId, `${nodeId}-element`), stringNode(`${nodeId}-element`));
+    else if (kind === "ARRAY_TASK") {
+      const taskFields = ["sourcePlayerId", "sourceRoleId", "sourceSeatNumber", "status", "taskId", "taskType"].map((fieldName, taskIndex) => {
+        const taskNodeId = `${nodeId}-task-${taskIndex + 1}`;
+        nodes.push(fieldName === "sourceSeatNumber" ? integerNode(taskNodeId) : fieldName === "status" ? enumNode(taskNodeId, ["PENDING", "SETTLED"]) : fieldName === "taskType" ? enumNode(taskNodeId, ["CERENOVUS_ACTION", "DREAMER_ACTION", "GENERIC_DEMON_KILL"]) : stringNode(taskNodeId));
+        return { fieldName, childNodeId: taskNodeId };
+      });
+      const taskRoot = `${nodeId}-task-root`;
+      nodes.push(recordNode(taskRoot, taskFields), arrayNode(nodeId, taskRoot));
+    }
     else nodes.push(stringNode(nodeId));
     return { fieldName, childNodeId: nodeId };
   });

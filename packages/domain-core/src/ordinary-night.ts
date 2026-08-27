@@ -4,6 +4,11 @@ import type { GameState } from "./game-state.js";
 export const ORDINARY_NIGHT_PLAN_VERSION = "ordinary-night-v1" as const;
 export const ORDINARY_NIGHT_WINDOW = "OTHER_NIGHT" as const;
 export const ORDINARY_NIGHT_CAPABILITY_KINDS = ["DREAMER_ACTION", "CERENOVUS_ACTION", "GENERIC_DEMON_KILL"] as const;
+const ORDINARY_NIGHT_SCHEDULE_ORDER: Readonly<Record<OrdinaryNightCapabilityKind, number>> = {
+  CERENOVUS_ACTION: 28,
+  GENERIC_DEMON_KILL: 47,
+  DREAMER_ACTION: 79
+};
 export type OrdinaryNightCapabilityKind = (typeof ORDINARY_NIGHT_CAPABILITY_KINDS)[number];
 export type OrdinaryNightTaskStatus = "PENDING" | "SETTLED";
 export type OrdinaryNightTask = {
@@ -89,6 +94,8 @@ export const createOrdinaryNightTaskPlan = (state: GameState): OrdinaryNightTask
     });
   }
   tasks.sort((left, right) => {
+    const orderDelta = ORDINARY_NIGHT_SCHEDULE_ORDER[left.taskType] - ORDINARY_NIGHT_SCHEDULE_ORDER[right.taskType];
+    if (orderDelta !== 0) return orderDelta;
     const seatDelta = left.sourceSeatNumber - right.sourceSeatNumber;
     if (seatDelta !== 0) return seatDelta;
     return left.taskId < right.taskId ? -1 : left.taskId === right.taskId ? 0 : 1;
@@ -110,7 +117,7 @@ export const validateOrdinaryNightTaskPlan = (value: unknown): value is Ordinary
 export const deriveOrdinaryNightTarget = (task: OrdinaryNightTask, state: GameState): OrdinaryNightTarget => {
   if (state.roster === undefined) throw new Error("ordinary-night target requires roster");
   const dead = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]);
-  const candidates = state.roster.entries.filter((entry) => entry.playerId !== task.sourcePlayerId && !dead.has(entry.playerId)).sort((left, right) => left.seatNumber - right.seatNumber).map((entry) => entry.playerId);
+  const candidates = state.roster.entries.filter((entry) => entry.playerId !== task.sourcePlayerId && !dead.has(entry.playerId)).sort((left, right) => (left.seatNumber - right.seatNumber)).map((entry) => entry.playerId);
   if (candidates.length === 0) throw new Error("ordinary-night target candidate set is empty");
   const selectionIndex = task.taskType === "GENERIC_DEMON_KILL"
     ? candidates.findIndex((playerId) => state.roster?.entries.find((entry) => entry.playerId === playerId)?.seatNumber === 1)

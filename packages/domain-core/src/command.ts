@@ -209,6 +209,24 @@ export const validateBeginNightCommandPayload = (value: unknown): BasicCommandVa
 export const validateSettleOrdinaryNightTaskCommandPayload = (value: unknown): BasicCommandValidation<SettleOrdinaryNightTaskCommandPayload> =>
   validateExactBasicCommand(value, ["commandType", "taskId"], "SettleOrdinaryNightTask", (record) => nonEmptyBasicString(record.taskId));
 
+export const validateBasicPhaseFlowCommandPayload = (value: unknown): { readonly valid: true } | { readonly valid: false; readonly reason: string } => {
+  if (!isPlainRecord(value)) return { valid: false, reason: "command payload must be a plain record" };
+  switch (value.commandType) {
+    case "CompleteNight": return validateCompleteNightCommandPayload(value);
+    case "PublishDawn": return validatePublishDawnCommandPayload(value);
+    case "OpenNominations": return validateOpenNominationsCommandPayload(value);
+    case "DeclareNomination": return validateDeclareNominationCommandPayload(value);
+    case "OpenVote": return validateOpenVoteCommandPayload(value);
+    case "CastVote": return validateCastVoteCommandPayload(value);
+    case "CompleteVote": return validateCompleteVoteCommandPayload(value);
+    case "CloseNominations": return validateCloseNominationsCommandPayload(value);
+    case "ResolveExecution": return validateResolveExecutionCommandPayload(value);
+    case "BeginNight": return validateBeginNightCommandPayload(value);
+    case "SettleOrdinaryNightTask": return validateSettleOrdinaryNightTaskCommandPayload(value);
+    default: return { valid: true };
+  }
+};
+
 export const validateSettleMathematicianInformationCommandPayload = (value: unknown):
   | { readonly valid: true; readonly payload: SettleMathematicianInformationCommandPayload }
   | { readonly valid: false; readonly reason: string } => {

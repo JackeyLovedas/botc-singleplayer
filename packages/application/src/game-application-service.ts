@@ -101,6 +101,7 @@ import {
   validateSettleClockmakerInformationCommandPayload,
   canActorSettleMathematicianInformation,
   validateSettleMathematicianInformationCommandPayload,
+  validateBasicPhaseFlowCommandPayload,
   resolveClockmakerNativeReferences,
   resolveClockmakerSourceEffectiveness,
   resolveClockmakerVortoxConstraint,
@@ -655,6 +656,10 @@ export class GameApplicationService {
       );
     }
     const command = capturedResult.captured.snapshot;
+    const basicPayloadValidation = validateBasicPhaseFlowCommandPayload(command.payload);
+    if (!basicPayloadValidation.valid) {
+      return failed(command.gameId, "DependencyExecutionFailed", `Command payload validation failed: ${basicPayloadValidation.reason}`, "command-validation");
+    }
     const commandFingerprint = capturedResult.captured.fingerprint;
     let existingReceipt;
     try {
@@ -4243,15 +4248,20 @@ export class GameApplicationService {
       case "CompleteVote": {
         if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "CompleteVote requires state");
         const nominationId = command.payload.nominationId;
-        const votes = (state.votes ?? []).filter((vote) => vote.nominationId === nominationId && vote.choice === "YES");
+        const yesVotesByNomination = new Map<string, number>();
+        for (const vote of state.votes ?? []) {
+          if (vote.choice === "YES") yesVotesByNomination.set(vote.nominationId, (yesVotesByNomination.get(vote.nominationId) ?? 0) + 1);
+        }
         const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set((state.deaths ?? []).map((death) => death.playerId)).size);
         const threshold = Math.ceil(livingPlayerCount / 2);
-        const tied = false;
-        const leaderVoteCount = votes.length;
+        const leaderVoteCount = Math.max(0, ...yesVotesByNomination.values());
+        const leaders = [...yesVotesByNomination.entries()].filter(([, count]) => count === leaderVoteCount && count > 0);
+        const tied = leaders.length > 1;
+        const executable = leaders.length === 1 && leaderVoteCount >= threshold;
         const blockEvent: DomainEventEnvelope<"BlockStateUpdated"> = {
           ...common(firstEventSequence), eventType: "BlockStateUpdated", payload: {
             rulesBaselineVersion: RULES_BASELINE_VERSION, nominationId, dayNumber: state.dayNumber,
-            livingPlayerCount, threshold, leaderNominationId: leaderVoteCount >= threshold && leaderVoteCount > 0 ? nominationId : null,
+            livingPlayerCount, threshold, leaderNominationId: executable ? leaders[0]?.[0] ?? null : null,
             leaderVoteCount, tied
           }
         };
@@ -4265,6 +4275,11 @@ export class GameApplicationService {
         const nominator = state.roster?.entries.find((entry) => entry.playerId === actorPlayerId);
         const nominee = state.roster?.entries.find((entry) => entry.playerId === (command.payload as { readonly targetPlayerId: string }).targetPlayerId);
         if (nominator === undefined || nominee === undefined) throw new DomainError("InvalidDomainBatchSemantics", "nomination participants unavailable");
+        const deadPlayerIds = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]);
+        if (deadPlayerIds.has(nominator.playerId)) throw new DomainError("InvalidDomainBatchSemantics", "dead players cannot nominate");
+        if ((state.nominations ?? []).some((entry) => entry.dayNumber === state.dayNumber && entry.nominatorPlayerId === nominator.playerId && !(state.blocks ?? []).some((block) => block.nominationId === entry.nominationId))) throw new DomainError("InvalidDomainBatchSemantics", "nominator has already nominated today");
+        const latestNomination = state.nominations?.at(-1);
+        if (latestNomination !== undefined && latestNomination.dayNumber === state.dayNumber && !(state.blocks ?? []).some((block) => block.nominationId === latestNomination.nominationId)) throw new DomainError("InvalidDomainBatchSemantics", "only one active nomination is allowed");
         const ordinal = (state.nominations?.length ?? 0) + 1;
         return [{ ...common(firstEventSequence), eventType: "NominationDeclared", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, nominationId: `nomination-v1:${state.dayNumber}:${ordinal}`, nominatorPlayerId: nominator.playerId, nomineePlayerId: nominee.playerId, dayNumber: state.dayNumber, nominationOrdinal: ordinal } }];
       }
@@ -4273,7 +4288,10 @@ export class GameApplicationService {
         const actorPlayerId = command.actor.kind === "human" || command.actor.kind === "ai" ? command.actor.playerId : undefined;
         const voter = state.roster?.entries.find((entry) => entry.playerId === actorPlayerId);
         if (voter === undefined) throw new DomainError("InvalidDomainBatchSemantics", "voter unavailable");
-        return [{ ...common(firstEventSequence), eventType: "VoteCast", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, voteId: `vote-v1:${command.payload.nominationId}:${(state.votes?.length ?? 0) + 1}`, nominationId: command.payload.nominationId, voterPlayerId: voter.playerId, voterSeatNumber: voter.seatNumber, choice: command.payload.choice, ghostVoteConsumed: false } }];
+        const deadPlayerIds = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]);
+        const ghostVoteConsumed = deadPlayerIds.has(voter.playerId);
+        if (ghostVoteConsumed && (state.votes ?? []).some((vote) => vote.voterPlayerId === voter.playerId && vote.ghostVoteConsumed)) throw new DomainError("InvalidDomainBatchSemantics", "dead voter has already consumed the ghost vote");
+        return [{ ...common(firstEventSequence), eventType: "VoteCast", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, voteId: `vote-v1:${command.payload.nominationId}:${(state.votes?.length ?? 0) + 1}`, nominationId: command.payload.nominationId, voterPlayerId: voter.playerId, voterSeatNumber: voter.seatNumber, choice: command.payload.choice, ghostVoteConsumed } }];
       }
       case "ResolveExecution": {
         if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ResolveExecution requires state");
@@ -4311,9 +4329,14 @@ export class GameApplicationService {
         if (task === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ordinary-night task unavailable");
         if (state.ordinaryNightTaskProgress?.settlements.includes(task.taskId)) throw new DomainError("InvalidDomainBatchSemantics", "ordinary-night task already settled");
         const target = deriveOrdinaryNightTarget(task, state);
+        const targetAlreadyDead = (state.deadPlayerIds ?? []).includes(target.targetPlayerId) || (state.deaths ?? []).some((death) => death.playerId === target.targetPlayerId);
+        const deathEvent = task.taskType === "GENERIC_DEMON_KILL" && !targetAlreadyDead
+          ? [{ ...common(firstEventSequence + 1), eventType: "PlayerDied" as const, payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, deathId: `death-v1:ordinary:${task.taskId}`, executionId: null, playerId: target.targetPlayerId, dayNumber: state.dayNumber, cause: "GENERIC_DEMON_KILL" as const } }]
+          : [];
         return [
           { ...common(firstEventSequence), eventType: "OrdinaryNightTargetDerived", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, ...target } },
-          { ...common(firstEventSequence + 1), eventType: "OrdinaryNightTaskSettled", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, planVersion: ORDINARY_NIGHT_PLAN_VERSION, window: ORDINARY_NIGHT_WINDOW, nightNumber: 2, taskId: task.taskId, taskType: task.taskType, sourcePlayerId: task.sourcePlayerId, targetPlayerId: target.targetPlayerId, settlement: "RESOLVED", transferOutcome: "NONE" } }
+          ...deathEvent,
+          { ...common(firstEventSequence + (deathEvent.length === 0 ? 1 : 2)), eventType: "OrdinaryNightTaskSettled", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, planVersion: ORDINARY_NIGHT_PLAN_VERSION, window: ORDINARY_NIGHT_WINDOW, nightNumber: 2, taskId: task.taskId, taskType: task.taskType, sourcePlayerId: task.sourcePlayerId, targetPlayerId: target.targetPlayerId, settlement: "RESOLVED", transferOutcome: "NONE" } }
         ];
       }
     }

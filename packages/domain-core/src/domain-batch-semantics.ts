@@ -131,9 +131,15 @@ const validateBasicPhaseFlowBatch = (
     return;
   }
   if (first.eventType === "OrdinaryNightTargetDerived") {
-    if (events.length !== 2 || events[1]?.eventType !== "OrdinaryNightTaskSettled" || state.phase !== "NIGHT_TASKS") reject("Ordinary-night target must be paired with settlement");
-    const settlement = events[1];
+    if ((events.length !== 2 && events.length !== 3) || events.at(-1)?.eventType !== "OrdinaryNightTaskSettled" || state.phase !== "NIGHT_TASKS") reject("Ordinary-night target must be paired with settlement");
+    const deathCandidate = events.length === 3
+      ? events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PlayerDied" }>
+      : undefined;
+    if (deathCandidate !== undefined && deathCandidate.eventType !== "PlayerDied") reject("Ordinary-night death must be a PlayerDied event");
+    const settlement = events.at(-1);
     if (settlement?.eventType !== "OrdinaryNightTaskSettled" || settlement.payload.taskId !== first.payload.taskId || settlement.payload.targetPlayerId !== first.payload.targetPlayerId || settlement.payload.taskType !== first.payload.taskType) reject("Ordinary-night target and settlement must agree");
+    if (first.payload.taskType === "GENERIC_DEMON_KILL" && deathCandidate === undefined) reject("Generic demon kill must include PlayerDied");
+    if (deathCandidate !== undefined && (deathCandidate.payload.cause !== "GENERIC_DEMON_KILL" || deathCandidate.payload.playerId !== first.payload.targetPlayerId)) reject("Ordinary-night death must match the derived target");
     return;
   }
   reject("Unsupported basic phase-flow event batch");
