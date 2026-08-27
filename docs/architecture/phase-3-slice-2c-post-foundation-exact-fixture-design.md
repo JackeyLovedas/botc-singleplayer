@@ -34,14 +34,23 @@ demon=vortox
 
 No Mathematician, Fang Gu, Witch, or Pit-Hag is present. Assignment seed `0`
 was checked within the bounded range `[0,99]` through the production assignment
-path. Its deterministic seat map is `1=mutant, 2=seamstress, 3=evil_twin,
-4=artist, 5=savant, 6=dreamer, 7=cerenovus, 8=klutz, 9=philosopher,
-10=vortox, 11=sage, 12=clockmaker`. No manual state injection is permitted.
+path with `rosterVersion=fixed-12-player-roster-v1`,
+`assignmentAlgorithmVersion=snv-12-assignment-v1`,
+`randomAlgorithmVersion=xmur3-sfc32-rejection-v1`,
+`randomStream=assignment/sects-and-violets/12/v1`, and
+`roleCatalogSignature=canonical-role-catalog-v1:60ac4718`. Its deterministic
+seat map is `1=mutant, 2=seamstress, 3=evil_twin, 4=artist, 5=savant,
+6=dreamer, 7=cerenovus, 8=klutz, 9=philosopher, 10=vortox, 11=sage,
+12=clockmaker`. No manual state injection is permitted.
 
 ## Capability and role boundaries
 
 The first-night path must genuinely settle Philosopher and Seamstress and
-persist their spent state. The ordinary-night plan may therefore contain only
+persist their spent state. Philosopher's deterministic legal choice is
+`artist` (seat 4); this gained ability is not an ordinary-night blocker.
+Seamstress chooses the real pair `mutant` (seat 1) and `savant` (seat 5),
+records its canonical spent state, and creates no later blocker. The ordinary-
+night plan may therefore contain only
 these actual blocking kinds:
 
 ```text
@@ -49,8 +58,9 @@ these actual blocking kinds:
 ordinaryNightBlockingKindCount=3
 ```
 
-Vortox is a continuous information constraint, not a scheduled task. Generic
-Demon kill targets a living Mutant or Klutz and excludes Demon-specific
+Vortox is a continuous information constraint, not a scheduled task. The
+generic Demon kill target is frozen to living Mutant seat 1, never Klutz, and
+excludes Demon-specific
 transfer, poisoning, or new information frameworks. Dreamer and Cerenovus
 reuse their accepted targeting, information/madness, settlement, and replay
 seams; no broad role framework is introduced.

@@ -28,9 +28,14 @@ roleIdsUnique=true
 
 This set contains no Mathematician, Fang Gu, Witch, or Pit-Hag. Assignment seed
 `0` was checked in the bounded range `[0,99]` through the production assignment
-path. The deterministic seat map is `1=mutant, 2=seamstress, 3=evil_twin,
-4=artist, 5=savant, 6=dreamer, 7=cerenovus, 8=klutz, 9=philosopher,
-10=vortox, 11=sage, 12=clockmaker`. No manual state mutation is valid.
+path with `rosterVersion=fixed-12-player-roster-v1`,
+`assignmentAlgorithmVersion=snv-12-assignment-v1`,
+`randomAlgorithmVersion=xmur3-sfc32-rejection-v1`,
+`randomStream=assignment/sects-and-violets/12/v1`, and
+`roleCatalogSignature=canonical-role-catalog-v1:60ac4718`. The deterministic
+seat map is `1=mutant, 2=seamstress, 3=evil_twin, 4=artist, 5=savant,
+6=dreamer, 7=cerenovus, 8=klutz, 9=philosopher, 10=vortox, 11=sage,
+12=clockmaker`. No manual state mutation is valid.
 
 ## Scoped rule claims
 
@@ -46,13 +51,14 @@ source snapshot is introduced here.
 ## Capability boundary
 
 Philosopher and Seamstress must be genuinely settled on first night and their
-canonical spent state must suppress later blocking tasks. The only allowed
+canonical spent state must suppress later blocking tasks. Philosopher chooses
+Artist seat 4; Seamstress chooses Mutant seat 1 and Savant seat 5. The only allowed
 ordinary-night blocking kinds are:
 
 ```text
 ordinaryNightBlockingKinds=[DREAMER_ACTION,CERENOVUS_ACTION,GENERIC_DEMON_KILL]
 ordinaryNightBlockingKindCount=3
-demonKillTarget=Mutant_or_Klutz_living_target
+demonKillTarget=Mutant_seat_1_living_target
 vortoxScheduledTask=false
 ```
 
