@@ -26,8 +26,11 @@ demon=vortox
 roleIdsUnique=true
 ```
 
-This set contains no Mathematician, Fang Gu, Witch, or Pit-Hag. Assignment
-must use the production assignment path; no manual state mutation is valid.
+This set contains no Mathematician, Fang Gu, Witch, or Pit-Hag. Assignment seed
+`0` was checked in the bounded range `[0,99]` through the production assignment
+path. The deterministic seat map is `1=mutant, 2=seamstress, 3=evil_twin,
+4=artist, 5=savant, 6=dreamer, 7=cerenovus, 8=klutz, 9=philosopher,
+10=vortox, 11=sage, 12=clockmaker`. No manual state mutation is valid.
 
 ## Scoped rule claims
 

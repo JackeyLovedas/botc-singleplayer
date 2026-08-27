@@ -32,10 +32,11 @@ postModifierCounts=7/2/2/1
 demon=vortox
 ```
 
-No Mathematician, Fang Gu, Witch, or Pit-Hag is present. Assignment remains
-the production assignment path; the bounded seed search is `[0,99]` and the
-selected assignment is pending a real replay. No manual state injection is
-permitted.
+No Mathematician, Fang Gu, Witch, or Pit-Hag is present. Assignment seed `0`
+was checked within the bounded range `[0,99]` through the production assignment
+path. Its deterministic seat map is `1=mutant, 2=seamstress, 3=evil_twin,
+4=artist, 5=savant, 6=dreamer, 7=cerenovus, 8=klutz, 9=philosopher,
+10=vortox, 11=sage, 12=clockmaker`. No manual state injection is permitted.
 
 ## Capability and role boundaries
 
