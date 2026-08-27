@@ -1,7 +1,7 @@
 {
-  "status": "COMPLETED",
-  "detailedStatus": "FINAL_D3_CLOSEOUT_ACCEPTED",
-  "disposition": "ACCEPTED",
+  "status": "HUMAN_BLOCKED",
+  "detailedStatus": "2C_RULE_SOURCE_UNAVAILABLE_HUMAN_BLOCKED",
+  "disposition": "HUMAN_BLOCKED",
   "canonicalActiveControlInvariant": {
     "schemaVersion": "POST-D3-CLOSEOUT-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
     "role": "VALIDATION_CONTRACT_ONLY / NOT_A_SECOND_STATUS_AUTHORITY",
@@ -39,7 +39,7 @@
       "expectedExitCode": 17
     }
   },
-  "taskType": "AUTHORITY_RECONCILIATION / DOCS_CONTROL_ONLY",
+  "taskType": "PHASE_3_SLICE_2C_RULE_GATE",
   "correctionId": "2B20A-ACCEPTED-NORMAL-DREAMER-RESTORATION-V1-CORRECTION-1",
   "authorization": "USER_AUTHORIZED_POST_D3_AUTHORITY_RECONCILIATION_AND_NEXT_SLICE_HANDOFF_ONLY",
   "designReleasePass": true,
@@ -101,10 +101,10 @@
   "productHead": "70ee998a631a347ced5975dc71923a71072fa5cb",
   "productBranchHead": "phase-3/reachable-base-dreamer-settleability-closure@70ee998a631a347ced5975dc71923a71072fa5cb",
   "currentBranch": "main",
-  "currentSlice": null,
+  "currentSlice": "2C-rule-gate",
   "local2B20AP1Status": "LOCAL_IMPLEMENTATION_REVIEW_PASS_PENDING_STACKED_PUBLICATION_AND_EXACT_HEAD_CI",
   "2B20AP1Acceptance": "UNACCEPTED_LOCAL_CANDIDATE",
-  "currentFoundation": null,
+  "currentFoundation": "2C_PREREQUISITE_FOUNDATION_ACCEPTED",
   "acceptedBase": "5a69c90f2d3947556ff45c15c467902b1e28ca43",
   "slice2B19A1Started": false,
   "slice2B19A2Started": false,
@@ -4282,7 +4282,7 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [],
+  "remainingBlockers": ["RULE_SOURCE_UNAVAILABLE_ORDINARY_NIGHT_SETTLEMENT_CONTRACT"],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
     "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE": "CLOSED_BY_IMPLEMENTATION",
@@ -5062,6 +5062,6 @@
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
   "lastAction": "Reconciled active controls after accepted Phase 3 D3 closeout at origin/main df9ee017de2f3b8f33f7608a49e91f46c51acc08. Verified D2/D3 acceptance, no active PR or temporary D2 branch, preserved historical records, and recorded Slice 2C only as an ambiguous roadmap candidate; no next slice was authorized or started.",
   "lastError": null,
-  "requiredNextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE",
+  "requiredNextAction": "HUMAN_RESOLVE_2C_REPOSITORY_SETTLEMENT_CONTRACT_OR_REAUTHORIZE_SCOPED_RULE_SOURCE",
   "nextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE"
 }
