@@ -6,14 +6,31 @@
 sliceId=2C
 designId=POST_FOUNDATION_EXACT_FIXTURE_2C_PREEMPTION_RESLICE_DESIGN
 designKind=BOUNDED_PREEMPTION_FIXTURE
-designStatus=DESIGN_CORRECTION_ROUND_1_PENDING_INDEPENDENT_REVIEW
+designStatus=DESIGN_CORRECTION_ROUND_2_PENDING_INDEPENDENT_REVIEW
 designVerdict=RULE_DESIGN_FIX_REQUIRED
 implementationAuthorized=false
-designCorrectionRound=1
-designCorrectionBudget=1/2
+designCorrectionRound=2
+designCorrectionBudget=2/2
 implementationCorrectionBudget=0/3
 futureImplementationSHA=NOT_APPLICABLE
 ```
+
+## Immutable status block
+
+```text
+C=FROZEN
+C1=FROZEN_40_EVENTS_59_BRANCHES
+B18=HUMAN_BLOCKED_UNCHANGED
+Slice3=NOT_STARTED_FROZEN
+workflow=FROZEN_NO_CHANGE
+coverage=FROZEN_NO_CHANGE
+productionBoundary=FROZEN_NO_CHANGE_OUTSIDE_APPROVED_IMPLEMENTATION
+testIdentityGeneration=FROZEN_NO_CHANGE
+implementationAuthorized=false
+```
+
+This correction round consumes the second and final design-correction budget.
+It must not create a third correction round.
 
 This document supersedes only the unaccepted Dreamer/Cerenovus exact-fixture
 proposal for the next design review. It does not rewrite accepted C/C1
@@ -88,6 +105,63 @@ seat 6, with causal reason `PIT_HAG_ARBITRARY_DEATH`; it must not encode this
 death as the daytime nomination execution. If the production role pool or
 accepted role source rejects this choice, the fixture is `FIXTURE_BINDING_MISMATCH`
 and the slice stops; no alternate role is inferred.
+
+### Exact Pit-Hag bounded event and state contract
+
+The single fixture-scoped `PitHagActionResolved` event has this exact expected
+payload shape (field names are part of the design contract; actual event IDs
+and future SHA values are implementation facts):
+
+```text
+eventType=PitHagActionResolved
+sourcePlayerId=player-10
+sourceSeatNumber=10
+sourceRoleId=pit_hag
+sourceRoleTenureId=<accepted-current-tenure>
+sourceAbilityInstanceId=<accepted-current-ability-instance>
+targetPlayerId=player-7
+targetSeatNumber=7
+oldRoleId=mutant
+newRoleId=fang_gu
+targetAlignment=GOOD
+alignmentPreserved=true
+choiceInExactFixture=false
+choiceInRolePool=true
+stateRevisionBefore=<current-character-state-revision>
+stateRevisionAfter=<next-character-state-revision>
+nightNumber=<current-ordinary-night>
+phase=NIGHT_PREEMPTION
+causalConsequence=PIT_HAG_ARBITRARY_DEATH_WINDOW
+```
+
+`<...>` fields are runtime bindings, not placeholders for future SHA values.
+Prospective validation requires the source tenure/ability instance to be the
+current accepted one; seat 7 must currently be `mutant` with `GOOD` alignment;
+`fang_gu` must be absent from the exact assigned role set; and the state
+mutation must change only the target character plus its new tenure/ability
+instance. The target alignment remains `GOOD`. The applier order is frozen:
+
+```text
+state-before check
+ -> PitHagActionResolved accepted
+ -> target character/tenure/ability-instance mutation
+ -> PlayerDied(target=player-6, cause=PIT_HAG_ARBITRARY_DEATH)
+ -> NIGHT_TASKS transition
+```
+
+Replay must apply exactly that order and reject a death before the action, a
+role mutation after the death, stale tenure/ability provenance, a changed
+alignment, duplicate action, or a second arbitrary death. The fixed Sage death
+is a night arbitrary-death consequence, not an `ExecutionDeclared`,
+`ExecutionResolved`, or daytime nomination execution. “Night attack/death”
+and “daytime execution” are distinct vocabulary and event causes throughout
+this design.
+
+The newly made `fang_gu` action itself is not simulated in this slice. It is
+recorded as fixture-specific `UNSUPPORTED_FANG_GU_ACTION` / `OUT_OF_SCOPE`;
+no Fang Gu scheduled task, attack resolver, or dynamic task rebuild is
+generated. If proving the action would require such a framework, the true
+stop is `NEW_ROLE_CHANGE_FRAMEWORK_REQUIRED`, and no implementation proceeds.
 
 ## Authority split
 
@@ -227,50 +301,101 @@ remain immutable. If the runtime cannot express this entry through the
 accepted additive seam, the required result is `NEW_APPROVED_DELTA_REQUIRED`
 and implementation stops.
 
+The candidate descriptor/node fields are frozen as:
+
+```text
+descriptorId=2C_PREEMPTION_PIT_HAG_V1
+eventType=PitHagActionResolved
+payloadFields=sourcePlayerId,sourceSeatNumber,sourceRoleId,sourceRoleTenureId,
+ sourceAbilityInstanceId,targetPlayerId,targetSeatNumber,oldRoleId,newRoleId,
+ targetAlignment,alignmentPreserved,stateRevisionBefore,stateRevisionAfter,
+ nightNumber,phase,causalConsequence
+requiredNodeKinds=EXACT,STRING,SAFE_INTEGER,BOOLEAN,LITERAL,ENUM
+descriptorOrdinal=41
+branchOrdinal=60
+runtimeAdmissionApi=admit2CPreemptionDescriptor
+defaultAuthorityApi=admitFullC1Authority
+defaultAuthorityResult=REJECT_ADDITIVE_DESCRIPTOR
+```
+
+`admit2CPreemptionDescriptor` is the only runtime additive entry and is
+available only to this exact fixture path. It must not mutate the default
+40/59 authority or expose a dynamic fallback. An implementation that needs a
+second entry, a different node kind, a descriptor ordinal below 41, a branch
+ordinal below 60, or a nonzero approved delta stops with
+`NEW_APPROVED_DELTA_REQUIRED`.
+
 ## Governance V1.1 traceability
 
 Each active criterion has exactly the nine required V1.1 fields below. R1-R4
 and T1-T3 are supporting/evidence labels only; none is allowed to become a
 second primary for another criterion.
 
+Reachability is restricted to the protocol values `R1`, `R2`, `R3`, and `R4`:
+`R1` is setup/plan application integration, `R2` is accepted-history replay
+compatibility, `R3` is command/application integration, and `R4` is hostile
+replay rejection. `A-B`, `G-K`, and similar step ranges are not reachability
+values. Primary mechanisms use only the applicable protocol layers
+`APPLICATION_COMMAND_INTEGRATION`, `LEGACY_REPLAY_COMPATIBILITY`,
+`HOSTILE_REPLAY_REJECTION`, and `STRUCTURAL_VALIDATION`.
+
 | CriterionId | RuleClaim | CompletionCriterion | RequiredEvidenceMechanism | ExpectedReachability | ExpectedTrust | ExpectedPrimaryLayer | ExpectedResult | SupportingAuthorityRequirement |
 |---|---|---|---|---|---|---|---|---|
-| 2C-A-R1 | exact role set is generated | setup and assignment digests equal the frozen 12-role binding | production generator witness + hostile fixture negatives | A-B | T1 | STRUCTURAL_VALIDATION | PASS | R1 setup source, T1 fixture manifest |
-| 2C-A-R2 | Pit-Hag choice is concrete and not-in-play | seat 10 -> seat 7, `fang_gu`, with one causal death before `NIGHT_TASKS` | prospective/replay causal batch | L-N | T1 | STRUCTURAL_VALIDATION | PASS | R2 Pit-Hag source, T1 event cross-link |
-| 2C-A-R3 | daytime vote rules are bounded | legal nomination/vote reaches strict-highest execution or deterministic no-execution | command validators + tally/replay negatives | G-K | T1 | STRUCTURAL_VALIDATION | PASS | R3 day rules, T2 tally record |
-| 2C-A-R4 | execution and death are distinct | execution-only stream never produces death; Pit-Hag death retains cause | event batch and replay rejection | K-M | T1 | STRUCTURAL_VALIDATION | PASS | R4 States/override, T2 causal record |
-| 2C-A-R5 | ordinary plan is exact | exactly two tasks, no Dreamer/Cerenovus placeholder | plan identity audit + duplicate/unknown rejection | O | T1 | STRUCTURAL_VALIDATION | PASS | R1 nightsheet, T1 plan manifest |
-| 2C-A-R6 | Flowergirl cannot settle after death | `FLOWERGIRL_ACTION` has exactly one `SOURCE_INELIGIBLE` terminal settlement after target death | prospective/replay task validator | P-Q | T1 | STRUCTURAL_VALIDATION | PASS | R2 Flowergirl/Vortox source, T2 death link |
-| 2C-A-R7 | whole loop is replayable and idempotent | A-R accepted stream replays exactly; same command retries once; altered retry fails | replay, provenance, idempotency audit | A-R | T1 | STRUCTURAL_VALIDATION | PASS | R3 event history, T3 replay manifest |
+| 2C-A-R1 | exact role set is generated | setup and assignment digests equal the frozen 12-role binding | production generator witness + hostile fixture negatives | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-001 |
+| 2C-A-R2 | Pit-Hag choice is concrete and not-in-play | seat 10 -> seat 7, `fang_gu`, with one causal death before `NIGHT_TASKS` | prospective/replay causal batch | R3 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-002 |
+| 2C-A-R3 | daytime vote rules are bounded | legal nomination/vote reaches strict-highest execution or deterministic no-execution | command validators + tally/replay negatives | R3 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-003 |
+| 2C-A-R4 | execution and death are distinct | execution-only stream never produces death; Pit-Hag death retains cause | event batch and replay rejection | R4 | T1 | HOSTILE_REPLAY_REJECTION | PASS | SUP-2C-PREEMPTION-004 |
+| 2C-A-R5 | ordinary plan is exact | exactly two tasks, no Dreamer/Cerenovus placeholder | plan identity audit + duplicate/unknown rejection | R1 | T1 | STRUCTURAL_VALIDATION | PASS | SUP-2C-PREEMPTION-005 |
+| 2C-A-R6 | Flowergirl cannot settle after death | `FLOWERGIRL_ACTION` has exactly one `SOURCE_INELIGIBLE` terminal settlement after target death | prospective/replay task validator | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | SUP-2C-PREEMPTION-006 |
+| 2C-A-R7 | whole loop is replayable and idempotent | A-R accepted stream replays exactly; same command retries once; altered retry fails | replay, provenance, idempotency audit | R4 | T1 | HOSTILE_REPLAY_REJECTION | PASS | SUP-2C-PREEMPTION-007 |
 
 Primary mechanisms are one-per-row. `R1`-`R4` are external source/research
 support, `T1`-`T3` are repository evidence support; neither label is a mixed
 primary layer. The traceability set is additive to this fresh design only and
 does not cover C/C1 criteria.
 
+### Planned supporting-authority ledger
+
+Supporting evidence is subordinate to the primary mechanism and receives no
+borrowed primary. The implementation-time ledger must materialize these
+planned rows exactly once:
+
+| AuthorityId | Status | UsedByCriteria | Mechanism | Primary | Required result |
+|---|---|---|---|---|---|
+| SUP-2C-PREEMPTION-001 | PLANNED | 2C-A,2C-B,2C-O | setup/assignment/plan fixture manifest | false | exact digest and role-set equality |
+| SUP-2C-PREEMPTION-002 | PLANNED | 2C-A-R2,2C-C,2C-D,2C-E,2C-L,2C-M | accepted replay and Pit-Hag causal chain | false | predecessor/state order exact |
+| SUP-2C-PREEMPTION-003 | PLANNED | 2C-A-R3,2C-G,2C-H,2C-I,2C-J | application command/tally evidence | false | legal vote and deterministic tally |
+| SUP-2C-PREEMPTION-004 | PLANNED | 2C-A-R4,2C-K,2C-N | hostile replay rejection evidence | false | death/execution and reorder failures |
+| SUP-2C-PREEMPTION-005 | PLANNED | 2C-A-R5,2C-O | exact ordinary-plan manifest | false | only two allowed tasks |
+| SUP-2C-PREEMPTION-006 | PLANNED | 2C-A-R6,2C-P,2C-Q | Flowergirl death/settlement cross-link | false | source death precedes terminal settlement |
+| SUP-2C-PREEMPTION-007 | PLANNED | 2C-A-R7,2C-R | stream/retry manifest | false | full replay and idempotency |
+
+No `SUP-*` row may replace a primary, be shared as a primary, or be used by C,
+C1, or B18. The ledger itself is design metadata and not a runtime registry.
+
 For auditability, the A-R flow is also expanded one-to-one below. Each row is
 an independent criterion; grouped rows above are summaries only.
 
 | CriterionId | RuleClaim | CompletionCriterion | RequiredEvidenceMechanism | ExpectedReachability | ExpectedTrust | ExpectedPrimaryLayer | ExpectedResult | SupportingAuthorityRequirement |
 |---|---|---|---|---|---|---|---|---|
-| 2C-A | setup role set is exact | generator accepts exactly twelve IDs | setup witness/digest | A | T1 | STRUCTURAL_VALIDATION | PASS | R1/T1 |
-| 2C-B | assignment is reproducible | seat and role binding digest matches expected binding | assignment witness | B | T1 | STRUCTURAL_VALIDATION | PASS | R1/T1 |
-| 2C-C | first-night plan remains accepted | existing plan opens without historical mutation | accepted replay | C | T1 | STRUCTURAL_VALIDATION | PASS | R2/T1 |
-| 2C-D | Philosopher/Artist spent path is preserved | choice, spend, and source provenance settle once | existing ability evidence | D | T1 | STRUCTURAL_VALIDATION | PASS | R2/T1 |
-| 2C-E | Seamstress pair path is preserved | Mutant/Savant choice and spend settle once | existing ability evidence | E | T1 | STRUCTURAL_VALIDATION | PASS | R2/T1 |
-| 2C-F | dawn closes first night | no ordinary task is settled in first-night window | transition/replay audit | F | T1 | STRUCTURAL_VALIDATION | PASS | R1/T1 |
-| 2C-G | day opens nomination window | phase and day revision are exact | phase transition audit | G | T1 | STRUCTURAL_VALIDATION | PASS | R3/T2 |
-| 2C-H | nomination eligibility is enforced | one legal alive nomination is accepted | prospective command audit | H | T1 | STRUCTURAL_VALIDATION | PASS | R3/T2 |
-| 2C-I | vote provenance is complete | legal live/ghost vote records voter and nomination | vote event audit | I | T1 | STRUCTURAL_VALIDATION | PASS | R3/T2 |
-| 2C-J | tally is strict-highest | threshold, nonzero, strict-highest result is deterministic | tally plus tie negatives | J | T1 | STRUCTURAL_VALIDATION | PASS | R3/T2 |
-| 2C-K | daily execution is bounded | no second execution; execution remains separate from death | execution batch replay | K | T1 | STRUCTURAL_VALIDATION | PASS | R4/T2 |
-| 2C-L | Pit-Hag preempts night tasks | exact choice resolves before `NIGHT_TASKS` | causal batch audit | L | T1 | STRUCTURAL_VALIDATION | PASS | R2/T2 |
-| 2C-M | death cause is explicit | Pit-Hag death has cause and is not daytime execution | death cross-link audit | M | T1 | STRUCTURAL_VALIDATION | PASS | R4/T2 |
-| 2C-N | transition follows preemption | only validated preemption permits `NIGHT_TASKS` | transition/reorder negatives | N | T1 | STRUCTURAL_VALIDATION | PASS | R4/T2 |
-| 2C-O | ordinary plan is exact | exactly generic kill plus Flowergirl task | plan identity audit | O | T1 | STRUCTURAL_VALIDATION | PASS | R1/T1 |
-| 2C-P | Vortox target is fixed | generic kill targets Flowergirl before her task | target/death witness | P | T1 | STRUCTURAL_VALIDATION | PASS | R2/T2 |
-| 2C-Q | dead source is ineligible | one Flowergirl `SOURCE_INELIGIBLE` terminal settlement | prospective/replay task audit | Q | T1 | STRUCTURAL_VALIDATION | PASS | R2/T2 |
-| 2C-R | complete stream is replayable | A-R replay and retry are exact/idempotent | full stream/replay manifest | R | T1 | STRUCTURAL_VALIDATION | PASS | R4/T3 |
+| 2C-A | setup role set is exact | generator accepts exactly twelve IDs | setup witness/digest | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-001 |
+| 2C-B | assignment is reproducible | seat and role binding digest matches expected binding | assignment witness | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-001 |
+| 2C-C | first-night plan remains accepted | existing plan opens without historical mutation | accepted replay | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | SUP-2C-PREEMPTION-002 |
+| 2C-D | Philosopher/Artist spent path is preserved | choice, spend, and source provenance settle once | existing ability evidence | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | SUP-2C-PREEMPTION-002 |
+| 2C-E | Seamstress pair path is preserved | Mutant/Savant choice and spend settle once | existing ability evidence | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | SUP-2C-PREEMPTION-002 |
+| 2C-F | dawn closes first night | no ordinary task is settled in first-night window | transition/replay audit | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | SUP-2C-PREEMPTION-002 |
+| 2C-G | day opens nomination window | phase and day revision are exact | phase transition audit | R3 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-003 |
+| 2C-H | nomination eligibility is enforced | one legal alive nomination is accepted | prospective command audit | R3 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-003 |
+| 2C-I | vote provenance is complete | legal live/ghost vote records voter and nomination | vote event audit | R3 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-003 |
+| 2C-J | tally is strict-highest | threshold, nonzero, strict-highest result is deterministic | tally plus tie negatives | R3 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-003 |
+| 2C-K | daily execution is bounded | no second execution; execution remains separate from death | execution batch replay | R4 | T1 | HOSTILE_REPLAY_REJECTION | PASS | SUP-2C-PREEMPTION-004 |
+| 2C-L | Pit-Hag preempts night tasks | exact choice resolves before `NIGHT_TASKS` | causal batch audit | R3 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-002 |
+| 2C-M | death cause is explicit | Pit-Hag death has cause and is not daytime execution | death cross-link audit | R3 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-002 |
+| 2C-N | transition follows preemption | only validated preemption permits `NIGHT_TASKS` | transition/reorder negatives | R4 | T1 | HOSTILE_REPLAY_REJECTION | PASS | SUP-2C-PREEMPTION-004 |
+| 2C-O | ordinary plan is exact | exactly generic kill plus Flowergirl task | plan identity audit | R1 | T1 | STRUCTURAL_VALIDATION | PASS | SUP-2C-PREEMPTION-005 |
+| 2C-P | Vortox target is fixed | generic kill targets Flowergirl before her task | target/death witness | R3 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | SUP-2C-PREEMPTION-006 |
+| 2C-Q | dead source is ineligible | one Flowergirl `SOURCE_INELIGIBLE` terminal settlement | prospective/replay task audit | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | SUP-2C-PREEMPTION-006 |
+| 2C-R | complete stream is replayable | A-R replay and retry are exact/idempotent | full stream/replay manifest | R4 | T1 | HOSTILE_REPLAY_REJECTION | PASS | SUP-2C-PREEMPTION-007 |
 
 ## Per-event contract and diagnostic identity
 
