@@ -1,25 +1,13 @@
 # Project State
 
-## Current state — Phase 3 D3 final closeout accepted
+## Current state — Phase 3 Foundation accepted; 2C rule gate blocked
 
-- Active state: `COMPLETED / FINAL_D3_CLOSEOUT_ACCEPTED`.
-- D2 and D3 are accepted. D3 implementation HEAD is
-  `40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`; final status is bound to
-  `df9ee017de2f3b8f33f7608a49e91f46c51acc08` on `origin/main`.
-- D2 source H is `56f34120f7da33335a60dc15fcddef605ba8cbb3`; D2 evidence E2 is
-  `8745e1375c30236d477d599f9d657ac7b3ac7b5d`. D3 cleanup is accepted and
-  no active PR or temporary D2 branch remains.
-- D3 product-head, PR, merge-commit, closeout, and closeout-merge CI are
-  separately recorded in the D3 final status. No status is inherited across
-  commits.
-- `currentSlice=null`, `currentBranch=main`, `currentPR=null`,
-  `remainingBlockers=[]`, and no next slice is authorized or started.
-- Slice `2C` (Integrated Basic Phase Flow) is the strongest roadmap candidate,
-  but candidate authority is `AMBIGUOUS`. This is handoff information only;
-  it is not an active slice or implementation authorization. Existing 2B18
-  rule blockers remain unresolved and do not authorize resumption.
-- `nextAction=AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`.
-
+- Active state: `FOUNDATION_ACCEPTED / 2C_RULE_SOURCE_UNAVAILABLE_HUMAN_BLOCKED`.
+- D2, D3, and the 2C prerequisite Foundation are accepted. D3 implementation HEAD is `40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`; final status is bound to `df9ee017de2f3b8f33f7608a49e91f46c51acc08`.
+- Foundation profile-binding PR #53 merged at `5b064afa8f90b9d75812784fc48cbc1e22277f9b`; closeout archive commit is `4faaa859d7a0fb3bc5ffb78fbb3d4b16a5b13366`, with exact closeout CI success.
+- Fresh 2C rule research returned `RULE_SOURCE_UNAVAILABLE`: external sources do not define the repository-level ordinary-night task inventory/completion predicate. No 2C design or implementation started.
+- `currentSlice=2C-rule-gate`, `currentBranch=main`, `currentPR=null`, `remainingBlockers=[RULE_SOURCE_UNAVAILABLE_ORDINARY_NIGHT_SETTLEMENT_CONTRACT]`.
+- `nextAction=HUMAN_RESOLVE_2C_REPOSITORY_SETTLEMENT_CONTRACT_OR_REAUTHORIZE_SCOPED_RULE_SOURCE`.
 All sections below are chronological history and do not override this state.
 
 ## Current state — 2B20A local restoration review passed; exact-head CI pending
