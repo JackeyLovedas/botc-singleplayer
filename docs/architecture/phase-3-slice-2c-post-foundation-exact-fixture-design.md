@@ -1,4 +1,4 @@
-# Phase 3 Slice 2C — Post-Foundation Exact-Fixture Design
+# Phase 3 Slice 2C — Exact-Fixture Rescope Design
 
 ## Design identity and gate
 
@@ -6,186 +6,99 @@
 sliceId=2C
 designKind=POST_FOUNDATION_EXACT_FIXTURE_2C_DESIGN
 parentFoundationCloseout=4faaa859d7a0fb3bc5ffb78fbb3d4b16a5b13366
-foundationSourceHead=2bdb60789a67f1ae846851fec88cc5f6240e3531
 freshDesignCorrectionCount=0/2
 implementationCorrectionBudget=0/3
 implementationAuthorized=false
-designReviewer=NOT_YET_REVIEWED
 designVerdict=HUMAN_BLOCKED
+stopCondition=NEW_C1_STRUCTURAL_DELTA_REQUIRED
 ```
 
-This fresh design supersedes the earlier no-viable-fixture checkpoint only
-within the newly authorized exact-fixture scope. It does not edit that
-historical document, reopen Foundation, or authorize implementation before an
-independent `RULE_DESIGN_PASS`.
+This fresh design supersedes the historical one-capability and Fang-Gu/Witch
+candidate text. It does not reopen Foundation, modify C/C1, or authorize
+implementation.
 
-## Repository and rule authority
+## Exact production fixture
 
-`BOTC-SIM-ORDINARY-NIGHT-SETTLEMENT-CONTRACT-V1` is a repository simulation
-contract. It defines task plans, separate progress, terminal settlements,
-completion, phase guards, replay, and idempotency. External BOTC sources define
-role abilities, nightsheet order, target/outcome semantics, and execution/death
-separation. Neither authority is used to prove claims belonging to the other.
-
-The only inventory authority is
-`SECTS_AND_VIOLETS_ORDINARY_NIGHT_INVENTORY` (25 canonical rows). There is no
-second role table and no setup-result substitution.
-
-## Exact production fixture census
-
-The existing `SeededSectsAndVioletsSetupGenerator` was invoked without source
-or algorithm changes using:
+The existing twelve-player `SeededSectsAndVioletsSetupGenerator` accepts this
+exact-role constraint through its production path:
 
 ```text
-scriptId=sects-and-violets
+rootSeed=2c-exact-role-constraint-vortox
 playerCount=12
-rootSeed=2c-exact-fang-gu-dreamer-cerenovus
-exactRoleIds=[artist,barber,cerenovus,clockmaker,dreamer,evil_twin,fang_gu,mathematician,mutant,sage,savant,sweetheart]
+exactRoleIds=[clockmaker,dreamer,savant,seamstress,philosopher,artist,sage,mutant,klutz,evil_twin,cerenovus,vortox]
 generatorStatus=success
-actualRoleCount=12
 preModifierCounts=7/2/2/1
-postModifierCounts=6/3/2/1
-demon=fang_gu
-roleIdsUnique=true
+postModifierCounts=7/2/2/1
+demon=vortox
 ```
 
-The legal exact fixture has three relevant ordinary-night capability kinds
-after the daytime execution path kills the Mathematician before the ordinary
-night:
+No Mathematician, Fang Gu, Witch, or Pit-Hag is present. Assignment remains
+the production assignment path; the bounded seed search is `[0,99]` and the
+selected assignment is pending a real replay. No manual state injection is
+permitted.
+
+## Capability and role boundaries
+
+The first-night path must genuinely settle Philosopher and Seamstress and
+persist their spent state. The ordinary-night plan may therefore contain only
+these actual blocking kinds:
 
 ```text
-ordinaryNightBlockingCapabilityKinds=[DREAMER_ACTION,CERENOVUS_ACTION,GENERIC_DEMON_KILL]
-ordinaryNightBlockingCapabilityCount=3
-ordinaryNightPlanMustBeNonEmpty=true
-FangGuTransferTriggered=false
-WitchPresent=false
+[DREAMER_ACTION,CERENOVUS_ACTION,GENERIC_DEMON_KILL]
+ordinaryNightBlockingKindCount=3
 ```
 
-The Fang Gu target is a living townsfolk, so this fixture exercises only the
-bounded generic demon-kill outcome and does not exercise transfer, alignment
-change, or role promotion. The dead Mathematician is not silently skipped: the
-current assignment and life state make its ordinary-night requirement
-inapplicable in this fixture.
+Vortox is a continuous information constraint, not a scheduled task. Generic
+Demon kill targets a living Mutant or Klutz and excludes Demon-specific
+transfer, poisoning, or new information frameworks. Dreamer and Cerenovus
+reuse their accepted targeting, information/madness, settlement, and replay
+seams; no broad role framework is introduced.
 
-## Ordinary-night plan/progress design
+## A–R flow contract
 
-The design introduces no generic scheduler. It follows the accepted first-night
-shape with a separate ordinary-night type:
+The intended bounded path is real production setup and assignment, complete
+first-night plan/progress, first dawn, day discussion, one legal nomination,
+deterministic voting, execution resolution, an independent death fact, day end,
+`NIGHT_TASKS`, ordinary-night plan/progress and the three terminal settlements,
+`NIGHT_TASKS_COMPLETED`, then the next dawn/day. The repository settlement
+contract remains the authority for plan/progress/completion. Execution and
+death are separate facts. Ghost-vote, tie-matrix, Slice 3, B18, and broad
+Storyteller automation remain out of scope.
+
+## C1 authority and stop
+
+The accepted C1 authority is internally consistent at:
 
 ```text
-OrdinaryNightTaskPlanV1 (immutable)
-  nightNumber >= 2
-  accepted inventory/source binding
-  blocking tasks ordered by nightsheetOtherNightOrder
-
-OrdinaryNightTaskProgressV1
-  settlements[]
+actualAcceptedC1EventCountBefore2C=40
+acceptedC1BranchCount=59
+codeDomainEventPayloadCount=40
+historicalC1DescriptorDelta=0
 ```
 
-Every plan task binds task ID, capability kind, source player/seat/role
-snapshot, and `PENDING`. Each terminal settlement binds task ID, capability
-kind, night number, outcome, and source/revision facts. Completion is accepted
-only when all blocking tasks have exactly one valid terminal settlement, no
-duplicate or unknown settlement exists, the next-unsettled query is undefined,
-and no triggered mandatory opportunity remains unresolved. Unsupported live
-requirements fail closed with no fake settlement and no phase transition.
-
-## Full bounded phase-flow contract
-
-The intended primary path is:
-
-```text
-CreateGame
- -> SelectScript
- -> GenerateSetup(exact fixture)
- -> AssignCharacters
- -> InitializeFirstNight
- -> EstablishPrivateKnowledge
- -> PlanFirstNightTasks
- -> settle all first-night tasks
- -> FIRST_NIGHT_COMPLETED
- -> DAWN_RESOLUTION
- -> DAY_DISCUSSION
- -> open nominations
- -> one alive nomination
- -> one deterministic vote lifecycle
- -> close nomination
- -> resolve execution
- -> ExecutionOccurred
- -> independent DeathOccurred (when applicable)
- -> NIGHT_TASKS
- -> OrdinaryNightTaskPlan
- -> Dreamer/Cerenovus/generic demon-kill settlements
- -> NIGHT_TASKS_COMPLETED
- -> DAWN_RESOLUTION
- -> next DAY_DISCUSSION
-```
-
-The existing phase policy remains the sole transition authority. Execution and
-death remain independent facts. No direct first-night bypass, test-only state
-mutation, fake settlement, ghost-vote framework, or Slice 3 behavior is part of
-this design.
-
-## Scoped rule evidence
-
-The exact fixture evidence is in
-`docs/rules/evidence/2C-post-foundation-exact-fixture.md`. It binds the
-previously accepted official Dreamer (`oldid=2904`), Cerenovus (`oldid=3048`),
-Fang Gu (`oldid=2974`), Glossary (`oldid=2874`), States (`oldid=1039`), and
-pinned nightsheet (`3d6d930a...`) records. The source scope is limited to the
-three selected capabilities and the ordinary-night window; no Witch, Fang Gu
-transfer, broad effect framework, or B18 conflict is selected.
-
-## C1 boundary and hard blocker
-
-The accepted C1 structural schema currently has:
-
-```text
-C1EventCountBefore=40
-C1BranchCountBefore=59
-historicalDescriptorDelta=0
-```
-
-`events.ts` and the accepted C1 descriptors currently contain no canonical
-nomination, vote, execution, death, ordinary-night-plan, or ordinary-night
-settlement event families. A real replayable implementation of the requested
-full loop therefore needs additive event descriptors and their structural
-bindings. It cannot truthfully use naked existing `PhaseTransitioned` events
-for these facts.
-
-Under the current writer instruction, a required new C1 structural delta is a
-hard stop. No C1 descriptor or production file is changed here, and no
-implementation is started.
+The accepted event map has no canonical nomination, vote, execution, death,
+ordinary-plan, ordinary-target, or ordinary-settlement event families. The
+A–R loop consequently needs a non-zero additive descriptor delta (at minimum
+the seven day/death subjects and three ordinary-night subjects). Reusing
+`PhaseTransitioned` would erase canonical replay facts and is forbidden.
 
 ```text
 newStructuralDeltaRequired=true
-newStructuralDeltaCount=UNRESOLVED_BUT_NONZERO_FOR_FULL_LOOP
+newStructuralDeltaCount>=1
+historicalC1DescriptorDelta=0
 C1HistoricalPrefixMutation=false
 ```
 
-## Stop-loss disposition
+Because this authorization explicitly says a required new C1 structural delta
+is a true STOP, no implementation, tests, workflow, coverage, Hosted CI, push,
+PR, or Slice 3 work starts. A new governance decision must authorize the
+minimal additive C1 descriptor extension before implementation can proceed.
 
-```text
-fixtureCensusPerformed=true
-playerCountsChecked=[12]
-seedRangesChecked={12:[0,99]}
-viableExactFixtureCount=1
-blockingTaskKindsByFixture=[DREAMER_ACTION,CERENOVUS_ACTION,GENERIC_DEMON_KILL]
-designVerdict=HUMAN_BLOCKED
-implementationAuthorized=false
-B18Status=HUMAN_BLOCKED_UNCHANGED
-Slice3ScopePulledForward=false
-```
+## Evidence and next action
 
-The exact fixture is now feasible under the newly authorized three-capability
-scope, but the complete phase loop is blocked by the need for a new C1
-structural delta. This document intentionally stops before implementation.
-Continuation requires a new governance decision explicitly authorizing the
-minimal additive C1 descriptor extension, while keeping historical C1 nodes
-immutable. It must not be treated as permission to modify C1 in this round.
-
-## Required next action
-
-Obtain independent design review of this exact fixture and resolve the C1
-additive-descriptor prerequisite. Until then: no production edits, no tests,
-no workflow changes, no coverage or Hosted CI, no push/PR, and no Slice 3.
+Scoped evidence is recorded in
+`docs/rules/evidence/2C-post-foundation-exact-fixture.md`, reusing accepted
+Dreamer/Cerenovus/Vortox, nightsheet, and execution/death sources. This design
+requires a fresh independent review; with the structural prerequisite still
+forbidden, the operative verdict is `HUMAN_BLOCKED` and
+`implementationAuthorized=false`.
