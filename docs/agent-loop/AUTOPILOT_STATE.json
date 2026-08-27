@@ -27,8 +27,8 @@
       "$.nextAction"
     ],
     "activeTextMarkers": {
-      "docs/agent-loop/CURRENT_TASK.md": "## Phase 3 D3 — final closeout accepted; authority reconciled",
-      "docs/agent-loop/PROJECT_STATE.md": "## Current state — Phase 3 D3 final closeout accepted",
+      "docs/agent-loop/CURRENT_TASK.md": "## Phase 3 Slice 2C — Foundation accepted; fresh rule gate blocked",
+      "docs/agent-loop/PROJECT_STATE.md": "## Current state — Phase 3 Foundation accepted; 2C rule gate blocked",
       "docs/reviews/pr-46-code-review-final.md": "<!-- ORIGINAL_COMMENT_BODY_BEGIN -->",
       "docs/agent-loop/AUTOPILOT_LOG.md": "2b20a-post-merge-closeout"
     },
@@ -5063,5 +5063,5 @@
   "lastAction": "Reconciled active controls after accepted Phase 3 D3 closeout at origin/main df9ee017de2f3b8f33f7608a49e91f46c51acc08. Verified D2/D3 acceptance, no active PR or temporary D2 branch, preserved historical records, and recorded Slice 2C only as an ambiguous roadmap candidate; no next slice was authorized or started.",
   "lastError": null,
   "requiredNextAction": "HUMAN_RESOLVE_2C_REPOSITORY_SETTLEMENT_CONTRACT_OR_REAUTHORIZE_SCOPED_RULE_SOURCE",
-  "nextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE"
+  "nextAction": "HUMAN_RESOLVE_2C_REPOSITORY_SETTLEMENT_CONTRACT_OR_REAUTHORIZE_SCOPED_RULE_SOURCE"
 }
