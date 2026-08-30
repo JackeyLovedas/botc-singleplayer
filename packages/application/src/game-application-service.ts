@@ -4277,7 +4277,7 @@ export class GameApplicationService {
         if (nominator === undefined || nominee === undefined) throw new DomainError("InvalidDomainBatchSemantics", "nomination participants unavailable");
         const deadPlayerIds = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]);
         if (deadPlayerIds.has(nominator.playerId)) throw new DomainError("InvalidDomainBatchSemantics", "dead players cannot nominate");
-        if ((state.nominations ?? []).some((entry) => entry.dayNumber === state.dayNumber && entry.nominatorPlayerId === nominator.playerId && !(state.blocks ?? []).some((block) => block.nominationId === entry.nominationId))) throw new DomainError("InvalidDomainBatchSemantics", "nominator has already nominated today");
+        if ((state.nominations ?? []).some((entry) => entry.dayNumber === state.dayNumber && entry.nominatorPlayerId === nominator.playerId)) throw new DomainError("InvalidDomainBatchSemantics", "nominator has already nominated today");
         const latestNomination = state.nominations?.at(-1);
         if (latestNomination !== undefined && latestNomination.dayNumber === state.dayNumber && !(state.blocks ?? []).some((block) => block.nominationId === latestNomination.nominationId)) throw new DomainError("InvalidDomainBatchSemantics", "only one active nomination is allowed");
         const ordinal = (state.nominations?.length ?? 0) + 1;
