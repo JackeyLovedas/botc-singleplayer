@@ -4369,6 +4369,8 @@ export class GameApplicationService {
             causalDeathEventId: sourceDeathEventId
           } }];
         }
+        const sourceDead = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).has(task.sourcePlayerId);
+        if (sourceDead) throw new DomainError("InvalidDomainBatchSemantics", "Generic demon source is ineligible");
         const target = deriveOrdinaryNightTarget(task, state);
         const targetAlreadyDead = (state.deadPlayerIds ?? []).includes(target.targetPlayerId) || (state.deaths ?? []).some((death) => death.playerId === target.targetPlayerId);
         if (targetAlreadyDead) throw new DomainError("InvalidDomainBatchSemantics", "Generic demon kill requires a living target at settlement");

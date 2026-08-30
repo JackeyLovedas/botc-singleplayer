@@ -194,6 +194,7 @@ const validateBasicPhaseFlowBatch = (
     if (settlement?.eventType !== "OrdinaryNightTaskSettled" || settlement.payload.taskId !== first.payload.taskId || settlement.payload.targetPlayerId !== first.payload.targetPlayerId || settlement.payload.taskType !== first.payload.taskType || settlement.payload.settlement !== "RESOLVED" || settlement.payload.sourcePlayerId !== first.payload.sourcePlayerId || settlement.payload.causalDeathEventId !== null) reject("Ordinary-night target and settlement must agree");
     const task = state.ordinaryNightTaskPlan?.tasks.find((candidate) => candidate.taskId === first.payload.taskId);
     if (task === undefined || task.taskType !== first.payload.taskType || task.sourcePlayerId !== first.payload.sourcePlayerId || task.taskType !== "GENERIC_DEMON_KILL" || task.sourceRoleId !== "vortox") reject("Ordinary-night target must reference the canonical generic Demon task");
+    if (new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).has(task!.sourcePlayerId)) reject("Ordinary-night generic Demon source is ineligible");
     const expectedTarget = (() => {
       try {
         return deriveOrdinaryNightTarget(task!, state);
