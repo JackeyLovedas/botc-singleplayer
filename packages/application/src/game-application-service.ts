@@ -4361,11 +4361,12 @@ export class GameApplicationService {
         if (task.taskType === "FLOWERGIRL_ACTION") {
           const sourceDeath = (state.deaths ?? []).find((death) => death.playerId === task.sourcePlayerId);
           if (sourceDeath === undefined) throw new DomainError("InvalidDomainBatchSemantics", "Flowergirl source is still eligible");
+          const sourceDeathEventId = state.deathEventIds?.find((entry) => entry.deathId === sourceDeath.deathId)?.eventId ?? sourceDeath.deathId;
           return [{ ...common(firstEventSequence), eventType: "OrdinaryNightTaskSettled" as const, payload: {
             rulesBaselineVersion: RULES_BASELINE_VERSION, planVersion: ORDINARY_NIGHT_PLAN_VERSION, window: ORDINARY_NIGHT_WINDOW,
             nightNumber: 2, taskId: task.taskId, taskType: task.taskType, sourcePlayerId: task.sourcePlayerId,
             targetPlayerId: null, settlement: "SOURCE_INELIGIBLE" as const, transferOutcome: "NONE" as const,
-            causalDeathEventId: sourceDeath.causeEventId ?? sourceDeath.deathId
+            causalDeathEventId: sourceDeathEventId
           } }];
         }
         const target = deriveOrdinaryNightTarget(task, state);

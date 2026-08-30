@@ -117,4 +117,6 @@ export type GameState = {
   readonly executions?: readonly import("./events.js").ExecutionDeclaredPayload[];
   readonly deaths?: readonly import("./events.js").PlayerDiedPayload[];
   readonly deadPlayerIds?: readonly string[];
+  /** Envelope identity for each accepted death, retained for later causal links. */
+  readonly deathEventIds?: readonly { readonly deathId: string; readonly eventId: string }[];
 };

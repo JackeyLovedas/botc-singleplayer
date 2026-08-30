@@ -2999,8 +2999,16 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
       if (event.payload.deadSeatNumber !== rosterEntry.seatNumber) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied seat must match the roster");
       if (event.payload.phase === "EXECUTION_RESOLUTION" && (event.payload.cause !== "EXECUTION" || event.payload.executionId === null || event.payload.causeEventType !== "ExecutionResolved" || event.payload.sourcePlayerId !== null || event.payload.sourceRoleId !== null)) throw new DomainError("InvalidDomainBatchSemantics", "Execution death provenance is invalid");
       if (event.payload.phase === "NIGHT_TASKS" && (event.payload.cause !== "GENERIC_DEMON_KILL" || event.payload.executionId !== null || event.payload.causeEventType !== "OrdinaryNightTargetDerived" || event.payload.sourcePlayerId === null || event.payload.sourceRoleId !== "vortox")) throw new DomainError("InvalidDomainBatchSemantics", "Generic death provenance is invalid");
+      if (event.payload.phase === "EXECUTION_RESOLUTION" && event.payload.deathId !== `death-v1:${event.payload.executionId}`) throw new DomainError("InvalidDomainBatchSemantics", "Execution death ID is not canonical");
       if (event.payload.dayNumber !== state.dayNumber || event.payload.nightNumber !== state.nightNumber || event.payload.characterStateRevision !== (state.currentCharacterState?.revision ?? 0)) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied state revision or phase counters are stale");
-      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, deaths: [...(state.deaths ?? []), event.payload], deadPlayerIds: [...(state.deadPlayerIds ?? []), event.payload.playerId] };
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        deaths: [...(state.deaths ?? []), event.payload],
+        deadPlayerIds: [...(state.deadPlayerIds ?? []), event.payload.playerId],
+        deathEventIds: [...(state.deathEventIds ?? []), { deathId: event.payload.deathId, eventId: event.eventId }]
+      };
     }
     case "ExecutionResolved":
       if (state === undefined) throw new DomainError("MissingGameCreated", "ExecutionResolved requires an existing game");

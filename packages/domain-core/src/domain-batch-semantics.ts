@@ -63,7 +63,7 @@ import {
 import { validateClockmakerInformationAgainstCanonicalState } from "./clockmaker.js";
 import { validateMathematicianInformationDeliveredPayloadShape } from "./mathematician.js";
 import { sameRoleSetupSnapshot, SUPPORTED_SCRIPT_ID } from "./setup-types.js";
-import { validateOrdinaryNightTaskPlan } from "./ordinary-night.js";
+import { deriveOrdinaryNightTarget, validateOrdinaryNightTaskPlan } from "./ordinary-night.js";
 import { validateTwoCDomainEventStructure } from "./domain-event-structural-validator.js";
 
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
@@ -75,6 +75,8 @@ const validateBasicPhaseFlowBatch = (
 ): void => {
   if (currentState === undefined) reject("Basic phase-flow events require an existing game");
   const state = currentState as GameState;
+  const deathEventIdFor = (death: { readonly deathId: string }): string =>
+    state.deathEventIds?.find((entry) => entry.deathId === death.deathId)?.eventId ?? death.deathId;
   assertSharedBatchMetadataForAll(events);
   for (const event of events) {
     if (event.rulesBaselineVersion !== state.rulesBaselineVersion) reject("Basic phase-flow rules baseline must match current state");
@@ -136,7 +138,7 @@ const validateBasicPhaseFlowBatch = (
     if (resolved.payload.executionId !== first.payload.executionId || resolved.payload.targetPlayerId !== first.payload.targetPlayerId || (died !== undefined && (died.payload.executionId !== first.payload.executionId || died.payload.playerId !== first.payload.targetPlayerId))) reject("Execution chain payloads do not agree");
     const expected = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "NIGHT_TASKS", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
     if (!expected.allowed || transition.payload.toPhase !== expected.nextPhase || transition.payload.transitionReason !== expected.reasonCode) reject("Execution must transition to ordinary night tasks");
-    if (died !== undefined && (died.payload.cause !== "EXECUTION" || died.payload.causeEventType !== "ExecutionResolved" || died.payload.causeEventId !== resolved.eventId || died.payload.phase !== "EXECUTION_RESOLUTION" || died.payload.executionId !== resolved.payload.executionId || died.payload.executionId === null || died.payload.sourcePlayerId !== null || died.payload.sourceRoleId !== null || died.payload.dayNumber !== state.dayNumber || died.payload.nightNumber !== state.nightNumber || died.payload.characterStateRevision !== (state.currentCharacterState?.revision ?? 0))) reject("Execution death must point to its resolution");
+    if (died !== undefined && (died.payload.cause !== "EXECUTION" || died.payload.deathId !== `death-v1:${died.payload.executionId}` || died.payload.causeEventType !== "ExecutionResolved" || died.payload.causeEventId !== resolved.eventId || died.payload.phase !== "EXECUTION_RESOLUTION" || died.payload.executionId !== resolved.payload.executionId || died.payload.executionId === null || died.payload.sourcePlayerId !== null || died.payload.sourceRoleId !== null || died.payload.dayNumber !== state.dayNumber || died.payload.nightNumber !== state.nightNumber || died.payload.characterStateRevision !== (state.currentCharacterState?.revision ?? 0))) reject("Execution death must point to its resolution");
     if ((state.deadPlayerIds ?? []).includes(first.payload.targetPlayerId) || (state.deaths ?? []).some((death) => death.playerId === first.payload.targetPlayerId)) {
       if (resolved.payload.deathOutcome !== "DID_NOT_DIE") reject("Already-dead execution must not emit a death");
     } else if (resolved.payload.deathOutcome !== "DIED" || died === undefined) reject("Living execution target must emit one death");
@@ -179,7 +181,7 @@ const validateBasicPhaseFlowBatch = (
     const task = state.ordinaryNightTaskPlan?.tasks.find((candidate) => candidate.taskId === first.payload.taskId);
     if (task === undefined || task.taskType !== "FLOWERGIRL_ACTION" || task.sourcePlayerId !== first.payload.sourcePlayerId) reject("Source-ineligible settlement must reference the planned Flowergirl task");
     const sourceDeath = (state.deaths ?? []).find((death) => death.playerId === first.payload.sourcePlayerId);
-    if (sourceDeath === undefined || first.payload.causalDeathEventId !== (sourceDeath.causeEventId ?? sourceDeath.deathId)) reject("Source-ineligible settlement must reference an accepted source death");
+    if (sourceDeath === undefined || first.payload.causalDeathEventId !== deathEventIdFor(sourceDeath)) reject("Source-ineligible settlement must reference an accepted source death");
     return;
   }
   if (first.eventType === "OrdinaryNightTargetDerived") {
@@ -192,9 +194,16 @@ const validateBasicPhaseFlowBatch = (
     if (settlement?.eventType !== "OrdinaryNightTaskSettled" || settlement.payload.taskId !== first.payload.taskId || settlement.payload.targetPlayerId !== first.payload.targetPlayerId || settlement.payload.taskType !== first.payload.taskType || settlement.payload.settlement !== "RESOLVED" || settlement.payload.sourcePlayerId !== first.payload.sourcePlayerId || settlement.payload.causalDeathEventId !== null) reject("Ordinary-night target and settlement must agree");
     const task = state.ordinaryNightTaskPlan?.tasks.find((candidate) => candidate.taskId === first.payload.taskId);
     if (task === undefined || task.taskType !== first.payload.taskType || task.sourcePlayerId !== first.payload.sourcePlayerId || task.taskType !== "GENERIC_DEMON_KILL" || task.sourceRoleId !== "vortox") reject("Ordinary-night target must reference the canonical generic Demon task");
-    if (first.payload.targetPlayerId === first.payload.sourcePlayerId || first.payload.candidateSet.length === 0 || first.payload.selectionIndex < 0 || first.payload.selectionIndex >= first.payload.candidateSet.length || first.payload.candidateSet[first.payload.selectionIndex] !== first.payload.targetPlayerId || first.payload.seed !== state.rootSeed || first.payload.transferOutcome !== "NONE") reject("Ordinary-night target provenance is invalid");
+    const expectedTarget = (() => {
+      try {
+        return deriveOrdinaryNightTarget(task!, state);
+      } catch {
+        return reject("Ordinary-night target candidate set is not derivable from accepted state");
+      }
+    })();
+    if (first.payload.targetPlayerId !== expectedTarget.targetPlayerId || first.payload.candidateSet.length !== expectedTarget.candidateSet.length || first.payload.candidateSet.some((playerId, index) => playerId !== expectedTarget.candidateSet[index]) || first.payload.selectionIndex !== expectedTarget.selectionIndex || first.payload.seed !== expectedTarget.seed || first.payload.transferOutcome !== "NONE") reject("Ordinary-night target provenance is invalid");
     if (first.payload.taskType === "GENERIC_DEMON_KILL" && (deathCandidate === undefined || deathCandidate.payload.playerId !== first.payload.targetPlayerId)) reject("Generic demon kill must include PlayerDied");
-    if (deathCandidate !== undefined && (deathCandidate.payload.cause !== "GENERIC_DEMON_KILL" || deathCandidate.payload.playerId !== first.payload.targetPlayerId || deathCandidate.payload.causeEventType !== "OrdinaryNightTargetDerived" || deathCandidate.payload.causeEventId !== first.eventId || deathCandidate.payload.phase !== "NIGHT_TASKS")) reject("Ordinary-night death must match the derived target");
+    if (deathCandidate !== undefined && (deathCandidate.payload.cause !== "GENERIC_DEMON_KILL" || deathCandidate.payload.deathId !== `death-v1:ordinary:${first.payload.taskId}` || deathCandidate.payload.playerId !== first.payload.targetPlayerId || deathCandidate.payload.sourcePlayerId !== first.payload.sourcePlayerId || deathCandidate.payload.sourceRoleId !== "vortox" || deathCandidate.payload.causeEventType !== "OrdinaryNightTargetDerived" || deathCandidate.payload.causeEventId !== first.eventId || deathCandidate.payload.phase !== "NIGHT_TASKS")) reject("Ordinary-night death must match the derived target");
     return;
   }
   reject("Unsupported basic phase-flow event batch");
