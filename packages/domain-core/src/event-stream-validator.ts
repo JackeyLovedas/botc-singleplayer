@@ -2,6 +2,20 @@ import { DomainError } from "./errors.js";
 import { SUPPORTED_DOMAIN_EVENT_VERSION } from "./events.js";
 import type { AnyDomainEventEnvelope } from "./events.js";
 import type { BatchId, CommandId, EventId, GameId } from "./ids.js";
+import { validateTwoCDomainEventStructure } from "./domain-event-structural-validator.js";
+
+const TWO_C_EVENT_TYPES = new Set([
+  "NominationDeclared",
+  "VoteCast",
+  "BlockStateUpdated",
+  "ExecutionDeclared",
+  "PlayerDied",
+  "ExecutionResolved",
+  "DayClosedWithoutExecution",
+  "OrdinaryNightTaskPlanCreated",
+  "OrdinaryNightTargetDerived",
+  "OrdinaryNightTaskSettled"
+]);
 
 type BatchMetadata = {
   readonly batchId: BatchId;
@@ -45,6 +59,16 @@ export const validateDomainEventStream = (events: readonly AnyDomainEventEnvelop
   for (const [index, event] of events.entries()) {
     if (event.eventVersion !== SUPPORTED_DOMAIN_EVENT_VERSION) {
       throw new DomainError("UnsupportedEventVersion", "Unsupported domain event version");
+    }
+
+    if (TWO_C_EVENT_TYPES.has(event.eventType)) {
+      const structural = validateTwoCDomainEventStructure(event);
+      if (!structural.ok) {
+        throw new DomainError(
+          "InvalidDomainBatchSemantics",
+          `2C domain event failed structural validation: ${structural.diagnostic.safeSummary}`
+        );
+      }
     }
 
     if (event.gameId !== streamGameId) {

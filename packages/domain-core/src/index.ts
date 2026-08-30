@@ -21,7 +21,13 @@ export type {
   CaptureCanonicalRuntimeValueResult,
   SerializeCanonicalRuntimeValueResult
 } from "./canonical-runtime-value.js";
-export { validateDomainEventStructure } from "./domain-event-structural-validator.js";
+export {
+  validateDomainEventStructure,
+  validateDomainEventStructureWithAuthority,
+  validateTwoCDomainEventStructure,
+  admitC1Authority,
+  admitTwoCAuthority
+} from "./domain-event-structural-validator.js";
 export type {
   DomainEventPayloadBranchId,
   DomainEventPayloadSchemaIdentity,

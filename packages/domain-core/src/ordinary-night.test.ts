@@ -17,9 +17,9 @@ const state = {
 } as unknown as GameState;
 
 describe("bounded ordinary-night foundation", () => {
-  it("plans the three bounded capability kinds and targets demon kill at seat 1", () => {
+  it("plans only the two accepted capability kinds and targets demon kill at seat 1", () => {
     const plan = createOrdinaryNightTaskPlan(state);
-    expect(plan.tasks.map((task) => task.taskType)).toEqual(["CERENOVUS_ACTION", "GENERIC_DEMON_KILL", "DREAMER_ACTION"]);
+    expect(plan.tasks.map((task) => task.taskType)).toEqual(["GENERIC_DEMON_KILL"]);
     const demonTask = plan.tasks.find((task) => task.taskType === "GENERIC_DEMON_KILL");
     expect(demonTask).toBeDefined();
     expect(deriveOrdinaryNightTarget(demonTask!, state).targetPlayerId).toBe("p1");

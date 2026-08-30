@@ -14,6 +14,7 @@ const booleanNode = (nodeId: string): StructuralSchemaNodeV1 => ({ nodeId, kind:
 const literalNode = (nodeId: string, value: string): StructuralSchemaNodeV1 => ({ nodeId, kind: "LITERAL", value });
 const enumNode = (nodeId: string, values: readonly string[]): StructuralSchemaNodeV1 => ({ nodeId, kind: "ENUM", values: [...values].sort((left, right) => left < right ? -1 : left === right ? 0 : 1) });
 const nullableStringNode = (nodeId: string, childNodeId: string): StructuralSchemaNodeV1 => ({ nodeId, kind: "NULLABLE", childNodeId });
+const nullableEnumNode = (nodeId: string, childNodeId: string): StructuralSchemaNodeV1 => ({ nodeId, kind: "NULLABLE", childNodeId });
 const arrayNode = (nodeId: string, elementNodeId: string): StructuralSchemaNodeV1 => ({ nodeId, kind: "ARRAY", elementNodeId });
 
 const recordNode = (nodeId: string, fields: readonly { readonly fieldName: string; readonly childNodeId: string }[]): StructuralSchemaNodeV1 => ({
@@ -27,7 +28,7 @@ type DescriptorSpec = {
   readonly eventType: string;
   readonly branchOrdinal: number;
   readonly branchId: string;
-  readonly fieldKinds: readonly ("STRING" | "INTEGER" | "BOOLEAN" | "NOMINATION" | "NULLABLE_STRING" | "ENUM" | "LITERAL" | "ARRAY_STRING" | "ARRAY_TASK")[];
+  readonly fieldKinds: readonly ("STRING" | "INTEGER" | "BOOLEAN" | "NOMINATION" | "NULLABLE_STRING" | "NULLABLE_VORTOX" | "ENUM" | "LITERAL" | "ARRAY_STRING" | "ARRAY_TASK")[];
   readonly fields: readonly string[];
   readonly literals?: Readonly<Record<number, string>>;
   readonly enums?: Readonly<Record<number, readonly string[]>>;
@@ -38,7 +39,7 @@ const SPECS: readonly DescriptorSpec[] = [
   { eventOrdinal: 42, eventType: "VoteCast", branchOrdinal: 61, branchId: "C-2C-VOTE-CAST", fields: ["rulesBaselineVersion", "voteId", "nominationId", "voterPlayerId", "voterSeatNumber", "choice", "ghostVoteConsumed"], fieldKinds: ["STRING", "STRING", "STRING", "STRING", "INTEGER", "ENUM", "BOOLEAN"], enums: { 5: ["YES", "NO"] } },
   { eventOrdinal: 43, eventType: "BlockStateUpdated", branchOrdinal: 62, branchId: "C-2C-BLOCK-UPDATED", fields: ["rulesBaselineVersion", "nominationId", "dayNumber", "livingPlayerCount", "threshold", "leaderNominationId", "leaderVoteCount", "tied"], fieldKinds: ["STRING", "STRING", "INTEGER", "INTEGER", "INTEGER", "NULLABLE_STRING", "INTEGER", "BOOLEAN"] },
   { eventOrdinal: 44, eventType: "ExecutionDeclared", branchOrdinal: 63, branchId: "C-2C-EXECUTION-DECLARED", fields: ["rulesBaselineVersion", "executionId", "blockId", "targetPlayerId", "dayNumber"], fieldKinds: ["STRING", "STRING", "STRING", "STRING", "INTEGER"] },
-  { eventOrdinal: 45, eventType: "PlayerDied", branchOrdinal: 64, branchId: "C-2C-PLAYER-DIED", fields: ["rulesBaselineVersion", "deathId", "executionId", "playerId", "deadSeatNumber", "dayNumber", "nightNumber", "phase", "cause", "causeEventId", "causeEventType", "sourcePlayerId", "sourceRoleId", "characterStateRevision"], fieldKinds: ["STRING", "STRING", "NULLABLE_STRING", "STRING", "INTEGER", "INTEGER", "INTEGER", "ENUM", "ENUM", "STRING", "ENUM", "NULLABLE_STRING", "NULLABLE_STRING", "INTEGER"], enums: { 7: ["EXECUTION_RESOLUTION", "NIGHT_TASKS"], 8: ["EXECUTION", "GENERIC_DEMON_KILL"], 10: ["ExecutionResolved", "OrdinaryNightTargetDerived"] } },
+  { eventOrdinal: 45, eventType: "PlayerDied", branchOrdinal: 64, branchId: "C-2C-PLAYER-DIED", fields: ["rulesBaselineVersion", "deathId", "executionId", "playerId", "deadSeatNumber", "dayNumber", "nightNumber", "phase", "cause", "causeEventId", "causeEventType", "sourcePlayerId", "sourceRoleId", "characterStateRevision"], fieldKinds: ["STRING", "STRING", "NULLABLE_STRING", "STRING", "INTEGER", "INTEGER", "INTEGER", "ENUM", "ENUM", "STRING", "ENUM", "NULLABLE_STRING", "NULLABLE_VORTOX", "INTEGER"], enums: { 7: ["EXECUTION_RESOLUTION", "NIGHT_TASKS"], 8: ["EXECUTION", "GENERIC_DEMON_KILL"], 10: ["ExecutionResolved", "OrdinaryNightTargetDerived"], 12: ["vortox"] } },
   { eventOrdinal: 46, eventType: "ExecutionResolved", branchOrdinal: 65, branchId: "C-2C-EXECUTION-RESOLVED", fields: ["rulesBaselineVersion", "executionId", "targetPlayerId", "dayNumber", "resolution", "deathOutcome"], fieldKinds: ["STRING", "STRING", "STRING", "INTEGER", "LITERAL", "ENUM"], literals: { 4: "EXECUTED" }, enums: { 5: ["DIED", "DID_NOT_DIE"] } },
   { eventOrdinal: 47, eventType: "DayClosedWithoutExecution", branchOrdinal: 66, branchId: "C-2C-DAY-CLOSED", fields: ["rulesBaselineVersion", "dayNumber", "blockId", "reason"], fieldKinds: ["STRING", "INTEGER", "NULLABLE_STRING", "LITERAL"], literals: { 3: "NO_EXECUTABLE_CANDIDATE" } },
   { eventOrdinal: 48, eventType: "OrdinaryNightTaskPlanCreated", branchOrdinal: 67, branchId: "C-2C-NIGHT-PLAN", fields: ["rulesBaselineVersion", "planVersion", "window", "nightNumber", "taskCount", "tasks"], fieldKinds: ["STRING", "LITERAL", "LITERAL", "INTEGER", "INTEGER", "ARRAY_TASK"], literals: { 1: "ordinary-night-v1", 2: "OTHER_NIGHT" } },
@@ -56,11 +57,12 @@ export const TWO_C_ADDITIVE_DESCRIPTORS: readonly C1AdditiveDescriptorV1[] = SPE
     else if (kind === "LITERAL") nodes.push(literalNode(nodeId, spec.literals?.[index] ?? ""));
     else if (kind === "ENUM") nodes.push(enumNode(nodeId, spec.enums?.[index] ?? []));
     else if (kind === "NULLABLE_STRING") nodes.push(nullableStringNode(nodeId, `${nodeId}-inner`), stringNode(`${nodeId}-inner`));
+    else if (kind === "NULLABLE_VORTOX") nodes.push(nullableEnumNode(nodeId, `${nodeId}-inner`), enumNode(`${nodeId}-inner`, spec.enums?.[index] ?? ["vortox"]));
     else if (kind === "ARRAY_STRING") nodes.push(arrayNode(nodeId, `${nodeId}-element`), stringNode(`${nodeId}-element`));
     else if (kind === "ARRAY_TASK") {
       const taskFields = ["sourcePlayerId", "sourceRoleId", "sourceSeatNumber", "status", "taskId", "taskType"].map((fieldName, taskIndex) => {
         const taskNodeId = `${nodeId}-task-${taskIndex + 1}`;
-        nodes.push(fieldName === "sourceSeatNumber" ? integerNode(taskNodeId) : fieldName === "status" ? enumNode(taskNodeId, ["PENDING", "SETTLED"]) : fieldName === "taskType" ? enumNode(taskNodeId, ["CERENOVUS_ACTION", "DREAMER_ACTION", "FLOWERGIRL_ACTION", "GENERIC_DEMON_KILL"]) : stringNode(taskNodeId));
+      nodes.push(fieldName === "sourceSeatNumber" ? integerNode(taskNodeId) : fieldName === "status" ? enumNode(taskNodeId, ["PENDING", "SETTLED"]) : fieldName === "taskType" ? enumNode(taskNodeId, ["FLOWERGIRL_ACTION", "GENERIC_DEMON_KILL"]) : stringNode(taskNodeId));
         return { fieldName, childNodeId: taskNodeId };
       });
       const taskRoot = `${nodeId}-task-root`;

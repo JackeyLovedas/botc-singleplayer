@@ -4352,7 +4352,9 @@ export class GameApplicationService {
         const deathMetadata = common(firstEventSequence + 1);
         const settlementMetadata = common(firstEventSequence + (targetAlreadyDead ? 1 : 2));
         const deathEvent = task.taskType === "GENERIC_DEMON_KILL" && !targetAlreadyDead
-          ? [{ ...deathMetadata, eventType: "PlayerDied" as const, payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, deathId: `death-v1:ordinary:${task.taskId}`, executionId: null, playerId: target.targetPlayerId, deadSeatNumber: targetSeatNumber, dayNumber: state.dayNumber, nightNumber: state.nightNumber, phase: "NIGHT_TASKS" as const, cause: "GENERIC_DEMON_KILL" as const, causeEventId: targetMetadata.eventId, causeEventType: "OrdinaryNightTargetDerived" as const, sourcePlayerId: task.sourcePlayerId, sourceRoleId: task.sourceRoleId, characterStateRevision: state.currentCharacterState?.revision ?? 0 } }]
+          ? (task.sourceRoleId === "vortox"
+            ? [{ ...deathMetadata, eventType: "PlayerDied" as const, payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, deathId: `death-v1:ordinary:${task.taskId}`, executionId: null, playerId: target.targetPlayerId, deadSeatNumber: targetSeatNumber, dayNumber: state.dayNumber, nightNumber: state.nightNumber, phase: "NIGHT_TASKS" as const, cause: "GENERIC_DEMON_KILL" as const, causeEventId: targetMetadata.eventId, causeEventType: "OrdinaryNightTargetDerived" as const, sourcePlayerId: task.sourcePlayerId, sourceRoleId: "vortox" as const, characterStateRevision: state.currentCharacterState?.revision ?? 0 } }]
+            : (() => { throw new DomainError("InvalidDomainBatchSemantics", "Generic demon kill requires the canonical Vortox source"); })())
           : [];
         return [
           { ...targetMetadata, eventType: "OrdinaryNightTargetDerived", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, ...target } },

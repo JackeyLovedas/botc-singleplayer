@@ -3,12 +3,13 @@ import type { GameState } from "./game-state.js";
 
 export const ORDINARY_NIGHT_PLAN_VERSION = "ordinary-night-v1" as const;
 export const ORDINARY_NIGHT_WINDOW = "OTHER_NIGHT" as const;
-export const ORDINARY_NIGHT_CAPABILITY_KINDS = ["DREAMER_ACTION", "CERENOVUS_ACTION", "GENERIC_DEMON_KILL", "FLOWERGIRL_ACTION"] as const;
+// The accepted 2C fixture has exactly two blocking ordinary-night tasks.  The
+// Dreamer/Cerenovus rows are first-night or unsupported placeholders here and
+// must never be emitted by this bounded planner.
+export const ORDINARY_NIGHT_CAPABILITY_KINDS = ["GENERIC_DEMON_KILL", "FLOWERGIRL_ACTION"] as const;
 const ORDINARY_NIGHT_SCHEDULE_ORDER: Readonly<Record<OrdinaryNightCapabilityKind, number>> = {
-  CERENOVUS_ACTION: 28,
   GENERIC_DEMON_KILL: 47,
-  FLOWERGIRL_ACTION: 80,
-  DREAMER_ACTION: 79
+  FLOWERGIRL_ACTION: 80
 };
 export type OrdinaryNightCapabilityKind = (typeof ORDINARY_NIGHT_CAPABILITY_KINDS)[number];
 export type OrdinaryNightTaskStatus = "PENDING" | "SETTLED";
@@ -71,8 +72,8 @@ export const createOrdinaryNightTaskPlan = (state: GameState): OrdinaryNightTask
     const assignment = state.assignment?.assignments.find((entry) => entry.role.roleId === roleId);
     if (assignment === undefined) return undefined;
     return {
-      taskId: ordinaryNightTaskId(roleId === "dreamer" ? "DREAMER_ACTION" : "CERENOVUS_ACTION", assignment.seatNumber),
-      taskType: roleId === "dreamer" ? "DREAMER_ACTION" : "CERENOVUS_ACTION",
+      taskId: ordinaryNightTaskId("FLOWERGIRL_ACTION", assignment.seatNumber),
+      taskType: "FLOWERGIRL_ACTION",
       sourcePlayerId: assignment.playerId,
       sourceRoleId: assignment.role.roleId,
       sourceSeatNumber: assignment.seatNumber,
@@ -80,10 +81,6 @@ export const createOrdinaryNightTaskPlan = (state: GameState): OrdinaryNightTask
     };
   };
   const tasks: OrdinaryNightTask[] = [];
-  const dreamer = byRole("dreamer");
-  if (dreamer !== undefined) tasks.push(dreamer);
-  const cerenovus = byRole("cerenovus");
-  if (cerenovus !== undefined) tasks.push(cerenovus);
   const flowergirl = byRole("flowergirl");
   if (flowergirl !== undefined) {
     tasks.push({ ...flowergirl, taskId: ordinaryNightTaskId("FLOWERGIRL_ACTION", flowergirl.sourceSeatNumber), taskType: "FLOWERGIRL_ACTION" });
