@@ -2945,6 +2945,23 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
         throw new DomainError("MissingTransitionPrerequisite", "CHARACTERS_ASSIGNED transition requires character assignment fact");
       }
 
+      if (
+        event.payload.transitionReason === "FIRST_NIGHT_COMPLETED" &&
+        event.payload.fromPhase === "FIRST_NIGHT" &&
+        event.payload.toPhase === "DAWN_RESOLUTION"
+      ) {
+        const plan = state.firstNightTaskPlan;
+        const progress = state.firstNightTaskProgress;
+        if (plan === undefined || progress === undefined ||
+            !validateFirstNightTaskProgress(plan, progress).valid ||
+            getNextUnsettledFirstNightTask(plan, progress) !== undefined) {
+          throw new DomainError(
+            "MissingTransitionPrerequisite",
+            "FIRST_NIGHT_COMPLETED transition requires a valid, fully settled first-night task plan"
+          );
+        }
+      }
+
       const transition = evaluatePhaseTransition({
         fromPhase: event.payload.fromPhase,
         toPhase: event.payload.toPhase,

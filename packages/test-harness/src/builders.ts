@@ -26,6 +26,28 @@ import type {
   CreatePlayerRosterCommandPayload,
   CreateGameCommand,
   CreateGameCommandPayload,
+  CompleteNightCommand,
+  CompleteNightCommandPayload,
+  PublishDawnCommand,
+  PublishDawnCommandPayload,
+  OpenNominationsCommand,
+  OpenNominationsCommandPayload,
+  DeclareNominationCommand,
+  DeclareNominationCommandPayload,
+  OpenVoteCommand,
+  OpenVoteCommandPayload,
+  CastVoteCommand,
+  CastVoteCommandPayload,
+  CompleteVoteCommand,
+  CompleteVoteCommandPayload,
+  CloseNominationsCommand,
+  CloseNominationsCommandPayload,
+  ResolveExecutionCommand,
+  ResolveExecutionCommandPayload,
+  BeginNightCommand,
+  BeginNightCommandPayload,
+  SettleOrdinaryNightTaskCommand,
+  SettleOrdinaryNightTaskCommandPayload,
   DomainEventEnvelope,
   GenerateSetupCommand,
   GenerateSetupCommandPayload,
@@ -373,6 +395,149 @@ export const submitSeamstressActionCommand = (
   issuedAt: "2026-07-07T00:00:15.000Z",
   correlationId: correlationId("correlation-15-seamstress-defer"),
   payload: submitSeamstressActionPayload,
+  ...overrides
+});
+
+export const completeNightCommand = (
+  overrides: Partial<CompleteNightCommand> = {}
+): CompleteNightCommand => ({
+  commandId: commandId("command-complete-night"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:01:00.000Z",
+  correlationId: correlationId("correlation-complete-night"),
+  payload: { commandType: "CompleteNight", phase: "FIRST_NIGHT", planVersion: SUPPORTED_FIRST_NIGHT_TASK_PLAN_VERSION, nightNumber: 1 } satisfies CompleteNightCommandPayload,
+  ...overrides
+});
+
+export const publishDawnCommand = (
+  overrides: Partial<PublishDawnCommand> = {}
+): PublishDawnCommand => ({
+  commandId: commandId("command-publish-dawn"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:01:01.000Z",
+  correlationId: correlationId("correlation-publish-dawn"),
+  payload: { commandType: "PublishDawn", phase: "DAWN_RESOLUTION", nightNumber: 1 } satisfies PublishDawnCommandPayload,
+  ...overrides
+});
+
+export const openNominationsCommand = (
+  overrides: Partial<OpenNominationsCommand> = {}
+): OpenNominationsCommand => ({
+  commandId: commandId("command-open-nominations"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:01:02.000Z",
+  correlationId: correlationId("correlation-open-nominations"),
+  payload: { commandType: "OpenNominations", dayNumber: 1 } satisfies OpenNominationsCommandPayload,
+  ...overrides
+});
+
+export const declareNominationCommand = (
+  overrides: Partial<DeclareNominationCommand> = {}
+): DeclareNominationCommand => ({
+  commandId: commandId("command-declare-nomination"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: { kind: "human", playerId: playerId("player-human") },
+  issuedAt: "2026-07-07T00:01:03.000Z",
+  correlationId: correlationId("correlation-declare-nomination"),
+  payload: { commandType: "DeclareNomination", targetPlayerId: playerId("player-ai-1") } satisfies DeclareNominationCommandPayload,
+  ...overrides
+});
+
+export const openVoteCommand = (
+  overrides: Partial<OpenVoteCommand> = {}
+): OpenVoteCommand => ({
+  commandId: commandId("command-open-vote"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:01:04.000Z",
+  correlationId: correlationId("correlation-open-vote"),
+  payload: { commandType: "OpenVote", nominationId: "nomination-v1:1:1" } satisfies OpenVoteCommandPayload,
+  ...overrides
+});
+
+export const castVoteCommand = (
+  overrides: Partial<CastVoteCommand> = {}
+): CastVoteCommand => ({
+  commandId: commandId("command-cast-vote"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: { kind: "human", playerId: playerId("player-human") },
+  issuedAt: "2026-07-07T00:01:05.000Z",
+  correlationId: correlationId("correlation-cast-vote"),
+  payload: { commandType: "CastVote", nominationId: "nomination-v1:1:1", choice: "YES" } satisfies CastVoteCommandPayload,
+  ...overrides
+});
+
+export const completeVoteCommand = (
+  overrides: Partial<CompleteVoteCommand> = {}
+): CompleteVoteCommand => ({
+  commandId: commandId("command-complete-vote"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:01:06.000Z",
+  correlationId: correlationId("correlation-complete-vote"),
+  payload: { commandType: "CompleteVote", nominationId: "nomination-v1:1:1" } satisfies CompleteVoteCommandPayload,
+  ...overrides
+});
+
+export const closeNominationsCommand = (
+  overrides: Partial<CloseNominationsCommand> = {}
+): CloseNominationsCommand => ({
+  commandId: commandId("command-close-nominations"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:01:07.000Z",
+  correlationId: correlationId("correlation-close-nominations"),
+  payload: { commandType: "CloseNominations", dayNumber: 1 } satisfies CloseNominationsCommandPayload,
+  ...overrides
+});
+
+export const resolveExecutionCommand = (
+  overrides: Partial<ResolveExecutionCommand> = {}
+): ResolveExecutionCommand => ({
+  commandId: commandId("command-resolve-execution"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:01:08.000Z",
+  correlationId: correlationId("correlation-resolve-execution"),
+  payload: { commandType: "ResolveExecution", blockId: "block-v1:1:1" } satisfies ResolveExecutionCommandPayload,
+  ...overrides
+});
+
+export const beginNightCommand = (
+  overrides: Partial<BeginNightCommand> = {}
+): BeginNightCommand => ({
+  commandId: commandId("command-begin-night"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:01:09.000Z",
+  correlationId: correlationId("correlation-begin-night"),
+  payload: { commandType: "BeginNight", dayNumber: 1, nightNumber: 2, planVersion: "ordinary-night-v1", window: "OTHER_NIGHT" } satisfies BeginNightCommandPayload,
+  ...overrides
+});
+
+export const settleOrdinaryNightTaskCommand = (
+  overrides: Partial<SettleOrdinaryNightTaskCommand> = {}
+): SettleOrdinaryNightTaskCommand => ({
+  commandId: commandId("command-settle-ordinary-night-task"),
+  gameId: ids.game,
+  expectedGameVersion: 1,
+  actor: systemActor,
+  issuedAt: "2026-07-07T00:01:10.000Z",
+  correlationId: correlationId("correlation-settle-ordinary-night-task"),
+  payload: { commandType: "SettleOrdinaryNightTask", taskId: scheduledTaskId("ordinary-night-v1:GENERIC_DEMON_KILL:night-02") } satisfies SettleOrdinaryNightTaskCommandPayload,
   ...overrides
 });
 

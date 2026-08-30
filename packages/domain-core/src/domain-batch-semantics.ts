@@ -13,6 +13,7 @@ import {
   LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
   getNextUnsettledFirstNightTask
 } from "./first-night-task-plan.js";
+import { validateFirstNightTaskProgress } from "./first-night-task-plan.js";
 import {
   evilTwinInformationEntriesEqual,
   expectedEvilTwinInformationEntries
@@ -69,6 +70,17 @@ import { validateTwoCDomainEventStructure } from "./domain-event-structural-vali
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
 type IneffectiveWitchEffectiveness = Extract<WitchEffectivenessResult, { readonly effective: false }>;
 
+const BASIC_PHASE_FLOW_TRANSITION_REASONS = [
+  "FIRST_NIGHT_COMPLETED",
+  "DAWN_COMPLETED",
+  "NOMINATION_OPENED",
+  "VOTE_OPENED",
+  "VOTE_COMPLETED",
+  "NOMINATIONS_CLOSED",
+  "EXECUTION_RESOLVED",
+  "NIGHT_TASKS_COMPLETED"
+] as const;
+
 const validateBasicPhaseFlowBatch = (
   currentState: GameState | undefined,
   events: readonly AnyDomainEventEnvelope[]
@@ -91,6 +103,14 @@ const validateBasicPhaseFlowBatch = (
     const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: first.payload.toPhase, dayNumber: state.dayNumber, nightNumber: state.nightNumber });
     if (!transition.allowed || first.payload.transitionReason !== transition.reasonCode || first.payload.dayNumberAfter !== transition.dayNumber || first.payload.nightNumberAfter !== transition.nightNumber) {
       reject("Basic phase transition does not match the phase policy");
+    }
+    if (first.payload.transitionReason === "FIRST_NIGHT_COMPLETED") {
+      const plan = state.firstNightTaskPlan;
+      const progress = state.firstNightTaskProgress;
+      if (state.phase !== "FIRST_NIGHT" || plan === undefined || progress === undefined ||
+          !validateFirstNightTaskProgress(plan, progress).valid || getNextUnsettledFirstNightTask(plan, progress) !== undefined) {
+        reject("FIRST_NIGHT_COMPLETED requires a valid, fully settled first-night task plan");
+      }
     }
     return;
   }
@@ -1656,7 +1676,10 @@ export const validateDomainBatchSemantics = (
   const phaseTransitions = batchEvents.filter(
     (event): event is DomainEventEnvelope<"PhaseTransitioned"> => event.eventType === "PhaseTransitioned"
   );
-  const unintegratedTransition = phaseTransitions.find((event) => !isIntegratedTransitionReason(event.payload.transitionReason));
+  const unintegratedTransition = phaseTransitions.find((event) =>
+    !isIntegratedTransitionReason(event.payload.transitionReason) &&
+    !BASIC_PHASE_FLOW_TRANSITION_REASONS.includes(event.payload.transitionReason as typeof BASIC_PHASE_FLOW_TRANSITION_REASONS[number])
+  );
   if (unintegratedTransition !== undefined) {
     throw new DomainError(
       "PhaseTransitionNotIntegrated",

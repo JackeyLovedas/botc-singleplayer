@@ -14,7 +14,7 @@ import {
   scheduledTaskId,
   validateDomainBatchSemantics
 } from "@botc/domain-core";
-import type { AnyDomainEventEnvelope, DomainErrorCode, DomainEventEnvelope } from "@botc/domain-core";
+import type { AnyDomainEventEnvelope, DomainErrorCode, DomainEventEnvelope, ScheduledTaskSettlementOutcomeType } from "@botc/domain-core";
 import {
   gameCreatedEvent,
   charactersAssignedEvent,
@@ -85,6 +85,60 @@ const firstNightTaskPlanState = () => rebuildGameState([
   initialPrivateKnowledgeEstablishedEvent(),
   firstNightTaskPlanCreatedEvent()
 ]);
+
+const completionOutcomeFor = (taskType: string): ScheduledTaskSettlementOutcomeType => {
+  switch (taskType) {
+    case "MINION_INFO": return "MINION_INFORMATION_DELIVERED";
+    case "DEMON_INFO": return "DEMON_INFORMATION_DELIVERED";
+    case "PHILOSOPHER_ACTION": return "PHILOSOPHER_DEFERRED";
+    case "SNAKE_CHARMER_ACTION": return "SNAKE_CHARMER_INEFFECTIVE";
+    case "EVIL_TWIN_SETUP": return "EVIL_TWIN_PAIR_ESTABLISHED";
+    case "WITCH_ACTION": return "WITCH_INEFFECTIVE";
+    case "CERENOVUS_ACTION": return "CERENOVUS_MADNESS_MARKED";
+    case "CLOCKMAKER_INFORMATION": return "CLOCKMAKER_INFORMATION_DELIVERED";
+    case "DREAMER_ACTION": return "DREAMER_INFORMATION_DELIVERED";
+    case "SEAMSTRESS_ACTION": return "SEAMSTRESS_DEFERRED";
+    case "MATHEMATICIAN_INFORMATION": return "MATHEMATICIAN_INFORMATION_DELIVERED";
+    default: throw new Error(`Unsupported first-night task type: ${taskType}`);
+  }
+};
+
+const completedFirstNightState = () => {
+  const state = firstNightTaskPlanState();
+  const plan = state.firstNightTaskPlan;
+  if (plan === undefined) throw new Error("Expected first-night task plan");
+  return {
+    ...state,
+    firstNightTaskProgress: {
+      settlements: plan.tasks.map((task) => ({
+        taskId: task.taskId,
+        taskType: task.taskType,
+        nightNumber: 1 as const,
+        settlementVersion: "scheduled-task-settlement-v1" as const,
+        outcomeType: completionOutcomeFor(task.taskType),
+        characterStateRevision: state.currentCharacterState?.revision ?? 1
+      }))
+    }
+  };
+};
+
+const firstNightCompletedTransition = (state = completedFirstNightState()) => phaseTransitionedEvent({
+  eventId: eventId("event-first-night-completed"),
+  eventSequence: state.lastEventSequence + 1,
+  batchId: batchId("batch-first-night-completed"),
+  commandId: commandId("command-complete-night"),
+  gameVersion: state.gameVersion + 1,
+  payload: {
+    ...phaseTransitionedEvent().payload,
+    fromPhase: "FIRST_NIGHT",
+    toPhase: "DAWN_RESOLUTION",
+    transitionReason: "FIRST_NIGHT_COMPLETED",
+    dayNumberBefore: 0,
+    dayNumberAfter: 0,
+    nightNumberBefore: 1,
+    nightNumberAfter: 1
+  }
+});
 
 const seamstressDeferredBatch = (): readonly [
   DomainEventEnvelope<"SeamstressActionDeferred">,
@@ -157,6 +211,42 @@ const characterAssignmentStateEvents = (): readonly AnyDomainEventEnvelope[] => 
 ];
 
 describe("domain batch semantic validation", () => {
+  it("accepts and replays a fully settled FIRST_NIGHT_COMPLETED transition", () => {
+    const state = completedFirstNightState();
+    const transition = firstNightCompletedTransition(state);
+
+    expect(() => validateDomainBatchSemantics(state, [transition])).not.toThrow();
+    expect(applyDomainEvent(state, transition)).toMatchObject({
+      phase: "DAWN_RESOLUTION",
+      dayNumber: 0,
+      nightNumber: 1,
+      gameVersion: state.gameVersion + 1
+    });
+  });
+
+  it("rejects FIRST_NIGHT_COMPLETED without a fully settled task plan", () => {
+    const state = firstNightTaskPlanState();
+    const transition = firstNightCompletedTransition({
+      ...state,
+      firstNightTaskProgress: { settlements: [] }
+    });
+
+    expectDomainCode(() => validateDomainBatchSemantics(state, [transition]), "InvalidDomainBatchSemantics");
+    expectDomainCode(() => applyDomainEvent(state, transition), "MissingTransitionPrerequisite");
+  });
+
+  it("rejects malformed FIRST_NIGHT_COMPLETED counters and replay reason", () => {
+    const state = completedFirstNightState();
+    const malformed = firstNightCompletedTransition(state);
+    const counterTampered = {
+      ...malformed,
+      payload: { ...malformed.payload, dayNumberAfter: 1 }
+    };
+
+    expectDomainCode(() => validateDomainBatchSemantics(state, [counterTampered]), "InvalidDomainBatchSemantics");
+    expectDomainCode(() => applyDomainEvent(state, counterTampered), "InvalidPhaseCounter");
+  });
+
   it("accepts a legal CreateGame single-event batch", () => {
     expect(() => validateDomainBatchSemantics(undefined, [gameCreatedEvent()])).not.toThrow();
   });

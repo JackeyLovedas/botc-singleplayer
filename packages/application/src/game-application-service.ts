@@ -2402,7 +2402,21 @@ export class GameApplicationService {
         const actorPlayerId = command.actor.kind === "human" || command.actor.kind === "ai" ? command.actor.playerId : undefined;
         switch (command.payload.commandType) {
           case "CompleteNight":
-            return state.phase === command.payload.phase ? undefined : { code: "CommandNotAllowedInPhase", message: "CompleteNight phase does not match state" };
+            if (state.phase !== command.payload.phase) {
+              return { code: "CommandNotAllowedInPhase", message: "CompleteNight phase does not match state" };
+            }
+            if (command.payload.nightNumber !== state.nightNumber) {
+              return { code: "CommandNotAllowedInPhase", message: "CompleteNight night number does not match state" };
+            }
+            if (state.phase === "FIRST_NIGHT" && state.firstNightTaskPlan !== undefined &&
+                command.payload.planVersion !== state.firstNightTaskPlan.taskPlanVersion) {
+              return { code: "CommandNotAllowedInPhase", message: "CompleteNight plan version does not match the first-night plan" };
+            }
+            if (state.phase === "NIGHT_TASKS" && state.ordinaryNightTaskPlan !== undefined &&
+                command.payload.planVersion !== state.ordinaryNightTaskPlan.planVersion) {
+              return { code: "CommandNotAllowedInPhase", message: "CompleteNight plan version does not match the ordinary-night plan" };
+            }
+            return undefined;
           case "PublishDawn":
             return state.phase === "DAWN_RESOLUTION" ? undefined : { code: "CommandNotAllowedInPhase", message: "PublishDawn requires dawn resolution" };
           case "OpenNominations":
@@ -4219,11 +4233,18 @@ export class GameApplicationService {
 
       case "CompleteNight": {
         if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "CompleteNight requires state");
+        if (command.payload.nightNumber !== state.nightNumber) throw new DomainError("InvalidDomainBatchSemantics", "CompleteNight night number does not match state");
         if (state.phase === "FIRST_NIGHT" && (state.firstNightTaskPlan === undefined || state.firstNightTaskProgress === undefined || getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress) !== undefined)) {
           throw new DomainError("InvalidDomainBatchSemantics", "CompleteNight requires all first-night tasks to be settled");
         }
+        if (state.phase === "FIRST_NIGHT" && state.firstNightTaskPlan !== undefined && command.payload.planVersion !== state.firstNightTaskPlan.taskPlanVersion) {
+          throw new DomainError("InvalidDomainBatchSemantics", "CompleteNight plan version does not match the first-night plan");
+        }
         if (state.phase === "NIGHT_TASKS" && (state.ordinaryNightTaskPlan === undefined || state.ordinaryNightTaskProgress === undefined || getNextUnsettledOrdinaryNightTask(state.ordinaryNightTaskPlan, state.ordinaryNightTaskProgress) !== undefined)) {
           throw new DomainError("InvalidDomainBatchSemantics", "CompleteNight requires all ordinary-night tasks to be settled");
+        }
+        if (state.phase === "NIGHT_TASKS" && state.ordinaryNightTaskPlan !== undefined && command.payload.planVersion !== state.ordinaryNightTaskPlan.planVersion) {
+          throw new DomainError("InvalidDomainBatchSemantics", "CompleteNight plan version does not match the ordinary-night plan");
         }
         const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "DAWN_RESOLUTION", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
         if (!transition.allowed || transition.reasonCode === undefined) throw new DomainError("InvalidPhaseTransition", transition.reason);
