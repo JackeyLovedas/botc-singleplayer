@@ -4328,6 +4328,28 @@ export class GameApplicationService {
         if (state.firstNightTaskPlan === undefined || state.firstNightTaskProgress === undefined || getNextUnsettledFirstNightTask(state.firstNightTaskPlan, state.firstNightTaskProgress) !== undefined) {
           throw new DomainError("InvalidDomainBatchSemantics", "BeginNight requires settled Philosopher and Seamstress first-night tasks");
         }
+        // Ordinary-night planning is only reachable after the role-action history
+        // has supplied its authoritative spend/choice provenance.  A settled task
+        // alone is not enough: replay must be able to identify the exact ability
+        // instance and the terminal outcome that consumed it.
+        for (const task of state.firstNightTaskPlan.tasks) {
+          if (task.source.kind !== "ROLE") continue;
+          const settlement = state.firstNightTaskProgress.settlements.find((entry) => entry.taskId === task.taskId);
+          if (task.source.role.roleId === "philosopher") {
+            const choice = state.philosopherAbilityChoices?.choices.find((entry) => entry.taskId === task.taskId);
+            if (settlement?.outcomeType !== "PHILOSOPHER_ABILITY_CHOSEN" || choice?.taskId !== task.taskId || choice.taskType !== task.taskType) {
+              throw new DomainError("InvalidDomainBatchSemantics", "BeginNight requires Philosopher choice provenance");
+            }
+          }
+          if (task.source.role.roleId === "seamstress") {
+            const choice = state.seamstressTargetChoices?.choices.find((entry) => entry.taskId === task.taskId);
+            const spend = state.seamstressAbilitySpends?.spends.find((entry) => entry.taskId === task.taskId);
+            const delivery = state.seamstressInformation?.deliveries.find((entry) => entry.taskId === task.taskId);
+            if (settlement?.outcomeType !== "SEAMSTRESS_INFORMATION_DELIVERED" || choice?.taskId !== task.taskId || spend?.taskId !== task.taskId || delivery?.taskId !== task.taskId || spend.abilityUseEntitlementId !== choice.abilityUseEntitlementId || delivery.abilityUseEntitlementId !== spend.abilityUseEntitlementId) {
+              throw new DomainError("InvalidDomainBatchSemantics", "BeginNight requires Seamstress spent provenance");
+            }
+          }
+        }
         const plan = createOrdinaryNightTaskPlan(state);
         return [{ ...common(firstEventSequence), eventType: "OrdinaryNightTaskPlanCreated", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, ...plan } }];
       }
