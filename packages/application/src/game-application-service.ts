@@ -4346,6 +4346,7 @@ export class GameApplicationService {
         }
         const target = deriveOrdinaryNightTarget(task, state);
         const targetAlreadyDead = (state.deadPlayerIds ?? []).includes(target.targetPlayerId) || (state.deaths ?? []).some((death) => death.playerId === target.targetPlayerId);
+        if (targetAlreadyDead) throw new DomainError("InvalidDomainBatchSemantics", "Generic demon kill requires a living target at settlement");
         const targetSeatNumber = state.roster?.entries.find((entry) => entry.playerId === target.targetPlayerId)?.seatNumber;
         if (targetSeatNumber === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ordinary-night target seat unavailable");
         const targetMetadata = common(firstEventSequence);

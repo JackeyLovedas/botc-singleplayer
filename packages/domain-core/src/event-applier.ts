@@ -2996,7 +2996,10 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
       if ((state.deadPlayerIds ?? []).includes(event.payload.playerId) || (state.deaths ?? []).some((death) => death.deathId === event.payload.deathId)) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied cannot be applied twice");
       const rosterEntry = state.roster?.entries.find((entry) => entry.playerId === event.payload.playerId);
       if (rosterEntry === undefined) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied target must be a roster member");
-      if (event.payload.deadSeatNumber !== undefined && event.payload.deadSeatNumber !== rosterEntry.seatNumber) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied seat must match the roster");
+      if (event.payload.deadSeatNumber !== rosterEntry.seatNumber) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied seat must match the roster");
+      if (event.payload.phase === "EXECUTION_RESOLUTION" && (event.payload.cause !== "EXECUTION" || event.payload.executionId === null || event.payload.causeEventType !== "ExecutionResolved" || event.payload.sourcePlayerId !== null || event.payload.sourceRoleId !== null)) throw new DomainError("InvalidDomainBatchSemantics", "Execution death provenance is invalid");
+      if (event.payload.phase === "NIGHT_TASKS" && (event.payload.cause !== "GENERIC_DEMON_KILL" || event.payload.executionId !== null || event.payload.causeEventType !== "OrdinaryNightTargetDerived" || event.payload.sourcePlayerId === null || event.payload.sourceRoleId !== "vortox")) throw new DomainError("InvalidDomainBatchSemantics", "Generic death provenance is invalid");
+      if (event.payload.dayNumber !== state.dayNumber || event.payload.nightNumber !== state.nightNumber || event.payload.characterStateRevision !== (state.currentCharacterState?.revision ?? 0)) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied state revision or phase counters are stale");
       return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, deaths: [...(state.deaths ?? []), event.payload], deadPlayerIds: [...(state.deadPlayerIds ?? []), event.payload.playerId] };
     }
     case "ExecutionResolved":
@@ -3018,6 +3021,10 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
     case "OrdinaryNightTaskSettled":
       if (state === undefined) throw new DomainError("MissingGameCreated", "OrdinaryNightTaskSettled requires an existing game");
       if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Ordinary-night settlement rules baseline must match state");
+      if (state.ordinaryNightTaskPlan === undefined || !state.ordinaryNightTaskPlan.tasks.some((task) => task.taskId === event.payload.taskId && task.taskType === event.payload.taskType && task.sourcePlayerId === event.payload.sourcePlayerId)) throw new DomainError("InvalidDomainBatchSemantics", "Ordinary-night settlement must reference the current plan");
+      if ((state.ordinaryNightTaskProgress?.settlements ?? []).includes(event.payload.taskId)) throw new DomainError("InvalidDomainBatchSemantics", "Ordinary-night settlement is duplicated");
+      if (event.payload.settlement === "SOURCE_INELIGIBLE" && (event.payload.taskType !== "FLOWERGIRL_ACTION" || event.payload.targetPlayerId !== null || event.payload.causalDeathEventId === null)) throw new DomainError("InvalidDomainBatchSemantics", "Source-ineligible settlement provenance is invalid");
+      if (event.payload.settlement === "RESOLVED" && (event.payload.taskType !== "GENERIC_DEMON_KILL" || event.payload.targetPlayerId === null || event.payload.causalDeathEventId !== null)) throw new DomainError("InvalidDomainBatchSemantics", "Resolved ordinary-night settlement provenance is invalid");
       return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, ordinaryNightTaskProgress: { settlements: [...(state.ordinaryNightTaskProgress?.settlements ?? []), event.payload.taskId] } };
 
     default:

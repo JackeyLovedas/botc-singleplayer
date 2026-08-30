@@ -62,6 +62,7 @@ const exactKeys = (value: unknown, keys: readonly string[]): value is Record<str
 
 const nonEmptyString = (value: unknown): value is string => typeof value === "string" && value.length > 0;
 const positiveInteger = (value: unknown): value is number => typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+const seatNumber = (value: unknown): value is number => positiveInteger(value) && value <= 12;
 
 export const ordinaryNightTaskId = (taskType: OrdinaryNightCapabilityKind, seatNumber: number): string =>
   `ordinary-night-v1:${taskType}:night-02:seat-${String(seatNumber).padStart(2, "0")}`;
@@ -87,6 +88,7 @@ export const createOrdinaryNightTaskPlan = (state: GameState): OrdinaryNightTask
   }
   const demon = state.assignment.assignments.find((entry) => entry.role.characterType === "DEMON");
   if (demon !== undefined) {
+    if (demon.role.roleId !== "vortox") throw new Error("ordinary-night bounded plan requires the canonical Vortox source");
     tasks.push({
       taskId: ordinaryNightTaskId("GENERIC_DEMON_KILL", demon.seatNumber),
       taskType: "GENERIC_DEMON_KILL",
@@ -120,10 +122,11 @@ export const validateOrdinaryNightTaskPlan = (value: unknown): value is Ordinary
   return tasks.every((task) => {
     if (!exactKeys(task, ["taskId", "taskType", "sourcePlayerId", "sourceRoleId", "sourceSeatNumber", "status"]) ||
         !nonEmptyString(task.taskId) || !ORDINARY_NIGHT_CAPABILITY_KINDS.includes(task.taskType as OrdinaryNightCapabilityKind) ||
-        !nonEmptyString(task.sourcePlayerId) || !nonEmptyString(task.sourceRoleId) || !positiveInteger(task.sourceSeatNumber) ||
+        !nonEmptyString(task.sourcePlayerId) || !nonEmptyString(task.sourceRoleId) || !seatNumber(task.sourceSeatNumber) ||
         (task.status !== "PENDING" && task.status !== "SETTLED") || seenTaskIds.has(task.taskId)) return false;
     const taskType = task.taskType as OrdinaryNightCapabilityKind;
     if (task.taskId !== ordinaryNightTaskId(taskType, task.sourceSeatNumber)) return false;
+    if ((taskType === "GENERIC_DEMON_KILL" && task.sourceRoleId !== "vortox") || (taskType === "FLOWERGIRL_ACTION" && task.sourceRoleId !== "flowergirl")) return false;
     const order = ORDINARY_NIGHT_SCHEDULE_ORDER[taskType];
     if (order < previousOrder) return false;
     previousOrder = order;
