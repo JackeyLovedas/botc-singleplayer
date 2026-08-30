@@ -9,7 +9,7 @@ authorization=USER_AUTHORIZED_2C_GOVERNANCE_AND_CANONICAL_IDENTITY_CLOSURE_RESLI
 parentDesignHead=7faae20ff2c23bc90705d9dece93cd72d98afcbf
 parentDesignCorrectionCount=2/2
 parentDesignDisposition=HISTORICAL_PREEMPTION_DESIGN_EXHAUSTED_PENDING_GOVERNANCE_IDENTITY_CLOSURE
-governanceIdentityResliceDesignCorrectionCount=0/2
+governanceIdentityResliceDesignCorrectionCount=1/2
 designStatus=READY_FOR_FRESH_INDEPENDENT_DESIGN_REVIEW
 designVerdict=RULE_DESIGN_FIX_REQUIRED
 implementationAuthorized=false
@@ -177,23 +177,38 @@ those are separate rows.
 
 | CriterionId | RuleClaim | CompletionCriterion | RequiredEvidenceMechanism | ExpectedReachability | ExpectedTrust | ExpectedPrimaryLayer | ExpectedResult | SupportingAuthorityRequirement | positiveOrNegative | acceptedApplicationEvidence | acceptedReplayEvidence | hostileReplayEvidence | acceptanceTestIdentity |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GI-C01 | The exact fixture can be accepted through the formal application path. | Production setup/assignment and bounded A–R application path accept only the twelve authorized role IDs and produce canonical events. | Real application commands, receipts, append and state outcome. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | positive | primary | supporting only | negative fixture inputs supporting only |
-| GI-C02 | The provisional structural candidate is exact and dense. | Ten retained rows have unique event/branch ordinals, exact payload descriptors, and no accepted-prefix delta. | Direct descriptor census and exact-shape validation. | R1 | T1 | STRUCTURAL_VALIDATION | PASS | NONE | positive | supporting only | supporting only | malformed/duplicate candidate negatives |
-| GI-C03 | The accepted A–R stream has stable replay meaning. | The same accepted event stream rebuilds the same canonical state with all death/task cross-links intact. | Full accepted-history replay and state equality. | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | NONE | positive | supporting only | primary | no hostile mutation in this row |
-| GI-C04 | Corrupted history is rejected. | Reordered, duplicated, forged-cause, missing-predecessor, and extra-field streams fail closed. | Hostile replay matrix with deterministic diagnostics. | R3 | T1 | HOSTILE_REPLAY_REJECTION | PASS | NONE | negative | no accepted application | no accepted replay | primary |
-| GI-C05 | The canonical nomination identity is singular. | `DeclareNomination` accepts one legal nomination and emits `NominationDeclared`; `NominationProposed` is never emitted or admitted. | Formal command mapping and duplicate/eligibility checks. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | positive | primary | supporting only | rejection cases supporting only |
-| GI-C06 | Individual vote and aggregate block facts are distinct. | `CastVote` emits `VoteCast`; `CompleteVote` emits `BlockStateUpdated` plus its phase transition; no `VoteCompleted` alias is introduced. | Command/event identity map and application receipts. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | positive | primary | supporting only | malformed vote inputs supporting only |
-| GI-C07 | Execution and death are independent canonical facts. | `ExecutionResolved(deathOutcome=DID_NOT_DIE)` has no death mutation; a real death has a separate `PlayerDied` fact. | Formal resolution application and explicit no-death result. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | positive | primary | supporting only | execution-only tamper cases supporting only |
-| GI-C08 | `PlayerDied` is the one generic death authority. | Execution and generic Demon-night causes bind to one complete PlayerDied contract, including seat, phase/night, cause reference, revision, applier and replay. | Canonical event creation plus prospective and state-applier validation. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | positive | primary | supporting only | forged cause/duplicate death supporting only |
-| GI-C09 | The Pit-Hag preemption fixture is correctly scoped. | Pit-Hag is nominated and executed during the day; its `PlayerDied.cause=EXECUTION` precedes `NIGHT_TASKS`, and no Pit-Hag action task/event exists. | Exact fixture application and plan census. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | positive | primary | supporting only | late Pit-Hag action rejection supporting only |
-| GI-C10 | Ordinary-night generic Demon action is singular. | The exact plan contains `GENERIC_DEMON_KILL` before `FLOWERGIRL_ACTION`; `OrdinaryNightTargetDerived` is the sole target/action fact and precedes its death. | Plan/target application and order checks. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | positive | primary | supporting only | duplicate/reordered plan supporting only |
-| GI-C11 | A dead Flowergirl source cannot act. | The Vortox target is Flowergirl; `PlayerDied.cause=GENERIC_DEMON_KILL` precedes one `OrdinaryNightTaskSettled` with `SOURCE_INELIGIBLE`. | Formal task settlement and source-dead cross-link. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | positive | primary | supporting only | live-source/forged-death rejection supporting only |
-| GI-C12 | Canonical identity and lifecycle are replay-safe. | The complete A–R stream is idempotent for the same command identity and rejects payload changes, duplicates, and cross-link mutation. | Exact replay, retry and hostile replay evidence. | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | NONE | positive | supporting only | primary | supporting negatives only |
+| GI-C01 | The exact fixture can be accepted through the real producer. | Production setup/assignment and bounded A–R application path accept only the twelve authorized role IDs and append canonical events. | Successful producer, receipt, append, rebuild and state witness. | R1 | T1 | ACCEPTED_STREAM_INTEGRATION | PASS | NONE | positive | primary | supporting only | fixture negatives supporting only |
+| GI-C02 | The provisional structural candidate is exact and dense. | Ten retained rows have unique event/branch ordinals, exact payload descriptors, and no accepted-prefix delta. | Direct descriptor census and exact-shape validator. | R3 | T1 | STRUCTURAL_VALIDATION | PASS | NONE | negative | supporting only | supporting only | malformed/duplicate candidate is primary only here |
+| GI-C03 | Valid accepted/imported history retains its meaning. | The same valid A–R history rebuilds the same canonical state with all death/task cross-links intact. | Full valid-history replay and state equality. | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | NONE | positive | supporting only | primary | hostile mutation is excluded |
+| GI-C04 | Corrupted history is rejected. | Reordered, duplicated, forged-cause, missing-predecessor, and extra-field streams fail closed. | Hostile replay matrix with deterministic diagnostics. | R3 | T1 | HOSTILE_REPLAY_REJECTION | PASS | NONE | negative | no accepted application | no valid replay | primary |
+| GI-C05 | The canonical nomination identity is singular. | `DeclareNomination` accepts one legal nomination and emits `NominationDeclared`; `NominationProposed` is never emitted or admitted. | Successful formal command, append and replay witness. | R1 | T1 | ACCEPTED_STREAM_INTEGRATION | PASS | NONE | positive | primary | supporting only | duplicate/eligibility negatives supporting only |
+| GI-C06 | Individual vote and aggregate block facts are distinct. | `CastVote` emits `VoteCast`; `CompleteVote` emits `BlockStateUpdated` plus its phase transition; no `VoteCompleted` alias is introduced. | Successful formal commands and canonical event batch. | R1 | T1 | ACCEPTED_STREAM_INTEGRATION | PASS | NONE | positive | primary | supporting only | malformed vote inputs supporting only |
+| GI-C07 | Execution and death are independent canonical facts. | `ExecutionResolved(deathOutcome=DID_NOT_DIE)` has no death mutation; a real death has a separate `PlayerDied` fact. | Successful resolution batch and explicit no-death result. | R1 | T1 | ACCEPTED_STREAM_INTEGRATION | PASS | NONE | positive | primary | supporting only | execution-only tamper cases supporting only |
+| GI-C08 | `PlayerDied` is the one generic death authority. | Execution and generic Demon-night causes bind to one complete PlayerDied contract, including seat, phase/night, cause reference, revision, applier and replay. | Successful canonical event creation and state mutation witness. | R1 | T1 | ACCEPTED_STREAM_INTEGRATION | PASS | NONE | positive | primary | supporting only | forged cause/duplicate death supporting only |
+| GI-C09 | The Pit-Hag preemption fixture is correctly scoped. | Pit-Hag is nominated and executed during the day; its `PlayerDied.cause=EXECUTION` precedes `NIGHT_TASKS`, and no Pit-Hag action task/event exists. | Successful exact-fixture application and plan witness. | R1 | T1 | ACCEPTED_STREAM_INTEGRATION | PASS | NONE | positive | primary | supporting only | late Pit-Hag action rejection supporting only |
+| GI-C10 | The ordinary plan shape is exact. | The direct structural contract admits exactly `GENERIC_DEMON_KILL` before `FLOWERGIRL_ACTION` and rejects Dreamer/Cerenovus placeholders. | Direct plan-shape validator and identity census. | R3 | T1 | STRUCTURAL_VALIDATION | PASS | NONE | negative | supporting only | supporting only | plan mutation/placeholder negatives are primary only here |
+| GI-C11 | Ordinary generic Demon action is singular. | `OrdinaryNightTargetDerived` is the sole target/action fact for `GENERIC_DEMON_KILL` and precedes its death; no `DemonKillResolved` alias exists. | Successful task command, target derivation and append witness. | R1 | T1 | ACCEPTED_STREAM_INTEGRATION | PASS | NONE | positive | primary | supporting only | duplicate/reordered action supporting only |
+| GI-C12 | A dead Flowergirl source cannot act. | Vortox targets Flowergirl; `PlayerDied.cause=GENERIC_DEMON_KILL` precedes one `OrdinaryNightTaskSettled` with `SOURCE_INELIGIBLE`. | Successful task command and causal settlement witness. | R1 | T1 | ACCEPTED_STREAM_INTEGRATION | PASS | NONE | positive | primary | supporting only | live-source/forged-death rejection supporting only |
+| GI-C13 | The complete A–R history is validly replayable. | A valid accepted/imported A–R stream rebuilds exactly once with the same state and retained provenance. | Full valid replay and state-equality audit. | R2 | T1 | LEGACY_REPLAY_COMPATIBILITY | PASS | NONE | positive | supporting only | primary | hostile mutation is excluded |
+| GI-C14 | Same-command retry is an application contract. | Retrying the same command envelope is a deterministic no-op/recovery and does not append a second canonical fact. | Real formal command retry, receipt and no-event/no-mutation result. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | positive | primary | supporting only | duplicate retry mutation is supporting only |
+| GI-C15 | Command identity cannot be reused with another payload. | Same `commandId` with changed payload or expected version is rejected without state mutation. | Real formal rejection path and deterministic diagnostic. | R1 | T1 | APPLICATION_COMMAND_INTEGRATION | PASS | NONE | negative | primary | supporting only | forged persisted history is excluded |
 
-`GI-C04` is the sole hostile-replay primary, `GI-C03` and `GI-C12` are the
-replay primaries, and application success is represented only by the
-application rows. No `SUP-*` record is required; supporting evidence remains
-subordinate and cannot become a borrowed primary.
+Primary counts are `ACCEPTED_STREAM_INTEGRATION=8`,
+`APPLICATION_COMMAND_INTEGRATION=2`, `LEGACY_REPLAY_COMPATIBILITY=2`,
+`HOSTILE_REPLAY_REJECTION=1`, `STRUCTURAL_VALIDATION=2`, and
+`mixedPrimaryCriterionCount=0`. The explicit reachability sets are:
+
+```text
+R1={GI-C01,GI-C05,GI-C06,GI-C07,GI-C08,GI-C09,GI-C11,GI-C12,GI-C14,GI-C15}
+R2={GI-C03,GI-C13}
+R3={GI-C02,GI-C04,GI-C10}
+R4={}
+```
+
+No criterion is classified R4 merely because it is unsupported: this active
+reslice contains no future hypothetical producer. No `SUP-*` record is
+required; supporting evidence remains subordinate and cannot be a borrowed
+primary.
 
 ## Canonical command-to-event identity map
 
@@ -215,7 +230,8 @@ identity mechanism.
 | `CloseNominations` | `NOMINATION_WINDOW` | `PhaseTransitioned` | none | command envelope identity | opens `EXECUTION_RESOLUTION` |
 | `ResolveExecution` | `EXECUTION_RESOLUTION` | `ExecutionDeclared` or `DayClosedWithoutExecution` | `ExecutionResolved`, optional `PlayerDied`, then `PhaseTransitioned` | command envelope identity | records at most one execution; death is emitted only when outcome is `DIED`; opens `NIGHT_TASKS` |
 | `BeginNight` | `NIGHT_TASKS` after day execution/death and first-night prerequisites | `OrdinaryNightTaskPlanCreated` | none | command envelope identity | stores exact two-task ordinary plan |
-| `SettleOrdinaryNightTask` | `NIGHT_TASKS` with an unsettled planned task | `OrdinaryNightTargetDerived` | optional `PlayerDied`, then `OrdinaryNightTaskSettled` | command envelope identity | derives one target; emits generic death if applicable; settles exactly once, including `SOURCE_INELIGIBLE` |
+| `SettleOrdinaryNightTask` — generic Demon path | `NIGHT_TASKS` with an unsettled `GENERIC_DEMON_KILL` task | `OrdinaryNightTargetDerived` | `PlayerDied`, then `OrdinaryNightTaskSettled` | command envelope identity | derives Flowergirl target, records generic death, then settles the Demon task exactly once |
+| `SettleOrdinaryNightTask` — Flowergirl source-ineligible path | `NIGHT_TASKS` with an unsettled `FLOWERGIRL_ACTION` task whose source is already dead | `OrdinaryNightTaskSettled` | none | command envelope identity | emits only the terminal `SOURCE_INELIGIBLE` settlement; no target-derived or information-result event is emitted |
 
 The map deliberately does not contain `NominationProposed`, `VoteCompleted`,
 `PlayerExecuted`, `ExecutionOccurred`, `DemonKillResolved`,
@@ -223,38 +239,83 @@ The map deliberately does not contain `NominationProposed`, `VoteCompleted`,
 event. A command may produce multiple canonical events, but their order is
 fixed by this table and the existing batch semantics.
 
+The two `SettleOrdinaryNightTask` rows are distinct bounded paths of the same
+actual command, not aliases. The generic Demon path has the exact chain
+`OrdinaryNightTargetDerived -> PlayerDied -> OrdinaryNightTaskSettled`. The
+Flowergirl path has only `OrdinaryNightTaskSettled` with
+`settlement=SOURCE_INELIGIBLE`; it must not emit a target, vote-information,
+or role-specific skipped event. The same command identity, task ID, and
+expected game version still provide idempotency for both paths.
+
 ## `PlayerDied` complete canonical authority
 
 `PlayerDied` is reused at provisional ordinal `45`, branch `64`; it is not
 renamed or paired with `DeathOccurred`, `PitHagDied`, or
-`FlowergirlDied`. Its implementation-time payload repair must preserve the
-existing fields and add the minimum provenance needed to prove the canonical
-death:
+`FlowergirlDied`. Its final provisional descriptor is one exact record. The
+implementation-time payload repair preserves the existing fields and adds
+the minimum provenance needed to prove the canonical death. The descriptor
+field/type contract is:
 
 ```text
 {
-  rulesBaselineVersion,
-  deathId,
-  executionId: string | null,
-  playerId,
-  deadSeatNumber,
-  dayNumber,
-  nightNumber,
-  phase: "DAY_EXECUTION" | "NIGHT_TASKS",
+  rulesBaselineVersion: nonEmptyString,
+  deathId: nonEmptyString,                 // death-v1:<cause reference>
+  executionId: nonEmptyString | null,      // execution-v1:<day>:01 or null
+  playerId: canonicalPlayerId,
+  deadSeatNumber: positiveSafeInteger,
+  dayNumber: positiveSafeInteger,
+  nightNumber: nonNegativeSafeInteger,
+  phase: "EXECUTION_RESOLUTION" | "NIGHT_TASKS",
   cause: "EXECUTION" | "GENERIC_DEMON_KILL",
-  causeEventId,
+  causeEventId: canonicalEventId,
   causeEventType: "ExecutionResolved" | "OrdinaryNightTargetDerived",
-  sourcePlayerId: string | null,
+  sourcePlayerId: canonicalPlayerId | null,
   sourceRoleId: "vortox" | null,
-  characterStateRevision
+  characterStateRevision: nonNegativeSafeInteger
 }
 ```
 
-The actual source file currently has the smaller provisional payload. This is
-an allowed provisional-contract repair, not a change to accepted C1. Every
-field is exact, enumerable, and validated at the T1 event boundary. The
-canonical authority chain is complete only when all layers below are wired by
-implementation and review:
+Canonical formats reuse repository-generated IDs: nomination
+`nomination-v1:<dayNumber>:<ordinal>`, execution
+`execution-v1:<dayNumber>:01`, ordinary task
+`ordinary-night-v1:<TASK_TYPE>:night-02:seat-<two-digit-seat>`, and event IDs
+from the existing `EventId` generator. A death ID is
+`death-v1:<executionId>` for execution or
+`death-v1:ordinary:<taskId>` for a generic Demon kill. The exact field names,
+types, enumerable-key requirement, and node bindings belong to provisional
+descriptor `45/64`; repairing them does not alter accepted C1 `1..40/1..59`
+or any accepted historical node ID.
+
+The conditional relations are part of the canonical contract:
+
+| Cause | Required relations |
+| --- | --- |
+| `EXECUTION` | `executionId != null`; `causeEventType=ExecutionResolved`; `causeEventId` identifies the preceding resolution with the same execution/target; `sourcePlayerId=null`; `sourceRoleId=null`; `phase=EXECUTION_RESOLUTION`; `deathId=death-v1:<executionId>`. |
+| `GENERIC_DEMON_KILL` | `executionId=null`; `causeEventType=OrdinaryNightTargetDerived`; `causeEventId` identifies the preceding target/action fact; `sourcePlayerId` and `sourceRoleId=vortox` match the plan; `phase=NIGHT_TASKS`; `deathId=death-v1:ordinary:<taskId>`. |
+
+In both cases `deadSeatNumber` equals the roster seat for `playerId`, the
+day/night numbers equal the current state, and `characterStateRevision`
+equals the pre-death canonical revision. The target is alive before the event
+and absent from the existing dead set. `PlayerDied` is the sole state
+mutation that adds the death: the applier appends the payload to `deaths` and
+the target to `deadPlayerIds`; the canonical alive predicate becomes false
+from that set. It does not mutate role, alignment, task plan, or another
+alive/dead field.
+
+The required applier order is:
+
+```text
+capture exact T1 event
+ -> validate descriptor and envelope
+ -> validate cause predecessor and all cross-links
+ -> validate target roster/seat, alive status, phase/night and revision
+ -> reject duplicate or reordered death
+ -> append deaths and deadPlayerIds exactly once
+ -> replay subsequent state from that canonical dead set
+```
+
+The canonical authority chain is complete only when all layers below are wired
+by implementation and review:
 
 ```text
 DomainEventType
@@ -289,11 +350,15 @@ ordinary-night Vortox generic kill of Flowergirl
 
 `ExecutionResolved` never mutates `alive=false` by itself. A
 `DID_NOT_DIE` execution remains an execution fact without `PlayerDied`.
-`PlayerDied` rejects a missing cause reference, wrong seat, wrong phase,
-stale character-state revision, duplicate death, a second death for the same
-player, or a cause/reference mismatch. The event applier records the dead
-player in canonical state; ordinary planning reads that state and therefore
-does not generate a Pit-Hag action after Pit-Hag's daytime death.
+`PlayerDied` rejects a missing cause predecessor (`DEATH_MISSING_CAUSE`), a
+forged or mismatched cause reference (`DEATH_FORGED_CAUSE_REFERENCE`), wrong
+seat (`DEATH_WRONG_SEAT`), wrong phase/night (`DEATH_WRONG_PHASE`), stale
+character-state revision (`DEATH_STALE_REVISION`), duplicate or second death
+(`DEATH_DUPLICATE`), and reordered event (`DEATH_REORDERED`). These are
+deterministic contract diagnostics. The event applier records the dead player
+in the existing canonical `deaths/deadPlayerIds` state; ordinary planning
+reads that state and therefore does not generate a Pit-Hag action after
+Pit-Hag's daytime death.
 
 ## Exact preemption fixture boundary
 
@@ -323,6 +388,32 @@ The plan is not a new scheduler. `OrdinaryNightTargetDerived` is the existing
 canonical action/target fact for the generic Demon task; it must not be
 duplicated by a same-meaning kill event. `SOURCE_INELIGIBLE` is a settlement
 outcome, not a role-specific event.
+
+For the Flowergirl branch, `SettleOrdinaryNightTask` has a deliberately
+different canonical event shape. After the generic Demon path has appended
+`PlayerDied` for the Flowergirl source, the command emits exactly one
+`OrdinaryNightTaskSettled` event with:
+
+```text
+taskType=FLOWERGIRL_ACTION
+sourcePlayerId=<flowergirl player>
+sourceRoleId=flowergirl
+sourceSeatNumber=<flowergirl seat>
+targetPlayerId=null
+settlement=SOURCE_INELIGIBLE
+transferOutcome=NONE
+causalDeathEventId=<PlayerDied event id>
+```
+
+There is no `OrdinaryNightTargetDerived`, information-result, or
+role-specific skipped event on this branch. The settlement is accepted only
+when the plan contains the exact source task, the causal `PlayerDied` is
+already in the canonical stream, the source is dead in `deadPlayerIds`, and
+the task has no prior terminal settlement. A live source, absent/forged death,
+wrong seat or role, non-null fabricated target, duplicate, or reordered
+settlement fails closed. The provisional settlement descriptor is repaired
+within the existing row `50/69` to admit this bounded terminal outcome; no
+new event subject or approved structural delta is created.
 
 ## C1 additive authority and candidate audit
 
@@ -388,7 +479,7 @@ postGovernanceIdentityResliceImplementationCorrectionCount=0/3
 ```
 
 This is not an old Repair Round 3. The design correction budget is
-`governanceIdentityResliceDesignCorrectionCount=0/2`; a third correction is a
+`governanceIdentityResliceDesignCorrectionCount=1/2`; a third correction is a
 true stop and requires rescope.
 
 | Asset | Lifecycle | Authority boundary |
@@ -441,4 +532,3 @@ rootUserWorktreeTouched=false
 Required next action after this docs-only commit: run the fresh independent
 design review. Only its complete `RULE_DESIGN_PASS` can authorize the bounded
 implementation cycle.
-
