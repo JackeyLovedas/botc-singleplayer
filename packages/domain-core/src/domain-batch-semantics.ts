@@ -104,10 +104,12 @@ const validateBasicPhaseFlowBatch = (
   }
   if (first.eventType === "VoteCast") {
     if (events.length !== 1 || state.phase !== "VOTING") reject("Vote must be a single fact during voting");
+    const activeNomination = state.nominations?.at(-1);
+    if (activeNomination === undefined || first.payload.nominationId !== activeNomination.nominationId) reject("Vote must reference the active nomination");
     const voter = state.roster?.entries.find((entry) => entry.playerId === first.payload.voterPlayerId);
     if (voter === undefined) reject("Vote actor must be a roster member");
     if (voter?.seatNumber !== first.payload.voterSeatNumber) reject("Vote seat must match the roster");
-    if (!(state.nominations ?? []).some((nomination) => nomination.nominationId === first.payload.nominationId)) reject("Vote must reference an existing nomination");
+    if (first.payload.voteId !== `vote-v1:${first.payload.nominationId}:${(state.votes?.length ?? 0) + 1}`) reject("Vote identity is not canonical");
     if ((state.votes ?? []).some((vote) => vote.nominationId === first.payload.nominationId && vote.voterPlayerId === first.payload.voterPlayerId)) reject("A voter may vote once per nomination");
     const dead = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).has(first.payload.voterPlayerId);
     if (first.payload.ghostVoteConsumed !== dead) reject("Vote ghost-token provenance does not match voter liveness");
@@ -126,6 +128,7 @@ const validateBasicPhaseFlowBatch = (
     const died = diedCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "PlayerDied" }> | undefined;
     const transition = transitionCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
     if (first.payload.executionId !== `execution-v1:${state.dayNumber}:01`) reject("Execution identity is not canonical");
+    if ((state.executions ?? []).some((execution) => execution.dayNumber === state.dayNumber)) reject("Only one execution may be declared per day");
     const block = (state.blocks ?? []).at(-1);
     if (block === undefined || block.tied || block.leaderNominationId === null || block.leaderVoteCount <= 0) reject("Execution must reference the current executable block");
     const targetNomination = (state.nominations ?? []).find((nomination) => nomination.nominationId === block?.leaderNominationId);
@@ -143,6 +146,7 @@ const validateBasicPhaseFlowBatch = (
     if (events.length !== 2 || events[1]?.eventType !== "PhaseTransitioned" || state.phase !== "VOTING" || first.payload.dayNumber !== state.dayNumber) reject("Block state must pair with vote completion");
     const nomination = (state.nominations ?? []).find((candidate) => candidate.nominationId === first.payload.nominationId);
     if (nomination === undefined) reject("Block state must reference an existing nomination");
+    if (nomination !== state.nominations?.at(-1)) reject("Block state must close the active nomination");
     const yesVotesByNomination = new Map<string, number>();
     for (const vote of state.votes ?? []) if (vote.choice === "YES") yesVotesByNomination.set(vote.nominationId, (yesVotesByNomination.get(vote.nominationId) ?? 0) + 1);
     const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).size);
@@ -158,6 +162,8 @@ const validateBasicPhaseFlowBatch = (
   if (first.eventType === "DayClosedWithoutExecution") {
     if (events.length !== 2 || events[1]?.eventType !== "PhaseTransitioned" || state.phase !== "EXECUTION_RESOLUTION") reject("Day close must pair with night transition");
     const transition = events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
+    const block = state.blocks?.at(-1);
+    if (block?.leaderNominationId !== null && block?.leaderNominationId !== undefined && !block.tied && block.leaderVoteCount > 0) reject("Day close cannot bypass an executable block");
     if (transition.payload.toPhase !== "NIGHT_TASKS" || transition.payload.transitionReason !== "EXECUTION_RESOLVED") reject("Day close must transition to night tasks");
     return;
   }

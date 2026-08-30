@@ -4252,7 +4252,7 @@ export class GameApplicationService {
         for (const vote of state.votes ?? []) {
           if (vote.choice === "YES") yesVotesByNomination.set(vote.nominationId, (yesVotesByNomination.get(vote.nominationId) ?? 0) + 1);
         }
-        const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set((state.deaths ?? []).map((death) => death.playerId)).size);
+        const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).size);
         const threshold = Math.ceil(livingPlayerCount / 2);
         const leaderVoteCount = Math.max(0, ...yesVotesByNomination.values());
         const leaders = [...yesVotesByNomination.entries()].filter(([, count]) => count === leaderVoteCount && count > 0);
