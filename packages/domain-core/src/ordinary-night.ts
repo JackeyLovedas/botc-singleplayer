@@ -3,10 +3,11 @@ import type { GameState } from "./game-state.js";
 
 export const ORDINARY_NIGHT_PLAN_VERSION = "ordinary-night-v1" as const;
 export const ORDINARY_NIGHT_WINDOW = "OTHER_NIGHT" as const;
-export const ORDINARY_NIGHT_CAPABILITY_KINDS = ["DREAMER_ACTION", "CERENOVUS_ACTION", "GENERIC_DEMON_KILL"] as const;
+export const ORDINARY_NIGHT_CAPABILITY_KINDS = ["DREAMER_ACTION", "CERENOVUS_ACTION", "GENERIC_DEMON_KILL", "FLOWERGIRL_ACTION"] as const;
 const ORDINARY_NIGHT_SCHEDULE_ORDER: Readonly<Record<OrdinaryNightCapabilityKind, number>> = {
   CERENOVUS_ACTION: 28,
   GENERIC_DEMON_KILL: 47,
+  FLOWERGIRL_ACTION: 80,
   DREAMER_ACTION: 79
 };
 export type OrdinaryNightCapabilityKind = (typeof ORDINARY_NIGHT_CAPABILITY_KINDS)[number];
@@ -46,9 +47,10 @@ export type OrdinaryNightTaskSettlement = {
   readonly taskId: string;
   readonly taskType: OrdinaryNightCapabilityKind;
   readonly sourcePlayerId: PlayerId;
-  readonly targetPlayerId: PlayerId;
-  readonly settlement: "RESOLVED";
+  readonly targetPlayerId: PlayerId | null;
+  readonly settlement: "RESOLVED" | "SOURCE_INELIGIBLE";
   readonly transferOutcome: "NONE";
+  readonly causalDeathEventId?: string | null;
 };
 
 const exactKeys = (value: unknown, keys: readonly string[]): value is Record<string, unknown> => {
@@ -82,6 +84,10 @@ export const createOrdinaryNightTaskPlan = (state: GameState): OrdinaryNightTask
   if (dreamer !== undefined) tasks.push(dreamer);
   const cerenovus = byRole("cerenovus");
   if (cerenovus !== undefined) tasks.push(cerenovus);
+  const flowergirl = byRole("flowergirl");
+  if (flowergirl !== undefined) {
+    tasks.push({ ...flowergirl, taskId: ordinaryNightTaskId("FLOWERGIRL_ACTION", flowergirl.sourceSeatNumber), taskType: "FLOWERGIRL_ACTION" });
+  }
   const demon = state.assignment.assignments.find((entry) => entry.role.characterType === "DEMON");
   if (demon !== undefined) {
     tasks.push({
@@ -111,7 +117,22 @@ export const getNextUnsettledOrdinaryNightTask = (plan: OrdinaryNightTaskPlan, p
 export const validateOrdinaryNightTaskPlan = (value: unknown): value is OrdinaryNightTaskPlan => {
   if (!exactKeys(value, ["planVersion", "window", "nightNumber", "taskCount", "tasks"])) return false;
   if (value.planVersion !== ORDINARY_NIGHT_PLAN_VERSION || value.window !== ORDINARY_NIGHT_WINDOW || value.nightNumber !== 2 || !positiveInteger(value.taskCount) || !Array.isArray(value.tasks) || value.taskCount !== value.tasks.length) return false;
-  return value.tasks.every((task) => exactKeys(task, ["taskId", "taskType", "sourcePlayerId", "sourceRoleId", "sourceSeatNumber", "status"]) && nonEmptyString(task.taskId) && ORDINARY_NIGHT_CAPABILITY_KINDS.includes(task.taskType as OrdinaryNightCapabilityKind) && nonEmptyString(task.sourcePlayerId) && nonEmptyString(task.sourceRoleId) && positiveInteger(task.sourceSeatNumber) && (task.status === "PENDING" || task.status === "SETTLED"));
+  const tasks = value.tasks as readonly Record<string, unknown>[];
+  const seenTaskIds = new Set<string>();
+  let previousOrder = -1;
+  return tasks.every((task) => {
+    if (!exactKeys(task, ["taskId", "taskType", "sourcePlayerId", "sourceRoleId", "sourceSeatNumber", "status"]) ||
+        !nonEmptyString(task.taskId) || !ORDINARY_NIGHT_CAPABILITY_KINDS.includes(task.taskType as OrdinaryNightCapabilityKind) ||
+        !nonEmptyString(task.sourcePlayerId) || !nonEmptyString(task.sourceRoleId) || !positiveInteger(task.sourceSeatNumber) ||
+        (task.status !== "PENDING" && task.status !== "SETTLED") || seenTaskIds.has(task.taskId)) return false;
+    const taskType = task.taskType as OrdinaryNightCapabilityKind;
+    if (task.taskId !== ordinaryNightTaskId(taskType, task.sourceSeatNumber)) return false;
+    const order = ORDINARY_NIGHT_SCHEDULE_ORDER[taskType];
+    if (order < previousOrder) return false;
+    previousOrder = order;
+    seenTaskIds.add(task.taskId);
+    return true;
+  });
 };
 
 export const deriveOrdinaryNightTarget = (task: OrdinaryNightTask, state: GameState): OrdinaryNightTarget => {
@@ -119,6 +140,7 @@ export const deriveOrdinaryNightTarget = (task: OrdinaryNightTask, state: GameSt
   const dead = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]);
   const candidates = state.roster.entries.filter((entry) => entry.playerId !== task.sourcePlayerId && !dead.has(entry.playerId)).sort((left, right) => (left.seatNumber - right.seatNumber)).map((entry) => entry.playerId);
   if (candidates.length === 0) throw new Error("ordinary-night target candidate set is empty");
+  if (task.taskType === "FLOWERGIRL_ACTION") throw new Error("Flowergirl source eligibility must be settled without target derivation");
   const selectionIndex = task.taskType === "GENERIC_DEMON_KILL"
     ? candidates.findIndex((playerId) => state.roster?.entries.find((entry) => entry.playerId === playerId)?.seatNumber === 1)
     : 0;

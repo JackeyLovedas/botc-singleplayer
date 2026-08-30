@@ -4308,11 +4308,17 @@ export class GameApplicationService {
           ];
         }
         const alreadyDead = (state.deaths ?? []).some((death) => death.playerId === nomination.nomineePlayerId);
+        const targetSeatNumber = state.roster?.entries.find((entry) => entry.playerId === nomination.nomineePlayerId)?.seatNumber;
+        if (targetSeatNumber === undefined) throw new DomainError("InvalidDomainBatchSemantics", "execution target seat unavailable");
+        const executionMetadata = common(firstEventSequence);
+        const resolutionMetadata = common(firstEventSequence + 1);
+        const deathMetadata = common(firstEventSequence + 2);
+        const transitionMetadata = common(firstEventSequence + (alreadyDead ? 2 : 3));
         return [
-          { ...common(firstEventSequence), eventType: "ExecutionDeclared", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, executionId, blockId: command.payload.blockId, targetPlayerId: nomination.nomineePlayerId, dayNumber: state.dayNumber } },
-          { ...common(firstEventSequence + 1), eventType: "ExecutionResolved", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, executionId, targetPlayerId: nomination.nomineePlayerId, dayNumber: state.dayNumber, resolution: "EXECUTED", deathOutcome: alreadyDead ? "DID_NOT_DIE" : "DIED" } },
-          ...(!alreadyDead ? [{ ...common(firstEventSequence + 2), eventType: "PlayerDied" as const, payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, deathId: `death-v1:${executionId}`, executionId, playerId: nomination.nomineePlayerId, dayNumber: state.dayNumber, cause: "EXECUTION" as const } }] : []),
-          { ...common(firstEventSequence + (alreadyDead ? 2 : 3)), eventType: "PhaseTransitioned", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: state.phase, toPhase: transition.nextPhase, transitionReason: transition.reasonCode, dayNumberBefore: state.dayNumber, dayNumberAfter: transition.dayNumber, nightNumberBefore: state.nightNumber, nightNumberAfter: transition.nightNumber } satisfies PhaseTransitionedPayload }
+          { ...executionMetadata, eventType: "ExecutionDeclared", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, executionId, blockId: command.payload.blockId, targetPlayerId: nomination.nomineePlayerId, dayNumber: state.dayNumber } },
+          { ...resolutionMetadata, eventType: "ExecutionResolved", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, executionId, targetPlayerId: nomination.nomineePlayerId, dayNumber: state.dayNumber, resolution: "EXECUTED", deathOutcome: alreadyDead ? "DID_NOT_DIE" : "DIED" } },
+          ...(!alreadyDead ? [{ ...deathMetadata, eventType: "PlayerDied" as const, payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, deathId: `death-v1:${executionId}`, executionId, playerId: nomination.nomineePlayerId, deadSeatNumber: targetSeatNumber, dayNumber: state.dayNumber, nightNumber: state.nightNumber, phase: "EXECUTION_RESOLUTION" as const, cause: "EXECUTION" as const, causeEventId: resolutionMetadata.eventId, causeEventType: "ExecutionResolved" as const, sourcePlayerId: null, sourceRoleId: null, characterStateRevision: state.currentCharacterState?.revision ?? 0 } }] : []),
+          { ...transitionMetadata, eventType: "PhaseTransitioned", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: state.phase, toPhase: transition.nextPhase, transitionReason: transition.reasonCode, dayNumberBefore: state.dayNumber, dayNumberAfter: transition.dayNumber, nightNumberBefore: state.nightNumber, nightNumberAfter: transition.nightNumber } satisfies PhaseTransitionedPayload }
         ];
       }
       case "BeginNight": {
@@ -4328,15 +4334,30 @@ export class GameApplicationService {
         const task = state.ordinaryNightTaskPlan.tasks.find((candidate) => candidate.taskId === (command.payload as { readonly taskId: string }).taskId);
         if (task === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ordinary-night task unavailable");
         if (state.ordinaryNightTaskProgress?.settlements.includes(task.taskId)) throw new DomainError("InvalidDomainBatchSemantics", "ordinary-night task already settled");
+        if (task.taskType === "FLOWERGIRL_ACTION") {
+          const sourceDeath = (state.deaths ?? []).find((death) => death.playerId === task.sourcePlayerId);
+          if (sourceDeath === undefined) throw new DomainError("InvalidDomainBatchSemantics", "Flowergirl source is still eligible");
+          return [{ ...common(firstEventSequence), eventType: "OrdinaryNightTaskSettled" as const, payload: {
+            rulesBaselineVersion: RULES_BASELINE_VERSION, planVersion: ORDINARY_NIGHT_PLAN_VERSION, window: ORDINARY_NIGHT_WINDOW,
+            nightNumber: 2, taskId: task.taskId, taskType: task.taskType, sourcePlayerId: task.sourcePlayerId,
+            targetPlayerId: null, settlement: "SOURCE_INELIGIBLE" as const, transferOutcome: "NONE" as const,
+            causalDeathEventId: sourceDeath.causeEventId ?? sourceDeath.deathId
+          } }];
+        }
         const target = deriveOrdinaryNightTarget(task, state);
         const targetAlreadyDead = (state.deadPlayerIds ?? []).includes(target.targetPlayerId) || (state.deaths ?? []).some((death) => death.playerId === target.targetPlayerId);
+        const targetSeatNumber = state.roster?.entries.find((entry) => entry.playerId === target.targetPlayerId)?.seatNumber;
+        if (targetSeatNumber === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ordinary-night target seat unavailable");
+        const targetMetadata = common(firstEventSequence);
+        const deathMetadata = common(firstEventSequence + 1);
+        const settlementMetadata = common(firstEventSequence + (targetAlreadyDead ? 1 : 2));
         const deathEvent = task.taskType === "GENERIC_DEMON_KILL" && !targetAlreadyDead
-          ? [{ ...common(firstEventSequence + 1), eventType: "PlayerDied" as const, payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, deathId: `death-v1:ordinary:${task.taskId}`, executionId: null, playerId: target.targetPlayerId, dayNumber: state.dayNumber, cause: "GENERIC_DEMON_KILL" as const } }]
+          ? [{ ...deathMetadata, eventType: "PlayerDied" as const, payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, deathId: `death-v1:ordinary:${task.taskId}`, executionId: null, playerId: target.targetPlayerId, deadSeatNumber: targetSeatNumber, dayNumber: state.dayNumber, nightNumber: state.nightNumber, phase: "NIGHT_TASKS" as const, cause: "GENERIC_DEMON_KILL" as const, causeEventId: targetMetadata.eventId, causeEventType: "OrdinaryNightTargetDerived" as const, sourcePlayerId: task.sourcePlayerId, sourceRoleId: task.sourceRoleId, characterStateRevision: state.currentCharacterState?.revision ?? 0 } }]
           : [];
         return [
-          { ...common(firstEventSequence), eventType: "OrdinaryNightTargetDerived", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, ...target } },
+          { ...targetMetadata, eventType: "OrdinaryNightTargetDerived", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, ...target } },
           ...deathEvent,
-          { ...common(firstEventSequence + (deathEvent.length === 0 ? 1 : 2)), eventType: "OrdinaryNightTaskSettled", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, planVersion: ORDINARY_NIGHT_PLAN_VERSION, window: ORDINARY_NIGHT_WINDOW, nightNumber: 2, taskId: task.taskId, taskType: task.taskType, sourcePlayerId: task.sourcePlayerId, targetPlayerId: target.targetPlayerId, settlement: "RESOLVED", transferOutcome: "NONE" } }
+          { ...settlementMetadata, eventType: "OrdinaryNightTaskSettled", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, planVersion: ORDINARY_NIGHT_PLAN_VERSION, window: ORDINARY_NIGHT_WINDOW, nightNumber: 2 as const, taskId: task.taskId, taskType: task.taskType, sourcePlayerId: task.sourcePlayerId, targetPlayerId: target.targetPlayerId, settlement: "RESOLVED", transferOutcome: "NONE", causalDeathEventId: null } }
         ];
       }
     }

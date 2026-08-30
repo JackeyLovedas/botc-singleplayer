@@ -38,4 +38,21 @@ describe("bounded ordinary-night foundation", () => {
       expect.objectContaining({ deltaId: "B54_PLACEHOLDER_UNION_NORMALIZATION_DELTA" })
     ]);
   });
+
+  it("adds Flowergirl after the generic Demon task without deriving a target", () => {
+    const fixture = {
+      ...state,
+      assignment: {
+        assignments: [
+          { playerId: "p1", seatNumber: 1, role: { roleId: "flowergirl", characterType: "TOWNSFOLK" } },
+          { playerId: "p2", seatNumber: 2, role: { roleId: "vortox", characterType: "DEMON" } }
+        ]
+      },
+      roster: { entries: [{ playerId: "p1", seatNumber: 1 }, { playerId: "p2", seatNumber: 2 }] }
+    } as unknown as GameState;
+    const plan = createOrdinaryNightTaskPlan(fixture);
+    expect(plan.tasks.map((task) => task.taskType)).toEqual(["GENERIC_DEMON_KILL", "FLOWERGIRL_ACTION"]);
+    expect(() => deriveOrdinaryNightTarget(plan.tasks[1]!, fixture)).toThrow("Flowergirl source eligibility");
+    expect(getNextUnsettledOrdinaryNightTask(plan, { settlements: [] })?.taskType).toBe("GENERIC_DEMON_KILL");
+  });
 });

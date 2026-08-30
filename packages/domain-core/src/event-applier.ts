@@ -2990,10 +2990,15 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
       if (state === undefined) throw new DomainError("MissingGameCreated", "ExecutionDeclared requires an existing game");
       if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Execution rules baseline must match state");
       return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, executions: [...(state.executions ?? []), event.payload] };
-    case "PlayerDied":
+    case "PlayerDied": {
       if (state === undefined) throw new DomainError("MissingGameCreated", "PlayerDied requires an existing game");
       if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Death rules baseline must match state");
+      if ((state.deadPlayerIds ?? []).includes(event.payload.playerId) || (state.deaths ?? []).some((death) => death.deathId === event.payload.deathId)) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied cannot be applied twice");
+      const rosterEntry = state.roster?.entries.find((entry) => entry.playerId === event.payload.playerId);
+      if (rosterEntry === undefined) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied target must be a roster member");
+      if (event.payload.deadSeatNumber !== undefined && event.payload.deadSeatNumber !== rosterEntry.seatNumber) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied seat must match the roster");
       return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, deaths: [...(state.deaths ?? []), event.payload], deadPlayerIds: [...(state.deadPlayerIds ?? []), event.payload.playerId] };
+    }
     case "ExecutionResolved":
       if (state === undefined) throw new DomainError("MissingGameCreated", "ExecutionResolved requires an existing game");
       if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Execution resolution rules baseline must match state");
