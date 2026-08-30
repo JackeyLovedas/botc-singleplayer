@@ -4295,12 +4295,14 @@ export class GameApplicationService {
       }
       case "ResolveExecution": {
         if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ResolveExecution requires state");
-        const nomination = state.nominations?.at(-1);
+        const block = state.blocks?.at(-1);
+        const nomination = block?.leaderNominationId === null || block?.leaderNominationId === undefined
+          ? state.nominations?.at(-1)
+          : state.nominations?.find((candidate) => candidate.nominationId === block.leaderNominationId);
         if (nomination === undefined) throw new DomainError("InvalidDomainBatchSemantics", "execution nomination unavailable");
         const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "NIGHT_TASKS", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
         if (!transition.allowed || transition.reasonCode === undefined) throw new DomainError("InvalidPhaseTransition", transition.reason);
         const executionId = `execution-v1:${state.dayNumber}:01`;
-        const block = state.blocks?.at(-1);
         if (block?.leaderNominationId !== nomination.nominationId || block.tied || block.leaderVoteCount <= 0) {
           return [
             { ...common(firstEventSequence), eventType: "DayClosedWithoutExecution", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, dayNumber: state.dayNumber, blockId: command.payload.blockId, reason: "NO_EXECUTABLE_CANDIDATE" } },

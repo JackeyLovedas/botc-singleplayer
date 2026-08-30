@@ -126,8 +126,10 @@ const validateBasicPhaseFlowBatch = (
     const died = diedCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "PlayerDied" }> | undefined;
     const transition = transitionCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
     if (first.payload.executionId !== `execution-v1:${state.dayNumber}:01`) reject("Execution identity is not canonical");
-    const block = (state.blocks ?? []).find((candidate) => candidate.nominationId === state.nominations?.at(-1)?.nominationId);
-    if (block === undefined || block.nominationId !== state.nominations?.at(-1)?.nominationId || block.leaderNominationId !== state.nominations?.at(-1)?.nominationId || block.tied || block.leaderVoteCount <= 0 || first.payload.blockId !== block.nominationId) reject("Execution must reference the current executable block");
+    const block = (state.blocks ?? []).at(-1);
+    if (block === undefined || block.tied || block.leaderNominationId === null || block.leaderVoteCount <= 0) reject("Execution must reference the current executable block");
+    const targetNomination = (state.nominations ?? []).find((nomination) => nomination.nominationId === block?.leaderNominationId);
+    if (targetNomination === undefined || targetNomination.nomineePlayerId !== first.payload.targetPlayerId) reject("Execution target must match the strict-highest block");
     if (resolved.payload.executionId !== first.payload.executionId || resolved.payload.targetPlayerId !== first.payload.targetPlayerId || (died !== undefined && (died.payload.executionId !== first.payload.executionId || died.payload.playerId !== first.payload.targetPlayerId))) reject("Execution chain payloads do not agree");
     const expected = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "NIGHT_TASKS", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
     if (!expected.allowed || transition.payload.toPhase !== expected.nextPhase || transition.payload.transitionReason !== expected.reasonCode) reject("Execution must transition to ordinary night tasks");
@@ -139,6 +141,16 @@ const validateBasicPhaseFlowBatch = (
   }
   if (first.eventType === "BlockStateUpdated") {
     if (events.length !== 2 || events[1]?.eventType !== "PhaseTransitioned" || state.phase !== "VOTING" || first.payload.dayNumber !== state.dayNumber) reject("Block state must pair with vote completion");
+    const nomination = (state.nominations ?? []).find((candidate) => candidate.nominationId === first.payload.nominationId);
+    if (nomination === undefined) reject("Block state must reference an existing nomination");
+    const yesVotesByNomination = new Map<string, number>();
+    for (const vote of state.votes ?? []) if (vote.choice === "YES") yesVotesByNomination.set(vote.nominationId, (yesVotesByNomination.get(vote.nominationId) ?? 0) + 1);
+    const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).size);
+    const threshold = Math.ceil(livingPlayerCount / 2);
+    const leaderVoteCount = Math.max(0, ...yesVotesByNomination.values());
+    const leaders = [...yesVotesByNomination.entries()].filter(([, count]) => count === leaderVoteCount && count > 0);
+    const executable = leaders.length === 1 && leaderVoteCount >= threshold;
+    if (first.payload.livingPlayerCount !== livingPlayerCount || first.payload.threshold !== threshold || first.payload.leaderVoteCount !== leaderVoteCount || first.payload.tied !== (leaders.length > 1) || first.payload.leaderNominationId !== (executable ? leaders[0]?.[0] ?? null : null)) reject("Block state does not match canonical vote tally");
     const transition = events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
     if (transition.payload.toPhase !== "NOMINATION_WINDOW" || transition.payload.transitionReason !== "VOTE_COMPLETED") reject("Block state must transition back to nomination window");
     return;
