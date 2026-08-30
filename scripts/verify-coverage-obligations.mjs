@@ -910,10 +910,16 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
     })
   })
 ]);
-const CURRENT_PROFILE_ID = "phase-3-slice-2c-correction-98a27cf-coverage-v1";
-const CURRENT_PROFILE_SOURCE_HEAD = "98a27cf2fe6528176f0b9fffad332a8ba32d0de7";
-const CURRENT_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
+const CURRENT_PROFILE_ID = "phase-3-slice-2c-correction-2290425-coverage-v1";
+const CURRENT_PROFILE_SOURCE_HEAD = "2290425eb7fe79126583a27ef1c3b7a1c9a15a8a";
+const PREVIOUS_PROFILE_ID = "phase-3-slice-2c-correction-98a27cf-coverage-v1";
+const PREVIOUS_PROFILE_SOURCE_HEAD = "98a27cf2fe6528176f0b9fffad332a8ba32d0de7";
+const PREVIOUS_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
   group.id === "domain-core-rest" ? { ...group, tests: 506 } : group
+));
+const CURRENT_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
+  group.id === "domain-core-rest" ? { ...group, tests: 509 } :
+    group.id === "application-service-core" ? { ...group, tests: 91 } : group
 ));
 
 function parseArguments(argv) {
@@ -1123,7 +1129,9 @@ function validateProfileArtifactBytes(record, bytes) {
   assertExactPlain(artifact.obligations, PROFILE_OBLIGATION_KEYS, "profile obligations", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
   const expectedGroups = record.profileId === CURRENT_PROFILE_ID && record.sourceHead === CURRENT_PROFILE_SOURCE_HEAD
     ? CURRENT_COVERAGE_GROUPS
-    : FROZEN_COVERAGE_GROUPS;
+    : record.profileId === PREVIOUS_PROFILE_ID && record.sourceHead === PREVIOUS_PROFILE_SOURCE_HEAD
+      ? PREVIOUS_COVERAGE_GROUPS
+      : FROZEN_COVERAGE_GROUPS;
   validateFrozenCoverageTopology(artifact.topology, artifact.testIdentityCount, artifact.logicalGroupCount, artifact.physicalGroupCount, expectedGroups);
   for (const key of PROFILE_OBLIGATION_KEYS) {
     assertExactPlain(artifact.obligations[key], ["count", "sha256"], `profile obligation ${key}`, "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
