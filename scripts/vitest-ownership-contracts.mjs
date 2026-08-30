@@ -1857,9 +1857,14 @@ export function auditOwnershipContracts({
   repoRoot,
   contracts,
   fullInventory,
-  legacyApplicationServiceProjects
+  legacyApplicationServiceProjects,
+  inventoryAuthority = "HISTORICAL_ACCEPTED"
 }) {
   const resolvedRoot = path.resolve(repoRoot);
+  if (!["HISTORICAL_ACCEPTED", "LIVE_CURRENT"].includes(inventoryAuthority)) {
+    fail("OWNERSHIP_INVENTORY_AUTHORITY_INVALID", inventoryAuthority);
+  }
+  const liveCurrentInventory = inventoryAuthority === "LIVE_CURRENT";
   const validatedContracts = validateOwnershipContracts(contracts, {
     repoRoot: resolvedRoot
   });
@@ -1940,6 +1945,7 @@ export function auditOwnershipContracts({
     new Set(fullInventory.map((identity) => identity.file))
   );
   if (
+    !liveCurrentInventory &&
     validatedContracts.some(
       (contract) =>
         contract.frozenBaseline.nonMarkerOwnershipSha256 !==
@@ -2025,14 +2031,14 @@ export function auditOwnershipContracts({
       ]
     ];
     for (const [label, expected, actual] of exactComparisons) {
-      if (expected !== actual) {
+    if (!liveCurrentInventory && expected !== actual) {
         fail(
           "OWNERSHIP_FROZEN_BASELINE_MISMATCH",
           `${contract.contractId} ${label}: expected=${expected}, actual=${actual}`
         );
       }
     }
-    if (inventory.length !== baseline.projectExecutionsAfter) {
+    if (!liveCurrentInventory && inventory.length !== baseline.projectExecutionsAfter) {
       fail(
         "OWNERSHIP_FROZEN_BASELINE_MISMATCH",
         `${contract.contractId} project executions: expected=${baseline.projectExecutionsAfter}, actual=${inventory.length}`

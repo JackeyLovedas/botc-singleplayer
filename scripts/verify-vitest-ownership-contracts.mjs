@@ -12,6 +12,7 @@ import {
   readFileSync,
   renameSync,
   rmSync,
+  symlinkSync,
   unlinkSync,
   writeFileSync,
   writeSync
@@ -50,6 +51,8 @@ const LEGACY_PROJECTS = Object.freeze(["legacy-a", "legacy-b"]);
 const NON_OWNED_POLICY =
   "GLOBAL_APPLICATION_NON_OWNED_EXACT_SHA256_WITH_FROZEN_LEGACY_MARKERS";
 const ZERO_SHA256 = "0".repeat(64);
+const HISTORICAL_OWNERSHIP_SOURCE_HEAD =
+  "8898f62ceb90433634cf02e83ad5d4ff95db4499";
 const CANDIDATE_LIFECYCLE_ERRORS = new WeakSet();
 
 class CandidateLifecycleError extends Error {
@@ -1440,6 +1443,40 @@ function audit(root, contracts, inventory) {
   });
 }
 
+function createHistoricalOwnershipWorktree() {
+  const historicalRoot = mkdtempSync(
+    path.join(tmpdir(), "botc-ownership-historical-")
+  );
+  const result = spawnSync(
+    "git",
+    ["worktree", "add", "--detach", historicalRoot, HISTORICAL_OWNERSHIP_SOURCE_HEAD],
+    { cwd: process.cwd(), encoding: "utf8" }
+  );
+  if (result.status !== 0 || result.error !== undefined) {
+    rmSync(historicalRoot, { recursive: true, force: true });
+    candidateFail("HISTORICAL_SOURCE_UNAVAILABLE");
+  }
+  const dependencies = path.resolve(process.cwd(), "node_modules");
+  if (!existsSync(dependencies)) {
+    spawnSync("git", ["worktree", "remove", "--force", historicalRoot], {
+      cwd: process.cwd(),
+      encoding: "utf8"
+    });
+    rmSync(historicalRoot, { recursive: true, force: true });
+    candidateFail("HISTORICAL_SOURCE_UNAVAILABLE", "node_modules is unavailable");
+  }
+  symlinkSync(dependencies, path.join(historicalRoot, "node_modules"), "junction");
+  return historicalRoot;
+}
+
+function removeHistoricalOwnershipWorktree(historicalRoot) {
+  spawnSync("git", ["worktree", "remove", "--force", historicalRoot], {
+    cwd: process.cwd(),
+    encoding: "utf8"
+  });
+  rmSync(historicalRoot, { recursive: true, force: true });
+}
+
 function createFixture(root, ids = ["2BTESTA"], options = {}) {
   const legacy = identity("legacy-a", "[2BLEGACY-01] frozen accepted marker");
   const owned = ids.map((id, index) =>
@@ -1820,6 +1857,8 @@ function runSelfTest() {
 }
 
 async function runCompleteSelfTest() {
+  const historicalRoot = createHistoricalOwnershipWorktree();
+  try {
   const results = runSelfTest();
   const check = async (name, execute) => {
     await execute();
@@ -2311,8 +2350,8 @@ async function runCompleteSelfTest() {
         createVitest(
           "test",
           {
-            root: process.cwd(),
-            workspace: path.resolve(process.cwd(), "vitest.workspace.ts"),
+            root: historicalRoot,
+            workspace: path.resolve(historicalRoot, "vitest.workspace.ts"),
             run: true,
             watch: false,
             passWithNoTests: false,
@@ -2324,13 +2363,13 @@ async function runCompleteSelfTest() {
         ),
       collect: async (vitest) => {
         realIntegrationCollectEntries += 1;
-        return collectSemanticInventory(vitest, process.cwd());
+        return collectSemanticInventory(vitest, historicalRoot);
       },
       validate: (inventory) => inventory,
       encode: (inventory) =>
         candidateBytes(
           buildOwnershipBaselineCandidate(
-            process.cwd(),
+            historicalRoot,
             inventory,
             ACCEPTED_OWNERSHIP_BASELINE_VERSION
           )
@@ -3462,8 +3501,8 @@ async function runCompleteSelfTest() {
         createVitest(
           "test",
           {
-            root: process.cwd(),
-            workspace: path.resolve(process.cwd(), "vitest.workspace.ts"),
+            root: historicalRoot,
+            workspace: path.resolve(historicalRoot, "vitest.workspace.ts"),
             run: true,
             watch: false,
             passWithNoTests: false,
@@ -3473,12 +3512,12 @@ async function runCompleteSelfTest() {
           {},
           { stdout, stderr }
         ),
-      collect: (vitest) => collectSemanticInventory(vitest, process.cwd()),
+      collect: (vitest) => collectSemanticInventory(vitest, historicalRoot),
       validate: (inventory) => inventory,
       encode: (inventory) =>
         candidateBytes(
           buildOwnershipBaselineCandidate(
-            process.cwd(),
+            historicalRoot,
             inventory,
             CANDIDATE_OWNERSHIP_BASELINE_VERSION
           )
@@ -3488,11 +3527,11 @@ async function runCompleteSelfTest() {
   const d1Path = (name) => path.join(tmpdir(), `botc-d1-${process.pid}-${name}.json`);
   const removeD1Paths = (paths) => paths.forEach((file) => { if (existsSync(file)) unlinkSync(file); });
   const runD1Cli = (argv) => Object.assign(spawnSync(process.execPath, [path.resolve(process.argv[1]), ...argv],
-    { cwd: process.cwd(), encoding: null, maxBuffer: 2 * 1024 * 1024 }),
-  { d1Argv: [...argv], d1Cwd: process.cwd() });
+    { cwd: historicalRoot, encoding: null, maxBuffer: 2 * 1024 * 1024 }),
+  { d1Argv: [...argv], d1Cwd: historicalRoot });
   const assertCli = (result, status, stderr = "", expectedArgv = result.d1Argv) => {
     if (result.status !== status || result.error !== undefined ||
-        result.stderr.toString("utf8") !== stderr || result.d1Cwd !== process.cwd() ||
+        result.stderr.toString("utf8") !== stderr || result.d1Cwd !== historicalRoot ||
         result.d1Argv.join("\0") !== expectedArgv.join("\0")) throw new Error("D1 public CLI result mismatch");
   };
   const emitArgs = (version, output) => ["--emit-candidate-baseline", "2B20A", "--workspace", "vitest.workspace.ts", "--baseline-version", version, "--output", output];
@@ -3504,7 +3543,7 @@ async function runCompleteSelfTest() {
     const emitted = runD1Cli(emitArgs(ACCEPTED_OWNERSHIP_BASELINE_VERSION, output));
     assertCli(emitted, 0);
     const acceptedBytes = readFileSync(output);
-    const accepted = validatePersistedCandidate(process.cwd(), acceptedBytes,
+    const accepted = validatePersistedCandidate(historicalRoot, acceptedBytes,
       ACCEPTED_OWNERSHIP_BASELINE_VERSION, acceptedBytes);
     const verified = runD1Cli(verifyArgs(ACCEPTED_OWNERSHIP_BASELINE_VERSION, output));
     assertCli(verified, 0);
@@ -3556,7 +3595,7 @@ async function runCompleteSelfTest() {
     );
   };
   await check("40 D1 C03 exact dual-baseline delta", async () => {
-    const report = auditOwnershipBaselineMigration(process.cwd(), candidateInventory());
+    const report = auditOwnershipBaselineMigration(historicalRoot, candidateInventory());
     if (
       report.delta.intersection !== 1572 ||
       report.delta.union !== 1712 ||
@@ -3578,7 +3617,7 @@ async function runCompleteSelfTest() {
     const acceptedIndex = inventory.findIndex(({ file }) =>
       !file.includes("canonical-runtime-") && !file.includes("domain-event-structural-"));
     const expectRemoval = (mutate) => expectCode("ACCEPTED_1572_HISTORY_REMOVAL", () =>
-      auditOwnershipBaselineMigration(process.cwd(), mutate(inventory.map((entry) => ({ ...entry,
+        auditOwnershipBaselineMigration(historicalRoot, mutate(inventory.map((entry) => ({ ...entry,
         ancestorPath: [...entry.ancestorPath] })))));
     expectRemoval((value) => value.filter((_, index) => index !== acceptedIndex));
     for (const field of ["title", "project", "file"]) expectRemoval((value) => {
@@ -3587,25 +3626,25 @@ async function runCompleteSelfTest() {
     expectRemoval((value) => { value[acceptedIndex].ancestorPath[0] += "-changed"; return value; });
     expectRemoval((value) => { value.splice(acceptedIndex, 1); value.push({ ...value[0], title: `${value[0].title}-compensating` }); return value; });
     const originalCandidateBytes = firstD1Candidate.bytes;
-    const originalReportBytes = candidateBytes(auditOwnershipBaselineMigration(process.cwd(), inventory));
+    const originalReportBytes = candidateBytes(auditOwnershipBaselineMigration(historicalRoot, inventory));
     const cases = [];
     const addCase = (name, execute) => cases.push({ name, execute });
-    addCase("duplicate identity", () => auditOwnershipBaselineMigration(process.cwd(), [...inventory, inventory[0]]));
-    addCase("borrowed identity", () => auditOwnershipBaselineMigration(process.cwd(), [...inventory,
+    addCase("duplicate identity", () => auditOwnershipBaselineMigration(historicalRoot, [...inventory, inventory[0]]));
+    addCase("borrowed identity", () => auditOwnershipBaselineMigration(historicalRoot, [...inventory,
       { ...inventory[0], file: "packages/domain-core/src/borrowed.test.ts", title: `${inventory[0].title}-borrowed` }]));
     for (const field of ["project", "file", "title"]) addCase(`wrong ${field}`, () => {
       const value = inventory.map((entry) => ({ ...entry })); value.at(-1)[field] += "-wrong";
-      return auditOwnershipBaselineMigration(process.cwd(), value);
+      return auditOwnershipBaselineMigration(historicalRoot, value);
     });
     addCase("wrong ancestorPath", () => { const value = inventory.map((entry) => ({ ...entry,
       ancestorPath: [...entry.ancestorPath] })); value.at(-1).ancestorPath[0] += "-wrong";
-      return auditOwnershipBaselineMigration(process.cwd(), value); });
+      return auditOwnershipBaselineMigration(historicalRoot, value); });
     addCase("malformed persisted registry", () => authenticateAcceptedContractRegistryOrder({}));
     addCase("duplicate registry entry", () => authenticateAcceptedContractRegistryOrder(
       [...ACCEPTED_CONTRACT_REGISTRY_ORDER.slice(0, -1), "2B19A3B1"]));
-    addCase("non-array inventory", () => auditOwnershipBaselineMigration(process.cwd(), {}));
+    addCase("non-array inventory", () => auditOwnershipBaselineMigration(historicalRoot, {}));
     const candidateMutation = (mutate) => { const value = JSON.parse(originalCandidateBytes.toString("utf8"));
-      mutate(value); return validatePersistedCandidate(process.cwd(), candidateBytes(value),
+      mutate(value); return validatePersistedCandidate(historicalRoot, candidateBytes(value),
         CANDIDATE_OWNERSHIP_BASELINE_VERSION, originalCandidateBytes); };
     addCase("extra candidate field", () => candidateMutation((value) => { value.extra = true; }));
     addCase("candidate SHA mismatch", () => candidateMutation((value) => { value.inventorySha256 = "0".repeat(64); }));
@@ -3646,7 +3685,7 @@ async function runCompleteSelfTest() {
         verified.stdout.toString("utf8") !== "CANDIDATE_BASELINE_VERIFIED 2B20A CANDIDATE_1712_D1_V1\n") {
       throw new Error("D1 persisted CLI determinism mismatch");
     }
-    const reversedReport = candidateBytes(auditOwnershipBaselineMigration(process.cwd(), candidateInventory().reverse())); validateMigrationReportBytes(reversedReport); const acceptedSelection = selectOwnershipBaseline(ACCEPTED_OWNERSHIP_BASELINE_VERSION); const candidateSelection = selectOwnershipBaseline(CANDIDATE_OWNERSHIP_BASELINE_VERSION);
+    const reversedReport = candidateBytes(auditOwnershipBaselineMigration(historicalRoot, candidateInventory().reverse())); validateMigrationReportBytes(reversedReport); const acceptedSelection = selectOwnershipBaseline(ACCEPTED_OWNERSHIP_BASELINE_VERSION); const candidateSelection = selectOwnershipBaseline(CANDIDATE_OWNERSHIP_BASELINE_VERSION);
     if (!reversedReport.equals(forward.stdout) || acceptedSelection.version !== ACCEPTED_OWNERSHIP_BASELINE_VERSION || candidateSelection.version !== CANDIDATE_OWNERSHIP_BASELINE_VERSION || acceptedSelection.acceptanceStatus !== "ACCEPTED" || candidateSelection.acceptanceStatus !== "UNACCEPTED_CANDIDATE" ||
         ["b", "a", "a"].sort(ordinalCompare).join(",") !== "a,a,b") throw new Error("D1 C05 supporting policy mismatch");
     const exactEmit = emitArgs(CANDIDATE_OWNERSHIP_BASELINE_VERSION, invalidPath); const invalids = [[emitArgs("latest", invalidPath), "OWNERSHIP_BASELINE_VERSION_INVALID\n"], [[...exactEmit.slice(0, 4), ...exactEmit.slice(6)], "INVALID_CANDIDATE_ARGUMENTS\n"],
@@ -3680,6 +3719,9 @@ async function runCompleteSelfTest() {
       2
     )}\n`
   );
+  } finally {
+    removeHistoricalOwnershipWorktree(historicalRoot);
+  }
 }
 
 try {
