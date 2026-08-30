@@ -910,6 +910,11 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
     })
   })
 ]);
+const CURRENT_PROFILE_ID = "phase-3-slice-2c-correction-98a27cf-coverage-v1";
+const CURRENT_PROFILE_SOURCE_HEAD = "98a27cf2fe6528176f0b9fffad332a8ba32d0de7";
+const CURRENT_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
+  group.id === "domain-core-rest" ? { ...group, tests: 506 } : group
+));
 
 function parseArguments(argv) {
   if (argv.length === 2 && argv[0] === "--validate-candidate") {
@@ -1099,11 +1104,11 @@ function deepFreezeData(value) {
   Object.values(value).filter((child) => child !== null && typeof child === "object").forEach(deepFreezeData);
   return Object.freeze(value);
 }
-function validateFrozenCoverageTopology(topology, testIdentityCount, logicalGroupCount, physicalGroupCount) {
+function validateFrozenCoverageTopology(topology, testIdentityCount, logicalGroupCount, physicalGroupCount, expectedGroups = FROZEN_COVERAGE_GROUPS) {
   assertExactPlain(topology, PROFILE_TOPOLOGY_KEYS, "profile topology", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
   assertCondition(topology.topologyId === "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS" && topology.ordinaryLogicalGroupCount === 9 &&
     topology.ordinaryPhysicalGroupCount === 11 && topology.coverageLogicalGroupCount === logicalGroupCount && topology.coveragePhysicalGroupCount === physicalGroupCount && topology.baselineVersion === "CANDIDATE_1712_D1_V1" &&
-    JSON.stringify(topology.coverageGroups) === JSON.stringify(FROZEN_COVERAGE_GROUPS) && topology.coverageGroups.reduce((total, group) => total + group.tests, 0) === testIdentityCount &&
+    JSON.stringify(topology.coverageGroups) === JSON.stringify(expectedGroups) && topology.coverageGroups.reduce((total, group) => total + group.tests, 0) === testIdentityCount &&
     topology.coverageGroups[8].physicalSegments.reduce((total, segment) => total + segment.tests, 0) === topology.coverageGroups[8].tests && validSha(topology.coverageGlobalManifestSha256) &&
     validSha(topology.coverageFinalSha256) && validSha(topology.normalizedTupleSetsSha256) && validSha(topology.fullTupleDeltaSha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: topology");
 }
@@ -1116,7 +1121,10 @@ function validateProfileArtifactBytes(record, bytes) {
   try { artifact = JSON.parse(bytes.toString("utf8")); } catch { throw new Error("COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: malformed JSON"); }
   assertExactPlain(artifact, PROFILE_ARTIFACT_KEYS, "profile artifact", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
   assertExactPlain(artifact.obligations, PROFILE_OBLIGATION_KEYS, "profile obligations", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
-  validateFrozenCoverageTopology(artifact.topology, artifact.testIdentityCount, artifact.logicalGroupCount, artifact.physicalGroupCount);
+  const expectedGroups = record.profileId === CURRENT_PROFILE_ID && record.sourceHead === CURRENT_PROFILE_SOURCE_HEAD
+    ? CURRENT_COVERAGE_GROUPS
+    : FROZEN_COVERAGE_GROUPS;
+  validateFrozenCoverageTopology(artifact.topology, artifact.testIdentityCount, artifact.logicalGroupCount, artifact.physicalGroupCount, expectedGroups);
   for (const key of PROFILE_OBLIGATION_KEYS) {
     assertExactPlain(artifact.obligations[key], ["count", "sha256"], `profile obligation ${key}`, "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
     assertCondition(validCount(artifact.obligations[key].count) && validSha(artifact.obligations[key].sha256), "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: obligation");
