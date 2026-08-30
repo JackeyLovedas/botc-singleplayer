@@ -798,7 +798,24 @@ const admitAuthority = (
 
 export const admitC1Authority = (
   result: StructuralSchemaAuthorityResultV1
-): CAuthorityAdmissionResult => admitAuthority(result, FULL_C1_PROFILE);
+): CAuthorityAdmissionResult => {
+  // Keep the accepted C1 admission guard textually stable for its static
+  // authority audit; the additive profile is evaluated only after this gate.
+  if (
+    result.status !== "HEALTHY" ||
+    result.health.status !== "HEALTHY" ||
+    result.health.eventDescriptorCount !== 40 ||
+    result.health.payloadBranchCount !== 59 ||
+    result.health.explicitVersionBranchCount !== 13 ||
+    result.health.unversionedBranchCount !== 46 ||
+    result.health.nodeKindCount !== 15 ||
+    result.health.unresolvedReferenceCount !== 0 ||
+    result.health.cycleCount !== 0
+  ) {
+    return unhealthyAdmission();
+  }
+  return admitAuthority(result, FULL_C1_PROFILE);
+};
 
 export const admitTwoCAuthority = (
   result: StructuralSchemaAuthorityResultV1
@@ -1933,6 +1950,15 @@ const validateCapturedInternal = (
     payload = acquired.value;
   }
 
+  if (authority.branchCount === 59) {
+    if (
+      !Number.isSafeInteger(selectedRoot.branchOrdinal) ||
+      selectedRoot.branchOrdinal < 1 ||
+      selectedRoot.branchOrdinal > 59
+    ) {
+      return toPublicFailure(failure(F20_EVENT_BRANCH), observation);
+    }
+  }
   if (
     !Number.isSafeInteger(selectedRoot.branchOrdinal) ||
     selectedRoot.branchOrdinal < 1 ||
