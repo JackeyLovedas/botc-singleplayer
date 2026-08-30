@@ -106,7 +106,7 @@ const validateBasicPhaseFlowBatch = (
     if (events.length !== 1 || state.phase !== "VOTING") reject("Vote must be a single fact during voting");
     const voter = state.roster?.entries.find((entry) => entry.playerId === first.payload.voterPlayerId);
     if (voter === undefined) reject("Vote actor must be a roster member");
-    if (voter.seatNumber !== first.payload.voterSeatNumber) reject("Vote seat must match the roster");
+    if (voter?.seatNumber !== first.payload.voterSeatNumber) reject("Vote seat must match the roster");
     if (!(state.nominations ?? []).some((nomination) => nomination.nominationId === first.payload.nominationId)) reject("Vote must reference an existing nomination");
     if ((state.votes ?? []).some((vote) => vote.nominationId === first.payload.nominationId && vote.voterPlayerId === first.payload.voterPlayerId)) reject("A voter may vote once per nomination");
     const dead = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).has(first.payload.voterPlayerId);
