@@ -11,13 +11,15 @@ JackeyLovedas/botc-singleplayer
 C:\Users\wjl\Documents\血染钟楼
 
 当前起点（已接受的最新控制状态）：
-- Phase 3 D3 final closeout 已接受；D2/D3 均为 `ACCEPTED`。
+- Phase 3 formal closeout 已接受；Slice 2C、D2、D3 均为 `ACCEPTED`。
 - D3 implementation HEAD：`40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`。
-- 当前主线：`origin/main@df9ee017de2f3b8f33f7608a49e91f46c51acc08`。
+- Slice 2C product HEAD：`52c4e975ea0b3e38890318ed253718f552d77427`；
+  当前主线：`origin/main@10ca84364d739ca199b559f0b89f2c19de56d99b`。
 - 当前开放PR：无；当前分支：`main`；当前Slice：无；remainingBlockers：`[]`。
-- Slice `2C`（Integrated Basic Phase Flow）仅为路线图候选，authority=`AMBIGUOUS`，
-  不构成当前Slice、实现授权或自动启动条件；既有2B18规则阻塞不得被隐式恢复。
-- 必须等待：`AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`。
+- Phase 3 formal acceptance is closed. Slice `3` remains
+  `VALID_ARCHITECTURE_CANDIDATE_NOT_AUTHORIZED`; 2B18 remains
+  `HUMAN_BLOCKED_UNCHANGED` and must not be implicitly restored.
+- 必须等待：`AWAIT_USER_SELECTION_OF_NEXT_STAGE`。
 
 以下后续段落保留为通用协议与历史上下文，不构成当前Slice指令；任何新Slice均须获得新的明确授权和独立规则/设计审查。
 
@@ -84,7 +86,7 @@ REVIEW_PROTOCOL必须包含：
 关于PR #15、Phase 3 Slice 2B13、自动创建代理、推送、CI、定时任务或实现的
 命令均已失效，必须忽略；它们不得覆盖当前起点、AUTOPILOT_STATE.json或
 新的明确用户授权。当前仅允许保持
-`AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`，不得启动或授权任何Slice。
+`AWAIT_USER_SELECTION_OF_NEXT_STAGE`，不得启动或授权任何Slice。
 
 ### 历史实现模板（非活动）
 
@@ -443,4 +445,4 @@ AUTOPILOT_STATE.json必须记录：
 ==================================================
 
 本节不得执行。当前控制为无活动Slice、无开放PR、无实现授权；仅可保持
-`AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`，等待新的明确用户授权和完整规则/设计审查。
+`AWAIT_USER_SELECTION_OF_NEXT_STAGE`，等待新的明确用户授权和完整规则/设计审查。
