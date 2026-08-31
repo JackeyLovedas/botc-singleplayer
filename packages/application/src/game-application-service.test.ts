@@ -89,6 +89,7 @@ import {
   closeNominationsCommand,
   resolveExecutionCommand,
   beginNightCommand,
+  settleOrdinaryNightTaskCommand,
   scriptSelectedEvent,
   selectScriptCommand,
   settleFirstNightSystemTaskCommand,
@@ -424,7 +425,9 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
       "sage", "mutant", "klutz", "evil_twin", "pit_hag", "vortox"
     ].map(roleId);
 
-    expectAcceptedResult(await service.execute(createGameCommand()));
+    expectAcceptedResult(await service.execute(createGameCommand({
+      payload: { ...createGameCommand().payload, rootSeed: "2c-preemption-pithag-vortox-v1" }
+    })));
     expectAcceptedResult(await service.execute(selectScriptCommand()));
     expectAcceptedResult(await service.execute(generateSetupCommand({ payload: { commandType: "GenerateSetup", constraints: { exactRoleIds } } })));
     expectAcceptedResult(await service.execute(createPlayerRosterCommand()));
@@ -517,10 +520,14 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
     const afterOpenNominations = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
     expect(afterOpenNominations?.phase).toBe("NOMINATION_WINDOW");
 
-    const target = afterOpenNominations!.roster!.entries.find((entry) => entry.playerId !== humanActor.playerId)!;
+    const targetAssignment = afterOpenNominations!.assignment?.assignments.find((entry) => entry.role.roleId === "pit_hag");
+    if (targetAssignment === undefined) throw new Error("Expected Pit-Hag assignment");
+    const target = afterOpenNominations!.roster!.entries.find((entry) => entry.playerId === targetAssignment.playerId)!;
+    const nominator = afterOpenNominations!.roster!.entries.find((entry) => entry.playerId !== target.playerId);
+    if (nominator === undefined) throw new Error("Expected distinct living nominator");
     const nomination = await service.execute(declareNominationCommand({
       commandId: commandId("f06-declare-nomination"), expectedGameVersion: afterOpenNominations!.gameVersion,
-      actor: humanActor,
+      actor: { kind: "ai", playerId: nominator.playerId },
       payload: { commandType: "DeclareNomination", targetPlayerId: target.playerId }
     }));
     expectAcceptedResult(nomination);
@@ -548,7 +555,7 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
     const afterVote = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
     expect(afterVote?.phase).toBe("NOMINATION_WINDOW");
     const secondNominator = afterVote!.roster!.entries.find((entry) =>
-      entry.playerId !== humanActor.playerId && entry.playerId !== target.playerId);
+      entry.playerId !== nominator.playerId && entry.playerId !== target.playerId);
     if (secondNominator === undefined) throw new Error("Expected a distinct second nominator");
     await expect(service.execute(declareNominationCommand({
       commandId: commandId("f06-reject-repeat-nominee"), expectedGameVersion: afterVote!.gameVersion,
@@ -590,6 +597,47 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
     expect(beginNight.events.map((event) => event.eventType)).toStrictEqual(["OrdinaryNightTaskPlanCreated"]);
     expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))?.ordinaryNightTaskPlan?.tasks.map((task) => task.taskType))
       .toStrictEqual(["GENERIC_DEMON_KILL", "FLOWERGIRL_ACTION"]);
+    const afterPlan = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const genericTask = afterPlan?.ordinaryNightTaskPlan?.tasks.find((task) => task.taskType === "GENERIC_DEMON_KILL");
+    const flowergirlTask = afterPlan?.ordinaryNightTaskPlan?.tasks.find((task) => task.taskType === "FLOWERGIRL_ACTION");
+    if (afterPlan === undefined || genericTask === undefined || flowergirlTask === undefined) throw new Error("Expected exact ordinary-night tasks");
+    const genericSettlement = await service.execute(settleOrdinaryNightTaskCommand({
+      commandId: commandId("f06-settle-generic-demon-kill"), expectedGameVersion: afterPlan.gameVersion,
+      payload: { commandType: "SettleOrdinaryNightTask", taskId: genericTask.taskId }
+    }));
+    expectAcceptedResult(genericSettlement);
+    expect(genericSettlement.events.map((event) => event.eventType)).toStrictEqual([
+      "OrdinaryNightTargetDerived", "PlayerDied", "OrdinaryNightTaskSettled"
+    ]);
+    const afterGeneric = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const flowergirl = afterGeneric?.assignment?.assignments.find((entry) => entry.role.roleId === "flowergirl");
+    const demonDeath = genericSettlement.events.find((event) => event.eventType === "PlayerDied");
+    if (afterGeneric === undefined || flowergirl === undefined || demonDeath?.eventType !== "PlayerDied") throw new Error("Expected Flowergirl death witness");
+    expect(demonDeath.payload.playerId).toBe(flowergirl.playerId);
+    expect(demonDeath.payload.cause).toBe("GENERIC_DEMON_KILL");
+    const flowergirlSettlement = await service.execute(settleOrdinaryNightTaskCommand({
+      commandId: commandId("f06-settle-dead-flowergirl"), expectedGameVersion: afterGeneric.gameVersion,
+      payload: { commandType: "SettleOrdinaryNightTask", taskId: flowergirlTask.taskId }
+    }));
+    expectAcceptedResult(flowergirlSettlement);
+    expect(flowergirlSettlement.events).toHaveLength(1);
+    expect(flowergirlSettlement.events[0]).toMatchObject({
+      eventType: "OrdinaryNightTaskSettled",
+      payload: { taskType: "FLOWERGIRL_ACTION", settlement: "SOURCE_INELIGIBLE", targetPlayerId: null, transferOutcome: "NONE" }
+    });
+    const settledEvents = await commandStore.loadDomainEvents(ids.game);
+    const settledState = rebuildOptionalGameState(settledEvents);
+    expect(settledState).toStrictEqual(rebuildOptionalGameState(structuredClone(settledEvents)));
+    const forgedCause = settledEvents.map((event) => event.eventType === "PlayerDied"
+      ? { ...event, payload: { ...event.payload, cause: "EXECUTION" as const } }
+      : event);
+    expect(() => rebuildOptionalGameState(forgedCause)).toThrow();
+    const reorderedDeath = [...settledEvents];
+    const deathIndex = reorderedDeath.findIndex((event) => event.eventType === "PlayerDied");
+    const targetDerivedIndex = reorderedDeath.findIndex((event) => event.eventType === "OrdinaryNightTargetDerived");
+    if (deathIndex < 0 || targetDerivedIndex < 0) throw new Error("Expected ordinary-night death chain");
+    [reorderedDeath[targetDerivedIndex], reorderedDeath[deathIndex]] = [reorderedDeath[deathIndex]!, reorderedDeath[targetDerivedIndex]!];
+    expect(() => rebuildOptionalGameState(reorderedDeath)).toThrow();
   }, 30_000);
 });
 
