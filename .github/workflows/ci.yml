@@ -242,7 +242,7 @@ jobs:
         run: >-
           node scripts/verify-coverage-obligations.mjs
           --validate-candidate .vitest-coverage/segmented-global/coverage-output/coverage-final.json
-          --profile phase-3-slice-2c-closure-0b4640e-coverage-v1
+          --profile phase-3-slice-2c-closure-52c4e97-coverage-v1
 
   deterministic-windows:
     name: deterministic setup/assignment/knowledge/projections/tasks/system-info/role-actions/philosopher-choice/snake-charmer/evil-twin/witch/dreamer/clockmaker
