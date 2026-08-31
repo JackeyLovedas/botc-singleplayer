@@ -420,8 +420,8 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
   it("accepts CompleteNight and reaches day, vote, execution, and ordinary-night planning", async () => {
     const { service, commandStore } = makeService();
     const exactRoleIds = [
-      "artist", "juggler", "sage", "savant", "flowergirl", "philosopher", "seamstress", "barber", "mutant",
-      "witch", "pit_hag", "vortox"
+      "clockmaker", "flowergirl", "savant", "seamstress", "philosopher", "artist",
+      "sage", "mutant", "klutz", "evil_twin", "pit_hag", "vortox"
     ].map(roleId);
 
     expectAcceptedResult(await service.execute(createGameCommand()));
@@ -434,7 +434,7 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
 
     let planned = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
     expect(planned?.firstNightTaskPlan?.tasks.map((task) => task.taskType)).toStrictEqual([
-      "PHILOSOPHER_ACTION", "MINION_INFO", "DEMON_INFO", "WITCH_ACTION", "SEAMSTRESS_ACTION"
+      "PHILOSOPHER_ACTION", "MINION_INFO", "DEMON_INFO", "EVIL_TWIN_SETUP", "CLOCKMAKER_INFORMATION", "SEAMSTRESS_ACTION"
     ]);
     for (let index = 0; planned?.firstNightTaskPlan !== undefined; index += 1) {
       const next = planned.firstNightTaskPlan.tasks[planned.firstNightTaskProgress?.settlements.length ?? 0];
@@ -446,6 +446,17 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
         }));
         if (next.taskType === "SEAMSTRESS_ACTION") expectEventSummaryAcceptedResult(settled);
         else expectAcceptedResult(settled);
+      } else if (next.taskType === "EVIL_TWIN_SETUP") {
+        const settled = await service.execute(settleEvilTwinSetupCommand({
+          commandId: commandId(`f06-settle-evil-twin-${index}`), expectedGameVersion: planned.gameVersion,
+          payload: { commandType: "SettleEvilTwinSetup", taskId: next.taskId }
+        }));
+        expectAcceptedResult(settled);
+      } else if (next.taskType === "CLOCKMAKER_INFORMATION") {
+        const settled = await service.execute(settleClockmakerCommand(planned, next.taskId, {
+          commandId: commandId(`f06-settle-clockmaker-${index}`)
+        }));
+        expectEventSummaryAcceptedResult(settled);
       } else {
         const opened = await service.execute(openFirstNightRoleActionOpportunityCommand({
           commandId: commandId(`f06-open-role-${index}`), expectedGameVersion: planned.gameVersion,
