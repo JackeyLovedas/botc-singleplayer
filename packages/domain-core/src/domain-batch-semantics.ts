@@ -120,6 +120,7 @@ const validateBasicPhaseFlowBatch = (
     const nominatorDead = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).has(first.payload.nominatorPlayerId);
     if (nominatorDead || first.payload.nominatorPlayerId === first.payload.nomineePlayerId) reject("Nomination requires a living, distinct nominator");
     if ((state.nominations ?? []).some((nomination) => nomination.dayNumber === state.dayNumber && nomination.nominatorPlayerId === first.payload.nominatorPlayerId)) reject("Nominator may nominate only once per day");
+    if ((state.nominations ?? []).some((nomination) => nomination.dayNumber === state.dayNumber && nomination.nomineePlayerId === first.payload.nomineePlayerId)) reject("Nominee may be nominated only once per day");
     const expectedNominationId = `nomination-v1:${state.dayNumber}:${first.payload.nominationOrdinal}`;
     if (first.payload.nominationId !== expectedNominationId || first.payload.nominationOrdinal !== (state.nominations?.length ?? 0) + 1) reject("Nomination identity or ordinal is not canonical");
     if ((state.nominations ?? []).some((nomination) => nomination.nominationId === first.payload.nominationId)) reject("Nomination identity is duplicated");

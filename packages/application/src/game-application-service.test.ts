@@ -536,6 +536,33 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
     expectAcceptedResult(completeVote);
     const afterVote = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
     expect(afterVote?.phase).toBe("NOMINATION_WINDOW");
+    const secondNominator = afterVote!.roster!.entries.find((entry) =>
+      entry.playerId !== humanActor.playerId && entry.playerId !== target.playerId);
+    if (secondNominator === undefined) throw new Error("Expected a distinct second nominator");
+    await expect(service.execute(declareNominationCommand({
+      commandId: commandId("f06-reject-repeat-nominee"), expectedGameVersion: afterVote!.gameVersion,
+      actor: { kind: "ai", playerId: secondNominator.playerId },
+      payload: { commandType: "DeclareNomination", targetPlayerId: target.playerId }
+    }))).resolves.toMatchObject({ status: "rejected", code: "DomainValidationFailed" });
+    const persistedBeforeClose = await commandStore.loadDomainEvents(ids.game);
+    const originalNomination = persistedBeforeClose.find((event): event is Extract<AnyDomainEventEnvelope, { readonly eventType: "NominationDeclared" }> =>
+      event.eventType === "NominationDeclared");
+    if (originalNomination === undefined) throw new Error("Expected persisted nomination");
+    const forgedRepeatNominee = {
+      ...originalNomination,
+      eventId: eventId("f06-forged-repeat-nominee"),
+      eventSequence: afterVote!.lastEventSequence + 1,
+      batchId: batchId("f06-forged-repeat-nominee-batch"),
+      gameVersion: afterVote!.gameVersion + 1,
+      commandId: commandId("f06-forged-repeat-nominee-command"),
+      payload: {
+        ...originalNomination.payload,
+        nominationId: `nomination-v1:${afterVote!.dayNumber}:2`,
+        nominatorPlayerId: secondNominator.playerId,
+        nominationOrdinal: 2
+      }
+    };
+    expect(() => rebuildOptionalGameState([...persistedBeforeClose, forgedRepeatNominee])).toThrow();
     const close = await service.execute(closeNominationsCommand({ commandId: commandId("f06-close-nominations"), expectedGameVersion: afterVote!.gameVersion }));
     expectAcceptedResult(close);
     const afterClose = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
