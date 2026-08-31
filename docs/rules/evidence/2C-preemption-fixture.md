@@ -256,6 +256,28 @@ criteria:
 Supporting records may not replace or borrow a primary, and may not be used by
 C, C1, or B18. This ledger is documentation metadata, not a registry.
 
+## Active support closure supersession
+
+The seven rows above are retained as historical design-round metadata. They
+are superseded for the active implementation closure by the following
+materialized bindings. No active support authority remains planned or
+unresolved. Each row points to an actual physical test in the repository and
+remains subordinate to the criterion's primary mechanism.
+
+| AuthorityId | ActiveStatus | PhysicalTestIdentity | BoundSurface | Primary |
+|---|---|---|---|---|
+| SUP-2C-PREEMPTION-001 | RESOLVED | `packages/application/src/game-application-service.test.ts` — `assigns characters deterministically and transitions to FIRST_NIGHT`; `packages/domain-core/src/domain-event-structural-schema-catalog.test.ts` — `[2C-F03] rejects one malformed descriptor for each additive subject` | 2C-A, 2C-B, 2C-O | false |
+| SUP-2C-PREEMPTION-002 | RESOLVED | `packages/application/src/game-application-service.test.ts` — `accepts CompleteNight and reaches day, vote, execution, and ordinary-night planning`; `packages/domain-core/src/domain-batch-semantics.test.ts` — `accepts and replays a fully settled FIRST_NIGHT_COMPLETED transition` | 2C-R2, 2C-C, 2C-D, 2C-E, 2C-L, 2C-M | false |
+| SUP-2C-PREEMPTION-003 | RESOLVED | `packages/application/src/game-application-service.test.ts` — `accepts CompleteNight and reaches day, vote, execution, and ordinary-night planning` | 2C-R3, 2C-G, 2C-H, 2C-I, 2C-J | false |
+| SUP-2C-PREEMPTION-004 | RESOLVED | `packages/domain-core/src/domain-batch-semantics.test.ts` — `rejects standalone execution PlayerDied replay without its canonical predecessor`; `rejects standalone generic-demon PlayerDied replay without its canonical predecessor`; `rejects standalone ExecutionResolved replay without its canonical execution chain` | 2C-R4, 2C-K, 2C-N | false |
+| SUP-2C-PREEMPTION-005 | RESOLVED | `packages/domain-core/src/domain-event-structural-schema-catalog.test.ts` — `[2C-F01] captures every additive subject against the immutable C1 prefix`; `[2C-F03] rejects one malformed descriptor for each additive subject` | 2C-R5, 2C-O | false |
+| SUP-2C-PREEMPTION-006 | RESOLVED | `packages/application/src/game-application-service.test.ts` — `accepts CompleteNight and reaches day, vote, execution, and ordinary-night planning` | 2C-R6, 2C-P, 2C-Q | false |
+| SUP-2C-PREEMPTION-007 | RESOLVED | `packages/domain-core/src/domain-batch-semantics.test.ts` — `rejects standalone execution PlayerDied replay without its canonical predecessor`; `rejects standalone generic-demon PlayerDied replay without its canonical predecessor`; `rejects standalone ExecutionResolved replay without its canonical execution chain`; `packages/application/src/game-application-service.test.ts` — `accepts CompleteNight and reaches day, vote, execution, and ordinary-night planning` | 2C-R7, 2C-R | false |
+
+The active closure records no new primary, no new event identity, and no
+runtime support registry. The historical planned ledger above is retained for
+audit only and cannot authorize or substitute for a primary.
+
 ## Nomination, vote, replay, and idempotency contract
 
 The repository must emit and validate the following narrow events without
