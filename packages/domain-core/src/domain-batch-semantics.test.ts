@@ -44,6 +44,52 @@ const expectDomainCode = (action: () => void, code: DomainErrorCode): void => {
 
 const createdState = () => rebuildGameState([gameCreatedEvent()]);
 
+const standaloneExecutionResolvedEvent = (): DomainEventEnvelope<"ExecutionResolved"> => ({
+  ...gameCreatedEvent(),
+  eventId: eventId("standalone-execution-resolved"),
+  eventSequence: 2,
+  batchId: batchId("standalone-execution-batch"),
+  commandId: commandId("standalone-execution-command"),
+  gameVersion: 2,
+  eventType: "ExecutionResolved",
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    executionId: "execution-v1:1:01",
+    targetPlayerId: "player-target",
+    dayNumber: 1,
+    resolution: "EXECUTED",
+    deathOutcome: "DIED"
+  }
+} as unknown as DomainEventEnvelope<"ExecutionResolved">);
+
+const standalonePlayerDiedEvent = (
+  cause: "EXECUTION" | "GENERIC_DEMON_KILL"
+): DomainEventEnvelope<"PlayerDied"> => ({
+  ...gameCreatedEvent(),
+  eventId: eventId(`standalone-${cause.toLowerCase()}-player-died`),
+  eventSequence: 2,
+  batchId: batchId(`standalone-${cause.toLowerCase()}-death-batch`),
+  commandId: commandId(`standalone-${cause.toLowerCase()}-death-command`),
+  gameVersion: 2,
+  eventType: "PlayerDied",
+  payload: {
+    rulesBaselineVersion: RULES_BASELINE_VERSION,
+    deathId: `death-v1:${cause.toLowerCase()}`,
+    executionId: cause === "EXECUTION" ? "execution-v1:1:01" : null,
+    playerId: "player-target",
+    deadSeatNumber: 1,
+    dayNumber: 1,
+    nightNumber: 1,
+    phase: cause === "EXECUTION" ? "EXECUTION_RESOLUTION" : "NIGHT_TASKS",
+    cause,
+    causeEventId: eventId(`standalone-${cause.toLowerCase()}-cause`),
+    causeEventType: cause === "EXECUTION" ? "ExecutionResolved" : "OrdinaryNightTargetDerived",
+    sourcePlayerId: cause === "EXECUTION" ? null : "player-source",
+    sourceRoleId: cause === "EXECUTION" ? null : "vortox",
+    characterStateRevision: 0
+  }
+} as unknown as DomainEventEnvelope<"PlayerDied">);
+
 const seamstressCapabilityDeclaredEvent = (
   overrides: Partial<DomainEventEnvelope<"SeamstressResolutionCapabilityDeclared">> = {}
 ): DomainEventEnvelope<"SeamstressResolutionCapabilityDeclared"> => {
@@ -211,6 +257,27 @@ const characterAssignmentStateEvents = (): readonly AnyDomainEventEnvelope[] => 
 ];
 
 describe("domain batch semantic validation", () => {
+  it("rejects standalone execution PlayerDied replay without its canonical predecessor", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(createdState(), [standalonePlayerDiedEvent("EXECUTION")]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects standalone generic-demon PlayerDied replay without its canonical predecessor", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(createdState(), [standalonePlayerDiedEvent("GENERIC_DEMON_KILL")]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
+  it("rejects standalone ExecutionResolved replay without its canonical execution chain", () => {
+    expectDomainCode(
+      () => validateDomainBatchSemantics(createdState(), [standaloneExecutionResolvedEvent()]),
+      "InvalidDomainBatchSemantics"
+    );
+  });
+
   it("accepts and replays a fully settled FIRST_NIGHT_COMPLETED transition", () => {
     const state = completedFirstNightState();
     const transition = firstNightCompletedTransition(state);

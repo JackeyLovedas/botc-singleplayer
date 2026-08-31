@@ -1709,7 +1709,7 @@ export const validateDomainBatchSemantics = (
   }
 
   if (first.eventType === "PhaseTransitioned" && ["FIRST_NIGHT_COMPLETED", "DAWN_COMPLETED", "NOMINATION_OPENED", "VOTE_OPENED", "VOTE_COMPLETED", "NOMINATIONS_CLOSED", "EXECUTION_RESOLVED", "NIGHT_TASKS_COMPLETED"].includes(first.payload.transitionReason) ||
-      first.eventType === "NominationDeclared" || first.eventType === "VoteCast" || first.eventType === "BlockStateUpdated" || first.eventType === "ExecutionDeclared" || first.eventType === "DayClosedWithoutExecution" || first.eventType === "OrdinaryNightTaskPlanCreated" || first.eventType === "OrdinaryNightTargetDerived" || first.eventType === "OrdinaryNightTaskSettled") {
+      first.eventType === "NominationDeclared" || first.eventType === "VoteCast" || first.eventType === "BlockStateUpdated" || first.eventType === "ExecutionDeclared" || first.eventType === "PlayerDied" || first.eventType === "ExecutionResolved" || first.eventType === "DayClosedWithoutExecution" || first.eventType === "OrdinaryNightTaskPlanCreated" || first.eventType === "OrdinaryNightTargetDerived" || first.eventType === "OrdinaryNightTaskSettled") {
     validateBasicPhaseFlowBatch(currentState, batchEvents);
     return;
   }
