@@ -910,8 +910,8 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
     })
   })
 ]);
-const CURRENT_PROFILE_ID = "phase-3-slice-2c-closure-e908bb9-coverage-v1";
-const CURRENT_PROFILE_SOURCE_HEAD = "e908bb9ea60c0f04d566607bff54e9f18ec26407";
+const CURRENT_PROFILE_ID = "phase-3-slice-2c-closure-0b4640e-coverage-v1";
+const CURRENT_PROFILE_SOURCE_HEAD = "0b4640e2d9df651626e0abfab496227d83c797a5";
 const PREVIOUS_PROFILE_ID = "phase-3-slice-2c-correction-2290425-coverage-v1";
 const PREVIOUS_PROFILE_SOURCE_HEAD = "2290425eb7fe79126583a27ef1c3b7a1c9a15a8a";
 const OLDER_PROFILE_ID = "phase-3-slice-2c-correction-98a27cf-coverage-v1";
