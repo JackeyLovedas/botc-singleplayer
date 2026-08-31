@@ -16,24 +16,60 @@
     "coverageLogicalGroupCount": 11,
     "coveragePhysicalGroupCount": 12,
     "coverageGroups": [
-      { "id": "domain-core-rebuild", "tests": 207 },
-      { "id": "domain-core-rest", "tests": 518 },
-      { "id": "application", "tests": 465 },
-      { "id": "application-service-core", "tests": 91 },
-      { "id": "application-service-role-actions", "tests": 52 },
-      { "id": "application-service-information-and-later-actions-base", "tests": 73 },
-      { "id": "application-service-information-and-later-actions-a3b2", "tests": 9 },
-      { "id": "application-service-compatibility-and-failure-boundaries", "tests": 26 },
+      {
+        "id": "domain-core-rebuild",
+        "tests": 207
+      },
+      {
+        "id": "domain-core-rest",
+        "tests": 518
+      },
+      {
+        "id": "application",
+        "tests": 465
+      },
+      {
+        "id": "application-service-core",
+        "tests": 91
+      },
+      {
+        "id": "application-service-role-actions",
+        "tests": 52
+      },
+      {
+        "id": "application-service-information-and-later-actions-base",
+        "tests": 73
+      },
+      {
+        "id": "application-service-information-and-later-actions-a3b2",
+        "tests": 9
+      },
+      {
+        "id": "application-service-compatibility-and-failure-boundaries",
+        "tests": 26
+      },
       {
         "id": "application-service-dreamer-vortox-core",
         "tests": 36,
         "physicalSegments": [
-          { "id": "legacy", "tests": 14 },
-          { "id": "2b20a", "tests": 22 }
+          {
+            "id": "legacy",
+            "tests": 14
+          },
+          {
+            "id": "2b20a",
+            "tests": 22
+          }
         ]
       },
-      { "id": "application-service-dreamer-vortox-gained", "tests": 10 },
-      { "id": "engines-and-projections", "tests": 241 }
+      {
+        "id": "application-service-dreamer-vortox-gained",
+        "tests": 10
+      },
+      {
+        "id": "engines-and-projections",
+        "tests": 241
+      }
     ],
     "coverageGlobalManifestSha256": "9c1bd1247dae12f706f19b2253376185e1fdb01cdb18a5f5e4d64597e47eaf5a",
     "coverageFinalSha256": "21d076a0f1d3a035a711c6125a87c43a37835a6ae676170b4380e2bae08bac5d",
@@ -42,10 +78,25 @@
     "baselineVersion": "CANDIDATE_1712_D1_V1"
   },
   "obligations": {
-    "sourceFiles": { "count": 72, "sha256": "49747524abf0192dcdc15e16e1dc68e990fde1da519e5bc6e3b62cb3f7ba634a" },
-    "zeroHitStatements": { "count": 3798, "sha256": "b77239767440df5d5d3a9ba8964d7ef131f686198dfe25fd9c9f2725fc8ada0c" },
-    "zeroHitFunctions": { "count": 27, "sha256": "5c37cd2bce002e5f9fffacff8edd18acff9b24f5d31f0c2a20972605e4437ec7" },
-    "zeroHitLines": { "count": 3798, "sha256": "2d0137b10129d81b01a3fcba0bbb9d133f307c8c4b6203ecdaf9cc874aed404d" },
-    "zeroHitBranchArms": { "count": 2358, "sha256": "c2a6b447c3b890a8de4c45d237334003b3252b97b407a0810366ff16064cd4fe" }
+    "sourceFiles": {
+      "count": 72,
+      "sha256": "49747524abf0192dcdc15e16e1dc68e990fde1da519e5bc6e3b62cb3f7ba634a"
+    },
+    "zeroHitStatements": {
+      "count": 3798,
+      "sha256": "b77239767440df5d5d3a9ba8964d7ef131f686198dfe25fd9c9f2725fc8ada0c"
+    },
+    "zeroHitFunctions": {
+      "count": 27,
+      "sha256": "5c37cd2bce002e5f9fffacff8edd18acff9b24f5d31f0c2a20972605e4437ec7"
+    },
+    "zeroHitLines": {
+      "count": 3798,
+      "sha256": "2d0137b10129d81b01a3fcba0bbb9d133f307c8c4b6203ecdaf9cc874aed404d"
+    },
+    "zeroHitBranchArms": {
+      "count": 2358,
+      "sha256": "c2a6b447c3b890a8de4c45d237334003b3252b97b407a0810366ff16064cd4fe"
+    }
   }
 }
