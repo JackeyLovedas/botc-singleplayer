@@ -47,7 +47,7 @@ The authorized applicability correction for the bounded fixture is recorded in
 preemption design's applicability for `PitHagActionResolved` and
 `NominationProposed`; the historical evidence and design files remain
 immutable. The active fixture uses daytime `Pit-Hag` execution,
-`PlayerDied(cause=DAYTIME_EXECUTION)` to suppress the Pit-Hag task before
+`PlayerDied(cause=EXECUTION)` in the daytime execution context to suppress the Pit-Hag task before
 `NIGHT_TASKS`, and the canonical `NominationDeclared` event. This is an
 applicability closure, not a new rule, event, or proof layer.
 

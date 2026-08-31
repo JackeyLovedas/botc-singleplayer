@@ -22,12 +22,12 @@ the applicable primary surface for this fixture.
 
 | Historical subject/surface | Historical record | Active bounded disposition | Active canonical surface |
 | --- | --- | --- | --- |
-| `PitHagActionResolved` as a fixture event | `docs/rules/evidence/2C-preemption-fixture.md`; `docs/architecture/phase-3-slice-2c-preemption-fixture-reslice-design.md` | `SUPERSEDED_FOR_FIXTURE_APPLICABILITY` | Daytime execution followed by `PlayerDied(cause=DAYTIME_EXECUTION)`; no Pit-Hag action event/task is required |
+| `PitHagActionResolved` as a fixture event | `docs/rules/evidence/2C-preemption-fixture.md`; `docs/architecture/phase-3-slice-2c-preemption-fixture-reslice-design.md` | `SUPERSEDED_FOR_FIXTURE_APPLICABILITY` | Daytime execution followed by `PlayerDied(cause=EXECUTION)`; no Pit-Hag action event/task is required |
 | `NominationProposed` as a nomination identity | same historical records | `SUPERSEDED_FOR_FIXTURE_APPLICABILITY` | `NominationDeclared` only |
 | `NominationDeclared` | historical 2C evidence and closure design | `RETAINED_CANONICAL` | One event identity; `nominatorPlayerId` once/day and `nomineePlayerId` once/day |
 
 The supersession is limited to the exact fixture: daytime Pit-Hag execution
-precedes `NIGHT_TASKS`, its `PlayerDied` fact suppresses any later Pit-Hag task,
+precedes `NIGHT_TASKS`, its `PlayerDied(cause=EXECUTION)` fact suppresses any later Pit-Hag task,
 and the nomination remains represented by `NominationDeclared`. It does not
 authorize a general Pit-Hag implementation, a role-change framework, a new
 execution/death rule, or a second nomination event.
