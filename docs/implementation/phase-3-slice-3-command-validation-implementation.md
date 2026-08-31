@@ -2,7 +2,7 @@
 
 ## Binding
 
-- `implementationHead`: `PENDING_FINAL_REVIEW`
+- `implementationHead`: `ec8b8107363ef660d202040da50b1284b8ecbc6f`
 - `designContract`: `docs/architecture/phase-3-slice-3-command-validation-design-contract-closure.md`
 - `ruleEvidence`: `docs/rules/evidence/phase-3-slice-3-command-validation.md`
 - `implementationCorrectionCount`: `2/3`
@@ -61,6 +61,9 @@ tests, not the new acceptance identities and not mutated fixtures.
 - `ruleEvidenceChanged`: `false`; dead nomination, dead nominee, ghost-vote, execution/death, actor/phase, C/C1, coverage, ownership, routing, and 2B18 contracts are unchanged.
 - `workflowChanged`: `false`; Hosted CI was not run by the implementer.
 
-The implementation remains subject to a fresh independent code/rule review on
-the committed implementation HEAD. No acceptance, push, PR, merge, or Phase 4
-start is implied by this artifact.
+The implementation has passed a fresh independent code/rule review on the
+exact committed implementation HEAD above. Local ordinary tests, typecheck,
+lint, and Slice 3 focused coverage passed; the earlier full-coverage run had
+all tests pass but ended non-zero on a Vitest worker `onTaskUpdate` timeout and
+is recorded as such rather than treated as a green full gate. Hosted CI remains
+a publication gate. No Phase 4 start is implied by this artifact.
