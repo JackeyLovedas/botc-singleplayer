@@ -627,6 +627,44 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
     });
     const settledEvents = await commandStore.loadDomainEvents(ids.game);
     const settledState = rebuildOptionalGameState(settledEvents);
+    if (settledState === undefined || settledState.ordinaryNightTaskPlan === undefined) throw new Error("Expected settled ordinary-night state");
+    const completeOrdinaryNight = completeNightCommand({
+      commandId: commandId("f06-complete-ordinary-night"),
+      expectedGameVersion: settledState.gameVersion,
+      payload: {
+        commandType: "CompleteNight",
+        phase: "NIGHT_TASKS",
+        planVersion: settledState.ordinaryNightTaskPlan.planVersion,
+        nightNumber: settledState.nightNumber
+      }
+    });
+    const eventCountBeforeCompleteFault = settledEvents.length;
+    commandStore.failBeforeCommit = true;
+    await expect(service.execute(completeOrdinaryNight)).resolves.toMatchObject({
+      status: "failed", code: "EventStoreAppendFailed", failureStage: "accepted-commit", retryable: true
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(eventCountBeforeCompleteFault);
+    expect(await commandStore.findCommandReceipt(ids.game, completeOrdinaryNight.commandId)).toBeUndefined();
+    expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))).toStrictEqual(settledState);
+    const completedOrdinaryNight = await service.execute(completeOrdinaryNight);
+    expectAcceptedResult(completedOrdinaryNight);
+    expect(completedOrdinaryNight.events.map((event) => event.eventType)).toStrictEqual(["PhaseTransitioned"]);
+    expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))?.phase).toBe("DAWN_RESOLUTION");
+    const idempotentOrdinaryNight = await service.execute(completeOrdinaryNight);
+    expect(idempotentOrdinaryNight).toStrictEqual({ ...completedOrdinaryNight, idempotent: true });
+    const conflictOrdinaryNight = await service.execute({
+      ...completeOrdinaryNight,
+      payload: { ...completeOrdinaryNight.payload, phase: "FIRST_NIGHT" }
+    });
+    expect(conflictOrdinaryNight).toStrictEqual({
+      status: "rejected",
+      gameId: completeOrdinaryNight.gameId,
+      code: "CommandIdempotencyConflict",
+      message: "commandId is already associated with a different command",
+      currentGameVersion: settledState.gameVersion + 1,
+      idempotent: false
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(eventCountBeforeCompleteFault + 1);
     expect(settledState).toStrictEqual(rebuildOptionalGameState(structuredClone(settledEvents)));
     const forgedCause = settledEvents.map((event) => event.eventType === "PlayerDied"
       ? { ...event, payload: { ...event.payload, cause: "EXECUTION" as const } }
