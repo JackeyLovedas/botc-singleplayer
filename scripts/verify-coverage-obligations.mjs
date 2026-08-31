@@ -910,11 +910,17 @@ const APPROVED_COVERAGE_PROFILES = Object.freeze([
     })
   })
 ]);
-const CURRENT_PROFILE_ID = "phase-3-slice-2c-correction-2290425-coverage-v1";
-const CURRENT_PROFILE_SOURCE_HEAD = "2290425eb7fe79126583a27ef1c3b7a1c9a15a8a";
-const PREVIOUS_PROFILE_ID = "phase-3-slice-2c-correction-98a27cf-coverage-v1";
-const PREVIOUS_PROFILE_SOURCE_HEAD = "98a27cf2fe6528176f0b9fffad332a8ba32d0de7";
+const CURRENT_PROFILE_ID = "phase-3-slice-2c-closure-ea0b3f2-coverage-v1";
+const CURRENT_PROFILE_SOURCE_HEAD = "ea0b3f21271924207fd1c7f5a0bdc5f45260391f";
+const PREVIOUS_PROFILE_ID = "phase-3-slice-2c-correction-2290425-coverage-v1";
+const PREVIOUS_PROFILE_SOURCE_HEAD = "2290425eb7fe79126583a27ef1c3b7a1c9a15a8a";
+const OLDER_PROFILE_ID = "phase-3-slice-2c-correction-98a27cf-coverage-v1";
+const OLDER_PROFILE_SOURCE_HEAD = "98a27cf2fe6528176f0b9fffad332a8ba32d0de7";
 const PREVIOUS_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
+  group.id === "domain-core-rest" ? { ...group, tests: 509 } :
+    group.id === "application-service-core" ? { ...group, tests: 91 } : group
+));
+const OLDER_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
   group.id === "domain-core-rest" ? { ...group, tests: 506 } : group
 ));
 const CURRENT_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
@@ -1131,7 +1137,9 @@ function validateProfileArtifactBytes(record, bytes) {
     ? CURRENT_COVERAGE_GROUPS
     : record.profileId === PREVIOUS_PROFILE_ID && record.sourceHead === PREVIOUS_PROFILE_SOURCE_HEAD
       ? PREVIOUS_COVERAGE_GROUPS
-      : FROZEN_COVERAGE_GROUPS;
+      : record.profileId === OLDER_PROFILE_ID && record.sourceHead === OLDER_PROFILE_SOURCE_HEAD
+        ? OLDER_COVERAGE_GROUPS
+        : FROZEN_COVERAGE_GROUPS;
   validateFrozenCoverageTopology(artifact.topology, artifact.testIdentityCount, artifact.logicalGroupCount, artifact.physicalGroupCount, expectedGroups);
   for (const key of PROFILE_OBLIGATION_KEYS) {
     assertExactPlain(artifact.obligations[key], ["count", "sha256"], `profile obligation ${key}`, "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
