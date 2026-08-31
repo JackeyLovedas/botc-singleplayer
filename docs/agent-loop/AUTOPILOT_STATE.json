@@ -1,7 +1,7 @@
 {
-  "status": "IMPLEMENTATION_IN_PROGRESS",
-  "detailedStatus": "2C_BOUNDED_CLOSURE_PENDING_FINAL_REVIEW",
-  "disposition": "IN_PROGRESS",
+  "status": "ACCEPTED_AND_CLOSED_OUT",
+  "detailedStatus": "2C_ACCEPTED_AND_CLOSED_OUT",
+  "disposition": "ACCEPTED",
   "canonicalActiveControlInvariant": {
     "schemaVersion": "POST-D3-CLOSEOUT-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
     "role": "VALIDATION_CONTRACT_ONLY / NOT_A_SECOND_STATUS_AUTHORITY",
@@ -98,12 +98,12 @@
   "infrastructurePRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/47",
   "infrastructurePublished": true,
   "infrastructurePublicationStatus": "MERGED_AND_CLOSED_OUT",
-  "productPR": null,
+  "productPR": 54,
   "productBranch": "phase-3/2c-integrated-basic-phase-flow",
   "productHead": "52c4e975ea0b3e38890318ed253718f552d77427",
   "productBranchHead": "phase-3/2c-integrated-basic-phase-flow@6f376ff25876a8ac0761b0088cbe2f365c24adb4",
-  "currentBranch": "phase-3/2c-integrated-basic-phase-flow",
-  "currentSlice": "2C",
+  "currentBranch": "main",
+  "currentSlice": null,
   "local2B20AP1Status": "HISTORICAL_2B20A_CONTROL_RECORD",
   "2B20AP1Acceptance": "UNACCEPTED_LOCAL_CANDIDATE",
   "currentFoundation": "2C_PREREQUISITE_FOUNDATION_ACCEPTED",
@@ -120,7 +120,7 @@
   "slice2B19A4Started": false,
   "slice2B19BStarted": true,
   "nextRoleSliceStarted": false,
-  "phase2CStarted": false,
+  "phase2CStarted": true,
   "infrastructureRepairRound": 2,
   "maxInfrastructureRepairRounds": 2,
   "ciRemediationRound": 2,
@@ -3311,13 +3311,10 @@
     "requiredNextAction": "UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW",
     "nextAction": "UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW"
   },
-  "implementationStatus": "IMPLEMENTATION_IN_PROGRESS",
+  "implementationStatus": "ACCEPTED_AND_CLOSED_OUT",
   "implementationBranch": "phase-3/2c-integrated-basic-phase-flow",
   "implementationCommit": "52c4e975ea0b3e38890318ed253718f552d77427",
-  "remainingBlockers": [
-    "PENDING_EXACT_HEAD_PR_AND_HOSTED_CI",
-    "FINAL_CODE_AND_RULE_REVIEW_PENDING"
-  ],
+  "remainingBlockers": [],
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
   "designRound3_2Scope": null,
@@ -5072,8 +5069,32 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Reconciled active controls for Slice 2C after exact local profile match and verbatim independent design-review archive; implementation remains pending independent final code/rule review.",
+  "lastAction": "Slice 2C accepted and closed out after exact-head Hosted CI, dual final review, merge, and merge-main CI.",
   "lastError": null,
-  "requiredNextAction": "FRESH_INDEPENDENT_FINAL_REVIEW",
-  "nextAction": "FRESH_INDEPENDENT_FINAL_REVIEW"
+  "requiredNextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE",
+  "nextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE",
+  "mergeSha": "0a12bf190133c3043edd9e736eda6a2e82e8defe",
+  "finalAccepted": true,
+  "slice2CStatus": "ACCEPTED_AND_CLOSED_OUT",
+  "slice2CFinalAccepted": true,
+  "slice2CFinalReview": {
+    "pr": 54,
+    "reviewedHead": "d9a4a6d1191f835f795cdaff6a94f91242192ed0",
+    "codeVerdict": "CODE_REVIEW_PASS",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [],
+    "codeComment": "https://github.com/JackeyLovedas/botc-singleplayer/pull/54#issuecomment-5474073561",
+    "ruleComment": "https://github.com/JackeyLovedas/botc-singleplayer/pull/54#issuecomment-5474075875"
+  },
+  "slice2CProductHeadCI": {
+    "sha": "d9a4a6d1191f835f795cdaff6a94f91242192ed0",
+    "pushRun": 33359597822,
+    "pullRequestRun": 33359612115,
+    "status": "SUCCESS"
+  },
+  "slice2CMergeCommitCI": {
+    "sha": "0a12bf190133c3043edd9e736eda6a2e82e8defe",
+    "run": 33360139173,
+    "status": "SUCCESS"
+  }
 }

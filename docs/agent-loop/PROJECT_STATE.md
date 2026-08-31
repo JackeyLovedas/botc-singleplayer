@@ -1,17 +1,17 @@
 # Project State
 
-## Current state — Phase 3 Slice 2C bounded implementation closure in progress
+## Current state — Phase 3 Slice 2C accepted and closed out
 
-- Active state: `IMPLEMENTATION_IN_PROGRESS / 2C_BOUNDED_CLOSURE_PENDING_FINAL_REVIEW`.
+- Active state: `ACCEPTED_AND_CLOSED_OUT`.
 - D2, D3, and the 2C prerequisite Foundation are accepted. D3 implementation HEAD is `40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`; final status is bound to `df9ee017de2f3b8f33f7608a49e91f46c51acc08`.
 - Foundation profile-binding PR #53 merged at `5b064afa8f90b9d75812784fc48cbc1e22277f9b`; closeout archive commit is `4faaa859d7a0fb3bc5ffb78fbb3d4b16a5b13366`, with exact closeout CI success.
-- The authorized governance/canonical-identity closure design has a recorded independent `RULE_DESIGN_PASS`; bounded implementation is active on branch `phase-3/2c-integrated-basic-phase-flow`. The historical rule-gate census remains immutable history below.
-- `implementationHead=52c4e975ea0b3e38890318ed253718f552d77427`, `currentSlice=2C`, `currentBranch=phase-3/2c-integrated-basic-phase-flow`, `currentPR=null`.
+- The authorized governance/canonical-identity closure design and final independent implementation review both passed. Product implementation is accepted at `52c4e975ea0b3e38890318ed253718f552d77427`; merge commit is `0a12bf190133c3043edd9e736eda6a2e82e8defe`. The historical rule-gate census remains immutable history below.
+- `implementationHead=52c4e975ea0b3e38890318ed253718f552d77427`, `currentSlice=null`, `currentBranch=main`, `currentPR=null`, `mergeSha=0a12bf190133c3043edd9e736eda6a2e82e8defe`.
 - Active coverage profile: `phase-3-slice-2c-closure-52c4e97-coverage-v1`; source head `52c4e975ea0b3e38890318ed253718f552d77427`; artifact SHA-256 `befca654fba0acf8725b0c69ae63af8b756467b07cc0a82974031852f03aa47a`.
 - Independent design review: `docs/implementation/phase-3-slice-2c-design-review.md`, SHA-256 `86cf06ee05c61b3071335266f2d40a6d4682a35a0521af23946f29a479058f45`, reviewed design head `e908bb9ea60c0f04d566607bff54e9f18ec26407`, verdict `RULE_DESIGN_PASS`, `remainingDesignBlockers=[]`.
 - Local gates after orphan-replay repair: typecheck PASS; lint PASS; full test PASS (41 files / 1728 tests); ownership self-test PASS (42/42); profile-group self-test PASS (7/7); logical-group self-test PASS (42/42); static bindings PASS (16/16); orphan-replay focused tests PASS (51/51); active profile self-hash and canonical artifact-byte validation MATCH (`profileSha256=d5a273dd…`, artifact SHA-256 `befca654…`).
-- `remainingBlockers=[PENDING_EXACT_HEAD_PR_AND_HOSTED_CI, FINAL_CODE_AND_RULE_REVIEW_PENDING]`.
-- `nextAction=FRESH_INDEPENDENT_FINAL_REVIEW`.
+- Final independent review: PR #54 at exact head `d9a4a6d1191f835f795cdaff6a94f91242192ed0`, `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `remainingBlockers=[]`; exact-head push/PR CI runs `33359597822`/`33359612115` succeeded; merge-main CI `33360139173` succeeded.
+- `remainingBlockers=[]`; `nextAction=AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`.
 All sections below are chronological history and do not override this state.
 
 ## Current state — 2B20A local restoration review passed; exact-head CI pending
