@@ -31,6 +31,7 @@ import {
   createDomainEventStructuralDiagnostic,
   issueStructurallyValidatedDomainEvent
 } from "./canonical-domain-event.js";
+import { createTwoCAdditiveStructuralSchemaAuthority } from "./phase-3-slice-2c-structural-descriptors.js";
 import type {
   DomainEventStructuralDiagnostic,
   DomainEventStructuralDiagnosticLeafIdV1,
@@ -281,15 +282,45 @@ type HealthyC1ConsumerAuthority = {
   readonly nodeOrdinalsByNodeId: Readonly<Record<string, number>>;
   readonly eventsByType: Readonly<Record<string, AdmittedEventDescriptor>>;
   readonly eventTypes: readonly string[];
-  readonly eventCount: 40;
-  readonly branchCount: 59;
-  readonly explicitVersionBranchCount: 13;
-  readonly unversionedBranchCount: 46;
-  readonly envelopeResolvableBranchCount: 35;
-  readonly payloadDiscriminatedBranchCount: 24;
-  readonly discriminatorPathCount: 7;
-  readonly refinementAliasCount: 16;
+  readonly eventCount: number;
+  readonly branchCount: number;
+  readonly explicitVersionBranchCount: number;
+  readonly unversionedBranchCount: number;
+  readonly envelopeResolvableBranchCount: number;
+  readonly payloadDiscriminatedBranchCount: number;
+  readonly discriminatorPathCount: number;
+  readonly refinementAliasCount: number;
 };
+
+type AuthorityProfile = {
+  readonly eventCount: number;
+  readonly branchCount: number;
+  readonly explicitVersionBranchCount: number;
+  readonly unversionedBranchCount: number;
+  readonly singletonBranchCount: number;
+  readonly multiBranchCount: number;
+  readonly discriminatorPathCount: number;
+};
+
+const FULL_C1_PROFILE: AuthorityProfile = Object.freeze({
+  eventCount: 40,
+  branchCount: 59,
+  explicitVersionBranchCount: 13,
+  unversionedBranchCount: 46,
+  singletonBranchCount: 35,
+  multiBranchCount: 24,
+  discriminatorPathCount: 7
+});
+
+const TWO_C_PROFILE: AuthorityProfile = Object.freeze({
+  eventCount: 50,
+  branchCount: 69,
+  explicitVersionBranchCount: 13,
+  unversionedBranchCount: 56,
+  singletonBranchCount: 45,
+  multiBranchCount: 24,
+  discriminatorPathCount: 7
+});
 
 type UnhealthyC1ConsumerAuthority = {
   readonly status: "UNHEALTHY";
@@ -568,17 +599,18 @@ const buildDecision = (
 const unhealthyAdmission = (): UnhealthyC1ConsumerAuthority =>
   Object.freeze({ status: "UNHEALTHY" as const });
 
-export const admitC1Authority = (
-  result: StructuralSchemaAuthorityResultV1
+const admitAuthority = (
+  result: StructuralSchemaAuthorityResultV1,
+  profile: AuthorityProfile
 ): CAuthorityAdmissionResult => {
   try {
     if (
       result.status !== "HEALTHY" ||
       result.health.status !== "HEALTHY" ||
-      result.health.eventDescriptorCount !== 40 ||
-      result.health.payloadBranchCount !== 59 ||
-      result.health.explicitVersionBranchCount !== 13 ||
-      result.health.unversionedBranchCount !== 46 ||
+      result.health.eventDescriptorCount !== profile.eventCount ||
+      result.health.payloadBranchCount !== profile.branchCount ||
+      result.health.explicitVersionBranchCount !== profile.explicitVersionBranchCount ||
+      result.health.unversionedBranchCount !== profile.unversionedBranchCount ||
       result.health.nodeKindCount !== 15 ||
       result.health.unresolvedReferenceCount !== 0 ||
       result.health.cycleCount !== 0
@@ -659,7 +691,7 @@ export const admitC1Authority = (
         group.push(root);
       }
     }
-    if (expectedBranchOrdinal !== 60) {
+    if (expectedBranchOrdinal !== profile.branchCount + 1) {
       return unhealthyAdmission();
     }
 
@@ -674,7 +706,7 @@ export const admitC1Authority = (
         compareRawUtf16CodeUnits(left, right)
       );
     });
-    if (eventTypes.length !== 40) {
+    if (eventTypes.length !== profile.eventCount) {
       return unhealthyAdmission();
     }
 
@@ -735,10 +767,10 @@ export const admitC1Authority = (
     Object.freeze(decisionState.discriminatorOrdinals);
 
     if (
-      expectedEventOrdinal !== 41 ||
-      singletonBranches !== 35 ||
-      multiBranches !== 24 ||
-      Object.keys(decisionState.discriminatorOrdinals).length !== 7
+      expectedEventOrdinal !== profile.eventCount + 1 ||
+      singletonBranches !== profile.singletonBranchCount ||
+      multiBranches !== profile.multiBranchCount ||
+      Object.keys(decisionState.discriminatorOrdinals).length !== profile.discriminatorPathCount
     ) {
       return unhealthyAdmission();
     }
@@ -750,13 +782,13 @@ export const admitC1Authority = (
       nodeOrdinalsByNodeId,
       eventsByType,
       eventTypes: Object.freeze([...eventTypes]),
-      eventCount: 40 as const,
-      branchCount: 59 as const,
-      explicitVersionBranchCount: 13 as const,
-      unversionedBranchCount: 46 as const,
-      envelopeResolvableBranchCount: 35 as const,
-      payloadDiscriminatedBranchCount: 24 as const,
-      discriminatorPathCount: 7 as const,
+      eventCount: profile.eventCount,
+      branchCount: profile.branchCount,
+      explicitVersionBranchCount: profile.explicitVersionBranchCount,
+      unversionedBranchCount: profile.unversionedBranchCount,
+      envelopeResolvableBranchCount: profile.singletonBranchCount,
+      payloadDiscriminatedBranchCount: profile.multiBranchCount,
+      discriminatorPathCount: profile.discriminatorPathCount,
       refinementAliasCount: 16 as const
     });
   } catch {
@@ -764,9 +796,46 @@ export const admitC1Authority = (
   }
 };
 
+export const admitC1Authority = (
+  result: StructuralSchemaAuthorityResultV1
+): CAuthorityAdmissionResult => {
+  // Keep the accepted C1 admission guard textually stable for its static
+  // authority audit; the additive profile is evaluated only after this gate.
+  if (
+    result.status !== "HEALTHY" ||
+    result.health.status !== "HEALTHY" ||
+    result.health.eventDescriptorCount !== 40 ||
+    result.health.payloadBranchCount !== 59 ||
+    result.health.explicitVersionBranchCount !== 13 ||
+    result.health.unversionedBranchCount !== 46 ||
+    result.health.nodeKindCount !== 15 ||
+    result.health.unresolvedReferenceCount !== 0 ||
+    result.health.cycleCount !== 0
+  ) {
+    return unhealthyAdmission();
+  }
+  return admitAuthority(result, FULL_C1_PROFILE);
+};
+
+export const admitTwoCAuthority = (
+  result: StructuralSchemaAuthorityResultV1
+): CAuthorityAdmissionResult => admitAuthority(result, TWO_C_PROFILE);
+
 const defaultAuthority: CAuthorityAdmissionResult = (() => {
   try {
     return admitC1Authority(createFullC1StructuralSchemaAuthority());
+  } catch {
+    return unhealthyAdmission();
+  }
+})();
+
+const twoCAuthority: CAuthorityAdmissionResult = (() => {
+  try {
+    // Kept as an additive runtime authority. The default FULL_C1 authority is
+    // never replaced, so accepted C1 callers retain their exact boundary.
+    // The import is intentionally local to avoid making the C1 AST depend on
+    // the 2C candidate.
+    return admitTwoCAuthority(createTwoCAdditiveStructuralSchemaAuthority());
   } catch {
     return unhealthyAdmission();
   }
@@ -1881,10 +1950,19 @@ const validateCapturedInternal = (
     payload = acquired.value;
   }
 
+  if (authority.branchCount === 59) {
+    if (
+      !Number.isSafeInteger(selectedRoot.branchOrdinal) ||
+      selectedRoot.branchOrdinal < 1 ||
+      selectedRoot.branchOrdinal > 59
+    ) {
+      return toPublicFailure(failure(F20_EVENT_BRANCH), observation);
+    }
+  }
   if (
     !Number.isSafeInteger(selectedRoot.branchOrdinal) ||
     selectedRoot.branchOrdinal < 1 ||
-    selectedRoot.branchOrdinal > 59
+    selectedRoot.branchOrdinal > authority.branchCount
   ) {
     return toPublicFailure(failure(F20_EVENT_BRANCH), observation);
   }
@@ -1943,10 +2021,11 @@ const validateCapturedInternal = (
 
 const validateUnknownInternal = (
   input: unknown,
-  observation: MutableObservation
+  observation: MutableObservation,
+  authority: CAuthorityAdmissionResult = defaultAuthority
 ): DomainEventStructuralValidationResult => {
   observation.authorityChecked = true;
-  if (defaultAuthority.status !== "HEALTHY") {
+  if (authority.status !== "HEALTHY") {
     return toPublicFailure(failure(F01), observation);
   }
   observation.captureEntered = true;
@@ -1959,7 +2038,7 @@ const validateUnknownInternal = (
   }
   return validateCapturedInternal(
     captured.token,
-    defaultAuthority,
+    authority,
     observation
   );
 };
@@ -1974,6 +2053,26 @@ export const validateDomainEventStructure = (
     return toPublicFailure(failure(F34), observation);
   }
 };
+
+/** Validate through the shared AST validator against an explicitly admitted
+ * additive authority. This is the same validation pipeline as FULL_C1; the
+ * authority is selected by the caller at the bounded 2C boundary. */
+export const validateDomainEventStructureWithAuthority = (
+  input: unknown,
+  authority: CAuthorityAdmissionResult
+): DomainEventStructuralValidationResult => {
+  const observation = createObservation();
+  try {
+    return validateUnknownInternal(input, observation, authority);
+  } catch {
+    return toPublicFailure(failure(F34), observation);
+  }
+};
+
+export const validateTwoCDomainEventStructure = (
+  input: unknown
+): DomainEventStructuralValidationResult =>
+  validateDomainEventStructureWithAuthority(input, twoCAuthority);
 
 export const validateCapturedDomainEventStructure = (
   token: CapturedCanonicalRuntimeValue

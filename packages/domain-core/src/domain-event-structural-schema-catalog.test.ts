@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { createFullC1StructuralSchemaAuthority, createStructuralSchemaAuthority } from "./domain-event-structural-schema-ast.js";
 import { createC1AdditiveStructuralSchemaAuthority, createC1AdditiveStructuralSchemaCandidate } from "./domain-event-structural-schema-additive.js";
+import { TWO_C_ADDITIVE_DESCRIPTORS, createTwoCAdditiveStructuralSchemaAuthority } from "./phase-3-slice-2c-structural-descriptors.js";
 import {
   APPROVED_C1_DELTA_REGISTRY_V1,
   C1_SUPPORTING_AUTHORITY_BINDINGS,
@@ -437,6 +438,108 @@ describe("Catalog V2 audit projection", () => {
     expect(catalog).toContain("C1-C04A=UNCLAIMED");
     expect(catalog).toContain("C1-C10=HISTORICAL_INACTIVE");
     expect(catalog).not.toContain("runtimeValidatorImplemented=true");
+  });
+
+  it("[2C-F01] captures every additive subject against the immutable C1 prefix", () => {
+    const baseline = healthyAuthority();
+    const input = { baseline, additions: structuredClone(TWO_C_ADDITIVE_DESCRIPTORS) };
+    const result = createC1AdditiveStructuralSchemaCandidate(input);
+    expect(baseline.candidate.expectedEventCount).toBe(40);
+    expect(baseline.candidate.expectedBranchCount).toBe(59);
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) return;
+    expect(result.candidate.expectedEventCount).toBe(50);
+    expect(result.candidate.expectedBranchCount).toBe(69);
+    expect(result.candidate.roots.slice(-10).map((root) => root.eventType)).toEqual(
+      TWO_C_ADDITIVE_DESCRIPTORS.map((descriptor) => descriptor.eventType)
+    );
+  });
+
+  it("[2C-F02] materializes detached backing for every additive subject", () => {
+    const authority = createTwoCAdditiveStructuralSchemaAuthority();
+    expect(authority.status).toBe("HEALTHY");
+    if (authority.status !== "HEALTHY") return;
+    expect(authority.candidate.expectedEventCount).toBe(50);
+    expect(authority.candidate.expectedBranchCount).toBe(69);
+    for (const descriptor of TWO_C_ADDITIVE_DESCRIPTORS) {
+      const root = authority.candidate.roots.find((candidate) => candidate.eventType === descriptor.eventType);
+      expect(root).toMatchObject({ eventOrdinal: descriptor.eventOrdinal, branchOrdinal: descriptor.branchOrdinal });
+      const binding = authority.candidate.nodeBindings.find((candidate) => candidate.nodeId === descriptor.rootNodeId);
+      expect(binding?.node.nodeId).toBe(descriptor.rootNodeId);
+    }
+    expect(Object.isFrozen(authority.candidate)).toBe(true);
+    expect(Object.isFrozen(authority.candidate.roots)).toBe(true);
+    expect(Object.isFrozen(authority.candidate.nodeBindings)).toBe(true);
+  });
+
+  it("[2C-F03] rejects one malformed descriptor for each additive subject", () => {
+    const baseline = healthyAuthority();
+    for (const [index, descriptor] of TWO_C_ADDITIVE_DESCRIPTORS.entries()) {
+      const additions = structuredClone(TWO_C_ADDITIVE_DESCRIPTORS) as unknown as Array<Record<string, unknown>>;
+      delete additions[index]?.rootNodeId;
+      const result = createC1AdditiveStructuralSchemaCandidate({ baseline, additions } as never);
+      expect(result, descriptor.eventType).toMatchObject({
+        ok: false,
+        diagnostic: { code: "INVALID_OBJECT_SHAPE", failClosed: true }
+      });
+    }
+  });
+
+  it("[2C-F04] rejects hostile descriptor capture for every additive subject without throwing", () => {
+    const baseline = healthyAuthority();
+    for (const descriptor of TWO_C_ADDITIVE_DESCRIPTORS) {
+      const hostile = new Proxy(structuredClone(descriptor), {
+        ownKeys: () => { throw new Error("hostile additive descriptor"); }
+      });
+      expect(() => createC1AdditiveStructuralSchemaCandidate({
+        baseline,
+        additions: [hostile]
+      })).not.toThrow();
+      expect(createC1AdditiveStructuralSchemaCandidate({
+        baseline,
+        additions: [hostile]
+      })).toMatchObject({
+        ok: false,
+        diagnostic: { code: "INVALID_OBJECT_SHAPE", failClosed: true }
+      });
+    }
+  });
+
+  it("[2C-F05] rejects tampered additive backing for every subject", () => {
+    for (const descriptor of TWO_C_ADDITIVE_DESCRIPTORS) {
+      const authority = createTwoCAdditiveStructuralSchemaAuthority();
+      expect(authority.status).toBe("HEALTHY");
+      if (authority.status !== "HEALTHY") return;
+      const candidate = structuredClone(authority.candidate) as unknown as {
+        nodeBindings: Array<{ nodeId: string; node: { nodeId: string } }>;
+      };
+      const binding = candidate.nodeBindings.find((entry) => entry.nodeId === descriptor.rootNodeId);
+      if (binding === undefined) throw new Error(`Missing additive root binding: ${descriptor.eventType}`);
+      binding.nodeId = `${binding.nodeId}-tampered`;
+      expect(createStructuralSchemaAuthority(candidate as never)).toMatchObject({
+        status: "UNHEALTHY",
+        diagnostic: { code: "NODE_BINDING_MISMATCH", failClosed: true }
+      });
+    }
+  });
+
+  it("[2C-F06] keeps additive replay reconstruction fail-closed for every subject", () => {
+    const authority = createTwoCAdditiveStructuralSchemaAuthority();
+    expect(authority.status).toBe("HEALTHY");
+    if (authority.status !== "HEALTHY") return;
+    expect(createStructuralSchemaAuthority(structuredClone(authority.candidate))).toMatchObject({ status: "HEALTHY" });
+    for (const descriptor of TWO_C_ADDITIVE_DESCRIPTORS) {
+      const candidate = structuredClone(authority.candidate) as unknown as {
+        roots: Array<{ eventType: string; branchOrdinal: number }>;
+      };
+      const root = candidate.roots.find((entry) => entry.eventType === descriptor.eventType);
+      if (root === undefined) throw new Error(`Missing additive replay root: ${descriptor.eventType}`);
+      root.branchOrdinal = 1;
+      expect(createStructuralSchemaAuthority(candidate as never), descriptor.eventType).toMatchObject({
+        status: "UNHEALTHY",
+        diagnostic: { failClosed: true }
+      });
+    }
   });
 
   it("matches the checked-in frozen generated Catalog V2 path byte-for-byte", () => {

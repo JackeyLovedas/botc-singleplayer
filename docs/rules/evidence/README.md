@@ -1,5 +1,9 @@
 # Rule Evidence Files
 
+For Slice 2C, the active applicability index is
+`docs/rules/evidence/2C-closure-supersession.md`. It is an additive pointer and
+does not replace the immutable historical `2C.md` or preemption-fixture record.
+
 Every proposed slice requires `docs/rules/evidence/<slice-id>.md` before architecture design begins. The read-only `rule-researcher` produces a sourced report; the sole writer materializes that report here without changing its rule conclusions. The architect cannot start until the file exists and the researcher verdict is `RULE_READY`.
 
 ## Required Fields

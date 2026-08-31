@@ -79,6 +79,17 @@ import {
   openFirstNightRoleActionOpportunityCommand,
   otherGameId,
   planFirstNightTasksCommand,
+  completeNightCommand,
+  publishDawnCommand,
+  openNominationsCommand,
+  declareNominationCommand,
+  openVoteCommand,
+  castVoteCommand,
+  completeVoteCommand,
+  closeNominationsCommand,
+  resolveExecutionCommand,
+  beginNightCommand,
+  settleOrdinaryNightTaskCommand,
   scriptSelectedEvent,
   selectScriptCommand,
   settleFirstNightSystemTaskCommand,
@@ -404,6 +415,268 @@ describeApplicationServiceShard("dreamer-vortox", "Phase 3 Slice 2B19A3A effecti
     expect(captured.finalState.currentCharacterState?.entries.find((entry) =>
       entry.playerId === delivery.payload.targetPlayerId)?.role.roleId).toBe("vortox");
   }, 15_000);
+});
+
+describeApplicationServiceShard("core", "F06 first-night completion to ordinary-night application chain", () => {
+  it("accepts CompleteNight and reaches day, vote, execution, and ordinary-night planning", async () => {
+    const { service, commandStore } = makeService();
+    const exactRoleIds = [
+      "clockmaker", "flowergirl", "savant", "seamstress", "philosopher", "artist",
+      "sage", "mutant", "klutz", "evil_twin", "pit_hag", "vortox"
+    ].map(roleId);
+
+    expectAcceptedResult(await service.execute(createGameCommand({
+      payload: { ...createGameCommand().payload, rootSeed: "2c-preemption-pithag-vortox-v1" }
+    })));
+    expectAcceptedResult(await service.execute(selectScriptCommand()));
+    expectAcceptedResult(await service.execute(generateSetupCommand({ payload: { commandType: "GenerateSetup", constraints: { exactRoleIds } } })));
+    expectAcceptedResult(await service.execute(createPlayerRosterCommand()));
+    expectAcceptedResult(await service.execute(assignCharactersCommand()));
+    expectAcceptedResult(await service.execute(initializeFirstNightCommand()));
+    expectAcceptedResult(await service.execute(planFirstNightTasksCommand()));
+
+    let planned = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(planned?.firstNightTaskPlan?.tasks.map((task) => task.taskType)).toStrictEqual([
+      "PHILOSOPHER_ACTION", "MINION_INFO", "DEMON_INFO", "EVIL_TWIN_SETUP", "CLOCKMAKER_INFORMATION", "SEAMSTRESS_ACTION"
+    ]);
+    for (let index = 0; planned?.firstNightTaskPlan !== undefined; index += 1) {
+      const next = planned.firstNightTaskPlan.tasks[planned.firstNightTaskProgress?.settlements.length ?? 0];
+      if (next === undefined) break;
+      if (next.source.kind === "SYSTEM") {
+        const settled = await service.execute(settleFirstNightSystemTaskCommand({
+          commandId: commandId(`f06-settle-system-${index}`), expectedGameVersion: planned.gameVersion,
+          payload: { commandType: "SettleFirstNightSystemTask", taskId: next.taskId }
+        }));
+        if (next.taskType === "SEAMSTRESS_ACTION") expectEventSummaryAcceptedResult(settled);
+        else expectAcceptedResult(settled);
+      } else if (next.taskType === "EVIL_TWIN_SETUP") {
+        const settled = await service.execute(settleEvilTwinSetupCommand({
+          commandId: commandId(`f06-settle-evil-twin-${index}`), expectedGameVersion: planned.gameVersion,
+          payload: { commandType: "SettleEvilTwinSetup", taskId: next.taskId }
+        }));
+        expectAcceptedResult(settled);
+      } else if (next.taskType === "CLOCKMAKER_INFORMATION") {
+        const settled = await service.execute(settleClockmakerCommand(planned, next.taskId, {
+          commandId: commandId(`f06-settle-clockmaker-${index}`)
+        }));
+        expectEventSummaryAcceptedResult(settled);
+      } else {
+        const opened = await service.execute(openFirstNightRoleActionOpportunityCommand({
+          commandId: commandId(`f06-open-role-${index}`), expectedGameVersion: planned.gameVersion,
+          payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: next.taskId }
+        }));
+        expectAcceptedResult(opened);
+        const openState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+        const opportunity = openState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === next.taskId);
+        if (openState === undefined || opportunity === undefined) throw new Error("Expected F06 role opportunity");
+        const settled = next.taskType === "PHILOSOPHER_ACTION"
+          ? await service.execute(submitPhilosopherActionCommand({
+              commandId: commandId(`f06-settle-role-${index}`), expectedGameVersion: openState.gameVersion,
+              payload: { commandType: "SubmitPhilosopherAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
+                decision: { kind: "CHOOSE_GOOD_CHARACTER", roleId: roleId("artist") } }
+            }))
+          : next.taskType === "SEAMSTRESS_ACTION"
+          ? await service.execute(submitSeamstressActionCommand({
+              commandId: commandId(`f06-settle-role-${index}`), expectedGameVersion: openState.gameVersion,
+              payload: { commandType: "SubmitSeamstressAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
+                decision: { kind: "CHOOSE_TWO_PLAYERS", targetPlayerIds: openState.currentCharacterState!.entries
+                  .filter((entry) => entry.playerId !== opportunity.sourcePlayerId).slice(0, 2).map((entry) => entry.playerId) as [typeof opportunity.sourcePlayerId, typeof opportunity.sourcePlayerId] } }
+            }))
+          : await service.execute(submitWitchActionCommand({
+              commandId: commandId(`f06-settle-role-${index}`), expectedGameVersion: openState.gameVersion,
+              actor: systemActor,
+              payload: { commandType: "SubmitWitchAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
+                decision: { kind: "CHOOSE_PLAYER", targetPlayerId: openState.currentCharacterState!.entries.find((entry) => entry.playerId !== opportunity.sourcePlayerId)!.playerId } }
+            }));
+        if (next.taskType === "SEAMSTRESS_ACTION") expectEventSummaryAcceptedResult(settled);
+        else expectAcceptedResult(settled);
+      }
+      planned = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    }
+    const ready = planned;
+    const complete = await service.execute(completeNightCommand({
+      commandId: commandId("f06-complete-first-night"), expectedGameVersion: ready!.gameVersion,
+      payload: { commandType: "CompleteNight", phase: "FIRST_NIGHT", planVersion: ready!.firstNightTaskPlan!.taskPlanVersion, nightNumber: 1 }
+    }));
+    expectAcceptedResult(complete);
+    expect(complete.events.map((event) => event.eventType)).toStrictEqual(["PhaseTransitioned"]);
+    expect(complete.events[0]).toMatchObject({ payload: { fromPhase: "FIRST_NIGHT", toPhase: "DAWN_RESOLUTION", transitionReason: "FIRST_NIGHT_COMPLETED" } });
+    const afterComplete = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(afterComplete?.phase).toBe("DAWN_RESOLUTION");
+
+    const tampered = structuredClone(await commandStore.loadDomainEvents(ids.game)).map((event) =>
+      event.eventType === "PhaseTransitioned" && event.payload.transitionReason === "FIRST_NIGHT_COMPLETED"
+        ? { ...event, payload: { ...event.payload, nightNumberAfter: 2 } }
+        : event
+    );
+    expect(() => rebuildOptionalGameState(tampered)).toThrow();
+
+    const dawn = await service.execute(publishDawnCommand({ expectedGameVersion: afterComplete!.gameVersion }));
+    expectAcceptedResult(dawn);
+    const afterDawn = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(afterDawn?.phase).toBe("DAY_DISCUSSION");
+    const openNominations = await service.execute(openNominationsCommand({ expectedGameVersion: afterDawn!.gameVersion }));
+    expectAcceptedResult(openNominations);
+    const afterOpenNominations = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(afterOpenNominations?.phase).toBe("NOMINATION_WINDOW");
+
+    const targetAssignment = afterOpenNominations!.assignment?.assignments.find((entry) => entry.role.roleId === "pit_hag");
+    if (targetAssignment === undefined) throw new Error("Expected Pit-Hag assignment");
+    const target = afterOpenNominations!.roster!.entries.find((entry) => entry.playerId === targetAssignment.playerId)!;
+    const nominator = afterOpenNominations!.roster!.entries.find((entry) => entry.playerId !== target.playerId);
+    if (nominator === undefined) throw new Error("Expected distinct living nominator");
+    const nomination = await service.execute(declareNominationCommand({
+      commandId: commandId("f06-declare-nomination"), expectedGameVersion: afterOpenNominations!.gameVersion,
+      actor: { kind: "ai", playerId: nominator.playerId },
+      payload: { commandType: "DeclareNomination", targetPlayerId: target.playerId }
+    }));
+    expectAcceptedResult(nomination);
+    const afterNomination = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const nominationId = afterNomination!.nominations!.at(-1)!.nominationId;
+    const openVote = await service.execute(openVoteCommand({
+      commandId: commandId("f06-open-vote"), expectedGameVersion: afterNomination!.gameVersion,
+      payload: { commandType: "OpenVote", nominationId }
+    }));
+    expectAcceptedResult(openVote);
+    let afterOpenVote = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    for (const [index, voter] of afterOpenVote!.roster!.entries.slice(0, 6).entries()) {
+      const vote = await service.execute(castVoteCommand({
+        commandId: commandId(`f06-cast-vote-${index + 1}`), expectedGameVersion: afterOpenVote!.gameVersion,
+        actor: { kind: "ai", playerId: voter.playerId }, payload: { commandType: "CastVote", nominationId, choice: "YES" }
+      }));
+      expectAcceptedResult(vote);
+      afterOpenVote = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    }
+    const completeVote = await service.execute(completeVoteCommand({
+      commandId: commandId("f06-complete-vote"), expectedGameVersion: afterOpenVote!.gameVersion,
+      payload: { commandType: "CompleteVote", nominationId }
+    }));
+    expectAcceptedResult(completeVote);
+    const afterVote = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(afterVote?.phase).toBe("NOMINATION_WINDOW");
+    const secondNominator = afterVote!.roster!.entries.find((entry) =>
+      entry.playerId !== nominator.playerId && entry.playerId !== target.playerId);
+    if (secondNominator === undefined) throw new Error("Expected a distinct second nominator");
+    await expect(service.execute(declareNominationCommand({
+      commandId: commandId("f06-reject-repeat-nominee"), expectedGameVersion: afterVote!.gameVersion,
+      actor: { kind: "ai", playerId: secondNominator.playerId },
+      payload: { commandType: "DeclareNomination", targetPlayerId: target.playerId }
+    }))).resolves.toMatchObject({ status: "rejected", code: "DomainValidationFailed" });
+    const persistedBeforeClose = await commandStore.loadDomainEvents(ids.game);
+    const originalNomination = persistedBeforeClose.find((event): event is Extract<AnyDomainEventEnvelope, { readonly eventType: "NominationDeclared" }> =>
+      event.eventType === "NominationDeclared");
+    if (originalNomination === undefined) throw new Error("Expected persisted nomination");
+    const forgedRepeatNominee = {
+      ...originalNomination,
+      eventId: eventId("f06-forged-repeat-nominee"),
+      eventSequence: afterVote!.lastEventSequence + 1,
+      batchId: batchId("f06-forged-repeat-nominee-batch"),
+      gameVersion: afterVote!.gameVersion + 1,
+      commandId: commandId("f06-forged-repeat-nominee-command"),
+      payload: {
+        ...originalNomination.payload,
+        nominationId: `nomination-v1:${afterVote!.dayNumber}:2`,
+        nominatorPlayerId: secondNominator.playerId,
+        nominationOrdinal: 2
+      }
+    };
+    expect(() => rebuildOptionalGameState([...persistedBeforeClose, forgedRepeatNominee])).toThrow();
+    const close = await service.execute(closeNominationsCommand({ commandId: commandId("f06-close-nominations"), expectedGameVersion: afterVote!.gameVersion }));
+    expectAcceptedResult(close);
+    const afterClose = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(afterClose?.phase).toBe("EXECUTION_RESOLUTION");
+    const resolve = await service.execute(resolveExecutionCommand({
+      commandId: commandId("f06-resolve-execution"), expectedGameVersion: afterClose!.gameVersion,
+      payload: { commandType: "ResolveExecution", blockId: "block-v1:1:1" }
+    }));
+    expectAcceptedResult(resolve);
+    const afterExecution = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    expect(afterExecution?.phase).toBe("NIGHT_TASKS");
+    const beginNight = await service.execute(beginNightCommand({ commandId: commandId("f06-begin-ordinary-night"), expectedGameVersion: afterExecution!.gameVersion }));
+    expectAcceptedResult(beginNight);
+    expect(beginNight.events.map((event) => event.eventType)).toStrictEqual(["OrdinaryNightTaskPlanCreated"]);
+    expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))?.ordinaryNightTaskPlan?.tasks.map((task) => task.taskType))
+      .toStrictEqual(["GENERIC_DEMON_KILL", "FLOWERGIRL_ACTION"]);
+    const afterPlan = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const genericTask = afterPlan?.ordinaryNightTaskPlan?.tasks.find((task) => task.taskType === "GENERIC_DEMON_KILL");
+    const flowergirlTask = afterPlan?.ordinaryNightTaskPlan?.tasks.find((task) => task.taskType === "FLOWERGIRL_ACTION");
+    if (afterPlan === undefined || genericTask === undefined || flowergirlTask === undefined) throw new Error("Expected exact ordinary-night tasks");
+    const genericSettlement = await service.execute(settleOrdinaryNightTaskCommand({
+      commandId: commandId("f06-settle-generic-demon-kill"), expectedGameVersion: afterPlan.gameVersion,
+      payload: { commandType: "SettleOrdinaryNightTask", taskId: genericTask.taskId }
+    }));
+    expectAcceptedResult(genericSettlement);
+    expect(genericSettlement.events.map((event) => event.eventType)).toStrictEqual([
+      "OrdinaryNightTargetDerived", "PlayerDied", "OrdinaryNightTaskSettled"
+    ]);
+    const afterGeneric = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+    const flowergirl = afterGeneric?.assignment?.assignments.find((entry) => entry.role.roleId === "flowergirl");
+    const demonDeath = genericSettlement.events.find((event) => event.eventType === "PlayerDied");
+    if (afterGeneric === undefined || flowergirl === undefined || demonDeath?.eventType !== "PlayerDied") throw new Error("Expected Flowergirl death witness");
+    expect(demonDeath.payload.playerId).toBe(flowergirl.playerId);
+    expect(demonDeath.payload.cause).toBe("GENERIC_DEMON_KILL");
+    const flowergirlSettlement = await service.execute(settleOrdinaryNightTaskCommand({
+      commandId: commandId("f06-settle-dead-flowergirl"), expectedGameVersion: afterGeneric.gameVersion,
+      payload: { commandType: "SettleOrdinaryNightTask", taskId: flowergirlTask.taskId }
+    }));
+    expectAcceptedResult(flowergirlSettlement);
+    expect(flowergirlSettlement.events).toHaveLength(1);
+    expect(flowergirlSettlement.events[0]).toMatchObject({
+      eventType: "OrdinaryNightTaskSettled",
+      payload: { taskType: "FLOWERGIRL_ACTION", settlement: "SOURCE_INELIGIBLE", targetPlayerId: null, transferOutcome: "NONE" }
+    });
+    const settledEvents = await commandStore.loadDomainEvents(ids.game);
+    const settledState = rebuildOptionalGameState(settledEvents);
+    if (settledState === undefined || settledState.ordinaryNightTaskPlan === undefined) throw new Error("Expected settled ordinary-night state");
+    const completeOrdinaryNight = completeNightCommand({
+      commandId: commandId("f06-complete-ordinary-night"),
+      expectedGameVersion: settledState.gameVersion,
+      payload: {
+        commandType: "CompleteNight",
+        phase: "NIGHT_TASKS",
+        planVersion: settledState.ordinaryNightTaskPlan.planVersion,
+        nightNumber: settledState.nightNumber
+      }
+    });
+    const eventCountBeforeCompleteFault = settledEvents.length;
+    commandStore.failBeforeCommit = true;
+    await expect(service.execute(completeOrdinaryNight)).resolves.toMatchObject({
+      status: "failed", code: "EventStoreAppendFailed", failureStage: "accepted-commit", retryable: true
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(eventCountBeforeCompleteFault);
+    expect(await commandStore.findCommandReceipt(ids.game, completeOrdinaryNight.commandId)).toBeUndefined();
+    expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))).toStrictEqual(settledState);
+    const completedOrdinaryNight = await service.execute(completeOrdinaryNight);
+    expectAcceptedResult(completedOrdinaryNight);
+    expect(completedOrdinaryNight.events.map((event) => event.eventType)).toStrictEqual(["PhaseTransitioned"]);
+    expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))?.phase).toBe("DAWN_RESOLUTION");
+    const idempotentOrdinaryNight = await service.execute(completeOrdinaryNight);
+    expect(idempotentOrdinaryNight).toStrictEqual({ ...completedOrdinaryNight, idempotent: true });
+    const conflictOrdinaryNight = await service.execute({
+      ...completeOrdinaryNight,
+      payload: { ...completeOrdinaryNight.payload, phase: "FIRST_NIGHT" }
+    });
+    expect(conflictOrdinaryNight).toStrictEqual({
+      status: "rejected",
+      gameId: completeOrdinaryNight.gameId,
+      code: "CommandIdempotencyConflict",
+      message: "commandId is already associated with a different command",
+      currentGameVersion: settledState.gameVersion + 1,
+      idempotent: false
+    });
+    expect(await commandStore.loadDomainEvents(ids.game)).toHaveLength(eventCountBeforeCompleteFault + 1);
+    expect(settledState).toStrictEqual(rebuildOptionalGameState(structuredClone(settledEvents)));
+    const forgedCause = settledEvents.map((event) => event.eventType === "PlayerDied"
+      ? { ...event, payload: { ...event.payload, cause: "EXECUTION" as const } }
+      : event);
+    expect(() => rebuildOptionalGameState(forgedCause)).toThrow();
+    const reorderedDeath = [...settledEvents];
+    const deathIndex = reorderedDeath.findIndex((event) => event.eventType === "PlayerDied");
+    const targetDerivedIndex = reorderedDeath.findIndex((event) => event.eventType === "OrdinaryNightTargetDerived");
+    if (deathIndex < 0 || targetDerivedIndex < 0) throw new Error("Expected ordinary-night death chain");
+    [reorderedDeath[targetDerivedIndex], reorderedDeath[deathIndex]] = [reorderedDeath[deathIndex]!, reorderedDeath[targetDerivedIndex]!];
+    expect(() => rebuildOptionalGameState(reorderedDeath)).toThrow();
+  }, 30_000);
 });
 
 const advancePastSystemInformation = async (

@@ -1152,7 +1152,8 @@ function main() {
       repoRoot,
       contracts: OWNERSHIP_CONTRACTS,
       fullInventory,
-      legacyApplicationServiceProjects: LEGACY_APPLICATION_SERVICE_PROJECTS
+      legacyApplicationServiceProjects: LEGACY_APPLICATION_SERVICE_PROJECTS,
+      inventoryAuthority: "LIVE_CURRENT"
     });
     const ownership =
       ownershipAudits.length === 1

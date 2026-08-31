@@ -13,11 +13,12 @@ import {
   LEGACY_FIRST_NIGHT_TASK_PLAN_VERSION,
   getNextUnsettledFirstNightTask
 } from "./first-night-task-plan.js";
+import { validateFirstNightTaskProgress } from "./first-night-task-plan.js";
 import {
   evilTwinInformationEntriesEqual,
   expectedEvilTwinInformationEntries
 } from "./evil-twin.js";
-import { isIntegratedTransitionReason } from "./phase-transition-policy.js";
+import { evaluatePhaseTransition, isIntegratedTransitionReason } from "./phase-transition-policy.js";
 import { firstNightTaskTypeForPhilosopherChoice } from "./philosopher-ability.js";
 import { evaluateSnakeCharmerEffectiveness } from "./snake-charmer.js";
 import type { SnakeCharmerEffectivenessResult } from "./snake-charmer.js";
@@ -63,9 +64,173 @@ import {
 import { validateClockmakerInformationAgainstCanonicalState } from "./clockmaker.js";
 import { validateMathematicianInformationDeliveredPayloadShape } from "./mathematician.js";
 import { sameRoleSetupSnapshot, SUPPORTED_SCRIPT_ID } from "./setup-types.js";
+import { deriveOrdinaryNightTarget, validateOrdinaryNightTaskPlan } from "./ordinary-night.js";
+import { validateTwoCDomainEventStructure } from "./domain-event-structural-validator.js";
 
 type IneffectiveSnakeCharmerEffectiveness = Extract<SnakeCharmerEffectivenessResult, { readonly effective: false }>;
 type IneffectiveWitchEffectiveness = Extract<WitchEffectivenessResult, { readonly effective: false }>;
+
+const BASIC_PHASE_FLOW_TRANSITION_REASONS = [
+  "FIRST_NIGHT_COMPLETED",
+  "DAWN_COMPLETED",
+  "NOMINATION_OPENED",
+  "VOTE_OPENED",
+  "VOTE_COMPLETED",
+  "NOMINATIONS_CLOSED",
+  "EXECUTION_RESOLVED",
+  "NIGHT_TASKS_COMPLETED"
+] as const;
+
+const validateBasicPhaseFlowBatch = (
+  currentState: GameState | undefined,
+  events: readonly AnyDomainEventEnvelope[]
+): void => {
+  if (currentState === undefined) reject("Basic phase-flow events require an existing game");
+  const state = currentState as GameState;
+  const deathEventIdFor = (death: { readonly deathId: string }): string =>
+    state.deathEventIds?.find((entry) => entry.deathId === death.deathId)?.eventId ?? death.deathId;
+  assertSharedBatchMetadataForAll(events);
+  for (const event of events) {
+    if (event.rulesBaselineVersion !== state.rulesBaselineVersion) reject("Basic phase-flow rules baseline must match current state");
+    if (["NominationDeclared", "VoteCast", "BlockStateUpdated", "ExecutionDeclared", "PlayerDied", "ExecutionResolved", "DayClosedWithoutExecution", "OrdinaryNightTaskPlanCreated", "OrdinaryNightTargetDerived", "OrdinaryNightTaskSettled"].includes(event.eventType)) {
+      const structural = validateTwoCDomainEventStructure(event);
+      if (!structural.ok) reject(`2C event failed structural validation: ${structural.diagnostic.safeSummary}`);
+    }
+  }
+  const first = events[0]!;
+  if (first.eventType === "PhaseTransitioned") {
+    if (events.length !== 1) reject("Standalone basic phase transition must contain exactly one event");
+    const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: first.payload.toPhase, dayNumber: state.dayNumber, nightNumber: state.nightNumber });
+    if (!transition.allowed || first.payload.transitionReason !== transition.reasonCode || first.payload.dayNumberAfter !== transition.dayNumber || first.payload.nightNumberAfter !== transition.nightNumber) {
+      reject("Basic phase transition does not match the phase policy");
+    }
+    if (first.payload.transitionReason === "FIRST_NIGHT_COMPLETED") {
+      const plan = state.firstNightTaskPlan;
+      const progress = state.firstNightTaskProgress;
+      if (state.phase !== "FIRST_NIGHT" || plan === undefined || progress === undefined ||
+          !validateFirstNightTaskProgress(plan, progress).valid || getNextUnsettledFirstNightTask(plan, progress) !== undefined) {
+        reject("FIRST_NIGHT_COMPLETED requires a valid, fully settled first-night task plan");
+      }
+    }
+    return;
+  }
+  if (first.eventType === "NominationDeclared") {
+    if (events.length !== 1 || state.phase !== "NOMINATION_WINDOW" || first.payload.dayNumber !== state.dayNumber) reject("Nomination must be a single fact during the nomination window");
+    if (state.roster === undefined || !state.roster.entries.some((entry) => entry.playerId === first.payload.nominatorPlayerId) || !state.roster.entries.some((entry) => entry.playerId === first.payload.nomineePlayerId)) reject("Nomination participants must be roster members");
+    const nominatorDead = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).has(first.payload.nominatorPlayerId);
+    if (nominatorDead || first.payload.nominatorPlayerId === first.payload.nomineePlayerId) reject("Nomination requires a living, distinct nominator");
+    if ((state.nominations ?? []).some((nomination) => nomination.dayNumber === state.dayNumber && nomination.nominatorPlayerId === first.payload.nominatorPlayerId)) reject("Nominator may nominate only once per day");
+    if ((state.nominations ?? []).some((nomination) => nomination.dayNumber === state.dayNumber && nomination.nomineePlayerId === first.payload.nomineePlayerId)) reject("Nominee may be nominated only once per day");
+    const expectedNominationId = `nomination-v1:${state.dayNumber}:${first.payload.nominationOrdinal}`;
+    if (first.payload.nominationId !== expectedNominationId || first.payload.nominationOrdinal !== (state.nominations?.length ?? 0) + 1) reject("Nomination identity or ordinal is not canonical");
+    if ((state.nominations ?? []).some((nomination) => nomination.nominationId === first.payload.nominationId)) reject("Nomination identity is duplicated");
+    return;
+  }
+  if (first.eventType === "VoteCast") {
+    if (events.length !== 1 || state.phase !== "VOTING") reject("Vote must be a single fact during voting");
+    const activeNomination = state.nominations?.at(-1);
+    if (activeNomination === undefined || first.payload.nominationId !== activeNomination.nominationId) reject("Vote must reference the active nomination");
+    const voter = state.roster?.entries.find((entry) => entry.playerId === first.payload.voterPlayerId);
+    if (voter === undefined) reject("Vote actor must be a roster member");
+    if (voter?.seatNumber !== first.payload.voterSeatNumber) reject("Vote seat must match the roster");
+    if (first.payload.voteId !== `vote-v1:${first.payload.nominationId}:${(state.votes?.length ?? 0) + 1}`) reject("Vote identity is not canonical");
+    if ((state.votes ?? []).some((vote) => vote.nominationId === first.payload.nominationId && vote.voterPlayerId === first.payload.voterPlayerId)) reject("A voter may vote once per nomination");
+    const dead = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).has(first.payload.voterPlayerId);
+    if (first.payload.ghostVoteConsumed !== dead) reject("Vote ghost-token provenance does not match voter liveness");
+    if (first.payload.ghostVoteConsumed && (state.votes ?? []).some((vote) => vote.voterPlayerId === first.payload.voterPlayerId && vote.ghostVoteConsumed)) reject("Ghost vote token is already consumed");
+    return;
+  }
+  if (first.eventType === "ExecutionDeclared") {
+    if ((events.length !== 3 && events.length !== 4) || events[1]?.eventType !== "ExecutionResolved" || events.at(-1)?.eventType !== "PhaseTransitioned" || state.phase !== "EXECUTION_RESOLUTION") reject("Execution must contain declaration, resolution, and night transition");
+    const resolvedCandidate = events[1];
+    const diedCandidate = events.length === 4 ? events[2] : undefined;
+    const transitionCandidate = events.at(-1);
+    if (resolvedCandidate === undefined || resolvedCandidate.eventType !== "ExecutionResolved" || transitionCandidate === undefined || transitionCandidate.eventType !== "PhaseTransitioned") reject("Execution chain is incomplete");
+    const resolved = resolvedCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "ExecutionResolved" }>;
+    if (resolved.payload.deathOutcome === "DIED" && (diedCandidate === undefined || diedCandidate.eventType !== "PlayerDied")) reject("DIED execution must include PlayerDied");
+    if (resolved.payload.deathOutcome === "DID_NOT_DIE" && diedCandidate !== undefined) reject("DID_NOT_DIE execution must not include PlayerDied");
+    const died = diedCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "PlayerDied" }> | undefined;
+    const transition = transitionCandidate as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
+    if (first.payload.executionId !== `execution-v1:${state.dayNumber}:01`) reject("Execution identity is not canonical");
+    if ((state.executions ?? []).some((execution) => execution.dayNumber === state.dayNumber)) reject("Only one execution may be declared per day");
+    const block = (state.blocks ?? []).at(-1);
+    if (block === undefined || block.tied || block.leaderNominationId === null || block.leaderVoteCount <= 0) reject("Execution must reference the current executable block");
+    const targetNomination = (state.nominations ?? []).find((nomination) => nomination.nominationId === block?.leaderNominationId);
+    if (targetNomination === undefined || targetNomination.nomineePlayerId !== first.payload.targetPlayerId) reject("Execution target must match the strict-highest block");
+    if (resolved.payload.executionId !== first.payload.executionId || resolved.payload.targetPlayerId !== first.payload.targetPlayerId || (died !== undefined && (died.payload.executionId !== first.payload.executionId || died.payload.playerId !== first.payload.targetPlayerId))) reject("Execution chain payloads do not agree");
+    const expected = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "NIGHT_TASKS", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
+    if (!expected.allowed || transition.payload.toPhase !== expected.nextPhase || transition.payload.transitionReason !== expected.reasonCode) reject("Execution must transition to ordinary night tasks");
+    if (died !== undefined && (died.payload.cause !== "EXECUTION" || died.payload.deathId !== `death-v1:${died.payload.executionId}` || died.payload.causeEventType !== "ExecutionResolved" || died.payload.causeEventId !== resolved.eventId || died.payload.phase !== "EXECUTION_RESOLUTION" || died.payload.executionId !== resolved.payload.executionId || died.payload.executionId === null || died.payload.sourcePlayerId !== null || died.payload.sourceRoleId !== null || died.payload.dayNumber !== state.dayNumber || died.payload.nightNumber !== state.nightNumber || died.payload.characterStateRevision !== (state.currentCharacterState?.revision ?? 0))) reject("Execution death must point to its resolution");
+    if ((state.deadPlayerIds ?? []).includes(first.payload.targetPlayerId) || (state.deaths ?? []).some((death) => death.playerId === first.payload.targetPlayerId)) {
+      if (resolved.payload.deathOutcome !== "DID_NOT_DIE") reject("Already-dead execution must not emit a death");
+    } else if (resolved.payload.deathOutcome !== "DIED" || died === undefined) reject("Living execution target must emit one death");
+    return;
+  }
+  if (first.eventType === "BlockStateUpdated") {
+    if (events.length !== 2 || events[1]?.eventType !== "PhaseTransitioned" || state.phase !== "VOTING" || first.payload.dayNumber !== state.dayNumber) reject("Block state must pair with vote completion");
+    const nomination = (state.nominations ?? []).find((candidate) => candidate.nominationId === first.payload.nominationId);
+    if (nomination === undefined) reject("Block state must reference an existing nomination");
+    if (nomination !== state.nominations?.at(-1)) reject("Block state must close the active nomination");
+    const yesVotesByNomination = new Map<string, number>();
+    for (const vote of state.votes ?? []) if (vote.choice === "YES") yesVotesByNomination.set(vote.nominationId, (yesVotesByNomination.get(vote.nominationId) ?? 0) + 1);
+    const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).size);
+    const threshold = Math.ceil(livingPlayerCount / 2);
+    const leaderVoteCount = Math.max(0, ...yesVotesByNomination.values());
+    const leaders = [...yesVotesByNomination.entries()].filter(([, count]) => count === leaderVoteCount && count > 0);
+    const executable = leaders.length === 1 && leaderVoteCount >= threshold;
+    if (first.payload.livingPlayerCount !== livingPlayerCount || first.payload.threshold !== threshold || first.payload.leaderVoteCount !== leaderVoteCount || first.payload.tied !== (leaders.length > 1) || first.payload.leaderNominationId !== (executable ? leaders[0]?.[0] ?? null : null)) reject("Block state does not match canonical vote tally");
+    const transition = events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
+    if (transition.payload.toPhase !== "NOMINATION_WINDOW" || transition.payload.transitionReason !== "VOTE_COMPLETED") reject("Block state must transition back to nomination window");
+    return;
+  }
+  if (first.eventType === "DayClosedWithoutExecution") {
+    if (events.length !== 2 || events[1]?.eventType !== "PhaseTransitioned" || state.phase !== "EXECUTION_RESOLUTION") reject("Day close must pair with night transition");
+    const transition = events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
+    const block = state.blocks?.at(-1);
+    if (block?.leaderNominationId !== null && block?.leaderNominationId !== undefined && !block.tied && block.leaderVoteCount > 0) reject("Day close cannot bypass an executable block");
+    if (transition.payload.toPhase !== "NIGHT_TASKS" || transition.payload.transitionReason !== "EXECUTION_RESOLVED") reject("Day close must transition to night tasks");
+    return;
+  }
+  if (first.eventType === "OrdinaryNightTaskPlanCreated") {
+    if (events.length !== 1 || state.phase !== "NIGHT_TASKS" || !validateOrdinaryNightTaskPlan({ planVersion: first.payload.planVersion, window: first.payload.window, nightNumber: first.payload.nightNumber, taskCount: first.payload.taskCount, tasks: first.payload.tasks })) reject("Ordinary-night plan must be a valid single plan fact during night tasks");
+    const taskTypes = first.payload.tasks.map((task) => task.taskType);
+    if (taskTypes.length !== 2 || taskTypes[0] !== "GENERIC_DEMON_KILL" || taskTypes[1] !== "FLOWERGIRL_ACTION") reject("Ordinary-night plan must contain exactly generic Demon kill then Flowergirl");
+    if (first.payload.tasks[0]?.sourceRoleId !== "vortox" || first.payload.tasks[1]?.sourceRoleId !== "flowergirl") reject("Ordinary-night plan sources are not canonical");
+    return;
+  }
+  if (first.eventType === "OrdinaryNightTaskSettled") {
+    if (events.length !== 1 || state.phase !== "NIGHT_TASKS" || first.payload.taskType !== "FLOWERGIRL_ACTION" || first.payload.settlement !== "SOURCE_INELIGIBLE" || first.payload.targetPlayerId !== null) reject("Source-ineligible settlement must be a single Flowergirl terminal fact");
+    const task = state.ordinaryNightTaskPlan?.tasks.find((candidate) => candidate.taskId === first.payload.taskId);
+    if (task === undefined || task.taskType !== "FLOWERGIRL_ACTION" || task.sourcePlayerId !== first.payload.sourcePlayerId) reject("Source-ineligible settlement must reference the planned Flowergirl task");
+    const sourceDeath = (state.deaths ?? []).find((death) => death.playerId === first.payload.sourcePlayerId);
+    if (sourceDeath === undefined || first.payload.causalDeathEventId !== deathEventIdFor(sourceDeath)) reject("Source-ineligible settlement must reference an accepted source death");
+    return;
+  }
+  if (first.eventType === "OrdinaryNightTargetDerived") {
+    if ((events.length !== 2 && events.length !== 3) || events.at(-1)?.eventType !== "OrdinaryNightTaskSettled" || state.phase !== "NIGHT_TASKS") reject("Ordinary-night target must be paired with settlement");
+    const deathCandidate = events.length === 3
+      ? events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PlayerDied" }>
+      : undefined;
+    if (deathCandidate !== undefined && deathCandidate.eventType !== "PlayerDied") reject("Ordinary-night death must be a PlayerDied event");
+    const settlement = events.at(-1);
+    if (settlement?.eventType !== "OrdinaryNightTaskSettled" || settlement.payload.taskId !== first.payload.taskId || settlement.payload.targetPlayerId !== first.payload.targetPlayerId || settlement.payload.taskType !== first.payload.taskType || settlement.payload.settlement !== "RESOLVED" || settlement.payload.sourcePlayerId !== first.payload.sourcePlayerId || settlement.payload.causalDeathEventId !== null) reject("Ordinary-night target and settlement must agree");
+    const task = state.ordinaryNightTaskPlan?.tasks.find((candidate) => candidate.taskId === first.payload.taskId);
+    if (task === undefined || task.taskType !== first.payload.taskType || task.sourcePlayerId !== first.payload.sourcePlayerId || task.taskType !== "GENERIC_DEMON_KILL" || task.sourceRoleId !== "vortox") reject("Ordinary-night target must reference the canonical generic Demon task");
+    if (new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).has(task!.sourcePlayerId)) reject("Ordinary-night generic Demon source is ineligible");
+    const expectedTarget = (() => {
+      try {
+        return deriveOrdinaryNightTarget(task!, state);
+      } catch {
+        return reject("Ordinary-night target candidate set is not derivable from accepted state");
+      }
+    })();
+    if (first.payload.targetPlayerId !== expectedTarget.targetPlayerId || first.payload.candidateSet.length !== expectedTarget.candidateSet.length || first.payload.candidateSet.some((playerId, index) => playerId !== expectedTarget.candidateSet[index]) || first.payload.selectionIndex !== expectedTarget.selectionIndex || first.payload.seed !== expectedTarget.seed || first.payload.transferOutcome !== "NONE") reject("Ordinary-night target provenance is invalid");
+    if (first.payload.taskType === "GENERIC_DEMON_KILL" && (deathCandidate === undefined || deathCandidate.payload.playerId !== first.payload.targetPlayerId)) reject("Generic demon kill must include PlayerDied");
+    if (deathCandidate !== undefined && (deathCandidate.payload.cause !== "GENERIC_DEMON_KILL" || deathCandidate.payload.deathId !== `death-v1:ordinary:${first.payload.taskId}` || deathCandidate.payload.playerId !== first.payload.targetPlayerId || deathCandidate.payload.sourcePlayerId !== first.payload.sourcePlayerId || deathCandidate.payload.sourceRoleId !== "vortox" || deathCandidate.payload.causeEventType !== "OrdinaryNightTargetDerived" || deathCandidate.payload.causeEventId !== first.eventId || deathCandidate.payload.phase !== "NIGHT_TASKS")) reject("Ordinary-night death must match the derived target");
+    return;
+  }
+  reject("Unsupported basic phase-flow event batch");
+};
 
 const reject = (message: string): never => {
   throw new DomainError("InvalidDomainBatchSemantics", message);
@@ -1512,7 +1677,10 @@ export const validateDomainBatchSemantics = (
   const phaseTransitions = batchEvents.filter(
     (event): event is DomainEventEnvelope<"PhaseTransitioned"> => event.eventType === "PhaseTransitioned"
   );
-  const unintegratedTransition = phaseTransitions.find((event) => !isIntegratedTransitionReason(event.payload.transitionReason));
+  const unintegratedTransition = phaseTransitions.find((event) =>
+    !isIntegratedTransitionReason(event.payload.transitionReason) &&
+    !BASIC_PHASE_FLOW_TRANSITION_REASONS.includes(event.payload.transitionReason as typeof BASIC_PHASE_FLOW_TRANSITION_REASONS[number])
+  );
   if (unintegratedTransition !== undefined) {
     throw new DomainError(
       "PhaseTransitionNotIntegrated",
@@ -1537,6 +1705,12 @@ export const validateDomainBatchSemantics = (
 
   if (first.eventType === "FirstNightTaskPlanCreated") {
     validateFirstNightTaskPlanCreatedBatch(currentState, batchEvents);
+    return;
+  }
+
+  if (first.eventType === "PhaseTransitioned" && ["FIRST_NIGHT_COMPLETED", "DAWN_COMPLETED", "NOMINATION_OPENED", "VOTE_OPENED", "VOTE_COMPLETED", "NOMINATIONS_CLOSED", "EXECUTION_RESOLVED", "NIGHT_TASKS_COMPLETED"].includes(first.payload.transitionReason) ||
+      first.eventType === "NominationDeclared" || first.eventType === "VoteCast" || first.eventType === "BlockStateUpdated" || first.eventType === "ExecutionDeclared" || first.eventType === "PlayerDied" || first.eventType === "ExecutionResolved" || first.eventType === "DayClosedWithoutExecution" || first.eventType === "OrdinaryNightTaskPlanCreated" || first.eventType === "OrdinaryNightTargetDerived" || first.eventType === "OrdinaryNightTaskSettled") {
+    validateBasicPhaseFlowBatch(currentState, batchEvents);
     return;
   }
 

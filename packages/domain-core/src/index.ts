@@ -21,7 +21,13 @@ export type {
   CaptureCanonicalRuntimeValueResult,
   SerializeCanonicalRuntimeValueResult
 } from "./canonical-runtime-value.js";
-export { validateDomainEventStructure } from "./domain-event-structural-validator.js";
+export {
+  validateDomainEventStructure,
+  validateDomainEventStructureWithAuthority,
+  validateTwoCDomainEventStructure,
+  admitC1Authority,
+  admitTwoCAuthority
+} from "./domain-event-structural-validator.js";
 export type {
   DomainEventPayloadBranchId,
   DomainEventPayloadSchemaIdentity,
@@ -100,3 +106,5 @@ export * from "./setup-types.js";
 export * from "./seamstress.js";
 export * from "./snake-charmer.js";
 export * from "./witch.js";
+export * from "./ordinary-night.js";
+export * from "./phase-3-slice-2c-structural-descriptors.js";

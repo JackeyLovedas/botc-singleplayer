@@ -1911,6 +1911,17 @@ const invalidPayloadCodeForEvent = (eventType: AnyDomainEventEnvelope["eventType
       return "InvalidScheduledTaskSettledPayload";
     case "PhaseTransitioned":
       return "InvalidPhaseTransition";
+    case "NominationDeclared":
+    case "VoteCast":
+    case "BlockStateUpdated":
+    case "ExecutionDeclared":
+    case "PlayerDied":
+    case "ExecutionResolved":
+    case "DayClosedWithoutExecution":
+    case "OrdinaryNightTaskPlanCreated":
+    case "OrdinaryNightTargetDerived":
+    case "OrdinaryNightTaskSettled":
+      return "InvalidDomainBatchSemantics";
     default:
       return assertNever(eventType);
   }
@@ -2934,6 +2945,23 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
         throw new DomainError("MissingTransitionPrerequisite", "CHARACTERS_ASSIGNED transition requires character assignment fact");
       }
 
+      if (
+        event.payload.transitionReason === "FIRST_NIGHT_COMPLETED" &&
+        event.payload.fromPhase === "FIRST_NIGHT" &&
+        event.payload.toPhase === "DAWN_RESOLUTION"
+      ) {
+        const plan = state.firstNightTaskPlan;
+        const progress = state.firstNightTaskProgress;
+        if (plan === undefined || progress === undefined ||
+            !validateFirstNightTaskProgress(plan, progress).valid ||
+            getNextUnsettledFirstNightTask(plan, progress) !== undefined) {
+          throw new DomainError(
+            "MissingTransitionPrerequisite",
+            "FIRST_NIGHT_COMPLETED transition requires a valid, fully settled first-night task plan"
+          );
+        }
+      }
+
       const transition = evaluatePhaseTransition({
         fromPhase: event.payload.fromPhase,
         toPhase: event.payload.toPhase,
@@ -2962,6 +2990,67 @@ const applyDomainEventWithoutOutcomeLedger = (state: GameState | undefined, even
         nightNumber: event.payload.nightNumberAfter
       };
     }
+
+    case "NominationDeclared":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "NominationDeclared requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Nomination rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, nominations: [...(state.nominations ?? []), event.payload] };
+    case "VoteCast":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "VoteCast requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Vote rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, votes: [...(state.votes ?? []), event.payload] };
+    case "BlockStateUpdated":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "BlockStateUpdated requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Block rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, blocks: [...(state.blocks ?? []), event.payload] };
+    case "ExecutionDeclared":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "ExecutionDeclared requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Execution rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, executions: [...(state.executions ?? []), event.payload] };
+    case "PlayerDied": {
+      if (state === undefined) throw new DomainError("MissingGameCreated", "PlayerDied requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Death rules baseline must match state");
+      if ((state.deadPlayerIds ?? []).includes(event.payload.playerId) || (state.deaths ?? []).some((death) => death.deathId === event.payload.deathId)) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied cannot be applied twice");
+      const rosterEntry = state.roster?.entries.find((entry) => entry.playerId === event.payload.playerId);
+      if (rosterEntry === undefined) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied target must be a roster member");
+      if (event.payload.deadSeatNumber !== rosterEntry.seatNumber) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied seat must match the roster");
+      if (event.payload.phase === "EXECUTION_RESOLUTION" && (event.payload.cause !== "EXECUTION" || event.payload.executionId === null || event.payload.causeEventType !== "ExecutionResolved" || event.payload.sourcePlayerId !== null || event.payload.sourceRoleId !== null)) throw new DomainError("InvalidDomainBatchSemantics", "Execution death provenance is invalid");
+      if (event.payload.phase === "NIGHT_TASKS" && (event.payload.cause !== "GENERIC_DEMON_KILL" || event.payload.executionId !== null || event.payload.causeEventType !== "OrdinaryNightTargetDerived" || event.payload.sourcePlayerId === null || event.payload.sourceRoleId !== "vortox")) throw new DomainError("InvalidDomainBatchSemantics", "Generic death provenance is invalid");
+      if (event.payload.phase === "EXECUTION_RESOLUTION" && event.payload.deathId !== `death-v1:${event.payload.executionId}`) throw new DomainError("InvalidDomainBatchSemantics", "Execution death ID is not canonical");
+      if (event.payload.dayNumber !== state.dayNumber || event.payload.nightNumber !== state.nightNumber || event.payload.characterStateRevision !== (state.currentCharacterState?.revision ?? 0)) throw new DomainError("InvalidDomainBatchSemantics", "PlayerDied state revision or phase counters are stale");
+      return {
+        ...state,
+        gameVersion: event.gameVersion,
+        lastEventSequence: event.eventSequence,
+        deaths: [...(state.deaths ?? []), event.payload],
+        deadPlayerIds: [...(state.deadPlayerIds ?? []), event.payload.playerId],
+        deathEventIds: [...(state.deathEventIds ?? []), { deathId: event.payload.deathId, eventId: event.eventId }]
+      };
+    }
+    case "ExecutionResolved":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "ExecutionResolved requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Execution resolution rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence };
+    case "DayClosedWithoutExecution":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "DayClosedWithoutExecution requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Day close rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence };
+    case "OrdinaryNightTaskPlanCreated":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "OrdinaryNightTaskPlanCreated requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Ordinary-night plan rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, ordinaryNightTaskPlan: event.payload, ordinaryNightTaskProgress: { settlements: [] } };
+    case "OrdinaryNightTargetDerived":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "OrdinaryNightTargetDerived requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Ordinary-night target rules baseline must match state");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, ordinaryNightTargets: [...(state.ordinaryNightTargets ?? []), event.payload] };
+    case "OrdinaryNightTaskSettled":
+      if (state === undefined) throw new DomainError("MissingGameCreated", "OrdinaryNightTaskSettled requires an existing game");
+      if (event.payload.rulesBaselineVersion !== state.rulesBaselineVersion) throw new DomainError("EventRulesBaselineMismatch", "Ordinary-night settlement rules baseline must match state");
+      if (state.ordinaryNightTaskPlan === undefined || !state.ordinaryNightTaskPlan.tasks.some((task) => task.taskId === event.payload.taskId && task.taskType === event.payload.taskType && task.sourcePlayerId === event.payload.sourcePlayerId)) throw new DomainError("InvalidDomainBatchSemantics", "Ordinary-night settlement must reference the current plan");
+      if ((state.ordinaryNightTaskProgress?.settlements ?? []).includes(event.payload.taskId)) throw new DomainError("InvalidDomainBatchSemantics", "Ordinary-night settlement is duplicated");
+      if (event.payload.settlement === "SOURCE_INELIGIBLE" && (event.payload.taskType !== "FLOWERGIRL_ACTION" || event.payload.targetPlayerId !== null || event.payload.causalDeathEventId === null)) throw new DomainError("InvalidDomainBatchSemantics", "Source-ineligible settlement provenance is invalid");
+      if (event.payload.settlement === "RESOLVED" && (event.payload.taskType !== "GENERIC_DEMON_KILL" || event.payload.targetPlayerId === null || event.payload.causalDeathEventId !== null)) throw new DomainError("InvalidDomainBatchSemantics", "Resolved ordinary-night settlement provenance is invalid");
+      return { ...state, gameVersion: event.gameVersion, lastEventSequence: event.eventSequence, ordinaryNightTaskProgress: { settlements: [...(state.ordinaryNightTaskProgress?.settlements ?? []), event.payload.taskId] } };
 
     default:
       return assertNever(event);

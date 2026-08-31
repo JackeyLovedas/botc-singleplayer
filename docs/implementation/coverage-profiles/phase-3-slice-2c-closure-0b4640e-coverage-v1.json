@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "botc-coverage-profile-artifact-v2",
+  "profileId": "phase-3-slice-2c-closure-0b4640e-coverage-v1",
+  "sourceHead": "0b4640e2d9df651626e0abfab496227d83c797a5",
+  "sourceCount": 72,
+  "testIdentityCount": 1725,
+  "inventorySha256": "b6295836ff9c931e720600bde1a9daa03f8f050bcdd928e5a85d18a6d72b47d1",
+  "tupleSha256": "fedd02b51f077e6e83dd6070add1bbed8a27f1233451044c2ab4d56d6595640d",
+  "logicalGroupCount": 11,
+  "physicalGroupCount": 12,
+  "profileSha256": "b7e757ceb17672c81911a80d2ce198c21f72136cf6122134ca9f94cbc7724fd4",
+  "topology": {
+    "topologyId": "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS",
+    "ordinaryLogicalGroupCount": 9,
+    "ordinaryPhysicalGroupCount": 11,
+    "coverageLogicalGroupCount": 11,
+    "coveragePhysicalGroupCount": 12,
+    "coverageGroups": [
+      {
+        "id": "domain-core-rebuild",
+        "tests": 207
+      },
+      {
+        "id": "domain-core-rest",
+        "tests": 515
+      },
+      {
+        "id": "application",
+        "tests": 465
+      },
+      {
+        "id": "application-service-core",
+        "tests": 91
+      },
+      {
+        "id": "application-service-role-actions",
+        "tests": 52
+      },
+      {
+        "id": "application-service-information-and-later-actions-base",
+        "tests": 73
+      },
+      {
+        "id": "application-service-information-and-later-actions-a3b2",
+        "tests": 9
+      },
+      {
+        "id": "application-service-compatibility-and-failure-boundaries",
+        "tests": 26
+      },
+      {
+        "id": "application-service-dreamer-vortox-core",
+        "tests": 36,
+        "physicalSegments": [
+          {
+            "id": "legacy",
+            "tests": 14
+          },
+          {
+            "id": "2b20a",
+            "tests": 22
+          }
+        ]
+      },
+      {
+        "id": "application-service-dreamer-vortox-gained",
+        "tests": 10
+      },
+      {
+        "id": "engines-and-projections",
+        "tests": 241
+      }
+    ],
+    "coverageGlobalManifestSha256": "ff53f16c8b2194f584d2b555e7524276659afeee36fef764b47992331a3ad118",
+    "coverageFinalSha256": "a96efc189ba6571367242a6add6b24be668575e5d67f5fe6a784360a42cc23b9",
+    "normalizedTupleSetsSha256": "fedd02b51f077e6e83dd6070add1bbed8a27f1233451044c2ab4d56d6595640d",
+    "fullTupleDeltaSha256": "bb9f52a319d5041b16f8094540b47f6f98475ad19dda65d97be15e06714040e8",
+    "baselineVersion": "CANDIDATE_1712_D1_V1"
+  },
+  "obligations": {
+    "sourceFiles": {
+      "count": 72,
+      "sha256": "49747524abf0192dcdc15e16e1dc68e990fde1da519e5bc6e3b62cb3f7ba634a"
+    },
+    "zeroHitStatements": {
+      "count": 3800,
+      "sha256": "299791de999910cc2bcc363137144b457b5888bd5e0e8d633fdaa244cb5c1da4"
+    },
+    "zeroHitFunctions": {
+      "count": 27,
+      "sha256": "5c37cd2bce002e5f9fffacff8edd18acff9b24f5d31f0c2a20972605e4437ec7"
+    },
+    "zeroHitLines": {
+      "count": 3800,
+      "sha256": "85605c0c5f21a0a2d80943c4232b07665d254c0b6988ce0af948b943f997565c"
+    },
+    "zeroHitBranchArms": {
+      "count": 2359,
+      "sha256": "2ae42608bdc1b12e37d7f3c8c8bc6d97b6bbcb5c5b1fa3f246c25781d64b3425"
+    }
+  }
+}

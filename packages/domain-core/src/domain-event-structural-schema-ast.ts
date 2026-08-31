@@ -1,6 +1,7 @@
 import type { DomainEventPayloadByType, DomainEventType } from "./events.js";
 import type { FirstNightAbilityInstanceProvenance } from "./first-night-ability-outcome-ledger.js";
 export const DOMAIN_EVENT_STRUCTURAL_SCHEMA_AST_VERSION = "botc-domain-event-structural-schema-ast-v1" as const;
+export type StructuralDomainEventTypeV1 = DomainEventType;
 export const DOMAIN_EVENT_STRUCTURAL_REFINEMENT_VERSION = "botc-domain-event-structural-refinement-v1" as const;
 export const DOMAIN_EVENT_STRUCTURAL_UNIQUE_NODE_TRAVERSAL_VERSION = "botc-domain-event-structural-unique-node-traversal-v1" as const;
 export const DOMAIN_EVENT_STRUCTURAL_NORMALIZATION_VERSION = "botc-domain-event-structural-normalization-v1" as const;
@@ -1378,14 +1379,15 @@ type ExactRuntimeShape<TLeft, TRight> = [TLeft] extends [TRight]
     : false
   : false;
 type FullC1Root = (typeof FULL_C1_SCHEMA_ROOT_DECLARATIONS)[number];
-type FullC1RootForEvent<TEventType extends DomainEventType> = Extract<
+type FullC1EventType = FullC1Root["eventType"];
+type FullC1RootForEvent<TEventType extends FullC1EventType> = Extract<
   FullC1Root,
   { readonly eventType: TEventType }
 >;
-type FullC1InferredPayloadForEvent<TEventType extends DomainEventType> =
+type FullC1InferredPayloadForEvent<TEventType extends FullC1EventType> =
   InferFullC1StructuralNode<FullC1RootForEvent<TEventType>["rootNodeId"]>;
 export type FullC1EventExactnessProofs = {
-  readonly [TEventType in DomainEventType]: ExactRuntimeShape<
+  readonly [TEventType in FullC1EventType]: ExactRuntimeShape<
     FullC1InferredPayloadForEvent<TEventType>,
     RuntimeShape<DomainEventPayloadByType[TEventType]>
   >;
