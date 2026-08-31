@@ -173,8 +173,15 @@ const validateBasicPhaseFlowBatch = (
     const nomination = (state.nominations ?? []).find((candidate) => candidate.nominationId === first.payload.nominationId);
     if (nomination === undefined) reject("Block state must reference an existing nomination");
     if (nomination !== state.nominations?.at(-1)) reject("Block state must close the active nomination");
+    const currentDayNominationIds = new Set((state.nominations ?? [])
+      .filter((nomination) => nomination.dayNumber === state.dayNumber)
+      .map((nomination) => nomination.nominationId));
     const yesVotesByNomination = new Map<string, number>();
-    for (const vote of state.votes ?? []) if (vote.choice === "YES") yesVotesByNomination.set(vote.nominationId, (yesVotesByNomination.get(vote.nominationId) ?? 0) + 1);
+    for (const vote of state.votes ?? []) {
+      if (currentDayNominationIds.has(vote.nominationId) && vote.choice === "YES") {
+        yesVotesByNomination.set(vote.nominationId, (yesVotesByNomination.get(vote.nominationId) ?? 0) + 1);
+      }
+    }
     const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).size);
     const threshold = Math.ceil(livingPlayerCount / 2);
     const leaderVoteCount = Math.max(0, ...yesVotesByNomination.values());

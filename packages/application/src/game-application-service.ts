@@ -2424,7 +2424,8 @@ export class GameApplicationService {
           case "DeclareNomination":
             return state.phase === "NOMINATION_WINDOW" && actorPlayerId !== undefined && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "DeclareNomination requires a roster player during nomination" };
           case "OpenVote":
-            return state.phase === "NOMINATION_WINDOW" && state.nominations?.at(-1)?.nominationId === (command.payload as { readonly nominationId: string }).nominationId ? undefined : { code: "CommandNotAllowedInPhase", message: "OpenVote requires the current nomination" };
+            return state.phase === "NOMINATION_WINDOW" && state.nominations?.at(-1)?.nominationId === (command.payload as { readonly nominationId: string }).nominationId &&
+              !(state.blocks ?? []).some((block) => block.nominationId === (command.payload as { readonly nominationId: string }).nominationId) ? undefined : { code: "CommandNotAllowedInPhase", message: "OpenVote requires the current uncompleted nomination" };
           case "CastVote":
             return state.phase === "VOTING" && actorPlayerId !== undefined && state.nominations?.at(-1)?.nominationId === (command.payload as { readonly nominationId: string }).nominationId && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "CastVote requires the current nomination and a roster player during voting" };
           case "CompleteVote":
@@ -2437,6 +2438,10 @@ export class GameApplicationService {
             if (latestNominationForClose !== undefined && latestNominationForClose.dayNumber === state.dayNumber &&
                 !(state.blocks ?? []).some((block) => block.nominationId === latestNominationForClose.nominationId)) {
               return { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current vote to be completed" };
+            }
+            if (latestNominationForClose === undefined || latestNominationForClose.dayNumber !== state.dayNumber ||
+                !(state.blocks ?? []).some((block) => block.nominationId === latestNominationForClose.nominationId && block.dayNumber === state.dayNumber)) {
+              return { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current completed vote block" };
             }
             return undefined;
           }
@@ -4292,7 +4297,11 @@ export class GameApplicationService {
         if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "CompleteVote requires state");
         const nominationId = command.payload.nominationId;
         const yesVotesByNomination = new Map<string, number>();
+        const currentDayNominationIds = new Set((state.nominations ?? [])
+          .filter((nomination) => nomination.dayNumber === state.dayNumber)
+          .map((nomination) => nomination.nominationId));
         for (const vote of state.votes ?? []) {
+          if (!currentDayNominationIds.has(vote.nominationId)) continue;
           if (vote.choice === "YES") yesVotesByNomination.set(vote.nominationId, (yesVotesByNomination.get(vote.nominationId) ?? 0) + 1);
         }
         const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).size);
