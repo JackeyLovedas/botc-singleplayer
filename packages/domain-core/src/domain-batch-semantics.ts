@@ -190,7 +190,7 @@ const validateBasicPhaseFlowBatch = (
     const transition = events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
     const block = state.blocks?.at(-1);
     if (first.payload.blockId !== null && first.payload.blockId !== `block-v1:${state.dayNumber}:${state.blocks?.length ?? 0}`) reject("Day close block identity is not canonical");
-    if (block !== undefined && (block.dayNumber !== state.dayNumber || block.nominationId !== state.nominations?.at(-1)?.nominationId)) reject("Day close must reference the current vote block");
+    if (block === undefined || block.dayNumber !== state.dayNumber || block.nominationId !== state.nominations?.at(-1)?.nominationId) reject("Day close must reference the current vote block");
     if (block?.leaderNominationId !== null && block?.leaderNominationId !== undefined && !block.tied && block.leaderVoteCount > 0) reject("Day close cannot bypass an executable block");
     if (transition.payload.toPhase !== "NIGHT_TASKS" || transition.payload.transitionReason !== "EXECUTION_RESOLVED") reject("Day close must transition to night tasks");
     return;

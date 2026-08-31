@@ -2424,13 +2424,22 @@ export class GameApplicationService {
           case "DeclareNomination":
             return state.phase === "NOMINATION_WINDOW" && actorPlayerId !== undefined && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "DeclareNomination requires a roster player during nomination" };
           case "OpenVote":
-            return state.phase === "NOMINATION_WINDOW" && (state.nominations ?? []).some((entry) => entry.nominationId === (command.payload as { readonly nominationId: string }).nominationId) ? undefined : { code: "CommandNotAllowedInPhase", message: "OpenVote requires an existing nomination" };
+            return state.phase === "NOMINATION_WINDOW" && state.nominations?.at(-1)?.nominationId === (command.payload as { readonly nominationId: string }).nominationId ? undefined : { code: "CommandNotAllowedInPhase", message: "OpenVote requires the current nomination" };
           case "CastVote":
-            return state.phase === "VOTING" && actorPlayerId !== undefined && (state.nominations ?? []).some((entry) => entry.nominationId === (command.payload as { readonly nominationId: string }).nominationId) && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "CastVote requires a roster player during voting" };
+            return state.phase === "VOTING" && actorPlayerId !== undefined && state.nominations?.at(-1)?.nominationId === (command.payload as { readonly nominationId: string }).nominationId && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "CastVote requires the current nomination and a roster player during voting" };
           case "CompleteVote":
-            return state.phase === "VOTING" && (state.nominations ?? []).some((entry) => entry.nominationId === (command.payload as { readonly nominationId: string }).nominationId) ? undefined : { code: "CommandNotAllowedInPhase", message: "CompleteVote requires an existing nomination during voting" };
-          case "CloseNominations":
-            return state.phase === "NOMINATION_WINDOW" && command.payload.dayNumber === state.dayNumber ? undefined : { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current nomination window" };
+            return state.phase === "VOTING" && state.nominations?.at(-1)?.nominationId === (command.payload as { readonly nominationId: string }).nominationId ? undefined : { code: "CommandNotAllowedInPhase", message: "CompleteVote requires the current nomination during voting" };
+          case "CloseNominations": {
+            if (state.phase !== "NOMINATION_WINDOW" || command.payload.dayNumber !== state.dayNumber) {
+              return { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current nomination window" };
+            }
+            const latestNominationForClose = state.nominations?.at(-1);
+            if (latestNominationForClose !== undefined && latestNominationForClose.dayNumber === state.dayNumber &&
+                !(state.blocks ?? []).some((block) => block.nominationId === latestNominationForClose.nominationId)) {
+              return { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current vote to be completed" };
+            }
+            return undefined;
+          }
           case "ResolveExecution": {
             if (state.phase !== "EXECUTION_RESOLUTION") {
               return { code: "CommandNotAllowedInPhase", message: "ResolveExecution requires execution resolution" };
