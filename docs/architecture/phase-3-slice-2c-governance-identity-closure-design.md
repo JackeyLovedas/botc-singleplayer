@@ -31,6 +31,26 @@ The design is not implementation evidence. No production, test, event
 definition, semantic validator, workflow, routing, coverage, Hosted CI, push,
 PR, or future implementation SHA is recorded here.
 
+## Correction 2/3 boundary clarifications
+
+The canonical `NominationDeclared` identity remains singular and unchanged.
+Its command contract has two independent daily guards: `nominatorPlayerId` may
+nominate at most once per day, and `nomineePlayerId` may be nominated at most
+once per day. Both guards are evaluated against the accepted day history before
+the command can append `NominationDeclared`; neither guard creates a second
+event identity or changes the existing event payload identity. A retry of the
+same accepted command is governed by the existing command idempotency contract,
+not by a second nomination fact.
+
+The authorized applicability correction for the bounded fixture is recorded in
+`docs/rules/evidence/2C-closure-supersession.md`. It supersedes only the prior
+preemption design's applicability for `PitHagActionResolved` and
+`NominationProposed`; the historical evidence and design files remain
+immutable. The active fixture uses daytime `Pit-Hag` execution,
+`PlayerDied(cause=DAYTIME_EXECUTION)` to suppress the Pit-Hag task before
+`NIGHT_TASKS`, and the canonical `NominationDeclared` event. This is an
+applicability closure, not a new rule, event, or proof layer.
+
 ## Repository census used by this design
 
 The census was read from the isolated branch at `7faae20ff2c23bc90705d9dece93cd72d98afcbf`.
