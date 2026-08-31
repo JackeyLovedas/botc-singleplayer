@@ -2,10 +2,10 @@
 
 ## Binding
 
-- `implementationHead`: `ec8b8107363ef660d202040da50b1284b8ecbc6f`
+- `implementationHead`: `PENDING_FINAL_REVIEW`
 - `designContract`: `docs/architecture/phase-3-slice-3-command-validation-design-contract-closure.md`
 - `ruleEvidence`: `docs/rules/evidence/phase-3-slice-3-command-validation.md`
-- `implementationCorrectionCount`: `2/3`
+- `implementationCorrectionCount`: `3/3`
 - `productionFilesChanged`: `2`
 - `testFilesChanged`: `1`
 - `newCommands`: `0`
@@ -60,10 +60,14 @@ tests, not the new acceptance identities and not mutated fixtures.
 - `rejectedCommandAuditRepresentation`: `RECEIPT_ONLY`.
 - `ruleEvidenceChanged`: `false`; dead nomination, dead nominee, ghost-vote, execution/death, actor/phase, C/C1, coverage, ownership, routing, and 2B18 contracts are unchanged.
 - `workflowChanged`: `false`; Hosted CI was not run by the implementer.
+- `logicalVerifierCountAlignment`: current ordinary and coverage totals are
+  `1733`; the `application-service-core` group is `96` (previously `91`). The
+  immutable D1.5 baseline counts remain unchanged.
 
-The implementation has passed a fresh independent code/rule review on the
-exact committed implementation HEAD above. Local ordinary tests, typecheck,
-lint, and Slice 3 focused coverage passed; the earlier full-coverage run had
-all tests pass but ended non-zero on a Vitest worker `onTaskUpdate` timeout and
-is recorded as such rather than treated as a green full gate. Hosted CI remains
-a publication gate. No Phase 4 start is implied by this artifact.
+The preceding implementation review covered the prior implementation HEAD;
+this verifier-count-only repair requires a fresh independent review. Local
+Slice 3 tests, typecheck, lint, and the logical-group verifier self-test pass.
+The earlier exact-head hosted run had all application-service-core tests pass
+but failed stale aggregate-count validation and coverage singleton merge; those
+results remain failures rather than being relabeled as a green gate. No Phase 4
+start is implied by this artifact.
