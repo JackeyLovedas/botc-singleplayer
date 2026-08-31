@@ -1,5 +1,24 @@
 # Project State
 
+## Current state — Phase 3 formally accepted and closed out
+
+- Active state: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`.
+- Phase 3 high-level acceptance is met by accepted Slice 2C. Phase 4 setup and
+  assignment requirements are already substantially satisfied by accepted
+  2B1/2B2 slices; the original roadmap wording is retained as history and
+  reconciled without renumbering.
+- Slice 3 is
+  `VALID_ARCHITECTURE_CANDIDATE_NOT_AUTHORIZED` and has not started. 2B18 is
+  `HUMAN_BLOCKED_UNCHANGED` and remains frozen.
+- `currentSlice=null`, `currentBranch=main`, `currentPR=null`,
+  `nextSliceStarted=false`, `remainingBlockers=[]`.
+- Top-priority project files `02_当前状态.md`, `01_决策日志.md`, and
+  `00_项目主档.md` were unavailable in the accessible workspace; this state
+  remains subject to correction if they reappear with conflicting authority.
+- Required next action: `AWAIT_USER_SELECTION_OF_NEXT_STAGE`.
+- Closeout artifact:
+  `docs/implementation/phase-3-formal-closeout-and-roadmap-reconciliation.md`.
+
 ## Current state — Phase 3 Slice 2C accepted and closed out
 
 - Active state: `ACCEPTED_AND_CLOSED_OUT`.

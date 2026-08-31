@@ -1,5 +1,25 @@
 # Current Task
 
+## Phase 3 — formally accepted and closed out
+
+- Status: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`.
+- Phase 3 high-level acceptance is met by the accepted Slice 2C flow. The
+  original Phase 4 setup/assignment requirements are already substantially
+  satisfied by accepted 2B1/2B2 vertical slices and are being reconciled, not
+  renumbered or reimplemented.
+- Slice 3 remains
+  `VALID_ARCHITECTURE_CANDIDATE_NOT_AUTHORIZED`; it is neither completed nor
+  started. 2B18 remains `HUMAN_BLOCKED_UNCHANGED`.
+- Top-priority project files `02_当前状态.md`, `01_决策日志.md`, and
+  `00_项目主档.md` were unavailable in the accessible workspace. Conclusions
+  are reconciled against repository operative authorities and remain subject
+  to correction if those files reappear with a conflicting decision.
+- `currentSlice=null`, `currentBranch=main`, `currentPR=null`,
+  `nextSliceStarted=false`, and `remainingBlockers=[]`.
+- Required next action: `AWAIT_USER_SELECTION_OF_NEXT_STAGE`.
+- Closeout artifact:
+  `docs/implementation/phase-3-formal-closeout-and-roadmap-reconciliation.md`.
+
 ## Phase 3 Slice 2C — accepted and closed out
 
 - Status: `ACCEPTED_AND_CLOSED_OUT`.

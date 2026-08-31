@@ -17,3 +17,15 @@ Phase 2 只做架构设计，不直接开发完整功能。
 | Phase 12 | UI、存档和回放 | 领域事件和视图模型 | 本地 UI、存档、回放、真相复盘 | 存档不泄露玩家视图 | Windows 打包 | 23; ARCHITECTURE_INPUT | 存档/回放测试 |
 | Phase 13 | 大规模模拟与规则审计 | 完整规则引擎 | 模拟报告、规则缺陷清单 | 关键路径无回归 | 新增剧本 | 25; 31 | 模拟回归测试 |
 | Phase 14 | Windows 打包 | 已验收应用 | Windows 本地安装包 | 安装、启动、存档路径通过 | 新功能开发 | PRODUCT_SCOPE | 安装包烟测 |
+
+## Reconciliation note — 2026-08-31
+
+- Phase 3 is `FORMALLY_ACCEPTED` on the basis of the accepted Slice 2C
+  vertical flow and its existing review/CI evidence.
+- Phase 4 is
+  `ALREADY_SUBSTANTIALLY_SATISFIED_BY_PHASE_3_VERTICAL_SLICES` for legal
+  setup, fixed-seed reproducibility, roster, and assignment. The original row
+  remains historical roadmap context; later accepted vertical slices
+  superseded its chronological execution order. No phase is renumbered.
+- Slice 3 remains a future architecture candidate pending explicit user
+  selection and fresh rule/design gates.
