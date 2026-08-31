@@ -3846,7 +3846,7 @@
   "historicalSlice2B18ARuleReady": true,
   "historicalSlice2B18ARuleDesignPass": false,
   "historicalSlice2B18AImplementationAuthorized": true,
-  "implementationStatus": "IMPLEMENTATION_IN_PROGRESS",
+  "historicalImplementationStatus": "IMPLEMENTATION_IN_PROGRESS",
   "localImplementationReviewVerdict": "INFRASTRUCTURE_IMPLEMENTATION_REVIEW_PASS",
   "localImplementationReviewedHead": "5b371308074e03c24f6e2a6688b64b4b8268bad3",
   "localImplementationReviewFindings": [],
@@ -4288,7 +4288,7 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": [
+  "historicalRemainingBlockers": [
     "PENDING_EXACT_HEAD_PR_AND_HOSTED_CI",
     "FINAL_CODE_AND_RULE_REVIEW_PENDING"
   ],
