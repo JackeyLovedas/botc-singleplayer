@@ -10,9 +10,9 @@ parentDesignHead=7faae20ff2c23bc90705d9dece93cd72d98afcbf
 parentDesignCorrectionCount=2/2
 parentDesignDisposition=HISTORICAL_PREEMPTION_DESIGN_EXHAUSTED_PENDING_GOVERNANCE_IDENTITY_CLOSURE
 governanceIdentityResliceDesignCorrectionCount=1/2
-designStatus=READY_FOR_FRESH_INDEPENDENT_DESIGN_REVIEW
-designVerdict=RULE_DESIGN_FIX_REQUIRED
-implementationAuthorized=false
+designStatus=INDEPENDENTLY_REVIEWED
+designVerdict=RULE_DESIGN_PASS
+implementationAuthorized=true
 futureImplementationSHA=NOT_WRITTEN
 ```
 
@@ -500,7 +500,7 @@ canonical identity that cannot be removed; a required Pit-Hag role-lifecycle
 framework; a Dreamer/Cerenovus recurrence; Slice 3 scope; new dependency or
 broad rewrite; or exhausted design/implementation correction budget.
 
-## Design gate and required review
+## Design gate and completed review
 
 Before implementation, a fresh independent reviewer must inspect this exact
 document, the ADR, the descriptor source, the command source, the command/event
@@ -515,11 +515,22 @@ F04_COMMAND_EVENT_MAPPING=CLOSED|OPEN
 designVerdict=RULE_DESIGN_PASS|RULE_DESIGN_FIX_REQUIRED|HUMAN_BLOCKED
 ```
 
-`RULE_DESIGN_PASS` is permitted only when all four statuses are `CLOSED`, the
-accepted prefix is unchanged, provisional rows are collision-free, the
-nomination identity is singular, `PlayerDied` is fully bound, Pit-Hag's
-daytime death suppresses later ability generation, and no new blocker exists.
-Until then:
+`RULE_DESIGN_PASS` was recorded only after all four statuses were `CLOSED`, the
+accepted prefix was unchanged, provisional rows were collision-free, the
+nomination identity was singular, `PlayerDied` was fully bound, Pit-Hag's
+daytime death suppressed later ability generation, and no new blocker existed.
+The completed independent design review is bound as follows:
+
+```text
+reviewedDesignHead=202511719a4871e606bb71ed7dff884894f5021b
+reviewedDesignSHA256=d8af60d895b171ed2c5550173f25a39f5927078fda2a8fc5b303edb6e7d73074
+designReviewer=FRESH_INDEPENDENT_READ_ONLY_REVIEWER
+designVerdict=RULE_DESIGN_PASS
+```
+
+Implementation actual bindings are recorded only in the implementation status
+and coverage profile artifacts; this design does not pre-write an implementation
+SHA. The following remain true at the design boundary:
 
 ```text
 implementationAuthorized=false
@@ -529,6 +540,6 @@ PRCreated=false
 rootUserWorktreeTouched=false
 ```
 
-Required next action after this docs-only commit: run the fresh independent
-design review. Only its complete `RULE_DESIGN_PASS` can authorize the bounded
-implementation cycle.
+The design gate is closed. Subsequent implementation, local evidence, hosted
+evidence, and final review remain separate gates and do not alter this design
+record.
