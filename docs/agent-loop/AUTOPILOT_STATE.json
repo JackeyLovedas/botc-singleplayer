@@ -1,6 +1,6 @@
 {
   "status": "IMPLEMENTATION_IN_PROGRESS",
-  "detailedStatus": "2C_BOUNDED_CLOSURE_PENDING_FINAL_EVIDENCE",
+  "detailedStatus": "2C_BOUNDED_CLOSURE_PENDING_FINAL_REVIEW",
   "disposition": "IN_PROGRESS",
   "canonicalActiveControlInvariant": {
     "schemaVersion": "POST-D3-CLOSEOUT-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
@@ -47,9 +47,11 @@
   "ruleReady": true,
   "ruleDesignPass": true,
   "ruleConflict": false,
-  "ruleCoverageStatus": "PENDING_FINAL_PROFILE_REFRESH",
-  "profileReviewVerdict": "COVERAGE_PROFILE_REVIEW_PASS",
-  "profileReviewedHead": "3cdb60b7de12b010a5b076800f3c8ab705b0108a",
+  "ruleCoverageStatus": "COVERAGE_APPROVED_PROFILE_MATCH",
+  "profileReviewVerdict": "COVERAGE_APPROVED_PROFILE_MATCH",
+  "profileReviewedHead": "e908bb9ea60c0f04d566607bff54e9f18ec26407",
+  "currentCoverageProfileId": "phase-3-slice-2c-closure-e908bb9-coverage-v1",
+  "currentCoverageProfileArtifactSha256": "2b22633baf7ba2b559c6cc7c4afacaad530574c342eda9a6a176f92392f9ebcf",
   "localRestorationReviewVerdict": "ACCEPTED_BEHAVIOR_RESTORATION_REVIEW_PASS",
   "localRestorationReviewedHead": "0326c2cd08eed768d4f6097f11dad671f0271143",
   "localRestorationReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md",
@@ -98,8 +100,8 @@
   "infrastructurePublicationStatus": "MERGED_AND_CLOSED_OUT",
   "productPR": null,
   "productBranch": "phase-3/2c-integrated-basic-phase-flow",
-  "productHead": "3ade506b138d8db475ac316272e866d48e0317da",
-  "productBranchHead": "phase-3/2c-integrated-basic-phase-flow@3ade506b138d8db475ac316272e866d48e0317da",
+  "productHead": "3039266d4932e40b6ce4e7e8423c76039c7a32f0",
+  "productBranchHead": "phase-3/2c-integrated-basic-phase-flow@3039266d4932e40b6ce4e7e8423c76039c7a32f0",
   "currentBranch": "phase-3/2c-integrated-basic-phase-flow",
   "currentSlice": "2C",
   "local2B20AP1Status": "HISTORICAL_2B20A_CONTROL_RECORD",
@@ -3311,9 +3313,9 @@
   },
   "implementationStatus": "IMPLEMENTATION_IN_PROGRESS",
   "implementationBranch": "phase-3/2c-integrated-basic-phase-flow",
-  "implementationCommit": "3ade506b138d8db475ac316272e866d48e0317da",
+  "implementationCommit": "3039266d4932e40b6ce4e7e8423c76039c7a32f0",
   "remainingBlockers": [
-    "FINAL_FIXTURE_EVIDENCE_AND_PROFILE_REFRESH_PENDING"
+    "FINAL_CODE_AND_RULE_REVIEW_PENDING"
   ],
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -3324,12 +3326,12 @@
   "candidateScope": "BOUNDED_IMPLEMENTATION_CLOSURE",
   "designStarted": true,
   "currentDesignPath": "docs/architecture/phase-3-slice-2c-governance-identity-closure-design.md",
-  "currentDesignHash": "2a65d26d0f4470a0473481f0676f08e32769b8c3d5076f407f4f464906cee092",
+  "currentDesignHash": "3721262b79183b4b0db44a812c16bdc09662578ac71ea173de45d88a3c3eedb7",
   "currentDesignStatus": "INDEPENDENTLY_REVIEWED",
   "currentDesignTerminal": "IMPLEMENTATION_AUTHORIZED",
   "currentDesignSource": "USER_AUTHORIZED_2C_GOVERNANCE_AND_CANONICAL_IDENTITY_CLOSURE_RESLICE_END_TO_END",
-  "currentDesignReviewPath": null,
-  "currentDesignReviewHash": null,
+  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2c-design-review.md",
+  "currentDesignReviewHash": "86cf06ee05c61b3071335266f2d40a6d4682a35a0521af23946f29a479058f45",
   "currentDesignReviewVerdict": "RULE_DESIGN_PASS",
   "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
   "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
@@ -5066,8 +5068,8 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Reconciled active controls for authorized Slice 2C bounded implementation closure after recording the independent design pass; implementation remains pending final fixture evidence, local gates, profile refresh, and fresh final review.",
+  "lastAction": "Reconciled active controls for Slice 2C after exact local profile match and verbatim independent design-review archive; implementation remains pending independent final code/rule review.",
   "lastError": null,
-  "requiredNextAction": "COMPLETE_LOCAL_EVIDENCE_THEN_FRESH_FINAL_REVIEW",
-  "nextAction": "COMPLETE_LOCAL_EVIDENCE_THEN_FRESH_FINAL_REVIEW"
+  "requiredNextAction": "FRESH_INDEPENDENT_FINAL_REVIEW",
+  "nextAction": "FRESH_INDEPENDENT_FINAL_REVIEW"
 }

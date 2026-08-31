@@ -2,12 +2,15 @@
 
 ## Phase 3 Slice 2C — bounded implementation closure in progress
 
-- Status: `IMPLEMENTATION_IN_PROGRESS / 2C_BOUNDED_CLOSURE_PENDING_FINAL_EVIDENCE`.
+- Status: `IMPLEMENTATION_IN_PROGRESS / 2C_BOUNDED_CLOSURE_PENDING_FINAL_REVIEW`.
 - D2, D3, and the 2C prerequisite Foundation are accepted. D3 implementation HEAD is `40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`; final status is bound to `df9ee017de2f3b8f33f7608a49e91f46c51acc08`.
 - Foundation profile-binding PR #53 merged at `5b064afa8f90b9d75812784fc48cbc1e22277f9b`; closeout archive commit is `4faaa859d7a0fb3bc5ffb78fbb3d4b16a5b13366` with exact closeout CI success.
 - The authorized governance/canonical-identity closure design has a recorded independent `RULE_DESIGN_PASS`; bounded implementation is active on branch `phase-3/2c-integrated-basic-phase-flow`. The historical rule-gate census remains immutable history below.
-- `currentSlice=2C`, `currentBranch=phase-3/2c-integrated-basic-phase-flow`, `currentPR=null`, `remainingBlockers=[FINAL_FIXTURE_EVIDENCE_AND_PROFILE_REFRESH_PENDING]`.
-- Required next action: `COMPLETE_LOCAL_EVIDENCE_THEN_FRESH_FINAL_REVIEW`.
+- `implementationHead=3039266d4932e40b6ce4e7e8423c76039c7a32f0`, `currentSlice=2C`, `currentBranch=phase-3/2c-integrated-basic-phase-flow`, `currentPR=null`.
+- Active coverage profile: `phase-3-slice-2c-closure-e908bb9-coverage-v1`; source head `e908bb9ea60c0f04d566607bff54e9f18ec26407`; artifact SHA-256 `2b22633baf7ba2b559c6cc7c4afacaad530574c342eda9a6a176f92392f9ebcf`.
+- Independent design review: `docs/implementation/phase-3-slice-2c-design-review.md`, SHA-256 `86cf06ee05c61b3071335266f2d40a6d4682a35a0521af23946f29a479058f45`, reviewed design head `e908bb9ea60c0f04d566607bff54e9f18ec26407`, verdict `RULE_DESIGN_PASS`, `remainingDesignBlockers=[]`.
+- `remainingBlockers=[FINAL_CODE_AND_RULE_REVIEW_PENDING]`.
+- Required next action: `FRESH_INDEPENDENT_FINAL_REVIEW`.
 All sections below are chronological history and do not override this state.
 
 ## 2B20A — local restoration review passed; exact-head CI pending
