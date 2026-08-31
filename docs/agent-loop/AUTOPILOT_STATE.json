@@ -4030,7 +4030,7 @@
       "phase2CStarted": false
     }
   },
-  "implementationCommit": "3ade506b138d8db475ac316272e866d48e0317da",
+  "implementationCommit": "3039266d4932e40b6ce4e7e8423c76039c7a32f0",
   "slice2B19A1FinalReviewRound1": {
     "report": "docs/implementation/phase-3-slice-2b19a1-final-review-round-1.md",
     "reviewedHead": "292d4e0dc4d718d2f03928e037eaddf9daed4349",
@@ -4290,7 +4290,7 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": ["FINAL_FIXTURE_EVIDENCE_AND_PROFILE_REFRESH_PENDING"],
+  "remainingBlockers": ["FINAL_CODE_AND_RULE_REVIEW_PENDING"],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
     "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE": "CLOSED_BY_IMPLEMENTATION",
