@@ -3315,6 +3315,7 @@
   "implementationBranch": "phase-3/2c-integrated-basic-phase-flow",
   "implementationCommit": "52c4e975ea0b3e38890318ed253718f552d77427",
   "remainingBlockers": [
+    "PENDING_EXACT_HEAD_PR_AND_HOSTED_CI",
     "FINAL_CODE_AND_RULE_REVIEW_PENDING"
   ],
   "behaviorDesignFrozen": false,
@@ -4291,6 +4292,7 @@
     "Dreamer/Vortox historical classification matrix"
   ],
   "remainingBlockers": [
+    "PENDING_EXACT_HEAD_PR_AND_HOSTED_CI",
     "FINAL_CODE_AND_RULE_REVIEW_PENDING"
   ],
   "historicalFindingDispositions": {
