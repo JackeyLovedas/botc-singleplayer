@@ -679,6 +679,195 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
   }, 30_000);
 });
 
+type Slice3DayFixture = {
+  readonly service: GameApplicationService;
+  readonly commandStore: MemoryCommandCommitStore;
+  readonly state: GameState;
+  readonly deadPlayerId: ReturnType<typeof playerId>;
+};
+
+const reachSlice3SecondDay = async (prefix: string): Promise<Slice3DayFixture> => {
+  const { service, commandStore } = makeService();
+  const exactRoleIds = [
+    "clockmaker", "flowergirl", "savant", "seamstress", "philosopher", "artist",
+    "sage", "mutant", "klutz", "evil_twin", "pit_hag", "vortox"
+  ].map(roleId);
+  expectAcceptedResult(await service.execute(createGameCommand({ payload: { ...createGameCommand().payload, rootSeed: "2c-preemption-pithag-vortox-v1" } })));
+  expectAcceptedResult(await service.execute(selectScriptCommand()));
+  expectAcceptedResult(await service.execute(generateSetupCommand({ payload: { commandType: "GenerateSetup", constraints: { exactRoleIds } } })));
+  expectAcceptedResult(await service.execute(createPlayerRosterCommand()));
+  expectAcceptedResult(await service.execute(assignCharactersCommand()));
+  expectAcceptedResult(await service.execute(initializeFirstNightCommand()));
+  expectAcceptedResult(await service.execute(planFirstNightTasksCommand()));
+
+  let state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  for (let index = 0; state?.firstNightTaskPlan !== undefined; index += 1) {
+    const next = state.firstNightTaskPlan.tasks[state.firstNightTaskProgress?.settlements.length ?? 0];
+    if (next === undefined) break;
+    if (next.source.kind === "SYSTEM") {
+      expectAcceptedResult(await service.execute(settleFirstNightSystemTaskCommand({
+        commandId: commandId(`${prefix}-system-${index}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "SettleFirstNightSystemTask", taskId: next.taskId }
+      })));
+    } else if (next.taskType === "EVIL_TWIN_SETUP") {
+      expectAcceptedResult(await service.execute(settleEvilTwinSetupCommand({
+        commandId: commandId(`${prefix}-evil-twin-${index}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "SettleEvilTwinSetup", taskId: next.taskId }
+      })));
+    } else if (next.taskType === "CLOCKMAKER_INFORMATION") {
+      expectEventSummaryAcceptedResult(await service.execute(settleClockmakerCommand(state, next.taskId, {
+        commandId: commandId(`${prefix}-clockmaker-${index}`)
+      })));
+    } else {
+      const opened = await service.execute(openFirstNightRoleActionOpportunityCommand({
+        commandId: commandId(`${prefix}-open-${index}`), expectedGameVersion: state.gameVersion,
+        payload: { commandType: "OpenFirstNightRoleActionOpportunity", taskId: next.taskId }
+      }));
+      expectAcceptedResult(opened);
+      const openState = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+      const opportunity = openState?.firstNightActionOpportunities?.opportunities.find((entry) => entry.taskId === next.taskId);
+      if (openState === undefined || opportunity === undefined) throw new Error("Expected Slice3 role opportunity");
+      const settled = next.taskType === "PHILOSOPHER_ACTION"
+        ? await service.execute(submitPhilosopherActionCommand({
+            commandId: commandId(`${prefix}-philosopher-${index}`), expectedGameVersion: openState.gameVersion,
+            payload: { commandType: "SubmitPhilosopherAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
+              decision: { kind: "CHOOSE_GOOD_CHARACTER", roleId: roleId("artist") } }
+          }))
+        : await service.execute(submitSeamstressActionCommand({
+            commandId: commandId(`${prefix}-seamstress-${index}`), expectedGameVersion: openState.gameVersion,
+            payload: { commandType: "SubmitSeamstressAction", taskId: next.taskId, opportunityId: opportunity.opportunityId,
+              decision: { kind: "CHOOSE_TWO_PLAYERS", targetPlayerIds: openState.currentCharacterState!.entries
+                .filter((entry) => entry.playerId !== opportunity.sourcePlayerId).slice(0, 2).map((entry) => entry.playerId) as [ReturnType<typeof playerId>, ReturnType<typeof playerId>] } }
+          }));
+      if (next.taskType === "SEAMSTRESS_ACTION") expectEventSummaryAcceptedResult(settled);
+      else expectAcceptedResult(settled);
+    }
+    state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  }
+  if (state === undefined || state.firstNightTaskPlan === undefined) throw new Error("Expected settled first night");
+  expectAcceptedResult(await service.execute(completeNightCommand({
+    commandId: commandId(`${prefix}-complete-first-night`), expectedGameVersion: state.gameVersion,
+    payload: { commandType: "CompleteNight", phase: "FIRST_NIGHT", planVersion: state.firstNightTaskPlan.taskPlanVersion, nightNumber: 1 }
+  })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  if (state === undefined) throw new Error("Expected dawn state");
+  expectAcceptedResult(await service.execute(publishDawnCommand({ commandId: commandId(`${prefix}-dawn-1`), expectedGameVersion: state.gameVersion })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  expectAcceptedResult(await service.execute(openNominationsCommand({ commandId: commandId(`${prefix}-open-nominations-1`), expectedGameVersion: state!.gameVersion })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  if (state === undefined || state.roster === undefined || state.assignment === undefined) throw new Error("Expected first nomination state");
+  const deadPlayerId = state.assignment.assignments.find((entry) => entry.role.roleId === "pit_hag")?.playerId;
+  const nominator = state.roster.entries.find((entry) => entry.playerId !== deadPlayerId);
+  if (deadPlayerId === undefined || nominator === undefined) throw new Error("Expected execution target and nominator");
+  expectAcceptedResult(await service.execute(declareNominationCommand({
+    commandId: commandId(`${prefix}-nomination-1`), expectedGameVersion: state.gameVersion,
+    actor: { kind: "ai", playerId: nominator.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: deadPlayerId }
+  })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const nominationId = state!.nominations!.at(-1)!.nominationId;
+  expectAcceptedResult(await service.execute(openVoteCommand({ commandId: commandId(`${prefix}-open-vote-1`), expectedGameVersion: state!.gameVersion, payload: { commandType: "OpenVote", nominationId } })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  for (const [index, voter] of state!.roster!.entries.slice(0, 6).entries()) {
+    expectAcceptedResult(await service.execute(castVoteCommand({
+      commandId: commandId(`${prefix}-vote-${index}`), expectedGameVersion: state!.gameVersion,
+      actor: { kind: "ai", playerId: voter.playerId }, payload: { commandType: "CastVote", nominationId, choice: "YES" }
+    })));
+    state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  }
+  expectAcceptedResult(await service.execute(completeVoteCommand({ commandId: commandId(`${prefix}-complete-vote-1`), expectedGameVersion: state!.gameVersion, payload: { commandType: "CompleteVote", nominationId } })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  expectAcceptedResult(await service.execute(closeNominationsCommand({ commandId: commandId(`${prefix}-close-1`), expectedGameVersion: state!.gameVersion })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  expectAcceptedResult(await service.execute(resolveExecutionCommand({ commandId: commandId(`${prefix}-resolve-1`), expectedGameVersion: state!.gameVersion, payload: { commandType: "ResolveExecution", blockId: "block-v1:1:1" } })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  expectAcceptedResult(await service.execute(beginNightCommand({ commandId: commandId(`${prefix}-begin-ordinary`), expectedGameVersion: state!.gameVersion })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  const genericTask = state!.ordinaryNightTaskPlan!.tasks.find((task) => task.taskType === "GENERIC_DEMON_KILL")!;
+  const flowergirlTask = state!.ordinaryNightTaskPlan!.tasks.find((task) => task.taskType === "FLOWERGIRL_ACTION")!;
+  expectAcceptedResult(await service.execute(settleOrdinaryNightTaskCommand({ commandId: commandId(`${prefix}-settle-generic`), expectedGameVersion: state!.gameVersion, payload: { commandType: "SettleOrdinaryNightTask", taskId: genericTask.taskId } })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  expectAcceptedResult(await service.execute(settleOrdinaryNightTaskCommand({ commandId: commandId(`${prefix}-settle-flowergirl`), expectedGameVersion: state!.gameVersion, payload: { commandType: "SettleOrdinaryNightTask", taskId: flowergirlTask.taskId } })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  expectAcceptedResult(await service.execute(completeNightCommand({ commandId: commandId(`${prefix}-complete-ordinary`), expectedGameVersion: state!.gameVersion, payload: { commandType: "CompleteNight", phase: "NIGHT_TASKS", planVersion: state!.ordinaryNightTaskPlan!.planVersion, nightNumber: 2 } })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  expectAcceptedResult(await service.execute(publishDawnCommand({ commandId: commandId(`${prefix}-dawn-2`), expectedGameVersion: state!.gameVersion })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  expectAcceptedResult(await service.execute(openNominationsCommand({ commandId: commandId(`${prefix}-open-nominations-2`), expectedGameVersion: state!.gameVersion, payload: { commandType: "OpenNominations", dayNumber: state!.dayNumber } })));
+  state = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
+  if (state === undefined) throw new Error("Expected second nomination state");
+  return { service, commandStore, state, deadPlayerId };
+};
+
+describeApplicationServiceShard("core", "Slice 3 command validation surface", () => {
+  it("[S3-C01] accepts living nomination and dead nominee through the real command boundary", async () => {
+    const fixture = await reachSlice3SecondDay("s3-c01");
+    const deadIds = new Set([...(fixture.state.deadPlayerIds ?? []), ...(fixture.state.deaths ?? []).map((death) => death.playerId)]);
+    const nominator = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId))!;
+    const result = await fixture.service.execute(declareNominationCommand({
+      commandId: commandId("s3-c01-dead-nominee"), expectedGameVersion: fixture.state.gameVersion,
+      actor: { kind: "ai", playerId: nominator.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: fixture.deadPlayerId }
+    }));
+    expectAcceptedResult(result);
+    expect(result.events[0]).toMatchObject({ eventType: "NominationDeclared", payload: { nomineePlayerId: fixture.deadPlayerId } });
+  }, 30_000);
+
+  it("[S3-C02] rejects dead nominator and illegal nomination boundaries with receipt-only audit", async () => {
+    const fixture = await reachSlice3SecondDay("s3-c02");
+    const before = await fixture.commandStore.loadDomainEvents(ids.game);
+    const deadIds = new Set([...(fixture.state.deadPlayerIds ?? []), ...(fixture.state.deaths ?? []).map((death) => death.playerId)]);
+    const result = await fixture.service.execute(declareNominationCommand({
+      commandId: commandId("s3-c02-dead-nominator"), expectedGameVersion: fixture.state.gameVersion,
+      actor: { kind: "ai", playerId: fixture.deadPlayerId },
+      payload: { commandType: "DeclareNomination", targetPlayerId: fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== fixture.deadPlayerId)!.playerId }
+    }));
+    expect(result).toMatchObject({ status: "rejected" });
+    expect(await fixture.commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(await fixture.commandStore.findCommandReceipt(ids.game, commandId("s3-c02-dead-nominator"))).toMatchObject({ result: { status: "rejected" } });
+  }, 30_000);
+
+  it("[S3-C03] validates living vote, ghost first use, no-vote, and second-use rejection", async () => {
+    const fixture = await reachSlice3SecondDay("s3-c03");
+    const deadIds = new Set([...(fixture.state.deadPlayerIds ?? []), ...(fixture.state.deaths ?? []).map((death) => death.playerId)]);
+    const nominator = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId))!;
+    const target = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== nominator.playerId)!;
+    expectAcceptedResult(await fixture.service.execute(declareNominationCommand({ commandId: commandId("s3-c03-nomination"), expectedGameVersion: fixture.state.gameVersion, actor: { kind: "ai", playerId: nominator.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: target.playerId } })));
+    let state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    const nominationId = state.nominations!.at(-1)!.nominationId;
+    expectAcceptedResult(await fixture.service.execute(openVoteCommand({ commandId: commandId("s3-c03-open-vote"), expectedGameVersion: state.gameVersion, payload: { commandType: "OpenVote", nominationId } })));
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    const yesVote = await fixture.service.execute(castVoteCommand({ commandId: commandId("s3-c03-dead-yes"), expectedGameVersion: state.gameVersion, actor: { kind: "ai", playerId: fixture.deadPlayerId }, payload: { commandType: "CastVote", nominationId, choice: "YES" } }));
+    expectAcceptedResult(yesVote);
+    expect(yesVote.events[0]).toMatchObject({ eventType: "VoteCast", payload: { choice: "YES", ghostVoteConsumed: true } });
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    const deadIdsAfterYes = [...new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)])];
+    const secondDeadPlayer = deadIdsAfterYes.find((playerId) => playerId !== fixture.deadPlayerId) as ReturnType<typeof playerId> | undefined;
+    if (secondDeadPlayer === undefined) throw new Error("Expected a second canonical dead voter");
+    const noVote = await fixture.service.execute(castVoteCommand({ commandId: commandId("s3-c03-dead-no"), expectedGameVersion: state.gameVersion, actor: { kind: "ai", playerId: secondDeadPlayer }, payload: { commandType: "CastVote", nominationId, choice: "NO" } }));
+    expectAcceptedResult(noVote);
+    expect(noVote.events[0]).toMatchObject({ eventType: "VoteCast", payload: { choice: "NO", ghostVoteConsumed: false } });
+    const unchanged = await fixture.commandStore.loadDomainEvents(ids.game);
+    const duplicate = await fixture.service.execute(castVoteCommand({ commandId: commandId("s3-c03-dead-second"), expectedGameVersion: rebuildOptionalGameState(unchanged)!.gameVersion, actor: { kind: "ai", playerId: fixture.deadPlayerId }, payload: { commandType: "CastVote", nominationId, choice: "YES" } }));
+    expect(duplicate).toMatchObject({ status: "rejected" });
+  }, 30_000);
+
+  it("[S3-C04] rejects incomplete execution lifecycle and preserves execution/death provenance", async () => {
+    const fixture = await reachSlice3SecondDay("s3-c04");
+    expectAcceptedResult(await fixture.service.execute(closeNominationsCommand({ commandId: commandId("s3-c04-close-without-vote"), expectedGameVersion: fixture.state.gameVersion, payload: { commandType: "CloseNominations", dayNumber: fixture.state.dayNumber } })));
+    const executionState = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    const incomplete = await fixture.service.execute(resolveExecutionCommand({ commandId: commandId("s3-c04-incomplete"), expectedGameVersion: executionState.gameVersion, payload: { commandType: "ResolveExecution", blockId: "block-v1:2:2" } }));
+    expect(incomplete).toMatchObject({ status: "rejected" });
+    expect((await fixture.commandStore.loadDomainEvents(ids.game)).at(-1)?.eventType).toBe("PhaseTransitioned");
+  }, 30_000);
+
+  it("[S3-C05] enforces the exact current command actor-phase-prerequisite matrix", async () => {
+    const fixture = await reachSlice3SecondDay("s3-c05");
+    const rejectedActor = await fixture.service.execute(beginNightCommand({ commandId: commandId("s3-c05-illegal-actor"), expectedGameVersion: fixture.state.gameVersion, actor: { kind: "human", playerId: fixture.deadPlayerId } }));
+    expect(rejectedActor).toMatchObject({ status: "rejected" });
+    const rejectedPhase = await fixture.service.execute(resolveExecutionCommand({ commandId: commandId("s3-c05-illegal-phase"), expectedGameVersion: fixture.state.gameVersion, payload: { commandType: "ResolveExecution", blockId: "block-v1:2:2" } }));
+    expect(rejectedPhase).toMatchObject({ status: "rejected" });
+  }, 30_000);
+});
+
 const advancePastSystemInformation = async (
   service: GameApplicationService,
   store: MemoryCommandCommitStore,
