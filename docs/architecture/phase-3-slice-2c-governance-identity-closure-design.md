@@ -533,12 +533,15 @@ and coverage profile artifacts; this design does not pre-write an implementation
 SHA. The following remain true at the design boundary:
 
 ```text
-implementationAuthorized=false
 HostedCI=NOT_RUN
 pushPerformed=false
 PRCreated=false
 rootUserWorktreeTouched=false
 ```
+
+The design authorization is closed as `implementationAuthorized=true`; these
+remaining fields record only that hosted publication and the root worktree are
+still untouched at this point.
 
 The design gate is closed. Subsequent implementation, local evidence, hosted
 evidence, and final review remain separate gates and do not alter this design

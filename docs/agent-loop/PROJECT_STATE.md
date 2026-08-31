@@ -1,13 +1,13 @@
 # Project State
 
-## Current state — Phase 3 Foundation accepted; 2C rule gate blocked
+## Current state — Phase 3 Slice 2C bounded implementation closure in progress
 
-- Active state: `FOUNDATION_ACCEPTED / 2C_NO_VIABLE_FIXTURE_HUMAN_BLOCKED`.
+- Active state: `IMPLEMENTATION_IN_PROGRESS / 2C_BOUNDED_CLOSURE_PENDING_FINAL_EVIDENCE`.
 - D2, D3, and the 2C prerequisite Foundation are accepted. D3 implementation HEAD is `40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`; final status is bound to `df9ee017de2f3b8f33f7608a49e91f46c51acc08`.
 - Foundation profile-binding PR #53 merged at `5b064afa8f90b9d75812784fc48cbc1e22277f9b`; closeout archive commit is `4faaa859d7a0fb3bc5ffb78fbb3d4b16a5b13366`, with exact closeout CI success.
-- Fresh 2C rule research is ready after the repository settlement adjudication. Deterministic census found no legal non-empty fixture satisfying the one-new-capability bound: the 12-player generator necessarily includes at least two explicit unsupported scheduled task kinds. No 2C design or implementation started.
-- `currentSlice=2C-rule-gate`, `currentBranch=main`, `currentPR=null`, `remainingBlockers=[NO_VIABLE_NONEMPTY_2C_FIXTURE_WITHIN_ONE_CAPABILITY]`.
-- `nextAction=HUMAN_RESOLVE_2C_FIXTURE_SCOPE_OR_AUTHORIZE_RESCOPE_BEYOND_ONE_CAPABILITY`.
+- The authorized governance/canonical-identity closure design has a recorded independent `RULE_DESIGN_PASS`; bounded implementation is active on branch `phase-3/2c-integrated-basic-phase-flow`. The historical rule-gate census remains immutable history below.
+- `currentSlice=2C`, `currentBranch=phase-3/2c-integrated-basic-phase-flow`, `currentPR=null`, `remainingBlockers=[FINAL_FIXTURE_EVIDENCE_AND_PROFILE_REFRESH_PENDING]`.
+- `nextAction=COMPLETE_LOCAL_EVIDENCE_THEN_FRESH_FINAL_REVIEW`.
 All sections below are chronological history and do not override this state.
 
 ## Current state — 2B20A local restoration review passed; exact-head CI pending
