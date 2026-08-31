@@ -798,6 +798,23 @@ const reachSlice3SecondDay = async (prefix: string): Promise<Slice3DayFixture> =
   return { service, commandStore, state, deadPlayerId };
 };
 
+const expectSlice3ReceiptOnlyRejection = async (
+  fixture: Slice3DayFixture,
+  command: SupportedCommandEnvelope
+): Promise<CommandRejected> => {
+  const beforeEvents = await fixture.commandStore.loadDomainEvents(ids.game);
+  const beforeState = rebuildOptionalGameState(beforeEvents);
+  const result = await fixture.service.execute(command);
+  expect(result).toMatchObject({ status: "rejected" });
+  expect(await fixture.commandStore.loadDomainEvents(ids.game)).toStrictEqual(beforeEvents);
+  expect(rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))).toStrictEqual(beforeState);
+  expect(await fixture.commandStore.findCommandReceipt(ids.game, command.commandId)).toMatchObject({
+    result: { status: "rejected" }
+  });
+  if (result.status !== "rejected") throw new Error("Expected a rejected Slice3 command");
+  return result;
+};
+
 describeApplicationServiceShard("core", "Slice 3 command validation surface", () => {
   it("[S3-C01] accepts living nomination and dead nominee through the real command boundary", async () => {
     const fixture = await reachSlice3SecondDay("s3-c01");
@@ -809,11 +826,25 @@ describeApplicationServiceShard("core", "Slice 3 command validation surface", ()
     }));
     expectAcceptedResult(result);
     expect(result.events[0]).toMatchObject({ eventType: "NominationDeclared", payload: { nomineePlayerId: fixture.deadPlayerId } });
+    const afterAccepted = await fixture.commandStore.loadDomainEvents(ids.game);
+    expect(await fixture.commandStore.findCommandReceipt(ids.game, commandId("s3-c01-dead-nominee"))).toMatchObject({ result: { status: "accepted" } });
+    const replay = await fixture.service.execute(declareNominationCommand({
+      commandId: commandId("s3-c01-dead-nominee"), expectedGameVersion: fixture.state.gameVersion,
+      actor: { kind: "ai", playerId: nominator.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: fixture.deadPlayerId }
+    }));
+    expectAcceptedResult(replay);
+    expect(await fixture.commandStore.loadDomainEvents(ids.game)).toStrictEqual(afterAccepted);
+    const alternateTarget = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== nominator.playerId)!.playerId;
+    await expectSlice3ReceiptOnlyRejection(fixture, declareNominationCommand({
+      commandId: commandId("s3-c01-nominator-once-per-day"), expectedGameVersion: rebuildOptionalGameState(afterAccepted)!.gameVersion,
+      actor: { kind: "ai", playerId: nominator.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: alternateTarget }
+    }));
   }, 30_000);
 
   it("[S3-C02] rejects dead nominator and illegal nomination boundaries with receipt-only audit", async () => {
     const fixture = await reachSlice3SecondDay("s3-c02");
     const before = await fixture.commandStore.loadDomainEvents(ids.game);
+    const beforeState = rebuildOptionalGameState(before);
     const deadIds = new Set([...(fixture.state.deadPlayerIds ?? []), ...(fixture.state.deaths ?? []).map((death) => death.playerId)]);
     const result = await fixture.service.execute(declareNominationCommand({
       commandId: commandId("s3-c02-dead-nominator"), expectedGameVersion: fixture.state.gameVersion,
@@ -822,50 +853,85 @@ describeApplicationServiceShard("core", "Slice 3 command validation surface", ()
     }));
     expect(result).toMatchObject({ status: "rejected" });
     expect(await fixture.commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
+    expect(rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))).toStrictEqual(beforeState);
     expect(await fixture.commandStore.findCommandReceipt(ids.game, commandId("s3-c02-dead-nominator"))).toMatchObject({ result: { status: "rejected" } });
+    await expectSlice3ReceiptOnlyRejection(fixture, openNominationsCommand({
+      commandId: commandId("s3-c02-wrong-day"), expectedGameVersion: fixture.state.gameVersion,
+      payload: { commandType: "OpenNominations", dayNumber: fixture.state.dayNumber + 1 }
+    }));
   }, 30_000);
 
   it("[S3-C03] validates living vote, ghost first use, no-vote, and second-use rejection", async () => {
     const fixture = await reachSlice3SecondDay("s3-c03");
     const deadIds = new Set([...(fixture.state.deadPlayerIds ?? []), ...(fixture.state.deaths ?? []).map((death) => death.playerId)]);
     const nominator = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId))!;
-    const target = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== nominator.playerId)!;
-    expectAcceptedResult(await fixture.service.execute(declareNominationCommand({ commandId: commandId("s3-c03-nomination"), expectedGameVersion: fixture.state.gameVersion, actor: { kind: "ai", playerId: nominator.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: target.playerId } })));
+    const livingVoter = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== nominator.playerId)!;
+    const target = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== nominator.playerId && entry.playerId !== livingVoter.playerId)!;
+    expectAcceptedResult(await fixture.service.execute(declareNominationCommand({ commandId: commandId("s3-c03-nomination-a"), expectedGameVersion: fixture.state.gameVersion, actor: { kind: "ai", playerId: nominator.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: target.playerId } })));
     let state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
     const nominationId = state.nominations!.at(-1)!.nominationId;
-    expectAcceptedResult(await fixture.service.execute(openVoteCommand({ commandId: commandId("s3-c03-open-vote"), expectedGameVersion: state.gameVersion, payload: { commandType: "OpenVote", nominationId } })));
+    expectAcceptedResult(await fixture.service.execute(openVoteCommand({ commandId: commandId("s3-c03-open-vote-a"), expectedGameVersion: state.gameVersion, payload: { commandType: "OpenVote", nominationId } })));
     state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
-    const yesVote = await fixture.service.execute(castVoteCommand({ commandId: commandId("s3-c03-dead-yes"), expectedGameVersion: state.gameVersion, actor: { kind: "ai", playerId: fixture.deadPlayerId }, payload: { commandType: "CastVote", nominationId, choice: "YES" } }));
-    expectAcceptedResult(yesVote);
-    expect(yesVote.events[0]).toMatchObject({ eventType: "VoteCast", payload: { choice: "YES", ghostVoteConsumed: true } });
+    const livingYes = await fixture.service.execute(castVoteCommand({ commandId: commandId("s3-c03-living-yes"), expectedGameVersion: state.gameVersion, actor: { kind: "ai", playerId: livingVoter.playerId }, payload: { commandType: "CastVote", nominationId, choice: "YES" } }));
+    expectAcceptedResult(livingYes);
+    expect(livingYes.events[0]).toMatchObject({ eventType: "VoteCast", payload: { voterPlayerId: livingVoter.playerId, choice: "YES", ghostVoteConsumed: false } });
     state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
-    const deadIdsAfterYes = [...new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)])];
-    const secondDeadPlayer = deadIdsAfterYes.find((playerId) => playerId !== fixture.deadPlayerId) as ReturnType<typeof playerId> | undefined;
-    if (secondDeadPlayer === undefined) throw new Error("Expected a second canonical dead voter");
-    const noVote = await fixture.service.execute(castVoteCommand({ commandId: commandId("s3-c03-dead-no"), expectedGameVersion: state.gameVersion, actor: { kind: "ai", playerId: secondDeadPlayer }, payload: { commandType: "CastVote", nominationId, choice: "NO" } }));
+    const noVote = await fixture.service.execute(castVoteCommand({ commandId: commandId("s3-c03-dead-no-a"), expectedGameVersion: state.gameVersion, actor: { kind: "ai", playerId: fixture.deadPlayerId }, payload: { commandType: "CastVote", nominationId, choice: "NO" } }));
     expectAcceptedResult(noVote);
     expect(noVote.events[0]).toMatchObject({ eventType: "VoteCast", payload: { choice: "NO", ghostVoteConsumed: false } });
-    const unchanged = await fixture.commandStore.loadDomainEvents(ids.game);
-    const forgedGhostProvenance = unchanged.map((event) => event.eventType === "VoteCast" && event.payload.voterPlayerId === fixture.deadPlayerId
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    expectAcceptedResult(await fixture.service.execute(completeVoteCommand({ commandId: commandId("s3-c03-complete-a"), expectedGameVersion: state.gameVersion, payload: { commandType: "CompleteVote", nominationId } })));
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+
+    const nominatorB = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== nominator.playerId)!;
+    const targetB = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== nominator.playerId && entry.playerId !== nominatorB.playerId && entry.playerId !== target.playerId)!;
+    expectAcceptedResult(await fixture.service.execute(declareNominationCommand({ commandId: commandId("s3-c03-nomination-b"), expectedGameVersion: state.gameVersion, actor: { kind: "ai", playerId: nominatorB.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: targetB.playerId } })));
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    const nominationB = state.nominations!.at(-1)!.nominationId;
+    expectAcceptedResult(await fixture.service.execute(openVoteCommand({ commandId: commandId("s3-c03-open-vote-b"), expectedGameVersion: state.gameVersion, payload: { commandType: "OpenVote", nominationId: nominationB } })));
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    const yesVote = await fixture.service.execute(castVoteCommand({ commandId: commandId("s3-c03-dead-yes-b"), expectedGameVersion: state.gameVersion, actor: { kind: "ai", playerId: fixture.deadPlayerId }, payload: { commandType: "CastVote", nominationId: nominationB, choice: "YES" } }));
+    expectAcceptedResult(yesVote);
+    expect(yesVote.events[0]).toMatchObject({ eventType: "VoteCast", payload: { choice: "YES", ghostVoteConsumed: true } });
+    const beforeDuplicateUse = await fixture.commandStore.loadDomainEvents(ids.game);
+    await expectSlice3ReceiptOnlyRejection(fixture, castVoteCommand({ commandId: commandId("s3-c03-dead-duplicate-b"), expectedGameVersion: rebuildOptionalGameState(beforeDuplicateUse)!.gameVersion, actor: { kind: "ai", playerId: fixture.deadPlayerId }, payload: { commandType: "CastVote", nominationId: nominationB, choice: "YES" } }));
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    expectAcceptedResult(await fixture.service.execute(completeVoteCommand({ commandId: commandId("s3-c03-complete-b"), expectedGameVersion: state.gameVersion, payload: { commandType: "CompleteVote", nominationId: nominationB } })));
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+
+    const nominatorC = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== nominator.playerId && entry.playerId !== nominatorB.playerId)!;
+    const nominationCTarget = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== nominator.playerId && entry.playerId !== nominatorB.playerId && entry.playerId !== nominatorC.playerId && entry.playerId !== target.playerId && entry.playerId !== targetB.playerId)!;
+    expectAcceptedResult(await fixture.service.execute(declareNominationCommand({ commandId: commandId("s3-c03-nomination-c"), expectedGameVersion: state.gameVersion, actor: { kind: "ai", playerId: nominatorC.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: nominationCTarget.playerId } })));
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    const nominationC = state.nominations!.at(-1)!.nominationId;
+    expectAcceptedResult(await fixture.service.execute(openVoteCommand({ commandId: commandId("s3-c03-open-vote-c"), expectedGameVersion: state.gameVersion, payload: { commandType: "OpenVote", nominationId: nominationC } })));
+    state = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
+    const forgedGhostProvenance = (await fixture.commandStore.loadDomainEvents(ids.game)).map((event) => event.eventType === "VoteCast" && event.payload.voterPlayerId === fixture.deadPlayerId && event.payload.nominationId === nominationB
       ? { ...event, payload: { ...event.payload, ghostVoteConsumed: false } }
       : event);
     expect(() => rebuildOptionalGameState(forgedGhostProvenance)).toThrow();
-    const beforeSecondUse = rebuildOptionalGameState(unchanged)!;
-    const duplicate = await fixture.service.execute(castVoteCommand({ commandId: commandId("s3-c03-dead-second"), expectedGameVersion: rebuildOptionalGameState(unchanged)!.gameVersion, actor: { kind: "ai", playerId: fixture.deadPlayerId }, payload: { commandType: "CastVote", nominationId, choice: "YES" } }));
-    expect(duplicate).toMatchObject({ status: "rejected" });
-    expect(await fixture.commandStore.loadDomainEvents(ids.game)).toStrictEqual(unchanged);
-    expect(rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))).toStrictEqual(beforeSecondUse);
+    await expectSlice3ReceiptOnlyRejection(fixture, castVoteCommand({
+      commandId: commandId("s3-c03-dead-exhausted-c"), expectedGameVersion: state.gameVersion,
+      actor: { kind: "ai", playerId: fixture.deadPlayerId }, payload: { commandType: "CastVote", nominationId: nominationC, choice: "YES" }
+    }));
   }, 30_000);
 
   it("[S3-C04] rejects incomplete execution lifecycle and preserves execution/death provenance", async () => {
     const fixture = await reachSlice3SecondDay("s3-c04");
     const priorEvents = await fixture.commandStore.loadDomainEvents(ids.game);
     const declared = priorEvents.find((event) => event.eventType === "ExecutionDeclared");
+    const completedBlock = priorEvents.find((event) => event.eventType === "BlockStateUpdated");
     const resolved = priorEvents.find((event) => event.eventType === "ExecutionResolved");
     const death = priorEvents.find((event) => event.eventType === "PlayerDied" && event.payload.cause === "EXECUTION");
-    if (declared === undefined || resolved === undefined || death === undefined || resolved.eventType !== "ExecutionResolved" || declared.eventType !== "ExecutionDeclared" || death.eventType !== "PlayerDied") {
+    if (declared === undefined || completedBlock === undefined || resolved === undefined || death === undefined || resolved.eventType !== "ExecutionResolved" || declared.eventType !== "ExecutionDeclared" || completedBlock.eventType !== "BlockStateUpdated" || death.eventType !== "PlayerDied") {
       throw new Error("Expected the canonical execution/death chain");
     }
+    expect(completedBlock.payload.leaderNominationId).not.toBeNull();
+    expect(completedBlock.payload.leaderVoteCount).toBeGreaterThanOrEqual(completedBlock.payload.threshold);
+    expect(completedBlock.payload.tied).toBe(false);
+    const winningNomination = priorEvents.find((event): event is Extract<AnyDomainEventEnvelope, { readonly eventType: "NominationDeclared" }> =>
+      event.eventType === "NominationDeclared" && event.payload.nominationId === completedBlock.payload.leaderNominationId);
+    expect(declared.payload.targetPlayerId).toBe(winningNomination?.payload.nomineePlayerId);
     expect(resolved.payload.executionId).toBe(declared.payload.executionId);
     expect(death.payload.causeEventId).toBe(resolved.eventId);
     expect(death.payload.causeEventType).toBe("ExecutionResolved");
@@ -878,23 +944,62 @@ describeApplicationServiceShard("core", "Slice 3 command validation surface", ()
     })));
     const nominationState = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
     const before = await fixture.commandStore.loadDomainEvents(ids.game);
-    const incompleteClose = await fixture.service.execute(closeNominationsCommand({
+    await expectSlice3ReceiptOnlyRejection(fixture, closeNominationsCommand({
       commandId: commandId("s3-c04-close-without-vote"), expectedGameVersion: nominationState.gameVersion,
       payload: { commandType: "CloseNominations", dayNumber: nominationState.dayNumber }
     }));
-    expect(incompleteClose).toMatchObject({ status: "rejected" });
     expect(await fixture.commandStore.loadDomainEvents(ids.game)).toStrictEqual(before);
   }, 30_000);
 
   it("[S3-C05] enforces the exact current command actor-phase-prerequisite matrix", async () => {
     const fixture = await reachSlice3SecondDay("s3-c05");
-    const rejectedActor = await fixture.service.execute(beginNightCommand({ commandId: commandId("s3-c05-illegal-actor"), expectedGameVersion: fixture.state.gameVersion, actor: { kind: "human", playerId: fixture.deadPlayerId } }));
-    expect(rejectedActor).toMatchObject({ status: "rejected" });
-    const rejectedPhase = await fixture.service.execute(resolveExecutionCommand({ commandId: commandId("s3-c05-illegal-phase"), expectedGameVersion: fixture.state.gameVersion, payload: { commandType: "ResolveExecution", blockId: "block-v1:2:2" } }));
-    expect(rejectedPhase).toMatchObject({ status: "rejected" });
     const deadIds = new Set([...(fixture.state.deadPlayerIds ?? []), ...(fixture.state.deaths ?? []).map((death) => death.playerId)]);
     const liveNominator = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId))!;
     const liveTarget = fixture.state.roster!.entries.find((entry) => !deadIds.has(entry.playerId) && entry.playerId !== liveNominator.playerId)!;
+    const matrixVersion = fixture.state.gameVersion;
+    await expectSlice3ReceiptOnlyRejection(fixture, openNominationsCommand({
+      commandId: commandId("s3-c05-reject-open-nominations"), expectedGameVersion: matrixVersion,
+      payload: { commandType: "OpenNominations", dayNumber: fixture.state.dayNumber }
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, declareNominationCommand({
+      commandId: commandId("s3-c05-reject-declare-dead"), expectedGameVersion: matrixVersion,
+      actor: { kind: "ai", playerId: fixture.deadPlayerId }, payload: { commandType: "DeclareNomination", targetPlayerId: liveTarget.playerId }
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, openVoteCommand({
+      commandId: commandId("s3-c05-reject-open-vote"), expectedGameVersion: matrixVersion,
+      payload: { commandType: "OpenVote", nominationId: "nomination-v1:2:999" }
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, castVoteCommand({
+      commandId: commandId("s3-c05-reject-cast-vote"), expectedGameVersion: matrixVersion,
+      actor: { kind: "ai", playerId: liveNominator.playerId }, payload: { commandType: "CastVote", nominationId: "nomination-v1:2:999", choice: "YES" }
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, completeVoteCommand({
+      commandId: commandId("s3-c05-reject-complete-vote"), expectedGameVersion: matrixVersion,
+      payload: { commandType: "CompleteVote", nominationId: "nomination-v1:2:999" }
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, closeNominationsCommand({
+      commandId: commandId("s3-c05-reject-close-nominations"), expectedGameVersion: matrixVersion,
+      payload: { commandType: "CloseNominations", dayNumber: fixture.state.dayNumber }
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, resolveExecutionCommand({
+      commandId: commandId("s3-c05-reject-resolve-execution"), expectedGameVersion: matrixVersion,
+      payload: { commandType: "ResolveExecution", blockId: "block-v1:2:2" }
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, completeNightCommand({
+      commandId: commandId("s3-c05-reject-complete-night"), expectedGameVersion: matrixVersion,
+      payload: { commandType: "CompleteNight", phase: "FIRST_NIGHT", planVersion: "first-night-task-plan-v2", nightNumber: fixture.state.nightNumber }
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, publishDawnCommand({
+      commandId: commandId("s3-c05-reject-publish-dawn"), expectedGameVersion: matrixVersion
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, beginNightCommand({
+      commandId: commandId("s3-c05-reject-begin-night"), expectedGameVersion: matrixVersion, actor: { kind: "human", playerId: fixture.deadPlayerId }
+    }));
+    await expectSlice3ReceiptOnlyRejection(fixture, settleOrdinaryNightTaskCommand({
+      commandId: commandId("s3-c05-reject-settle-ordinary"), expectedGameVersion: matrixVersion,
+      payload: { commandType: "SettleOrdinaryNightTask", taskId: scheduledTaskId("ordinary-night-v1:GENERIC_DEMON_KILL:night-02:seat-99") }
+    }));
+
     const nomination = await fixture.service.execute(declareNominationCommand({ commandId: commandId("s3-c05-matrix-nomination"), expectedGameVersion: fixture.state.gameVersion, actor: { kind: "ai", playerId: liveNominator.playerId }, payload: { commandType: "DeclareNomination", targetPlayerId: liveTarget.playerId } }));
     expectAcceptedResult(nomination);
     let matrixState = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
@@ -903,10 +1008,10 @@ describeApplicationServiceShard("core", "Slice 3 command validation surface", ()
     matrixState = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
     expectAcceptedResult(await fixture.service.execute(completeVoteCommand({ commandId: commandId("s3-c05-matrix-complete-vote"), expectedGameVersion: matrixState.gameVersion, payload: { commandType: "CompleteVote", nominationId } })));
     matrixState = rebuildOptionalGameState(await fixture.commandStore.loadDomainEvents(ids.game))!;
-    const beforeReopen = await fixture.commandStore.loadDomainEvents(ids.game);
-    const reopen = await fixture.service.execute(openVoteCommand({ commandId: commandId("s3-c05-matrix-reopen-vote"), expectedGameVersion: matrixState.gameVersion, payload: { commandType: "OpenVote", nominationId } }));
-    expect(reopen).toMatchObject({ status: "rejected" });
-    expect(await fixture.commandStore.loadDomainEvents(ids.game)).toStrictEqual(beforeReopen);
+    await expectSlice3ReceiptOnlyRejection(fixture, openVoteCommand({
+      commandId: commandId("s3-c05-matrix-reopen-vote"), expectedGameVersion: matrixState.gameVersion,
+      payload: { commandType: "OpenVote", nominationId }
+    }));
   }, 30_000);
 });
 
