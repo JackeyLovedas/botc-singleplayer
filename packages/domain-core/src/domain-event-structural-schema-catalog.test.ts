@@ -475,7 +475,7 @@ describe("Catalog V2 audit projection", () => {
   it("[2C-F03] rejects one malformed descriptor for each additive subject", () => {
     const baseline = healthyAuthority();
     for (const [index, descriptor] of TWO_C_ADDITIVE_DESCRIPTORS.entries()) {
-      const additions = structuredClone(TWO_C_ADDITIVE_DESCRIPTORS) as Array<Record<string, unknown>>;
+      const additions = structuredClone(TWO_C_ADDITIVE_DESCRIPTORS) as unknown as Array<Record<string, unknown>>;
       delete additions[index]?.rootNodeId;
       const result = createC1AdditiveStructuralSchemaCandidate({ baseline, additions } as never);
       expect(result, descriptor.eventType).toMatchObject({
@@ -494,11 +494,11 @@ describe("Catalog V2 audit projection", () => {
       expect(() => createC1AdditiveStructuralSchemaCandidate({
         baseline,
         additions: [hostile]
-      } as never)).not.toThrow();
+      })).not.toThrow();
       expect(createC1AdditiveStructuralSchemaCandidate({
         baseline,
         additions: [hostile]
-      } as never)).toMatchObject({
+      })).toMatchObject({
         ok: false,
         diagnostic: { code: "INVALID_OBJECT_SHAPE", failClosed: true }
       });
@@ -510,7 +510,7 @@ describe("Catalog V2 audit projection", () => {
       const authority = createTwoCAdditiveStructuralSchemaAuthority();
       expect(authority.status).toBe("HEALTHY");
       if (authority.status !== "HEALTHY") return;
-      const candidate = structuredClone(authority.candidate) as {
+      const candidate = structuredClone(authority.candidate) as unknown as {
         nodeBindings: Array<{ nodeId: string; node: { nodeId: string } }>;
       };
       const binding = candidate.nodeBindings.find((entry) => entry.nodeId === descriptor.rootNodeId);
@@ -529,7 +529,7 @@ describe("Catalog V2 audit projection", () => {
     if (authority.status !== "HEALTHY") return;
     expect(createStructuralSchemaAuthority(structuredClone(authority.candidate))).toMatchObject({ status: "HEALTHY" });
     for (const descriptor of TWO_C_ADDITIVE_DESCRIPTORS) {
-      const candidate = structuredClone(authority.candidate) as {
+      const candidate = structuredClone(authority.candidate) as unknown as {
         roots: Array<{ eventType: string; branchOrdinal: number }>;
       };
       const root = candidate.roots.find((entry) => entry.eventType === descriptor.eventType);
