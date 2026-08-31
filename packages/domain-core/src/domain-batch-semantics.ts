@@ -136,7 +136,8 @@ const validateBasicPhaseFlowBatch = (
     if (first.payload.voteId !== `vote-v1:${first.payload.nominationId}:${(state.votes?.length ?? 0) + 1}`) reject("Vote identity is not canonical");
     if ((state.votes ?? []).some((vote) => vote.nominationId === first.payload.nominationId && vote.voterPlayerId === first.payload.voterPlayerId)) reject("A voter may vote once per nomination");
     const dead = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).has(first.payload.voterPlayerId);
-    if (first.payload.ghostVoteConsumed !== dead) reject("Vote ghost-token provenance does not match voter liveness");
+    const expectedGhostVoteConsumed = dead && first.payload.choice === "YES";
+    if (first.payload.ghostVoteConsumed !== expectedGhostVoteConsumed) reject("Vote ghost-token provenance does not match voter liveness and choice");
     if (first.payload.ghostVoteConsumed && (state.votes ?? []).some((vote) => vote.voterPlayerId === first.payload.voterPlayerId && vote.ghostVoteConsumed)) reject("Ghost vote token is already consumed");
     return;
   }
@@ -154,7 +155,8 @@ const validateBasicPhaseFlowBatch = (
     if (first.payload.executionId !== `execution-v1:${state.dayNumber}:01`) reject("Execution identity is not canonical");
     if ((state.executions ?? []).some((execution) => execution.dayNumber === state.dayNumber)) reject("Only one execution may be declared per day");
     const block = (state.blocks ?? []).at(-1);
-    if (block === undefined || block.tied || block.leaderNominationId === null || block.leaderVoteCount <= 0) reject("Execution must reference the current executable block");
+    if (first.payload.blockId !== `block-v1:${state.dayNumber}:${state.blocks?.length ?? 0}`) reject("Execution block identity is not canonical");
+    if (block === undefined || block.dayNumber !== state.dayNumber || block.nominationId !== state.nominations?.at(-1)?.nominationId || block.tied || block.leaderNominationId === null || block.leaderVoteCount <= 0) reject("Execution must reference the current executable block");
     const targetNomination = (state.nominations ?? []).find((nomination) => nomination.nominationId === block?.leaderNominationId);
     if (targetNomination === undefined || targetNomination.nomineePlayerId !== first.payload.targetPlayerId) reject("Execution target must match the strict-highest block");
     if (resolved.payload.executionId !== first.payload.executionId || resolved.payload.targetPlayerId !== first.payload.targetPlayerId || (died !== undefined && (died.payload.executionId !== first.payload.executionId || died.payload.playerId !== first.payload.targetPlayerId))) reject("Execution chain payloads do not agree");
@@ -187,6 +189,8 @@ const validateBasicPhaseFlowBatch = (
     if (events.length !== 2 || events[1]?.eventType !== "PhaseTransitioned" || state.phase !== "EXECUTION_RESOLUTION") reject("Day close must pair with night transition");
     const transition = events[1] as Extract<AnyDomainEventEnvelope, { readonly eventType: "PhaseTransitioned" }>;
     const block = state.blocks?.at(-1);
+    if (first.payload.blockId !== null && first.payload.blockId !== `block-v1:${state.dayNumber}:${state.blocks?.length ?? 0}`) reject("Day close block identity is not canonical");
+    if (block !== undefined && (block.dayNumber !== state.dayNumber || block.nominationId !== state.nominations?.at(-1)?.nominationId)) reject("Day close must reference the current vote block");
     if (block?.leaderNominationId !== null && block?.leaderNominationId !== undefined && !block.tied && block.leaderVoteCount > 0) reject("Day close cannot bypass an executable block");
     if (transition.payload.toPhase !== "NIGHT_TASKS" || transition.payload.transitionReason !== "EXECUTION_RESOLVED") reject("Day close must transition to night tasks");
     return;
