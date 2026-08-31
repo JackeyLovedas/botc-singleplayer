@@ -4290,7 +4290,11 @@
     "WitchDeathPendingMarked terminal allowlist exception",
     "Dreamer/Vortox historical classification matrix"
   ],
-  "remainingBlockers": ["FINAL_CODE_AND_RULE_REVIEW_PENDING"],
+  "remainingBlockers": [
+    "FINAL_CODE_AND_RULE_REVIEW_PENDING",
+    "TYPECHECK_FAILED_ADDITIVE_TEST_ASSERTIONS",
+    "LINT_FAILED_ADDITIVE_TEST_ASSERTIONS"
+  ],
   "historicalFindingDispositions": {
     "LFC_IMPLEMENTATION_FILE_URL_ROOT_DOUBLE_CLASSIFICATION": "CLOSED_BY_IMPLEMENTATION",
     "LFC_IMPLEMENTATION_DIAGNOSTIC_REDACTION_INCOMPLETE": "CLOSED_BY_IMPLEMENTATION",
