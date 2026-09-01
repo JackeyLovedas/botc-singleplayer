@@ -436,7 +436,11 @@ function vitestRunArgs(cli, mode, projects, pattern, paths) {
   const args = [cli, "run", `--workspace=${WORKSPACE}`, ...projects.map((item) => `--project=${item}`)];
   if (projects[0] === "application-service-dreamer-vortox") args.push(APP_TEST);
   if (pattern !== null) args.push(`--testNamePattern=${pattern}`);
-  args.push("--reporter=blob", `--reporter=${SCRIPT_PATH}`, `--outputFile.blob=${paths.blob}`);
+  // Keep one Vitest worker for the whole logical group.  The existing
+  // VITEST_MAX_FORKS environment marker is consumed by the test harness, not
+  // by Vitest itself; without the explicit CLI bound, the worker RPC can
+  // time out while the parent drains concurrent task updates during coverage.
+  args.push("--maxWorkers=1", "--minWorkers=1", "--reporter=blob", `--reporter=${SCRIPT_PATH}`, `--outputFile.blob=${paths.blob}`);
   if (mode === "coverage") {
     args.push("--coverage", `--coverage.include=${COVERAGE_INCLUDE}`, "--coverage.reporter=json", `--coverage.reportsDirectory=${path.dirname(paths.coverage)}`);
   }
@@ -1624,6 +1628,8 @@ function selfTest() {
   check(Object.keys(ORDINARY).length === 9 && Object.values(ORDINARY).flat().length === 11, "ordinary topology");
   check(Object.keys(COVERAGE).length === 11 && Object.values(COVERAGE).flat().length === 12, "coverage topology");
   check(Object.values(WINDOWS).flat().length === 3, "windows topology");
+  const lifecycleArgs = vitestRunArgs("vitest.mjs", "ordinary", ["application-service-core"], null, { blob: "blob" });
+  check(lifecycleArgs.includes("--maxWorkers=1") && lifecycleArgs.includes("--minWorkers=1"), "single-worker lifecycle bound");
   check(EXPECTED_TOTAL.ordinary === 1733 && EXPECTED_TOTAL.coverage === 1733, "current totals");
   check(CURRENT_ORDINARY_COUNTS.reduce((sum, count) => sum + count, 0) === 1733, "current ordinary counts");
   check(CURRENT_COVERAGE_COUNTS.reduce((sum, count) => sum + count, 0) === 1733, "current coverage counts");
