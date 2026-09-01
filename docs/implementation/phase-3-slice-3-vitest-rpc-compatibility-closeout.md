@@ -56,10 +56,10 @@ compatibilityMergeCommit: `c6ea5ac22439dc2efbb5161af024a6cf3af0452e`
 compatibilityMergeCIFirstAttempt: `33501544643 SUCCESS`
 rpcTimeoutBlockerStatus: `CLOSED_BY_UPSTREAM_COMPATIBILITY_BACKPORT`
 reviewArchives: [`docs/reviews/pr-58-compatibility-review.md`]
-closeoutCommit: `PENDING`
-closeoutCI: `PENDING`
-finalControlCommit: `PENDING`
-finalControlCI: `PENDING`
+closeoutCommit: `c8c7afe969f19740b611c8b39d8875daa7a9aac6`
+closeoutCI: `33502330908 SUCCESS` ([run](https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/33502330908))
+finalControlCommit: `c8c7afe969f19740b611c8b39d8875daa7a9aac6`
+finalControlCI: `33502330908 SUCCESS`
 Phase3FinalAccepted: `true`
 Slice2CFinalAccepted: `true`
 Slice3Status: `ACCEPTED_AND_CLOSED_OUT`
