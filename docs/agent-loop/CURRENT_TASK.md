@@ -1,24 +1,21 @@
 # Current Task
 
-## Phase 3 — formally accepted and closed out
+## Phase 3 Slice 3 — Vitest RPC compatibility accepted and closed out
 
-- Status: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`.
-- Phase 3 high-level acceptance is met by the accepted Slice 2C flow. The
-  original Phase 4 setup/assignment requirements are already substantially
-  satisfied by accepted 2B1/2B2 vertical slices and are being reconciled, not
-  renumbered or reimplemented.
-- Slice 3 remains
-  `VALID_ARCHITECTURE_CANDIDATE_NOT_AUTHORIZED`; it is neither completed nor
-  started. 2B18 remains `HUMAN_BLOCKED_UNCHANGED`.
-- Top-priority project files `02_当前状态.md`, `01_决策日志.md`, and
-  `00_项目主档.md` were unavailable in the accessible workspace. Conclusions
-  are reconciled against repository operative authorities and remain subject
-  to correction if those files reappear with a conflicting decision.
-- `currentSlice=null`, `currentBranch=main`, `currentPR=null`,
+- Status: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`;
+  `slice3FinalAccepted=true`.
+- Slice 3 product merge remains frozen at `cc6f7523f0fdf7d4ecca551d6493e3f5e6062564`.
+  Compatibility PR #58 merged as `c6ea5ac22439dc2efbb5161af024a6cf3af0452e`;
+  first PR and merge-main CI runs `33501007647` and `33501544643` passed.
+- The active coverage profile remains `phase-3-slice-3-c5c8f6f-coverage-v1`
+  with 72 sources and 1,733 identities; reporter, diagnostic, evidence,
+  routing and workflow contracts are unchanged.
+- 2B18 remains `HUMAN_BLOCKED_UNCHANGED`. No next slice is authorized or
+  started: `currentSlice=null`, `currentBranch=main`, `currentPR=null`,
   `nextSliceStarted=false`, and `remainingBlockers=[]`.
-- Required next action: `AWAIT_USER_SELECTION_OF_NEXT_STAGE`.
+- Required next action: `AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`.
 - Closeout artifact:
-  `docs/implementation/phase-3-formal-closeout-and-roadmap-reconciliation.md`.
+  `docs/implementation/phase-3-slice-3-vitest-rpc-compatibility-closeout.md`.
 
 ## Phase 3 Slice 2C — accepted and closed out
 

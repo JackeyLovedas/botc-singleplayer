@@ -1,23 +1,21 @@
 # Project State
 
-## Current state — Phase 3 formally accepted and closed out
+## Current state — Phase 3 Slice 3 Vitest RPC compatibility accepted and closed out
 
-- Active state: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`.
-- Phase 3 high-level acceptance is met by accepted Slice 2C. Phase 4 setup and
-  assignment requirements are already substantially satisfied by accepted
-  2B1/2B2 slices; the original roadmap wording is retained as history and
-  reconciled without renumbering.
-- Slice 3 is
-  `VALID_ARCHITECTURE_CANDIDATE_NOT_AUTHORIZED` and has not started. 2B18 is
-  `HUMAN_BLOCKED_UNCHANGED` and remains frozen.
-- `currentSlice=null`, `currentBranch=main`, `currentPR=null`,
+- Active state: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`;
+  `slice3FinalAccepted=true`.
+- Slice 3 product merge is frozen at `cc6f7523f0fdf7d4ecca551d6493e3f5e6062564`.
+  Compatibility PR #58 merged as `c6ea5ac22439dc2efbb5161af024a6cf3af0452e`;
+  first PR and merge-main CI runs `33501007647` and `33501544643` succeeded.
+- Active coverage remains `phase-3-slice-3-c5c8f6f-coverage-v1` (72 sources,
+  1,733 identities). No product behavior, tests, rules, routing, coverage
+  profile or workflow topology changed.
+- 2B18 remains `HUMAN_BLOCKED_UNCHANGED`; no next slice is authorized or
+  started. `currentSlice=null`, `currentBranch=main`, `currentPR=null`,
   `nextSliceStarted=false`, `remainingBlockers=[]`.
-- Top-priority project files `02_当前状态.md`, `01_决策日志.md`, and
-  `00_项目主档.md` were unavailable in the accessible workspace; this state
-  remains subject to correction if they reappear with conflicting authority.
-- Required next action: `AWAIT_USER_SELECTION_OF_NEXT_STAGE`.
+- Required next action: `AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`.
 - Closeout artifact:
-  `docs/implementation/phase-3-formal-closeout-and-roadmap-reconciliation.md`.
+  `docs/implementation/phase-3-slice-3-vitest-rpc-compatibility-closeout.md`.
 
 ## Current state — Phase 3 Slice 2C accepted and closed out
 
