@@ -118,15 +118,15 @@ const GLOBAL_ROOTS = Object.freeze({
   ordinary: ".vitest-test/segmented-global",
   coverage: ".vitest-coverage/segmented-global"
 });
-const EXPECTED_TOTAL = Object.freeze({ ordinary: 1733, coverage: 1733, windows: 46 });
+const EXPECTED_TOTAL = Object.freeze({ ordinary: 1744, coverage: 1744, windows: 46 });
 const EXPECTED_PHYSICAL = Object.freeze({ ordinary: 11, coverage: 12, windows: 3 });
 const EXPECTED_LOGICAL = Object.freeze({ ordinary: 9, coverage: 11, windows: 1 });
 const D15_BASELINE_PATH =
   "docs/implementation/phase-3-slice-2b20b-p2f1r-d1-5-routing-baseline-manifest.json";
 const D15_ORDINARY_COUNTS = Object.freeze([207, 503, 465, 90, 52, 82, 26, 46, 241]);
 const D15_COVERAGE_COUNTS = Object.freeze([207, 503, 465, 90, 52, 73, 9, 26, 36, 10, 241]);
-const CURRENT_ORDINARY_COUNTS = Object.freeze([207, 518, 465, 96, 52, 82, 26, 46, 241]);
-const CURRENT_COVERAGE_COUNTS = Object.freeze([207, 518, 465, 96, 52, 73, 9, 26, 36, 10, 241]);
+const CURRENT_ORDINARY_COUNTS = Object.freeze([207, 518, 465, 96, 52, 82, 26, 46, 252]);
+const CURRENT_COVERAGE_COUNTS = Object.freeze([207, 518, 465, 96, 52, 73, 9, 26, 36, 10, 252]);
 
 export class VitestEvidenceError extends Error {
   constructor(code, detail) {
@@ -1624,9 +1624,9 @@ function selfTest() {
   check(Object.keys(ORDINARY).length === 9 && Object.values(ORDINARY).flat().length === 11, "ordinary topology");
   check(Object.keys(COVERAGE).length === 11 && Object.values(COVERAGE).flat().length === 12, "coverage topology");
   check(Object.values(WINDOWS).flat().length === 3, "windows topology");
-  check(EXPECTED_TOTAL.ordinary === 1733 && EXPECTED_TOTAL.coverage === 1733, "current totals");
-  check(CURRENT_ORDINARY_COUNTS.reduce((sum, count) => sum + count, 0) === 1733, "current ordinary counts");
-  check(CURRENT_COVERAGE_COUNTS.reduce((sum, count) => sum + count, 0) === 1733, "current coverage counts");
+  check(EXPECTED_TOTAL.ordinary === 1744 && EXPECTED_TOTAL.coverage === 1744, "current totals");
+  check(CURRENT_ORDINARY_COUNTS.reduce((sum, count) => sum + count, 0) === 1744, "current ordinary counts");
+  check(CURRENT_COVERAGE_COUNTS.reduce((sum, count) => sum + count, 0) === 1744, "current coverage counts");
   check(D15_ORDINARY_COUNTS.reduce((sum, count) => sum + count, 0) === 1712, "D1.5R ordinary counts");
   check(D15_COVERAGE_COUNTS.reduce((sum, count) => sum + count, 0) === 1712, "D1.5R coverage counts");
   verifyD15Baseline(repositoryRoot());
