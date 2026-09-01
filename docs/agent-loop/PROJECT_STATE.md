@@ -9,6 +9,8 @@
   `8596022be93d3f0a90664889469ce0914aceed33`.
 - Exact-head product CI passed on push `33516692557` and PR `33516698595`;
   merge-main CI `33517604706` passed for the exact merge SHA.
+- Docs-only closeout commit `51f994a8368fcb7d5697de9208bc1873c208d20c` and
+  exact closeout CI `33519457026` both passed.
 - Active profile: `phase-3-slice-4-c7142a5-coverage-v1` (72 sources,
   1,746 identities); test delta `+13/-0`, production source-file delta `0`.
 - Final independent code/rule review passed at the frozen feature HEAD with

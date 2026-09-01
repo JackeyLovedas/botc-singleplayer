@@ -5146,9 +5146,9 @@
     "codeVerdict": "CODE_REVIEW_PASS",
     "ruleVerdict": "RULE_REVIEW_PASS",
     "remainingBlockers": [],
-    "closeoutCommit": null,
-    "closeoutCI": { "status": "PENDING" },
-    "finalControlCommit": null,
-    "finalControlCI": { "status": "PENDING" }
+    "closeoutCommit": "51f994a8368fcb7d5697de9208bc1873c208d20c",
+    "closeoutCI": { "run": 33519457026, "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/33519457026", "status": "SUCCESS" },
+    "finalControlCommit": "51f994a8368fcb7d5697de9208bc1873c208d20c",
+    "finalControlCI": { "run": 33519457026, "status": "SUCCESS" }
   }
 }

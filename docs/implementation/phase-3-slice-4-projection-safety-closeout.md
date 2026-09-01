@@ -42,6 +42,8 @@ death state.
 - Exact reviewed-head hosted CI: push `33516692557`, PR `33516698595`.
 - Merge commit: `d01f19dc270e5374f7892af86dabc086f91bb969`; merge-main CI
   `33517604706` completed successfully.
+- Docs-only closeout commit: `51f994a8368fcb7d5697de9208bc1873c208d20c`;
+  exact closeout CI `33519457026` completed successfully.
 - Independent final code and rule reviews at the exact feature HEAD returned
   `CODE_REVIEW_PASS` and `RULE_REVIEW_PASS`, with empty findings/blockers.
 

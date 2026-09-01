@@ -9,6 +9,8 @@
   frozen feature HEAD is `8596022be93d3f0a90664889469ce0914aceed33`.
 - Exact-head product CI passed on push `33516692557` and PR
   `33516698595`; merge-main CI `33517604706` passed on merge SHA.
+- Docs-only closeout commit is `51f994a8368fcb7d5697de9208bc1873c208d20c`;
+  exact closeout CI `33519457026` passed.
 - Active coverage profile is `phase-3-slice-4-c7142a5-coverage-v1` with
   72 sources and 1,746 test identities. Test identity delta is `+13/-0`;
   production source-file delta is `0`.

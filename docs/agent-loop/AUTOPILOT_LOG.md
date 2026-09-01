@@ -356,3 +356,11 @@
   `HUMAN_BLOCKED_UNCHANGED`; `currentSlice=null`, `currentBranch=main`,
   `currentPR=null`, and no next slice was started. Required next action is
   `AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`.
+
+## 2026-09-01T22:36:00+08:00 — phase-3-slice-4-closeout-ci-confirmed
+
+- Exact docs-only closeout commit `51f994a8368fcb7d5697de9208bc1873c208d20c`
+  passed main CI run `33519457026`.
+- This closes the Slice 4 evidence chain without changing product behavior,
+  tests, workflow topology, dependencies, rules, or role statuses. No Slice 5
+  was started; authority review remains the next action.
