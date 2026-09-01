@@ -1,0 +1,288 @@
+diff --git a/dist/chunks/cli-api.DWGBtMmz.js b/dist/chunks/cli-api.DWGBtMmz.js
+index 8730a5c19229dc14e527146a458341e13340ad9f..558c2b9e6c8e42f34aac8b0f85f0356483fc55c9 100644
+--- a/dist/chunks/cli-api.DWGBtMmz.js
++++ b/dist/chunks/cli-api.DWGBtMmz.js
+@@ -5176,13 +5176,12 @@ function setup(ctx, _server) {
+ 			],
+ 			serialize: (data) => stringify(data, stringifyReplace),
+ 			deserialize: parse,
+-			onTimeoutError(functionName) {
+-				throw new Error(`[vitest-api]: Timeout calling "${functionName}"`);
+-			}
++			timeout: -1
+ 		});
+ 		clients.set(ws, rpc);
+ 		ws.on("close", () => {
+ 			clients.delete(ws);
++			rpc.$close(new Error("[vitest-api]: Pending methods while closing rpc"));
+ 		});
+ 	}
+ 	ctx.reporters.push(new WebSocketReporter(ctx, wss, clients));
+diff --git a/dist/chunks/coverage.DfSpMS-b.js b/dist/chunks/coverage.DfSpMS-b.js
+index d2c98ebd58552fa3006c35aac57ca6496c024da7..6c601223e50b8a7aee6fd839fe1f4e51f7f85d23 100644
+--- a/dist/chunks/coverage.DfSpMS-b.js
++++ b/dist/chunks/coverage.DfSpMS-b.js
+@@ -2570,11 +2570,6 @@ function createChildProcessChannel$1(project, collect = false) {
+ 		message: "message",
+ 		response: "response"
+ 	};
+-	const channel = {
+-		onMessage: (callback) => emitter.on(events.message, callback),
+-		postMessage: (message) => emitter.emit(events.response, message),
+-		onClose: () => emitter.removeAllListeners()
+-	};
+ 	const rpc = createBirpc(createMethodsRPC(project, {
+ 		cacheFs: true,
+ 		collect
+@@ -2598,11 +2593,17 @@ function createChildProcessChannel$1(project, collect = false) {
+ 		on(fn) {
+ 			emitter.on(events.response, fn);
+ 		},
+-		onTimeoutError(functionName) {
+-			throw new Error(`[vitest-pool]: Timeout calling "${functionName}"`);
+-		}
++		timeout: -1
+ 	});
+ 	project.vitest.onCancel((reason) => rpc.onCancel(reason));
++	const channel = {
++		onMessage: (callback) => emitter.on(events.message, callback),
++		postMessage: (message) => emitter.emit(events.response, message),
++		onClose: () => {
++			emitter.removeAllListeners();
++			rpc.$close(new Error("[vitest-pool]: Pending methods while closing rpc"));
++		}
++	};
+ 	return channel;
+ }
+ function createForksPool(vitest, { execArgv, env }) {
+@@ -2731,14 +2732,17 @@ function createWorkerChannel$1(project, collect) {
+ 		on(fn) {
+ 			port.on("message", fn);
+ 		},
+-		onTimeoutError(functionName) {
+-			throw new Error(`[vitest-pool]: Timeout calling "${functionName}"`);
+-		}
++		timeout: -1
+ 	});
+ 	project.vitest.onCancel((reason) => rpc.onCancel(reason));
++	const onClose = () => {
++		port.close();
++		workerPort.close();
++		rpc.$close(new Error("[vitest-pool]: Pending methods while closing rpc"));
++	};
+ 	return {
+ 		workerPort,
+-		port
++		onClose
+ 	};
+ }
+ function createThreadsPool(vitest, { execArgv, env }) {
+@@ -2771,11 +2775,7 @@ function createThreadsPool(vitest, { execArgv, env }) {
+ 		async function runFiles(project, config, files, environment, invalidates = []) {
+ 			const paths = files.map((f) => f.filepath);
+ 			vitest.state.clearFiles(project, paths);
+-			const { workerPort, port } = createWorkerChannel$1(project, name === "collect");
+-			const onClose = () => {
+-				port.close();
+-				workerPort.close();
+-			};
++			const { workerPort, onClose } = createWorkerChannel$1(project, name === "collect");
+ 			const workerId = ++id;
+ 			const data = {
+ 				pool: "threads",
+@@ -3027,15 +3027,10 @@ function stringToBytes(input, percentageReference) {
+ const suppressWarningsPath$1 = resolve(rootDir, "./suppress-warnings.cjs");
+ function createChildProcessChannel(project, collect) {
+ 	const emitter = new EventEmitter();
+-	const cleanup = () => emitter.removeAllListeners();
+ 	const events = {
+ 		message: "message",
+ 		response: "response"
+ 	};
+-	const channel = {
+-		onMessage: (callback) => emitter.on(events.message, callback),
+-		postMessage: (message) => emitter.emit(events.response, message)
+-	};
+ 	const rpc = createBirpc(createMethodsRPC(project, {
+ 		cacheFs: true,
+ 		collect
+@@ -3059,14 +3054,19 @@ function createChildProcessChannel(project, collect) {
+ 		on(fn) {
+ 			emitter.on(events.response, fn);
+ 		},
+-		onTimeoutError(functionName) {
+-			throw new Error(`[vitest-pool]: Timeout calling "${functionName}"`);
+-		}
++		timeout: -1
+ 	});
+ 	project.vitest.onCancel((reason) => rpc.onCancel(reason));
++	const channel = {
++		onMessage: (callback) => emitter.on(events.message, callback),
++		postMessage: (message) => emitter.emit(events.response, message),
++		onClose: () => {
++			emitter.removeAllListeners();
++			rpc.$close(new Error("[vitest-pool]: Pending methods while closing rpc"));
++		}
++	};
+ 	return {
+-		channel,
+-		cleanup
++		channel
+ 	};
+ }
+ function createVmForksPool(vitest, { execArgv, env }) {
+@@ -3104,7 +3104,7 @@ function createVmForksPool(vitest, { execArgv, env }) {
+ 		async function runFiles(project, config, files, environment, invalidates = []) {
+ 			const paths = files.map((f) => f.filepath);
+ 			vitest.state.clearFiles(project, paths);
+-			const { channel, cleanup } = createChildProcessChannel(project, name === "collect");
++			const { channel } = createChildProcessChannel(project, name === "collect");
+ 			const workerId = ++id;
+ 			const data = {
+ 				pool: "forks",
+@@ -3128,7 +3128,7 @@ function createVmForksPool(vitest, { execArgv, env }) {
+ 				else if (vitest.isCancelling && error instanceof Error && /The task has been cancelled/.test(error.message)) vitest.state.cancelFiles(paths, project);
+ 				else throw error;
+ 			} finally {
+-				cleanup();
++				channel.onClose();
+ 			}
+ 		}
+ 		return async (specs, invalidates) => {
+@@ -3179,14 +3179,17 @@ function createWorkerChannel(project, collect) {
+ 		on(fn) {
+ 			port.on("message", fn);
+ 		},
+-		onTimeoutError(functionName) {
+-			throw new Error(`[vitest-pool]: Timeout calling "${functionName}"`);
+-		}
++		timeout: -1
+ 	});
+ 	project.vitest.onCancel((reason) => rpc.onCancel(reason));
++	const onClose = () => {
++		workerPort.close();
++		port.close();
++		rpc.$close(new Error("[vitest-pool]: Pending methods while closing rpc"));
++	};
+ 	return {
+ 		workerPort,
+-		port
++		onClose
+ 	};
+ }
+ function createVmThreadsPool(vitest, { execArgv, env }) {
+@@ -3224,7 +3227,7 @@ function createVmThreadsPool(vitest, { execArgv, env }) {
+ 		async function runFiles(project, config, files, environment, invalidates = []) {
+ 			const paths = files.map((f) => f.filepath);
+ 			vitest.state.clearFiles(project, paths);
+-			const { workerPort, port } = createWorkerChannel(project, name === "collect");
++			const { workerPort, onClose } = createWorkerChannel(project, name === "collect");
+ 			const workerId = ++id;
+ 			const data = {
+ 				pool: "vmThreads",
+@@ -3249,8 +3252,7 @@ function createVmThreadsPool(vitest, { execArgv, env }) {
+ 				else if (vitest.isCancelling && error instanceof Error && /The task has been cancelled/.test(error.message)) vitest.state.cancelFiles(paths, project);
+ 				else throw error;
+ 			} finally {
+-				port.close();
+-				workerPort.close();
++				onClose();
+ 			}
+ 		}
+ 		return async (specs, invalidates) => {
+diff --git a/dist/chunks/index.B521nVV-.js b/dist/chunks/index.B521nVV-.js
+index e0ecf1295073ab166a317456fc336a334daf5a06..fb6b0c99a1b6cc39d46702a2f946cf27595302e9 100644
+--- a/dist/chunks/index.B521nVV-.js
++++ b/dist/chunks/index.B521nVV-.js
+@@ -29,6 +29,9 @@ function createBirpc(functions, options) {
+         return functions;
+       if (method === "$close")
+         return close;
++      if (method === "$rejectPendingCalls") {
++        return rejectPendingCalls;
++      }
+       if (method === "$closed")
+         return closed;
+       if (method === "then" && !eventNames.includes("then") && !("then" in functions))
+@@ -83,6 +86,17 @@ function createBirpc(functions, options) {
+     rpcPromiseMap.clear();
+     off(onMessage);
+   }
++  function rejectPendingCalls(handler) {
++    const entries = Array.from(rpcPromiseMap.values());
++    const handlerResults = entries.map(({ method, reject }) => {
++      if (!handler) {
++        return reject(new Error(`[birpc]: rejected pending call "${method}".`));
++      }
++      return handler({ method, reject });
++    });
++    rpcPromiseMap.clear();
++    return handlerResults;
++  }
+   async function onMessage(data, ...extra) {
+     let msg;
+     try {
+diff --git a/dist/chunks/rpc.-pEldfrD.js b/dist/chunks/rpc.-pEldfrD.js
+index a48eb0174a4fbc508a36c46ff78b0f9bf7ba6295..430cee572e64badb98d3e3dc8ec8a1fd28740cc7 100644
+--- a/dist/chunks/rpc.-pEldfrD.js
++++ b/dist/chunks/rpc.-pEldfrD.js
+@@ -45,13 +45,7 @@ function createRuntimeRpc(options) {
+ 			"onCollected",
+ 			"onCancel"
+ 		],
+-		onTimeoutError(functionName, args) {
+-			let message = `[vitest-worker]: Timeout calling "${functionName}"`;
+-			if (functionName === "fetch" || functionName === "transform" || functionName === "resolveId") message += ` with "${JSON.stringify(args)}"`;
+-			// JSON.stringify cannot serialize Error instances
+-			if (functionName === "onUnhandledError") message += ` with "${args[0]?.message || args[0]}"`;
+-			throw new Error(message);
+-		},
++		timeout: -1,
+ 		...options
+ 	}));
+ 	return {
+@@ -61,6 +55,8 @@ function createRuntimeRpc(options) {
+ }
+ function createSafeRpc(rpc) {
+ 	return new Proxy(rpc, { get(target, p, handler) {
++		// keep $rejectPendingCalls as sync function
++		if (p === "$rejectPendingCalls") return rpc.$rejectPendingCalls;
+ 		const sendCall = get(target, p, handler);
+ 		const safeSendCall = (...args) => withSafeTimers(async () => {
+ 			const result = sendCall(...args);
+diff --git a/dist/worker.js b/dist/worker.js
+index 91b87b274086cfc7a15db2b54ae27c39fc7036fb..acc8ac3ee74f9f4ca6a85c9f790e02d489c2ecce 100644
+--- a/dist/worker.js
++++ b/dist/worker.js
+@@ -69,7 +69,7 @@ if (isChildProcess()) {
+ async function execute(method, ctx) {
+ 	disposeInternalListeners();
+ 	const prepareStart = performance.now();
+-	const inspectorCleanup = setupInspect(ctx);
++	const cleanups = [setupInspect(ctx)];
+ 	process.env.VITEST_WORKER_ID = String(ctx.workerId);
+ 	process.env.VITEST_POOL_ID = String(workerId);
+ 	try {
+@@ -82,6 +82,12 @@ async function execute(method, ctx) {
+ 		if (!worker.getRpcOptions || typeof worker.getRpcOptions !== "function") throw new TypeError(`Test worker should expose "getRpcOptions" method. Received "${typeof worker.getRpcOptions}".`);
+ 		// RPC is used to communicate between worker (be it a thread worker or child process or a custom implementation) and the main thread
+ 		const { rpc, onCancel } = createRuntimeRpc(worker.getRpcOptions(ctx));
++		// Keep the RPC channel open long enough to surface pending-call errors to the main thread.
++		cleanups.push(async () => {
++			await Promise.all(rpc.$rejectPendingCalls(({ method, reject }) => {
++				reject(new Error(`[vitest-worker]: Closing rpc while "${method}" was pending`));
++			}));
++		});
+ 		const beforeEnvironmentTime = performance.now();
+ 		const environment = await loadEnvironment(ctx, rpc);
+ 		if (ctx.environment.transformMode) environment.transformMode = ctx.environment.transformMode;
+@@ -107,8 +113,8 @@ async function execute(method, ctx) {
+ 		if (!worker[methodName] || typeof worker[methodName] !== "function") throw new TypeError(`Test worker should expose "runTests" method. Received "${typeof worker.runTests}".`);
+ 		await worker[methodName](state);
+ 	} finally {
++		await Promise.all(cleanups.map((fn) => fn()));
+ 		await rpcDone().catch(() => {});
+-		inspectorCleanup();
+ 	}
+ }
+ function run(ctx) {

@@ -5,3 +5,5 @@ onlyBuiltDependencies:
   - esbuild
 allowBuilds:
   esbuild: true
+patchedDependencies:
+  vitest@3.2.6: patches/vitest@3.2.6.patch
