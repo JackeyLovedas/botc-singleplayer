@@ -39,6 +39,7 @@ describe("architecture boundaries", () => {
     const setupNames = dependencyNames(await readPackageJson("packages/setup-engine/package.json"));
     const informationNames = dependencyNames(await readPackageJson("packages/information-engine/package.json"));
     const projectionNames = dependencyNames(await readPackageJson("packages/projections/package.json"));
+    const projectionSource = await readFile("packages/projections/src/index.ts", "utf8");
     const taskNames = dependencyNames(await readPackageJson("packages/task-engine/package.json"));
     const testHarnessNames = dependencyNames(await readPackageJson("packages/test-harness/package.json"));
 
@@ -46,6 +47,9 @@ describe("architecture boundaries", () => {
     expect(setupNames).toStrictEqual(["@botc/domain-core"]);
     expect(informationNames).toStrictEqual(["@botc/domain-core"]);
     expect(projectionNames).toStrictEqual(["@botc/domain-core"]);
+    expect(projectionSource).toContain("buildPublicGameProjection");
+    expect(projectionSource).not.toMatch(/Receipt|CommandStore|commandStore|command-store|fingerprint/);
+    expect(projectionSource).not.toMatch(/@botc\/(application|persistence|test-harness)/);
     expect(taskNames).toStrictEqual(["@botc/domain-core"]);
     expect(testHarnessNames).toEqual(expect.arrayContaining([
       "@botc/application",

@@ -71,6 +71,8 @@ import type {
   ,MathematicianInformationDeliveredPayload
   ,AnyDomainEventEnvelope
 } from "@botc/domain-core";
+import { rebuildGameState } from "@botc/domain-core";
+import type { GameId, GamePhase, SeatNumber } from "@botc/domain-core";
 
 type SupportedInitialPrivateKnowledgePayload = InitialPrivateKnowledgeEstablishedPayload & {
   readonly knowledgeModelVersion: typeof SUPPORTED_INITIAL_KNOWLEDGE_MODEL_VERSION;
@@ -764,3 +766,157 @@ export const buildAiPrivateKnowledgeViewFromAcceptedEventStream = (
   events: readonly AnyDomainEventEnvelope[],
   viewerPlayerId: PlayerId
 ): PlayerPrivateKnowledgeView => buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(events, viewerPlayerId);
+
+export type PublicProjectionLifeStatus = "ALIVE" | "DEAD";
+
+export type PublicGameProjection = {
+  readonly projectionVersion: "public-game-projection-v1";
+  readonly gameId: GameId;
+  readonly gameVersion: number;
+  readonly phase: GamePhase;
+  readonly dayNumber: number;
+  readonly nightNumber: number;
+  readonly roster: readonly {
+    readonly playerId: PlayerId;
+    readonly seatNumber: SeatNumber;
+    readonly displayName: string;
+    readonly lifeStatus: PublicProjectionLifeStatus;
+  }[];
+  readonly nominations: readonly {
+    readonly nominatorPlayerId: PlayerId;
+    readonly nomineePlayerId: PlayerId;
+    readonly dayNumber: number;
+    readonly nominationOrdinal: number;
+    readonly votes: readonly {
+      readonly voterPlayerId: PlayerId;
+      readonly choice: "YES" | "NO";
+    }[];
+    readonly voteCounts: {
+      readonly yesCount: number;
+      readonly noCount: number;
+    };
+  }[];
+  readonly executions: readonly {
+    readonly targetPlayerId: PlayerId;
+    readonly dayNumber: number;
+    readonly status: "EXECUTED";
+    readonly targetLifeStatus: PublicProjectionLifeStatus;
+  }[];
+};
+
+export type GeneralPlayerProjection = {
+  readonly projectionVersion: "general-player-projection-v1";
+  readonly viewerPlayerId: PlayerId;
+  readonly public: PublicGameProjection;
+  readonly privateKnowledge: PlayerPrivateKnowledgeView;
+};
+
+const publicProjectionState = (state: GameState): PublicGameProjection => {
+  if (state.roster === undefined) {
+    throw new DomainError("PrivateKnowledgeUnavailable", "Public projection requires canonical roster state");
+  }
+
+  const deadPlayerIds = new Set(state.deadPlayerIds ?? []);
+  const roster = [...state.roster.entries]
+    .sort((left, right) => left.seatNumber - right.seatNumber)
+    .map((entry) => ({
+    playerId: entry.playerId,
+    seatNumber: entry.seatNumber,
+    displayName: entry.displayName,
+    lifeStatus: deadPlayerIds.has(entry.playerId) ? "DEAD" as const : "ALIVE" as const
+  }));
+  const orderedNominations = [...(state.nominations ?? [])].sort((left, right) =>
+    left.dayNumber - right.dayNumber || left.nominationOrdinal - right.nominationOrdinal
+  );
+  const nominationIds = new Set<string>();
+  const nominationOrdinals = new Set<string>();
+  for (const nomination of orderedNominations) {
+    if (nominationIds.has(nomination.nominationId)) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Public projection requires unique canonical nominations");
+    }
+    const ordinalKey = `${nomination.dayNumber}:${nomination.nominationOrdinal}`;
+    if (nominationOrdinals.has(ordinalKey)) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Public projection requires unique nomination ordinals");
+    }
+    nominationIds.add(nomination.nominationId);
+    nominationOrdinals.add(ordinalKey);
+  }
+  const votesByNomination = new Map<string, NonNullable<GameState["votes"]>[number][]>();
+  for (const vote of state.votes ?? []) {
+    if (!nominationIds.has(vote.nominationId)) {
+      throw new DomainError("PrivateKnowledgeUnavailable", "Public projection requires nomination-linked votes");
+    }
+    const existing = votesByNomination.get(vote.nominationId) ?? [];
+    existing.push(vote);
+    votesByNomination.set(vote.nominationId, existing);
+  }
+  const nominations = orderedNominations.map((nomination) => {
+    const votes = votesByNomination.get(nomination.nominationId) ?? [];
+    const publicVotes = votes.map((vote) => ({
+      voterPlayerId: vote.voterPlayerId as PlayerId,
+      choice: vote.choice
+    }));
+    const voteCounts = publicVotes.reduce(
+      (counts, vote) => {
+        if (vote.choice === "YES") counts.yesCount += 1;
+        else counts.noCount += 1;
+        return counts;
+      },
+      { yesCount: 0, noCount: 0 }
+    );
+    return {
+    nominatorPlayerId: nomination.nominatorPlayerId as PlayerId,
+    nomineePlayerId: nomination.nomineePlayerId as PlayerId,
+    dayNumber: nomination.dayNumber,
+    nominationOrdinal: nomination.nominationOrdinal,
+    votes: publicVotes,
+    voteCounts
+    };
+  });
+  const executions = [...(state.executions ?? [])]
+    .sort((left, right) => left.dayNumber - right.dayNumber)
+    .map((execution) => ({
+    targetPlayerId: execution.targetPlayerId as PlayerId,
+    dayNumber: execution.dayNumber,
+    status: "EXECUTED" as const,
+    targetLifeStatus: deadPlayerIds.has(execution.targetPlayerId) ? "DEAD" as const : "ALIVE" as const
+    }));
+
+  return {
+    projectionVersion: "public-game-projection-v1",
+    gameId: state.gameId,
+    gameVersion: state.gameVersion,
+    phase: state.phase,
+    dayNumber: state.dayNumber,
+    nightNumber: state.nightNumber,
+    roster,
+    nominations,
+    executions
+  };
+};
+
+export const buildPublicGameProjection = (state: GameState): PublicGameProjection => publicProjectionState(state);
+
+export const buildPublicGameProjectionFromAcceptedEventStream = (
+  events: readonly AnyDomainEventEnvelope[]
+): PublicGameProjection => buildPublicGameProjection(rebuildGameState(events));
+
+export const buildGeneralPlayerProjection = (
+  state: GameState,
+  viewerPlayerId: PlayerId
+): GeneralPlayerProjection => ({
+  projectionVersion: "general-player-projection-v1",
+  viewerPlayerId,
+  public: buildPublicGameProjection(state),
+  privateKnowledge: buildPlayerPrivateKnowledgeView(state, viewerPlayerId)
+});
+
+export const buildGeneralPlayerProjectionFromAcceptedEventStream = (
+  events: readonly AnyDomainEventEnvelope[],
+  viewerPlayerId: PlayerId
+): GeneralPlayerProjection => ({
+  projectionVersion: "general-player-projection-v1",
+  viewerPlayerId,
+  public: buildPublicGameProjectionFromAcceptedEventStream(events),
+  privateKnowledge: buildPlayerPrivateKnowledgeViewFromAcceptedEventStream(events, viewerPlayerId)
+});

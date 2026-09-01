@@ -914,6 +914,8 @@ const CURRENT_PROFILE_ID = "phase-3-slice-2c-closure-52c4e97-coverage-v1";
 const CURRENT_PROFILE_SOURCE_HEAD = "52c4e975ea0b3e38890318ed253718f552d77427";
 const SLICE3_PROFILE_ID = "phase-3-slice-3-c5c8f6f-coverage-v1";
 const SLICE3_PROFILE_SOURCE_HEAD = "c5c8f6fabe863f9ec45536305d87c1d5ad2e209b";
+const SLICE4_PROFILE_ID = "phase-3-slice-4-c7142a5-coverage-v1";
+const SLICE4_PROFILE_SOURCE_HEAD = "c952447ae0b49d6fd3e6996610d7657e06c8f578";
 const PREVIOUS_PROFILE_ID = "phase-3-slice-2c-correction-2290425-coverage-v1";
 const PREVIOUS_PROFILE_SOURCE_HEAD = "2290425eb7fe79126583a27ef1c3b7a1c9a15a8a";
 const OLDER_PROFILE_ID = "phase-3-slice-2c-correction-98a27cf-coverage-v1";
@@ -932,6 +934,9 @@ const CURRENT_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group)
 const SLICE3_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
   group.id === "domain-core-rest" ? { ...group, tests: 518 } :
     group.id === "application-service-core" ? { ...group, tests: 96 } : group
+));
+const SLICE4_COVERAGE_GROUPS = Object.freeze(SLICE3_COVERAGE_GROUPS.map((group) =>
+  group.id === "engines-and-projections" ? { ...group, tests: 254 } : group
 ));
 const HISTORICAL_CLOSURE_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
   group.id === "domain-core-rest" ? { ...group, tests: 509 } :
@@ -1147,8 +1152,10 @@ function validateProfileArtifactBytes(record, bytes) {
   try { artifact = JSON.parse(bytes.toString("utf8")); } catch { throw new Error("COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: malformed JSON"); }
   assertExactPlain(artifact, PROFILE_ARTIFACT_KEYS, "profile artifact", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
   assertExactPlain(artifact.obligations, PROFILE_OBLIGATION_KEYS, "profile obligations", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
-  const expectedGroups = record.profileId === SLICE3_PROFILE_ID && record.sourceHead === SLICE3_PROFILE_SOURCE_HEAD
-    ? SLICE3_COVERAGE_GROUPS
+  const expectedGroups = record.profileId === SLICE4_PROFILE_ID && record.sourceHead === SLICE4_PROFILE_SOURCE_HEAD
+    ? SLICE4_COVERAGE_GROUPS
+    : record.profileId === SLICE3_PROFILE_ID && record.sourceHead === SLICE3_PROFILE_SOURCE_HEAD
+      ? SLICE3_COVERAGE_GROUPS
     : record.profileId === CURRENT_PROFILE_ID && record.sourceHead === CURRENT_PROFILE_SOURCE_HEAD
       ? CURRENT_COVERAGE_GROUPS
     : record.profileId === "phase-3-slice-2c-closure-0b4640e-coverage-v1"
