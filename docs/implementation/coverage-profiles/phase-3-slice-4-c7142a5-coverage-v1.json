@@ -8,7 +8,7 @@
   "tupleSha256": "31ea9dc9facfe43882a78387db8e78361b8227902407e768cd410597b5ce740d",
   "logicalGroupCount": 11,
   "physicalGroupCount": 12,
-  "profileSha256": "733ea88f73d2f9566ab25c6a0cda4ca2ccffd67eda76679c7436827c7e33e485",
+  "profileSha256": "6d160088dc277953a6d25c85aad1491071c057b455cb875f8f381b259fa3515c",
   "topology": {
     "topologyId": "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS",
     "ordinaryLogicalGroupCount": 9,
