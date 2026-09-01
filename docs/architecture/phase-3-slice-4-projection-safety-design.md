@@ -95,6 +95,14 @@ persistence surfaces, or Slice 5 files may change. Existing logical group
 and `newApprovedStructuralDeltaCount=0`; test identity loss is zero and role
 coverage remains unchanged.
 
+The existing CI wiring may receive only the minimal evidence-plumbing changes
+needed to consume the frozen Slice 4 profile and execute its already-owned
+projection identities on Windows: the coverage job's profile argument may be
+updated from the superseded Slice 3 profile to the appended Slice 4 profile,
+and the existing projections package test command may include the new public
+projection test file. These are selector/command-surface updates only; they do
+not alter workflow topology, test behavior, or any product authority.
+
 ### Corrected closed schemas and canonical identity boundary
 
 The public schema is exactly (votes and counts are nested under their

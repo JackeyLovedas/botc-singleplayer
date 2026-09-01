@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "cd ../.. && vitest run --workspace vitest.workspace.ts packages/projections/src/private-knowledge-view.test.ts packages/projections/src/clockmaker-private-knowledge.test.ts"
+    "test": "cd ../.. && vitest run --workspace vitest.workspace.ts packages/projections/src/private-knowledge-view.test.ts packages/projections/src/clockmaker-private-knowledge.test.ts packages/projections/src/public-player-projection.test.ts"
   },
   "dependencies": {
     "@botc/domain-core": "workspace:*"
