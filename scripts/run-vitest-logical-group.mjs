@@ -1624,9 +1624,9 @@ function selfTest() {
   check(Object.keys(ORDINARY).length === 9 && Object.values(ORDINARY).flat().length === 11, "ordinary topology");
   check(Object.keys(COVERAGE).length === 11 && Object.values(COVERAGE).flat().length === 12, "coverage topology");
   check(Object.values(WINDOWS).flat().length === 3, "windows topology");
-  check(EXPECTED_TOTAL.ordinary === 1744 && EXPECTED_TOTAL.coverage === 1744, "current totals");
-  check(CURRENT_ORDINARY_COUNTS.reduce((sum, count) => sum + count, 0) === 1744, "current ordinary counts");
-  check(CURRENT_COVERAGE_COUNTS.reduce((sum, count) => sum + count, 0) === 1744, "current coverage counts");
+  check(EXPECTED_TOTAL.ordinary === 1746 && EXPECTED_TOTAL.coverage === 1746, "current totals");
+  check(CURRENT_ORDINARY_COUNTS.reduce((sum, count) => sum + count, 0) === 1746, "current ordinary counts");
+  check(CURRENT_COVERAGE_COUNTS.reduce((sum, count) => sum + count, 0) === 1746, "current coverage counts");
   check(D15_ORDINARY_COUNTS.reduce((sum, count) => sum + count, 0) === 1712, "D1.5R ordinary counts");
   check(D15_COVERAGE_COUNTS.reduce((sum, count) => sum + count, 0) === 1712, "D1.5R coverage counts");
   verifyD15Baseline(repositoryRoot());
