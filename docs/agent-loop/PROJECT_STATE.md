@@ -1,5 +1,29 @@
 # Project State
 
+## Current state — Phase 3 Slice 4 Projection Safety accepted and closed out
+
+- Active state: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`;
+  `slice3FinalAccepted=true`; `slice4FinalAccepted=true`.
+- Base main head: `ad0e3ff86d7ff37e1db5a14fd908be5c46d9d57d`. PR #59 merged as
+  `d01f19dc270e5374f7892af86dabc086f91bb969`; frozen feature HEAD is
+  `8596022be93d3f0a90664889469ce0914aceed33`.
+- Exact-head product CI passed on push `33516692557` and PR `33516698595`;
+  merge-main CI `33517604706` passed for the exact merge SHA.
+- Active profile: `phase-3-slice-4-c7142a5-coverage-v1` (72 sources,
+  1,746 identities); test delta `+13/-0`, production source-file delta `0`.
+- Final independent code/rule review passed at the frozen feature HEAD with
+  empty findings and blockers. Verbatim archives:
+  `docs/reviews/pr-59-code-review-final.md` and
+  `docs/reviews/pr-59-rule-review-final.md`.
+- 2B18 remains `HUMAN_BLOCKED_UNCHANGED`; no next slice is authorized or
+  started. `currentSlice=null`, `currentBranch=main`, `currentPR=null`,
+  `nextSliceStarted=false`, `remainingBlockers=[]`.
+- Required next action: `AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`.
+- Closeout artifact:
+  `docs/implementation/phase-3-slice-4-projection-safety-closeout.md`.
+
+All sections below are chronological history and do not override this state.
+
 ## Current state — Phase 3 Slice 3 Vitest RPC compatibility accepted and closed out
 
 - Active state: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`;

@@ -2,6 +2,12 @@
 
 This baseline records accepted repository implementation facts only. Its statuses are implementation coverage, not the Phase One rule-research verification labels. It is not external rule evidence and does not authorize a new slice.
 
+Phase 3 Slice 4 Projection Safety is accepted and closed out at merge
+`d01f19dc270e5374f7892af86dabc086f91bb969` (frozen feature HEAD
+`8596022be93d3f0a90664889469ce0914aceed33`). It adds only public-safe and
+viewer-bound general-player projection surfaces plus structural leakage/parity
+evidence; role coverage statuses remain unchanged and no role is COMPLETE.
+
 Cell meanings:
 
 - `PARTIAL: ...` — an accepted implementation covers the named path but not the full dimension.

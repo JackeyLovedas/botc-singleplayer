@@ -1,6 +1,6 @@
 {
   "status": "ACCEPTED_AND_CLOSED_OUT",
-  "detailedStatus": "PHASE_3_ACCEPTED_AND_CLOSED_OUT",
+  "detailedStatus": "PHASE_3_SLICE_4_ACCEPTED_AND_CLOSED_OUT",
   "phase3Status": "ACCEPTED_AND_CLOSED_OUT",
   "phase3FinalAccepted": true,
   "nextSliceStarted": false,
@@ -9,13 +9,16 @@
   "slice3Started": true,
   "slice3Status": "ACCEPTED_AND_CLOSED_OUT",
   "slice3FinalAccepted": true,
+  "slice4Started": true,
+  "slice4Status": "ACCEPTED_AND_CLOSED_OUT",
+  "slice4FinalAccepted": true,
   "remainingBlockers": [],
   "disposition": "ACCEPTED",
   "canonicalActiveControlInvariant": {
     "schemaVersion": "POST-D3-CLOSEOUT-CANONICAL-ACTIVE-CONTROL-INVARIANT-V1",
     "role": "VALIDATION_CONTRACT_ONLY / NOT_A_SECOND_STATUS_AUTHORITY",
     "authority": "ROOT_ACTIVE_CONTROL_TUPLE",
-    "findingCode": "CANONICAL_TOP_LEVEL_SLICE3_CLOSEOUT_CONTROL_STATE_CONTRADICTION",
+    "findingCode": "CANONICAL_TOP_LEVEL_SLICE4_CLOSEOUT_CONTROL_STATE_CONTRADICTION",
     "statusEqualityPaths": [
       "$.detailedStatus",
       "$.currentDesignStatus",
@@ -36,21 +39,21 @@
       "$.nextAction"
     ],
     "activeTextMarkers": {
-      "docs/agent-loop/CURRENT_TASK.md": "## Phase 3 Slice 3 — Vitest RPC compatibility accepted and closed out",
-      "docs/agent-loop/PROJECT_STATE.md": "## Current state — Phase 3 Slice 3 Vitest RPC compatibility accepted and closed out",
-      "docs/implementation/phase-3-slice-3-vitest-rpc-compatibility-closeout.md": "# Phase 3 Slice 3 Vitest RPC Compatibility and Final Closure",
-      "docs/agent-loop/AUTOPILOT_LOG.md": "phase-3-slice-3-vitest-rpc-compatibility-post-merge-closeout"
+      "docs/agent-loop/CURRENT_TASK.md": "## Phase 3 Slice 4 — Projection Safety accepted and closed out",
+      "docs/agent-loop/PROJECT_STATE.md": "## Current state — Phase 3 Slice 4 Projection Safety accepted and closed out",
+      "docs/implementation/phase-3-slice-4-projection-safety-closeout.md": "# Phase 3 Slice 4 Projection Safety Final Closure",
+      "docs/agent-loop/AUTOPILOT_LOG.md": "phase-3-slice-4-projection-safety-post-merge-closeout"
     },
     "negativeFixture": {
       "mutationPath": "$.detailedStatus",
       "mutatedValue": "VALID_ARCHITECTURE_CANDIDATE_NOT_AUTHORIZED",
-      "expectedFindingCode": "CANONICAL_TOP_LEVEL_SLICE3_CLOSEOUT_CONTROL_STATE_CONTRADICTION",
+      "expectedFindingCode": "CANONICAL_TOP_LEVEL_SLICE4_CLOSEOUT_CONTROL_STATE_CONTRADICTION",
       "expectedExitCode": 17
     }
   },
-  "taskType": "PHASE_3_SLICE_3_INFRASTRUCTURE_CLOSEOUT",
+  "taskType": "PHASE_3_SLICE_4_PROJECTION_SAFETY_CLOSEOUT",
   "correctionId": "2B20A-ACCEPTED-NORMAL-DREAMER-RESTORATION-V1-CORRECTION-1",
-  "authorization": "USER_AUTHORIZED_SLICE3_VITEST_RPC_COMPATIBILITY_RESCOPE_AND_FINAL_CLOSURE",
+  "authorization": "USER_AUTHORIZED_PHASE_3_SLICE_4_PROJECTION_SAFETY_END_TO_END_CLOSURE",
   "designReleasePass": true,
   "designReleaseVerdict": "DESIGN_RELEASE_PASS",
   "ruleReady": true,
@@ -58,9 +61,9 @@
   "ruleConflict": false,
   "ruleCoverageStatus": "COVERAGE_APPROVED_PROFILE_MATCH",
   "profileReviewVerdict": "COVERAGE_APPROVED_PROFILE_MATCH",
-  "profileReviewedHead": "52c4e975ea0b3e38890318ed253718f552d77427",
-  "currentCoverageProfileId": "phase-3-slice-2c-closure-52c4e97-coverage-v1",
-  "currentCoverageProfileArtifactSha256": "befca654fba0acf8725b0c69ae63af8b756467b07cc0a82974031852f03aa47a",
+  "profileReviewedHead": "c952447ae0b49d6fd3e6996610d7657e06c8f578",
+  "currentCoverageProfileId": "phase-3-slice-4-c7142a5-coverage-v1",
+  "currentCoverageProfileArtifactSha256": "6d160088dc277953a6d25c85aad1491071c057b455cb875f8f381b259fa3515c",
   "localRestorationReviewVerdict": "ACCEPTED_BEHAVIOR_RESTORATION_REVIEW_PASS",
   "localRestorationReviewedHead": "0326c2cd08eed768d4f6097f11dad671f0271143",
   "localRestorationReviewPath": "docs/implementation/phase-3-slice-2b20a-accepted-normal-dreamer-restoration-implementation-review.md",
@@ -107,10 +110,10 @@
   "infrastructurePRUrl": "https://github.com/JackeyLovedas/botc-singleplayer/pull/47",
   "infrastructurePublished": true,
   "infrastructurePublicationStatus": "MERGED_AND_CLOSED_OUT",
-  "productPR": 54,
-  "productBranch": "phase-3/2c-integrated-basic-phase-flow",
-  "productHead": "52c4e975ea0b3e38890318ed253718f552d77427",
-  "productBranchHead": "phase-3/2c-integrated-basic-phase-flow@6f376ff25876a8ac0761b0088cbe2f365c24adb4",
+  "productPR": 59,
+  "productBranch": "codex/phase-3-slice-4-projection-safety",
+  "productHead": "c952447ae0b49d6fd3e6996610d7657e06c8f578",
+  "productBranchHead": "codex/phase-3-slice-4-projection-safety@8596022be93d3f0a90664889469ce0914aceed33",
   "currentBranch": "main",
   "currentSlice": null,
   "local2B20AP1Status": "HISTORICAL_2B20A_CONTROL_RECORD",
@@ -1210,10 +1213,10 @@
     },
     "remainingBlockers": []
   },
-  "reviewedHead": "d9a4a6d1191f835f795cdaff6a94f91242192ed0",
-  "currentReviewHeadAuthority": "The complete independent final review is bound to PR #54 frozen feature HEAD d9a4a6d1191f835f795cdaff6a94f91242192ed0 and returned CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]. The two original GitHub audit comments were re-read after merge and archived verbatim.",
-  "exactHeadCIAuthority": "Product-head push run 33359597822 and pull-request run 33359612115 each bind exact frozen feature HEAD d9a4a6d1191f835f795cdaff6a94f91242192ed0, completed/success. Merge run 33360139173 binds merge SHA 0a12bf190133c3043edd9e736eda6a2e82e8defe, completed/success. Post-closeout exact-head run 33361581727 binds origin/main 10ca84364d739ca199b559f0b89f2c19de56d99b, completed/success.",
-  "currentFeatureHead": "52c4e975ea0b3e38890318ed253718f552d77427",
+  "reviewedHead": "8596022be93d3f0a90664889469ce0914aceed33",
+  "currentReviewHeadAuthority": "The complete independent final review is bound to PR #59 frozen feature HEAD 8596022be93d3f0a90664889469ce0914aceed33 and returned CODE_REVIEW_PASS / RULE_REVIEW_PASS / remainingBlockers=[]. The two original GitHub audit comments were re-read after merge and archived verbatim.",
+  "exactHeadCIAuthority": "Product-head push run 33516692557 and pull-request run 33516698595 each bind exact frozen feature HEAD 8596022be93d3f0a90664889469ce0914aceed33, completed/success. Merge run 33517604706 binds merge SHA d01f19dc270e5374f7892af86dabc086f91bb969, completed/success. Closeout CI will bind only the exact docs-only closeout SHA.",
+  "currentFeatureHead": "8596022be93d3f0a90664889469ce0914aceed33",
   "repairBaseHead": "70ee998a631a347ced5975dc71923a71072fa5cb",
   "remotePRHead": null,
   "priorDesignCommit": "627dc709dcbf94e92b61a82cef0b75020b936146",
@@ -3320,9 +3323,9 @@
     "requiredNextAction": "UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW",
     "nextAction": "UPDATE_PR47_BODY_PUSH_RECONCILIATION_HEAD_WAIT_EXACT_CI_THEN_RERUN_COMPLETE_FINAL_REVIEW"
   },
-  "implementationStatus": "PHASE_3_ACCEPTED_AND_CLOSED_OUT",
-  "implementationBranch": "phase-3/2c-integrated-basic-phase-flow",
-  "implementationCommit": "52c4e975ea0b3e38890318ed253718f552d77427",
+  "implementationStatus": "PHASE_3_SLICE_4_ACCEPTED_AND_CLOSED_OUT",
+  "implementationBranch": "codex/phase-3-slice-4-projection-safety",
+  "implementationCommit": "8596022be93d3f0a90664889469ce0914aceed33",
   "remainingBlockers": [],
   "behaviorDesignFrozen": false,
   "finalDesignCompletionRound": false,
@@ -3332,13 +3335,13 @@
   "candidateRole": "2C_INTEGRATED_BASIC_PHASE_FLOW",
   "candidateScope": "BOUNDED_IMPLEMENTATION_CLOSURE",
   "designStarted": true,
-  "currentDesignPath": "docs/architecture/phase-3-slice-2c-governance-identity-closure-design.md",
-  "currentDesignHash": "3721262b79183b4b0db44a812c16bdc09662578ac71ea173de45d88a3c3eedb7",
-  "currentDesignStatus": "PHASE_3_ACCEPTED_AND_CLOSED_OUT",
-  "currentDesignTerminal": "PHASE_3_ACCEPTED_AND_CLOSED_OUT",
-  "currentDesignSource": "USER_AUTHORIZED_2C_GOVERNANCE_AND_CANONICAL_IDENTITY_CLOSURE_RESLICE_END_TO_END",
-  "currentDesignReviewPath": "docs/implementation/phase-3-slice-2c-design-review.md",
-  "currentDesignReviewHash": "86cf06ee05c61b3071335266f2d40a6d4682a35a0521af23946f29a479058f45",
+  "currentDesignPath": "docs/architecture/phase-3-slice-4-projection-safety-design.md",
+  "currentDesignHash": "14e72bb017abc7ce652f12521e1b33eb16297b6e4dfcb27d4c17ee0fa273ab0a",
+  "currentDesignStatus": "PHASE_3_SLICE_4_ACCEPTED_AND_CLOSED_OUT",
+  "currentDesignTerminal": "PHASE_3_SLICE_4_ACCEPTED_AND_CLOSED_OUT",
+  "currentDesignSource": "USER_AUTHORIZED_PHASE_3_SLICE_4_PROJECTION_SAFETY_END_TO_END_CLOSURE",
+  "currentDesignReviewPath": "docs/reviews/pr-59-rule-review-final.md",
+  "currentDesignReviewHash": "4db5bc79bb702f6c442e9a4f4f368707fcc08953a4be87a336acb057beff281c",
   "currentDesignReviewVerdict": "RULE_DESIGN_PASS",
   "currentDesignReviewSource": "INDEPENDENT_READ_ONLY_REVIEWER",
   "traceabilityClassificationCorrectionPath": "docs/implementation/phase-3-slice-2b20a-traceability-classification-correction-v1.md",
@@ -4563,32 +4566,14 @@
   },
   "completedSlices": ["2B13", "2B14", "2B15", "2B16", "2B17", "2B17.1", "2B17.2", "2B17.3", "2B18A", "2B18B", "2B19T", "2B19A1", "2B19A2", "2B19A3A", "2B19A3B1", "2B19B", "2B19A3B2"],
   "productHeadCI": {
-    "commitSha": "8cb921c5130454c90c0a63fc4b03a1d24f789b0f",
-    "push": {
-      "run": 30011473350,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30011473350",
-      "status": "SUCCESS",
-      "attempt1": "FAILURE",
-      "attempt2": "SUCCESS",
-      "jobs": "24/24"
-    },
-    "pullRequest": {
-      "run": 30011477353,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30011477353",
-      "status": "SUCCESS",
-      "jobs": "24/24"
-    },
-    "scope": "Frozen Phase 3 Slice 2B19A3B2 final feature HEAD only"
+    "commitSha": "8596022be93d3f0a90664889469ce0914aceed33",
+    "push": { "run": 33516692557, "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/33516692557", "status": "SUCCESS" },
+    "pullRequest": { "run": 33516698595, "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/33516698595", "status": "SUCCESS" },
+    "scope": "Frozen Phase 3 Slice 4 feature HEAD only"
   },
   "mergeCommitCI": {
-    "commitSha": "e247993e1b7ca8b651659f7b6cdeee6c2a58a070",
-    "mainPush": {
-      "run": 30060339928,
-      "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/30060339928",
-      "status": "SUCCESS",
-      "jobs": "24/24"
-    },
-    "acceptedTag": "phase-3-slice-2b19a3b2-combined-dreamer-mathematician-integration",
+    "commitSha": "d01f19dc270e5374f7892af86dabc086f91bb969",
+    "mainPush": { "run": 33517604706, "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/33517604706", "status": "SUCCESS" },
     "scope": "Exact merge SHA only"
   },
   "closeoutCommitCI": {
@@ -4596,7 +4581,7 @@
     "run": null,
     "url": null,
     "status": "PENDING",
-    "scope": "Future exact Phase 3 Slice 2B19A3B2 docs-only closeout SHA only"
+    "scope": "Future exact Phase 3 Slice 4 docs-only closeout SHA only"
   },
   "slice2B17ProductImplementation": {
     "head": "69c3f0375883bd9ec7908b5f9f609dad5e6fcee5",
@@ -5078,11 +5063,11 @@
     "phase2CStarted": false
   },
   "startedAt": "2026-07-24T12:01:14.5653647+08:00",
-  "lastAction": "Slice 3 Vitest RPC compatibility merged and closed out after first-attempt PR and merge-main CI success; no next slice started.",
+  "lastAction": "Slice 4 Projection Safety merged and closed out after exact-head PR and merge-main CI success; no next slice started.",
   "lastError": null,
   "requiredNextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE",
   "nextAction": "AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE",
-  "mergeSha": "c6ea5ac22439dc2efbb5161af024a6cf3af0452e",
+  "mergeSha": "d01f19dc270e5374f7892af86dabc086f91bb969",
   "finalAccepted": true,
   "slice2CStatus": "ACCEPTED_AND_CLOSED_OUT",
   "slice2CFinalAccepted": true,
@@ -5140,5 +5125,30 @@
     "run": 33361129639,
     "status": "SUCCESS",
     "url": "https://github.com/JackeyLovedas/botc-singleplayer/actions/runs/33361129639"
+  },
+  "slice4ProjectionSafety": {
+    "status": "ACCEPTED_AND_CLOSED_OUT",
+    "authorization": "USER_AUTHORIZED_PHASE_3_SLICE_4_PROJECTION_SAFETY_END_TO_END_CLOSURE",
+    "designPath": "docs/architecture/phase-3-slice-4-projection-safety-design.md",
+    "designSha256": "14e72bb017abc7ce652f12521e1b33eb16297b6e4dfcb27d4c17ee0fa273ab0a",
+    "designCorrectionCount": "2/2",
+    "designVerdict": "RULE_DESIGN_PASS",
+    "implementationHead": "8596022be93d3f0a90664889469ce0914aceed33",
+    "implementationCorrectionCount": "2/3",
+    "mergeCommit": "d01f19dc270e5374f7892af86dabc086f91bb969",
+    "coverageProfileId": "phase-3-slice-4-c7142a5-coverage-v1",
+    "coverageProfileSourceHead": "c952447ae0b49d6fd3e6996610d7657e06c8f578",
+    "coverageProfileSourceCount": 72,
+    "coverageProfileTestIdentityCount": 1746,
+    "productHeadCI": { "pushRun": 33516692557, "pullRequestRun": 33516698595, "status": "SUCCESS" },
+    "mergeCommitCI": { "run": 33517604706, "status": "SUCCESS" },
+    "finalReviewHead": "8596022be93d3f0a90664889469ce0914aceed33",
+    "codeVerdict": "CODE_REVIEW_PASS",
+    "ruleVerdict": "RULE_REVIEW_PASS",
+    "remainingBlockers": [],
+    "closeoutCommit": null,
+    "closeoutCI": { "status": "PENDING" },
+    "finalControlCommit": null,
+    "finalControlCI": { "status": "PENDING" }
   }
 }
