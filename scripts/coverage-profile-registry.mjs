@@ -437,7 +437,7 @@ export const COVERAGE_PROFILE_RECORDS = Object.freeze([
     profileId: "phase-3-slice-4-c7142a5-coverage-v1",
     schemaVersion: "botc-coverage-profile-registry-v3",
     lifecycleStatus: "ACTIVE",
-    sourceHead: "0f42d5909f24d41d5dbda61d347b570dbc46a93f",
+    sourceHead: "7ae6739046872ce9141a273b4d69094753d855b3",
     sourceCount: 72,
     testIdentityCount: 1746,
     inventorySha256: "49747524abf0192dcdc15e16e1dc68e990fde1da519e5bc6e3b62cb3f7ba634a",

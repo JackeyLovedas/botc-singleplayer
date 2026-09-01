@@ -1,14 +1,14 @@
 {
   "schemaVersion": "botc-coverage-profile-artifact-v2",
   "profileId": "phase-3-slice-4-c7142a5-coverage-v1",
-  "sourceHead": "0f42d5909f24d41d5dbda61d347b570dbc46a93f",
+  "sourceHead": "7ae6739046872ce9141a273b4d69094753d855b3",
   "sourceCount": 72,
   "testIdentityCount": 1746,
   "inventorySha256": "49747524abf0192dcdc15e16e1dc68e990fde1da519e5bc6e3b62cb3f7ba634a",
   "tupleSha256": "31ea9dc9facfe43882a78387db8e78361b8227902407e768cd410597b5ce740d",
   "logicalGroupCount": 11,
   "physicalGroupCount": 12,
-  "profileSha256": "9dcee1ceb79e279461d289afa4c477191febc29a3c67c67f170c64ca8a7b19c7",
+  "profileSha256": "6ecacede8010215da16315313624faea70d890d42de4dde9196baee52285149d",
   "topology": {
     "topologyId": "TWELVE_PHYSICAL_ELEVEN_LOGICAL_COVERAGE_WITH_DREAMER_CORE_SEGMENTS",
     "ordinaryLogicalGroupCount": 9,
