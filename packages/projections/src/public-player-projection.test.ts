@@ -76,6 +76,25 @@ describe("Slice 4 public and general player projections", () => {
     expect(serialized).not.toContain("currentCharacterState");
   });
 
+  it("keeps distinct viewer private facts isolated and parity-stable", () => {
+    const state = baseState();
+    const [firstViewer, secondViewer] = state.roster!.entries;
+    if (!firstViewer || !secondViewer) throw new Error("Expected two viewer fixtures");
+    const first = buildGeneralPlayerProjection(state, firstViewer.playerId);
+    const second = buildGeneralPlayerProjection(state, secondViewer.playerId);
+    const firstReplay = buildGeneralPlayerProjectionFromAcceptedEventStream(acceptedEvents(), firstViewer.playerId);
+    const secondReplay = buildGeneralPlayerProjectionFromAcceptedEventStream(acceptedEvents(), secondViewer.playerId);
+
+    expect(first.public).toStrictEqual(second.public);
+    expect(first.privateKnowledge.viewerPlayerId).toBe(firstViewer.playerId);
+    expect(second.privateKnowledge.viewerPlayerId).toBe(secondViewer.playerId);
+    expect(first.privateKnowledge.ownCharacter).not.toStrictEqual(second.privateKnowledge.ownCharacter);
+    expect(first.privateKnowledge).not.toStrictEqual(expect.objectContaining({ viewerPlayerId: secondViewer.playerId }));
+    expect(second.privateKnowledge).not.toStrictEqual(expect.objectContaining({ viewerPlayerId: firstViewer.playerId }));
+    expect(firstReplay).toStrictEqual(first);
+    expect(secondReplay).toStrictEqual(second);
+  });
+
   it("projects public nomination, vote counts, execution and independent life status", () => {
     const state = baseState();
     const [nominator, nominee, voter] = state.roster!.entries;
@@ -159,6 +178,14 @@ describe("Slice 4 public and general player projections", () => {
 
   it("rejects malformed accepted history before projection", () => {
     expect(() => buildPublicGameProjectionFromAcceptedEventStream([])).toThrow();
+  });
+
+  it("rejects a mutated accepted prefix before projection", () => {
+    const hostile = acceptedEvents();
+    const mutated = hostile[1];
+    if (!mutated) throw new Error("Expected accepted prefix event");
+    (mutated as { eventSequence: number }).eventSequence = 99;
+    expect(() => buildPublicGameProjectionFromAcceptedEventStream(hostile)).toThrow();
   });
 
   it("returns fresh nested projection containers", () => {
