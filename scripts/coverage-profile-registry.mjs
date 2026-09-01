@@ -437,9 +437,9 @@ export const COVERAGE_PROFILE_RECORDS = Object.freeze([
     profileId: "phase-3-slice-4-c7142a5-coverage-v1",
     schemaVersion: "botc-coverage-profile-registry-v3",
     lifecycleStatus: "ACTIVE",
-    sourceHead: "c7142a50abfeffc17e4afb92cefb2239127dae46",
+    sourceHead: "0f42d5909f24d41d5dbda61d347b570dbc46a93f",
     sourceCount: 72,
-    testIdentityCount: 1744,
+    testIdentityCount: 1746,
     inventorySha256: "49747524abf0192dcdc15e16e1dc68e990fde1da519e5bc6e3b62cb3f7ba634a",
     tupleSha256: "31ea9dc9facfe43882a78387db8e78361b8227902407e768cd410597b5ce740d",
     profileArtifactPath: "docs/implementation/coverage-profiles/phase-3-slice-4-c7142a5-coverage-v1.json",
@@ -447,7 +447,7 @@ export const COVERAGE_PROFILE_RECORDS = Object.freeze([
     physicalGroupCount: 12,
     previousProfileId: "phase-3-slice-3-c5c8f6f-coverage-v1",
     sourceDelta: Object.freeze({ added: 0, removed: 0 }),
-    testDelta: Object.freeze({ added: 11, removed: 0 }),
+    testDelta: Object.freeze({ added: 13, removed: 0 }),
     unexplainedLoss: 0
   })
 ]);
