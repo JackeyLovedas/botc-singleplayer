@@ -11,15 +11,18 @@ JackeyLovedas/botc-singleplayer
 C:\Users\wjl\Documents\血染钟楼
 
 当前起点（已接受的最新控制状态）：
-- Phase 3 formal closeout 已接受；Slice 2C、D2、D3 均为 `ACCEPTED`。
-- D3 implementation HEAD：`40b214964ae8ce8f4aebc6f64ec1fc9ba7859f38`。
-- Slice 2C product HEAD：`52c4e975ea0b3e38890318ed253718f552d77427`；
-  当前主线：`origin/main@10ca84364d739ca199b559f0b89f2c19de56d99b`。
-- 当前开放PR：无；当前分支：`main`；当前Slice：无；remainingBlockers：`[]`。
-- Phase 3 formal acceptance is closed. Slice `3` remains
-  `VALID_ARCHITECTURE_CANDIDATE_NOT_AUTHORIZED`; 2B18 remains
-  `HUMAN_BLOCKED_UNCHANGED` and must not be implicitly restored.
-- 必须等待：`AWAIT_USER_SELECTION_OF_NEXT_STAGE`。
+- Phase 3 formal closeout 已接受；Slice 2C、D2、D3 均为 `ACCEPTED`，Slice 3
+  Vitest RPC compatibility 也已 `ACCEPTED_AND_CLOSED_OUT`。
+- Slice 3 product merge：`cc6f7523f0fdf7d4ecca551d6493e3f5e6062564`；兼容性
+  merge：`c6ea5ac22439dc2efbb5161af024a6cf3af0452e`；closeout control：
+  `c8c7afe969f19740b611c8b39d8875daa7a9aac6`。
+- 当前主线：`origin/main@1c281c00e089033c8177f5384474993d4f60a95d`；当前开放PR：无；
+  当前分支：`main`；当前Slice：无；`remainingBlockers=[]`。
+- Slice 3 compatibility PR #58 的首次 PR CI `33501007647` 与首次 merge-main CI
+  `33501544643` 均成功；closeout CI `33502330908` 及 provenance CI `33502910670`
+  均成功。
+- 2B18 remains `HUMAN_BLOCKED_UNCHANGED`; no next slice is authorized or started。
+- 必须等待：`AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`。
 
 以下后续段落保留为通用协议与历史上下文，不构成当前Slice指令；任何新Slice均须获得新的明确授权和独立规则/设计审查。
 
