@@ -2424,15 +2424,42 @@ export class GameApplicationService {
           case "DeclareNomination":
             return state.phase === "NOMINATION_WINDOW" && actorPlayerId !== undefined && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "DeclareNomination requires a roster player during nomination" };
           case "OpenVote":
-            return state.phase === "NOMINATION_WINDOW" && (state.nominations ?? []).some((entry) => entry.nominationId === (command.payload as { readonly nominationId: string }).nominationId) ? undefined : { code: "CommandNotAllowedInPhase", message: "OpenVote requires an existing nomination" };
+            return state.phase === "NOMINATION_WINDOW" && state.nominations?.at(-1)?.nominationId === (command.payload as { readonly nominationId: string }).nominationId &&
+              !(state.blocks ?? []).some((block) => block.nominationId === (command.payload as { readonly nominationId: string }).nominationId) ? undefined : { code: "CommandNotAllowedInPhase", message: "OpenVote requires the current uncompleted nomination" };
           case "CastVote":
-            return state.phase === "VOTING" && actorPlayerId !== undefined && (state.nominations ?? []).some((entry) => entry.nominationId === (command.payload as { readonly nominationId: string }).nominationId) && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "CastVote requires a roster player during voting" };
+            return state.phase === "VOTING" && actorPlayerId !== undefined && state.nominations?.at(-1)?.nominationId === (command.payload as { readonly nominationId: string }).nominationId && state.roster?.entries.some((entry) => entry.playerId === actorPlayerId) === true ? undefined : { code: "CommandNotAllowedInPhase", message: "CastVote requires the current nomination and a roster player during voting" };
           case "CompleteVote":
-            return state.phase === "VOTING" && (state.nominations ?? []).some((entry) => entry.nominationId === (command.payload as { readonly nominationId: string }).nominationId) ? undefined : { code: "CommandNotAllowedInPhase", message: "CompleteVote requires an existing nomination during voting" };
-          case "CloseNominations":
-            return state.phase === "NOMINATION_WINDOW" && command.payload.dayNumber === state.dayNumber ? undefined : { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current nomination window" };
-          case "ResolveExecution":
-            return state.phase === "EXECUTION_RESOLUTION" ? undefined : { code: "CommandNotAllowedInPhase", message: "ResolveExecution requires execution resolution" };
+            return state.phase === "VOTING" && state.nominations?.at(-1)?.nominationId === (command.payload as { readonly nominationId: string }).nominationId ? undefined : { code: "CommandNotAllowedInPhase", message: "CompleteVote requires the current nomination during voting" };
+          case "CloseNominations": {
+            if (state.phase !== "NOMINATION_WINDOW" || command.payload.dayNumber !== state.dayNumber) {
+              return { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current nomination window" };
+            }
+            const latestNominationForClose = state.nominations?.at(-1);
+            if (latestNominationForClose !== undefined && latestNominationForClose.dayNumber === state.dayNumber &&
+                !(state.blocks ?? []).some((block) => block.nominationId === latestNominationForClose.nominationId)) {
+              return { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current vote to be completed" };
+            }
+            if (latestNominationForClose === undefined || latestNominationForClose.dayNumber !== state.dayNumber ||
+                !(state.blocks ?? []).some((block) => block.nominationId === latestNominationForClose.nominationId && block.dayNumber === state.dayNumber)) {
+              return { code: "CommandNotAllowedInPhase", message: "CloseNominations requires the current completed vote block" };
+            }
+            return undefined;
+          }
+          case "ResolveExecution": {
+            if (state.phase !== "EXECUTION_RESOLUTION") {
+              return { code: "CommandNotAllowedInPhase", message: "ResolveExecution requires execution resolution" };
+            }
+            const currentBlock = state.blocks?.at(-1);
+            const currentNomination = state.nominations?.at(-1);
+            const expectedBlockId = `block-v1:${state.dayNumber}:${state.blocks?.length ?? 0}`;
+            if (currentBlock === undefined || currentNomination === undefined ||
+                currentBlock.dayNumber !== state.dayNumber ||
+                currentBlock.nominationId !== currentNomination.nominationId ||
+                command.payload.blockId !== expectedBlockId) {
+              return { code: "CommandNotAllowedInPhase", message: "ResolveExecution requires the current completed vote block" };
+            }
+            return undefined;
+          }
           case "BeginNight":
             return state.phase === "NIGHT_TASKS" ? undefined : { code: "CommandNotAllowedInPhase", message: "BeginNight requires ordinary night tasks" };
           case "SettleOrdinaryNightTask":
@@ -4270,7 +4297,11 @@ export class GameApplicationService {
         if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "CompleteVote requires state");
         const nominationId = command.payload.nominationId;
         const yesVotesByNomination = new Map<string, number>();
+        const currentDayNominationIds = new Set((state.nominations ?? [])
+          .filter((nomination) => nomination.dayNumber === state.dayNumber)
+          .map((nomination) => nomination.nominationId));
         for (const vote of state.votes ?? []) {
+          if (!currentDayNominationIds.has(vote.nominationId)) continue;
           if (vote.choice === "YES") yesVotesByNomination.set(vote.nominationId, (yesVotesByNomination.get(vote.nominationId) ?? 0) + 1);
         }
         const livingPlayerCount = Math.max(0, (state.roster?.entries.length ?? 0) - new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]).size);
@@ -4311,15 +4342,22 @@ export class GameApplicationService {
         const voter = state.roster?.entries.find((entry) => entry.playerId === actorPlayerId);
         if (voter === undefined) throw new DomainError("InvalidDomainBatchSemantics", "voter unavailable");
         const deadPlayerIds = new Set([...(state.deadPlayerIds ?? []), ...(state.deaths ?? []).map((death) => death.playerId)]);
-        const ghostVoteConsumed = deadPlayerIds.has(voter.playerId);
+        const ghostVoteConsumed = deadPlayerIds.has(voter.playerId) && command.payload.choice === "YES";
         if (ghostVoteConsumed && (state.votes ?? []).some((vote) => vote.voterPlayerId === voter.playerId && vote.ghostVoteConsumed)) throw new DomainError("InvalidDomainBatchSemantics", "dead voter has already consumed the ghost vote");
         return [{ ...common(firstEventSequence), eventType: "VoteCast", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, voteId: `vote-v1:${command.payload.nominationId}:${(state.votes?.length ?? 0) + 1}`, nominationId: command.payload.nominationId, voterPlayerId: voter.playerId, voterSeatNumber: voter.seatNumber, choice: command.payload.choice, ghostVoteConsumed } }];
       }
       case "ResolveExecution": {
         if (state === undefined) throw new DomainError("InvalidDomainBatchSemantics", "ResolveExecution requires state");
         const block = state.blocks?.at(-1);
-        const nomination = block?.leaderNominationId === null || block?.leaderNominationId === undefined
-          ? state.nominations?.at(-1)
+        const latestNomination = state.nominations?.at(-1);
+        const expectedBlockId = `block-v1:${state.dayNumber}:${state.blocks?.length ?? 0}`;
+        if (block === undefined || latestNomination === undefined ||
+            block.dayNumber !== state.dayNumber || block.nominationId !== latestNomination.nominationId ||
+            command.payload.blockId !== expectedBlockId) {
+          throw new DomainError("InvalidDomainBatchSemantics", "execution requires the current completed vote block");
+        }
+        const nomination = block.leaderNominationId === null || block.leaderNominationId === undefined
+          ? latestNomination
           : state.nominations?.find((candidate) => candidate.nominationId === block.leaderNominationId);
         if (nomination === undefined) throw new DomainError("InvalidDomainBatchSemantics", "execution nomination unavailable");
         const transition = evaluatePhaseTransition({ fromPhase: state.phase, toPhase: "NIGHT_TASKS", dayNumber: state.dayNumber, nightNumber: state.nightNumber });
@@ -4331,7 +4369,8 @@ export class GameApplicationService {
             { ...common(firstEventSequence + 1), eventType: "PhaseTransitioned", payload: { rulesBaselineVersion: RULES_BASELINE_VERSION, fromPhase: state.phase, toPhase: transition.nextPhase, transitionReason: transition.reasonCode, dayNumberBefore: state.dayNumber, dayNumberAfter: transition.dayNumber, nightNumberBefore: state.nightNumber, nightNumberAfter: transition.nightNumber } satisfies PhaseTransitionedPayload }
           ];
         }
-        const alreadyDead = (state.deaths ?? []).some((death) => death.playerId === nomination.nomineePlayerId);
+        const alreadyDead = (state.deadPlayerIds ?? []).includes(nomination.nomineePlayerId) ||
+          (state.deaths ?? []).some((death) => death.playerId === nomination.nomineePlayerId);
         const targetSeatNumber = state.roster?.entries.find((entry) => entry.playerId === nomination.nomineePlayerId)?.seatNumber;
         if (targetSeatNumber === undefined) throw new DomainError("InvalidDomainBatchSemantics", "execution target seat unavailable");
         const executionMetadata = common(firstEventSequence);
