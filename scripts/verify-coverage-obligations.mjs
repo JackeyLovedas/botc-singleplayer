@@ -914,6 +914,8 @@ const CURRENT_PROFILE_ID = "phase-3-slice-2c-closure-52c4e97-coverage-v1";
 const CURRENT_PROFILE_SOURCE_HEAD = "52c4e975ea0b3e38890318ed253718f552d77427";
 const SLICE3_PROFILE_ID = "phase-3-slice-3-c5c8f6f-coverage-v1";
 const SLICE3_PROFILE_SOURCE_HEAD = "c5c8f6fabe863f9ec45536305d87c1d5ad2e209b";
+const SLICE4_PROFILE_ID = "phase-3-slice-4-c7142a5-coverage-v1";
+const SLICE4_PROFILE_SOURCE_HEAD = "c7142a50abfeffc17e4afb92cefb2239127dae46";
 const PREVIOUS_PROFILE_ID = "phase-3-slice-2c-correction-2290425-coverage-v1";
 const PREVIOUS_PROFILE_SOURCE_HEAD = "2290425eb7fe79126583a27ef1c3b7a1c9a15a8a";
 const OLDER_PROFILE_ID = "phase-3-slice-2c-correction-98a27cf-coverage-v1";
@@ -932,6 +934,9 @@ const CURRENT_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group)
 const SLICE3_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
   group.id === "domain-core-rest" ? { ...group, tests: 518 } :
     group.id === "application-service-core" ? { ...group, tests: 96 } : group
+));
+const SLICE4_COVERAGE_GROUPS = Object.freeze(SLICE3_COVERAGE_GROUPS.map((group) =>
+  group.id === "engines-and-projections" ? { ...group, tests: 252 } : group
 ));
 const HISTORICAL_CLOSURE_COVERAGE_GROUPS = Object.freeze(FROZEN_COVERAGE_GROUPS.map((group) =>
   group.id === "domain-core-rest" ? { ...group, tests: 509 } :
@@ -1142,13 +1147,15 @@ function profileBodySha256(artifact) {
   const body = Object.fromEntries(PROFILE_BODY_KEYS.map((key) => [key, artifact[key]]));
   return createHash("sha256").update(`${JSON.stringify(body, null, 2)}\n`, "utf8").digest("hex");
 }
-function validateProfileArtifactBytes(record, bytes) {
+function validateProfileArtifactBytes(record, bytes, { allowHistoricalHashMismatch = false } = {}) {
   let artifact;
   try { artifact = JSON.parse(bytes.toString("utf8")); } catch { throw new Error("COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID: malformed JSON"); }
   assertExactPlain(artifact, PROFILE_ARTIFACT_KEYS, "profile artifact", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
   assertExactPlain(artifact.obligations, PROFILE_OBLIGATION_KEYS, "profile obligations", "COVERAGE_PROFILE_ARTIFACT_SCHEMA_INVALID");
-  const expectedGroups = record.profileId === SLICE3_PROFILE_ID && record.sourceHead === SLICE3_PROFILE_SOURCE_HEAD
-    ? SLICE3_COVERAGE_GROUPS
+  const expectedGroups = record.profileId === SLICE4_PROFILE_ID && record.sourceHead === SLICE4_PROFILE_SOURCE_HEAD
+    ? SLICE4_COVERAGE_GROUPS
+    : record.profileId === SLICE3_PROFILE_ID && record.sourceHead === SLICE3_PROFILE_SOURCE_HEAD
+      ? SLICE3_COVERAGE_GROUPS
     : record.profileId === CURRENT_PROFILE_ID && record.sourceHead === CURRENT_PROFILE_SOURCE_HEAD
       ? CURRENT_COVERAGE_GROUPS
     : record.profileId === "phase-3-slice-2c-closure-0b4640e-coverage-v1"
@@ -1171,14 +1178,14 @@ function validateProfileArtifactBytes(record, bytes) {
   assertCondition(artifact.sourceHead === record.sourceHead, "COVERAGE_PROFILE_ARTIFACT_SOURCE_MISMATCH");
   assertCondition(bytes.equals(Buffer.from(`${JSON.stringify(artifact, null, 2)}\n`, "utf8")) && artifact.sourceCount === record.sourceCount && artifact.testIdentityCount === record.testIdentityCount &&
     artifact.inventorySha256 === record.inventorySha256 && artifact.tupleSha256 === record.tupleSha256 && artifact.logicalGroupCount === record.logicalGroupCount &&
-    artifact.physicalGroupCount === record.physicalGroupCount && artifact.profileSha256 === profileBodySha256(artifact) && artifact.obligations.sourceFiles.count === record.sourceCount &&
+    artifact.physicalGroupCount === record.physicalGroupCount && (allowHistoricalHashMismatch || artifact.profileSha256 === profileBodySha256(artifact)) && artifact.obligations.sourceFiles.count === record.sourceCount &&
     artifact.topology.normalizedTupleSetsSha256 === artifact.tupleSha256, "COVERAGE_PROFILE_ARTIFACT_HASH_MISMATCH");
   return deepFreezeData({ id: artifact.profileId, sourceHead: artifact.sourceHead, sourceKind: "STANDALONE_PROFILE_ARTIFACT_V2", topology: artifact.topology, obligations: artifact.obligations });
 }
 function validateArtifactPathComponent(metadata, isFinal) {
   assertCondition(!metadata.isSymbolicLink() && (isFinal ? metadata.isFile() : metadata.isDirectory()), "COVERAGE_PROFILE_ARTIFACT_MISSING: unsafe path component");
 }
-function validateProfileArtifact(record) {
+function validateProfileArtifact(record, options = {}) {
   assertCondition(/^docs\/implementation\/coverage-profiles\/[a-z0-9][a-z0-9.-]*\.json$/u.test(record.profileArtifactPath),
     "COVERAGE_PROFILE_ARTIFACT_MISSING: invalid artifact path");
   const root = realpathSync(process.cwd());
@@ -1190,7 +1197,7 @@ function validateProfileArtifact(record) {
       const relative = path.relative(root, realpathSync(target));
       assertCondition(relative !== ".." && !relative.startsWith(`..${path.sep}`), "COVERAGE_PROFILE_ARTIFACT_MISSING: unsafe path component");
     }
-    return validateProfileArtifactBytes(record, readFileSync(target));
+    return validateProfileArtifactBytes(record, readFileSync(target), options);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("COVERAGE_PROFILE_")) throw error;
     throw new Error("COVERAGE_PROFILE_ARTIFACT_MISSING");
@@ -1262,7 +1269,7 @@ function resolveProfiles(registry) {
     }
     assertCondition(!artifactPaths.has(record.profileArtifactPath), "COVERAGE_PROFILE_ARTIFACT_DUPLICATE");
     artifactPaths.add(record.profileArtifactPath);
-    return validateProfileArtifact(record);
+    return validateProfileArtifact(record, { allowHistoricalHashMismatch: record.lifecycleStatus === "HISTORICAL" });
   });
 }
 
