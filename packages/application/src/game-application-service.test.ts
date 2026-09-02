@@ -118,7 +118,11 @@ import {
   buildAiPrivateKnowledgeView,
   buildAiPrivateKnowledgeViewFromAcceptedEventStream,
   buildPlayerPrivateKnowledgeView,
-  buildPlayerPrivateKnowledgeViewFromAcceptedEventStream
+  buildPlayerPrivateKnowledgeViewFromAcceptedEventStream,
+  buildPublicGameProjection,
+  buildPublicGameProjectionFromAcceptedEventStream,
+  buildGeneralPlayerProjection,
+  buildGeneralPlayerProjectionFromAcceptedEventStream
 } from "@botc/projections";
 import { deriveFirstNightAbilityOutcomeFact } from "../../domain-core/src/first-night-ability-outcome-ledger.js";
 import { assertRebuiltCanonicalRoleTenureState } from "../../domain-core/src/role-tenure-replay.js";
@@ -592,7 +596,36 @@ describeApplicationServiceShard("core", "F06 first-night completion to ordinary-
     expectAcceptedResult(resolve);
     const afterExecution = rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game));
     expect(afterExecution?.phase).toBe("NIGHT_TASKS");
-    const beginNight = await service.execute(beginNightCommand({ commandId: commandId("f06-begin-ordinary-night"), expectedGameVersion: afterExecution!.gameVersion }));
+
+    // Slice 5 verification mapping reuses GI-C01/GI-C05/GI-C06/GI-C07/GI-C08,
+    // S3-C01/S3-C03/S3-C04, S4-C01/S4-C05/S4-C06/S4-C07/S4-C10, and A-R H/I/J/K/L.
+    // This assertion-only extension adds no semantic criterion or product behavior.
+    if (afterExecution === undefined) throw new Error("Expected post-execution state");
+    const acceptedInteractionEvents = await commandStore.loadDomainEvents(ids.game);
+    const publicProjection = buildPublicGameProjection(afterExecution);
+    const replayedPublicProjection = buildPublicGameProjectionFromAcceptedEventStream(acceptedInteractionEvents);
+    expect(replayedPublicProjection).toStrictEqual(publicProjection);
+    expect(publicProjection.phase).toBe("NIGHT_TASKS");
+    expect(publicProjection.nominations).toHaveLength(1);
+    expect(publicProjection.nominations[0]?.votes.length).toBeGreaterThan(0);
+    expect(publicProjection.executions).toHaveLength(1);
+    const executedPlayerId = publicProjection.executions[0]?.targetPlayerId;
+    expect(executedPlayerId).toBeDefined();
+    expect(publicProjection.roster.find((entry) => entry.playerId === executedPlayerId)?.lifeStatus).toBe("DEAD");
+
+    const viewerPlayerId = afterExecution.roster?.entries.find((entry) => entry.playerId !== executedPlayerId)?.playerId;
+    if (viewerPlayerId === undefined) throw new Error("Expected a viewer player");
+    const playerProjection = buildGeneralPlayerProjection(afterExecution, viewerPlayerId);
+    const replayedPlayerProjection = buildGeneralPlayerProjectionFromAcceptedEventStream(
+      acceptedInteractionEvents,
+      viewerPlayerId
+    );
+    expect(replayedPlayerProjection).toStrictEqual(playerProjection);
+    expect(playerProjection.public).toStrictEqual(publicProjection);
+    const serializedPlayerProjection = JSON.stringify(playerProjection);
+    expect(serializedPlayerProjection).not.toMatch(/assignment|truth|cause|receipt|eventId|currentCharacterState/i);
+
+    const beginNight = await service.execute(beginNightCommand({ commandId: commandId("f06-begin-ordinary-night"), expectedGameVersion: afterExecution.gameVersion }));
     expectAcceptedResult(beginNight);
     expect(beginNight.events.map((event) => event.eventType)).toStrictEqual(["OrdinaryNightTaskPlanCreated"]);
     expect(rebuildOptionalGameState(await commandStore.loadDomainEvents(ids.game))?.ordinaryNightTaskPlan?.tasks.map((task) => task.taskType))
