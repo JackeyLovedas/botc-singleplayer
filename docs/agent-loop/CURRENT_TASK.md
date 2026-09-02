@@ -1,5 +1,34 @@
 # Current Task
 
+## Phase 3 Slice 5 — One Verified Core Interaction accepted and closed out
+
+- Status: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`;
+  `slice4FinalAccepted=true`; `slice5FinalAccepted=true`.
+- Slice 5 PR #60 merged as
+  `158defec11d0204d32a1672bce421232797d3d90`; frozen feature HEAD is
+  `5024a9183aa8b1e433686157d4f344a9056b6bef`.
+- Exact-head product CI passed on runs `33607041048` and `33607065740`;
+  merge-main CI `33608168986` passed for the exact merge SHA.
+- The existing F06 test identity was extended with assertion-only
+  nomination/vote/execution/death and public/player projection/replay checks.
+  Production source count remains 72; test identity count remains 1,746;
+  no coverage profile migration was required.
+- Independent final review at the frozen feature HEAD returned
+  `CODE_REVIEW_PASS / RULE_REVIEW_PASS`, `findings=[]`, and
+  `remainingBlockers=[]`; original comments are archived under
+  `docs/reviews/pr-60-code-review-final.md` and
+  `docs/reviews/pr-60-rule-review-final.md`.
+- Evil Twin remains `PARTIAL`; no victory, game-over, role-change, or
+  preemption behavior was implemented. 2B18 remains
+  `HUMAN_BLOCKED_UNCHANGED`.
+- No next slice is authorized or started: `currentSlice=null`,
+  `currentBranch=main`, `currentPR=null`, `nextSliceStarted=false`.
+- Required next action: `AUTHORITY_REVIEW_ONLY_NO_AUTO_NEXT_SLICE`.
+- Closeout artifact:
+  `docs/implementation/phase-3-slice-5-one-verified-interaction-closeout.md`.
+
+All sections below are chronological history and do not override this state.
+
 ## Phase 3 Slice 4 — Projection Safety accepted and closed out
 
 - Status: `ACCEPTED_AND_CLOSED_OUT`; `phase3FinalAccepted=true`;
